@@ -411,7 +411,40 @@ public class StringUtils {
         int result = 0;
         if (StringUtils.isNotNullOrEmpty(s)) {
             try {
-                result = Integer.parseInt(s);
+                result = Integer.parseInt(s.trim());
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return result;
+    }
+
+    public static long toLong(String s) {
+        long result = 0;
+        if (StringUtils.isNotNullOrEmpty(s)) {
+            try {
+                result = Long.parseLong(s.trim());
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return result;
+    }
+
+    public static double toFloat(String s) {
+        float result = 0;
+        if (StringUtils.isNotNullOrEmpty(s)) {
+            try {
+                result = Float.parseFloat(s.trim());
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return result;
+    }
+
+    public static double toDouble(String s) {
+        double result = 0;
+        if (StringUtils.isNotNullOrEmpty(s)) {
+            try {
+                result = Double.parseDouble(s.trim());
             } catch (NumberFormatException ignored) {
             }
         }
