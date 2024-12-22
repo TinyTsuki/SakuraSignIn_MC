@@ -266,6 +266,18 @@ public class TextureCoordinate implements Serializable {
     @NonNull
     private Coordinate sortUV = new Coordinate().setU0(280).setV0(880).setUWidth(40).setVHeight(40);
 
+    /**
+     * 签到按钮纹理坐标
+     */
+    @NonNull
+    private Coordinate signInBtnUV = new Coordinate().setU0(120).setV0(920).setUWidth(60).setVHeight(60);
+
+    /**
+     * 奖励配置按钮纹理坐标
+     */
+    @NonNull
+    private Coordinate rewardOptionBtnUV = new Coordinate().setU0(180).setV0(920).setUWidth(60).setVHeight(60);
+
     // region Always NON-NULL Getter
 
     public @NonNull Coordinate getYearCoordinate() {
@@ -398,6 +410,14 @@ public class TextureCoordinate implements Serializable {
 
     public @NonNull Coordinate getSortUV() {
         return sortUV = sortUV == null ? new Coordinate() : sortUV;
+    }
+
+    public @NonNull Coordinate getSignInBtnUV() {
+        return signInBtnUV = signInBtnUV == null ? new Coordinate() : signInBtnUV;
+    }
+
+    public @NonNull Coordinate getRewardOptionBtnUV() {
+        return rewardOptionBtnUV = rewardOptionBtnUV == null ? new Coordinate() : rewardOptionBtnUV;
     }
 
     // endregion Always NON-NULL Getter
