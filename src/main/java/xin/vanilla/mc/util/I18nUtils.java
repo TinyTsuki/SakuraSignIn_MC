@@ -81,6 +81,7 @@ public class I18nUtils {
         put("使用键盘%s键也可以哦", "tips.sakura_sign_in.use_s_key");
         put("点击切换主题", "tips.sakura_sign_in.click_to_change_theme");
         put("左键点击切换主题\n右键点击选择外部主题", "tips.sakura_sign_in.click_to_change_theme_or_select_external_theme");
+        put("按住Ctrl或Alt键可拖动按钮\nCtrl: 绝对位置坐标\nAlt: 屏幕百分比位置", "tips.sakura_sign_in.drag_inventory_button");
         put("已选择主题文件: %s", "message.sakura_sign_in.selected_theme_file_s");
         put("前面的的日期以后再来探索吧。", "message.sakura_sign_in.next_day_cannot_operate");
         put("已经签过到了哦。", "message.sakura_sign_in.already_signed");
