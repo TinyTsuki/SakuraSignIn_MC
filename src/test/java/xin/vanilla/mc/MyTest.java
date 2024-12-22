@@ -160,6 +160,8 @@ public class MyTest {
                 aDefault.getUploadUV().setU0(200).setV0(924).setUWidth(40).setVHeight(40);
                 aDefault.getFolderUV().setU0(240).setV0(924).setUWidth(40).setVHeight(40);
                 aDefault.getSortUV().setU0(280).setV0(924).setUWidth(40).setVHeight(40);
+                aDefault.getSignInBtnUV().setU0(120).setV0(964);
+                aDefault.getRewardOptionBtnUV().setU0(180).setV0(964);
                 break;
         }
         PNGUtils.writePrivateChunk(sourceFile, tempFile, "vacb", aDefault, true);
