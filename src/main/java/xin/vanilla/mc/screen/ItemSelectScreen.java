@@ -347,7 +347,7 @@ public class ItemSelectScreen extends Screen {
     }
 
     /**
-     * 重写键盘事件，ESC键关闭当前屏幕并返回到调用者的 Screen
+     * 重写键盘事件
      */
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
@@ -361,6 +361,11 @@ public class ItemSelectScreen extends Screen {
         } else {
             return super.keyPressed(keyCode, scanCode, modifiers);
         }
+    }
+
+    @Override
+    public boolean shouldCloseOnEsc() {
+        return false;
     }
 
     @Override
