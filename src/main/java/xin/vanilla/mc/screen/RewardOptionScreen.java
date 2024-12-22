@@ -3,6 +3,8 @@ package xin.vanilla.mc.screen;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.gui.AbstractGui;
@@ -59,6 +61,14 @@ import static xin.vanilla.mc.util.I18nUtils.getByZh;
 @OnlyIn(Dist.CLIENT)
 public class RewardOptionScreen extends Screen {
     private static final Logger LOGGER = LogManager.getLogger();
+
+    /**
+     * 父级 Screen
+     */
+    @Getter
+    @Setter
+    @Accessors(chain = true)
+    private Screen previousScreen;
 
     /**
      * 当前按下的按键
@@ -1504,7 +1514,7 @@ public class RewardOptionScreen extends Screen {
         this.keyCode = keyCode;
         this.modifiers = modifiers;
         if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
-            this.onClose();
+            if (this.previousScreen != null) Minecraft.getInstance().setScreen(this.previousScreen);
             return true;
         } else {
             return super.keyPressed(keyCode, scanCode, modifiers);
@@ -1520,6 +1530,11 @@ public class RewardOptionScreen extends Screen {
         this.keyCode = -1;
         this.modifiers = -1;
         return super.keyReleased(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public boolean shouldCloseOnEsc() {
+        return false;
     }
 
     /**

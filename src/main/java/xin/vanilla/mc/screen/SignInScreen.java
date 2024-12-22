@@ -3,6 +3,8 @@ package xin.vanilla.mc.screen;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.gui.screen.Screen;
@@ -46,6 +48,14 @@ public class SignInScreen extends Screen {
     private static final Logger LOGGER = LogManager.getLogger();
 
     // region 变量定义
+
+    /**
+     * 父级 Screen
+     */
+    @Getter
+    @Setter
+    @Accessors(chain = true)
+    private Screen previousScreen;
 
     /**
      * 当前按下的按键
@@ -762,8 +772,8 @@ public class SignInScreen extends Screen {
         this.keyCode = keyCode;
         this.modifiers = modifiers;
         // 当按键等于SIGN_IN_SCREEN_KEY键的值或Inventory键时，调用onClose方法，并返回true，表示该按键事件已被消耗
-        if (keyCode == ClientEventHandler.SIGN_IN_SCREEN_KEY.getKey().getValue() || keyCode == Minecraft.getInstance().options.keyInventory.getKey().getValue()) {
-            this.onClose();
+        if (keyCode == GLFW.GLFW_KEY_ESCAPE || keyCode == ClientEventHandler.SIGN_IN_SCREEN_KEY.getKey().getValue() || keyCode == Minecraft.getInstance().options.keyInventory.getKey().getValue()) {
+            if (this.previousScreen != null) Minecraft.getInstance().setScreen(this.previousScreen);
             return true;
         } else {
             // 对于其他按键，交由父类处理，并返回父类的处理结果
