@@ -52,6 +52,10 @@ public class ServerConfig {
      * 实际时间
      */
     public static final ForgeConfigSpec.ConfigValue<String> ACTUAL_TIME;
+    /**
+     * 玩家签到数据同步网络包大小
+     */
+    public static final ForgeConfigSpec.IntValue PLAYER_DATA_SYNC_PACKET_SIZE;
 
     static {
         ForgeConfigSpec.Builder SERVER_BUILDER = new ForgeConfigSpec.Builder();
@@ -122,6 +126,15 @@ public class ServerConfig {
                 .comment("Calculate the server time offset by matching the original time with the actual time to calibrate the server time."
                         , "实际时间，与 服务器原时间 配合计算服务器时间偏移以校准服务器时间。")
                 .define("serverCalibrationTime", DateUtils.toDateTimeString(new Date()));
+
+        // 玩家签到数据同步网络包大小
+        PLAYER_DATA_SYNC_PACKET_SIZE = SERVER_BUILDER
+                .comment("The maximum size of the player data synchronization network packet."
+                        , "When the amount of player sign-in data is too large, "
+                        , "causing the player to enter the server with an error message 'Invalid Player Data', "
+                        , "please reduce this value."
+                        , "玩家数据同步网络包的大小。当玩家签到数据量过大，导致玩家进入服务器报错『无效的玩家数据』时请将此值改小。")
+                .defineInRange("playerDataSyncPacketSize", 100, 1, 1024);
 
         SERVER_BUILDER.pop();
 
