@@ -15,6 +15,7 @@ import org.lwjgl.glfw.GLFW;
 import xin.vanilla.mc.SakuraSignIn;
 import xin.vanilla.mc.screen.coordinate.Coordinate;
 import xin.vanilla.mc.util.AbstractGuiUtils;
+import xin.vanilla.mc.util.StringUtils;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.function.Consumer;
@@ -68,6 +69,20 @@ public class InventoryButton extends AbstractWidget {
         this.y_ = y;
     }
 
+    public InventoryButton setUV(Coordinate coordinate, int totalWidth, int totalHeight) {
+        return setUV(coordinate.getU0(), coordinate.getV0(), coordinate.getUWidth(), coordinate.getVHeight(), totalWidth, totalHeight);
+    }
+
+    public InventoryButton setUV(double u0, double v0, double uWidth, double vHeight, int totalWidth, int totalHeight) {
+        this.u0 = u0;
+        this.v0 = v0;
+        this.uWidth = uWidth;
+        this.vHeight = vHeight;
+        this.totalWidth = totalWidth;
+        this.totalHeight = totalHeight;
+        return this;
+    }
+
     @Override
     @ParametersAreNonnullByDefault
     public void render(PoseStack poseStack, int mouseX, int mouseY, float partialTicks) {
@@ -85,7 +100,9 @@ public class InventoryButton extends AbstractWidget {
         if (this.mouseDrag) {
             Text text;
             if (this.modifiers == GLFW.GLFW_MOD_ALT) {
-                text = Text.literal(String.format("X: %.4f%%\nY: %.4f%%", (super.getX() - 2.0d) / (screenWidth - this.width - 2.0d * 2), (super.getY() - 2.0d) / (screenHeight - this.height - 2.0d * 2)));
+                text = Text.literal(String.format("X: %s\nY: %s"
+                        , StringUtils.toPercent((super.getX() - 2.0d) / (screenWidth - this.width - 2.0d * 2))
+                        , StringUtils.toPercent((super.getY() - 2.0d) / (screenHeight - this.height - 2.0d * 2))));
             } else {
                 text = Text.literal(String.format("X: %d\nY: %d", super.getX(), super.getY()));
             }
@@ -97,20 +114,6 @@ public class InventoryButton extends AbstractWidget {
                 AbstractGuiUtils.drawPopupMessage(AbstractGuiUtils.componentToText(this.getMessage().copy()), mouseX, mouseY, screenWidth, screenHeight);
             }
         }
-    }
-
-    public InventoryButton setUV(Coordinate coordinate, int totalWidth, int totalHeight) {
-        return setUV(coordinate.getU0(), coordinate.getV0(), coordinate.getUWidth(), coordinate.getVHeight(), totalWidth, totalHeight);
-    }
-
-    public InventoryButton setUV(double u0, double v0, double uWidth, double vHeight, int totalWidth, int totalHeight) {
-        this.u0 = u0;
-        this.v0 = v0;
-        this.uWidth = uWidth;
-        this.vHeight = vHeight;
-        this.totalWidth = totalWidth;
-        this.totalHeight = totalHeight;
-        return this;
     }
 
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
