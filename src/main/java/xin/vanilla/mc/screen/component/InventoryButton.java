@@ -68,35 +68,16 @@ public class InventoryButton extends AbstractWidget {
         this.y_ = y;
     }
 
-    @Override
-    @ParametersAreNonnullByDefault
-    public void render(PoseStack poseStack, int mouseX, int mouseY, float partialTicks) {
-        // 无法直接监听鼠标移动事件, 直接在绘制时调用
-        this.mouseMoved(mouseX, mouseY);
+    /**
+     * 获取有效的坐标X
+     */
+    public static double getValidX(double x, int width) {
+        int screenWidth = 427;
         Screen screen = Minecraft.getInstance().screen;
         if (screen != null) {
-            this.screenWidth = screen.width;
-            this.screenHeight = screen.height;
+            screenWidth = screen.width;
         }
-        // 绘制自定义纹理
-        AbstractGuiUtils.bindTexture(SakuraSignIn.getThemeTexture());
-        int offset = this.isHovered && !this.mouseDrag ? 1 : 0;
-        AbstractGuiUtils.blit(poseStack, super.getX() - offset, super.getY() - offset, this.width + offset * 2, this.height + offset * 2, (int) this.u0, (int) this.v0, (int) this.uWidth, (int) this.vHeight, (int) totalWidth, (int) totalHeight);
-        if (this.mouseDrag) {
-            Text text;
-            if (this.modifiers == GLFW.GLFW_MOD_ALT) {
-                text = Text.literal(String.format("X: %.4f\nY: %.4f", super.getX() * 1.0f / screenWidth, super.getY() * 1.0f / screenHeight));
-            } else {
-                text = Text.literal(String.format("X: %d\nY: %d", super.getX(), super.getY()));
-            }
-            AbstractGuiUtils.drawPopupMessage(text, super.getX() + (AbstractGuiUtils.multilineTextWidth(text) - this.width) / 2, super.getY() + this.height / 2, screenWidth, screenHeight);
-        } else if (this.isHovered) {
-            if (this.modifiers == GLFW.GLFW_MOD_SHIFT) {
-                AbstractGuiUtils.drawPopupMessage(Text.i18n("按住Ctrl或Alt键可拖动按钮\nCtrl: 绝对位置坐标\nAlt: 屏幕百分比位置"), mouseX, mouseY, screenWidth, screenHeight);
-            } else {
-                AbstractGuiUtils.drawPopupMessage(AbstractGuiUtils.componentToText(this.getMessage().copy()), mouseX, mouseY, screenWidth, screenHeight);
-            }
-        }
+        return Math.min(screenWidth - 2 - width, Math.max(2, x));
     }
 
     public InventoryButton setUV(Coordinate coordinate, int totalWidth, int totalHeight) {
@@ -121,13 +102,73 @@ public class InventoryButton extends AbstractWidget {
         return this.pressed;
     }
 
+    /**
+     * 获取有效的坐标Y
+     */
+    public static double getValidY(double y, int height) {
+        int screenHeight = 240;
+        Screen screen = Minecraft.getInstance().screen;
+        if (screen != null) {
+            screenHeight = screen.height;
+        }
+        return Math.min(screenHeight - 2 - height, Math.max(2, y));
+    }
+
+    @Override
+    @ParametersAreNonnullByDefault
+    public void render(PoseStack poseStack, int mouseX, int mouseY, float partialTicks) {
+        // 无法直接监听鼠标移动事件, 直接在绘制时调用
+        this.mouseMoved(mouseX, mouseY);
+        Screen screen = Minecraft.getInstance().screen;
+        if (screen != null) {
+            this.screenWidth = screen.width;
+            this.screenHeight = screen.height;
+        }
+        // 绘制自定义纹理
+        AbstractGuiUtils.bindTexture(SakuraSignIn.getThemeTexture());
+        int offset = this.isHovered && !this.mouseDrag ? 1 : 0;
+        AbstractGuiUtils.blit(poseStack, super.getX() - offset, super.getY() - offset, this.width + offset * 2, this.height + offset * 2, (int) this.u0, (int) this.v0, (int) this.uWidth, (int) this.vHeight, (int) totalWidth, (int) totalHeight);
+        if (this.mouseDrag) {
+            Text text;
+            if (this.modifiers == GLFW.GLFW_MOD_ALT) {
+                text = Text.literal(String.format("X: %.4f%%\nY: %.4f%%", (super.getX() - 2.0d) / (screenWidth - this.width - 2.0d * 2), (super.getY() - 2.0d) / (screenHeight - this.height - 2.0d * 2)));
+            } else {
+                text = Text.literal(String.format("X: %d\nY: %d", super.getX(), super.getY()));
+            }
+            AbstractGuiUtils.drawPopupMessage(text, super.getX() + (AbstractGuiUtils.multilineTextWidth(text) - this.width) / 2, super.getY() + this.height / 2, screenWidth, screenHeight);
+        } else if (this.isHovered) {
+            if (this.modifiers == GLFW.GLFW_MOD_SHIFT) {
+                AbstractGuiUtils.drawPopupMessage(Text.i18n("按住Ctrl或Alt键可拖动按钮\nCtrl: 绝对位置坐标\nAlt: 屏幕百分比位置"), mouseX, mouseY, screenWidth, screenHeight);
+            } else {
+                AbstractGuiUtils.drawPopupMessage(AbstractGuiUtils.componentToText(this.getMessage().copy()), mouseX, mouseY, screenWidth, screenHeight);
+            }
+        }
+    }
+
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        this.keyCode = keyCode;
+        this.modifiers = modifiers;
+        return false;
+    }
+
+    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+        this.keyCode = -1;
+        this.modifiers = -1;
+        return false;
+    }
+
+    @Override
+    @ParametersAreNonnullByDefault
+    public void updateWidgetNarration(NarrationElementOutput narration) {
+    }
+
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         boolean flag = false;
         if (this.pressed && this.mouseDrag) {
             if (this.modifiers == GLFW.GLFW_MOD_ALT) {
                 Screen screen = Minecraft.getInstance().screen;
                 if (screen != null) {
-                    this.onDragEnd.accept(new Coordinate().setX(super.getX() * 1.0f / screen.width).setY(super.getY() * 1.0f / screen.height));
+                    this.onDragEnd.accept(new Coordinate().setX((super.getX() - 2.0d) / (screen.width - this.width - 2.0d * 2)).setY((super.getY() - 2.0d) / (screen.height - this.height - 2.0d * 2)));
                     flag = true;
                 }
             } else {
@@ -159,33 +200,16 @@ public class InventoryButton extends AbstractWidget {
                     || ((this.keyCode == GLFW.GLFW_KEY_LEFT_ALT || this.keyCode == GLFW.GLFW_KEY_RIGHT_ALT) && this.modifiers == GLFW.GLFW_MOD_ALT)
                     || this.mouseButton == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
                 this.mouseDrag = true;
-                super.setX(Math.min(this.screenWidth - 2, Math.max(2, this.x_ + (int) (mouseX - this.mouseClickX))));
-                super.setY(Math.min(this.screenHeight - 2, Math.max(2, this.y_ + (int) (mouseY - this.mouseClickY))));
+                super.setX((int) getValidX(this.x_ + (mouseX - this.mouseClickX), this.width));
+                super.setY((int) getValidY(this.y_ + (mouseY - this.mouseClickY), this.height));
             }
             // 若拖动过程中松开键盘按键则恢复原位
             else {
                 this.mouseDrag = false;
-                super.setX(Math.min(this.screenWidth - 2, Math.max(2, this.x_)));
-                super.setY(Math.min(this.screenHeight - 2, Math.max(2, this.y_)));
+                super.setX((int) getValidX(this.x_, this.width));
+                super.setY((int) getValidY(this.y_, this.height));
             }
         }
         super.mouseMoved(mouseX, mouseY);
-    }
-
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        this.keyCode = keyCode;
-        this.modifiers = modifiers;
-        return false;
-    }
-
-    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
-        this.keyCode = -1;
-        this.modifiers = -1;
-        return false;
-    }
-
-    @Override
-    @ParametersAreNonnullByDefault
-    public void updateWidgetNarration(NarrationElementOutput narration) {
     }
 }
