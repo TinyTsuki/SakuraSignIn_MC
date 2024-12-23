@@ -466,4 +466,32 @@ public class StringUtils {
         }
         return roman.toString();
     }
+
+    /**
+     * 转百分数
+     */
+    public static String toPercent(double num) {
+        return toPercent(num, 2);
+    }
+
+    /**
+     * 转百分数
+     */
+    public static String toPercent(double num, int scale) {
+        return String.format(String.format("%%.%df%%%%", scale), num * 100);
+    }
+
+    /**
+     * 转百分数
+     */
+    public static String toPercent(BigDecimal num) {
+        return toPercent(num.doubleValue());
+    }
+
+    /**
+     * 转百分数
+     */
+    public static String toPercent(BigDecimal num, int scale) {
+        return toPercent(num.doubleValue(), scale);
+    }
 }
