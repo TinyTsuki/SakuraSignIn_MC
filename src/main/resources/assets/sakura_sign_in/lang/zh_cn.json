@@ -100,6 +100,7 @@
   "tips.sakura_sign_in.click_to_change_theme": "切换主题喵?",
   "tips.sakura_sign_in.click_to_change_theme_or_select_external_theme": "切换主题喵?\n右键点击选择外部主题喵",
   "tips.sakura_sign_in.drag_inventory_button": "按住Ctrl或Alt键可拖动按钮\nCtrl: 绝对位置坐标\nAlt: 屏幕百分比位置",
+  "tips.sakura_sign_in.how_to_sign_in": "鼠标左键签到\n右键补签/领取奖励",
   "tips.sakura_sign_in.reward_rule_description_1": "签到基础奖励：每次签到都会获得。",
   "tips.sakura_sign_in.reward_rule_description_2": "连续签到奖励：连续签到一定天数后，会获得相应的奖励，\n              签到天数不足下个奖励标准但是满足上个标准时将会获得上个标准的奖励。\n              按照默认配置：连续签到到第1、2、3天，会获得5点经验值；\n              连续签到到第4、5、6、7天，会获得1块蛋糕；\n              连续签到8天及以后会获得1个补签卡。",
   "tips.sakura_sign_in.reward_rule_description_3": "签到周期奖励：连续签到一定天数后，会获得相应的奖励，\n              连续签到天数大于最大天数时重新从第一个奖励开始计算。\n              按照默认配置：连续签到到第2、3、4、7、8、9天，会获得3点经验值；\n              连续签到到第5、10天，会获得1级经验等级。",
