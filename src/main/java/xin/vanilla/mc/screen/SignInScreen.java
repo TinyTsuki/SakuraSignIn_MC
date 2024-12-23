@@ -249,7 +249,7 @@ public class SignInScreen extends Screen {
                 .setTextureWidth(SakuraSignIn.getThemeTextureCoordinate().getTotalWidth())
                 .setTextureHeight(SakuraSignIn.getThemeTextureCoordinate().getTotalHeight())
                 .setTremblingAmplitude(3.5)
-                .setTooltip(getByZh("左键点击切换主题\n右键点击选择外部主题")));
+                .setTooltip(Text.i18n("左键点击切换主题\n右键点击选择外部主题").setAlign(Text.Align.CENTER)));
     }
 
     /**
@@ -487,7 +487,11 @@ public class SignInScreen extends Screen {
         // 渲染格子弹出层
         for (SignInCell cell : signInCells) {
             if (cell.isShowHover() && cell.isMouseOver(mouseX, mouseY)) {
-                cell.renderTooltip(matrixStack, super.font, this.itemRenderer, mouseX, mouseY);
+                if ((this.keyCode == GLFW.GLFW_KEY_LEFT_SHIFT || this.keyCode == GLFW.GLFW_KEY_RIGHT_SHIFT) && this.modifiers == GLFW.GLFW_MOD_SHIFT) {
+                    AbstractGuiUtils.drawPopupMessage(Text.i18n("鼠标左键签到\n右键补签/领取奖励").setMatrixStack(matrixStack).setFont(this.font).setAlign(Text.Align.CENTER), mouseX, mouseY, super.width, super.height);
+                } else {
+                    cell.renderTooltip(matrixStack, super.font, this.itemRenderer, mouseX, mouseY);
+                }
             }
         }
 
