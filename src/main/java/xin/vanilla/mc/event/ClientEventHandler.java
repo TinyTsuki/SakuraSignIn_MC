@@ -140,10 +140,16 @@ public class ClientEventHandler {
             }
 
             // 如果坐标为百分比则转换为像素坐标
-            if (signInX > 0 && signInX < 1) signInX *= event.getScreen().width;
-            if (signInY > 0 && signInY < 1) signInY *= event.getScreen().height;
-            if (rewardOptionX > 0 && rewardOptionX < 1) rewardOptionX *= event.getScreen().width;
-            if (rewardOptionY > 0 && rewardOptionY < 1) rewardOptionY *= event.getScreen().height;
+            if (signInX > 0 && signInX <= 1) signInX *= event.getScreen().width;
+            if (signInY > 0 && signInY <= 1) signInY *= event.getScreen().height;
+            if (rewardOptionX > 0 && rewardOptionX <= 1) rewardOptionX *= event.getScreen().width;
+            if (rewardOptionY > 0 && rewardOptionY <= 1) rewardOptionY *= event.getScreen().height;
+
+            // 转换为有效坐标
+            signInX = InventoryButton.getValidX(signInX, AbstractGuiUtils.ITEM_ICON_SIZE);
+            signInY = InventoryButton.getValidY(signInY, AbstractGuiUtils.ITEM_ICON_SIZE);
+            rewardOptionX = InventoryButton.getValidX(rewardOptionX, AbstractGuiUtils.ITEM_ICON_SIZE);
+            rewardOptionY = InventoryButton.getValidY(rewardOptionY, AbstractGuiUtils.ITEM_ICON_SIZE);
 
             InventoryButton signInButton = new InventoryButton((int) signInX, (int) signInY,
                     AbstractGuiUtils.ITEM_ICON_SIZE,
