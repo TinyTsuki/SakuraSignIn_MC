@@ -773,6 +773,7 @@ public class SignInScreen extends Screen {
         // 当按键等于SIGN_IN_SCREEN_KEY键的值或Inventory键时，调用onClose方法，并返回true，表示该按键事件已被消耗
         if (keyCode == GLFW.GLFW_KEY_ESCAPE || keyCode == ClientEventHandler.SIGN_IN_SCREEN_KEY.getKey().getValue() || keyCode == Minecraft.getInstance().options.keyInventory.getKey().getValue()) {
             if (this.previousScreen != null) Minecraft.getInstance().setScreen(this.previousScreen);
+            else this.onClose();
             return true;
         } else {
             // 对于其他按键，交由父类处理，并返回父类的处理结果
