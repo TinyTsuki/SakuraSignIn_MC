@@ -1518,6 +1518,7 @@ public class RewardOptionScreen extends Screen {
         this.modifiers = modifiers;
         if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
             if (this.previousScreen != null) Minecraft.getInstance().setScreen(this.previousScreen);
+            else this.onClose();
             return true;
         } else {
             return super.keyPressed(keyCode, scanCode, modifiers);
