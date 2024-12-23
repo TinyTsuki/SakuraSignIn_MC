@@ -85,7 +85,7 @@ public class InventoryButton extends AbstractWidget {
         if (this.mouseDrag) {
             Text text;
             if (this.modifiers == GLFW.GLFW_MOD_ALT) {
-                text = Text.literal(String.format("X: %.4f\nY: %.4f", super.getX() * 1.0f / screenWidth, super.getY() * 1.0f / screenHeight));
+                text = Text.literal(String.format("X: %.4f%%\nY: %.4f%%", (super.getX() - 2.0d) / (screenWidth - this.width - 2.0d * 2), (super.getY() - 2.0d) / (screenHeight - this.height - 2.0d * 2)));
             } else {
                 text = Text.literal(String.format("X: %d\nY: %d", super.getX(), super.getY()));
             }
@@ -127,7 +127,7 @@ public class InventoryButton extends AbstractWidget {
             if (this.modifiers == GLFW.GLFW_MOD_ALT) {
                 Screen screen = Minecraft.getInstance().screen;
                 if (screen != null) {
-                    this.onDragEnd.accept(new Coordinate().setX(super.getX() * 1.0f / screen.width).setY(super.getY() * 1.0f / screen.height));
+                    this.onDragEnd.accept(new Coordinate().setX((super.getX() - 2.0d) / (screen.width - this.width - 2.0d * 2)).setY((super.getY() - 2.0d) / (screen.height - this.height - 2.0d * 2)));
                     flag = true;
                 }
             } else {
@@ -159,14 +159,14 @@ public class InventoryButton extends AbstractWidget {
                     || ((this.keyCode == GLFW.GLFW_KEY_LEFT_ALT || this.keyCode == GLFW.GLFW_KEY_RIGHT_ALT) && this.modifiers == GLFW.GLFW_MOD_ALT)
                     || this.mouseButton == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
                 this.mouseDrag = true;
-                super.setX(Math.min(this.screenWidth - 2, Math.max(2, this.x_ + (int) (mouseX - this.mouseClickX))));
-                super.setY(Math.min(this.screenHeight - 2, Math.max(2, this.y_ + (int) (mouseY - this.mouseClickY))));
+                super.setX((int) getValidX(this.x_ + (mouseX - this.mouseClickX), this.width));
+                super.setY((int) getValidY(this.y_ + (mouseY - this.mouseClickY), this.height));
             }
             // 若拖动过程中松开键盘按键则恢复原位
             else {
                 this.mouseDrag = false;
-                super.setX(Math.min(this.screenWidth - 2, Math.max(2, this.x_)));
-                super.setY(Math.min(this.screenHeight - 2, Math.max(2, this.y_)));
+                super.setX((int) getValidX(this.x_, this.width));
+                super.setY((int) getValidY(this.y_, this.height));
             }
         }
         super.mouseMoved(mouseX, mouseY);
@@ -192,5 +192,29 @@ public class InventoryButton extends AbstractWidget {
     @Override
     @ParametersAreNonnullByDefault
     public void renderWidget(PoseStack poseStack, int i, int i1, float v) {
+    }
+
+    /**
+     * 获取有效的坐标X
+     */
+    public static double getValidX(double x, int width) {
+        int screenWidth = 427;
+        Screen screen = Minecraft.getInstance().screen;
+        if (screen != null) {
+            screenWidth = screen.width;
+        }
+        return Math.min(screenWidth - 2 - width, Math.max(2, x));
+    }
+
+    /**
+     * 获取有效的坐标Y
+     */
+    public static double getValidY(double y, int height) {
+        int screenHeight = 240;
+        Screen screen = Minecraft.getInstance().screen;
+        if (screen != null) {
+            screenHeight = screen.height;
+        }
+        return Math.min(screenHeight - 2 - height, Math.max(2, y));
     }
 }
