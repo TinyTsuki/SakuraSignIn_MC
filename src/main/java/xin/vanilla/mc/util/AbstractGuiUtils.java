@@ -31,8 +31,7 @@ import xin.vanilla.mc.screen.component.Text;
 import xin.vanilla.mc.screen.coordinate.Coordinate;
 import xin.vanilla.mc.screen.coordinate.TextureCoordinate;
 
-import java.util.Collection;
-import java.util.Random;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -519,76 +518,104 @@ public class AbstractGuiUtils {
             String ellipsis = "...";
             Font font = text.getFont();
             int ellipsisWidth = font.width(ellipsis);
-            String[] lines = StringUtils.replaceLine(text.getContent()).split("\n");
-            int index = -1;
-            for (int i = 0; i < lines.length; i++) {
-                boolean skip = false;
-                String line = lines[i];
-                // 计算文本长度
-                if (position != null) {
-                    switch (position) {
-                        case START:
-                            // 15 , 8   < 7
-                            if (maxLine > 0 && lines.length >= maxLine && i < lines.length - maxLine) {
-                                // 如果不是第一行就跳过
-                                if (i == 0) line = ellipsis;
-                                else skip = true;
-                            } else if (maxWidth > 0 && font.width(line) > maxWidth) {
-                                while (font.width(line + ellipsis) > maxWidth && line.length() > 1) {
-                                    // 从头部截取字符
-                                    line = line.substring(1);
-                                }
-                                line = ellipsis + line;
-                            }
-                            break;
-                        case MIDDLE:
-                            // 15 , 9   < 4   > 10.5
-                            // 15 , 8   < 4   > 11
-                            if (maxLine > 0 && lines.length >= maxLine && i >= maxLine / 2 && i < lines.length - maxLine / 2.0) {
-                                // 如果不是中间行就跳过
-                                if (i == Math.ceil(maxLine / 2.0)) line = ellipsis;
-                                else skip = true;
-                            } else if (maxWidth > 0 && font.width(line) > maxWidth) {
-                                int halfWidth = (maxWidth - ellipsisWidth) / 2;
-                                String start = line;
-                                String end = line;
 
-                                while (font.width(start) > halfWidth && start.length() > 1) {
-                                    // 截取前半部分
-                                    start = start.substring(0, start.length() - 1);
-                                }
-                                while (font.width(end) > halfWidth && end.length() > 1) {
-                                    // 截取后半部分
-                                    end = end.substring(1);
-                                }
-                                line = start + ellipsis + end;
-                            }
-                            break;
-                        case END:
-                        default:
-                            // 15 , 8   > 8 - 1
-                            if (maxLine > 0 && lines.length >= maxLine && i > maxLine - 1) {
-                                // 如果不是最后一行就跳过
-                                if (i == maxLine - 1) line = ellipsis;
-                                else skip = true;
-                            } else if (maxWidth > 0 && font.width(line) > maxWidth) {
-                                while (font.width(line + ellipsis) > maxWidth && line.length() > 1) {
-                                    // 从尾部截取字符
-                                    line = line.substring(0, line.length() - 1);
-                                }
-                                line = line + ellipsis;
-                            }
-                            break;
+            // 拆分文本行
+            String[] lines = StringUtils.replaceLine(text.getContent()).split("\n");
+
+            // 如果 maxLine <= 1 或 maxLine 大于等于行数，则正常显示所有行
+            if (maxLine <= 0 || maxLine >= lines.length) {
+                maxLine = lines.length;
+                position = null; // 不需要省略号
+            }
+
+            List<String> outputLines = new ArrayList<>();
+            if (position != null && maxLine > 1) {
+                switch (position) {
+                    case START:
+                        // 显示最后 maxLine 行，开头加省略号
+                        outputLines.add(ellipsis);
+                        outputLines.addAll(Arrays.asList(lines).subList(lines.length - maxLine + 1, lines.length));
+                        break;
+                    case MIDDLE:
+                        // 显示前后各一部分，中间加省略号
+                        int midStart = maxLine / 2;
+                        int midEnd = lines.length - (maxLine - midStart) + 1;
+                        outputLines.addAll(Arrays.asList(lines).subList(0, midStart));
+                        outputLines.add(ellipsis);
+                        outputLines.addAll(Arrays.asList(lines).subList(midEnd, lines.length));
+                        break;
+                    case END:
+                    default:
+                        // 显示前 maxLine 行，结尾加省略号
+                        outputLines.addAll(Arrays.asList(lines).subList(0, maxLine - 1));
+                        outputLines.add(ellipsis);
+                        break;
+                }
+            } else {
+                if (maxLine == 1) {
+                    outputLines.add(lines[0]);
+                } else {
+                    // 正常显示所有行
+                    outputLines.addAll(Arrays.asList(lines));
+                }
+            }
+
+            // 绘制文本
+            int index = 0;
+            int maxLineWidth = AbstractGuiUtils.multilineTextWidth(text);
+            maxLineWidth = maxLine > 0 ? Math.min(maxLineWidth, maxWidth) : maxLineWidth;
+            for (String line : outputLines) {
+                // 如果宽度超出 maxWidth，进行截断并加省略号
+                if (maxWidth > 0 && font.width(line) > maxWidth) {
+                    if (position == EllipsisPosition.START) {
+                        // 截断前部
+                        while (font.width(ellipsis + line) > maxWidth && line.length() > 1) {
+                            line = line.substring(1);
+                        }
+                        line = ellipsis + line;
+                    } else if (position == EllipsisPosition.END) {
+                        // 截断后部
+                        while (font.width(line + ellipsis) > maxWidth && line.length() > 1) {
+                            line = line.substring(0, line.length() - 1);
+                        }
+                        line = line + ellipsis;
+                    } else {
+                        // 截断两侧（默认处理）
+                        int halfWidth = (maxWidth - ellipsisWidth) / 2;
+                        String start = line, end = line;
+                        while (font.width(start) > halfWidth && start.length() > 1) {
+                            start = start.substring(0, start.length() - 1);
+                        }
+                        while (font.width(end) > halfWidth && end.length() > 1) {
+                            end = end.substring(1);
+                        }
+                        line = start + ellipsis + end;
                     }
                 }
-                if (skip) continue;
-                else index++;
+
+                // 计算水平偏移
+                float xOffset;
+                switch (text.getAlign()) {
+                    case CENTER:
+                        xOffset = (maxLineWidth - font.width(line)) / 2.0f;
+                        break;
+                    case RIGHT:
+                        xOffset = maxLineWidth - font.width(line);
+                        break;
+                    default:
+                        xOffset = 0;
+                        break;
+                }
+
+                // 绘制每行文本
                 PoseStack poseStack = text.getPoseStack();
                 if (text.isShadow()) {
-                    font.drawShadow(poseStack, AbstractGuiUtils.textToComponent(text.copy().setText(line)), (float) x, (float) y + index * font.lineHeight, text.getColor());
+                    font.drawShadow(poseStack, AbstractGuiUtils.textToComponent(text.copy().setText(line)), (float) x + xOffset, (float) y + index * font.lineHeight, text.getColor());
                 } else {
-                    font.draw(poseStack, AbstractGuiUtils.textToComponent(text.copy().setText(line)), (float) x, (float) y + index * font.lineHeight, text.getColor());
+                    font.draw(poseStack, AbstractGuiUtils.textToComponent(text.copy().setText(line)), (float) x + xOffset, (float) y + index * font.lineHeight, text.getColor());
                 }
+
+                index++;
             }
         }
     }
@@ -1047,6 +1074,9 @@ public class AbstractGuiUtils {
         int msgWidth = AbstractGuiUtils.multilineTextWidth(text) + padding;
         int msgHeight = AbstractGuiUtils.multilineTextHeight(text) + padding;
 
+        if (msgWidth >= screenWidth) msgWidth = screenWidth - padding * 2;
+        if (msgHeight >= screenHeight) msgHeight = screenHeight - padding * 2;
+
         // 初始化调整后的坐标
         int adjustedX = x - msgWidth / 2; // 横向居中
         int adjustedY = y - msgHeight - 5; // 放置在鼠标上方（默认偏移 5 像素）
@@ -1078,7 +1108,7 @@ public class AbstractGuiUtils {
         // 在计算完的坐标位置绘制消息框背景
         GuiComponent.fill(text.getPoseStack(), adjustedX, adjustedY, adjustedX + msgWidth, adjustedY + msgHeight, bgColor);
         // 绘制消息文字
-        AbstractGuiUtils.drawMultilineText(text, adjustedX + (float) padding / 2, adjustedY + (float) padding / 2);
+        AbstractGuiUtils.drawLimitedText(text, adjustedX + (float) padding / 2, adjustedY + (float) padding / 2, msgWidth, msgHeight / text.getFont().lineHeight, EllipsisPosition.MIDDLE);
         AbstractGuiUtils.resetDepth(text.getPoseStack());
     }
 
