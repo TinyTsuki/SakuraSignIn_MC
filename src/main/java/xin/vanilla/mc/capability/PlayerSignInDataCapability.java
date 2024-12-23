@@ -48,6 +48,8 @@ public class PlayerSignInDataCapability {
     public static void syncPlayerData(ServerPlayer player) {
         // 创建自定义包并发送到客户端
         PlayerDataSyncPacket packet = new PlayerDataSyncPacket(player.getUUID(), PlayerSignInDataCapability.getData(player));
-        ModNetworkHandler.INSTANCE.send(packet, PacketDistributor.PLAYER.with(player));
+        for (PlayerDataSyncPacket syncPacket : packet.split()) {
+            ModNetworkHandler.INSTANCE.send(syncPacket, PacketDistributor.PLAYER.with(player));
+        }
     }
 }
