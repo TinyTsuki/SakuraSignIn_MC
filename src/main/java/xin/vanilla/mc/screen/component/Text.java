@@ -64,6 +64,10 @@ public class Text {
      */
     private boolean obfuscated;
     /**
+     * 文本对齐方式(仅多行绘制时)
+     */
+    private Align align = Align.LEFT;
+    /**
      * 鼠标悬浮时文本颜色
      */
     private int hoverColor = 0xFFFFFFFF;
@@ -99,6 +103,17 @@ public class Text {
      * 鼠标悬浮时是否混淆
      */
     private boolean hoverObfuscated;
+    /**
+     * 鼠标悬浮时对齐方式(仅多行绘制时)
+     */
+    private Align hoverAlign = Align.LEFT;
+
+    /**
+     * 文字对齐方向(仅多行绘制时)
+     */
+    public enum Align {
+        LEFT, CENTER, RIGHT
+    }
 
     private Text() {
     }
@@ -132,6 +147,7 @@ public class Text {
                 .setUnderlined(this.underlined)
                 .setStrikethrough(this.strikethrough)
                 .setObfuscated(this.obfuscated)
+                .setAlign(this.align)
                 .setHoverColor(this.hoverColor)
                 .setHoverBgColor(this.hoverBgColor)
                 .setHoverText(this.hoverText)
@@ -141,6 +157,7 @@ public class Text {
                 .setHoverUnderlined(this.hoverUnderlined)
                 .setHoverStrikethrough(this.hoverStrikethrough)
                 .setHoverObfuscated(this.hoverObfuscated)
+                .setHoverAlign(this.hoverAlign)
                 .setGraphics(this.graphics)
                 .setFont(this.font);
     }
@@ -183,6 +200,10 @@ public class Text {
 
     public boolean isObfuscated() {
         return this.hovered ? this.hoverObfuscated : this.obfuscated;
+    }
+
+    public Align getAlign() {
+        return this.hovered ? this.hoverAlign : this.align;
     }
 
     public Text setColor(int color) {
@@ -236,6 +257,12 @@ public class Text {
     public Text setObfuscated(boolean obfuscated) {
         this.obfuscated = obfuscated;
         this.hoverObfuscated = obfuscated;
+        return this;
+    }
+
+    public Text setAlign(Align align) {
+        this.align = align;
+        this.hoverAlign = align;
         return this;
     }
 }
