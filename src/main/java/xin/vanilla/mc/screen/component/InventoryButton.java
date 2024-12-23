@@ -15,6 +15,7 @@ import org.lwjgl.glfw.GLFW;
 import xin.vanilla.mc.SakuraSignIn;
 import xin.vanilla.mc.screen.coordinate.Coordinate;
 import xin.vanilla.mc.util.AbstractGuiUtils;
+import xin.vanilla.mc.util.StringUtils;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.function.Consumer;
@@ -68,18 +69,6 @@ public class InventoryButton extends AbstractWidget {
         this.y_ = y;
     }
 
-    /**
-     * 获取有效的坐标X
-     */
-    public static double getValidX(double x, int width) {
-        int screenWidth = 427;
-        Screen screen = Minecraft.getInstance().screen;
-        if (screen != null) {
-            screenWidth = screen.width;
-        }
-        return Math.min(screenWidth - 2 - width, Math.max(2, x));
-    }
-
     public InventoryButton setUV(Coordinate coordinate, int totalWidth, int totalHeight) {
         return setUV(coordinate.getU0(), coordinate.getV0(), coordinate.getUWidth(), coordinate.getVHeight(), totalWidth, totalHeight);
     }
@@ -92,26 +81,6 @@ public class InventoryButton extends AbstractWidget {
         this.totalWidth = totalWidth;
         this.totalHeight = totalHeight;
         return this;
-    }
-
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        this.pressed = this.isMouseOver(mouseX, mouseY);
-        this.mouseButton = button;
-        this.mouseClickX = (int) mouseX;
-        this.mouseClickY = (int) mouseY;
-        return this.pressed;
-    }
-
-    /**
-     * 获取有效的坐标Y
-     */
-    public static double getValidY(double y, int height) {
-        int screenHeight = 240;
-        Screen screen = Minecraft.getInstance().screen;
-        if (screen != null) {
-            screenHeight = screen.height;
-        }
-        return Math.min(screenHeight - 2 - height, Math.max(2, y));
     }
 
     @Override
@@ -131,7 +100,9 @@ public class InventoryButton extends AbstractWidget {
         if (this.mouseDrag) {
             Text text;
             if (this.modifiers == GLFW.GLFW_MOD_ALT) {
-                text = Text.literal(String.format("X: %.4f%%\nY: %.4f%%", (super.getX() - 2.0d) / (screenWidth - this.width - 2.0d * 2), (super.getY() - 2.0d) / (screenHeight - this.height - 2.0d * 2)));
+                text = Text.literal(String.format("X: %s\nY: %s"
+                        , StringUtils.toPercent((super.getX() - 2.0d) / (screenWidth - this.width - 2.0d * 2))
+                        , StringUtils.toPercent((super.getY() - 2.0d) / (screenHeight - this.height - 2.0d * 2))));
             } else {
                 text = Text.literal(String.format("X: %d\nY: %d", super.getX(), super.getY()));
             }
@@ -145,21 +116,12 @@ public class InventoryButton extends AbstractWidget {
         }
     }
 
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        this.keyCode = keyCode;
-        this.modifiers = modifiers;
-        return false;
-    }
-
-    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
-        this.keyCode = -1;
-        this.modifiers = -1;
-        return false;
-    }
-
-    @Override
-    @ParametersAreNonnullByDefault
-    public void updateWidgetNarration(NarrationElementOutput narration) {
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        this.pressed = this.isMouseOver(mouseX, mouseY);
+        this.mouseButton = button;
+        this.mouseClickX = (int) mouseX;
+        this.mouseClickY = (int) mouseY;
+        return this.pressed;
     }
 
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
@@ -211,5 +173,46 @@ public class InventoryButton extends AbstractWidget {
             }
         }
         super.mouseMoved(mouseX, mouseY);
+    }
+
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        this.keyCode = keyCode;
+        this.modifiers = modifiers;
+        return false;
+    }
+
+    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+        this.keyCode = -1;
+        this.modifiers = -1;
+        return false;
+    }
+
+    @Override
+    @ParametersAreNonnullByDefault
+    public void updateWidgetNarration(NarrationElementOutput narration) {
+    }
+
+    /**
+     * 获取有效的坐标X
+     */
+    public static double getValidX(double x, int width) {
+        int screenWidth = 427;
+        Screen screen = Minecraft.getInstance().screen;
+        if (screen != null) {
+            screenWidth = screen.width;
+        }
+        return Math.min(screenWidth - 2 - width, Math.max(2, x));
+    }
+
+    /**
+     * 获取有效的坐标Y
+     */
+    public static double getValidY(double y, int height) {
+        int screenHeight = 240;
+        Screen screen = Minecraft.getInstance().screen;
+        if (screen != null) {
+            screenHeight = screen.height;
+        }
+        return Math.min(screenHeight - 2 - height, Math.max(2, y));
     }
 }
