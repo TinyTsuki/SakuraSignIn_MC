@@ -65,6 +65,52 @@ public class InventoryButton extends Widget {
         this.y_ = y;
     }
 
+    /**
+     * 获取有效的坐标X
+     */
+    public static double getValidX(double x, int width) {
+        int screenWidth = 427;
+        Screen screen = Minecraft.getInstance().screen;
+        if (screen != null) {
+            screenWidth = screen.width;
+        }
+        return Math.min(screenWidth - 2 - width, Math.max(2, x));
+    }
+
+    /**
+     * 获取有效的坐标Y
+     */
+    public static double getValidY(double y, int height) {
+        int screenHeight = 240;
+        Screen screen = Minecraft.getInstance().screen;
+        if (screen != null) {
+            screenHeight = screen.height;
+        }
+        return Math.min(screenHeight - 2 - height, Math.max(2, y));
+    }
+
+    public InventoryButton setUV(Coordinate coordinate, int totalWidth, int totalHeight) {
+        return setUV(coordinate.getU0(), coordinate.getV0(), coordinate.getUWidth(), coordinate.getVHeight(), totalWidth, totalHeight);
+    }
+
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        this.pressed = this.isMouseOver(mouseX, mouseY);
+        this.mouseButton = button;
+        this.mouseClickX = (int) mouseX;
+        this.mouseClickY = (int) mouseY;
+        return this.pressed;
+    }
+
+    public InventoryButton setUV(double u0, double v0, double uWidth, double vHeight, int totalWidth, int totalHeight) {
+        this.u0 = u0;
+        this.v0 = v0;
+        this.uWidth = uWidth;
+        this.vHeight = vHeight;
+        this.totalWidth = totalWidth;
+        this.totalHeight = totalHeight;
+        return this;
+    }
+
     @Override
     @ParametersAreNonnullByDefault
     public void render(int mouseX, int mouseY, float partialTicks) {
@@ -82,7 +128,7 @@ public class InventoryButton extends Widget {
         if (this.mouseDrag) {
             Text text;
             if (this.modifiers == GLFW.GLFW_MOD_ALT) {
-                text = Text.literal(String.format("X: %.4f\nY: %.4f", this.x * 1.0f / screenWidth, this.y * 1.0f / screenHeight));
+                text = Text.literal(String.format("X: %.4f%%\nY: %.4f%%", (this.x - 2.0d) / (screenWidth - this.width - 2.0d * 2), (this.y - 2.0d) / (screenHeight - this.height - 2.0d * 2)));
             } else {
                 text = Text.literal(String.format("X: %d\nY: %d", this.x, this.y));
             }
@@ -96,26 +142,16 @@ public class InventoryButton extends Widget {
         }
     }
 
-    public InventoryButton setUV(Coordinate coordinate, int totalWidth, int totalHeight) {
-        return setUV(coordinate.getU0(), coordinate.getV0(), coordinate.getUWidth(), coordinate.getVHeight(), totalWidth, totalHeight);
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        this.keyCode = keyCode;
+        this.modifiers = modifiers;
+        return false;
     }
 
-    public InventoryButton setUV(double u0, double v0, double uWidth, double vHeight, int totalWidth, int totalHeight) {
-        this.u0 = u0;
-        this.v0 = v0;
-        this.uWidth = uWidth;
-        this.vHeight = vHeight;
-        this.totalWidth = totalWidth;
-        this.totalHeight = totalHeight;
-        return this;
-    }
-
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        this.pressed = this.isMouseOver(mouseX, mouseY);
-        this.mouseButton = button;
-        this.mouseClickX = (int) mouseX;
-        this.mouseClickY = (int) mouseY;
-        return this.pressed;
+    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+        this.keyCode = -1;
+        this.modifiers = -1;
+        return false;
     }
 
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
@@ -124,7 +160,7 @@ public class InventoryButton extends Widget {
             if (this.modifiers == GLFW.GLFW_MOD_ALT) {
                 Screen screen = Minecraft.getInstance().screen;
                 if (screen != null) {
-                    this.onDragEnd.accept(new Coordinate().setX(this.x * 1.0f / screen.width).setY(this.y * 1.0f / screen.height));
+                    this.onDragEnd.accept(new Coordinate().setX((this.x - 2.0d) / (screen.width - this.width - 2.0d * 2)).setY((this.y - 2.0d) / (screen.height - this.height - 2.0d * 2)));
                     flag = true;
                 }
             } else {
@@ -156,28 +192,16 @@ public class InventoryButton extends Widget {
                     || ((this.keyCode == GLFW.GLFW_KEY_LEFT_ALT || this.keyCode == GLFW.GLFW_KEY_RIGHT_ALT) && this.modifiers == GLFW.GLFW_MOD_ALT)
                     || this.mouseButton == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
                 this.mouseDrag = true;
-                this.x = Math.min(this.screenWidth - 2, Math.max(2, this.x_ + (int) (mouseX - this.mouseClickX)));
-                this.y = Math.min(this.screenHeight - 2, Math.max(2, this.y_ + (int) (mouseY - this.mouseClickY)));
+                this.x = (int) getValidX(this.x_ + (mouseX - this.mouseClickX), this.width);
+                this.y = (int) getValidY(this.y_ + (mouseY - this.mouseClickY), this.height);
             }
             // 若拖动过程中松开键盘按键则恢复原位
             else {
                 this.mouseDrag = false;
-                this.x = Math.min(this.screenWidth - 2, Math.max(2, this.x_));
-                this.y = Math.min(this.screenHeight - 2, Math.max(2, this.y_));
+                this.x = (int) getValidX(this.x_, this.width);
+                this.y = (int) getValidY(this.y_, this.height);
             }
         }
         super.mouseMoved(mouseX, mouseY);
-    }
-
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        this.keyCode = keyCode;
-        this.modifiers = modifiers;
-        return false;
-    }
-
-    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
-        this.keyCode = -1;
-        this.modifiers = -1;
-        return false;
     }
 }
