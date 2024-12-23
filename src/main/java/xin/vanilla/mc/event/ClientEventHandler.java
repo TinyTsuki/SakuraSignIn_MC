@@ -109,7 +109,7 @@ public class ClientEventHandler {
     }
 
     @SubscribeEvent
-    public static void onRenderScreen(GuiScreenEvent.InitGuiEvent event) {
+    public static void onRenderScreen(GuiScreenEvent.InitGuiEvent.Post event) {
         if (event.getGui() instanceof DisplayEffectsScreen) {
             if (SakuraSignIn.getThemeTexture() == null) ClientEventHandler.loadThemeTexture();
             // 创建按钮并添加到界面
