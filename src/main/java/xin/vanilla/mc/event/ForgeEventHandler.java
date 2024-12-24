@@ -50,6 +50,14 @@ public class ForgeEventHandler {
 
     @SubscribeEvent
     @OnlyIn(Dist.CLIENT)
+    public static void onPlayerLoggedOut(ClientPlayerNetworkEvent.LoggingOut event) {
+        LOGGER.debug("Client: Player logged out.");
+        isPlayerLoggedIn = false;
+        hasTriggeredLoadComplete = false;
+    }
+
+    @SubscribeEvent
+    @OnlyIn(Dist.CLIENT)
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase == TickEvent.Phase.END && isPlayerLoggedIn) {
             Minecraft mc = Minecraft.getInstance();
