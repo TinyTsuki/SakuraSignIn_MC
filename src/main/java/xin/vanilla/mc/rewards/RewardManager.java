@@ -433,30 +433,30 @@ public class RewardManager {
      * 签到or补签
      */
     public static void signIn(ServerPlayerEntity player, SignInPacket packet) {
-        Date serverDate = DateUtils.getServerDate();
-        Date clientDate = DateUtils.getValidDate(packet.getSignInTime());
-        Date serverCompensateDate = getCompensateDate(serverDate);
         IPlayerSignInData signInData = PlayerSignInDataCapability.getData(player);
-        ETimeCoolingMethod coolingMethod = ServerConfig.TIME_COOLING_METHOD.get();
+        Date serverDate = DateUtils.getServerDate();
+        Date clientDate = packet.getSignInTime();
+        LOGGER.info("SignIn: serverDate: {}, clientDate: {}", DateUtils.toDateTimeString(serverDate), DateUtils.toDateTimeString(clientDate));
+        Date serverCompensateDate = getCompensateDate(serverDate);
+        // 仅签到需要校准时间
+        Date clientCompensateDate = packet.getSignInType().equals(ESignInType.SIGN_IN) ? getCompensateDate(clientDate) : clientDate;
         int serverCompensateDateInt = DateUtils.toDateInt(serverCompensateDate);
-        int signInDateInt = DateUtils.toDateInt(clientDate);
+        int clientCompensateDateInt = DateUtils.toDateInt(clientCompensateDate);
+        LOGGER.info("SignIn: serverCompensateDate: {}, clientCompensateDate: {}", DateUtils.toDateTimeString(serverCompensateDate), DateUtils.toDateTimeString(clientCompensateDate));
+
+        ETimeCoolingMethod coolingMethod = ServerConfig.TIME_COOLING_METHOD.get();
         // 判断签到/补签时间合法性
-        if (serverCompensateDateInt < signInDateInt && !DateUtils.equals(serverDate, clientDate, DateUtils.DateUnit.MINUTE)) {
-            if (!(ESignInType.SIGN_IN.equals(packet.getSignInType()) && (coolingMethod.equals(ETimeCoolingMethod.FIXED_TIME) || coolingMethod.equals(ETimeCoolingMethod.MIXED)))) {
-                player.sendMessage(new TranslationTextComponent(getI18nKey("签到日期晚于服务器当前日期，签到失败")), player.getUUID());
-            }
+        if (ESignInType.SIGN_IN.equals(packet.getSignInType()) && serverCompensateDateInt < clientCompensateDateInt) {
+            player.sendMessage(new TranslationTextComponent(getI18nKey("签到日期晚于服务器当前日期，签到失败")), player.getUUID());
             return;
-        } else if (ESignInType.SIGN_IN.equals(packet.getSignInType()) && serverCompensateDateInt > signInDateInt) {
-            if (!((coolingMethod.equals(ETimeCoolingMethod.FIXED_TIME) || coolingMethod.equals(ETimeCoolingMethod.MIXED))
-                    && DateUtils.equals(serverDate, clientDate, DateUtils.DateUnit.MINUTE))) {
-                player.sendMessage(new TranslationTextComponent(getI18nKey("签到日期早于服务器当前日期，签到失败")), player.getUUID());
-                return;
-            }
-        } else if (ESignInType.RE_SIGN_IN.equals(packet.getSignInType()) && serverCompensateDateInt <= signInDateInt) {
-            player.sendMessage(new TranslationTextComponent(getI18nKey("补签日期不早于服务器当前日期，补签失败")), player.getUUID());
+        } else if (ESignInType.SIGN_IN.equals(packet.getSignInType()) && serverCompensateDateInt > clientCompensateDateInt) {
+            player.sendMessage(new TranslationTextComponent(getI18nKey("签到日期早于服务器当前日期，签到失败")), player.getUUID());
             return;
-        } else if (ESignInType.SIGN_IN.equals(packet.getSignInType()) && serverCompensateDateInt == DateUtils.toDateInt(signInData.getLastSignInTime())) {
+        } else if (ESignInType.SIGN_IN.equals(packet.getSignInType()) && signInData.getSignInRecords().stream().anyMatch(record -> DateUtils.toDateInt(record.getCompensateTime()) == clientCompensateDateInt)) {
             player.sendMessage(new TranslationTextComponent(getI18nKey("已经签过到了哦")), player.getUUID());
+            return;
+        } else if (ESignInType.RE_SIGN_IN.equals(packet.getSignInType()) && serverCompensateDateInt <= clientCompensateDateInt) {
+            player.sendMessage(new TranslationTextComponent(getI18nKey("补签日期需早于服务器当前日期，补签失败")), player.getUUID());
             return;
         }
         // 判断签到CD
@@ -474,22 +474,22 @@ public class RewardManager {
         } else if (ESignInType.RE_SIGN_IN.equals(packet.getSignInType()) && signInData.getSignInCard() <= 0) {
             player.sendMessage(new TranslationTextComponent(getI18nKey("补签卡不足，补签失败")), player.getUUID());
             return;
-        } else if (ESignInType.RE_SIGN_IN.equals(packet.getSignInType()) && isSignedIn(signInData, clientDate, false)) {
+        } else if (ESignInType.RE_SIGN_IN.equals(packet.getSignInType()) && isSignedIn(signInData, clientCompensateDate, false)) {
             player.sendMessage(new TranslationTextComponent(getI18nKey("已经签过到了哦")), player.getUUID());
             return;
         }
         // 判断领取奖励
         if (ESignInType.REWARD.equals(packet.getSignInType())) {
-            if (isRewarded(signInData, clientDate, false)) {
-                player.sendMessage(new TranslationTextComponent(getI18nKey("%s的奖励已经领取过啦"), DateUtils.toString(clientDate)), player.getUUID());
+            if (isRewarded(signInData, clientCompensateDate, false)) {
+                player.sendMessage(new TranslationTextComponent(getI18nKey("%s的奖励已经领取过啦"), DateUtils.toString(clientCompensateDate)), player.getUUID());
                 return;
-            } else if (!isSignedIn(signInData, clientDate, false)) {
-                player.sendMessage(new TranslationTextComponent(getI18nKey("没有查询到[%s]的签到记录哦，鉴定为阁下没有签到！"), DateUtils.toString(clientDate)), player.getUUID());
+            } else if (!isSignedIn(signInData, clientCompensateDate, false)) {
+                player.sendMessage(new TranslationTextComponent(getI18nKey("没有查询到[%s]的签到记录哦，鉴定为阁下没有签到！"), DateUtils.toString(clientCompensateDate)), player.getUUID());
                 return;
             } else {
                 signInData.getSignInRecords().stream()
                         // 若签到日期等于当前日期
-                        .filter(record -> DateUtils.toDateInt(record.getCompensateTime()) == DateUtils.toDateInt(clientDate))
+                        .filter(record -> DateUtils.toDateInt(record.getCompensateTime()) == DateUtils.toDateInt(clientCompensateDate))
                         // 若奖励未领取
                         .filter(record -> !record.isRewarded())
                         .forEach(record -> {
@@ -509,14 +509,14 @@ public class RewardManager {
         }
         // 签到/补签
         else {
-            RewardList rewardList = RewardManager.getRewardListByDate(clientDate, signInData, false).clone();
+            RewardList rewardList = RewardManager.getRewardListByDate(clientCompensateDate, signInData, false).clone();
             if (ESignInType.RE_SIGN_IN.equals(packet.getSignInType())) signInData.subSignInCard();
             SignInRecord signInRecord = new SignInRecord();
             signInRecord.setRewarded(packet.isAutoRewarded());
             signInRecord.setRewardList(new RewardList());
             signInRecord.setSignInTime(clientDate);
             if (packet.getSignInType().equals(ESignInType.RE_SIGN_IN)) {
-                signInRecord.setCompensateTime(clientDate);
+                signInRecord.setCompensateTime(clientCompensateDate);
             } else {
                 signInRecord.setCompensateTime(serverCompensateDate);
             }

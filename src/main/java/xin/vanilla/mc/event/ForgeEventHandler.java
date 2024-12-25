@@ -11,8 +11,10 @@ import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.LogicalSide;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.network.PacketDistributor;
 import org.apache.logging.log4j.LogManager;
@@ -75,6 +77,20 @@ public class ForgeEventHandler {
     }
 
     /**
+     * 同步客户端服务端数据
+     */
+    @SubscribeEvent
+    public static void playerTickEvent(TickEvent.PlayerTickEvent event) {
+        PlayerEntity player = event.player;
+        if (event.side == LogicalSide.SERVER && event.phase == TickEvent.Phase.END) {
+            if (!SakuraSignIn.getPlayerCapabilityStatus().getOrDefault(player.getUUID().toString(), false)) {
+                // 同步玩家签到数据到客户端
+                PlayerSignInDataCapability.syncPlayerData((ServerPlayerEntity) player);
+            }
+        }
+    }
+
+    /**
      * 当 AttachCapabilitiesEvent 事件发生时，此方法会为玩家实体附加自定义的能力
      * 在 Minecraft 中，实体可以拥有多种能力，这是一种扩展游戏行为的强大机制
      * 此处我们利用这个机制，为玩家实体附加一个用于签到的数据管理能力
@@ -92,16 +108,27 @@ public class ForgeEventHandler {
     }
 
     /**
-     * 玩家死亡后重生或者从末地回到主世界
+     * 玩家死亡后重生或者从末地回主世界
      */
     @SubscribeEvent
     public static void onPlayerCloned(PlayerEvent.Clone event) {
-        if (!event.isWasDeath()) {
-            LazyOptional<IPlayerSignInData> oldSpeedCap = event.getOriginal().getCapability(PlayerSignInDataCapability.PLAYER_DATA);
-            LazyOptional<IPlayerSignInData> newSpeedCap = event.getPlayer().getCapability(PlayerSignInDataCapability.PLAYER_DATA);
-            if (oldSpeedCap.isPresent() && newSpeedCap.isPresent()) {
-                newSpeedCap.ifPresent((newCap) -> oldSpeedCap.ifPresent((oldCap) -> newCap.deserializeNBT(oldCap.serializeNBT())));
-            }
+        PlayerEntity original = event.getOriginal();
+        PlayerEntity newPlayer = event.getPlayer();
+        original.revive();
+        LazyOptional<IPlayerSignInData> oldDataCap = original.getCapability(PlayerSignInDataCapability.PLAYER_DATA);
+        LazyOptional<IPlayerSignInData> newDataCap = newPlayer.getCapability(PlayerSignInDataCapability.PLAYER_DATA);
+        oldDataCap.ifPresent(oldData -> newDataCap.ifPresent(newData -> newData.copyFrom(oldData)));
+        SakuraSignIn.getPlayerCapabilityStatus().put(newPlayer.getUUID().toString(), false);
+    }
+
+    /**
+     * 玩家进入维度
+     */
+    @SubscribeEvent
+    public static void onEntityJoinWorld(EntityJoinWorldEvent event) {
+        if (event.getEntity() instanceof ServerPlayerEntity) {
+            PlayerEntity player = (ServerPlayerEntity) event.getEntity();
+            SakuraSignIn.getPlayerCapabilityStatus().put(player.getUUID().toString(), false);
         }
     }
 
