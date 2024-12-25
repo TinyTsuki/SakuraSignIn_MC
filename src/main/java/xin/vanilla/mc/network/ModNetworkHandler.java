@@ -26,5 +26,6 @@ public class ModNetworkHandler {
         INSTANCE.messageBuilder(SignInPacket.class, nextID()).encoder(SignInPacket::toBytes).decoder(SignInPacket::new).consumerMainThread(SignInPacket::handle).add();
         INSTANCE.messageBuilder(AdvancementPacket.class, nextID()).encoder(AdvancementPacket::toBytes).decoder(AdvancementPacket::new).consumerMainThread(AdvancementPacket::handle).add();
         INSTANCE.messageBuilder(DownloadRewardOptionNotice.class, nextID()).encoder(DownloadRewardOptionNotice::toBytes).decoder(DownloadRewardOptionNotice::new).consumerMainThread(DownloadRewardOptionNotice::handle).add();
+        INSTANCE.messageBuilder(PlayerDataReceivedNotice.class, nextID()).encoder(PlayerDataReceivedNotice::toBytes).decoder(PlayerDataReceivedNotice::new).consumerMainThread(PlayerDataReceivedNotice::handle).add();
     }
 }
