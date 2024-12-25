@@ -481,7 +481,7 @@ public class SignInScreen extends Screen {
 
         // 渲染所有格子
         for (SignInCell cell : signInCells) {
-            cell.render(matrixStack, super.font, this.itemRenderer, mouseX, mouseY);
+            cell.render(matrixStack, super.font, mouseX, mouseY);
         }
 
         // 渲染格子弹出层
