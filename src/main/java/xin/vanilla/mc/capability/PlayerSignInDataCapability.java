@@ -39,7 +39,12 @@ public class PlayerSignInDataCapability {
      * @param data   玩家签到数据
      */
     public static void setData(Player player, IPlayerSignInData data) {
-        player.getCapability(PLAYER_DATA).ifPresent(capability -> capability.copyFrom(data));
+        LazyOptional<IPlayerSignInData> optional = player.getCapability(PLAYER_DATA);
+        if (optional.isPresent()) {
+            optional.ifPresent(capability -> capability.copyFrom(data));
+        } else {
+            throw new IllegalArgumentException("Player data capability is missing.");
+        }
     }
 
     /**
