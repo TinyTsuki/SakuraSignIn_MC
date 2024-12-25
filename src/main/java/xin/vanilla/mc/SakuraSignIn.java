@@ -11,7 +11,6 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.level.LevelEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -104,6 +103,12 @@ public class SakuraSignIn {
     @Getter
     private static final Map<String, List<? extends SplitPacket>> packetCache = new ConcurrentHashMap<>();
 
+    /**
+     * 玩家能力同步状态
+     */
+    @Getter
+    private static final Map<String, Boolean> playerCapabilityStatus = new ConcurrentHashMap<>();
+
     public SakuraSignIn() {
 
         // 注册网络通道
@@ -193,19 +198,6 @@ public class SakuraSignIn {
                 enabled = false;
             }
         }
-    }
-
-    /**
-     * 世界卸载事件
-     *
-     * @param event 世界卸载事件对象，通过该对象可以获取到卸载的世界对象
-     */
-    @SubscribeEvent
-    @OnlyIn(Dist.CLIENT)
-    public void onWorldUnload(LevelEvent.Unload event) {
-        LOGGER.debug("World has unloaded.");
-        // 当玩家离开世界时
-        enabled = false;
     }
 
     /**
