@@ -10,6 +10,7 @@ import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -88,16 +89,27 @@ public class ClientForgeEventHandler {
     }
 
     /**
-     * 玩家死亡后重生或者从末地回到主世界
+     * 玩家死亡后重生或者从末地回主世界
      */
     @SubscribeEvent
     public static void onPlayerCloned(PlayerEvent.Clone event) {
-        if (!event.isWasDeath()) {
-            LazyOptional<IPlayerSignInData> oldSpeedCap = event.getOriginal().getCapability(PlayerSignInDataCapability.PLAYER_DATA);
-            LazyOptional<IPlayerSignInData> newSpeedCap = event.getEntity().getCapability(PlayerSignInDataCapability.PLAYER_DATA);
-            if (oldSpeedCap.isPresent() && newSpeedCap.isPresent()) {
-                newSpeedCap.ifPresent((newCap) -> oldSpeedCap.ifPresent((oldCap) -> newCap.deserializeNBT(oldCap.serializeNBT())));
-            }
+        Player original = event.getOriginal();
+        Player newPlayer = event.getEntity();
+        original.revive();
+        LazyOptional<IPlayerSignInData> oldDataCap = original.getCapability(PlayerSignInDataCapability.PLAYER_DATA);
+        LazyOptional<IPlayerSignInData> newDataCap = newPlayer.getCapability(PlayerSignInDataCapability.PLAYER_DATA);
+        oldDataCap.ifPresent(oldData -> newDataCap.ifPresent(newData -> newData.copyFrom(oldData)));
+        SakuraSignIn.getPlayerCapabilityStatus().put(newPlayer.getUUID().toString(), false);
+    }
+
+    /**
+     * 玩家进入维度
+     */
+    @SubscribeEvent
+    public static void onEntityJoinWorld(EntityJoinLevelEvent event) {
+        if (event.getEntity() instanceof ServerPlayer) {
+            Player player = (ServerPlayer) event.getEntity();
+            SakuraSignIn.getPlayerCapabilityStatus().put(player.getUUID().toString(), false);
         }
     }
 

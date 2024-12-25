@@ -6,6 +6,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.network.CustomPayloadEvent;
 import xin.vanilla.mc.enums.ESignInType;
 import xin.vanilla.mc.rewards.RewardManager;
+import xin.vanilla.mc.util.DateUtils;
 
 import java.util.Date;
 
@@ -22,13 +23,13 @@ public class SignInPacket {
     }
 
     public SignInPacket(FriendlyByteBuf buf) {
-        this.signInTime = buf.readDate();
+        this.signInTime = DateUtils.format(buf.readUtf());
         this.autoRewarded = buf.readBoolean();
         this.signInType = ESignInType.valueOf(buf.readInt());
     }
 
     public void toBytes(FriendlyByteBuf buf) {
-        buf.writeDate(signInTime);
+        buf.writeUtf(DateUtils.toDateTimeString(signInTime));
         buf.writeBoolean(autoRewarded);
         buf.writeInt(signInType.getCode());
     }

@@ -137,7 +137,7 @@
   "message.sakura_sign_in.next_sign_in_time_f": "要到今天的%05.2f后才能签到哦",
   "message.sakura_sign_in.sign_in_date_late_server_current_date_fail": "签到日期晚于服务器当前日期，签到失败",
   "message.sakura_sign_in.sign_in_date_early_server_current_date_fail": "签到日期早于服务器当前日期，签到失败",
-  "message.sakura_sign_in.compensate_date_not_early_server_current_date_fail": "补签日期不早于服务器当前日期，补签失败",
+  "message.sakura_sign_in.compensate_date_not_early_server_current_date_fail": "补签日期需早于服务器当前日期，补签失败",
   "message.sakura_sign_in.sign_in_cool_down_fail": "签到冷却中，签到失败，请稍后再试",
   "message.sakura_sign_in.server_not_enable_sign_in_card_fail": "服务器未开启补签功能，补签失败",
   "message.sakura_sign_in.not_enough_sign_in_card_fail": "补签卡不足，补签失败",
