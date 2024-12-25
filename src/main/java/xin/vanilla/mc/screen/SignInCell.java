@@ -77,7 +77,7 @@ public class SignInCell {
     }
 
     // 渲染格子
-    public void render(MatrixStack matrixStack, FontRenderer font, ItemRenderer itemRenderer, int mouseX, int mouseY) {
+    public void render(MatrixStack matrixStack, FontRenderer font, int mouseX, int mouseY) {
         boolean isHovered = this.isMouseOver(mouseX, mouseY);
         if (showIcon) {
             Minecraft.getInstance().getTextureManager().bind(BACKGROUND_TEXTURE);
