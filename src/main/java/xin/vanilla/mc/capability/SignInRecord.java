@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.NonNull;
 import net.minecraft.nbt.CompoundNBT;
 import xin.vanilla.mc.rewards.RewardList;
+import xin.vanilla.mc.util.DateUtils;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -51,8 +52,8 @@ public class SignInRecord implements Serializable, Cloneable {
     // 序列化到 NBT
     public CompoundNBT writeToNBT() {
         CompoundNBT tag = new CompoundNBT();
-        tag.putLong("compensateTime", compensateTime.getTime());
-        tag.putLong("signInTime", signInTime.getTime());
+        tag.putString("compensateTime", DateUtils.toDateTimeString(compensateTime));
+        tag.putString("signInTime", DateUtils.toDateTimeString(signInTime));
         tag.putString("signInUUID", signInUUID);
         tag.putBoolean("rewarded", rewarded);
         tag.putString("rewardList", GSON.toJson(rewardList));
@@ -63,8 +64,8 @@ public class SignInRecord implements Serializable, Cloneable {
     public static SignInRecord readFromNBT(CompoundNBT tag) {
         SignInRecord record = new SignInRecord();
         // 读取简单字段
-        record.compensateTime = new Date(tag.getLong("compensateTime"));
-        record.signInTime = new Date(tag.getLong("signInTime"));
+        record.compensateTime = DateUtils.format(tag.getString("compensateTime"));
+        record.signInTime = DateUtils.format(tag.getString("signInTime"));
         record.signInUUID = tag.getString("signInUUID");
         record.rewarded = tag.getBoolean("rewarded");
 
