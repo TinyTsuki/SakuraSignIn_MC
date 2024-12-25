@@ -78,7 +78,7 @@ public class SignInCell {
     }
 
     // 渲染格子
-    public void render(PoseStack poseStack, Font font, ItemRenderer itemRenderer, int mouseX, int mouseY) {
+    public void render(PoseStack poseStack, Font font, int mouseX, int mouseY) {
         boolean isHovered = this.isMouseOver(mouseX, mouseY);
         if (showIcon) {
             AbstractGuiUtils.bindTexture(BACKGROUND_TEXTURE);
