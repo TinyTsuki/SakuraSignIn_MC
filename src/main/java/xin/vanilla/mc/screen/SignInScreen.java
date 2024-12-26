@@ -708,7 +708,7 @@ public class SignInScreen extends Screen {
         } else if (cell.status == ESignInStatus.CAN_REPAIR.getCode()) {
             if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
                 if (!ServerConfig.SIGN_IN_CARD.get()) {
-                    player.sendMessage(new TranslatableComponent(getI18nKey("服务器未开启补签功能哦。")), player.getUUID());
+                    player.sendMessage(new TranslatableComponent(getI18nKey("服务器补签功能被禁用了哦。")), player.getUUID());
                 } else {
                     if (PlayerSignInDataCapability.getData(player).getSignInCard() <= 0) {
                         player.sendMessage(new TranslatableComponent(getI18nKey("补签卡不足了哦。")), player.getUUID());

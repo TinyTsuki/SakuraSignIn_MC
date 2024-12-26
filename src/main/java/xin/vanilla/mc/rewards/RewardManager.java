@@ -436,13 +436,13 @@ public class RewardManager {
         IPlayerSignInData signInData = PlayerSignInDataCapability.getData(player);
         Date serverDate = DateUtils.getServerDate();
         Date clientDate = packet.getSignInTime();
-        LOGGER.info("SignIn: serverDate: {}, clientDate: {}", DateUtils.toDateTimeString(serverDate), DateUtils.toDateTimeString(clientDate));
+        LOGGER.debug("SignIn: serverDate: {}, clientDate: {}", DateUtils.toDateTimeString(serverDate), DateUtils.toDateTimeString(clientDate));
         Date serverCompensateDate = getCompensateDate(serverDate);
         // 仅签到需要校准时间
         Date clientCompensateDate = packet.getSignInType().equals(ESignInType.SIGN_IN) ? getCompensateDate(clientDate) : clientDate;
         int serverCompensateDateInt = DateUtils.toDateInt(serverCompensateDate);
         int clientCompensateDateInt = DateUtils.toDateInt(clientCompensateDate);
-        LOGGER.info("SignIn: serverCompensateDate: {}, clientCompensateDate: {}", DateUtils.toDateTimeString(serverCompensateDate), DateUtils.toDateTimeString(clientCompensateDate));
+        LOGGER.debug("SignIn: serverCompensateDate: {}, clientCompensateDate: {}", DateUtils.toDateTimeString(serverCompensateDate), DateUtils.toDateTimeString(clientCompensateDate));
 
         ETimeCoolingMethod coolingMethod = ServerConfig.TIME_COOLING_METHOD.get();
         // 判断签到/补签时间合法性
@@ -469,7 +469,7 @@ public class RewardManager {
         }
         // 判断补签
         if (ESignInType.RE_SIGN_IN.equals(packet.getSignInType()) && !ServerConfig.SIGN_IN_CARD.get()) {
-            player.sendMessage(new TranslatableComponent(getI18nKey("服务器未开启补签功能，补签失败")), player.getUUID());
+            player.sendMessage(new TranslatableComponent(getI18nKey("服务器补签功能被禁用了哦，补签失败")), player.getUUID());
             return;
         } else if (ESignInType.RE_SIGN_IN.equals(packet.getSignInType()) && signInData.getSignInCard() <= 0) {
             player.sendMessage(new TranslatableComponent(getI18nKey("补签卡不足，补签失败")), player.getUUID());
