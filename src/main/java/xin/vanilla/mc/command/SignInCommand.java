@@ -3,6 +3,7 @@ package xin.vanilla.mc.command;
 
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
@@ -31,6 +32,7 @@ import xin.vanilla.mc.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
@@ -83,6 +85,12 @@ public class SignInCommand {
                     + " " + localDateTime.getHour() + " " + localDateTime.getMinute() + " " + localDateTime.getSecond());
             builder.suggest("~ ~ ~ ~ ~ ~");
             builder.suggest("~ ~ ~ ~ ~ ~-1");
+            return builder.buildFuture();
+        };
+        // 提供布尔值建议的 SuggestionProvider
+        SuggestionProvider<CommandSourceStack> booleanSuggestions = (context, builder) -> {
+            builder.suggest("true");
+            builder.suggest("false");
             return builder.buildFuture();
         };
 
@@ -189,6 +197,13 @@ public class SignInCommand {
                 .then(Commands.literal("help")
                         .executes(helpCommand)
                         .then(Commands.argument("page", IntegerArgumentType.integer(1, 4))
+                                .suggests((context, builder) -> {
+                                    int totalPages = (int) Math.ceil((double) HELP_MESSAGE.size() / HELP_INFO_NUM_PER_PAGE);
+                                    for (int i = 0; i < totalPages; i++) {
+                                        builder.suggest(i + 1);
+                                    }
+                                    return builder.buildFuture();
+                                })
                                 .executes(helpCommand)
                         )
                 )
@@ -221,16 +236,23 @@ public class SignInCommand {
                         .executes(context -> {
                             ServerPlayer player = context.getSource().getPlayerOrException();
                             if (!ServerConfig.SIGN_IN_CARD.get()) {
-                                player.sendSystemMessage(Component.translatable(getI18nKey("服务器未开启补签功能哦。")));
+                                player.sendSystemMessage(Component.translatable(getI18nKey("服务器补签功能被禁用了哦。")));
                             } else {
                                 player.sendSystemMessage(Component.translatable(getI18nKey("当前拥有%d张补签卡"), PlayerSignInDataCapability.getData(player).getSignInCard()));
                             }
                             return 1;
                         })
-                        // 增加/减少补签卡 /va card give <num> [<player>]
+                        // 增加/减少补签卡 /va card give <num> [<players>]
                         .then(Commands.literal("give")
                                 .requires(source -> source.hasPermission(2))
                                 .then(Commands.argument("num", IntegerArgumentType.integer())
+                                        .suggests((context, builder) -> {
+                                            builder.suggest(0);
+                                            builder.suggest(1);
+                                            builder.suggest(10);
+                                            builder.suggest(50);
+                                            return builder.buildFuture();
+                                        })
                                         .executes(context -> {
                                             int num = IntegerArgumentType.getInteger(context, "num");
                                             ServerPlayer player = context.getSource().getPlayerOrException();
@@ -240,24 +262,33 @@ public class SignInCommand {
                                             PlayerSignInDataCapability.syncPlayerData(player);
                                             return 1;
                                         })
-                                        .then(Commands.argument("player", EntityArgument.player())
+                                        .then(Commands.argument("player", EntityArgument.players())
                                                 .executes(context -> {
                                                     int num = IntegerArgumentType.getInteger(context, "num");
-                                                    ServerPlayer player = EntityArgument.getPlayer(context, "player");
-                                                    IPlayerSignInData signInData = PlayerSignInDataCapability.getData(player);
-                                                    signInData.setSignInCard(signInData.getSignInCard() + num);
-                                                    player.sendSystemMessage(Component.translatable(getI18nKey("获得%d张补签卡"), num));
-                                                    PlayerSignInDataCapability.syncPlayerData(player);
+                                                    Collection<ServerPlayer> players = EntityArgument.getPlayers(context, "player");
+                                                    for (ServerPlayer player : players) {
+                                                        IPlayerSignInData signInData = PlayerSignInDataCapability.getData(player);
+                                                        signInData.setSignInCard(signInData.getSignInCard() + num);
+                                                        player.sendSystemMessage(Component.translatable(getI18nKey("获得%d张补签卡"), num));
+                                                        PlayerSignInDataCapability.syncPlayerData(player);
+                                                    }
                                                     return 1;
                                                 })
                                         )
 
                                 )
                         )
-                        // 设置补签卡数量 /va card set <num> [<player>]
+                        // 设置补签卡数量 /va card set <num> [<players>]
                         .then(Commands.literal("set")
                                 .requires(source -> source.hasPermission(2))
                                 .then(Commands.argument("num", IntegerArgumentType.integer())
+                                        .suggests((context, builder) -> {
+                                            builder.suggest(0);
+                                            builder.suggest(1);
+                                            builder.suggest(10);
+                                            builder.suggest(50);
+                                            return builder.buildFuture();
+                                        })
                                         .executes(context -> {
                                             int num = IntegerArgumentType.getInteger(context, "num");
                                             ServerPlayer player = context.getSource().getPlayerOrException();
@@ -267,14 +298,16 @@ public class SignInCommand {
                                             PlayerSignInDataCapability.syncPlayerData(player);
                                             return 1;
                                         })
-                                        .then(Commands.argument("player", EntityArgument.player())
+                                        .then(Commands.argument("player", EntityArgument.players())
                                                 .executes(context -> {
                                                     int num = IntegerArgumentType.getInteger(context, "num");
-                                                    ServerPlayer player = EntityArgument.getPlayer(context, "player");
-                                                    IPlayerSignInData signInData = PlayerSignInDataCapability.getData(player);
-                                                    signInData.setSignInCard(num);
-                                                    player.sendSystemMessage(Component.translatable(getI18nKey("补签卡被设置为了%d张"), num));
-                                                    PlayerSignInDataCapability.syncPlayerData(player);
+                                                    Collection<ServerPlayer> players = EntityArgument.getPlayers(context, "player");
+                                                    for (ServerPlayer player : players) {
+                                                        IPlayerSignInData signInData = PlayerSignInDataCapability.getData(player);
+                                                        signInData.setSignInCard(num);
+                                                        player.sendSystemMessage(Component.translatable(getI18nKey("补签卡被设置为了%d张"), num));
+                                                        PlayerSignInDataCapability.syncPlayerData(player);
+                                                    }
                                                     return 1;
                                                 })
                                         )
@@ -303,7 +336,7 @@ public class SignInCommand {
                                 .then(Commands.literal("autoSignIn")
                                         .executes(context -> {
                                             ServerPlayer player = context.getSource().getPlayerOrException();
-                                            player.sendSystemMessage(Component.translatable(getI18nKey(String.format("服务器%s自动签到", ServerConfig.AUTO_SIGN_IN.get() ? "已启用" : "未启用"))));
+                                            player.sendSystemMessage(Component.translatable(getI18nKey(String.format("服务器已%s自动签到", ServerConfig.AUTO_SIGN_IN.get() ? "启用" : "禁用"))));
                                             return 1;
                                         })
                                 )
@@ -334,7 +367,7 @@ public class SignInCommand {
                                 .then(Commands.literal("signInCard")
                                         .executes(context -> {
                                             ServerPlayer player = context.getSource().getPlayerOrException();
-                                            player.sendSystemMessage(Component.translatable(getI18nKey(String.format("服务器%s补签卡", ServerConfig.SIGN_IN_CARD.get() ? "已启用" : "未启用"))));
+                                            player.sendSystemMessage(Component.translatable(getI18nKey(String.format("服务器已%s补签卡", ServerConfig.SIGN_IN_CARD.get() ? "启用" : "禁用"))));
                                             return 1;
                                         })
                                 )
@@ -349,7 +382,7 @@ public class SignInCommand {
                                 .then(Commands.literal("signInCardOnlyBaseReward")
                                         .executes(context -> {
                                             ServerPlayer player = context.getSource().getPlayerOrException();
-                                            player.sendSystemMessage(Component.translatable(getI18nKey(String.format("服务器%s补签仅获得基础奖励", ServerConfig.SIGN_IN_CARD_ONLY_BASE_REWARD.get() ? "已启用" : "未启用"))));
+                                            player.sendSystemMessage(Component.translatable(getI18nKey(String.format("服务器已%s补签仅获得基础奖励", ServerConfig.SIGN_IN_CARD_ONLY_BASE_REWARD.get() ? "启用" : "禁用"))));
                                             return 1;
                                         })
                                 )
@@ -360,28 +393,161 @@ public class SignInCommand {
                                             return 1;
                                         })
                                 )
+                                .then(Commands.literal("playerDataSyncPacketSize")
+                                        .executes(context -> {
+                                            ServerPlayer player = context.getSource().getPlayerOrException();
+                                            player.sendSystemMessage(Component.translatable(getI18nKey("玩家签到数据同步网络包大小为: %d"), ServerConfig.PLAYER_DATA_SYNC_PACKET_SIZE.get()));
+                                            return 1;
+                                        })
+                                )
                         )
                         // 设置服务器时间 /va config set date <year> <month> <day> <hour> <minute> <second>
                         .then(Commands.literal("set")
-                                        .requires(source -> source.hasPermission(3))
-                                        .then(Commands.literal("date")
-                                                .then(Commands.argument("datetime", StringArgumentType.greedyString())
-                                                        .suggests(datetimeSuggestions)
-                                                        .executes(context -> {
-                                                            long datetime = getRelativeLong(context, "datetime");
-                                                            Date date = DateUtils.getDate(datetime);
-                                                            ServerConfig.SERVER_TIME.set(DateUtils.toDateTimeString(new Date()));
-                                                            ServerConfig.ACTUAL_TIME.set(DateUtils.toDateTimeString(date));
-                                                            ServerPlayer player = context.getSource().getPlayerOrException();
-                                                            player.sendSystemMessage(Component.translatable(getI18nKey("服务器时间已设置为: %s"), DateUtils.toDateTimeString(date)));
-                                                            return 1;
-                                                        })
-                                                )
+                                .requires(source -> source.hasPermission(3))
+                                .then(Commands.literal("date")
+                                        .then(Commands.argument("datetime", StringArgumentType.greedyString())
+                                                .suggests(datetimeSuggestions)
+                                                .executes(context -> {
+                                                    long datetime = getRelativeLong(context, "datetime");
+                                                    Date date = DateUtils.getDate(datetime);
+                                                    ServerConfig.SERVER_TIME.set(DateUtils.toDateTimeString(new Date()));
+                                                    ServerConfig.ACTUAL_TIME.set(DateUtils.toDateTimeString(date));
+                                                    ServerPlayer player = context.getSource().getPlayerOrException();
+                                                    player.server.sendSystemMessage(Component.translatable(getI18nKey("服务器时间已设置为: %s"), DateUtils.toDateTimeString(date)));
+                                                    return 1;
+                                                })
                                         )
-                                // TODO 继续注册管理员指令实现修改所有服务器配置
+                                )
+                                .then(Commands.literal("autoSignIn")
+                                        .then(Commands.argument("bool", StringArgumentType.word())
+                                                .suggests(booleanSuggestions)
+                                                .executes(context -> {
+                                                    String boolString = StringArgumentType.getString(context, "bool");
+                                                    boolean bool = StringUtils.stringToBoolean(boolString);
+                                                    ServerConfig.AUTO_SIGN_IN.set(bool);
+                                                    ServerPlayer player = context.getSource().getPlayerOrException();
+                                                    player.server.sendSystemMessage(Component.translatable(getI18nKey("服务器已%s自动签到"), bool ? "启用" : "禁用"));
+                                                    return 1;
+                                                })
+                                        )
+                                )
+                                .then(Commands.literal("signInCard")
+                                        .then(Commands.argument("bool", StringArgumentType.word())
+                                                .suggests(booleanSuggestions)
+                                                .executes(context -> {
+                                                    String boolString = StringArgumentType.getString(context, "bool");
+                                                    boolean bool = StringUtils.stringToBoolean(boolString);
+                                                    ServerConfig.SIGN_IN_CARD.set(bool);
+                                                    ServerPlayer player = context.getSource().getPlayerOrException();
+                                                    player.server.sendSystemMessage(Component.translatable(getI18nKey("服务器已%s补签卡"), bool ? "启用" : "禁用"));
+                                                    return 1;
+                                                })
+                                        )
+                                )
+                                .then(Commands.literal("reSignInDays")
+                                        .then(Commands.argument("days", IntegerArgumentType.integer(1, 365))
+                                                .executes(context -> {
+                                                    int days = IntegerArgumentType.getInteger(context, "days");
+                                                    ServerConfig.RE_SIGN_IN_DAYS.set(days);
+                                                    ServerPlayer player = context.getSource().getPlayerOrException();
+                                                    player.server.sendSystemMessage(Component.translatable(getI18nKey("服务器最大补签天数已被设置为: %d"), days));
+                                                    return 1;
+                                                })
+                                        )
+                                )
+                                .then(Commands.literal("signInCardOnlyBaseReward")
+                                        .then(Commands.argument("bool", StringArgumentType.word())
+                                                .suggests(booleanSuggestions)
+                                                .executes(context -> {
+                                                    String boolString = StringArgumentType.getString(context, "bool");
+                                                    boolean bool = StringUtils.stringToBoolean(boolString);
+                                                    ServerConfig.SIGN_IN_CARD_ONLY_BASE_REWARD.set(bool);
+                                                    ServerPlayer player = context.getSource().getPlayerOrException();
+                                                    player.server.sendSystemMessage(Component.translatable(getI18nKey("服务器已%s补签仅获得基础奖励"), bool ? "启用" : "禁用"));
+                                                    return 1;
+                                                })
+                                        )
+                                )
+                                .then(Commands.literal("timeCoolingMethod")
+                                        .then(Commands.argument("method", StringArgumentType.word())
+                                                .suggests((context, builder) -> {
+                                                    for (ETimeCoolingMethod value : ETimeCoolingMethod.values()) {
+                                                        builder.suggest(value.getName());
+                                                    }
+                                                    return builder.buildFuture();
+                                                })
+                                                .executes(context -> {
+                                                    String method = StringArgumentType.getString(context, "method");
+                                                    ServerConfig.TIME_COOLING_METHOD.set(ETimeCoolingMethod.valueOf(method));
+                                                    ServerPlayer player = context.getSource().getPlayerOrException();
+                                                    player.sendSystemMessage(Component.translatable(getI18nKey("服务器签到时间冷却方式已被设置为: %s"), method));
+                                                    return 1;
+                                                })
+                                        )
+                                )
+                                .then(Commands.literal("timeCoolingTime")
+                                        .then(Commands.argument("time", DoubleArgumentType.doubleArg(-23.59, 23.59))
+                                                .executes(context -> {
+                                                    double time = DoubleArgumentType.getDouble(context, "time");
+                                                    SignInCommand.checkTime(time);
+                                                    ServerConfig.TIME_COOLING_TIME.set(time);
+                                                    ServerPlayer player = context.getSource().getPlayerOrException();
+                                                    player.sendSystemMessage(Component.translatable(getI18nKey("服务器签到冷却刷新时间已被设置为: %05.2f"), time));
+                                                    return 1;
+                                                })
+                                        )
+                                )
+                                .then(Commands.literal("timeCoolingInterval")
+                                        .then(Commands.argument("time", DoubleArgumentType.doubleArg(-23.59f, 23.59f))
+                                                .executes(context -> {
+                                                    double time = DoubleArgumentType.getDouble(context, "time");
+                                                    SignInCommand.checkTime(time);
+                                                    ServerConfig.TIME_COOLING_INTERVAL.set(time);
+                                                    ServerPlayer player = context.getSource().getPlayerOrException();
+                                                    player.sendSystemMessage(Component.translatable(getI18nKey("服务器签到冷却刷新间隔已被设置为: %05.2f"), time));
+                                                    return 1;
+                                                })
+                                        )
+                                )
+                                .then(Commands.literal("playerDataSyncPacketSize")
+                                        .then(Commands.argument("size", IntegerArgumentType.integer(1, 1024))
+                                                .executes(context -> {
+                                                    int size = IntegerArgumentType.getInteger(context, "size");
+                                                    ServerConfig.PLAYER_DATA_SYNC_PACKET_SIZE.set(size);
+                                                    ServerPlayer player = context.getSource().getPlayerOrException();
+                                                    player.server.sendSystemMessage(Component.translatable(getI18nKey("玩家签到数据同步网络包大小已被设置为: %d"), size));
+                                                    return 1;
+                                                })
+                                        )
+                                )
                         )
                 )
         );
+    }
+
+    // 校验时间是否合法
+    private static void checkTime(double time) throws CommandSyntaxException {
+        boolean throwException = false;
+        if (time < -23.59 || time > 23.59) {
+            throwException = true;
+        } else {
+            String format = String.format("%05.2f", time);
+            String[] split = format.split("\\.");
+            if (split.length != 2) {
+                throwException = true;
+            } else {
+                int hour = StringUtils.toInt(split[0]);
+                int minute = StringUtils.toInt(split[1]);
+                if (hour < -23 || hour > 23) {
+                    throwException = true;
+                } else if (minute < 0 || minute > 59) {
+                    throwException = true;
+                }
+            }
+        }
+        if (throwException) {
+            throw CommandSyntaxException.BUILT_IN_EXCEPTIONS.dispatcherParseException().create(time);
+        }
     }
 
     private static long getRelativeLong(CommandContext<CommandSourceStack> context, @NonNull String name) throws CommandSyntaxException {
