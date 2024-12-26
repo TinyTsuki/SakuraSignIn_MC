@@ -14,6 +14,7 @@ import net.minecraft.command.CommandSource;
 import net.minecraft.command.Commands;
 import net.minecraft.command.arguments.EntityArgument;
 import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.util.text.TranslationTextComponent;
@@ -246,7 +247,6 @@ public class SignInCommand {
                                 .requires(source -> source.hasPermission(2))
                                 .then(Commands.argument("num", IntegerArgumentType.integer())
                                         .suggests((context, builder) -> {
-                                            builder.suggest(0);
                                             builder.suggest(1);
                                             builder.suggest(10);
                                             builder.suggest(50);
@@ -343,7 +343,7 @@ public class SignInCommand {
                                         .executes(context -> {
                                             ServerPlayerEntity player = context.getSource().getPlayerOrException();
                                             ETimeCoolingMethod coolingMethod = ServerConfig.TIME_COOLING_METHOD.get();
-                                            player.sendMessage(new TranslationTextComponent(getI18nKey("服务器签到时间冷却方式为: %s"), coolingMethod.getName()));
+                                            player.sendMessage(new TranslationTextComponent(getI18nKey("服务器签到时间冷却方式为: %s"), coolingMethod.name()));
                                             return 1;
                                         })
                                 )
@@ -412,7 +412,7 @@ public class SignInCommand {
                                                     ServerConfig.SERVER_TIME.set(DateUtils.toDateTimeString(new Date()));
                                                     ServerConfig.ACTUAL_TIME.set(DateUtils.toDateTimeString(date));
                                                     ServerPlayerEntity player = context.getSource().getPlayerOrException();
-                                                    player.server.sendMessage(new TranslationTextComponent(getI18nKey("服务器时间已设置为: %s"), DateUtils.toDateTimeString(date)));
+                                                    broadcastMessage(player, new TranslationTextComponent(getI18nKey("服务器时间已设置为: %s"), DateUtils.toDateTimeString(date)));
                                                     return 1;
                                                 })
                                         )
@@ -425,7 +425,7 @@ public class SignInCommand {
                                                     boolean bool = StringUtils.stringToBoolean(boolString);
                                                     ServerConfig.AUTO_SIGN_IN.set(bool);
                                                     ServerPlayerEntity player = context.getSource().getPlayerOrException();
-                                                    player.server.sendMessage(new TranslationTextComponent(getI18nKey("服务器已%s自动签到"), bool ? "启用" : "禁用"));
+                                                    broadcastMessage(player, new TranslationTextComponent(getI18nKey("服务器已%s自动签到"), bool ? "启用" : "禁用"));
                                                     return 1;
                                                 })
                                         )
@@ -438,18 +438,25 @@ public class SignInCommand {
                                                     boolean bool = StringUtils.stringToBoolean(boolString);
                                                     ServerConfig.SIGN_IN_CARD.set(bool);
                                                     ServerPlayerEntity player = context.getSource().getPlayerOrException();
-                                                    player.server.sendMessage(new TranslationTextComponent(getI18nKey("服务器已%s补签卡"), bool ? "启用" : "禁用"));
+                                                    broadcastMessage(player, new TranslationTextComponent(getI18nKey("服务器已%s补签卡"), bool ? "启用" : "禁用"));
                                                     return 1;
                                                 })
                                         )
                                 )
                                 .then(Commands.literal("reSignInDays")
                                         .then(Commands.argument("days", IntegerArgumentType.integer(1, 365))
+                                                .suggests((context, builder) -> {
+                                                    builder.suggest(1);
+                                                    builder.suggest(7);
+                                                    builder.suggest(30);
+                                                    builder.suggest(365);
+                                                    return builder.buildFuture();
+                                                })
                                                 .executes(context -> {
                                                     int days = IntegerArgumentType.getInteger(context, "days");
                                                     ServerConfig.RE_SIGN_IN_DAYS.set(days);
                                                     ServerPlayerEntity player = context.getSource().getPlayerOrException();
-                                                    player.server.sendMessage(new TranslationTextComponent(getI18nKey("服务器最大补签天数已被设置为: %d"), days));
+                                                    broadcastMessage(player, new TranslationTextComponent(getI18nKey("服务器最大补签天数已被设置为: %d"), days));
                                                     return 1;
                                                 })
                                         )
@@ -462,7 +469,7 @@ public class SignInCommand {
                                                     boolean bool = StringUtils.stringToBoolean(boolString);
                                                     ServerConfig.SIGN_IN_CARD_ONLY_BASE_REWARD.set(bool);
                                                     ServerPlayerEntity player = context.getSource().getPlayerOrException();
-                                                    player.server.sendMessage(new TranslationTextComponent(getI18nKey("服务器已%s补签仅获得基础奖励"), bool ? "启用" : "禁用"));
+                                                    broadcastMessage(player, new TranslationTextComponent(getI18nKey("服务器已%s补签仅获得基础奖励"), bool ? "启用" : "禁用"));
                                                     return 1;
                                                 })
                                         )
@@ -471,7 +478,7 @@ public class SignInCommand {
                                         .then(Commands.argument("method", StringArgumentType.word())
                                                 .suggests((context, builder) -> {
                                                     for (ETimeCoolingMethod value : ETimeCoolingMethod.values()) {
-                                                        builder.suggest(value.getName());
+                                                        builder.suggest(value.name());
                                                     }
                                                     return builder.buildFuture();
                                                 })
@@ -479,42 +486,64 @@ public class SignInCommand {
                                                     String method = StringArgumentType.getString(context, "method");
                                                     ServerConfig.TIME_COOLING_METHOD.set(ETimeCoolingMethod.valueOf(method));
                                                     ServerPlayerEntity player = context.getSource().getPlayerOrException();
-                                                    player.sendMessage(new TranslationTextComponent(getI18nKey("服务器签到时间冷却方式已被设置为: %s"), method));
+                                                    broadcastMessage(player, new TranslationTextComponent(getI18nKey("服务器签到时间冷却方式已被设置为: %s"), method));
                                                     return 1;
                                                 })
                                         )
                                 )
                                 .then(Commands.literal("timeCoolingTime")
                                         .then(Commands.argument("time", DoubleArgumentType.doubleArg(-23.59, 23.59))
+                                                .suggests((context, builder) -> {
+                                                    builder.suggest("0.00");
+                                                    builder.suggest("4.00");
+                                                    builder.suggest("12.00");
+                                                    builder.suggest("23.59");
+                                                    builder.suggest("-23.59");
+                                                    return builder.buildFuture();
+                                                })
                                                 .executes(context -> {
                                                     double time = DoubleArgumentType.getDouble(context, "time");
                                                     SignInCommand.checkTime(time);
                                                     ServerConfig.TIME_COOLING_TIME.set(time);
                                                     ServerPlayerEntity player = context.getSource().getPlayerOrException();
-                                                    player.sendMessage(new TranslationTextComponent(getI18nKey("服务器签到冷却刷新时间已被设置为: %05.2f"), time));
+                                                    broadcastMessage(player, new TranslationTextComponent(getI18nKey("服务器签到冷却刷新时间已被设置为: %05.2f"), time));
                                                     return 1;
                                                 })
                                         )
                                 )
                                 .then(Commands.literal("timeCoolingInterval")
-                                        .then(Commands.argument("time", DoubleArgumentType.doubleArg(-23.59f, 23.59f))
+                                        .then(Commands.argument("time", DoubleArgumentType.doubleArg(0, 23.59f))
+                                                .suggests((context, builder) -> {
+                                                    builder.suggest("0.00");
+                                                    builder.suggest("6.00");
+                                                    builder.suggest("12.34");
+                                                    builder.suggest("23.59");
+                                                    return builder.buildFuture();
+                                                })
                                                 .executes(context -> {
                                                     double time = DoubleArgumentType.getDouble(context, "time");
                                                     SignInCommand.checkTime(time);
                                                     ServerConfig.TIME_COOLING_INTERVAL.set(time);
                                                     ServerPlayerEntity player = context.getSource().getPlayerOrException();
-                                                    player.sendMessage(new TranslationTextComponent(getI18nKey("服务器签到冷却刷新间隔已被设置为: %05.2f"), time));
+                                                    broadcastMessage(player, new TranslationTextComponent(getI18nKey("服务器签到冷却刷新间隔已被设置为: %05.2f"), time));
                                                     return 1;
                                                 })
                                         )
                                 )
                                 .then(Commands.literal("playerDataSyncPacketSize")
                                         .then(Commands.argument("size", IntegerArgumentType.integer(1, 1024))
+                                                .suggests((context, builder) -> {
+                                                    builder.suggest(1);
+                                                    builder.suggest(10);
+                                                    builder.suggest(100);
+                                                    builder.suggest(1024);
+                                                    return builder.buildFuture();
+                                                })
                                                 .executes(context -> {
                                                     int size = IntegerArgumentType.getInteger(context, "size");
                                                     ServerConfig.PLAYER_DATA_SYNC_PACKET_SIZE.set(size);
                                                     ServerPlayerEntity player = context.getSource().getPlayerOrException();
-                                                    player.server.sendMessage(new TranslationTextComponent(getI18nKey("玩家签到数据同步网络包大小已被设置为: %d"), size));
+                                                    broadcastMessage(player, new TranslationTextComponent(getI18nKey("玩家签到数据同步网络包大小已被设置为: %d"), size));
                                                     return 1;
                                                 })
                                         )
@@ -522,6 +551,11 @@ public class SignInCommand {
                         )
                 )
         );
+    }
+
+    // 广播消息
+    private static void broadcastMessage(ServerPlayerEntity player, ITextComponent message) {
+        player.server.getPlayerList().broadcastMessage(new TranslationTextComponent("chat.type.announcement", player.getDisplayName(), message), true);
     }
 
     // 校验时间是否合法
