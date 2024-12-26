@@ -172,6 +172,7 @@ public class DateUtils {
     }
 
     public static String toString(Date date, String pattern) {
+        if (date == null) date = new Date();
         SimpleDateFormat format = new SimpleDateFormat(pattern);
         return format.format(date);
     }

@@ -13,6 +13,7 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.LogicalSide;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.network.PacketDistributor;
 import org.apache.logging.log4j.LogManager;
@@ -72,6 +73,20 @@ public class ClientForgeEventHandler {
     }
 
     /**
+     * 同步数据
+     */
+    @SubscribeEvent
+    public static void playerTickEvent(TickEvent.PlayerTickEvent event) {
+        Player player = event.player;
+        if (event.side == LogicalSide.SERVER && event.phase == TickEvent.Phase.END) {
+            if (!SakuraSignIn.getPlayerCapabilityStatus().getOrDefault(player.getUUID().toString(), false)) {
+                // 同步玩家签到数据到客户端
+                PlayerSignInDataCapability.syncPlayerData((ServerPlayer) player);
+            }
+        }
+    }
+
+    /**
      * 当 AttachCapabilitiesEvent 事件发生时，此方法会为玩家实体附加自定义的能力
      * 在 Minecraft 中，实体可以拥有多种能力，这是一种扩展游戏行为的强大机制
      * 此处我们利用这个机制，为玩家实体附加一个用于签到的数据管理能力
@@ -107,8 +122,7 @@ public class ClientForgeEventHandler {
      */
     @SubscribeEvent
     public static void onEntityJoinWorld(EntityJoinLevelEvent event) {
-        if (event.getEntity() instanceof ServerPlayer) {
-            Player player = (ServerPlayer) event.getEntity();
+        if (event.getEntity() instanceof Player player) {
             SakuraSignIn.getPlayerCapabilityStatus().put(player.getUUID().toString(), false);
         }
     }
