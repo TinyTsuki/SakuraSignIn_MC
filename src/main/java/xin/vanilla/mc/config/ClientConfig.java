@@ -38,6 +38,11 @@ public class ClientConfig {
      */
     public static final ForgeConfigSpec.ConfigValue<String> INVENTORY_REWARD_OPTION_BUTTON_COORDINATE;
 
+    /**
+     * 显示签到界面提示
+     */
+    public static final ForgeConfigSpec.BooleanValue SHOW_SIGN_IN_SCREEN_TIPS;
+
     static {
         ForgeConfigSpec.Builder CLIENT_BUILDER = new ForgeConfigSpec.Builder();
 
@@ -70,7 +75,7 @@ public class ClientConfig {
 
         // 自动领取
         AUTO_REWARDED = CLIENT_BUILDER
-                .comment("Whether the rewards will be automatically claimed when you sign in or re-sign-in."
+                .comment("Whether the rewards will be automatically claimed when you sign-in or re-sign-in."
                         , "签到或补签时是否自动领取奖励。")
                 .define("autoRewarded", false);
 
@@ -85,6 +90,11 @@ public class ClientConfig {
                 .comment("The coordinate of the reward option button in the inventory screen. If the coordinate is 0~1, it is the percentage position."
                         , "背包界面奖励配置按钮坐标，若坐标为0~1之间的小数则为百分比位置。")
                 .define("inventoryRewardOptionButtonCoordinate", "20,2");
+
+        SHOW_SIGN_IN_SCREEN_TIPS = CLIENT_BUILDER
+                .comment("Whether or not to display a prompt for action when you open the sign-in screen."
+                        , "打开签到页面时是否显示操作提示。")
+                .define("showSignInScreenTips", true);
 
         CLIENT_BUILDER.pop();
 
