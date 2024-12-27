@@ -34,6 +34,7 @@ public class I18nUtils {
         put("取消", "option.sakura_sign_in.cancel");
         put("提交", "option.sakura_sign_in.submit");
         put("确认", "option.sakura_sign_in.confirm");
+        put("不再提醒", "option.sakura_sign_in.no_remind");
         put("请输入", "tips.sakura_sign_in.enter_something");
         put("请输入规则名称", "tips.sakura_sign_in.enter_reward_rule_key");
         put("请输入物品Json", "tips.sakura_sign_in.enter_item_json");
@@ -83,6 +84,8 @@ public class I18nUtils {
         put("左键点击切换主题\n右键点击选择外部主题", "tips.sakura_sign_in.click_to_change_theme_or_select_external_theme");
         put("按住Ctrl或Alt键可拖动按钮\nCtrl: 绝对位置坐标\nAlt: 屏幕百分比位置", "tips.sakura_sign_in.drag_inventory_button");
         put("鼠标左键签到\n右键补签/领取奖励", "tips.sakura_sign_in.how_to_sign_in");
+        put("补签卡: %s\n连续签到: %sd\n累计签到: %sd", "tips.sakura_sign_in.sign_in_info");
+        put("签到页面开屏提示", "tips.sakura_sign_in.sign_in_screen_tips");
         put("已选择主题文件: %s", "message.sakura_sign_in.selected_theme_file_s");
         put("前面的的日期以后再来探索吧。", "message.sakura_sign_in.next_day_cannot_operate");
         put("已经签过到了哦。", "message.sakura_sign_in.already_signed");
@@ -143,7 +146,7 @@ public class I18nUtils {
         try {
             return I18n.get(ZH_CN_KEY_MAP.get(key), args);
         } catch (Exception e) {
-            return key;
+            return String.format(key, args);
         }
     }
 }
