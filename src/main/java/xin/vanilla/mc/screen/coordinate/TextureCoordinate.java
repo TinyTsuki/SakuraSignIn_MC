@@ -117,6 +117,12 @@ public class TextureCoordinate implements Serializable {
     private Coordinate downArrowCoordinate = new Coordinate().setX(128).setY(60).setWidth(92).setHeight(16);
 
     /**
+     * 签到信息区域坐标
+     */
+    @NonNull
+    private Coordinate signInInfoCoordinate = new Coordinate().setX(400).setY(0).setWidth(100).setHeight(100);
+
+    /**
      * 主题区域坐标
      */
     @NonNull
@@ -171,6 +177,11 @@ public class TextureCoordinate implements Serializable {
      */
     @NonNull
     private Coordinate arrowTapUV = new Coordinate().setU0(40).setV0(600).setUWidth(40).setVHeight(40);
+    /**
+     * 签到信息纹理坐标
+     */
+    @NonNull
+    private Coordinate signInInfoUV = new Coordinate().setU0(200).setV0(640).setUWidth(40).setVHeight(40);
 
     /**
      * 未签到纹理坐标
@@ -308,6 +319,10 @@ public class TextureCoordinate implements Serializable {
         return downArrowCoordinate = downArrowCoordinate == null ? new Coordinate() : downArrowCoordinate;
     }
 
+    public @NonNull Coordinate getSignInInfoCoordinate() {
+        return signInInfoCoordinate = signInInfoCoordinate == null ? new Coordinate() : signInInfoCoordinate;
+    }
+
     public @NonNull Coordinate getThemeCoordinate() {
         return themeCoordinate = themeCoordinate == null ? new Coordinate() : themeCoordinate;
     }
@@ -342,6 +357,10 @@ public class TextureCoordinate implements Serializable {
 
     public @NonNull Coordinate getArrowTapUV() {
         return arrowTapUV = arrowTapUV == null ? new Coordinate() : arrowTapUV;
+    }
+
+    public @NonNull Coordinate getSignInInfoUV() {
+        return signInInfoUV = signInInfoUV == null ? new Coordinate() : signInInfoUV;
     }
 
     public @NonNull Coordinate getNotSignedInUV() {
