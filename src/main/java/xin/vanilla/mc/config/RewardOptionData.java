@@ -24,8 +24,8 @@ import java.util.stream.Collectors;
 
 @Data
 public class RewardOptionData implements Serializable {
-    public static final String DATE_RANGE_REGEX1 = "(\\d{4}|0000)[-/](\\d{2}|00)[-/](\\d{2}|00)(?:[T ](\\d{2}):(\\d{2}):(\\d{2}))?";
-    public static final String DATE_RANGE_REGEX2 = "(\\d{4})(?:~(\\d+))?[-/](\\d{2})(?:~(\\d+))?[-/](\\d{2})(?:~(\\d+))?";
+    public static final String DATE_RANGE_REGEX1 = "(\\d{4})[-/](\\d{1,2})[-/](\\d{1,2})(?:[T ](\\d{1,2}):(\\d{1,2}):(\\d{1,2}))?";
+    public static final String DATE_RANGE_REGEX2 = "(\\d{4})(?:~(\\d+))?[-/](\\d{1,2})(?:~(\\d+))?[-/](\\d{1,2})(?:~(\\d+))?";
     public static final String REWARD_RULE_KEY_REGEX = "(?:(?:" + DATE_RANGE_REGEX1 + ")|(?:" + DATE_RANGE_REGEX2 + ")|(?:" + "-?\\d{4}" + "))";
 
     /**
@@ -314,12 +314,14 @@ public class RewardOptionData implements Serializable {
     @SuppressWarnings("ConstantConditions")
     public void addDateTimeRewards(@NonNull String key, @NonNull RewardList value) {
         if (dateTimeRewards == null) this.dateTimeRewards = new LinkedHashMap<>();
-        List<String> parsedDates = RewardOptionData.parseDateRange(key);
-        if (!parsedDates.isEmpty()) {
-            this.dateTimeRewardsRelation = new LinkedHashMap<>();
+        if (!RewardOptionData.parseDateRange(key).isEmpty()) {
             this.dateTimeRewards.put(key, value);
-            for (String date : parsedDates) {
-                this.dateTimeRewardsRelation.put(date, key);
+            this.dateTimeRewardsRelation = new LinkedHashMap<>();
+            for (String dateTimeKey : dateTimeRewards.keySet()) {
+                List<String> parsedDates = RewardOptionData.parseDateRange(dateTimeKey);
+                for (String date : parsedDates) {
+                    this.dateTimeRewardsRelation.put(date, dateTimeKey);
+                }
             }
         }
     }
@@ -457,7 +459,7 @@ public class RewardOptionData implements Serializable {
             String secondString = matcher.group(6);
 
             // 对于"0000"年、"00"月和"00"日的情况，不做处理，按原样返回
-            if ("0000".equals(yearString) || "00".equals(monthString) || "00".equals(dayString)) {
+            if ("0000".equals(yearString) || "00".equals(monthString) || "0".equals(monthString) || "00".equals(dayString) || "0".equals(dayString)) {
                 result.add(dateRange);
                 return result;
             }
