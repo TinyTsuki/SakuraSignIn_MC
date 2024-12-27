@@ -1,6 +1,7 @@
 package xin.vanilla.mc;
 
 import org.junit.Test;
+import xin.vanilla.mc.screen.coordinate.Coordinate;
 import xin.vanilla.mc.screen.coordinate.TextureCoordinate;
 import xin.vanilla.mc.util.DateUtils;
 import xin.vanilla.mc.util.PNGUtils;
@@ -98,6 +99,8 @@ public class MyTest {
                 aDefault.setTextColorCanRepair(0xFFFFFFBB);
                 aDefault.setTextColorToday(0xFFE03D63);
                 aDefault.setTextColorDate(0xFF000000);
+                aDefault.setSignInInfoCoordinate(new Coordinate().setX(375).setY(5).setWidth(120).setHeight(96));
+                aDefault.setSignInInfoUV(new Coordinate().setU0(200).setV0(640).setUWidth(60).setVHeight(48));
                 break;
             case "clover":
                 aDefault.setSpecial(true);
@@ -108,6 +111,8 @@ public class MyTest {
                 aDefault.setTextColorCanRepair(0xFFEFCE8B);
                 aDefault.setTextColorToday(0xFFB2D87C);
                 aDefault.setTextColorDate(0xFF000000);
+                aDefault.setSignInInfoCoordinate(new Coordinate().setX(400).setY(2).setWidth(80).setHeight(75));
+                aDefault.setSignInInfoUV(new Coordinate().setU0(200).setV0(640).setUWidth(32).setVHeight(30));
                 break;
             case "maple":
                 aDefault.setSpecial(true);
@@ -117,6 +122,8 @@ public class MyTest {
                 aDefault.setTextColorCanRepair(0xFFFFFCD2);
                 aDefault.setTextColorToday(0xFFFF4E00);
                 aDefault.setTextColorDate(0xFF000000);
+                aDefault.setSignInInfoCoordinate(new Coordinate().setX(400).setY(2).setWidth(80).setHeight(75));
+                aDefault.setSignInInfoUV(new Coordinate().setU0(200).setV0(640).setUWidth(32).setVHeight(30));
                 break;
             case "chaos":
                 aDefault.setWeekStart(1);
@@ -162,6 +169,8 @@ public class MyTest {
                 aDefault.getSortUV().setU0(280).setV0(924).setUWidth(40).setVHeight(40);
                 aDefault.getSignInBtnUV().setU0(120).setV0(964);
                 aDefault.getRewardOptionBtnUV().setU0(180).setV0(964);
+                aDefault.setSignInInfoCoordinate(new Coordinate().setX(485).setY(0).setWidth(120).setHeight(150));
+                aDefault.setSignInInfoUV(new Coordinate().setU0(400).setV0(500).setUWidth(120).setVHeight(150));
                 break;
         }
         PNGUtils.writePrivateChunk(sourceFile, tempFile, "vacb", aDefault, true);
