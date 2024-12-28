@@ -54,15 +54,15 @@ public class AdvancementRewardParser implements RewardParser<ResourceLocation> {
         return getAdvancementData(resourceLocation.toString());
     }
 
-    public static String getDisplayName(AdvancementData advancementData) {
+    public static @NonNull String getDisplayName(AdvancementData advancementData) {
         return advancementData.displayInfo().getTitle().getString();
     }
 
-    public static String getDescription(AdvancementData advancementData) {
+    public static @NonNull String getDescription(AdvancementData advancementData) {
         return advancementData.displayInfo().getDescription().getString();
     }
 
-    public static String getDisplayName(AdvancementHolder advancement) {
+    public static @NonNull String getDisplayName(AdvancementHolder advancement) {
         String result = "";
         DisplayInfo display = advancement.value().display().orElse(null);
         if (display != null)
@@ -71,7 +71,7 @@ public class AdvancementRewardParser implements RewardParser<ResourceLocation> {
     }
 
     @Override
-    public String getDisplayName(JsonObject json) {
+    public @NonNull String getDisplayName(JsonObject json) {
         ResourceLocation deserialize = deserialize(json);
         return String.format("%s: %s", I18nUtils.get(String.format("reward.sakura_sign_in.reward_type_%s", ERewardType.ADVANCEMENT.getCode()))
                 , SakuraSignIn.getAdvancementData().stream()
@@ -80,7 +80,8 @@ public class AdvancementRewardParser implements RewardParser<ResourceLocation> {
                         .displayInfo().getTitle().getString());
     }
 
-    public static String getDescription(AdvancementHolder advancement) {
+    public @NonNull
+    static String getDescription(AdvancementHolder advancement) {
         String result = "";
         DisplayInfo display = advancement.value().display().orElse(null);
         if (display != null)

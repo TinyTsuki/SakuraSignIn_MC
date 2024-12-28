@@ -155,6 +155,7 @@ public class RewardOptionData implements Serializable {
      */
     public void setContinuousRewards(@NonNull Map<String, RewardList> continuousRewards) {
         // 只有键为有效正整数字符串时才会被添加到映射中，以确保数据的合法性
+        this.continuousRewards = new LinkedHashMap<>();
         continuousRewards.forEach((key, value) -> {
             if (StringUtils.isNotNullOrEmpty(key)) {
                 this.addContinuousRewards(key, value);
@@ -167,15 +168,19 @@ public class RewardOptionData implements Serializable {
      */
     @SuppressWarnings("ConstantConditions")
     public void addContinuousRewards(@NonNull String key, @NonNull RewardList value) {
-        if (continuousRewards == null) this.continuousRewards = new LinkedHashMap<>();
+        if (this.continuousRewards == null) this.continuousRewards = new LinkedHashMap<>();
         int keyInt = StringUtils.toInt(key);
         if (keyInt > 0) {
-            this.continuousRewards.put(String.valueOf(keyInt), value);
+            if (this.cumulativeRewards.containsKey(String.valueOf(keyInt))) {
+                this.cumulativeRewards.get(String.valueOf(keyInt)).addAll(value);
+            } else {
+                this.continuousRewards.put(String.valueOf(keyInt), value);
+            }
         }
         // 处理映射关系
-        if (!continuousRewards.isEmpty()) {
+        if (!this.continuousRewards.isEmpty()) {
             this.continuousRewardsRelation = new LinkedHashMap<>();
-            List<Integer> keyList = continuousRewards.keySet().stream().map(Integer::parseInt).sorted().toList();
+            List<Integer> keyList = this.continuousRewards.keySet().stream().map(Integer::parseInt).sorted().toList();
             int max = keyList.stream().max(Comparator.naturalOrder()).orElse(0);
             int cur = keyList.get(0);
             for (int i = 1; i <= max; i++) {
@@ -190,6 +195,7 @@ public class RewardOptionData implements Serializable {
      */
     public void setCycleRewards(@NonNull Map<String, RewardList> cycleRewards) {
         // 只有键为有效正整数字符串时才会被添加到映射中，以确保数据的合法性
+        this.cycleRewards = new LinkedHashMap<>();
         cycleRewards.forEach((key, value) -> {
             if (StringUtils.isNotNullOrEmpty(key)) {
                 this.addCycleRewards(key, value);
@@ -202,15 +208,19 @@ public class RewardOptionData implements Serializable {
      */
     @SuppressWarnings("ConstantConditions")
     public void addCycleRewards(@NonNull String key, @NonNull RewardList value) {
-        if (cycleRewards == null) cycleRewards = new LinkedHashMap<>();
+        if (this.cycleRewards == null) this.cycleRewards = new LinkedHashMap<>();
         int keyInt = StringUtils.toInt(key);
         if (keyInt > 0) {
-            this.cycleRewards.put(String.valueOf(keyInt), value);
+            if (this.cycleRewards.containsKey(String.valueOf(keyInt))) {
+                this.cycleRewards.get(String.valueOf(keyInt)).addAll(value);
+            } else {
+                this.cycleRewards.put(String.valueOf(keyInt), value);
+            }
         }
         // 处理映射关系
-        if (!cycleRewards.isEmpty()) {
+        if (!this.cycleRewards.isEmpty()) {
             this.cycleRewardsRelation = new LinkedHashMap<>();
-            List<Integer> keyList = cycleRewards.keySet().stream().map(Integer::parseInt).sorted().toList();
+            List<Integer> keyList = this.cycleRewards.keySet().stream().map(Integer::parseInt).sorted().toList();
             int max = keyList.stream().max(Comparator.naturalOrder()).orElse(0);
             int cur = keyList.get(0);
             for (int i = 1; i <= max; i++) {
@@ -225,6 +235,7 @@ public class RewardOptionData implements Serializable {
      */
     public void setYearRewards(@NonNull Map<String, RewardList> yearRewards) {
         // 只有键为有效整数字符串时才会被添加到映射中，以确保数据的合法性
+        this.yearRewards = new LinkedHashMap<>();
         yearRewards.forEach((key, value) -> {
             if (StringUtils.isNotNullOrEmpty(key)) {
                 this.addYearRewards(key, value);
@@ -237,10 +248,14 @@ public class RewardOptionData implements Serializable {
      */
     @SuppressWarnings("ConstantConditions")
     public void addYearRewards(@NonNull String key, @NonNull RewardList value) {
-        if (yearRewards == null) this.yearRewards = new LinkedHashMap<>();
+        if (this.yearRewards == null) this.yearRewards = new LinkedHashMap<>();
         int keyInt = StringUtils.toInt(key);
         if (keyInt > -366 && keyInt <= 366 && keyInt != 0) {
-            this.yearRewards.put(String.valueOf(keyInt), value);
+            if (this.yearRewards.containsKey(String.valueOf(keyInt))) {
+                this.yearRewards.get(String.valueOf(keyInt)).addAll(value);
+            } else {
+                this.yearRewards.put(String.valueOf(keyInt), value);
+            }
         }
     }
 
@@ -249,6 +264,7 @@ public class RewardOptionData implements Serializable {
      */
     public void setMonthRewards(@NonNull Map<String, RewardList> monthRewards) {
         // 只有键为有效整数字符串时才会被添加到映射中，以确保数据的合法性
+        this.monthRewards = new LinkedHashMap<>();
         monthRewards.forEach((key, value) -> {
             if (StringUtils.isNotNullOrEmpty(key)) {
                 this.addMonthRewards(key, value);
@@ -261,10 +277,14 @@ public class RewardOptionData implements Serializable {
      */
     @SuppressWarnings("ConstantConditions")
     public void addMonthRewards(@NonNull String key, @NonNull RewardList value) {
-        if (monthRewards == null) this.monthRewards = new LinkedHashMap<>();
+        if (this.monthRewards == null) this.monthRewards = new LinkedHashMap<>();
         int keyInt = StringUtils.toInt(key);
         if (keyInt > -31 && keyInt <= 31 && keyInt != 0) {
-            this.monthRewards.put(String.valueOf(keyInt), value);
+            if (this.monthRewards.containsKey(String.valueOf(keyInt))) {
+                this.monthRewards.get(String.valueOf(keyInt)).addAll(value);
+            } else {
+                this.monthRewards.put(String.valueOf(keyInt), value);
+            }
         }
     }
 
@@ -273,6 +293,7 @@ public class RewardOptionData implements Serializable {
      */
     public void setWeekRewards(@NonNull Map<String, RewardList> weekRewards) {
         // 只有键为有效正整数字符串时才会被添加到映射中，以确保数据的合法性
+        this.weekRewards = new LinkedHashMap<>();
         weekRewards.forEach((key, value) -> {
             if (StringUtils.isNotNullOrEmpty(key)) {
                 this.addWeekRewards(key, value);
@@ -285,10 +306,14 @@ public class RewardOptionData implements Serializable {
      */
     @SuppressWarnings("ConstantConditions")
     public void addWeekRewards(@NonNull String key, @NonNull RewardList value) {
-        if (weekRewards == null) this.weekRewards = new LinkedHashMap<>();
+        if (this.weekRewards == null) this.weekRewards = new LinkedHashMap<>();
         int keyInt = StringUtils.toInt(key);
         if (keyInt > 0 && keyInt <= 7) {
-            this.weekRewards.put(String.valueOf(keyInt), value);
+            if (this.weekRewards.containsKey(String.valueOf(keyInt))) {
+                this.weekRewards.get(String.valueOf(keyInt)).addAll(value);
+            } else {
+                this.weekRewards.put(String.valueOf(keyInt), value);
+            }
         }
     }
 
@@ -299,6 +324,7 @@ public class RewardOptionData implements Serializable {
      * 这有助于在给定特定日期时，能够快速确定该日期所属的日期范围及其对应的奖励
      */
     public void setDateTimeRewards(@NonNull Map<String, RewardList> dateTimeRewards) {
+        this.dateTimeRewards = new LinkedHashMap<>();
         dateTimeRewards.forEach((key, rewardList) -> {
             if (!CollectionUtils.isNullOrEmpty(rewardList)) {
                 // 解析日期范围并生成具体日期
@@ -312,11 +338,15 @@ public class RewardOptionData implements Serializable {
      */
     @SuppressWarnings("ConstantConditions")
     public void addDateTimeRewards(@NonNull String key, @NonNull RewardList value) {
-        if (dateTimeRewards == null) this.dateTimeRewards = new LinkedHashMap<>();
+        if (this.dateTimeRewards == null) this.dateTimeRewards = new LinkedHashMap<>();
         if (!RewardOptionData.parseDateRange(key).isEmpty()) {
-            this.dateTimeRewards.put(key, value);
+            if (this.dateTimeRewards.containsKey(key)) {
+                this.dateTimeRewards.get(key).addAll(value);
+            } else {
+                this.dateTimeRewards.put(key, value);
+            }
             this.dateTimeRewardsRelation = new LinkedHashMap<>();
-            for (String dateTimeKey : dateTimeRewards.keySet()) {
+            for (String dateTimeKey : this.dateTimeRewards.keySet()) {
                 List<String> parsedDates = RewardOptionData.parseDateRange(dateTimeKey);
                 for (String date : parsedDates) {
                     this.dateTimeRewardsRelation.put(date, dateTimeKey);
@@ -330,6 +360,7 @@ public class RewardOptionData implements Serializable {
      */
     public void setCumulativeRewards(@NonNull Map<String, RewardList> cumulativeRewards) {
         // 只有键为有效正整数字符串时才会被添加到映射中，以确保数据的合法性
+        this.cumulativeRewards = new LinkedHashMap<>();
         cumulativeRewards.forEach((key, value) -> {
             if (StringUtils.isNotNullOrEmpty(key)) {
                 this.addCumulativeReward(key, value);
@@ -345,7 +376,11 @@ public class RewardOptionData implements Serializable {
         if (this.cumulativeRewards == null) this.cumulativeRewards = new LinkedHashMap<>();
         int keyInt = StringUtils.toInt(key);
         if (keyInt > 0) {
-            this.cumulativeRewards.put(String.valueOf(keyInt), value);
+            if (this.cumulativeRewards.containsKey(String.valueOf(keyInt))) {
+                this.cumulativeRewards.get(String.valueOf(keyInt)).addAll(value);
+            } else {
+                this.cumulativeRewards.put(String.valueOf(keyInt), value);
+            }
         }
     }
 
