@@ -45,16 +45,16 @@ public class EffectRewardParser implements RewardParser<EffectInstance> {
     }
 
     @Override
-    public String getDisplayName(JsonObject json) {
+    public @NonNull String getDisplayName(JsonObject json) {
         return String.format("%s: %s", I18nUtils.get(String.format("reward.sakura_sign_in.reward_type_%s", ERewardType.EFFECT.getCode()))
                 , this.deserialize(json).getEffect().getDisplayName().getString());
     }
 
-    public static String getDisplayName(EffectInstance instance) {
+    public static @NonNull String getDisplayName(EffectInstance instance) {
         return getDisplayName(instance.getEffect());
     }
 
-    public static String getDisplayName(Effect effect) {
+    public static @NonNull String getDisplayName(Effect effect) {
         return effect.getDisplayName().getString().replaceAll("\\[(.*)]", "$1");
     }
 
