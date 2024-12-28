@@ -28,5 +28,6 @@ public class ModNetworkHandler {
         INSTANCE.registerMessage(nextID(), AdvancementPacket.class, AdvancementPacket::toBytes, AdvancementPacket::new, AdvancementPacket::handle);
         INSTANCE.registerMessage(nextID(), DownloadRewardOptionNotice.class, DownloadRewardOptionNotice::toBytes, DownloadRewardOptionNotice::new, DownloadRewardOptionNotice::handle);
         INSTANCE.registerMessage(nextID(), PlayerDataReceivedNotice.class, PlayerDataReceivedNotice::toBytes, PlayerDataReceivedNotice::new, PlayerDataReceivedNotice::handle);
+        INSTANCE.registerMessage(nextID(), ClientModLoadedNotice.class, ClientModLoadedNotice::toBytes, ClientModLoadedNotice::new, ClientModLoadedNotice::handle);
     }
 }
