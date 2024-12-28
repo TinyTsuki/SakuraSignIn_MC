@@ -599,9 +599,11 @@ public class RewardOptionScreen extends Screen {
                 if (!"标题,base".equalsIgnoreCase(key)) {
                     this.popupOption.addOption(Text.i18n("编辑"));
                 }
-                this.popupOption.addOption(Text.i18n("复制"))
-                        .addOption(Text.i18n("剪切"))
-                        .addOption(Text.i18n("粘贴"));
+                this.popupOption.addOption(Text.i18n("复制"));
+                if (!"标题,base".equalsIgnoreCase(key)) {
+                    this.popupOption.addOption(Text.i18n("剪切"));
+                }
+                this.popupOption.addOption(Text.i18n("粘贴"));
                 for (ERewardType rewardType : ERewardType.values()) {
                     this.popupOption.addOption(Text.translatable(String.format("reward.sakura_sign_in.reward_type_%s", rewardType.getCode())));
                 }
