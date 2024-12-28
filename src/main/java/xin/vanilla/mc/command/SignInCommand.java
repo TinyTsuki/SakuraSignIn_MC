@@ -196,7 +196,7 @@ public class SignInCommand {
                 .executes(helpCommand)
                 .then(Commands.literal("help")
                         .executes(helpCommand)
-                        .then(Commands.argument("page", IntegerArgumentType.integer(1, 4))
+                        .then(Commands.argument("page", IntegerArgumentType.integer(1, (int) Math.ceil((double) HELP_MESSAGE.size() / HELP_INFO_NUM_PER_PAGE)))
                                 .suggests((context, builder) -> {
                                     int totalPages = (int) Math.ceil((double) HELP_MESSAGE.size() / HELP_INFO_NUM_PER_PAGE);
                                     for (int i = 0; i < totalPages; i++) {
