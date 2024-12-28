@@ -27,6 +27,7 @@ import xin.vanilla.mc.event.ClientEventHandler;
 import xin.vanilla.mc.network.AdvancementData;
 import xin.vanilla.mc.network.ModNetworkHandler;
 import xin.vanilla.mc.network.SplitPacket;
+import xin.vanilla.mc.rewards.RewardList;
 import xin.vanilla.mc.screen.coordinate.TextureCoordinate;
 
 import java.io.IOException;
@@ -106,6 +107,9 @@ public class SakuraSignIn {
      */
     @Getter
     private static final Map<String, Boolean> playerCapabilityStatus = new ConcurrentHashMap<>();
+
+    @Getter
+    private static final RewardList clipboard = new RewardList();
 
     public SakuraSignIn() {
 

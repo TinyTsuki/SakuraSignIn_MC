@@ -273,7 +273,7 @@ public class RewardOptionDataManager {
     public static void addKeyName(@NonNull ERewardRule rule, @NonNull String keyName, @NonNull RewardList rewardList) {
         switch (rule) {
             case BASE_REWARD:
-                rewardOptionData.setBaseRewards(rewardList);
+                rewardOptionData.getBaseRewards().addAll(rewardList);
                 break;
             case CONTINUOUS_REWARD:
                 rewardOptionData.addContinuousRewards(keyName, rewardList);
@@ -708,6 +708,7 @@ public class RewardOptionDataManager {
     /**
      * 反序列化 RewardOption
      */
+    @NonNull
     public static RewardOptionData deserializeRewardOption(String jsonString) {
         RewardOptionData result = new RewardOptionData();
         if (StringUtils.isNotNullOrEmpty(jsonString)) {
@@ -738,6 +739,26 @@ public class RewardOptionDataManager {
             RewardOptionDataManager.saveRewardOption();
         }
         return result;
+    }
+
+    /**
+     * 反序列化 RewardList
+     */
+    @NonNull
+    public static RewardList deSerializeRewardList(String jsonString) {
+        RewardList rewardList = new RewardList();
+        if (StringUtils.isNotNullOrEmpty(jsonString)) {
+            if (jsonString.startsWith("[")) {
+                RewardList list = GSON.fromJson(jsonString, new TypeToken<RewardList>() {
+                }.getType());
+                rewardList.addAll(list);
+            } else if (jsonString.startsWith("{")) {
+                Reward reward = GSON.fromJson(jsonString, new TypeToken<Reward>() {
+                }.getType());
+                rewardList.add(reward);
+            }
+        }
+        return rewardList;
     }
 
     public static Map<String, RewardList> getRewardMap(ERewardRule rule) {
