@@ -27,8 +27,10 @@ public class I18nUtils {
         put("周度签到奖励", "button.sakura_sign_in.reward_week");
         put("具体时间奖励", "button.sakura_sign_in.reward_time");
         put("累计签到奖励", "button.sakura_sign_in.reward_cumulative");
-        put("修改", "option.sakura_sign_in.edit");
+        put("编辑", "option.sakura_sign_in.edit");
         put("复制", "option.sakura_sign_in.copy");
+        put("剪切", "option.sakura_sign_in.cut");
+        put("粘贴", "option.sakura_sign_in.paste");
         put("删除", "option.sakura_sign_in.delete");
         put("清空", "option.sakura_sign_in.clear");
         put("取消", "option.sakura_sign_in.cancel");
@@ -86,6 +88,7 @@ public class I18nUtils {
         put("鼠标左键签到\n右键补签/领取奖励", "tips.sakura_sign_in.how_to_sign_in");
         put("补签卡: %s\n连续签到: %sd\n累计签到: %sd", "tips.sakura_sign_in.sign_in_info");
         put("签到页面开屏提示", "tips.sakura_sign_in.sign_in_screen_tips");
+        put("奖励配置页面开屏提示", "tips.sakura_sign_in.reward_option_screen_tips");
         put("已选择主题文件: %s", "message.sakura_sign_in.selected_theme_file_s");
         put("前面的的日期以后再来探索吧。", "message.sakura_sign_in.next_day_cannot_operate");
         put("已经签过到了哦。", "message.sakura_sign_in.already_signed");

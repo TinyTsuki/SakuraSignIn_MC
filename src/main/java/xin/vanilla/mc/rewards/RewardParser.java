@@ -20,5 +20,6 @@ public interface RewardParser<T> {
      */
     JsonObject serialize(T reward);
 
+    @NonNull
     String getDisplayName(JsonObject json);
 }
