@@ -177,7 +177,6 @@ public class SignInScreen extends Screen {
         // 初始化布局信息
         this.updateLayout();
 
-        //
         tips = Text.i18n("签到页面开屏提示");
         Button submit = AbstractGuiUtils.newButton(0, 0, 0, 20,
                 AbstractGuiUtils.textToComponent(Text.i18n("确认")), button -> this.SIGN_IN_SCREEN_TIPS = false);
