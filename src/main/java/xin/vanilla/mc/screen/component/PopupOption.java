@@ -14,6 +14,7 @@ import xin.vanilla.mc.util.CollectionUtils;
 import xin.vanilla.mc.util.StringUtils;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -28,6 +29,7 @@ public class PopupOption {
     private final int rightPadding = 5;
     private final int margin = 2;
     private final List<Text> optionList = new ArrayList<>();
+    @Getter
     private final List<Text> renderList = new ArrayList<>();
     private final Map<Integer, Integer> relationMap = new HashMap<>();
     @Setter
@@ -67,6 +69,17 @@ public class PopupOption {
      */
     @Setter
     private int tipsKeyCode = -1, tipsModifiers = -1;
+
+    /**
+     * 渲染前回调
+     */
+    @Setter
+    private Consumer<PopupOption> beforeRender = null;
+    /**
+     * 渲染后回调
+     */
+    @Setter
+    private Consumer<PopupOption> afterRender = null;
 
     private PopupOption(Font font) {
         this.font = font;
@@ -236,6 +249,8 @@ public class PopupOption {
         this.maxLines = 0;
         this.tipsKeyCode = -1;
         this.tipsModifiers = -1;
+        this.beforeRender = null;
+        this.afterRender = null;
     }
 
     public boolean isHovered() {
@@ -291,6 +306,7 @@ public class PopupOption {
     }
 
     public void render(PoseStack poseStack, double mouseX, double mouseY, int keyCode, int modifiers) {
+        if (this.beforeRender != null) this.beforeRender.accept(this);
         if (CollectionUtils.isNullOrEmpty(optionList)) return;
         if (Minecraft.getInstance().screen == null) return;
 
@@ -349,5 +365,7 @@ public class PopupOption {
                 }
             }
         }
+
+        if (this.afterRender != null) this.afterRender.accept(this);
     }
 }
