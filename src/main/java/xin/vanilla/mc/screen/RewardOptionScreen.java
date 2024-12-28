@@ -71,6 +71,8 @@ public class RewardOptionScreen extends Screen {
     @Accessors(chain = true)
     private Screen previousScreen;
 
+    private Text tips;
+
     /**
      * 当前按下的按键
      */
@@ -114,10 +116,6 @@ public class RewardOptionScreen extends Screen {
      * 每行可放物品的数量
      */
     private int lineItemCount;
-    /**
-     * 屏幕可放的行数
-     */
-    private int lineCount;
     // 矩阵栈
     private GuiGraphics gg;
     /**
@@ -464,6 +462,14 @@ public class RewardOptionScreen extends Screen {
         }
     }
 
+    private final Consumer<PopupOption> pasteConsumer = option -> {
+        if (getByZh("粘贴").equalsIgnoreCase(option.getSelectedString())) {
+            option.getRenderList().stream()
+                    .filter(item -> getByZh("粘贴").equalsIgnoreCase(item.getContent()))
+                    .forEach(item -> item.setColor(!SakuraSignIn.getClipboard().isEmpty() ? 0xFFFFFFFF : 0xFF999999));
+        }
+    };
+
     /**
      * 处理操作按钮事件
      *
@@ -515,10 +521,12 @@ public class RewardOptionScreen extends Screen {
             if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
                 if (this.currOpButton > 200 && this.currOpButton <= 299) {
                     this.popupOption.clear();
+                    this.popupOption.addOption(Text.i18n("粘贴"));
                     for (ERewardType rewardType : ERewardType.values()) {
                         this.popupOption.addOption(Text.translatable(String.format("reward.sakura_sign_in.reward_type_%s", rewardType.getCode())));
                     }
                     this.popupOption.build(super.font, mouseX, mouseY, String.format("奖励面板按钮:%s", this.currOpButton));
+                    this.popupOption.setBeforeRender(pasteConsumer);
                     flag.set(true);
                 }
             }
@@ -593,9 +601,11 @@ public class RewardOptionScreen extends Screen {
             if (key.startsWith("标题")) {
                 this.popupOption.clear();
                 if (!"标题,base".equalsIgnoreCase(key)) {
-                    this.popupOption.addOption(Text.i18n("修改"))
-                            .addOption(Text.i18n("复制"));
+                    this.popupOption.addOption(Text.i18n("编辑"));
                 }
+                this.popupOption.addOption(Text.i18n("复制"))
+                        .addOption(Text.i18n("剪切"))
+                        .addOption(Text.i18n("粘贴"));
                 for (ERewardType rewardType : ERewardType.values()) {
                     this.popupOption.addOption(Text.translatable(String.format("reward.sakura_sign_in.reward_type_%s", rewardType.getCode())));
                 }
@@ -610,14 +620,17 @@ public class RewardOptionScreen extends Screen {
                         .build(super.font, mouseX, mouseY, String.format("奖励按钮:%s", key));
             } else {
                 this.popupOption.clear();
-                this.popupOption.addOption(Text.i18n("修改"))
+                this.popupOption.addOption(Text.i18n("编辑"))
                         .addOption(Text.i18n("复制"))
+                        .addOption(Text.i18n("剪切"))
+                        .addOption(Text.i18n("粘贴"))
                         .addOption(Text.i18n("删除").setColor(0xFFFF0000))
                         .addTips(Text.i18n("Ctrl + 鼠标右键确认"), -1)
                         .setTipsKeyCode(GLFW.GLFW_KEY_LEFT_SHIFT)
                         .setTipsModifiers(GLFW.GLFW_MOD_SHIFT)
                         .build(super.font, mouseX, mouseY, String.format("奖励按钮:%s", key));
             }
+            this.popupOption.setBeforeRender(pasteConsumer);
             flag.set(true);
         }
     }
@@ -686,8 +699,31 @@ public class RewardOptionScreen extends Screen {
             }
         } else if (popupOption.getId().startsWith("奖励面板按钮:")) {
             String[] key = new String[]{""};
+            if (getByZh("粘贴").equalsIgnoreCase(selectedString)) {
+                if (!SakuraSignIn.getClipboard().isEmpty()) {
+                    if (rule != ERewardRule.BASE_REWARD) {
+                        Minecraft.getInstance().setScreen(new StringInputScreen(this, Text.i18n("请输入规则名称").setShadow(true), Text.i18n("请输入"), "[\\d +~/:T-]*", "", input -> {
+                            String result = "";
+                            if (StringUtils.isNotNullOrEmpty(input)) {
+                                if (RewardOptionDataManager.validateKeyName(rule, input)) {
+                                    RewardList rewardList = SakuraSignIn.getClipboard().clone();
+                                    RewardOptionDataManager.addKeyName(rule, input, rewardList);
+                                    RewardOptionDataManager.saveRewardOption();
+                                } else {
+                                    result = getByZh("规则名称[%s]输入有误", input);
+                                }
+                            }
+                            return result;
+                        }));
+                    } else {
+                        RewardList rewardList = SakuraSignIn.getClipboard().clone();
+                        RewardOptionDataManager.addKeyName(rule, "", rewardList);
+                        RewardOptionDataManager.saveRewardOption();
+                    }
+                }
+            }
             // 物品
-            if (I18nUtils.get(String.format("reward.sakura_sign_in.reward_type_%s", ERewardType.ITEM.getCode())).equalsIgnoreCase(selectedString)) {
+            else if (I18nUtils.get(String.format("reward.sakura_sign_in.reward_type_%s", ERewardType.ITEM.getCode())).equalsIgnoreCase(selectedString)) {
                 ItemSelectScreen callbackScreen = new ItemSelectScreen(this, input -> {
                     if (input != null && input.getItem() != Items.AIR && StringUtils.isNotNullOrEmpty(key[0])) {
                         RewardOptionDataManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(input, ERewardType.ITEM), ERewardType.ITEM));
@@ -837,7 +873,7 @@ public class RewardOptionScreen extends Screen {
             String id = popupOption.getId().replace("奖励按钮:", "");
             if (id.startsWith("标题")) {
                 String key = id.substring(3);
-                if (getByZh("修改").equalsIgnoreCase(selectedString)) {
+                if (getByZh("编辑").equalsIgnoreCase(selectedString)) {
                     if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
                         Minecraft.getInstance().setScreen(new StringInputScreen(this, Text.i18n("请输入规则名称").setShadow(true), Text.i18n("请输入"), "[\\d +~/:T-]*", key, input -> {
                             String result = "";
@@ -854,19 +890,25 @@ public class RewardOptionScreen extends Screen {
                     }
                 } else if (getByZh("复制").equalsIgnoreCase(selectedString)) {
                     if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-                        Minecraft.getInstance().setScreen(new StringInputScreen(this, Text.i18n("请输入规则名称").setShadow(true), Text.i18n("请输入"), "[\\d +~/:T-]*", key, input -> {
-                            String result = "";
-                            if (StringUtils.isNotNullOrEmpty(input)) {
-                                if (RewardOptionDataManager.validateKeyName(rule, input)) {
-                                    RewardList rewardList = RewardOptionDataManager.getKeyName(rule, key).clone();
-                                    RewardOptionDataManager.addKeyName(rule, input, rewardList);
-                                    RewardOptionDataManager.saveRewardOption();
-                                } else {
-                                    result = getByZh("规则名称[%s]输入有误", input);
-                                }
-                            }
-                            return result;
-                        }));
+                        RewardList rewardList = RewardOptionDataManager.getKeyName(rule, key).clone();
+                        SakuraSignIn.getClipboard().clear();
+                        SakuraSignIn.getClipboard().addAll(rewardList);
+                    }
+                } else if (getByZh("剪切").equalsIgnoreCase(selectedString)) {
+                    if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+                        RewardList rewardList = RewardOptionDataManager.getKeyName(rule, key).clone();
+                        RewardOptionDataManager.deleteKey(rule, key);
+                        RewardOptionDataManager.saveRewardOption();
+                        SakuraSignIn.getClipboard().clear();
+                        SakuraSignIn.getClipboard().addAll(rewardList);
+                    }
+                } else if (getByZh("粘贴").equalsIgnoreCase(selectedString)) {
+                    if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+                        if (!SakuraSignIn.getClipboard().isEmpty()) {
+                            RewardList rewardList = SakuraSignIn.getClipboard().clone();
+                            RewardOptionDataManager.addKeyName(rule, key, rewardList);
+                            RewardOptionDataManager.saveRewardOption();
+                        }
                     }
                 } else if (getByZh("清空").equalsIgnoreCase(selectedString)) {
                     if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
@@ -991,7 +1033,7 @@ public class RewardOptionScreen extends Screen {
                 }
                 String key = split[0];
                 String index = split[1];
-                if (getByZh("修改").equalsIgnoreCase(selectedString)) {
+                if (getByZh("编辑").equalsIgnoreCase(selectedString)) {
                     if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
                         Reward reward = RewardOptionDataManager.getReward(rule, key, Integer.parseInt(index)).clone();
                         if (reward.getType() == ERewardType.ITEM) {
@@ -1120,8 +1162,25 @@ public class RewardOptionScreen extends Screen {
                 } else if (getByZh("复制").equalsIgnoreCase(selectedString)) {
                     if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
                         Reward reward = RewardOptionDataManager.getReward(rule, key, Integer.parseInt(index)).clone();
-                        RewardOptionDataManager.addReward(rule, key, reward);
+                        SakuraSignIn.getClipboard().clear();
+                        SakuraSignIn.getClipboard().add(reward);
+                    }
+                } else if (getByZh("剪切").equalsIgnoreCase(selectedString)) {
+                    if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+                        Reward reward = RewardOptionDataManager.getReward(rule, key, Integer.parseInt(index)).clone();
+                        RewardOptionDataManager.deleteReward(rule, key, Integer.parseInt(index));
                         RewardOptionDataManager.saveRewardOption();
+                        SakuraSignIn.getClipboard().clear();
+                        SakuraSignIn.getClipboard().add(reward);
+                    }
+                } else if (getByZh("粘贴").equalsIgnoreCase(selectedString)) {
+                    if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+                        if (!SakuraSignIn.getClipboard().isEmpty()) {
+                            for (Reward reward : SakuraSignIn.getClipboard().clone()) {
+                                RewardOptionDataManager.addReward(rule, key, reward);
+                            }
+                            RewardOptionDataManager.saveRewardOption();
+                        }
                     }
                 } else if (getByZh("删除").equalsIgnoreCase(selectedString)) {
                     if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
@@ -1163,7 +1222,6 @@ public class RewardOptionScreen extends Screen {
     private void updateLayout() {
         this.leftBarWidth = SakuraSignIn.isRewardOptionBarOpened() ? 100 : 20;
         this.lineItemCount = (super.width - leftBarWidth - leftMargin - rightMargin - rightBarWidth) / (itemIconSize + itemRightMargin);
-        this.lineCount = (super.height - topMargin - bottomMargin) / (itemIconSize + itemBottomMargin);
         // 重置奖励面板坐标
         OP_BUTTONS.get(OperationButtonType.REWARD_PANEL.getCode()).setX(leftBarWidth).setY(0).setWidth(super.width - leftBarWidth - rightBarWidth).setHeight(super.height);
         // 更新奖励面板列表内容
@@ -1279,6 +1337,8 @@ public class RewardOptionScreen extends Screen {
                 .setTransparentCheck(false)
                 .setTooltip(getByZh("奖励规则排序")));
         this.updateLayout();
+
+        tips = Text.i18n("奖励配置页面开屏提示");
     }
 
     @Override
@@ -1291,8 +1351,21 @@ public class RewardOptionScreen extends Screen {
         // 刷新数据
         if (RewardOptionDataManager.isRewardOptionDataChanged()) this.updateLayout();
 
+        // 绘制操作提示
+        if (OperationButtonType.valueOf(currOpButton) == null) {
+            AbstractGuiUtils.fill(graphics, this.leftBarWidth + 4, 4, super.width - this.leftBarWidth - this.rightBarWidth - 8, super.height - 8, 0x88000000, 15);
+            float x, y;
+            tips.setGraphics(graphics).setFont(super.font);
+            int textHeight = AbstractGuiUtils.multilineTextHeight(tips);
+            int textWidth = AbstractGuiUtils.multilineTextWidth(tips);
+            x = this.leftBarWidth + ((super.width - this.leftBarWidth - this.rightBarWidth) - textWidth) / 2.0f;
+            y = (super.height - (textHeight + 4)) / 2.0f;
+            AbstractGuiUtils.drawString(tips, x, y);
+        }
         // 绘制奖励项目
-        this.renderRewardList(graphics, mouseX, mouseY);
+        else {
+            this.renderRewardList(graphics, mouseX, mouseY);
+        }
 
         // 绘制左侧边栏列表背景
         graphics.fill(0, 0, leftBarWidth, super.height, 0xAA000000);

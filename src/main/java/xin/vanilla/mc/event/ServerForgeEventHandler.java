@@ -13,17 +13,12 @@ import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.LogicalSide;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.network.PacketDistributor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.mc.SakuraSignIn;
 import xin.vanilla.mc.capability.IPlayerSignInData;
 import xin.vanilla.mc.capability.PlayerSignInDataCapability;
 import xin.vanilla.mc.capability.PlayerSignInDataProvider;
-import xin.vanilla.mc.config.RewardOptionDataManager;
-import xin.vanilla.mc.network.AdvancementPacket;
-import xin.vanilla.mc.network.ModNetworkHandler;
-import xin.vanilla.mc.network.RewardOptionSyncPacket;
 
 /**
  * Forge 事件处理
@@ -88,21 +83,21 @@ public class ServerForgeEventHandler {
         }
     }
 
-    @SubscribeEvent
-    public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
-        // 服务器端逻辑
-        if (event.getEntity() instanceof ServerPlayer) {
-            LOGGER.debug("Server: Player logged in.");
-            // 同步玩家签到数据到客户端
-            PlayerSignInDataCapability.syncPlayerData((ServerPlayer) event.getEntity());
-            // 同步签到奖励配置到客户端
-            for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardOptionDataManager.toSyncPacket().split()) {
-                ModNetworkHandler.INSTANCE.send(rewardOptionSyncPacket, PacketDistributor.PLAYER.with((ServerPlayer) event.getEntity()));
-            }
-            // 同步进度列表到客户端
-            for (AdvancementPacket advancementPacket : new AdvancementPacket(((ServerPlayer) event.getEntity()).server.getAdvancements().getAllAdvancements()).split()) {
-                ModNetworkHandler.INSTANCE.send(advancementPacket, PacketDistributor.PLAYER.with((ServerPlayer) event.getEntity()));
-            }
-        }
-    }
+    // @SubscribeEvent
+    // public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
+    //     // 服务器端逻辑
+    //     if (event.getEntity() instanceof ServerPlayer) {
+    //         LOGGER.debug("Server: Player logged in.");
+    //         // 同步玩家签到数据到客户端
+    //         PlayerSignInDataCapability.syncPlayerData((ServerPlayer) event.getEntity());
+    //         // 同步签到奖励配置到客户端
+    //         for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardOptionDataManager.toSyncPacket().split()) {
+    //             ModNetworkHandler.INSTANCE.send(rewardOptionSyncPacket, PacketDistributor.PLAYER.with((ServerPlayer) event.getEntity()));
+    //         }
+    //         // 同步进度列表到客户端
+    //         for (AdvancementPacket advancementPacket : new AdvancementPacket(((ServerPlayer) event.getEntity()).server.getAdvancements().getAllAdvancements()).split()) {
+    //             ModNetworkHandler.INSTANCE.send(advancementPacket, PacketDistributor.PLAYER.with((ServerPlayer) event.getEntity()));
+    //         }
+    //     }
+    // }
 }

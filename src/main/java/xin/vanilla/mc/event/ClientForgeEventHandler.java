@@ -23,10 +23,12 @@ import xin.vanilla.mc.capability.IPlayerSignInData;
 import xin.vanilla.mc.capability.PlayerSignInDataCapability;
 import xin.vanilla.mc.capability.PlayerSignInDataProvider;
 import xin.vanilla.mc.config.ClientConfig;
-import xin.vanilla.mc.config.RewardOptionDataManager;
 import xin.vanilla.mc.config.ServerConfig;
 import xin.vanilla.mc.enums.ESignInType;
-import xin.vanilla.mc.network.*;
+import xin.vanilla.mc.network.ClientConfigSyncPacket;
+import xin.vanilla.mc.network.ClientModLoadedNotice;
+import xin.vanilla.mc.network.ModNetworkHandler;
+import xin.vanilla.mc.network.SignInPacket;
 import xin.vanilla.mc.rewards.RewardManager;
 
 import java.util.Date;
@@ -46,6 +48,7 @@ public class ClientForgeEventHandler {
         isPlayerLoggedIn = true;
         // 同步客户端配置到服务器
         ModNetworkHandler.INSTANCE.send(new ClientConfigSyncPacket(), PacketDistributor.SERVER.noArg());
+        ModNetworkHandler.INSTANCE.send(new ClientModLoadedNotice(), PacketDistributor.SERVER.noArg());
     }
 
     @SubscribeEvent
@@ -79,7 +82,8 @@ public class ClientForgeEventHandler {
     public static void playerTickEvent(TickEvent.PlayerTickEvent event) {
         Player player = event.player;
         if (event.side == LogicalSide.SERVER && event.phase == TickEvent.Phase.END) {
-            if (!SakuraSignIn.getPlayerCapabilityStatus().getOrDefault(player.getUUID().toString(), false)) {
+            // 不用给未安装mod的玩家发送数据包
+            if (!SakuraSignIn.getPlayerCapabilityStatus().getOrDefault(player.getUUID().toString(), true)) {
                 // 同步玩家签到数据到客户端
                 PlayerSignInDataCapability.syncPlayerData((ServerPlayer) player);
             }
@@ -114,7 +118,9 @@ public class ClientForgeEventHandler {
         LazyOptional<IPlayerSignInData> oldDataCap = original.getCapability(PlayerSignInDataCapability.PLAYER_DATA);
         LazyOptional<IPlayerSignInData> newDataCap = newPlayer.getCapability(PlayerSignInDataCapability.PLAYER_DATA);
         oldDataCap.ifPresent(oldData -> newDataCap.ifPresent(newData -> newData.copyFrom(oldData)));
-        SakuraSignIn.getPlayerCapabilityStatus().put(newPlayer.getUUID().toString(), false);
+        if (SakuraSignIn.getPlayerCapabilityStatus().containsKey(newPlayer.getUUID().toString())) {
+            SakuraSignIn.getPlayerCapabilityStatus().put(newPlayer.getUUID().toString(), false);
+        }
     }
 
     /**
@@ -123,25 +129,17 @@ public class ClientForgeEventHandler {
     @SubscribeEvent
     public static void onEntityJoinWorld(EntityJoinLevelEvent event) {
         if (event.getEntity() instanceof Player player) {
-            SakuraSignIn.getPlayerCapabilityStatus().put(player.getUUID().toString(), false);
+            if (SakuraSignIn.getPlayerCapabilityStatus().containsKey(player.getUUID().toString())) {
+                SakuraSignIn.getPlayerCapabilityStatus().put(player.getUUID().toString(), false);
+            }
         }
     }
 
-    @SubscribeEvent
-    public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
-        // 服务器端逻辑
-        if (event.getEntity() instanceof ServerPlayer) {
-            LOGGER.debug("Server: Player logged in.");
-            // 同步玩家签到数据到客户端
-            PlayerSignInDataCapability.syncPlayerData((ServerPlayer) event.getEntity());
-            // 同步签到奖励配置到客户端
-            for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardOptionDataManager.toSyncPacket().split()) {
-                ModNetworkHandler.INSTANCE.send(rewardOptionSyncPacket, PacketDistributor.PLAYER.with((ServerPlayer) event.getEntity()));
-            }
-            // 同步进度列表到客户端
-            for (AdvancementPacket advancementPacket : new AdvancementPacket(((ServerPlayer) event.getEntity()).server.getAdvancements().getAllAdvancements()).split()) {
-                ModNetworkHandler.INSTANCE.send(advancementPacket, PacketDistributor.PLAYER.with((ServerPlayer) event.getEntity()));
-            }
-        }
-    }
+    // @SubscribeEvent
+    // public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
+    //     // 服务器端逻辑
+    //     if (event.getPlayer() instanceof ServerPlayerEntity) {
+    //         LOGGER.debug("Server: Player logged in.");
+    //     }
+    // }
 }
