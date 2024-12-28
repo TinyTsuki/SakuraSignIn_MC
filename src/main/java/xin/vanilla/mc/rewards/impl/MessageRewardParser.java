@@ -58,7 +58,7 @@ public class MessageRewardParser implements RewardParser<IFormattableTextCompone
     }
 
     @Override
-    public String getDisplayName(JsonObject json) {
+    public @NonNull String getDisplayName(JsonObject json) {
         return I18nUtils.get(String.format("reward.sakura_sign_in.reward_type_%s", ERewardType.MESSAGE.getCode()));
     }
 }
