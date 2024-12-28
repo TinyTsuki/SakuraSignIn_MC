@@ -85,7 +85,7 @@ public class RewardManager {
         if (parser == null) {
             throw new JsonParseException("Unknown reward type: " + reward.getType());
         }
-        return parser.getDisplayName(reward.getContent());
+        return parser.getDisplayName(reward.getContent()).trim();
     }
 
     /**
