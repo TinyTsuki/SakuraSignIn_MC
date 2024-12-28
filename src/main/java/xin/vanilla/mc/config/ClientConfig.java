@@ -83,13 +83,13 @@ public class ClientConfig {
         INVENTORY_SIGN_IN_BUTTON_COORDINATE = CLIENT_BUILDER
                 .comment("The coordinate of the sign-in button in the inventory screen. If the coordinate is 0~1, it is the percentage position."
                         , "背包界面签到按钮坐标，若坐标为0~1之间的小数则为百分比位置。")
-                .define("inventorySignInButtonCoordinate", "2,2");
+                .define("inventorySignInButtonCoordinate", "92,2");
 
         // 背包界面奖励配置按钮坐标
         INVENTORY_REWARD_OPTION_BUTTON_COORDINATE = CLIENT_BUILDER
                 .comment("The coordinate of the reward option button in the inventory screen. If the coordinate is 0~1, it is the percentage position."
                         , "背包界面奖励配置按钮坐标，若坐标为0~1之间的小数则为百分比位置。")
-                .define("inventoryRewardOptionButtonCoordinate", "20,2");
+                .define("inventoryRewardOptionButtonCoordinate", "72,2");
 
         SHOW_SIGN_IN_SCREEN_TIPS = CLIENT_BUILDER
                 .comment("Whether or not to display a prompt for action when you open the sign-in screen."
