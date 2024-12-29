@@ -83,6 +83,10 @@ public class InventoryButton extends Widget {
     @Override
     @ParametersAreNonnullByDefault
     public void render(int mouseX, int mouseY, float partialTicks) {
+        // 重写并且啥也不干
+    }
+
+    public void render_(int mouseX, int mouseY, float partialTicks) {
         // 无法直接监听鼠标移动事件, 直接在绘制时调用
         this.mouseMoved(mouseX, mouseY);
         Screen screen = Minecraft.getInstance().screen;
@@ -93,7 +97,9 @@ public class InventoryButton extends Widget {
         // 绘制自定义纹理
         Minecraft.getInstance().getTextureManager().bind(SakuraSignIn.getThemeTexture());
         int offset = this.isHovered && !this.mouseDrag ? 1 : 0;
+        AbstractGuiUtils.setDepth(AbstractGuiUtils.EDepth.TOOLTIP);
         AbstractGuiUtils.blit(this.x - offset, this.y - offset, this.width + offset * 2, this.height + offset * 2, (int) this.u0, (int) this.v0, (int) this.uWidth, (int) this.vHeight, (int) totalWidth, (int) totalHeight);
+        AbstractGuiUtils.resetDepth();
         if (this.mouseDrag) {
             Text text;
             if (this.modifiers == GLFW.GLFW_MOD_ALT) {
@@ -113,7 +119,7 @@ public class InventoryButton extends Widget {
         }
     }
 
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked_(double mouseX, double mouseY, int button) {
         this.pressed = this.isMouseOver(mouseX, mouseY);
         this.mouseButton = button;
         this.mouseClickX = (int) mouseX;
@@ -121,8 +127,9 @@ public class InventoryButton extends Widget {
         return this.pressed;
     }
 
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+    public boolean mouseReleased_(double mouseX, double mouseY, int button) {
         boolean flag = false;
+        this.isHovered = this.isMouseOver(mouseX, mouseY);
         if (this.pressed && this.mouseDrag) {
             if (this.modifiers == GLFW.GLFW_MOD_ALT) {
                 Screen screen = Minecraft.getInstance().screen;
@@ -136,7 +143,7 @@ public class InventoryButton extends Widget {
             }
             this.x_ = this.x;
             this.y_ = this.y;
-        } else if (this.pressed && button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+        } else if (this.pressed && this.isHovered && button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
             onClick.accept(this);
             flag = true;
         }
@@ -147,7 +154,7 @@ public class InventoryButton extends Widget {
         this.mouseClickY = -1;
         this.keyCode = -1;
         this.modifiers = -1;
-        return flag || super.mouseReleased(mouseX, mouseY, button);
+        return flag;
     }
 
     @Override
@@ -172,13 +179,13 @@ public class InventoryButton extends Widget {
         super.mouseMoved(mouseX, mouseY);
     }
 
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed_(int keyCode, int scanCode, int modifiers) {
         this.keyCode = keyCode;
         this.modifiers = modifiers;
         return false;
     }
 
-    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+    public boolean keyReleased_(int keyCode, int scanCode, int modifiers) {
         this.keyCode = -1;
         this.modifiers = -1;
         return false;
