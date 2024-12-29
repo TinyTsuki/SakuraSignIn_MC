@@ -86,6 +86,10 @@ public class InventoryButton extends AbstractWidget {
     @Override
     @ParametersAreNonnullByDefault
     public void render(PoseStack poseStack, int mouseX, int mouseY, float partialTicks) {
+        // 重写并且啥也不干
+    }
+
+    public void render_(PoseStack poseStack, int mouseX, int mouseY, float partialTicks) {
         // 无法直接监听鼠标移动事件, 直接在绘制时调用
         this.mouseMoved(mouseX, mouseY);
         Screen screen = Minecraft.getInstance().screen;
@@ -96,7 +100,9 @@ public class InventoryButton extends AbstractWidget {
         // 绘制自定义纹理
         AbstractGuiUtils.bindTexture(SakuraSignIn.getThemeTexture());
         int offset = this.isHovered && !this.mouseDrag ? 1 : 0;
+        AbstractGuiUtils.setDepth(poseStack, AbstractGuiUtils.EDepth.TOOLTIP);
         AbstractGuiUtils.blit(poseStack, this.x - offset, this.y - offset, this.width + offset * 2, this.height + offset * 2, (int) this.u0, (int) this.v0, (int) this.uWidth, (int) this.vHeight, (int) totalWidth, (int) totalHeight);
+        AbstractGuiUtils.resetDepth(poseStack);
         if (this.mouseDrag) {
             Text text;
             if (this.modifiers == GLFW.GLFW_MOD_ALT) {
@@ -106,17 +112,17 @@ public class InventoryButton extends AbstractWidget {
             } else {
                 text = Text.literal(String.format("X: %d\nY: %d", this.x, this.y));
             }
-            AbstractGuiUtils.drawPopupMessage(text, this.x + (AbstractGuiUtils.multilineTextWidth(text) - this.width) / 2, this.y + this.height / 2, screenWidth, screenHeight);
+            AbstractGuiUtils.drawPopupMessage(text.setPoseStack(poseStack), this.x + (AbstractGuiUtils.multilineTextWidth(text) - this.width) / 2, this.y + this.height / 2, screenWidth, screenHeight);
         } else if (this.isHovered) {
             if (this.modifiers == GLFW.GLFW_MOD_SHIFT) {
-                AbstractGuiUtils.drawPopupMessage(Text.i18n("按住Ctrl或Alt键可拖动按钮\nCtrl: 绝对位置坐标\nAlt: 屏幕百分比位置"), mouseX, mouseY, screenWidth, screenHeight);
+                AbstractGuiUtils.drawPopupMessage(Text.i18n("按住Ctrl或Alt键可拖动按钮\nCtrl: 绝对位置坐标\nAlt: 屏幕百分比位置").setPoseStack(poseStack), mouseX, mouseY, screenWidth, screenHeight);
             } else {
-                AbstractGuiUtils.drawPopupMessage(AbstractGuiUtils.componentToText(this.getMessage().copy()), mouseX, mouseY, screenWidth, screenHeight);
+                AbstractGuiUtils.drawPopupMessage(AbstractGuiUtils.componentToText(this.getMessage().copy()).setPoseStack(poseStack), mouseX, mouseY, screenWidth, screenHeight);
             }
         }
     }
 
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked_(double mouseX, double mouseY, int button) {
         this.pressed = this.isMouseOver(mouseX, mouseY);
         this.mouseButton = button;
         this.mouseClickX = (int) mouseX;
@@ -129,8 +135,9 @@ public class InventoryButton extends AbstractWidget {
     public void updateNarration(NarrationElementOutput narration) {
     }
 
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+    public boolean mouseReleased_(double mouseX, double mouseY, int button) {
         boolean flag = false;
+        this.isHovered = this.isMouseOver(mouseX, mouseY);
         if (this.pressed && this.mouseDrag) {
             if (this.modifiers == GLFW.GLFW_MOD_ALT) {
                 Screen screen = Minecraft.getInstance().screen;
@@ -144,7 +151,7 @@ public class InventoryButton extends AbstractWidget {
             }
             this.x_ = this.x;
             this.y_ = this.y;
-        } else if (this.pressed && button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+        } else if (this.pressed && this.isHovered && button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
             onClick.accept(this);
             flag = true;
         }
@@ -155,7 +162,7 @@ public class InventoryButton extends AbstractWidget {
         this.mouseClickY = -1;
         this.keyCode = -1;
         this.modifiers = -1;
-        return flag || super.mouseReleased(mouseX, mouseY, button);
+        return flag;
     }
 
     @Override
@@ -180,13 +187,13 @@ public class InventoryButton extends AbstractWidget {
         super.mouseMoved(mouseX, mouseY);
     }
 
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed_(int keyCode, int scanCode, int modifiers) {
         this.keyCode = keyCode;
         this.modifiers = modifiers;
         return false;
     }
 
-    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+    public boolean keyReleased_(int keyCode, int scanCode, int modifiers) {
         this.keyCode = -1;
         this.modifiers = -1;
         return false;
