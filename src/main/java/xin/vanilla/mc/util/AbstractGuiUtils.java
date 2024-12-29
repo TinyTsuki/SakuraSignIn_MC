@@ -1070,6 +1070,8 @@ public class AbstractGuiUtils {
         AbstractGuiUtils.setDepth(text.getGraphics(), EDepth.POPUP_TIPS);
         // 在计算完的坐标位置绘制消息框背景
         AbstractGuiUtils.fill(text.getGraphics(), adjustedX, adjustedY, msgWidth, msgHeight, bgColor);
+        AbstractGuiUtils.resetDepth(text.getGraphics());
+        AbstractGuiUtils.setDepth(text.getGraphics(), EDepth.POPUP_TIPS);
         // 绘制消息文字
         AbstractGuiUtils.drawLimitedText(text, adjustedX + (float) padding / 2, adjustedY + (float) padding / 2, msgWidth, msgHeight / text.getFont().lineHeight, EllipsisPosition.MIDDLE);
         AbstractGuiUtils.resetDepth(text.getGraphics());
