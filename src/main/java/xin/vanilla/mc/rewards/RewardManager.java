@@ -5,11 +5,13 @@ import com.google.gson.JsonParseException;
 import lombok.NonNull;
 import net.minecraft.advancements.Advancement;
 import net.minecraft.advancements.AdvancementProgress;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.TextComponent;
 import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import org.apache.logging.log4j.LogManager;
@@ -29,9 +31,12 @@ import xin.vanilla.mc.util.CollectionUtils;
 import xin.vanilla.mc.util.DateUtils;
 import xin.vanilla.mc.util.StringUtils;
 
+import java.awt.*;
+import java.util.List;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static xin.vanilla.mc.util.I18nUtils.getByZh;
 import static xin.vanilla.mc.util.I18nUtils.getI18nKey;
 
 /**
@@ -79,12 +84,12 @@ public class RewardManager {
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> String getRewardName(Reward reward) {
+    public static <T> String getRewardName(Reward reward, boolean withNum) {
         RewardParser<T> parser = (RewardParser<T>) rewardParsers.get(reward.getType());
         if (parser == null) {
             throw new JsonParseException("Unknown reward type: " + reward.getType());
         }
-        return parser.getDisplayName(reward.getContent()).trim();
+        return parser.getDisplayName(reward.getContent(), withNum).trim();
     }
 
     /**
@@ -275,7 +280,7 @@ public class RewardManager {
         }
 
         // 若签到记录存在，则添加签到奖励记录
-        if (!CollectionUtils.isNullOrEmpty(rewardRecords)) {
+        if (CollectionUtils.isNotNullOrEmpty(rewardRecords)) {
             result.addAll(rewardRecords);
         }
         // 若日期小于当前日期 且 补签仅计算基础奖励
@@ -305,7 +310,7 @@ public class RewardManager {
                     .map(serverData.getDateTimeRewards()::get)
                     .flatMap(Collection::stream)
                     .collect(Collectors.toList());
-            if (!CollectionUtils.isNullOrEmpty(dateTimeRewards)) result.addAll(dateTimeRewards);
+            if (CollectionUtils.isNotNullOrEmpty(dateTimeRewards)) result.addAll(dateTimeRewards);
             // 累计签到奖励
             result.addAll(serverData.getCumulativeRewards().getOrDefault(String.valueOf(playerData.getTotalSignInDays() + 1), new RewardList()));
 
@@ -324,7 +329,7 @@ public class RewardManager {
                                 String.valueOf(Math.min(continuousMax, continuousSignInDays))
                         )
                 );
-                if (!CollectionUtils.isNullOrEmpty(continuousRewards)) result.addAll(continuousRewards);
+                if (CollectionUtils.isNotNullOrEmpty(continuousRewards)) result.addAll(continuousRewards);
                 // 签到周期奖励
                 int cycleMax = serverData.getCycleRewardsRelation().keySet().stream().map(Integer::parseInt).max(Comparator.naturalOrder()).orElse(0);
                 RewardList cycleRewards = new RewardList();
@@ -335,7 +340,7 @@ public class RewardManager {
                             )
                     );
                 }
-                if (!CollectionUtils.isNullOrEmpty(cycleRewards)) result.addAll(cycleRewards);
+                if (CollectionUtils.isNotNullOrEmpty(cycleRewards)) result.addAll(cycleRewards);
             }
         }
         return RewardManager.mergeRewards(result);
@@ -487,6 +492,7 @@ public class RewardManager {
                 player.sendMessage(new TranslatableComponent(getI18nKey("没有查询到[%s]的签到记录哦，鉴定为阁下没有签到！"), DateUtils.toString(clientCompensateDate)), player.getUUID());
                 return;
             } else {
+                MutableComponent msg = new TextComponent(getByZh("奖励领取详情:"));
                 signInData.getSignInRecords().stream()
                         // 若签到日期等于当前日期
                         .filter(record -> DateUtils.toDateInt(record.getCompensateTime()) == DateUtils.toDateInt(clientCompensateDate))
@@ -501,10 +507,16 @@ public class RewardManager {
                                     .forEach(reward -> {
                                         reward.setDisabled(true);
                                         reward.setRewarded(true);
-                                        giveRewardToPlayer(player, signInData, reward);
+                                        MutableComponent detail = new TextComponent("\n").append(reward.getName(true));
+                                        if (giveRewardToPlayer(player, signInData, reward)) {
+                                            detail.withStyle(style -> style.withColor(Color.GREEN.getRGB()));
+                                        } else {
+                                            detail.withStyle(style -> style.withColor(Color.RED.getRGB()));
+                                        }
+                                        msg.append(detail);
                                     });
                         });
-                player.sendMessage(new TranslatableComponent(getI18nKey("奖励领取成功")), player.getUUID());
+                player.sendMessage(msg, player.getUUID());
             }
         }
         // 签到/补签
@@ -523,10 +535,18 @@ public class RewardManager {
             signInRecord.setSignInUUID(player.getUUID().toString());
             // 是否自动领取
             if (packet.isAutoRewarded()) {
+                MutableComponent msg = new TextComponent(getByZh("奖励领取详情:"));
                 rewardList.forEach(reward -> {
-                    giveRewardToPlayer(player, signInData, reward);
+                    MutableComponent detail = new TextComponent("\n").append(reward.getName(true));
+                    if (giveRewardToPlayer(player, signInData, reward)) {
+                        detail.withStyle(style -> style.withColor(Color.GREEN.getRGB()));
+                    } else {
+                        detail.withStyle(style -> style.withColor(Color.RED.getRGB()));
+                    }
                     signInRecord.getRewardList().add(reward);
+                    msg.append(detail);
                 });
+                player.sendMessage(msg, player.getUUID());
             } else {
                 signInRecord.getRewardList().addAll(rewardList);
             }
@@ -542,9 +562,23 @@ public class RewardManager {
         PlayerSignInDataCapability.syncPlayerData(player);
     }
 
-    private static void giveRewardToPlayer(ServerPlayer player, IPlayerSignInData signInData, Reward reward) {
+    private static boolean giveRewardToPlayer(ServerPlayer player, IPlayerSignInData signInData, Reward reward) {
         reward.setRewarded(true);
         Object object = RewardManager.deserializeReward(reward);
+        // 判断是否启用
+        if (ServerConfig.REWARD_AFFECTED_BY_LUCK.get()) {
+            int offset = player.getActiveEffects().stream()
+                    .filter(instance -> instance.getEffect() == MobEffects.LUCK || instance.getEffect() == MobEffects.UNLUCK)
+                    .map(instance -> {
+                        if (instance.getEffect() == MobEffects.LUCK) {
+                            return instance.getAmplifier();
+                        } else {
+                            return -instance.getAmplifier();
+                        }
+                    }).reduce(0, Integer::sum);
+            if (new Random().nextDouble() > reward.getProbability() + offset * 0.075)
+                return false;
+        }
         switch (reward.getType()) {
             case ITEM:
                 RewardManager.giveItemStack(player, (ItemStack) object, true);
@@ -580,6 +614,7 @@ public class RewardManager {
                 break;
             default:
         }
+        return true;
     }
 
     /**
