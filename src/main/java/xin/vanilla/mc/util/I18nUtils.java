@@ -115,6 +115,8 @@ public class I18nUtils {
         put("服务器已禁用补签仅获得基础奖励", "message.sakura_sign_in.server_disabled_sign_in_card_only_basic_reward");
         put("服务器当前时间: %s", "message.sakura_sign_in.server_current_time_s");
         put("玩家签到数据同步网络包大小为: %d", "message.sakura_sign_in.player_data_sync_packet_size_d");
+        put("服务器已启用奖励领取受幸运影响", "message.sakura_sign_in.server_enabled_reward_affected_by_luck");
+        put("服务器已禁用奖励领取受幸运影响", "message.sakura_sign_in.server_disabled_reward_affected_by_luck");
 
         put("服务器时间已设置为: %s", "message.sakura_sign_in.set_server_time_s");
         put("服务器最大补签天数已被设置为: %d", "message.sakura_sign_in.set_max_sign_in_day_d");
@@ -132,7 +134,7 @@ public class I18nUtils {
         put("补签卡不足，补签失败", "message.sakura_sign_in.not_enough_sign_in_card_fail");
         put("%s的奖励已经领取过啦", "message.sakura_sign_in.already_receive_reward_s");
         put("没有查询到[%s]的签到记录哦，鉴定为阁下没有签到！", "message.sakura_sign_in.not_sign_in");
-        put("奖励领取成功", "message.sakura_sign_in.receive_reward_success");
+        put("奖励领取详情:", "message.sakura_sign_in.receive_reward_success");
         put("签到成功, %s/%s", "message.sakura_sign_in.sign_in_success_s");
 
     }};

@@ -667,6 +667,36 @@ public class AbstractGuiUtils {
     }
 
     /**
+     * 绘制效果图标
+     *
+     * @param poseStack      用于变换绘制坐标系的矩阵堆栈
+     * @param font           字体渲染器
+     * @param effectInstance 待绘制的效果实例
+     * @param x              矩形的左上角x坐标
+     * @param y              矩形的左上角y坐标
+     * @param width          目标矩形的宽度，决定了图像在屏幕上的宽度
+     * @param height         目标矩形的高度，决定了图像在屏幕上的高度
+     * @param showText       是否显示效果等级和持续时间
+     */
+    public static void drawEffectIcon(PoseStack poseStack, Font font, MobEffectInstance effectInstance, int x, int y, int width, int height, boolean showText) {
+        AbstractGuiUtils.drawEffectIcon(poseStack, font, effectInstance, SakuraSignIn.getThemeTexture(), SakuraSignIn.getThemeTextureCoordinate(), x, y, width, height, showText);
+    }
+
+    /**
+     * 绘制效果图标
+     *
+     * @param poseStack      用于变换绘制坐标系的矩阵堆栈
+     * @param font           字体渲染器
+     * @param effectInstance 待绘制的效果实例
+     * @param x              矩形的左上角x坐标
+     * @param y              矩形的左上角y坐标
+     * @param showText       是否显示效果等级和持续时间
+     */
+    public static void drawEffectIcon(PoseStack poseStack, Font font, MobEffectInstance effectInstance, int x, int y, boolean showText) {
+        AbstractGuiUtils.drawEffectIcon(poseStack, font, effectInstance, SakuraSignIn.getThemeTexture(), SakuraSignIn.getThemeTextureCoordinate(), x, y, ITEM_ICON_SIZE, ITEM_ICON_SIZE, showText);
+    }
+
+    /**
      * 绘制自定义图标
      *
      * @param poseStack       用于变换绘制坐标系的矩阵堆栈
@@ -689,6 +719,13 @@ public class AbstractGuiUtils {
             float fontX = x + ITEM_ICON_SIZE - (float) numWidth / 2 - 2;
             float fontY = y + (float) ITEM_ICON_SIZE - font.lineHeight + 2;
             font.drawShadow(poseStack, num, fontX, fontY, 0xFFFFFF);
+        }
+    }
+
+    public static void renderItem(ItemRenderer itemRenderer, Font fontRenderer, ItemStack itemStack, int x, int y, boolean showText) {
+        itemRenderer.renderGuiItem(itemStack, x, y);
+        if (showText) {
+            itemRenderer.renderGuiItemDecorations(fontRenderer, itemStack, x, y, String.valueOf(itemStack.getCount()));
         }
     }
 
@@ -743,13 +780,60 @@ public class AbstractGuiUtils {
         else if (reward.getType().equals(ERewardType.COMMAND)) {
             renderItem(itemRenderer, fontRenderer, new ItemStack(Items.REPEATING_COMMAND_BLOCK), x, y, false);
         }
+        if (showText && reward.getProbability() != 1) {
+            AbstractGuiUtils.setDepth(poseStack, EDepth.FOREGROUND);
+            AbstractGuiUtils.drawString(poseStack, fontRenderer, "?", x - 1, y - 1, AbstractGuiUtils.getProbabilityColor(reward.getProbability()));
+            AbstractGuiUtils.resetDepth(poseStack);
+        }
     }
 
-    public static void renderItem(ItemRenderer itemRenderer, Font fontRenderer, ItemStack itemStack, int x, int y, boolean showText) {
-        itemRenderer.renderGuiItem(itemStack, x, y);
-        if (showText) {
-            itemRenderer.renderGuiItemDecorations(fontRenderer, itemStack, x, y, String.valueOf(itemStack.getCount()));
+    public static int getProbabilityColor(double probability) {
+        int color = 0xFF000000;
+        // 默认不渲染
+        if (probability == 1) {
+            color = 0x00FFFFFF;
         }
+        // 深灰色，最低级
+        else if (probability >= 0.9) {
+            color = 0xEFA9A9A9;
+        }
+        // 灰色，低级
+        else if (probability >= 0.8) {
+            color = 0xEFC0C0C0;
+        }
+        // 白色，普通
+        else if (probability >= 0.7) {
+            color = 0xEFFFFFFF;
+        }
+        // 亮绿色，良好
+        else if (probability >= 0.6) {
+            color = 0xEF32CD32;
+        }
+        // 深绿色，优秀
+        else if (probability >= 0.5) {
+            color = 0xEF228B22;
+        }
+        // 蓝色，稀有
+        else if (probability >= 0.4) {
+            color = 0xEF1E90FF;
+        }
+        // 深蓝色，稀有
+        else if (probability >= 0.3) {
+            color = 0xEF4682B4;
+        }
+        // 紫色，史诗
+        else if (probability >= 0.2) {
+            color = 0xEFA020F0;
+        }
+        // 金色，传说
+        else if (probability >= 0.1) {
+            color = 0xEFFFD700;
+        }
+        // 橙红色，终极
+        else if (probability > 0) {
+            color = 0xEFFF4500;
+        }
+        return color;
     }
 
     //  endregion 绘制图标

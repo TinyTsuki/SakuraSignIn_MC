@@ -140,6 +140,8 @@
   "message.sakura_sign_in.server_disabled_sign_in_card_only_basic_reward": "The server has disabled: Retroactive-Sign-In only grants basic rewards",
   "message.sakura_sign_in.server_current_time_s": "Current server time: %s",
   "message.sakura_sign_in.player_data_sync_packet_size_d": "The maximum size of the player data synchronization network packet is: %d",
+  "message.sakura_sign_in.server_enabled_reward_affected_by_luck": "The server has enabled: Rewards will be affected by the player's luck",
+  "message.sakura_sign_in.server_disabled_reward_affected_by_luck": "The server has disabled: Rewards will be affected by the player's luck",
   "message.sakura_sign_in.set_server_time_s": "The server time has been set to: %s",
   "message.sakura_sign_in.set_max_sign_in_day_d": "The maximum number of days for supplementary signing on the server has been set to: %d",
   "message.sakura_sign_in.set_sign_in_time_cool_down_mode_s": "The cooling method for server sign-in time has been set to: %s",
@@ -155,6 +157,6 @@
   "message.sakura_sign_in.not_enough_sign_in_card_fail": "Insufficient Sign-In Card, Retroactive-Sign-In failed",
   "message.sakura_sign_in.already_receive_reward_s": "The reward for %s has already been claimed",
   "message.sakura_sign_in.not_sign_in": "There are no sign-in records found for [%s].",
-  "message.sakura_sign_in.receive_reward_success": "Reward received successfully",
+  "message.sakura_sign_in.receive_reward_success": "Reward received details:",
   "message.sakura_sign_in.sign_in_success_s": "Sign-In successfully, %s/%s"
 }
