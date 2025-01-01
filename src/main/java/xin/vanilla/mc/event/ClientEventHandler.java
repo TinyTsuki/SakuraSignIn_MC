@@ -171,25 +171,25 @@ public class ClientEventHandler {
                 ((GuiScreenEvent.InitGuiEvent.Post) event).addWidget(rewardOptionButton);
             }
             // 手动触发鼠标、键盘与渲染事件
-            else if (event instanceof GuiScreenEvent.KeyboardKeyPressedEvent.Post) {
+            else if (event instanceof GuiScreenEvent.KeyboardKeyPressedEvent.Pre) {
                 event.getGui().children().stream()
                         .filter(button -> button instanceof InventoryButton)
                         .forEach(button -> {
                             boolean cancel = ((InventoryButton) button).keyPressed_(
-                                    ((GuiScreenEvent.KeyboardKeyPressedEvent.Post) event).getKeyCode(),
-                                    ((GuiScreenEvent.KeyboardKeyPressedEvent.Post) event).getScanCode(),
-                                    ((GuiScreenEvent.KeyboardKeyPressedEvent.Post) event).getModifiers()
+                                    ((GuiScreenEvent.KeyboardKeyPressedEvent.Pre) event).getKeyCode(),
+                                    ((GuiScreenEvent.KeyboardKeyPressedEvent.Pre) event).getScanCode(),
+                                    ((GuiScreenEvent.KeyboardKeyPressedEvent.Pre) event).getModifiers()
                             );
                             if (event.isCancelable()) event.setCanceled(cancel);
                         });
-            } else if (event instanceof GuiScreenEvent.KeyboardKeyReleasedEvent.Post) {
+            } else if (event instanceof GuiScreenEvent.KeyboardKeyReleasedEvent.Pre) {
                 event.getGui().children().stream()
                         .filter(button -> button instanceof InventoryButton)
                         .forEach(button -> {
                             boolean cancel = ((InventoryButton) button).keyReleased_(
-                                    ((GuiScreenEvent.KeyboardKeyReleasedEvent.Post) event).getKeyCode(),
-                                    ((GuiScreenEvent.KeyboardKeyReleasedEvent.Post) event).getScanCode(),
-                                    ((GuiScreenEvent.KeyboardKeyReleasedEvent.Post) event).getModifiers()
+                                    ((GuiScreenEvent.KeyboardKeyReleasedEvent.Pre) event).getKeyCode(),
+                                    ((GuiScreenEvent.KeyboardKeyReleasedEvent.Pre) event).getScanCode(),
+                                    ((GuiScreenEvent.KeyboardKeyReleasedEvent.Pre) event).getModifiers()
                             );
                             if (event.isCancelable()) event.setCanceled(cancel);
                         });
