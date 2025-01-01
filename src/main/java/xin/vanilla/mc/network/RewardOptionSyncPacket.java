@@ -43,7 +43,7 @@ public class RewardOptionSyncPacket extends SplitPacket {
     public static void handle(RewardOptionSyncPacket packet, CustomPayloadEvent.Context ctx) {
         ctx.enqueueWork(() -> {
             List<RewardOptionSyncPacket> packets = SplitPacket.handle(packet);
-            if (!CollectionUtils.isNullOrEmpty(packets)) {
+            if (CollectionUtils.isNotNullOrEmpty(packets)) {
                 if (ctx.getDirection().getReceptionSide().isClient()) {
                     // 备份 RewardOption
                     RewardOptionDataManager.backupRewardOption();

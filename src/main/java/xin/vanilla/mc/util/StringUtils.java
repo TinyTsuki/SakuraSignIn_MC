@@ -408,7 +408,11 @@ public class StringUtils {
     }
 
     public static int toInt(String s) {
-        int result = 0;
+        return toInt(s, 0);
+    }
+
+    public static int toInt(String s, int defaultValue) {
+        int result = defaultValue;
         if (StringUtils.isNotNullOrEmpty(s)) {
             try {
                 result = Integer.parseInt(s.trim());
@@ -419,7 +423,11 @@ public class StringUtils {
     }
 
     public static long toLong(String s) {
-        long result = 0;
+        return toLong(s, 0);
+    }
+
+    public static long toLong(String s, long defaultValue) {
+        long result = defaultValue;
         if (StringUtils.isNotNullOrEmpty(s)) {
             try {
                 result = Long.parseLong(s.trim());
@@ -430,7 +438,11 @@ public class StringUtils {
     }
 
     public static double toFloat(String s) {
-        float result = 0;
+        return toFloat(s, 0);
+    }
+
+    public static double toFloat(String s, float defaultValue) {
+        float result = defaultValue;
         if (StringUtils.isNotNullOrEmpty(s)) {
             try {
                 result = Float.parseFloat(s.trim());
@@ -441,7 +453,11 @@ public class StringUtils {
     }
 
     public static double toDouble(String s) {
-        double result = 0;
+        return toDouble(s, 0);
+    }
+
+    public static double toDouble(String s, double defaultValue) {
+        double result = defaultValue;
         if (StringUtils.isNotNullOrEmpty(s)) {
             try {
                 result = Double.parseDouble(s.trim());
