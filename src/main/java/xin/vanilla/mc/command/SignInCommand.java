@@ -399,6 +399,13 @@ public class SignInCommand {
                                             return 1;
                                         })
                                 )
+                                .then(Commands.literal("rewardAffectedByLuck")
+                                        .executes(context -> {
+                                            ServerPlayerEntity player = context.getSource().getPlayerOrException();
+                                            player.sendMessage(new TranslationTextComponent(getI18nKey(String.format("服务器已%s奖励领取受幸运影响", ServerConfig.REWARD_AFFECTED_BY_LUCK.get() ? "启用" : "禁用"))));
+                                            return 1;
+                                        })
+                                )
                         )
                         // 设置服务器时间 /va config set date <year> <month> <day> <hour> <minute> <second>
                         .then(Commands.literal("set")
@@ -544,6 +551,19 @@ public class SignInCommand {
                                                     ServerConfig.PLAYER_DATA_SYNC_PACKET_SIZE.set(size);
                                                     ServerPlayerEntity player = context.getSource().getPlayerOrException();
                                                     broadcastMessage(player, new TranslationTextComponent(getI18nKey("玩家签到数据同步网络包大小已被设置为: %d"), size));
+                                                    return 1;
+                                                })
+                                        )
+                                )
+                                .then(Commands.literal("rewardAffectedByLuck")
+                                        .then(Commands.argument("bool", StringArgumentType.word())
+                                                .suggests(booleanSuggestions)
+                                                .executes(context -> {
+                                                    String boolString = StringArgumentType.getString(context, "bool");
+                                                    boolean bool = StringUtils.stringToBoolean(boolString);
+                                                    ServerConfig.REWARD_AFFECTED_BY_LUCK.set(bool);
+                                                    ServerPlayerEntity player = context.getSource().getPlayerOrException();
+                                                    broadcastMessage(player, new TranslationTextComponent(getI18nKey("服务器已%s奖励领取受幸运影响"), bool ? "启用" : "禁用"));
                                                     return 1;
                                                 })
                                         )

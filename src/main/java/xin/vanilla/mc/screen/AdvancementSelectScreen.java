@@ -8,12 +8,15 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.potion.EffectInstance;
+import net.minecraft.potion.Effects;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.StringTextComponent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
 import xin.vanilla.mc.SakuraSignIn;
+import xin.vanilla.mc.config.StringList;
 import xin.vanilla.mc.enums.ERewardType;
 import xin.vanilla.mc.network.AdvancementData;
 import xin.vanilla.mc.rewards.Reward;
@@ -22,6 +25,7 @@ import xin.vanilla.mc.rewards.impl.AdvancementRewardParser;
 import xin.vanilla.mc.screen.component.OperationButton;
 import xin.vanilla.mc.screen.component.Text;
 import xin.vanilla.mc.util.AbstractGuiUtils;
+import xin.vanilla.mc.util.CollectionUtils;
 import xin.vanilla.mc.util.StringUtils;
 
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -50,11 +54,11 @@ public class AdvancementSelectScreen extends Screen {
     /**
      * 输入数据回调1
      */
-    private final Consumer<ResourceLocation> onDataReceived1;
+    private final Consumer<Reward> onDataReceived1;
     /**
      * 输入数据回调2
      */
-    private final Function<ResourceLocation, String> onDataReceived2;
+    private final Function<Reward, String> onDataReceived2;
     /**
      * 是否要显示该界面, 若为false则直接关闭当前界面并返回到调用者的 Screen
      */
@@ -82,7 +86,11 @@ public class AdvancementSelectScreen extends Screen {
     /**
      * 当前选择的进度
      */
-    private ResourceLocation currentAdvancement = new ResourceLocation("");
+    private Reward currentAdvancement = new Reward(new ResourceLocation(""), ERewardType.ADVANCEMENT);
+    /**
+     * 奖励概率
+     */
+    private double probability = 1;
     /**
      * 显示模式
      */
@@ -125,6 +133,7 @@ public class AdvancementSelectScreen extends Screen {
         TYPE(1),
         ADVANCEMENT(2),
         SLIDER(5),
+        PROBABILITY(6),
         ;
 
         final int code;
@@ -138,43 +147,47 @@ public class AdvancementSelectScreen extends Screen {
         }
     }
 
-    public AdvancementSelectScreen(@NonNull Screen callbackScreen, @NonNull Consumer<ResourceLocation> onDataReceived, @NonNull ResourceLocation defaultAdvancement, Supplier<Boolean> shouldClose) {
+    public AdvancementSelectScreen(@NonNull Screen callbackScreen, @NonNull Consumer<Reward> onDataReceived, @NonNull Reward defaultAdvancement, Supplier<Boolean> shouldClose) {
         super(new StringTextComponent("AdvancementSelectScreen"));
         this.previousScreen = callbackScreen;
         this.onDataReceived1 = onDataReceived;
         this.onDataReceived2 = null;
         this.currentAdvancement = defaultAdvancement;
+        this.probability = defaultAdvancement.getProbability();
         this.shouldClose = shouldClose;
     }
 
-    public AdvancementSelectScreen(@NonNull Screen callbackScreen, @NonNull Function<ResourceLocation, String> onDataReceived, @NonNull ResourceLocation defaultAdvancement, Supplier<Boolean> shouldClose) {
+    public AdvancementSelectScreen(@NonNull Screen callbackScreen, @NonNull Function<Reward, String> onDataReceived, @NonNull Reward defaultAdvancement, Supplier<Boolean> shouldClose) {
         super(new StringTextComponent("AdvancementSelectScreen"));
         this.previousScreen = callbackScreen;
         this.onDataReceived1 = null;
         this.onDataReceived2 = onDataReceived;
         this.currentAdvancement = defaultAdvancement;
+        this.probability = defaultAdvancement.getProbability();
         this.shouldClose = shouldClose;
     }
 
-    public AdvancementSelectScreen(@NonNull Screen callbackScreen, @NonNull Consumer<ResourceLocation> onDataReceived, @NonNull ResourceLocation defaultAdvancement) {
+    public AdvancementSelectScreen(@NonNull Screen callbackScreen, @NonNull Consumer<Reward> onDataReceived, @NonNull Reward defaultAdvancement) {
         super(new StringTextComponent("AdvancementSelectScreen"));
         this.previousScreen = callbackScreen;
         this.onDataReceived1 = onDataReceived;
         this.onDataReceived2 = null;
         this.currentAdvancement = defaultAdvancement;
+        this.probability = defaultAdvancement.getProbability();
         this.shouldClose = null;
     }
 
-    public AdvancementSelectScreen(@NonNull Screen callbackScreen, @NonNull Function<ResourceLocation, String> onDataReceived, @NonNull ResourceLocation defaultAdvancement) {
+    public AdvancementSelectScreen(@NonNull Screen callbackScreen, @NonNull Function<Reward, String> onDataReceived, @NonNull Reward defaultAdvancement) {
         super(new StringTextComponent("AdvancementSelectScreen"));
         this.previousScreen = callbackScreen;
         this.onDataReceived1 = null;
         this.onDataReceived2 = onDataReceived;
         this.currentAdvancement = defaultAdvancement;
+        this.probability = defaultAdvancement.getProbability();
         this.shouldClose = null;
     }
 
-    public AdvancementSelectScreen(@NonNull Screen callbackScreen, @NonNull Consumer<ResourceLocation> onDataReceived) {
+    public AdvancementSelectScreen(@NonNull Screen callbackScreen, @NonNull Consumer<Reward> onDataReceived) {
         super(new StringTextComponent("AdvancementSelectScreen"));
         this.previousScreen = callbackScreen;
         this.onDataReceived1 = onDataReceived;
@@ -182,7 +195,7 @@ public class AdvancementSelectScreen extends Screen {
         this.shouldClose = null;
     }
 
-    public AdvancementSelectScreen(@NonNull Screen callbackScreen, @NonNull Function<ResourceLocation, String> onDataReceived) {
+    public AdvancementSelectScreen(@NonNull Screen callbackScreen, @NonNull Function<Reward, String> onDataReceived) {
         super(new StringTextComponent("AdvancementSelectScreen"));
         this.previousScreen = callbackScreen;
         this.onDataReceived1 = null;
@@ -209,11 +222,12 @@ public class AdvancementSelectScreen extends Screen {
                         Minecraft.getInstance().setScreen(previousScreen);
                     } else {
                         // 获取选择的数据，并执行回调
+                        ResourceLocation resourceLocation = RewardManager.deserializeReward(this.currentAdvancement);
                         if (onDataReceived1 != null) {
-                            onDataReceived1.accept(this.currentAdvancement);
+                            onDataReceived1.accept(new Reward(resourceLocation, ERewardType.ADVANCEMENT, this.probability));
                             Minecraft.getInstance().setScreen(previousScreen);
                         } else if (onDataReceived2 != null) {
-                            String result = onDataReceived2.apply(this.currentAdvancement);
+                            String result = onDataReceived2.apply(new Reward(resourceLocation, ERewardType.ADVANCEMENT, this.probability));
                             if (StringUtils.isNotNullOrEmpty(result)) {
                                 // this.errorText = Text.literal(result).setColor(0xFFFF0000);
                             } else {
@@ -367,9 +381,18 @@ public class AdvancementSelectScreen extends Screen {
             int lineColor = context.button.isHovered() ? 0xEEFFFFFF : 0xEE000000;
             AbstractGuiUtils.fill((int) context.button.getX(), (int) context.button.getY(), (int) context.button.getWidth(), (int) context.button.getHeight(), 0xEE707070, 2);
             AbstractGuiUtils.fillOutLine((int) context.button.getX(), (int) context.button.getY(), (int) context.button.getWidth(), (int) context.button.getHeight(), 1, lineColor, 2);
-            AbstractGuiUtils.renderItem(itemRenderer, font, AdvancementRewardParser.getAdvancementData(this.currentAdvancement).getDisplayInfo().getIcon(), (int) context.button.getX() + 2, (int) context.button.getY() + 2, false);
-            context.button.setTooltip(Text.literal(AdvancementRewardParser.getAdvancementData(this.currentAdvancement).getDisplayInfo().getTitle().getString()));
+            AbstractGuiUtils.renderItem(itemRenderer, font, AdvancementRewardParser.getAdvancementData((ResourceLocation) RewardManager.deserializeReward(this.currentAdvancement)).getDisplayInfo().getIcon(), (int) context.button.getX() + 2, (int) context.button.getY() + 2, false);
+            context.button.setTooltip(Text.literal(AdvancementRewardParser.getAdvancementData(((ResourceLocation) RewardManager.deserializeReward(this.currentAdvancement))).getDisplayInfo().getTitle().getString()));
         }).setX(this.bgX - AbstractGuiUtils.ITEM_ICON_SIZE - 2 - margin - 3).setY(this.bgY + margin + AbstractGuiUtils.ITEM_ICON_SIZE + 4 + 1).setWidth(AbstractGuiUtils.ITEM_ICON_SIZE + 4).setHeight(AbstractGuiUtils.ITEM_ICON_SIZE + 4));
+        this.OP_BUTTONS.put(OperationButtonType.PROBABILITY.getCode(), new OperationButton(OperationButtonType.PROBABILITY.getCode(), context -> {
+            // 绘制背景
+            int lineColor = context.button.isHovered() ? 0xEEFFFFFF : 0xEE000000;
+            AbstractGuiUtils.fill((int) context.button.getX(), (int) context.button.getY(), (int) context.button.getWidth(), (int) context.button.getHeight(), 0xEE707070, 2);
+            AbstractGuiUtils.fillOutLine((int) context.button.getX(), (int) context.button.getY(), (int) context.button.getWidth(), (int) context.button.getHeight(), 1, lineColor, 2);
+            AbstractGuiUtils.drawEffectIcon(super.font, new EffectInstance(Effects.LUCK), (int) context.button.getX() + 2, (int) context.button.getY() + 2, false);
+            Text text = Text.i18n("设置概率\n当前 %.3f%%", this.probability * 100d);
+            context.button.setTooltip(text);
+        }).setX(this.bgX - AbstractGuiUtils.ITEM_ICON_SIZE - 2 - margin - 3).setY(this.bgY + margin + (AbstractGuiUtils.ITEM_ICON_SIZE + 4 + 1) * 2).setWidth(AbstractGuiUtils.ITEM_ICON_SIZE + 4).setHeight(AbstractGuiUtils.ITEM_ICON_SIZE + 4));
 
         // 滚动条
         this.OP_BUTTONS.put(OperationButtonType.SLIDER.getCode(), new OperationButton(OperationButtonType.SLIDER.getCode(), context -> {
@@ -470,8 +493,9 @@ public class AdvancementSelectScreen extends Screen {
     private void handleAdvancement(OperationButton bt, int button, AtomicBoolean flag) {
         if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
             if (StringUtils.isNotNullOrEmpty(bt.getId())) {
-                this.currentAdvancement = new ResourceLocation(bt.getId());
-                LOGGER.debug("Select effect: {}", AdvancementRewardParser.getAdvancementData(this.currentAdvancement).getDisplayInfo().getTitle().getString());
+                ResourceLocation resourceLocation = new ResourceLocation(bt.getId());
+                this.currentAdvancement = new Reward(resourceLocation, ERewardType.ADVANCEMENT, this.probability);
+                LOGGER.debug("Select effect: {}", AdvancementRewardParser.getAdvancementData(resourceLocation).getDisplayInfo().getTitle().getString());
                 flag.set(true);
             }
         }
@@ -482,23 +506,51 @@ public class AdvancementSelectScreen extends Screen {
             this.displayMode = !this.displayMode;
             updateSearchResults.set(true);
             flag.set(true);
-        } else if (bt.getOperation() == OperationButtonType.ADVANCEMENT.getCode()) {
-            String effectRewardJsonString = RewardManager.serializeReward(this.currentAdvancement, ERewardType.ADVANCEMENT).toString();
-            Minecraft.getInstance().setScreen(new StringInputScreen(this, Text.i18n("请输入进度Json").setShadow(true), Text.i18n("请输入"), "", effectRewardJsonString, input -> {
-                String result = "";
-                if (StringUtils.isNotNullOrEmpty(input)) {
+        }
+        // 编辑进度Json
+        else if (bt.getOperation() == OperationButtonType.ADVANCEMENT.getCode()) {
+            String effectRewardJsonString = GSON.toJson(this.currentAdvancement.getContent());
+            Minecraft.getInstance().setScreen(new StringInputScreen(this
+                    , Text.i18n("请输入进度Json").setShadow(true)
+                    , Text.i18n("请输入")
+                    , ""
+                    , effectRewardJsonString
+                    , input -> {
+                StringList result = new StringList();
+                if (CollectionUtils.isNotNullOrEmpty(input)) {
                     ResourceLocation instance;
+                    String json = input.get(0);
                     try {
-                        JsonObject jsonObject = GSON.fromJson(input, JsonObject.class);
-                        instance = RewardManager.deserializeReward(new Reward(jsonObject, ERewardType.ADVANCEMENT));
+                        JsonObject jsonObject = GSON.fromJson(json, JsonObject.class);
+                        instance = RewardManager.deserializeReward(new Reward(jsonObject, ERewardType.ADVANCEMENT, this.probability));
                     } catch (Exception e) {
-                        LOGGER.error("Invalid Json: {}", input);
+                        LOGGER.error("Invalid Json: {}", json);
                         instance = null;
                     }
                     if (instance != null) {
-                        this.currentAdvancement = instance;
+                        this.currentAdvancement = new Reward(instance, ERewardType.ADVANCEMENT, this.probability);
                     } else {
-                        result = getByZh("进度Json[%s]输入有误", input);
+                        result.add(getByZh("进度Json[%s]输入有误", json));
+                    }
+                }
+                return result;
+            }));
+        }
+        // 编辑概率
+        else if (bt.getOperation() == OperationButtonType.PROBABILITY.getCode()) {
+            Minecraft.getInstance().setScreen(new StringInputScreen(this
+                    , Text.i18n("请输入奖励概率").setShadow(true)
+                    , Text.i18n("请输入")
+                    , "(1|0\\.?\\d{0,5})?"
+                    , String.valueOf(this.probability)
+                    , input -> {
+                StringList result = new StringList();
+                if (CollectionUtils.isNotNullOrEmpty(input)) {
+                    double p = StringUtils.toDouble(input.get(0));
+                    if (p > 0 && p <= 1) {
+                        this.probability = p;
+                    } else {
+                        result.add(getByZh("奖励概率[%s]输入有误", input.get(0)));
                     }
                 }
                 return result;

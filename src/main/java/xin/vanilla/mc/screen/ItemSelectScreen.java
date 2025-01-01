@@ -11,7 +11,6 @@ import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.resources.I18n;
-import net.minecraft.client.util.ISearchTree;
 import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.client.util.SearchTreeManager;
 import net.minecraft.enchantment.Enchantment;
@@ -20,6 +19,8 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.potion.EffectInstance;
+import net.minecraft.potion.Effects;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.Tag;
 import net.minecraft.tags.TagCollection;
@@ -33,6 +34,8 @@ import net.minecraftforge.fml.client.config.GuiUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
+import xin.vanilla.mc.config.ArraySet;
+import xin.vanilla.mc.config.StringList;
 import xin.vanilla.mc.enums.ERewardType;
 import xin.vanilla.mc.rewards.Reward;
 import xin.vanilla.mc.rewards.RewardManager;
@@ -40,6 +43,7 @@ import xin.vanilla.mc.rewards.impl.ItemRewardParser;
 import xin.vanilla.mc.screen.component.OperationButton;
 import xin.vanilla.mc.screen.component.Text;
 import xin.vanilla.mc.util.AbstractGuiUtils;
+import xin.vanilla.mc.util.CollectionUtils;
 import xin.vanilla.mc.util.StringUtils;
 
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -71,11 +75,11 @@ public class ItemSelectScreen extends Screen {
     /**
      * 输入数据回调1
      */
-    private final Consumer<ItemStack> onDataReceived1;
+    private final Consumer<Reward> onDataReceived1;
     /**
      * 输入数据回调2
      */
-    private final Function<ItemStack, String> onDataReceived2;
+    private final Function<Reward, String> onDataReceived2;
     /**
      * 是否要显示该界面, 若为false则直接关闭当前界面并返回到调用者的 Screen
      */
@@ -91,7 +95,7 @@ public class ItemSelectScreen extends Screen {
     /**
      * 搜索结果
      */
-    private final List<ItemStack> itemList = new ArrayList<>();
+    private final ArraySet<ItemStack> itemList = new ArraySet<>();
     /**
      * 操作按钮
      */
@@ -112,7 +116,11 @@ public class ItemSelectScreen extends Screen {
     /**
      * 当前选择的物品
      */
-    private ItemStack currentItem = new ItemStack(Items.AIR);
+    private Reward currentItem = new Reward(new ItemStack(Items.AIR), ERewardType.ITEM);
+    /**
+     * 奖励概率
+     */
+    private double probability = 1;
     /**
      * 背包模式
      */
@@ -157,6 +165,7 @@ public class ItemSelectScreen extends Screen {
         COUNT(3),
         NBT(4),
         SLIDER(5),
+        PROBABILITY(6),
         ;
 
         final int code;
@@ -170,47 +179,51 @@ public class ItemSelectScreen extends Screen {
         }
     }
 
-    public ItemSelectScreen(@NonNull Screen callbackScreen, @NonNull Consumer<ItemStack> onDataReceived, @NonNull ItemStack defaultItem, Supplier<Boolean> shouldClose) {
+    public ItemSelectScreen(@NonNull Screen callbackScreen, @NonNull Consumer<Reward> onDataReceived, @NonNull Reward defaultItem, Supplier<Boolean> shouldClose) {
         super(new StringTextComponent("ItemSelectScreen"));
         this.previousScreen = callbackScreen;
         this.onDataReceived1 = onDataReceived;
         this.onDataReceived2 = null;
         this.currentItem = defaultItem;
-        this.selectedItemId = ItemRewardParser.getId(defaultItem);
+        this.probability = defaultItem.getProbability();
+        this.selectedItemId = ItemRewardParser.getId((ItemStack) RewardManager.deserializeReward(defaultItem));
         this.shouldClose = shouldClose;
     }
 
-    public ItemSelectScreen(@NonNull Screen callbackScreen, @NonNull Function<ItemStack, String> onDataReceived, @NonNull ItemStack defaultItem, Supplier<Boolean> shouldClose) {
+    public ItemSelectScreen(@NonNull Screen callbackScreen, @NonNull Function<Reward, String> onDataReceived, @NonNull Reward defaultItem, Supplier<Boolean> shouldClose) {
         super(new StringTextComponent("ItemSelectScreen"));
         this.previousScreen = callbackScreen;
         this.onDataReceived1 = null;
         this.onDataReceived2 = onDataReceived;
         this.currentItem = defaultItem;
-        this.selectedItemId = ItemRewardParser.getId(defaultItem);
+        this.probability = defaultItem.getProbability();
+        this.selectedItemId = ItemRewardParser.getId((ItemStack) RewardManager.deserializeReward(defaultItem));
         this.shouldClose = shouldClose;
     }
 
-    public ItemSelectScreen(@NonNull Screen callbackScreen, @NonNull Consumer<ItemStack> onDataReceived, @NonNull ItemStack defaultItem) {
+    public ItemSelectScreen(@NonNull Screen callbackScreen, @NonNull Consumer<Reward> onDataReceived, @NonNull Reward defaultItem) {
         super(new StringTextComponent("ItemSelectScreen"));
         this.previousScreen = callbackScreen;
         this.onDataReceived1 = onDataReceived;
         this.onDataReceived2 = null;
         this.currentItem = defaultItem;
-        this.selectedItemId = ItemRewardParser.getId(defaultItem);
+        this.probability = defaultItem.getProbability();
+        this.selectedItemId = ItemRewardParser.getId((ItemStack) RewardManager.deserializeReward(defaultItem));
         this.shouldClose = null;
     }
 
-    public ItemSelectScreen(@NonNull Screen callbackScreen, @NonNull Function<ItemStack, String> onDataReceived, @NonNull ItemStack defaultItem) {
+    public ItemSelectScreen(@NonNull Screen callbackScreen, @NonNull Function<Reward, String> onDataReceived, @NonNull Reward defaultItem) {
         super(new StringTextComponent("ItemSelectScreen"));
         this.previousScreen = callbackScreen;
         this.onDataReceived1 = null;
         this.onDataReceived2 = onDataReceived;
         this.currentItem = defaultItem;
-        this.selectedItemId = ItemRewardParser.getId(defaultItem);
+        this.probability = defaultItem.getProbability();
+        this.selectedItemId = ItemRewardParser.getId((ItemStack) RewardManager.deserializeReward(defaultItem));
         this.shouldClose = null;
     }
 
-    public ItemSelectScreen(@NonNull Screen callbackScreen, @NonNull Consumer<ItemStack> onDataReceived) {
+    public ItemSelectScreen(@NonNull Screen callbackScreen, @NonNull Consumer<Reward> onDataReceived) {
         super(new StringTextComponent("ItemSelectScreen"));
         this.previousScreen = callbackScreen;
         this.onDataReceived1 = onDataReceived;
@@ -218,7 +231,7 @@ public class ItemSelectScreen extends Screen {
         this.shouldClose = null;
     }
 
-    public ItemSelectScreen(@NonNull Screen callbackScreen, @NonNull Function<ItemStack, String> onDataReceived) {
+    public ItemSelectScreen(@NonNull Screen callbackScreen, @NonNull Function<Reward, String> onDataReceived) {
         super(new StringTextComponent("ItemSelectScreen"));
         this.previousScreen = callbackScreen;
         this.onDataReceived1 = null;
@@ -245,11 +258,12 @@ public class ItemSelectScreen extends Screen {
                         Minecraft.getInstance().setScreen(previousScreen);
                     } else {
                         // 获取选择的数据，并执行回调
+                        Reward reward = new Reward((ItemStack) RewardManager.deserializeReward(this.currentItem), ERewardType.ITEM, this.probability);
                         if (onDataReceived1 != null) {
-                            onDataReceived1.accept(this.currentItem);
+                            onDataReceived1.accept(reward);
                             Minecraft.getInstance().setScreen(previousScreen);
                         } else if (onDataReceived2 != null) {
-                            String result = onDataReceived2.apply(this.currentItem);
+                            String result = onDataReceived2.apply(reward);
                             if (StringUtils.isNotNullOrEmpty(result)) {
                                 // this.errorText = Text.literal(result).setColor(0xFFFF0000);
                             } else {
@@ -425,8 +439,8 @@ public class ItemSelectScreen extends Screen {
             int lineColor = context.button.isHovered() ? 0xEEFFFFFF : 0xEE000000;
             AbstractGuiUtils.fill((int) context.button.getX(), (int) context.button.getY(), (int) context.button.getWidth(), (int) context.button.getHeight(), 0xEE707070, 2);
             AbstractGuiUtils.fillOutLine((int) context.button.getX(), (int) context.button.getY(), (int) context.button.getWidth(), (int) context.button.getHeight(), 1, lineColor, 2);
-            AbstractGuiUtils.renderItem(itemRenderer, font, this.currentItem, (int) context.button.getX() + 2, (int) context.button.getY() + 2, false);
-            context.button.setTooltip(AbstractGuiUtils.componentToText(this.currentItem.getHoverName().copy()));
+            AbstractGuiUtils.renderItem(itemRenderer, font, RewardManager.deserializeReward(this.currentItem), (int) context.button.getX() + 2, (int) context.button.getY() + 2, false);
+            context.button.setTooltip(AbstractGuiUtils.componentToText(((ItemStack) RewardManager.deserializeReward(this.currentItem)).getHoverName().copy()));
         }).setX(this.bgX - AbstractGuiUtils.ITEM_ICON_SIZE - 2 - margin - 3).setY(this.bgY + margin + AbstractGuiUtils.ITEM_ICON_SIZE + 4 + 1).setWidth(AbstractGuiUtils.ITEM_ICON_SIZE + 4).setHeight(AbstractGuiUtils.ITEM_ICON_SIZE + 4));
         this.OP_BUTTONS.put(OperationButtonType.COUNT.getCode(), new OperationButton(OperationButtonType.COUNT.getCode(), context -> {
             // 绘制背景
@@ -435,7 +449,7 @@ public class ItemSelectScreen extends Screen {
             AbstractGuiUtils.fillOutLine((int) context.button.getX(), (int) context.button.getY(), (int) context.button.getWidth(), (int) context.button.getHeight(), 1, lineColor, 2);
             ItemStack itemStack = new ItemStack(Items.WRITABLE_BOOK);
             AbstractGuiUtils.renderItem(itemRenderer, font, itemStack, (int) context.button.getX() + 2, (int) context.button.getY() + 2, false);
-            Text text = Text.i18n("设置数量\n当前 %s", this.currentItem.getCount());
+            Text text = Text.i18n("设置数量\n当前 %s", ((ItemStack) RewardManager.deserializeReward(this.currentItem)).getCount());
             context.button.setTooltip(text);
         }).setX(this.bgX - AbstractGuiUtils.ITEM_ICON_SIZE - 2 - margin - 3).setY(this.bgY + margin + (AbstractGuiUtils.ITEM_ICON_SIZE + 4 + 1) * 2).setWidth(AbstractGuiUtils.ITEM_ICON_SIZE + 4).setHeight(AbstractGuiUtils.ITEM_ICON_SIZE + 4));
         this.OP_BUTTONS.put(OperationButtonType.NBT.getCode(), new OperationButton(OperationButtonType.NBT.getCode(), context -> {
@@ -448,6 +462,15 @@ public class ItemSelectScreen extends Screen {
             Text text = Text.i18n("编辑NBT");
             context.button.setTooltip(text);
         }).setX(this.bgX - AbstractGuiUtils.ITEM_ICON_SIZE - 2 - margin - 3).setY(this.bgY + margin + (AbstractGuiUtils.ITEM_ICON_SIZE + 4 + 1) * 3).setWidth(AbstractGuiUtils.ITEM_ICON_SIZE + 4).setHeight(AbstractGuiUtils.ITEM_ICON_SIZE + 4));
+        this.OP_BUTTONS.put(OperationButtonType.PROBABILITY.getCode(), new OperationButton(OperationButtonType.PROBABILITY.getCode(), context -> {
+            // 绘制背景
+            int lineColor = context.button.isHovered() ? 0xEEFFFFFF : 0xEE000000;
+            AbstractGuiUtils.fill((int) context.button.getX(), (int) context.button.getY(), (int) context.button.getWidth(), (int) context.button.getHeight(), 0xEE707070, 2);
+            AbstractGuiUtils.fillOutLine((int) context.button.getX(), (int) context.button.getY(), (int) context.button.getWidth(), (int) context.button.getHeight(), 1, lineColor, 2);
+            AbstractGuiUtils.drawEffectIcon(super.font, new EffectInstance(Effects.LUCK), (int) context.button.getX() + 2, (int) context.button.getY() + 2, false);
+            Text text = Text.i18n("设置概率\n当前 %.3f%%", this.probability * 100d);
+            context.button.setTooltip(text);
+        }).setX(this.bgX - AbstractGuiUtils.ITEM_ICON_SIZE - 2 - margin - 3).setY(this.bgY + margin + (AbstractGuiUtils.ITEM_ICON_SIZE + 4 + 1) * 4).setWidth(AbstractGuiUtils.ITEM_ICON_SIZE + 4).setHeight(AbstractGuiUtils.ITEM_ICON_SIZE + 4));
 
         // 滚动条
         this.OP_BUTTONS.put(OperationButtonType.SLIDER.getCode(), new OperationButton(OperationButtonType.SLIDER.getCode(), context -> {
@@ -548,6 +571,10 @@ public class ItemSelectScreen extends Screen {
         }
     }
 
+    private List<ItemStack> getItemList() {
+        return this.inventoryMode ? this.playerItemList : this.allItemList;
+    }
+
     /**
      * 更新搜索结果
      */
@@ -556,34 +583,47 @@ public class ItemSelectScreen extends Screen {
         this.itemList.clear();
         this.visibleTags.clear();
         if (StringUtils.isNotNullOrEmpty(s)) {
-            ISearchTree<ItemStack> isearchtree;
+            // # 物品标签
             if (s.startsWith("#")) {
                 s = s.substring(1);
-                isearchtree = Minecraft.getInstance().getSearchTree(SearchTreeManager.CREATIVE_TAGS);
                 this.updateVisibleTags(s);
-            } else {
-                isearchtree = Minecraft.getInstance().getSearchTree(SearchTreeManager.CREATIVE_NAMES);
+                this.itemList.addAll(Minecraft.getInstance().getSearchTree(SearchTreeManager.CREATIVE_TAGS).search(s.toLowerCase(Locale.ROOT)));
             }
-            this.itemList.addAll(isearchtree.search(s.toLowerCase(Locale.ROOT)));
+            // $ 描述
+            else if (s.startsWith("$")) {
+                s = s.substring(1);
+                this.itemList.addAll(this.searchByDescription(s));
+            } else {
+                // @ modId
+                if (s.startsWith("@")) s = s.replaceAll("^@(\\S+)", "$1:");
+                this.itemList.addAll(Minecraft.getInstance().getSearchTree(SearchTreeManager.CREATIVE_NAMES).search(s.toLowerCase(Locale.ROOT)));
+            }
         } else {
-            this.itemList.addAll(new ArrayList<>(this.inventoryMode ? this.playerItemList : this.allItemList));
+            this.itemList.addAll(new ArrayList<>(this.getItemList()));
         }
         this.setScrollOffset(0);
     }
 
     private void updateVisibleTags(String string) {
-        int i = string.indexOf(58);
+        int i = string.indexOf(':');
         Predicate<ResourceLocation> predicate;
         if (i == -1) {
             predicate = (resourceLocation) -> resourceLocation.getPath().contains(string);
         } else {
-            String s = string.substring(0, i).trim();
-            String s1 = string.substring(i + 1).trim();
-            predicate = (resourceLocation) -> resourceLocation.getNamespace().contains(s) && resourceLocation.getPath().contains(s1);
+            String modId = string.substring(0, i).trim();
+            String itemId = string.substring(i + 1).trim();
+            predicate = (resourceLocation) -> resourceLocation.getNamespace().contains(modId) && (StringUtils.isNullOrEmpty(itemId) || resourceLocation.getPath().contains(itemId));
         }
 
         TagCollection<Item> itagcollection = ItemTags.getAllTags();
         itagcollection.getAvailableTags().stream().filter(predicate).forEach((resourceLocation) -> this.visibleTags.put(resourceLocation, itagcollection.getTag(resourceLocation)));
+    }
+
+    private List<ItemStack> searchByDescription(String keyword) {
+        return this.getItemList().stream()
+                .filter(item -> item.getTooltipLines(Minecraft.getInstance().player, ITooltipFlag.TooltipFlags.ADVANCED)
+                        .stream().anyMatch(component -> component.getString().contains(keyword))
+                ).collect(Collectors.toList());
     }
 
     private void setScrollOffset(double offset) {
@@ -606,9 +646,10 @@ public class ItemSelectScreen extends Screen {
         if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
             this.selectedItemId = bt.getId();
             if (StringUtils.isNotNullOrEmpty(this.selectedItemId)) {
-                this.currentItem = ItemRewardParser.getItemStack(selectedItemId);
-                this.currentItem.setCount(1);
-                LOGGER.debug("Select item: {}", ItemRewardParser.getDisplayName(this.currentItem));
+                ItemStack itemStack = ItemRewardParser.getItemStack(selectedItemId);
+                itemStack.setCount(1);
+                this.currentItem = new Reward(itemStack, ERewardType.ITEM, this.probability);
+                LOGGER.debug("Select item: {}", ItemRewardParser.getDisplayName(itemStack));
                 flag.set(true);
 
             }
@@ -620,59 +661,106 @@ public class ItemSelectScreen extends Screen {
             this.inventoryMode = !this.inventoryMode;
             updateSearchResults.set(true);
             flag.set(true);
-        } else if (bt.getOperation() == OperationButtonType.ITEM.getCode()) {
-            String itemRewardJsonString = RewardManager.serializeReward(this.currentItem, ERewardType.ITEM).toString();
-            Minecraft.getInstance().setScreen(new StringInputScreen(this, Text.i18n("请输入物品Json").setShadow(true), Text.i18n("请输入"), "", itemRewardJsonString, input -> {
-                String result = "";
-                if (StringUtils.isNotNullOrEmpty(input)) {
+        }
+        // 编辑奖励Json
+        else if (bt.getOperation() == OperationButtonType.ITEM.getCode()) {
+            String itemRewardJsonString = GSON.toJson(this.currentItem.getContent());
+            Minecraft.getInstance().setScreen(new StringInputScreen(this
+                    , Text.i18n("请输入物品Json").setShadow(true)
+                    , Text.i18n("请输入")
+                    , ""
+                    , itemRewardJsonString
+                    , input -> {
+                StringList result = new StringList();
+                if (CollectionUtils.isNotNullOrEmpty(input)) {
                     ItemStack itemStack;
+                    String json = input.get(0);
                     try {
-                        JsonObject jsonObject = GSON.fromJson(input, JsonObject.class);
-                        itemStack = RewardManager.deserializeReward(new Reward(jsonObject, ERewardType.ITEM));
+                        JsonObject jsonObject = GSON.fromJson(json, JsonObject.class);
+                        itemStack = RewardManager.deserializeReward(new Reward(jsonObject, ERewardType.ITEM, this.probability));
                     } catch (Exception e) {
-                        LOGGER.error("Invalid Json: {}", input);
+                        LOGGER.error("Invalid Json: {}", json);
                         itemStack = null;
                     }
                     if (itemStack != null && itemStack.getItem() != Items.AIR) {
-                        this.currentItem = itemStack;
-                        this.selectedItemId = ItemRewardParser.getId(this.currentItem);
+                        this.currentItem = new Reward(itemStack, ERewardType.ITEM, this.probability);
+                        this.selectedItemId = ItemRewardParser.getId(itemStack);
                     } else {
-                        result = getByZh("物品Json[%s]输入有误", input);
+                        result.add(getByZh("物品Json[%s]输入有误", json));
                     }
                 }
                 return result;
             }));
-        } else if (bt.getOperation() == OperationButtonType.COUNT.getCode()) {
-            Minecraft.getInstance().setScreen(new StringInputScreen(this, Text.i18n("请输入物品数量").setShadow(true), Text.i18n("请输入"), "\\d{0,4}", String.valueOf(this.currentItem.getCount()), input -> {
-                String result = "";
-                if (StringUtils.isNotNullOrEmpty(input)) {
-                    int count = StringUtils.toInt(input);
+        }
+        // 编辑数量
+        else if (bt.getOperation() == OperationButtonType.COUNT.getCode()) {
+            Minecraft.getInstance().setScreen(new StringInputScreen(this
+                    , Text.i18n("请输入物品数量").setShadow(true)
+                    , Text.i18n("请输入")
+                    , "\\d{0,4}"
+                    , String.valueOf(((ItemStack) RewardManager.deserializeReward(this.currentItem)).getCount())
+                    , input -> {
+                StringList result = new StringList();
+                if (CollectionUtils.isNotNullOrEmpty(input)) {
+                    String num = input.get(0);
+                    int count = StringUtils.toInt(num);
                     if (count > 0 && count <= 64 * 9 * 5) {
-                        this.currentItem.setCount(count);
+                        ItemStack itemStack = RewardManager.deserializeReward(this.currentItem);
+                        itemStack.setCount(count);
+                        this.currentItem = new Reward(itemStack, ERewardType.ITEM, this.probability);
                     } else {
-                        result = getByZh("物品数量[%s]输入有误", input);
+                        result.add(getByZh("物品数量[%s]输入有误", num));
                     }
                 }
                 return result;
             }));
-        } else if (bt.getOperation() == OperationButtonType.NBT.getCode()) {
-            String itemNbtJsonString = ItemRewardParser.getNbtString(this.currentItem);
-            Minecraft.getInstance().setScreen(new StringInputScreen(this, Text.i18n("请输入物品NBT").setShadow(true), Text.i18n("请输入"), "", itemNbtJsonString, input -> {
-                String result = "";
-                if (StringUtils.isNotNullOrEmpty(input)) {
+        }
+        // 编辑NBT
+        else if (bt.getOperation() == OperationButtonType.NBT.getCode()) {
+            String itemNbtJsonString = ItemRewardParser.getNbtString(RewardManager.deserializeReward(this.currentItem));
+            Minecraft.getInstance().setScreen(new StringInputScreen(this
+                    , Text.i18n("请输入物品NBT").setShadow(true)
+                    , Text.i18n("请输入")
+                    , ""
+                    , itemNbtJsonString
+                    , input -> {
+                StringList result = new StringList();
+                if (CollectionUtils.isNotNullOrEmpty(input)) {
                     ItemStack itemStack;
+                    String nbt = input.get(0);
                     try {
-                        itemStack = ItemRewardParser.getItemStack(ItemRewardParser.getId(this.currentItem.getItem()) + input, true);
-                        itemStack.setCount(this.currentItem.getCount());
+                        itemStack = ItemRewardParser.getItemStack(ItemRewardParser.getId(((ItemStack) RewardManager.deserializeReward(this.currentItem)).getItem()) + nbt, true);
+                        itemStack.setCount(((ItemStack) RewardManager.deserializeReward(this.currentItem)).getCount());
                     } catch (Exception e) {
-                        LOGGER.error("Invalid NBT: {}", input);
+                        LOGGER.error("Invalid NBT: {}", nbt);
                         itemStack = null;
                     }
                     if (itemStack != null && itemStack.hasTag()) {
-                        this.currentItem = itemStack;
-                        this.selectedItemId = ItemRewardParser.getId(this.currentItem);
+                        this.currentItem = new Reward(itemStack, ERewardType.ITEM, this.probability);
+                        this.selectedItemId = ItemRewardParser.getId(itemStack);
                     } else {
-                        result = getByZh("物品NBT[%s]输入有误", input);
+                        result.add(getByZh("物品NBT[%s]输入有误", nbt));
+                    }
+                }
+                return result;
+            }));
+        }
+        // 编辑概率
+        else if (bt.getOperation() == OperationButtonType.PROBABILITY.getCode()) {
+            Minecraft.getInstance().setScreen(new StringInputScreen(this
+                    , Text.i18n("请输入奖励概率").setShadow(true)
+                    , Text.i18n("请输入")
+                    , "(1|0\\.?\\d{0,5})?"
+                    , String.valueOf(this.probability)
+                    , input -> {
+                StringList result = new StringList();
+                if (CollectionUtils.isNotNullOrEmpty(input)) {
+                    String s = input.get(0);
+                    double p = StringUtils.toDouble(s);
+                    if (p > 0 && p <= 1) {
+                        this.probability = p;
+                    } else {
+                        result.add(getByZh("奖励概率[%s]输入有误", s));
                     }
                 }
                 return result;
