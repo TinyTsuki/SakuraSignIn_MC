@@ -11,8 +11,16 @@ public class CollectionUtils {
         return list == null || list.isEmpty();
     }
 
+    public static boolean isNotNullOrEmpty(Collection<?> list) {
+        return !isNullOrEmpty(list);
+    }
+
     public static boolean isNullOrEmpty(Object[] array) {
         return array == null || array.length == 0;
+    }
+
+    public static boolean isNotNullOrEmpty(Object[] array) {
+        return !isNullOrEmpty(array);
     }
 
     public static boolean isNullOrEmpty(int[] array) {
