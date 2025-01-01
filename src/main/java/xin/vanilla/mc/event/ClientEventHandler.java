@@ -172,25 +172,25 @@ public class ClientEventHandler {
                 ((ScreenEvent.Init.Post) event).addListener(rewardOptionButton);
             }
             // 手动触发鼠标、键盘与渲染事件
-            else if (event instanceof ScreenEvent.KeyPressed.Post) {
+            else if (event instanceof ScreenEvent.KeyPressed.Pre) {
                 event.getScreen().children().stream()
                         .filter(button -> button instanceof InventoryButton)
                         .forEach(button -> {
                             boolean cancel = ((InventoryButton) button).keyPressed_(
-                                    ((ScreenEvent.KeyPressed.Post) event).getKeyCode(),
-                                    ((ScreenEvent.KeyPressed.Post) event).getScanCode(),
-                                    ((ScreenEvent.KeyPressed.Post) event).getModifiers()
+                                    ((ScreenEvent.KeyPressed.Pre) event).getKeyCode(),
+                                    ((ScreenEvent.KeyPressed.Pre) event).getScanCode(),
+                                    ((ScreenEvent.KeyPressed.Pre) event).getModifiers()
                             );
                             if (event.isCancelable()) event.setCanceled(cancel);
                         });
-            } else if (event instanceof ScreenEvent.KeyReleased.Post) {
+            } else if (event instanceof ScreenEvent.KeyReleased.Pre) {
                 event.getScreen().children().stream()
                         .filter(button -> button instanceof InventoryButton)
                         .forEach(button -> {
                             boolean cancel = ((InventoryButton) button).keyReleased_(
-                                    ((ScreenEvent.KeyReleased.Post) event).getKeyCode(),
-                                    ((ScreenEvent.KeyReleased.Post) event).getScanCode(),
-                                    ((ScreenEvent.KeyReleased.Post) event).getModifiers()
+                                    ((ScreenEvent.KeyReleased.Pre) event).getKeyCode(),
+                                    ((ScreenEvent.KeyReleased.Pre) event).getScanCode(),
+                                    ((ScreenEvent.KeyReleased.Pre) event).getModifiers()
                             );
                             if (event.isCancelable()) event.setCanceled(cancel);
                         });

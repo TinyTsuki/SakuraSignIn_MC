@@ -253,7 +253,7 @@ public class PopupOption {
     }
 
     public boolean isHovered() {
-        return !CollectionUtils.isNullOrEmpty(optionList) && this.relationMap.getOrDefault(selectedIndex, -1) >= 0;
+        return CollectionUtils.isNotNullOrEmpty(optionList) && this.relationMap.getOrDefault(selectedIndex, -1) >= 0;
     }
 
     public int getSelectedIndex() {
@@ -262,7 +262,7 @@ public class PopupOption {
 
     @NonNull
     public String getSelectedString() {
-        return (!CollectionUtils.isNullOrEmpty(optionList)
+        return (CollectionUtils.isNotNullOrEmpty(optionList)
                 && this.getSelectedIndex() >= 0
                 && this.getSelectedIndex() < this.optionList.size()
                 && this.relationMap.getOrDefault(selectedIndex, -1) >= 0)

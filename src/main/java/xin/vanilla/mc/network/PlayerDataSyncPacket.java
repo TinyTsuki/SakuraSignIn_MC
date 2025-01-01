@@ -97,7 +97,7 @@ public class PlayerDataSyncPacket extends SplitPacket {
                 // 在客户端更新 PlayerSignInDataCapability
                 // 获取玩家并更新 Capability 数据
                 List<PlayerDataSyncPacket> packets = SplitPacket.handle(packet);
-                if (!CollectionUtils.isNullOrEmpty(packets)) {
+                if (CollectionUtils.isNotNullOrEmpty(packets)) {
                     DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientProxy.handleSynPlayerData(new PlayerDataSyncPacket(packets)));
                 }
             }
