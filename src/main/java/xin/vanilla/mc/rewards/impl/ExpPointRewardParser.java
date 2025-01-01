@@ -27,6 +27,12 @@ public class ExpPointRewardParser implements RewardParser<Integer> {
 
     @Override
     public @NonNull String getDisplayName(JsonObject json) {
-        return I18nUtils.get(String.format("reward.sakura_sign_in.reward_type_%s", ERewardType.EXP_POINT.getCode()));
+        return getDisplayName(json, false);
+    }
+
+    @Override
+    public @NonNull String getDisplayName(JsonObject json, boolean withNum) {
+        int num = deserialize(json);
+        return I18nUtils.get(String.format("reward.sakura_sign_in.reward_type_%s", ERewardType.EXP_POINT.getCode())) + (withNum ? "x" + num : "");
     }
 }

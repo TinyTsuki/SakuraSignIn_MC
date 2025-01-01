@@ -72,6 +72,11 @@ public class AdvancementRewardParser implements RewardParser<ResourceLocation> {
 
     @Override
     public @NonNull String getDisplayName(JsonObject json) {
+        return getDisplayName(json, false);
+    }
+
+    @Override
+    public @NonNull String getDisplayName(JsonObject json, boolean withNum) {
         ResourceLocation deserialize = deserialize(json);
         return String.format("%s: %s", I18nUtils.get(String.format("reward.sakura_sign_in.reward_type_%s", ERewardType.ADVANCEMENT.getCode()))
                 , SakuraSignIn.getAdvancementData().stream()
