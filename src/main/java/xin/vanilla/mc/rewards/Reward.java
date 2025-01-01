@@ -31,6 +31,10 @@ public class Reward implements Cloneable, Serializable {
      */
     private ERewardType type;
     /**
+     * 奖励概率
+     */
+    private double probability = 1d;
+    /**
      * 奖励内容
      */
     private JsonObject content;
@@ -38,9 +42,30 @@ public class Reward implements Cloneable, Serializable {
     public Reward() {
     }
 
+    public double getProbability() {
+        return probability <= 1 || probability > 0 ? probability : 1;
+    }
+
+    public <T> Reward(T content, ERewardType type) {
+        this.content = RewardManager.serializeReward(content, type);
+        this.type = type;
+    }
+
     public Reward(JsonObject content, ERewardType type) {
         this.content = content;
         this.type = type;
+    }
+
+    public Reward(JsonObject content, ERewardType type, double probability) {
+        this.content = content;
+        this.type = type;
+        this.probability = probability;
+    }
+
+    public <T> Reward(T content, ERewardType type, double probability) {
+        this.content = RewardManager.serializeReward(content, type);
+        this.type = type;
+        this.probability = probability;
     }
 
     @Override
@@ -50,6 +75,7 @@ public class Reward implements Cloneable, Serializable {
             cloned.rewarded = this.rewarded;
             cloned.disabled = this.disabled;
             cloned.type = this.type;
+            cloned.probability = this.probability;
             cloned.content = GSON.fromJson(GSON.toJson(this.content), JsonObject.class);
             return cloned;
         } catch (CloneNotSupportedException e) {
@@ -58,7 +84,11 @@ public class Reward implements Cloneable, Serializable {
     }
 
     public String getName() {
-        return RewardManager.getRewardName(this);
+        return getName(true);
+    }
+
+    public String getName(boolean withNum) {
+        return RewardManager.getRewardName(this, withNum);
     }
 
     public static Reward getDefault() {
@@ -70,6 +100,7 @@ public class Reward implements Cloneable, Serializable {
         json.addProperty("rewarded", this.rewarded);
         json.addProperty("disabled", this.disabled);
         json.addProperty("type", this.type.name());
+        json.addProperty("probability", this.probability);
         json.add("content", this.content);
         return json;
     }

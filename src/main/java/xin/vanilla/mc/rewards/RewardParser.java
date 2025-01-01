@@ -22,4 +22,7 @@ public interface RewardParser<T> {
 
     @NonNull
     String getDisplayName(JsonObject json);
+
+    @NonNull
+    String getDisplayName(JsonObject json, boolean withNum);
 }

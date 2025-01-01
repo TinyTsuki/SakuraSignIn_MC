@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class RewardOptionDataManager {
-    public static final Gson GSON = new GsonBuilder().setPrettyPrinting().enableComplexMapKeySerialization().create();
+    public static final Gson GSON = new GsonBuilder().enableComplexMapKeySerialization().create();
 
     public static final String FILE_NAME = "reward_option_data.json";
 
