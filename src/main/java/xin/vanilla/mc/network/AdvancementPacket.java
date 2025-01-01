@@ -49,7 +49,7 @@ public class AdvancementPacket extends SplitPacket {
             if (ctx.get().getDirection().getReceptionSide().isClient()) {
                 // 在客户端更新 List<AdvancementData>
                 List<AdvancementPacket> packets = SplitPacket.handle(packet);
-                if (!CollectionUtils.isNullOrEmpty(packets)) {
+                if (CollectionUtils.isNotNullOrEmpty(packets)) {
                     DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientProxy.handleAdvancement(new AdvancementPacket(packets)));
                 }
             }
