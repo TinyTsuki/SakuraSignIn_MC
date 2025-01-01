@@ -327,7 +327,7 @@ public class RewardOptionData implements Serializable {
     public void setDateTimeRewards(@NonNull Map<String, RewardList> dateTimeRewards) {
         this.dateTimeRewards = new LinkedHashMap<>();
         dateTimeRewards.forEach((key, rewardList) -> {
-            if (!CollectionUtils.isNullOrEmpty(rewardList)) {
+            if (CollectionUtils.isNotNullOrEmpty(rewardList)) {
                 // 解析日期范围并生成具体日期
                 this.addDateTimeRewards(key, rewardList);
             }

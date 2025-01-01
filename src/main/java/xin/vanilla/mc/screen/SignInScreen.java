@@ -603,7 +603,7 @@ public class SignInScreen extends Screen {
         AtomicBoolean flag = new AtomicBoolean(false);
         if (popupOption.isHovered()) {
             LOGGER.debug("选择了弹出选项:\tIndex: {}\tContent: {}", popupOption.getSelectedIndex(), popupOption.getSelectedString());
-            if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT && !CollectionUtils.isNullOrEmpty(themeFileList)) {
+            if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT && CollectionUtils.isNotNullOrEmpty(themeFileList)) {
                 ClientPlayerEntity player = Minecraft.getInstance().player;
                 String selectedFile = themeFileList.get(popupOption.getSelectedIndex()).getPath();
                 if (player != null) {
