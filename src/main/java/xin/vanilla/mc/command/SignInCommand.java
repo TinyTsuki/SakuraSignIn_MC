@@ -6,7 +6,6 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
-import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import lombok.NonNull;
@@ -22,6 +21,7 @@ import xin.vanilla.mc.SakuraSignIn;
 import xin.vanilla.mc.capability.IPlayerSignInData;
 import xin.vanilla.mc.capability.PlayerSignInDataCapability;
 import xin.vanilla.mc.config.KeyValue;
+import xin.vanilla.mc.config.RewardOptionDataManager;
 import xin.vanilla.mc.config.ServerConfig;
 import xin.vanilla.mc.enums.ESignInType;
 import xin.vanilla.mc.enums.ETimeCoolingMethod;
@@ -77,6 +77,7 @@ public class SignInCommand {
             builder.suggest(localDateTime.getYear() + " " + localDateTime.getMonthValue() + " " + localDateTime.getDayOfMonth());
             builder.suggest("~ ~ ~");
             builder.suggest("~ ~ ~-1");
+            builder.suggest("all");
             return builder.buildFuture();
         };
         SuggestionProvider<CommandSourceStack> datetimeSuggestions = (context, builder) -> {
@@ -95,46 +96,79 @@ public class SignInCommand {
         };
 
         Command<CommandSourceStack> signInCommand = context -> {
-            Date signInTime;
-            ESignInType signInType;
-            try {
-                long date = getRelativeLong(context, "date");
-                signInTime = DateUtils.getDate(date);
-                signInType = ESignInType.RE_SIGN_IN;
-            } catch (IllegalArgumentException ignored) {
-                signInTime = DateUtils.getServerDate();
-                signInType = ESignInType.SIGN_IN;
-            }
+            List<KeyValue<Date, ESignInType>> signInTimeList = new ArrayList<>();
             ServerPlayer player = context.getSource().getPlayerOrException();
             IPlayerSignInData signInData = PlayerSignInDataCapability.getData(player);
-            RewardManager.signIn(player, new SignInPacket(signInTime, signInData.isAutoRewarded(), signInType));
+            try {
+                String string = StringArgumentType.getString(context, "date");
+                if (ServerConfig.SIGN_IN_CARD.get() && "all".equalsIgnoreCase(string)) {
+                    int days = 0;
+                    for (int i = 1; i <= ServerConfig.RE_SIGN_IN_DAYS.get() && days < signInData.getSignInCard(); i++) {
+                        Date date = DateUtils.addDay(DateUtils.getServerDate(), -i);
+                        if (signInData.getSignInRecords().stream().noneMatch(data -> DateUtils.toDateInt(data.getCompensateTime()) == DateUtils.toDateInt(RewardManager.getCompensateDate(date)))) {
+                            signInTimeList.add(new KeyValue<>(DateUtils.format(DateUtils.toString(date)), ESignInType.RE_SIGN_IN));
+                            days++;
+                        }
+                    }
+                } else {
+                    long date = getRelativeLong(string, "date");
+                    signInTimeList.add(new KeyValue<>(DateUtils.getDate(date), ESignInType.RE_SIGN_IN));
+                }
+            } catch (IllegalArgumentException ignored) {
+                signInTimeList.add(new KeyValue<>(DateUtils.getServerDate(), ESignInType.SIGN_IN));
+            }
+            for (KeyValue<Date, ESignInType> keyValue : signInTimeList) {
+                RewardManager.signIn(player, new SignInPacket(keyValue.getKey(), signInData.isAutoRewarded(), keyValue.getValue()));
+            }
             return 1;
         };
         Command<CommandSourceStack> rewardCommand = context -> {
-            Date rewardTime;
-            try {
-                long date = getRelativeLong(context, "date");
-                rewardTime = DateUtils.getDate(date);
-            } catch (IllegalArgumentException ignored) {
-                rewardTime = DateUtils.getServerDate();
-            }
+            List<Date> rewardTimeList = new ArrayList<>();
             ServerPlayer player = context.getSource().getPlayerOrException();
-            RewardManager.signIn(player, new SignInPacket(rewardTime, true, ESignInType.REWARD));
+            IPlayerSignInData signInData = PlayerSignInDataCapability.getData(player);
+            try {
+                String string = StringArgumentType.getString(context, "date");
+                if ("all".equalsIgnoreCase(string)) {
+                    signInData.getSignInRecords().stream()
+                            .filter(data -> !data.isRewarded())
+                            .forEach(data -> rewardTimeList.add(DateUtils.format(DateUtils.toString(RewardManager.getUnCompensateDate(data.getCompensateTime())))));
+                } else {
+                    long date = getRelativeLong(string, "date");
+                    rewardTimeList.add(DateUtils.getDate(date));
+                }
+            } catch (IllegalArgumentException ignored) {
+                rewardTimeList.add(DateUtils.getServerDate());
+            }
+            for (Date date : rewardTimeList) {
+                RewardManager.signIn(player, new SignInPacket(date, true, ESignInType.REWARD));
+            }
             return 1;
         };
         Command<CommandSourceStack> signAndRewardCommand = context -> {
-            Date signInTime;
-            ESignInType signInType;
-            try {
-                long date = getRelativeLong(context, "date");
-                signInTime = DateUtils.getDate(date);
-                signInType = ESignInType.RE_SIGN_IN;
-            } catch (IllegalArgumentException ignored) {
-                signInTime = DateUtils.getServerDate();
-                signInType = ESignInType.SIGN_IN;
-            }
+            List<KeyValue<Date, ESignInType>> signInTimeList = new ArrayList<>();
             ServerPlayer player = context.getSource().getPlayerOrException();
-            RewardManager.signIn(player, new SignInPacket(signInTime, true, signInType));
+            IPlayerSignInData signInData = PlayerSignInDataCapability.getData(player);
+            try {
+                String string = StringArgumentType.getString(context, "date");
+                if (ServerConfig.SIGN_IN_CARD.get() && "all".equalsIgnoreCase(string)) {
+                    int days = 0;
+                    for (int i = 1; i <= ServerConfig.RE_SIGN_IN_DAYS.get() && days < signInData.getSignInCard(); i++) {
+                        Date date = DateUtils.addDay(DateUtils.getServerDate(), -i);
+                        if (signInData.getSignInRecords().stream().noneMatch(data -> DateUtils.toDateInt(data.getCompensateTime()) == DateUtils.toDateInt(RewardManager.getCompensateDate(date)))) {
+                            signInTimeList.add(new KeyValue<>(date, ESignInType.RE_SIGN_IN));
+                            days++;
+                        }
+                    }
+                } else {
+                    long date = getRelativeLong(string, "date");
+                    signInTimeList.add(new KeyValue<>(DateUtils.getDate(date), ESignInType.RE_SIGN_IN));
+                }
+            } catch (IllegalArgumentException ignored) {
+                signInTimeList.add(new KeyValue<>(DateUtils.getServerDate(), ESignInType.SIGN_IN));
+            }
+            for (KeyValue<Date, ESignInType> keyValue : signInTimeList) {
+                RewardManager.signIn(player, new SignInPacket(keyValue.getKey(), true, keyValue.getValue()));
+            }
             return 1;
         };
         Command<CommandSourceStack> helpCommand = context -> {
@@ -406,6 +440,20 @@ public class SignInCommand {
                                             return 1;
                                         })
                                 )
+                                .then(Commands.literal("continuousRewardsRepeatable")
+                                        .executes(context -> {
+                                            ServerPlayer player = context.getSource().getPlayerOrException();
+                                            player.sendSystemMessage(Component.translatable(getI18nKey(String.format("服务器已%s连续签到奖励持续领取", ServerConfig.CONTINUOUS_REWARDS_REPEATABLE.get() ? "启用" : "禁用"))));
+                                            return 1;
+                                        })
+                                )
+                                .then(Commands.literal("cycleRewardsRepeatable")
+                                        .executes(context -> {
+                                            ServerPlayer player = context.getSource().getPlayerOrException();
+                                            player.sendSystemMessage(Component.translatable(getI18nKey(String.format("服务器已%s循环签到奖励持续领取", ServerConfig.CYCLE_REWARDS_REPEATABLE.get() ? "启用" : "禁用"))));
+                                            return 1;
+                                        })
+                                )
                         )
                         // 设置服务器时间 /va config set date <year> <month> <day> <hour> <minute> <second>
                         .then(Commands.literal("set")
@@ -414,7 +462,8 @@ public class SignInCommand {
                                         .then(Commands.argument("datetime", StringArgumentType.greedyString())
                                                 .suggests(datetimeSuggestions)
                                                 .executes(context -> {
-                                                    long datetime = getRelativeLong(context, "datetime");
+                                                    String string = StringArgumentType.getString(context, "datetime");
+                                                    long datetime = getRelativeLong(string, "datetime");
                                                     Date date = DateUtils.getDate(datetime);
                                                     ServerConfig.SERVER_TIME.set(DateUtils.toDateTimeString(new Date()));
                                                     ServerConfig.ACTUAL_TIME.set(DateUtils.toDateTimeString(date));
@@ -568,6 +617,34 @@ public class SignInCommand {
                                                 })
                                         )
                                 )
+                                .then(Commands.literal("continuousRewardsRepeatable")
+                                        .then(Commands.argument("bool", StringArgumentType.word())
+                                                .suggests(booleanSuggestions)
+                                                .executes(context -> {
+                                                    String boolString = StringArgumentType.getString(context, "bool");
+                                                    boolean bool = StringUtils.stringToBoolean(boolString);
+                                                    ServerConfig.CONTINUOUS_REWARDS_REPEATABLE.set(bool);
+                                                    RewardOptionDataManager.getRewardOptionData().refreshContinuousRewardsRelation();
+                                                    ServerPlayer player = context.getSource().getPlayerOrException();
+                                                    broadcastMessage(player, Component.translatable(getI18nKey("服务器已%s连续签到奖励持续领取"), bool ? "启用" : "禁用"));
+                                                    return 1;
+                                                })
+                                        )
+                                )
+                                .then(Commands.literal("cycleRewardsRepeatable")
+                                        .then(Commands.argument("bool", StringArgumentType.word())
+                                                .suggests(booleanSuggestions)
+                                                .executes(context -> {
+                                                    String boolString = StringArgumentType.getString(context, "bool");
+                                                    boolean bool = StringUtils.stringToBoolean(boolString);
+                                                    ServerConfig.CYCLE_REWARDS_REPEATABLE.set(bool);
+                                                    RewardOptionDataManager.getRewardOptionData().refreshCycleRewardsRelation();
+                                                    ServerPlayer player = context.getSource().getPlayerOrException();
+                                                    broadcastMessage(player, Component.translatable(getI18nKey("服务器已%s循环签到奖励持续领取"), bool ? "启用" : "禁用"));
+                                                    return 1;
+                                                })
+                                        )
+                                )
                         )
                 )
         );
@@ -603,8 +680,7 @@ public class SignInCommand {
         }
     }
 
-    private static long getRelativeLong(CommandContext<CommandSourceStack> context, @NonNull String name) throws CommandSyntaxException {
-        String string = StringArgumentType.getString(context, name);
+    private static long getRelativeLong(String string, @NonNull String name) throws CommandSyntaxException {
         if (StringUtils.isNullOrEmptyEx(string)) {
             throw CommandSyntaxException.BUILT_IN_EXCEPTIONS.readerInvalidInt().create(string);
         }

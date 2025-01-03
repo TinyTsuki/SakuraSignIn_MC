@@ -757,7 +757,7 @@ public class RewardOptionScreen extends Screen {
                 StringInputScreen callbackScreen = new StringInputScreen(this
                         , new TextList(Text.i18n("请输入经验点值").setShadow(true), Text.i18n("请输入奖励概率").setShadow(true))
                         , new TextList(Text.i18n("请输入"))
-                        , new StringList("-?\\d*", "(1|0\\.?\\d{0,5})?")
+                        , new StringList("-?\\d*", "(1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                         , new StringList("1")
                         , input -> {
                     StringList result = new StringList();
@@ -785,7 +785,7 @@ public class RewardOptionScreen extends Screen {
                 StringInputScreen callbackScreen = new StringInputScreen(this
                         , new TextList(Text.i18n("请输入经验等级").setShadow(true), Text.i18n("请输入奖励概率").setShadow(true))
                         , new TextList(Text.i18n("请输入"))
-                        , new StringList("-?\\d*", "(1|0\\.?\\d{0,5})?")
+                        , new StringList("-?\\d*", "(1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                         , new StringList("1")
                         , input -> {
                     StringList result = new StringList();
@@ -813,7 +813,7 @@ public class RewardOptionScreen extends Screen {
                 StringInputScreen callbackScreen = new StringInputScreen(this
                         , new TextList(Text.i18n("请输入补签卡数量").setShadow(true), Text.i18n("请输入奖励概率").setShadow(true))
                         , new TextList(Text.i18n("请输入"))
-                        , new StringList("-?\\d*", "(1|0\\.?\\d{0,5})?")
+                        , new StringList("-?\\d*", "(1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                         , new StringList("1")
                         , input -> {
                     StringList result = new StringList();
@@ -856,7 +856,7 @@ public class RewardOptionScreen extends Screen {
                 StringInputScreen callbackScreen = new StringInputScreen(this
                         , new TextList(Text.i18n("请输入消息").setShadow(true), Text.i18n("请输入奖励概率").setShadow(true))
                         , new TextList(Text.i18n("请输入"))
-                        , new StringList("", "(1|0\\.?\\d{0,5})?")
+                        , new StringList("", "(1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                         , new StringList("", "1")
                         , input -> {
                     if (CollectionUtils.isNotNullOrEmpty(input) && StringUtils.isNotNullOrEmpty(key[0])) {
@@ -878,7 +878,7 @@ public class RewardOptionScreen extends Screen {
                 StringInputScreen callbackScreen = new StringInputScreen(this
                         , new TextList(Text.i18n("请输入指令").setShadow(true), Text.i18n("请输入奖励概率").setShadow(true))
                         , new TextList(Text.i18n("请输入"))
-                        , new StringList("", "(1|0\\.?\\d{0,5})?")
+                        , new StringList("", "(1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                         , new StringList("", "1")
                         , input -> {
                     StringList result = new StringList();
@@ -978,7 +978,7 @@ public class RewardOptionScreen extends Screen {
                     Minecraft.getInstance().setScreen(new StringInputScreen(this
                             , new TextList(Text.i18n("请输入经验点值").setShadow(true), Text.i18n("请输入奖励概率").setShadow(true))
                             , new TextList(Text.i18n("请输入"))
-                            , new StringList("-?\\d*", "(1|0\\.?\\d{0,5})?")
+                            , new StringList("-?\\d*", "(1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                             , new StringList("1")
                             , input -> {
                         StringList result = new StringList();
@@ -1000,7 +1000,7 @@ public class RewardOptionScreen extends Screen {
                     Minecraft.getInstance().setScreen(new StringInputScreen(this
                             , new TextList(Text.i18n("请输入经验等级").setShadow(true), Text.i18n("请输入奖励概率").setShadow(true))
                             , new TextList(Text.i18n("请输入"))
-                            , new StringList("-?\\d*", "(1|0\\.?\\d{0,5})?")
+                            , new StringList("-?\\d*", "(1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                             , new StringList("1")
                             , input -> {
                         StringList result = new StringList();
@@ -1022,7 +1022,7 @@ public class RewardOptionScreen extends Screen {
                     Minecraft.getInstance().setScreen(new StringInputScreen(this
                             , new TextList(Text.i18n("请输入补签卡数量").setShadow(true), Text.i18n("请输入奖励概率").setShadow(true))
                             , new TextList(Text.i18n("请输入"))
-                            , new StringList("-?\\d*", "(1|0\\.?\\d{0,5})?")
+                            , new StringList("-?\\d*", "(1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                             , new StringList("1")
                             , input -> {
                         StringList result = new StringList();
@@ -1054,7 +1054,7 @@ public class RewardOptionScreen extends Screen {
                     Minecraft.getInstance().setScreen(new StringInputScreen(this
                             , new TextList(Text.i18n("请输入消息").setShadow(true), Text.i18n("请输入奖励概率").setShadow(true))
                             , new TextList(Text.i18n("请输入"))
-                            , new StringList("", "(1|0\\.?\\d{0,5})?")
+                            , new StringList("", "(1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                             , new StringList("", "1")
                             , input -> {
                         if (CollectionUtils.isNotNullOrEmpty(input)) {
@@ -1070,7 +1070,7 @@ public class RewardOptionScreen extends Screen {
                     Minecraft.getInstance().setScreen(new StringInputScreen(this
                             , new TextList(Text.i18n("请输入指令").setShadow(true), Text.i18n("请输入奖励概率").setShadow(true))
                             , new TextList(Text.i18n("请输入"))
-                            , new StringList("", "(1|0\\.?\\d{0,5})?")
+                            , new StringList("", "(1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                             , new StringList("", "1")
                             , input -> {
                         StringList result = new StringList();
@@ -1118,8 +1118,8 @@ public class RewardOptionScreen extends Screen {
                             Minecraft.getInstance().setScreen(new StringInputScreen(this
                                     , new TextList(Text.i18n("请输入经验点值").setShadow(true), Text.i18n("请输入奖励概率").setShadow(true))
                                     , new TextList(Text.i18n("请输入"))
-                                    , new StringList("-?\\d*", "(1|0\\.?\\d{0,5})?")
-                                    , new StringList(String.valueOf((Integer) RewardManager.deserializeReward(reward)), String.valueOf(reward.getProbability()))
+                                    , new StringList("-?\\d*", "(1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                    , new StringList(String.valueOf((Integer) RewardManager.deserializeReward(reward)), StringUtils.toFixedEx(reward.getProbability(), 5))
                                     , input -> {
                                 StringList result = new StringList();
                                 if (CollectionUtils.isNotNullOrEmpty(input)) {
@@ -1141,8 +1141,8 @@ public class RewardOptionScreen extends Screen {
                             Minecraft.getInstance().setScreen(new StringInputScreen(this
                                     , new TextList(Text.i18n("请输入经验等级").setShadow(true), Text.i18n("请输入奖励概率").setShadow(true))
                                     , new TextList(Text.i18n("请输入"))
-                                    , new StringList("-?\\d*", "(1|0\\.?\\d{0,5})?")
-                                    , new StringList(String.valueOf((Integer) RewardManager.deserializeReward(reward)), String.valueOf(reward.getProbability()))
+                                    , new StringList("-?\\d*", "(1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                    , new StringList(String.valueOf((Integer) RewardManager.deserializeReward(reward)), StringUtils.toFixedEx(reward.getProbability(), 5))
                                     , input -> {
                                 StringList result = new StringList();
                                 if (CollectionUtils.isNotNullOrEmpty(input)) {
@@ -1164,8 +1164,8 @@ public class RewardOptionScreen extends Screen {
                             Minecraft.getInstance().setScreen(new StringInputScreen(this
                                     , new TextList(Text.i18n("请输入补签卡数量").setShadow(true), Text.i18n("请输入奖励概率").setShadow(true))
                                     , new TextList(Text.i18n("请输入"))
-                                    , new StringList("-?\\d*", "(1|0\\.?\\d{0,5})?")
-                                    , new StringList(String.valueOf((Integer) RewardManager.deserializeReward(reward)), String.valueOf(reward.getProbability()))
+                                    , new StringList("-?\\d*", "(1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                    , new StringList(String.valueOf((Integer) RewardManager.deserializeReward(reward)), StringUtils.toFixedEx(reward.getProbability(), 5))
                                     , input -> {
                                 StringList result = new StringList();
                                 if (CollectionUtils.isNotNullOrEmpty(input)) {
@@ -1196,8 +1196,8 @@ public class RewardOptionScreen extends Screen {
                             Minecraft.getInstance().setScreen(new StringInputScreen(this
                                     , new TextList(Text.i18n("请输入消息").setShadow(true), Text.i18n("请输入奖励概率").setShadow(true))
                                     , new TextList(Text.i18n("请输入"))
-                                    , new StringList("", "(1|0\\.?\\d{0,5})?")
-                                    , new StringList(((MutableComponent) RewardManager.deserializeReward(reward)).getString(), String.valueOf(reward.getProbability()))
+                                    , new StringList("", "(1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                    , new StringList(((MutableComponent) RewardManager.deserializeReward(reward)).getString(), StringUtils.toFixedEx(reward.getProbability(), 5))
                                     , input -> {
                                 if (CollectionUtils.isNotNullOrEmpty(input)) {
                                     MutableComponent textToComponent = AbstractGuiUtils.textToComponent(Text.literal(input.get(0)));
@@ -1213,8 +1213,8 @@ public class RewardOptionScreen extends Screen {
                             Minecraft.getInstance().setScreen(new StringInputScreen(this
                                     , new TextList(Text.i18n("请输入指令").setShadow(true), Text.i18n("请输入奖励概率").setShadow(true))
                                     , new TextList(Text.i18n("请输入"))
-                                    , new StringList("", "(1|0\\.?\\d{0,5})?")
-                                    , new StringList(RewardManager.deserializeReward(reward), String.valueOf(reward.getProbability()))
+                                    , new StringList("", "(1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                    , new StringList(RewardManager.deserializeReward(reward), StringUtils.toFixedEx(reward.getProbability(), 5))
                                     , input -> {
                                 StringList result = new StringList();
                                 if (CollectionUtils.isNotNullOrEmpty(input) && input.get(0).startsWith("/")) {
