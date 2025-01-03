@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class I18nUtils {
+    // 如你所见，这代码与翻译写得并不好
     private static final Map<String, String> ZH_CN_KEY_MAP = new HashMap<>() {{
         put("奖励规则类型", "title.sakura_sign_in.reward_rule_type");
         put("基础奖励", "title.sakura_sign_in.base_reward");
@@ -51,6 +52,7 @@ public class I18nUtils {
         put("请输入进度Json", "tips.sakura_sign_in.enter_advancement_json");
         put("请输入消息", "tips.sakura_sign_in.enter_message");
         put("请输入指令", "tips.sakura_sign_in.enter_command");
+        put("请输入奖励概率", "tips.sakura_sign_in.enter_reward_probability");
         put("规则名称[%s]输入有误", "tips.sakura_sign_in.reward_rule_s_error");
         put("物品Json[%s]输入有误", "tips.sakura_sign_in.item_json_s_error");
         put("物品数量[%s]输入有误", "tips.sakura_sign_in.item_count_s_error");
@@ -59,6 +61,7 @@ public class I18nUtils {
         put("持续时间[%s]输入有误", "tips.sakura_sign_in.effect_duration_s_error");
         put("效果等级[%s]输入有误", "tips.sakura_sign_in.effect_amplifier_s_error");
         put("进度Json[%s]输入有误", "tips.sakura_sign_in.advancement_json_s_error");
+        put("奖励概率[%s]输入有误", "tips.sakura_sign_in.reward_probability_s_error");
         put("输入值[%s]有误", "tips.sakura_sign_in.enter_value_s_error");
         put("展开侧边栏", "tips.sakura_sign_in.open_sidebar");
         put("收起侧边栏", "tips.sakura_sign_in.close_sidebar");
@@ -73,6 +76,7 @@ public class I18nUtils {
         put("设置数量\n当前 %s", "tips.sakura_sign_in.set_count_s");
         put("设置持续时间\n当前 %s", "tips.sakura_sign_in.set_duration_s");
         put("设置效果等级\n当前 %s", "tips.sakura_sign_in.set_amplifier_s");
+        put("设置概率\n当前 %.3f%%", "tips.sakura_sign_in.set_probability_f");
         put("编辑NBT", "tips.sakura_sign_in.edit_nbt");
         put("页面上部分元素\n按住Shift键可查看帮助信息", "tips.sakura_sign_in.help_button");
         put("比如红色字体按钮, 按住Shift时会给予帮助信息:\n按住Control键 并且 鼠标右键点击以确认\n直接点击是取消哦", "tips.sakura_sign_in.help_button_shift");
@@ -117,6 +121,10 @@ public class I18nUtils {
         put("玩家签到数据同步网络包大小为: %d", "message.sakura_sign_in.player_data_sync_packet_size_d");
         put("服务器已启用奖励领取受幸运影响", "message.sakura_sign_in.server_enabled_reward_affected_by_luck");
         put("服务器已禁用奖励领取受幸运影响", "message.sakura_sign_in.server_disabled_reward_affected_by_luck");
+        put("服务器已启用连续签到奖励持续领取", "message.sakura_sign_in.server_enabled_continuous_rewards_repeatable");
+        put("服务器已禁用连续签到奖励持续领取", "message.sakura_sign_in.server_disabled_continuous_rewards_repeatable");
+        put("服务器已启用循环签到奖励持续领取", "message.sakura_sign_in.server_enabled_cycle_rewards_repeatable");
+        put("服务器已禁用循环签到奖励持续领取", "message.sakura_sign_in.server_disabled_cycle_rewards_repeatable");
 
         put("服务器时间已设置为: %s", "message.sakura_sign_in.set_server_time_s");
         put("服务器最大补签天数已被设置为: %d", "message.sakura_sign_in.set_max_sign_in_day_d");
@@ -135,7 +143,7 @@ public class I18nUtils {
         put("%s的奖励已经领取过啦", "message.sakura_sign_in.already_receive_reward_s");
         put("没有查询到[%s]的签到记录哦，鉴定为阁下没有签到！", "message.sakura_sign_in.not_sign_in");
         put("奖励领取详情:", "message.sakura_sign_in.receive_reward_success");
-        put("签到成功, %s/%s", "message.sakura_sign_in.sign_in_success_s");
+        put("%s 签到成功, %s/%s", "message.sakura_sign_in.sign_in_success_s");
 
     }};
 
