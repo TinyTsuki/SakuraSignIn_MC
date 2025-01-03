@@ -69,6 +69,7 @@
   "tips.sakura_sign_in.enter_advancement_json": "Please enter the Advancement's Json",
   "tips.sakura_sign_in.enter_message": "Please enter the Message",
   "tips.sakura_sign_in.enter_command": "Please enter the Command",
+  "tips.sakura_sign_in.enter_reward_probability": "Please enter the Probability",
   "tips.sakura_sign_in.reward_rule_s_error": "The rule name [%s] is incorrect",
   "tips.sakura_sign_in.item_json_s_error": "Item's Json [%s] is incorrect",
   "tips.sakura_sign_in.item_count_s_error": "Item's Quantity [%s] is incorrect",
@@ -77,6 +78,7 @@
   "tips.sakura_sign_in.effect_duration_s_error": "Effect's Duration [%s] is incorrect",
   "tips.sakura_sign_in.effect_amplifier_s_error": "Effect's Amplifier [%s] is incorrect",
   "tips.sakura_sign_in.advancement_json_s_error": "Advancement's Json [%s] is incorrect",
+  "tips.sakura_sign_in.reward_probability_s_error": "Probability [%s] is incorrect",
   "tips.sakura_sign_in.enter_value_s_error": "Enter Value [%s] is incorrect",
   "tips.sakura_sign_in.open_sidebar": "Open sidebar",
   "tips.sakura_sign_in.close_sidebar": "Close sidebar",
@@ -91,6 +93,7 @@
   "tips.sakura_sign_in.set_count_s": "Set Quantity\nCurrently %s",
   "tips.sakura_sign_in.set_duration_s": "Set Duration\nCurrently %ss",
   "tips.sakura_sign_in.set_amplifier_s": "Set Amplifier\nCurrently %s",
+  "tips.sakura_sign_in.set_probability_f": "Set Probability\nCurrently %.3f%%",
   "tips.sakura_sign_in.edit_nbt": "Edit NBT",
   "tips.sakura_sign_in.help_button": "Hold down the Shift key on some elements\non the page to view help information",
   "tips.sakura_sign_in.help_button_shift": "For example, for the red font button,\npressing and holding Shift will provide help information:\nHold down the Ctrl key and right-click with the mouse to confirm.\nClicking directly cancels the operation",
@@ -142,6 +145,10 @@
   "message.sakura_sign_in.player_data_sync_packet_size_d": "The maximum size of the player data synchronization network packet is: %d",
   "message.sakura_sign_in.server_enabled_reward_affected_by_luck": "The server has enabled: Rewards will be affected by the player's luck",
   "message.sakura_sign_in.server_disabled_reward_affected_by_luck": "The server has disabled: Rewards will be affected by the player's luck",
+  "message.sakura_sign_in.server_enabled_continuous_rewards_repeatable": "The server has enabled: The Continuous-Rewards can be repeatedly obtained after reaching the standard",
+  "message.sakura_sign_in.server_disabled_continuous_rewards_repeatable": "The server has disabled: The Continuous-Rewards can be repeatedly obtained after reaching the standard",
+  "message.sakura_sign_in.server_enabled_cycle_rewards_repeatable": "The server has enabled: The Cycle-Rewards can be repeatedly obtained after reaching the standard",
+  "message.sakura_sign_in.server_disabled_cycle_rewards_repeatable": "The server has disabled: The Cycle-Rewards can be repeatedly obtained after reaching the standard",
   "message.sakura_sign_in.set_server_time_s": "The server time has been set to: %s",
   "message.sakura_sign_in.set_max_sign_in_day_d": "The maximum number of days for supplementary signing on the server has been set to: %d",
   "message.sakura_sign_in.set_sign_in_time_cool_down_mode_s": "The cooling method for server sign-in time has been set to: %s",
@@ -158,5 +165,5 @@
   "message.sakura_sign_in.already_receive_reward_s": "The reward for %s has already been claimed",
   "message.sakura_sign_in.not_sign_in": "There are no sign-in records found for [%s].",
   "message.sakura_sign_in.receive_reward_success": "Reward received details:",
-  "message.sakura_sign_in.sign_in_success_s": "Sign-In successfully, %s/%s"
+  "message.sakura_sign_in.sign_in_success_s": "Successfully Signed-In on %s, continuous: %sd, accumulated: %sd"
 }
