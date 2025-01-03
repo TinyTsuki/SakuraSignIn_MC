@@ -60,6 +60,14 @@ public class ServerConfig {
      * 奖励领取是否受玩家幸运/霉运影响
      */
     public static final ForgeConfigSpec.BooleanValue REWARD_AFFECTED_BY_LUCK;
+    /**
+     * 连续签到奖励 天数达标后是否允许一直领取该标准奖励
+     */
+    public static final ForgeConfigSpec.BooleanValue CONTINUOUS_REWARDS_REPEATABLE;
+    /**
+     * 签到周期奖励 天数达标后是否允许一直领取该标准奖励
+     */
+    public static final ForgeConfigSpec.BooleanValue CYCLE_REWARDS_REPEATABLE;
 
     static {
         ForgeConfigSpec.Builder SERVER_BUILDER = new ForgeConfigSpec.Builder();
@@ -145,6 +153,18 @@ public class ServerConfig {
                 .comment("Whether the rewards will be affected by the player's luck/unluck."
                         , "奖励领取是否受玩家幸运/霉运影响。")
                 .define("rewardAffectedByLuck", true);
+
+        // 连续签到奖励 天数达标后是否允许一直领取该标准奖励
+        CONTINUOUS_REWARDS_REPEATABLE = SERVER_BUILDER
+                .comment("Whether the Continuous-Rewards can be repeatedly obtained after reaching the standard."
+                        , "连续签到奖励 天数达标后是否允许一直领取该标准奖励。")
+                .define("continuousRewardsRepeatable", false);
+
+        // 签到周期奖励 天数达标后是否允许一直领取该标准奖励
+        CYCLE_REWARDS_REPEATABLE = SERVER_BUILDER
+                .comment("Whether the Cycle-Rewards can be repeatedly obtained after reaching the standard."
+                        , "签到周期奖励 天数达标后是否允许一直领取该标准奖励。")
+                .define("cycleRewardsRepeatable", false);
 
         SERVER_BUILDER.pop();
 
