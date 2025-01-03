@@ -747,8 +747,8 @@ public class ItemSelectScreen extends Screen {
             Minecraft.getInstance().setScreen(new StringInputScreen(this
                     , Text.i18n("请输入奖励概率").setShadow(true)
                     , Text.i18n("请输入")
-                    , "(1|0\\.?\\d{0,5})?"
-                    , String.valueOf(this.probability)
+                    , "(1(\\.0{0,5})?|0(\\.\\d{0,5})?)?"
+                    , StringUtils.toFixedEx(this.probability, 5)
                     , input -> {
                 StringList result = new StringList();
                 if (CollectionUtils.isNotNullOrEmpty(input)) {

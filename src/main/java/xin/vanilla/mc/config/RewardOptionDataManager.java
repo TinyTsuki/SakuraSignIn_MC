@@ -89,6 +89,8 @@ public class RewardOptionDataManager {
         if (file.exists()) {
             try {
                 rewardOptionData = RewardOptionDataManager.deserializeRewardOption(new String(Files.readAllBytes(Paths.get(file.getPath()))));
+                rewardOptionData.refreshContinuousRewardsRelation();
+                rewardOptionData.refreshCycleRewardsRelation();
             } catch (IOException e) {
                 LOGGER.error("Error loading sign-in data: ", e);
             }
