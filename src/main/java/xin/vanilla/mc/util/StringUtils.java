@@ -510,4 +510,12 @@ public class StringUtils {
     public static String toPercent(BigDecimal num, int scale) {
         return toPercent(num.doubleValue(), scale);
     }
+
+    public static String toFixed(double d, int scale) {
+        return new BigDecimal(d).setScale(scale, RoundingMode.HALF_UP).toString();
+    }
+
+    public static String toFixedEx(double d, int scale) {
+        return toFixed(d, scale).replaceAll("0+$", "").replaceAll("[.]$", "");
+    }
 }
