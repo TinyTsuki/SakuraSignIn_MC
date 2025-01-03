@@ -177,15 +177,23 @@ public class RewardOptionData implements Serializable {
                 this.continuousRewards.put(String.valueOf(keyInt), value);
             }
         }
+        this.refreshContinuousRewardsRelation();
+    }
+
+    public void refreshContinuousRewardsRelation() {
         // 处理映射关系
         if (!this.continuousRewards.isEmpty()) {
             this.continuousRewardsRelation = new LinkedHashMap<>();
             List<Integer> keyList = this.continuousRewards.keySet().stream().map(Integer::parseInt).sorted().toList();
-            int max = keyList.stream().max(Comparator.naturalOrder()).orElse(0);
-            int cur = keyList.get(0);
-            for (int i = 1; i <= max; i++) {
-                if (keyList.contains(i)) cur = i;
-                this.continuousRewardsRelation.put(String.valueOf(i), String.valueOf(cur));
+            if (ServerConfig.CONTINUOUS_REWARDS_REPEATABLE.get()) {
+                int max = keyList.stream().max(Comparator.naturalOrder()).orElse(0);
+                int cur = keyList.get(0);
+                for (int i = 1; i <= max; i++) {
+                    if (keyList.contains(i)) cur = i;
+                    this.continuousRewardsRelation.put(String.valueOf(i), String.valueOf(cur));
+                }
+            } else {
+                this.continuousRewardsRelation.put(String.valueOf(keyList.get(0)), String.valueOf(keyList.get(0)));
             }
         }
     }
@@ -217,15 +225,23 @@ public class RewardOptionData implements Serializable {
                 this.cycleRewards.put(String.valueOf(keyInt), value);
             }
         }
+        this.refreshCycleRewardsRelation();
+    }
+
+    public void refreshCycleRewardsRelation() {
         // 处理映射关系
         if (!this.cycleRewards.isEmpty()) {
             this.cycleRewardsRelation = new LinkedHashMap<>();
             List<Integer> keyList = this.cycleRewards.keySet().stream().map(Integer::parseInt).sorted().toList();
-            int max = keyList.stream().max(Comparator.naturalOrder()).orElse(0);
-            int cur = keyList.get(0);
-            for (int i = 1; i <= max; i++) {
-                if (keyList.contains(i)) cur = i;
-                this.cycleRewardsRelation.put(String.valueOf(i), String.valueOf(cur));
+            if (ServerConfig.CYCLE_REWARDS_REPEATABLE.get()) {
+                int max = keyList.stream().max(Comparator.naturalOrder()).orElse(0);
+                int cur = keyList.get(0);
+                for (int i = 1; i <= max; i++) {
+                    if (keyList.contains(i)) cur = i;
+                    this.cycleRewardsRelation.put(String.valueOf(i), String.valueOf(cur));
+                }
+            } else {
+                this.cycleRewardsRelation.put(String.valueOf(keyList.get(0)), String.valueOf(keyList.get(0)));
             }
         }
     }
