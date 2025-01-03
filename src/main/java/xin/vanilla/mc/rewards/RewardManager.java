@@ -380,7 +380,7 @@ public class RewardManager {
                                     key = reward.getContent().toString();
                                     break;
                             }
-                            return key;
+                            return key + reward.getProbability();
                         },
                         Collectors.reducing(null, (reward1, reward2) -> {
                             if (reward1 == null) return reward2;
@@ -507,13 +507,13 @@ public class RewardManager {
                                     .forEach(reward -> {
                                         reward.setDisabled(true);
                                         reward.setRewarded(true);
-                                        MutableComponent detail = new TextComponent("\n").append(reward.getName(true));
+                                        MutableComponent detail = new TextComponent(reward.getName(true));
                                         if (giveRewardToPlayer(player, signInData, reward)) {
                                             detail.withStyle(style -> style.withColor(Color.GREEN.getRGB()));
                                         } else {
                                             detail.withStyle(style -> style.withColor(Color.RED.getRGB()));
                                         }
-                                        msg.append(detail);
+                                        msg.append(", ").append(detail);
                                     });
                         });
                 player.sendMessage(msg, player.getUUID());
@@ -537,14 +537,14 @@ public class RewardManager {
             if (packet.isAutoRewarded()) {
                 MutableComponent msg = new TextComponent(getByZh("奖励领取详情:"));
                 rewardList.forEach(reward -> {
-                    MutableComponent detail = new TextComponent("\n").append(reward.getName(true));
+                    MutableComponent detail = new TextComponent(reward.getName(true));
                     if (giveRewardToPlayer(player, signInData, reward)) {
                         detail.withStyle(style -> style.withColor(Color.GREEN.getRGB()));
                     } else {
                         detail.withStyle(style -> style.withColor(Color.RED.getRGB()));
                     }
                     signInRecord.getRewardList().add(reward);
-                    msg.append(detail);
+                    msg.append(", ").append(detail);
                 });
                 player.sendMessage(msg, player.getUUID());
             } else {
@@ -554,7 +554,7 @@ public class RewardManager {
             signInData.getSignInRecords().add(signInRecord);
             signInData.setContinuousSignInDays(DateUtils.calculateContinuousDays(signInData.getSignInRecords().stream().map(SignInRecord::getCompensateTime).collect(Collectors.toList()), serverCompensateDate));
             signInData.plusTotalSignInDays();
-            player.sendMessage(new TranslatableComponent(getI18nKey("签到成功, %s/%s"), signInData.getContinuousSignInDays(), getTotalSignInDays(signInData)), player.getUUID());
+            player.sendMessage(new TranslatableComponent(getI18nKey("%s 签到成功, %s/%s"), DateUtils.toString(signInRecord.getCompensateTime()), signInData.getContinuousSignInDays(), getTotalSignInDays(signInData)), player.getUUID());
         }
         // PlayerSignInDataCapability.setData(player, signInData);
         signInData.save(player);
