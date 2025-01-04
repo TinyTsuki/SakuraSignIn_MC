@@ -467,6 +467,21 @@ public class StringUtils {
         return result;
     }
 
+    public static BigDecimal toBigDecimal(String s) {
+        return toBigDecimal(s, BigDecimal.ZERO);
+    }
+
+    public static BigDecimal toBigDecimal(String s, BigDecimal defaultValue) {
+        BigDecimal result = defaultValue;
+        if (StringUtils.isNotNullOrEmpty(s)) {
+            try {
+                result = new BigDecimal(s.trim());
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return result;
+    }
+
     /**
      * 整数转罗马数字
      */
@@ -517,5 +532,9 @@ public class StringUtils {
 
     public static String toFixedEx(double d, int scale) {
         return toFixed(d, scale).replaceAll("0+$", "").replaceAll("[.]$", "");
+    }
+
+    public static String toFixedEx(BigDecimal d, int scale) {
+        return d.setScale(scale, RoundingMode.HALF_UP).toString().replaceAll("0+$", "").replaceAll("[.]$", "");
     }
 }
