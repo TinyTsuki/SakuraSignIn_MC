@@ -35,6 +35,7 @@ import xin.vanilla.mc.util.StringUtils;
 
 import java.awt.*;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -567,7 +568,7 @@ public class RewardManager {
                             return -instance.getAmplifier();
                         }
                     }).reduce(0, Integer::sum);
-            if (new Random().nextDouble() > reward.getProbability() + offset * 0.075)
+            if (new Random().nextDouble() > reward.getProbability().add(BigDecimal.valueOf(offset * 0.075)).doubleValue())
                 return false;
         }
         switch (reward.getType()) {
