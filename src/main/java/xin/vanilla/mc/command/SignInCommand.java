@@ -104,7 +104,7 @@ public class SignInCommand {
                     int days = 0;
                     for (int i = 1; i <= ServerConfig.RE_SIGN_IN_DAYS.get() && days < signInData.getSignInCard(); i++) {
                         Date date = DateUtils.addDay(DateUtils.getServerDate(), -i);
-                        if (signInData.getSignInRecords().stream().noneMatch(data -> DateUtils.toDateInt(data.getCompensateTime()) == DateUtils.toDateInt(RewardManager.getCompensateDate(date)))) {
+                        if (signInData.getSignInRecords().stream().noneMatch(data -> DateUtils.toDateInt(data.getCompensateTime()) == DateUtils.toDateInt(date))) {
                             signInTimeList.add(new KeyValue<>(DateUtils.format(DateUtils.toString(date)), ESignInType.RE_SIGN_IN));
                             days++;
                         }
@@ -130,7 +130,7 @@ public class SignInCommand {
                 if ("all".equalsIgnoreCase(string)) {
                     signInData.getSignInRecords().stream()
                             .filter(data -> !data.isRewarded())
-                            .forEach(data -> rewardTimeList.add(DateUtils.format(DateUtils.toString(RewardManager.getUnCompensateDate(data.getCompensateTime())))));
+                            .forEach(data -> rewardTimeList.add(DateUtils.format(DateUtils.toString(data.getCompensateTime()))));
                 } else {
                     long date = getRelativeLong(string, "date");
                     rewardTimeList.add(DateUtils.getDate(date));
@@ -153,7 +153,7 @@ public class SignInCommand {
                     int days = 0;
                     for (int i = 1; i <= ServerConfig.RE_SIGN_IN_DAYS.get() && days < signInData.getSignInCard(); i++) {
                         Date date = DateUtils.addDay(DateUtils.getServerDate(), -i);
-                        if (signInData.getSignInRecords().stream().noneMatch(data -> DateUtils.toDateInt(data.getCompensateTime()) == DateUtils.toDateInt(RewardManager.getCompensateDate(date)))) {
+                        if (signInData.getSignInRecords().stream().noneMatch(data -> DateUtils.toDateInt(data.getCompensateTime()) == DateUtils.toDateInt(date))) {
                             signInTimeList.add(new KeyValue<>(date, ESignInType.RE_SIGN_IN));
                             days++;
                         }

@@ -210,7 +210,7 @@ public class StringInputScreen extends Screen {
         this.submitButton = AbstractGuiUtils.newButton(this.width / 2 + 5, this.yStart + this.layoutHeight - 28, 95, 20, new TextComponent(I18nUtils.getByZh("取消")), button -> {
             StringList value = new StringList();
             this.inputField.stream().map(EditBox::getValue).forEach(value::add);
-            if (CollectionUtils.isNullOrEmpty(value)) {
+            if (CollectionUtils.isNullOrEmpty(value) || button.getMessage().getString().equals(I18nUtils.getByZh("取消"))) {
                 // 关闭当前屏幕并返回到调用者的 Screen
                 Minecraft.getInstance().setScreen(previousScreen);
             } else {
@@ -283,12 +283,17 @@ public class StringInputScreen extends Screen {
      */
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == GLFW.GLFW_KEY_BACKSPACE && this.inputField.stream().noneMatch(EditBox::isFocused)) {
+        if (keyCode == GLFW.GLFW_KEY_ESCAPE || (keyCode == GLFW.GLFW_KEY_BACKSPACE && this.inputField.stream().noneMatch(EditBox::isFocused))) {
             Minecraft.getInstance().setScreen(previousScreen);
             return true;
         } else {
             return super.keyPressed(keyCode, scanCode, modifiers);
         }
+    }
+
+    @Override
+    public boolean shouldCloseOnEsc() {
+        return false;
     }
 
     @Override
