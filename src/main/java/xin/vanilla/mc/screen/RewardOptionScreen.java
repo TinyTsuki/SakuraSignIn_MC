@@ -47,6 +47,7 @@ import xin.vanilla.mc.util.StringUtils;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.io.File;
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -761,7 +762,7 @@ public class RewardOptionScreen extends Screen {
                     StringList result = new StringList();
                     if (CollectionUtils.isNotNullOrEmpty(input) && StringUtils.isNotNullOrEmpty(key[0])) {
                         int count = StringUtils.toInt(input.get(0));
-                        double p = StringUtils.toDouble(input.get(1), 1);
+                        BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                         if (count != 0) {
                             RewardOptionDataManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(count, ERewardType.EXP_POINT), ERewardType.EXP_POINT, p));
                             RewardOptionDataManager.saveRewardOption();
@@ -789,7 +790,7 @@ public class RewardOptionScreen extends Screen {
                     StringList result = new StringList();
                     if (CollectionUtils.isNotNullOrEmpty(input) && StringUtils.isNotNullOrEmpty(key[0])) {
                         int count = StringUtils.toInt(input.get(0));
-                        double p = StringUtils.toDouble(input.get(1), 1);
+                        BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                         if (count != 0) {
                             RewardOptionDataManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(count, ERewardType.EXP_LEVEL), ERewardType.EXP_LEVEL, p));
                             RewardOptionDataManager.saveRewardOption();
@@ -817,7 +818,7 @@ public class RewardOptionScreen extends Screen {
                     StringList result = new StringList();
                     if (CollectionUtils.isNotNullOrEmpty(input) && StringUtils.isNotNullOrEmpty(key[0])) {
                         int count = StringUtils.toInt(input.get(0));
-                        double p = StringUtils.toDouble(input.get(1), 1);
+                        BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                         if (count != 0) {
                             RewardOptionDataManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(count, ERewardType.SIGN_IN_CARD), ERewardType.SIGN_IN_CARD, p));
                             RewardOptionDataManager.saveRewardOption();
@@ -859,7 +860,7 @@ public class RewardOptionScreen extends Screen {
                         , input -> {
                     if (CollectionUtils.isNotNullOrEmpty(input) && StringUtils.isNotNullOrEmpty(key[0])) {
                         ITextComponent textToComponent = AbstractGuiUtils.textToComponent(Text.literal(input.get(0)));
-                        double p = StringUtils.toDouble(input.get(1), 1);
+                        BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                         RewardOptionDataManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(textToComponent, ERewardType.MESSAGE), ERewardType.MESSAGE, p));
                         RewardOptionDataManager.saveRewardOption();
                     }
@@ -881,7 +882,7 @@ public class RewardOptionScreen extends Screen {
                         , input -> {
                     StringList result = new StringList();
                     if (CollectionUtils.isNotNullOrEmpty(input) && input.get(0).startsWith("/") && StringUtils.isNotNullOrEmpty(key[0])) {
-                        double p = StringUtils.toDouble(input.get(1), 1);
+                        BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                         RewardOptionDataManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(input.get(0), ERewardType.COMMAND), ERewardType.COMMAND, p));
                         RewardOptionDataManager.saveRewardOption();
                     } else {
@@ -982,7 +983,7 @@ public class RewardOptionScreen extends Screen {
                         StringList result = new StringList();
                         if (CollectionUtils.isNotNullOrEmpty(input)) {
                             int count = StringUtils.toInt(input.get(0));
-                            double p = StringUtils.toDouble(input.get(1), 1);
+                            BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                             if (count != 0) {
                                 RewardOptionDataManager.addReward(rule, key, new Reward(RewardManager.serializeReward(count, ERewardType.EXP_POINT), ERewardType.EXP_POINT, p));
                                 RewardOptionDataManager.saveRewardOption();
@@ -1004,7 +1005,7 @@ public class RewardOptionScreen extends Screen {
                         StringList result = new StringList();
                         if (CollectionUtils.isNotNullOrEmpty(input)) {
                             int count = StringUtils.toInt(input.get(0));
-                            double p = StringUtils.toDouble(input.get(1), 1);
+                            BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                             if (count != 0) {
                                 RewardOptionDataManager.addReward(rule, key, new Reward(RewardManager.serializeReward(count, ERewardType.EXP_LEVEL), ERewardType.EXP_LEVEL, p));
                                 RewardOptionDataManager.saveRewardOption();
@@ -1026,7 +1027,7 @@ public class RewardOptionScreen extends Screen {
                         StringList result = new StringList();
                         if (CollectionUtils.isNotNullOrEmpty(input)) {
                             int count = StringUtils.toInt(input.get(0));
-                            double p = StringUtils.toDouble(input.get(1), 1);
+                            BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                             if (count != 0) {
                                 RewardOptionDataManager.addReward(rule, key, new Reward(RewardManager.serializeReward(count, ERewardType.SIGN_IN_CARD), ERewardType.SIGN_IN_CARD, p));
                                 RewardOptionDataManager.saveRewardOption();
@@ -1057,7 +1058,7 @@ public class RewardOptionScreen extends Screen {
                             , input -> {
                         if (CollectionUtils.isNotNullOrEmpty(input)) {
                             ITextComponent textToComponent = AbstractGuiUtils.textToComponent(Text.literal(input.get(0)));
-                            double p = StringUtils.toDouble(input.get(1), 1);
+                            BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                             RewardOptionDataManager.addReward(rule, key, new Reward(RewardManager.serializeReward(textToComponent, ERewardType.MESSAGE), ERewardType.MESSAGE, p));
                             RewardOptionDataManager.saveRewardOption();
                         }
@@ -1073,7 +1074,7 @@ public class RewardOptionScreen extends Screen {
                             , input -> {
                         StringList result = new StringList();
                         if (CollectionUtils.isNotNullOrEmpty(input) && input.get(0).startsWith("/")) {
-                            double p = StringUtils.toDouble(input.get(1), 1);
+                            BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                             RewardOptionDataManager.addReward(rule, key, new Reward(RewardManager.serializeReward(input.get(0), ERewardType.COMMAND), ERewardType.COMMAND, p));
                             RewardOptionDataManager.saveRewardOption();
                         } else {
@@ -1122,7 +1123,7 @@ public class RewardOptionScreen extends Screen {
                                 StringList result = new StringList();
                                 if (CollectionUtils.isNotNullOrEmpty(input)) {
                                     int count = StringUtils.toInt(input.get(0));
-                                    double p = StringUtils.toDouble(input.get(1), 1);
+                                    BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                                     if (count != 0) {
                                         RewardOptionDataManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(count, ERewardType.EXP_POINT), ERewardType.EXP_POINT, p));
                                         RewardOptionDataManager.saveRewardOption();
@@ -1145,7 +1146,7 @@ public class RewardOptionScreen extends Screen {
                                 StringList result = new StringList();
                                 if (CollectionUtils.isNotNullOrEmpty(input)) {
                                     int count = StringUtils.toInt(input.get(0));
-                                    double p = StringUtils.toDouble(input.get(1), 1);
+                                    BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                                     if (count != 0) {
                                         RewardOptionDataManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(count, ERewardType.EXP_LEVEL), ERewardType.EXP_LEVEL, p));
                                         RewardOptionDataManager.saveRewardOption();
@@ -1168,7 +1169,7 @@ public class RewardOptionScreen extends Screen {
                                 StringList result = new StringList();
                                 if (CollectionUtils.isNotNullOrEmpty(input)) {
                                     int count = StringUtils.toInt(input.get(0));
-                                    double p = StringUtils.toDouble(input.get(1), 1);
+                                    BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                                     if (count != 0) {
                                         RewardOptionDataManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(count, ERewardType.SIGN_IN_CARD), ERewardType.SIGN_IN_CARD, p));
                                         RewardOptionDataManager.saveRewardOption();
@@ -1199,7 +1200,7 @@ public class RewardOptionScreen extends Screen {
                                     , input -> {
                                 if (CollectionUtils.isNotNullOrEmpty(input)) {
                                     ITextComponent textToComponent = AbstractGuiUtils.textToComponent(Text.literal(input.get(0)));
-                                    double p = StringUtils.toDouble(input.get(1), 1);
+                                    BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                                     RewardOptionDataManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(textToComponent, ERewardType.MESSAGE), ERewardType.MESSAGE, p));
                                     RewardOptionDataManager.saveRewardOption();
                                 }
@@ -1216,7 +1217,7 @@ public class RewardOptionScreen extends Screen {
                                     , input -> {
                                 StringList result = new StringList();
                                 if (CollectionUtils.isNotNullOrEmpty(input) && input.get(0).startsWith("/")) {
-                                    double p = StringUtils.toDouble(input.get(1), 1);
+                                    BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                                     RewardOptionDataManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(input.get(0), ERewardType.COMMAND), ERewardType.COMMAND, p));
                                     RewardOptionDataManager.saveRewardOption();
                                 } else {

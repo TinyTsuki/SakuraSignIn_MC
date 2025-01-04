@@ -8,6 +8,7 @@ import net.minecraft.item.Items;
 import xin.vanilla.mc.enums.ERewardType;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 
 import static xin.vanilla.mc.config.RewardOptionDataManager.GSON;
 
@@ -33,7 +34,7 @@ public class Reward implements Cloneable, Serializable {
     /**
      * 奖励概率
      */
-    private double probability = 1d;
+    private BigDecimal probability = BigDecimal.ONE;
     /**
      * 奖励内容
      */
@@ -42,8 +43,8 @@ public class Reward implements Cloneable, Serializable {
     public Reward() {
     }
 
-    public double getProbability() {
-        return probability <= 1 || probability > 0 ? probability : 1;
+    public BigDecimal getProbability() {
+        return probability.compareTo(BigDecimal.ONE) <= 0 || probability.compareTo(BigDecimal.ZERO) > 0 ? probability : BigDecimal.ONE;
     }
 
     public <T> Reward(T content, ERewardType type) {
@@ -56,13 +57,13 @@ public class Reward implements Cloneable, Serializable {
         this.type = type;
     }
 
-    public Reward(JsonObject content, ERewardType type, double probability) {
+    public Reward(JsonObject content, ERewardType type, BigDecimal probability) {
         this.content = content;
         this.type = type;
         this.probability = probability;
     }
 
-    public <T> Reward(T content, ERewardType type, double probability) {
+    public <T> Reward(T content, ERewardType type, BigDecimal probability) {
         this.content = RewardManager.serializeReward(content, type);
         this.type = type;
         this.probability = probability;
