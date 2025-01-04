@@ -31,6 +31,7 @@ import xin.vanilla.mc.util.CollectionUtils;
 import xin.vanilla.mc.util.StringUtils;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -92,7 +93,7 @@ public class EffecrSelectScreen extends Screen {
     /**
      * 奖励概率
      */
-    private double probability = 1;
+    private BigDecimal probability = BigDecimal.ONE;
     /**
      * 背包模式
      */
@@ -423,7 +424,7 @@ public class EffecrSelectScreen extends Screen {
             AbstractGuiUtils.fill(context.matrixStack, (int) context.button.getX(), (int) context.button.getY(), (int) context.button.getWidth(), (int) context.button.getHeight(), 0xEE707070, 2);
             AbstractGuiUtils.fillOutLine(context.matrixStack, (int) context.button.getX(), (int) context.button.getY(), (int) context.button.getWidth(), (int) context.button.getHeight(), 1, lineColor, 2);
             AbstractGuiUtils.drawEffectIcon(context.matrixStack, super.font, new EffectInstance(Effects.LUCK), (int) context.button.getX() + 2, (int) context.button.getY() + 2, false);
-            Text text = Text.i18n("设置概率\n当前 %.3f%%", this.probability * 100d);
+            Text text = Text.i18n("设置概率\n当前 %.3f%%", this.probability.multiply(new BigDecimal(100)).floatValue());
             context.button.setTooltip(text);
         }).setX(this.bgX - AbstractGuiUtils.ITEM_ICON_SIZE - 2 - margin - 3).setY(this.bgY + margin + (AbstractGuiUtils.ITEM_ICON_SIZE + 4 + 1) * 4).setWidth(AbstractGuiUtils.ITEM_ICON_SIZE + 4).setHeight(AbstractGuiUtils.ITEM_ICON_SIZE + 4));
 
@@ -616,8 +617,8 @@ public class EffecrSelectScreen extends Screen {
                     , input -> {
                 StringList result = new StringList();
                 if (CollectionUtils.isNotNullOrEmpty(input)) {
-                    double p = StringUtils.toDouble(input.get(0));
-                    if (p > 0 && p <= 1) {
+                    BigDecimal p = StringUtils.toBigDecimal(input.get(0));
+                    if (p.compareTo(BigDecimal.ZERO) > 0 && p.compareTo(BigDecimal.ONE) <= 0) {
                         this.probability = p;
                     } else {
                         result.add(getByZh("奖励概率[%s]输入有误", input.get(0)));
