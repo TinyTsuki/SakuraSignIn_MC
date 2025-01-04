@@ -28,6 +28,7 @@ import xin.vanilla.mc.screen.component.Text;
 import xin.vanilla.mc.screen.coordinate.Coordinate;
 import xin.vanilla.mc.screen.coordinate.TextureCoordinate;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -770,9 +771,9 @@ public class AbstractGuiUtils {
         else if (reward.getType().equals(ERewardType.COMMAND)) {
             renderItem(itemRenderer, fontRenderer, new ItemStack(Items.REPEATING_COMMAND_BLOCK), x, y, false);
         }
-        if (showText && reward.getProbability() != 1) {
+        if (showText && reward.getProbability().compareTo(BigDecimal.ONE) != 0) {
             AbstractGuiUtils.setDepth(matrixStack, EDepth.FOREGROUND);
-            AbstractGuiUtils.drawString(matrixStack, fontRenderer, "?", x - 1, y - 1, AbstractGuiUtils.getProbabilityColor(reward.getProbability()));
+            AbstractGuiUtils.drawString(matrixStack, fontRenderer, "?", x - 1, y - 1, AbstractGuiUtils.getProbabilityColor(reward.getProbability().doubleValue()));
             AbstractGuiUtils.resetDepth(matrixStack);
         }
     }
