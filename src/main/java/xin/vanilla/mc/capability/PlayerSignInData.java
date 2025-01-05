@@ -5,6 +5,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
+import xin.vanilla.mc.config.KeyValue;
 import xin.vanilla.mc.util.CollectionUtils;
 import xin.vanilla.mc.util.DateUtils;
 
@@ -24,6 +25,7 @@ public class PlayerSignInData implements IPlayerSignInData {
     private final AtomicInteger signInCard = new AtomicInteger();
     private boolean autoRewarded;
     private List<SignInRecord> signInRecords;
+    private List<KeyValue<String, KeyValue<Date, Boolean>>> cdkRecords;
 
     @Override
     public int getTotalSignInDays() {
@@ -121,28 +123,47 @@ public class PlayerSignInData implements IPlayerSignInData {
         this.signInRecords = records;
     }
 
+    @Override
+    public @NonNull List<KeyValue<String, KeyValue<Date, Boolean>>> getCdkErrorRecords() {
+        return cdkRecords = CollectionUtils.isNullOrEmpty(cdkRecords) ? new ArrayList<>() : cdkRecords;
+    }
+
+    @Override
+    public void setCdkErrorRecords(List<KeyValue<String, KeyValue<Date, Boolean>>> cdkRecords) {
+        this.cdkRecords = cdkRecords;
+    }
+
     public void writeToBuffer(FriendlyByteBuf buffer) {
         buffer.writeInt(this.getTotalSignInDays());
         buffer.writeInt(this.getContinuousSignInDays());
-        buffer.writeDate(this.getLastSignInTime());
+        buffer.writeUtf(DateUtils.toDateTimeString(this.getLastSignInTime()));
         buffer.writeInt(this.getSignInCard());
         buffer.writeBoolean(this.isAutoRewarded());
         buffer.writeInt(this.getSignInRecords().size());
         for (SignInRecord record : this.getSignInRecords()) {
             buffer.writeNbt(record.writeToNBT());
         }
+        buffer.writeInt(this.getCdkErrorRecords().size());
+        for (KeyValue<String, KeyValue<Date, Boolean>> record : this.getCdkErrorRecords()) {
+            buffer.writeUtf(record.getKey());
+            buffer.writeUtf(DateUtils.toDateTimeString(record.getValue().getKey()));
+            buffer.writeBoolean(record.getValue().getValue());
+        }
     }
 
     public void readFromBuffer(FriendlyByteBuf buffer) {
         this.totalSignInDays.set(buffer.readInt());
         this.continuousSignInDays.set(buffer.readInt());
-        this.lastSignInTime = buffer.readDate();
+        this.lastSignInTime = DateUtils.format(buffer.readUtf());
         this.signInCard.set(buffer.readInt());
         this.autoRewarded = buffer.readBoolean();
-        int size = buffer.readInt();
         this.signInRecords = new ArrayList<>();
-        for (int i = 0; i < size; i++) {
+        for (int i = 0; i < buffer.readInt(); i++) {
             this.signInRecords.add(SignInRecord.readFromNBT(Objects.requireNonNull(buffer.readNbt())));
+        }
+        this.cdkRecords = new ArrayList<>();
+        for (int i = 0; i < buffer.readInt(); i++) {
+            this.cdkRecords.add(new KeyValue<>(buffer.readUtf(), new KeyValue<>(DateUtils.format(buffer.readUtf()), buffer.readBoolean())));
         }
     }
 
@@ -153,6 +174,7 @@ public class PlayerSignInData implements IPlayerSignInData {
         this.signInCard.set(capability.getSignInCard());
         this.autoRewarded = capability.isAutoRewarded();
         this.signInRecords = capability.getSignInRecords();
+        this.cdkRecords = capability.getCdkErrorRecords();
     }
 
     @Override
@@ -170,6 +192,15 @@ public class PlayerSignInData implements IPlayerSignInData {
             recordsNBT.add(record.writeToNBT());
         }
         tag.put("signInRecords", recordsNBT);
+        // 序列化CDK输错记录
+        ListTag cdkRecordsNBT = new ListTag();
+        for (KeyValue<String, KeyValue<Date, Boolean>> record : this.getCdkErrorRecords()) {
+            CompoundTag cdkErrorRecordNBT = new CompoundTag();
+            cdkErrorRecordNBT.putString("key", record.getKey());
+            cdkErrorRecordNBT.putString("date", DateUtils.toDateTimeString(record.getValue().getKey()));
+            cdkErrorRecordNBT.putBoolean("value", record.getValue().getValue());
+        }
+        tag.put("cdkRecords", cdkRecordsNBT);
         return tag;
     }
 
@@ -188,6 +219,13 @@ public class PlayerSignInData implements IPlayerSignInData {
             records.add(SignInRecord.readFromNBT(recordsNBT.getCompound(i)));
         }
         this.setSignInRecords(records);
+        ListTag cdkRecordsNBT = nbt.getList("cdkRecords", 10); // 10 是 CompoundNBT 的类型ID
+        List<KeyValue<String, KeyValue<Date, Boolean>>> cdkRecords = new ArrayList<>();
+        for (int i = 0; i < cdkRecordsNBT.size(); i++) {
+            CompoundTag cdkErrorRecordNBT = cdkRecordsNBT.getCompound(i);
+            cdkRecords.add(new KeyValue<>(cdkErrorRecordNBT.getString("key"), new KeyValue<>(DateUtils.format(cdkErrorRecordNBT.getString("date")), cdkErrorRecordNBT.getBoolean("value"))));
+        }
+        this.setCdkErrorRecords(cdkRecords);
     }
 
     @Override
