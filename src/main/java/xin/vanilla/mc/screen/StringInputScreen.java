@@ -222,7 +222,7 @@ public class StringInputScreen extends Screen {
                     Minecraft.getInstance().setScreen(previousScreen);
                 } else if (onDataReceived2 != null) {
                     StringList result = onDataReceived2.apply(value);
-                    if (CollectionUtils.isNotNullOrEmpty(result)) {
+                    if (CollectionUtils.isNotNullOrEmpty(result) && result.stream().anyMatch(StringUtils::isNotNullOrEmpty)) {
                         this.errorText.clear();
                         for (String s : result) {
                             this.errorText.add(Text.literal(s).setColor(0xFFFF0000));
