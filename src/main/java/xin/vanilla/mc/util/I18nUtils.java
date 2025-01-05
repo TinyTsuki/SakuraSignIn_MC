@@ -13,6 +13,7 @@ public class I18nUtils {
         put("第%s天", "title.sakura_sign_in.day_s");
         put("年度第%s天", "title.sakura_sign_in.year_day_s");
         put("月度第%s天", "title.sakura_sign_in.month_day_s");
+        put("%s, 有效期至: %s", "title.sakura_sign_in.s_valid_until_s");
         put("周1", "title.sakura_sign_in.week_1");
         put("周2", "title.sakura_sign_in.week_2");
         put("周3", "title.sakura_sign_in.week_3");
@@ -28,6 +29,8 @@ public class I18nUtils {
         put("周度签到奖励", "button.sakura_sign_in.reward_week");
         put("具体时间奖励", "button.sakura_sign_in.reward_time");
         put("累计签到奖励", "button.sakura_sign_in.reward_cumulative");
+        put("随机奖励池", "button.sakura_sign_in.reward_random");
+        put("兑换码奖励池", "button.sakura_sign_in.reward_cdk");
         put("编辑", "option.sakura_sign_in.edit");
         put("复制", "option.sakura_sign_in.copy");
         put("剪切", "option.sakura_sign_in.cut");
@@ -53,6 +56,7 @@ public class I18nUtils {
         put("请输入消息", "tips.sakura_sign_in.enter_message");
         put("请输入指令", "tips.sakura_sign_in.enter_command");
         put("请输入奖励概率", "tips.sakura_sign_in.enter_reward_probability");
+        put("请输入有效期", "tips.sakura_sign_in.enter_valid_until");
         put("规则名称[%s]输入有误", "tips.sakura_sign_in.reward_rule_s_error");
         put("物品Json[%s]输入有误", "tips.sakura_sign_in.item_json_s_error");
         put("物品数量[%s]输入有误", "tips.sakura_sign_in.item_count_s_error");
@@ -62,6 +66,7 @@ public class I18nUtils {
         put("效果等级[%s]输入有误", "tips.sakura_sign_in.effect_amplifier_s_error");
         put("进度Json[%s]输入有误", "tips.sakura_sign_in.advancement_json_s_error");
         put("奖励概率[%s]输入有误", "tips.sakura_sign_in.reward_probability_s_error");
+        put("有效期[%s]输入有误", "tips.sakura_sign_in.valid_until_s_error");
         put("输入值[%s]有误", "tips.sakura_sign_in.enter_value_s_error");
         put("展开侧边栏", "tips.sakura_sign_in.open_sidebar");
         put("收起侧边栏", "tips.sakura_sign_in.close_sidebar");
@@ -144,6 +149,10 @@ public class I18nUtils {
         put("没有查询到[%s]的签到记录哦，鉴定为阁下没有签到！", "message.sakura_sign_in.not_sign_in");
         put("奖励领取详情:", "message.sakura_sign_in.receive_reward_success");
         put("%s 签到成功, %s/%s", "message.sakura_sign_in.sign_in_success_s");
+        put("今日CDK输入错误次数过多，请明日再试", "message.sakura_sign_in.cdk_error_too_many_times");
+        put("阁下已领取过当前CDK的奖励，请勿重复领取", "message.sakura_sign_in.cdk_already_received");
+        put("输入的CDK不存在或已被领取", "message.sakura_sign_in.cdk_not_exist_or_already_received");
+        put("输入的CDK已过期", "message.sakura_sign_in.cdk_expired");
 
     }};
 
