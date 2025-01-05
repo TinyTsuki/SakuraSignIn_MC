@@ -6,9 +6,11 @@ import net.minecraft.nbt.ListNBT;
 import net.minecraft.util.Direction;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.Capability.IStorage;
+import xin.vanilla.mc.config.KeyValue;
 import xin.vanilla.mc.util.DateUtils;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -43,6 +45,15 @@ public class PlayerSignInDataStorage implements IStorage<IPlayerSignInData> {
             recordsNBT.add(record.writeToNBT());
         }
         tag.put("signInRecords", recordsNBT);
+        // 序列化CDK输错记录
+        ListNBT cdkRecordsNBT = new ListNBT();
+        for (KeyValue<String, KeyValue<Date, Boolean>> record : instance.getCdkErrorRecords()) {
+            CompoundNBT cdkErrorRecordNBT = new CompoundNBT();
+            cdkErrorRecordNBT.putString("key", record.getKey());
+            cdkErrorRecordNBT.putString("date", DateUtils.toDateTimeString(record.getValue().getKey()));
+            cdkErrorRecordNBT.putBoolean("value", record.getValue().getValue());
+        }
+        tag.put("cdkRecords", cdkRecordsNBT);
         return tag;
     }
 
@@ -72,6 +83,16 @@ public class PlayerSignInDataStorage implements IStorage<IPlayerSignInData> {
                 records.add(SignInRecord.readFromNBT(recordsNBT.getCompound(i)));
             }
             instance.setSignInRecords(records);
+            ListNBT cdkRecordsNBT = nbtTag.getList("cdkRecords", 10); // 10 是 CompoundNBT 的类型ID
+            List<KeyValue<String, KeyValue<Date, Boolean>>> cdkRecords = new ArrayList<>();
+            for (int i = 0; i < cdkRecordsNBT.size(); i++) {
+                CompoundNBT cdkErrorRecordNBT = cdkRecordsNBT.getCompound(i);
+                cdkRecords.add(new KeyValue<>(cdkErrorRecordNBT.getString("key")
+                        , new KeyValue<>(DateUtils.format(cdkErrorRecordNBT.getString("date"))
+                        , cdkErrorRecordNBT.getBoolean("value")))
+                );
+            }
+            instance.setCdkErrorRecords(cdkRecords);
         }
     }
 }

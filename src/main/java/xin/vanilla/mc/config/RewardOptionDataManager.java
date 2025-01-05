@@ -20,12 +20,15 @@ import xin.vanilla.mc.util.StringUtils;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.reflect.Type;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -89,8 +92,6 @@ public class RewardOptionDataManager {
         if (file.exists()) {
             try {
                 rewardOptionData = RewardOptionDataManager.deserializeRewardOption(new String(Files.readAllBytes(Paths.get(file.getPath()))));
-                rewardOptionData.refreshContinuousRewardsRelation();
-                rewardOptionData.refreshCycleRewardsRelation();
             } catch (IOException e) {
                 LOGGER.error("Error loading sign-in data: ", e);
             }
@@ -219,6 +220,15 @@ public class RewardOptionDataManager {
                 result = anInt > 0;
             }
             break;
+            case RANDOM_REWARD: {
+                BigDecimal property = StringUtils.toBigDecimal(keyName);
+                result = property.compareTo(BigDecimal.ZERO) > 0 && property.compareTo(BigDecimal.ONE) <= 0;
+            }
+            break;
+            case CDK_REWARD: {
+                result = Pattern.compile("^\\w+$").matcher(keyName).matches();
+            }
+            break;
             default:
                 result = false;
         }
@@ -259,6 +269,21 @@ public class RewardOptionDataManager {
             case CUMULATIVE_REWARD:
                 result = rewardOptionData.getCumulativeRewards().get(keyName);
                 break;
+            case RANDOM_REWARD:
+                result = rewardOptionData.getRandomRewards().get(keyName);
+                break;
+            case CDK_REWARD:
+                String[] split = keyName.replaceAll("\\|", ",").split(",");
+                int key = rewardOptionData.getCdkRewards().size();
+                if (split.length == 3) {
+                    key = StringUtils.toInt(split[2]);
+                }
+                if (rewardOptionData.getCdkRewards().size() <= key) {
+                    result = null;
+                } else {
+                    result = rewardOptionData.getCdkRewards().get(key).getValue().getValue();
+                }
+                break;
             default:
                 throw new IllegalArgumentException("Unknown rule: " + rule);
         }
@@ -297,6 +322,23 @@ public class RewardOptionDataManager {
                 break;
             case CUMULATIVE_REWARD:
                 rewardOptionData.addCumulativeReward(keyName, rewardList);
+                break;
+            case RANDOM_REWARD:
+                rewardOptionData.addRandomReward(keyName, rewardList);
+                break;
+            case CDK_REWARD:
+                String[] split = keyName.replaceAll("\\|", ",").split(",");
+                String date = "";
+                int index = rewardOptionData.getCdkRewards().size();
+                if (split.length == 3) {
+                    date = split[1];
+                    index = StringUtils.toInt(split[2]);
+                }
+                if (rewardOptionData.getCdkRewards().size() <= index) {
+                    rewardOptionData.addCdkReward(new KeyValue<>(split[0], new KeyValue<>(date, rewardList)));
+                } else {
+                    rewardOptionData.getCdkRewards().get(index).getValue().getValue().addAll(rewardList);
+                }
                 break;
             default:
                 throw new IllegalArgumentException("Unknown rule: " + rule);
@@ -349,6 +391,25 @@ public class RewardOptionDataManager {
                 rewardOptionData.addCumulativeReward(newKeyName, remove);
             }
             break;
+            case RANDOM_REWARD: {
+                RewardList remove = rewardOptionData.getRandomRewards().remove(oldKeyName);
+                rewardOptionData.addRandomReward(newKeyName, remove);
+            }
+            break;
+            case CDK_REWARD: {
+                String[] oldSplit = oldKeyName.replaceAll("\\|", ",").split(",");
+                int oldIndex = rewardOptionData.getCdkRewards().size();
+                if (oldSplit.length == 3) {
+                    oldIndex = StringUtils.toInt(oldSplit[2]);
+                }
+                if (rewardOptionData.getCdkRewards().size() > oldIndex) {
+                    String[] split = newKeyName.replaceAll("\\|", ",").split(",");
+                    KeyValue<String, KeyValue<String, RewardList>> remove = rewardOptionData.getCdkRewards().remove(oldIndex);
+                    remove.setKey(split[0]);
+                    rewardOptionData.addCdkReward(remove);
+                }
+            }
+            break;
             default:
                 throw new IllegalArgumentException("Unknown rule: " + rule);
         }
@@ -386,6 +447,19 @@ public class RewardOptionDataManager {
             case CUMULATIVE_REWARD:
                 rewardOptionData.getCumulativeRewards().get(keyName).clear();
                 break;
+            case RANDOM_REWARD:
+                rewardOptionData.getRandomRewards().get(keyName).clear();
+                break;
+            case CDK_REWARD:
+                String[] split = keyName.replaceAll("\\|", ",").split(",");
+                int index = rewardOptionData.getCdkRewards().size();
+                if (split.length == 3) {
+                    index = StringUtils.toInt(split[2]);
+                }
+                if (rewardOptionData.getCdkRewards().size() > index) {
+                    rewardOptionData.getCdkRewards().get(index).getValue().getValue().clear();
+                }
+                break;
             default:
                 throw new IllegalArgumentException("Unknown rule: " + rule);
         }
@@ -421,6 +495,19 @@ public class RewardOptionDataManager {
                 break;
             case CUMULATIVE_REWARD:
                 rewardOptionData.getCumulativeRewards().remove(keyName);
+                break;
+            case RANDOM_REWARD:
+                rewardOptionData.getRandomRewards().remove(keyName);
+                break;
+            case CDK_REWARD:
+                String[] split = keyName.replaceAll("\\|", ",").split(",");
+                int index = rewardOptionData.getCdkRewards().size();
+                if (split.length == 3) {
+                    index = StringUtils.toInt(split[2]);
+                }
+                if (rewardOptionData.getCdkRewards().size() > index) {
+                    rewardOptionData.getCdkRewards().remove(index);
+                }
                 break;
             default:
                 throw new IllegalArgumentException("Unknown rule: " + rule);
@@ -462,6 +549,21 @@ public class RewardOptionDataManager {
                     break;
                 case CUMULATIVE_REWARD:
                     result = rewardOptionData.getCumulativeRewards().get(keyName).get(index);
+                    break;
+                case RANDOM_REWARD:
+                    result = rewardOptionData.getRandomRewards().get(keyName).get(index);
+                    break;
+                case CDK_REWARD:
+                    String[] split = keyName.replaceAll("\\|", ",").split(",");
+                    int key = rewardOptionData.getCdkRewards().size();
+                    if (split.length == 3) {
+                        key = StringUtils.toInt(split[2]);
+                    }
+                    if (rewardOptionData.getCdkRewards().size() <= key) {
+                        result = null;
+                    } else {
+                        result = rewardOptionData.getCdkRewards().get(key).getValue().getValue().get(index);
+                    }
                     break;
                 default:
                     throw new IllegalArgumentException("Unknown rule: " + rule);
@@ -526,6 +628,28 @@ public class RewardOptionDataManager {
                     rewardOptionData.getCumulativeRewards().put(keyName, new RewardList());
                 }
                 rewardOptionData.getCumulativeRewards().get(keyName).add(reward);
+                break;
+            case RANDOM_REWARD:
+                if (!rewardOptionData.getRandomRewards().containsKey(keyName)) {
+                    rewardOptionData.getRandomRewards().put(keyName, new RewardList());
+                }
+                rewardOptionData.getRandomRewards().get(keyName).add(reward);
+                break;
+            case CDK_REWARD:
+                String[] split = keyName.replaceAll("\\|", ",").split(",");
+                String date = "";
+                int key = rewardOptionData.getCdkRewards().size();
+                if (split.length == 3) {
+                    date = split[1];
+                    key = StringUtils.toInt(split[2]);
+                }
+                if (rewardOptionData.getCdkRewards().size() <= key || key < 0) {
+                    rewardOptionData.getCdkRewards().add(new KeyValue<>(split[0], new KeyValue<>(date, new RewardList() {{
+                        add(reward);
+                    }})));
+                } else {
+                    rewardOptionData.getCdkRewards().get(key).getValue().getValue().add(reward);
+                }
                 break;
             default:
                 throw new IllegalArgumentException("Unknown rule: " + rule);
@@ -602,6 +726,28 @@ public class RewardOptionDataManager {
                     }
                     rewardOptionData.getCumulativeRewards().get(keyName).set(index, reward);
                     break;
+                case RANDOM_REWARD:
+                    if (!rewardOptionData.getRandomRewards().containsKey(keyName)) {
+                        rewardOptionData.getRandomRewards().put(keyName, new RewardList() {{
+                            add(reward);
+                        }});
+                    }
+                    rewardOptionData.getRandomRewards().get(keyName).set(index, reward);
+                    break;
+                case CDK_REWARD:
+                    String[] split = keyName.replaceAll("\\|", ",").split(",");
+                    int key = rewardOptionData.getCdkRewards().size();
+                    if (split.length == 3) {
+                        key = StringUtils.toInt(split[2]);
+                    }
+                    if (rewardOptionData.getCdkRewards().size() <= key) {
+                        rewardOptionData.getCdkRewards().add(new KeyValue<>(split[0], new KeyValue<>(split[1], new RewardList() {{
+                            add(reward);
+                        }})));
+                    } else {
+                        rewardOptionData.getCdkRewards().get(key).getValue().getValue().set(index, reward);
+                    }
+                    break;
                 default:
                     throw new IllegalArgumentException("Unknown rule: " + rule);
             }
@@ -642,6 +788,21 @@ public class RewardOptionDataManager {
                     break;
                 case CUMULATIVE_REWARD:
                     rewardOptionData.getCumulativeRewards().get(keyName).remove(index);
+                    break;
+                case RANDOM_REWARD:
+                    rewardOptionData.getRandomRewards().get(keyName).remove(index);
+                    break;
+                case CDK_REWARD:
+                    String[] split = keyName.replaceAll("\\|", ",").split(",");
+                    int key = rewardOptionData.getCdkRewards().size();
+                    if (split.length == 3) {
+                        key = StringUtils.toInt(split[2]);
+                    }
+                    if (rewardOptionData.getCdkRewards().size() <= key) {
+                        rewardOptionData.getCdkRewards().add(new KeyValue<>(split[0], new KeyValue<>(split[1], new RewardList())));
+                    } else {
+                        rewardOptionData.getCdkRewards().get(key).getValue().getValue().remove(index);
+                    }
                     break;
                 default:
                     throw new IllegalArgumentException("Unknown rule: " + rule);
@@ -696,6 +857,12 @@ public class RewardOptionDataManager {
                 case CUMULATIVE_REWARD:
                     replaceWithSortedMap((LinkedHashMap<String, RewardList>) rewardOptionData.getCumulativeRewards());
                     break;
+                case RANDOM_REWARD:
+                    replaceWithSortedMap((LinkedHashMap<String, RewardList>) rewardOptionData.getRandomRewards());
+                    break;
+                case CDK_REWARD:
+                    rewardOptionData.getCdkRewards().sort(Comparator.comparing(KeyValue::getKey));
+                    break;
             }
         }
     }
@@ -716,23 +883,35 @@ public class RewardOptionDataManager {
         if (StringUtils.isNotNullOrEmpty(jsonString)) {
             try {
                 JsonObject jsonObject = GSON.fromJson(jsonString, JsonObject.class);
-                result.setBaseRewards(GSON.fromJson(jsonObject.get("baseRewards"), new TypeToken<RewardList>() {
-                }.getType()));
-                result.setContinuousRewards(GSON.fromJson(jsonObject.get("continuousRewards"), new TypeToken<LinkedHashMap<String, RewardList>>() {
-                }.getType()));
-                result.setCycleRewards(GSON.fromJson(jsonObject.get("cycleRewards"), new TypeToken<LinkedHashMap<String, RewardList>>() {
-                }.getType()));
-                result.setYearRewards(GSON.fromJson(jsonObject.get("yearRewards"), new TypeToken<LinkedHashMap<String, RewardList>>() {
-                }.getType()));
-                result.setMonthRewards(GSON.fromJson(jsonObject.get("monthRewards"), new TypeToken<LinkedHashMap<String, RewardList>>() {
-                }.getType()));
-                result.setWeekRewards(GSON.fromJson(jsonObject.get("weekRewards"), new TypeToken<LinkedHashMap<String, RewardList>>() {
-                }.getType()));
-                result.setDateTimeRewards(GSON.fromJson(jsonObject.get("dateTimeRewards"), new TypeToken<LinkedHashMap<String, RewardList>>() {
-                }.getType()));
-                result.setCumulativeRewards(GSON.fromJson(jsonObject.get("cumulativeRewards"), new TypeToken<LinkedHashMap<String, RewardList>>() {
-                }.getType()));
-            } catch (JsonSyntaxException | JsonIOException e) {
+                result.setBaseRewards(fromJsonOrDefault(jsonObject.get("baseRewards"), new TypeToken<RewardList>() {
+                }.getType(), new RewardList()));
+                result.setContinuousRewards(fromJsonOrDefault(jsonObject.get("continuousRewards"), new TypeToken<LinkedHashMap<String, RewardList>>() {
+                }.getType(), new LinkedHashMap<>()));
+                result.setCycleRewards(fromJsonOrDefault(jsonObject.get("cycleRewards"), new TypeToken<LinkedHashMap<String, RewardList>>() {
+                }.getType(), new LinkedHashMap<>()));
+                result.setYearRewards(fromJsonOrDefault(jsonObject.get("yearRewards"), new TypeToken<LinkedHashMap<String, RewardList>>() {
+                }.getType(), new LinkedHashMap<>()));
+                result.setMonthRewards(fromJsonOrDefault(jsonObject.get("monthRewards"), new TypeToken<LinkedHashMap<String, RewardList>>() {
+                }.getType(), new LinkedHashMap<>()));
+                result.setWeekRewards(fromJsonOrDefault(jsonObject.get("weekRewards"), new TypeToken<LinkedHashMap<String, RewardList>>() {
+                }.getType(), new LinkedHashMap<>()));
+                result.setDateTimeRewards(fromJsonOrDefault(jsonObject.get("dateTimeRewards"), new TypeToken<LinkedHashMap<String, RewardList>>() {
+                }.getType(), new LinkedHashMap<>()));
+                result.setCumulativeRewards(fromJsonOrDefault(jsonObject.get("cumulativeRewards"), new TypeToken<LinkedHashMap<String, RewardList>>() {
+                }.getType(), new LinkedHashMap<>()));
+                result.setRandomRewards(fromJsonOrDefault(jsonObject.get("randomRewards"), new TypeToken<LinkedHashMap<String, RewardList>>() {
+                }.getType(), new LinkedHashMap<>()));
+                JsonArray cdkRewards = jsonObject.getAsJsonArray("cdkRewards");
+                for (JsonElement cdkReward : cdkRewards) {
+                    String key = ((JsonObject) cdkReward).get("key").getAsString();
+                    String date = ((JsonObject) cdkReward).get("date").getAsString();
+                    RewardList rewardList = fromJsonOrDefault(((JsonObject) cdkReward).get("value"), new TypeToken<RewardList>() {
+                    }.getType(), new RewardList());
+                    result.addCdkReward(new KeyValue<>(key, new KeyValue<>(date, rewardList)));
+                }
+                result.refreshContinuousRewardsRelation();
+                result.refreshCycleRewardsRelation();
+            } catch (Exception e) {
                 LOGGER.error("Error loading sign-in data: ", e);
             }
         } else {
@@ -741,6 +920,12 @@ public class RewardOptionDataManager {
             RewardOptionDataManager.saveRewardOption();
         }
         return result;
+    }
+
+    @NonNull
+    public static <T> T fromJsonOrDefault(JsonElement json, Type typeOfT, T defaultValue) {
+        T result = GSON.fromJson(json, typeOfT);
+        return result == null ? defaultValue : result;
     }
 
     /**
@@ -790,6 +975,16 @@ public class RewardOptionDataManager {
             case CUMULATIVE_REWARD:
                 result = rewardOptionData.getCumulativeRewards();
                 break;
+            case RANDOM_REWARD:
+                result = rewardOptionData.getRandomRewards();
+                break;
+            case CDK_REWARD:
+                result = new LinkedHashMap<>();
+                for (int i = 0; i < rewardOptionData.getCdkRewards().size(); i++) {
+                    KeyValue<String, KeyValue<String, RewardList>> keyValue = rewardOptionData.getCdkRewards().get(i);
+                    result.put(String.format("%s|%s|%d", keyValue.getKey(), keyValue.getValue().getKey(), i), keyValue.getValue().getValue());
+                }
+                break;
         }
         return result;
     }
@@ -820,6 +1015,18 @@ public class RewardOptionDataManager {
             case CUMULATIVE_REWARD:
                 data.setCumulativeRewards(map);
                 break;
+            case RANDOM_REWARD:
+                data.setRandomRewards(map);
+                break;
+            case CDK_REWARD:
+                List<KeyValue<String, KeyValue<String, RewardList>>> cdkRewards = new ArrayList<>();
+                map.keySet().stream()
+                        .sorted(Comparator.comparingInt(s -> Integer.parseInt(s.replaceAll("\\|", ",").split(",")[2])))
+                        .forEach(key -> {
+                            String[] split = key.replaceAll("\\|", ",").split(",");
+                            cdkRewards.add(new KeyValue<>(split[0], new KeyValue<>(split[1], map.get(key))));
+                        });
+                data.setCdkRewards(cdkRewards);
         }
     }
 
