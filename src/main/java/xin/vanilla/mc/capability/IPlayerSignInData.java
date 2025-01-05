@@ -5,6 +5,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.common.util.INBTSerializable;
+import xin.vanilla.mc.config.KeyValue;
 
 import java.util.Date;
 import java.util.List;
@@ -110,6 +111,17 @@ public interface IPlayerSignInData extends INBTSerializable<CompoundTag> {
      * 设置签到记录
      */
     void setSignInRecords(List<SignInRecord> records);
+
+    /**
+     * 获取CDK领取记录
+     */
+    @NonNull
+    List<KeyValue<String, KeyValue<Date, Boolean>>> getCdkErrorRecords();
+
+    /**
+     * 设置CDK领取记录
+     */
+    void setCdkErrorRecords(List<KeyValue<String, KeyValue<Date, Boolean>>> records);
 
     void writeToBuffer(FriendlyByteBuf buffer);
 
