@@ -24,6 +24,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
 import xin.vanilla.mc.SakuraSignIn;
+import xin.vanilla.mc.config.KeyValue;
 import xin.vanilla.mc.config.RewardOptionData;
 import xin.vanilla.mc.config.RewardOptionDataManager;
 import xin.vanilla.mc.config.StringList;
@@ -38,15 +39,13 @@ import xin.vanilla.mc.rewards.RewardList;
 import xin.vanilla.mc.rewards.RewardManager;
 import xin.vanilla.mc.screen.component.*;
 import xin.vanilla.mc.screen.coordinate.Coordinate;
-import xin.vanilla.mc.util.AbstractGuiUtils;
-import xin.vanilla.mc.util.CollectionUtils;
-import xin.vanilla.mc.util.I18nUtils;
-import xin.vanilla.mc.util.StringUtils;
+import xin.vanilla.mc.util.*;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.io.File;
 import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -161,6 +160,8 @@ public class RewardOptionScreen extends Screen {
         WEEK_REWARD(206),
         DATE_TIME_REWARD(207),
         CUMULATIVE_REWARD(208),
+        RANDOM_REWARD(209),
+        CDK_REWARD(210),
         OFFSET_Y(301),
         HELP(302),
         DOWNLOAD(303),
@@ -320,13 +321,38 @@ public class RewardOptionScreen extends Screen {
     }
 
     private StringInputScreen getRuleKeyInputScreen(Screen callbackScreen, ERewardRule rule, String[] key) {
-        return new StringInputScreen(callbackScreen, Text.i18n("请输入规则名称").setShadow(true), Text.i18n("请输入"), "[\\d +~/:T-]*", "", input -> {
+        return new StringInputScreen(callbackScreen, Text.i18n("请输入规则名称").setShadow(true), Text.i18n("请输入"), "[\\d +~/:.T-]*", "", input -> {
             StringList result = new StringList();
             if (CollectionUtils.isNotNullOrEmpty(input)) {
                 if (RewardOptionDataManager.validateKeyName(rule, input.get(0))) {
                     key[0] = input.get(0);
                 } else {
-                    result.add(getByZh("规则名称[%s]输入有误", input));
+                    result.add(getByZh("规则名称[%s]输入有误", input.get(0)));
+                }
+            }
+            return result;
+        });
+    }
+
+    private StringInputScreen getCdkRuleKeyInputScreen(Screen callbackScreen, ERewardRule rule, String[] key) {
+        return new StringInputScreen(callbackScreen
+                , new TextList(Text.i18n("请输入规则名称").setShadow(true), Text.i18n("请输入有效期").setShadow(true))
+                , new TextList(Text.i18n("请输入"))
+                , new StringList("\\w*", "")
+                , new StringList("", DateUtils.toString(DateUtils.addMonth(new Date(), 1)))
+                , input -> {
+            StringList result = new StringList("", "");
+            if (CollectionUtils.isNotNullOrEmpty(input)) {
+                if (!RewardOptionDataManager.validateKeyName(rule, input.get(0))) {
+                    result.set(0, getByZh("规则名称[%s]输入有误", input.get(0)));
+                }
+                if (StringUtils.isNotNullOrEmpty(input.get(1))) {
+                    if (DateUtils.format(input.get(1)) == null) {
+                        result.set(1, getByZh("有效期[%s]输入有误", input.get(1)));
+                    }
+                }
+                if (result.stream().allMatch(StringUtils::isNullOrEmptyEx)) {
+                    key[0] = String.format("%s|%s|-1", input.get(0), input.get(1));
                 }
             }
             return result;
@@ -436,6 +462,33 @@ public class RewardOptionScreen extends Screen {
                 }
             }
             break;
+            case RANDOM_REWARD: {
+                for (String key : rewardOptionData.getRandomRewards().keySet()) {
+                    if (rewardListIndex.get() > 0) {
+                        rewardListIndex.set((int) ((Math.floor((double) rewardListIndex.get() / lineItemCount) + 1) * lineItemCount));
+                    }
+                    this.addRewardTitleButton(String.format("%.3f%%", new BigDecimal(key).multiply(new BigDecimal(100)).floatValue()), key, titleIndex, rewardListIndex.get());
+                    rewardListIndex.addAndGet(lineItemCount);
+                    this.addRewardButton(rewardOptionData.getRandomRewards(), key, rewardListIndex);
+                    titleIndex--;
+                }
+            }
+            break;
+            case CDK_REWARD: {
+                for (int i = 0; i < rewardOptionData.getCdkRewards().size(); i++) {
+                    KeyValue<String, KeyValue<String, RewardList>> keyValue = rewardOptionData.getCdkRewards().get(i);
+                    String key = String.format("%s|%s|%d", keyValue.getKey(), keyValue.getValue().getKey(), i);
+                    if (rewardListIndex.get() > 0) {
+                        rewardListIndex.set((int) ((Math.floor((double) rewardListIndex.get() / lineItemCount) + 1) * lineItemCount));
+                    }
+                    this.addRewardTitleButton(getByZh("%s, 有效期至: %s", keyValue.getKey(), keyValue.getValue().getKey()), key, titleIndex, rewardListIndex.get());
+                    rewardListIndex.addAndGet(lineItemCount);
+                    this.addRewardButton(new HashMap<String, RewardList>() {{
+                        put(key, keyValue.getValue().getValue());
+                    }}, key, rewardListIndex);
+                }
+            }
+            break;
         }
     }
 
@@ -540,6 +593,8 @@ public class RewardOptionScreen extends Screen {
                     .addOption(Text.translatable("tips.sakura_sign_in.reward_rule_description_6"))
                     .addOption(Text.translatable("tips.sakura_sign_in.reward_rule_description_7"))
                     .addOption(Text.translatable("tips.sakura_sign_in.reward_rule_description_8"))
+                    .addOption(Text.translatable("tips.sakura_sign_in.reward_rule_description_9"))
+                    .addOption(Text.translatable("tips.sakura_sign_in.reward_rule_description_10"))
                     .build(super.font, mouseX, mouseY, "reward_rule_description");
         }
         // 上传奖励配置
@@ -689,6 +744,14 @@ public class RewardOptionScreen extends Screen {
                                 RewardOptionDataManager.getRewardOptionData().getCumulativeRewards().clear();
                             }
                             break;
+                            case RANDOM_REWARD: {
+                                RewardOptionDataManager.getRewardOptionData().getRandomRewards().clear();
+                            }
+                            break;
+                            case CDK_REWARD: {
+                                RewardOptionDataManager.getRewardOptionData().getCdkRewards().clear();
+                            }
+                            break;
                         }
                         RewardOptionDataManager.saveRewardOption();
                         updateLayout.set(true);
@@ -700,8 +763,38 @@ public class RewardOptionScreen extends Screen {
             String[] key = new String[]{""};
             if (getByZh("粘贴").equalsIgnoreCase(selectedString)) {
                 if (!SakuraSignIn.getClipboard().isEmpty()) {
-                    if (rule != ERewardRule.BASE_REWARD) {
-                        Minecraft.getInstance().setScreen(new StringInputScreen(this, Text.i18n("请输入规则名称").setShadow(true), Text.i18n("请输入"), "[\\d +~/:T-]*", "", input -> {
+                    if (rule == ERewardRule.CDK_REWARD) {
+                        Minecraft.getInstance().setScreen(new StringInputScreen(this
+                                , new TextList(Text.i18n("请输入规则名称").setShadow(true), Text.i18n("请输入有效期").setShadow(true))
+                                , new TextList(Text.i18n("请输入"))
+                                , new StringList("\\w*", "")
+                                , new StringList("", DateUtils.toString(DateUtils.addMonth(new Date(), 1)))
+                                , input -> {
+                            StringList result = new StringList("", "");
+                            if (CollectionUtils.isNotNullOrEmpty(input)) {
+                                if (!RewardOptionDataManager.validateKeyName(rule, input.get(0))) {
+                                    result.set(0, getByZh("规则名称[%s]输入有误", input.get(0)));
+                                }
+                                if (StringUtils.isNotNullOrEmpty(input.get(1))) {
+                                    if (DateUtils.format(input.get(1)) == null) {
+                                        result.set(1, getByZh("有效期[%s]输入有误", input.get(1)));
+                                    }
+                                }
+                                if (result.stream().allMatch(StringUtils::isNullOrEmptyEx)) {
+                                    RewardList rewardList = SakuraSignIn.getClipboard().clone();
+                                    RewardOptionDataManager.addKeyName(rule, String.format("%s|%s|-1", input.get(0), input.get(1)), rewardList);
+                                    RewardOptionDataManager.saveRewardOption();
+                                }
+                            }
+                            return result;
+                        }));
+                    } else if (rule != ERewardRule.BASE_REWARD) {
+                        Minecraft.getInstance().setScreen(new StringInputScreen(this
+                                , Text.i18n("请输入规则名称").setShadow(true)
+                                , Text.i18n("请输入")
+                                , "[\\d +~/:.T-]*"
+                                , ""
+                                , input -> {
                             StringList result = new StringList();
                             if (CollectionUtils.isNotNullOrEmpty(input)) {
                                 if (RewardOptionDataManager.validateKeyName(rule, input.get(0))) {
@@ -709,7 +802,7 @@ public class RewardOptionScreen extends Screen {
                                     RewardOptionDataManager.addKeyName(rule, input.get(0), rewardList);
                                     RewardOptionDataManager.saveRewardOption();
                                 } else {
-                                    result.add(getByZh("规则名称[%s]输入有误", input));
+                                    result.add(getByZh("规则名称[%s]输入有误", input.get(0)));
                                 }
                             }
                             return result;
@@ -729,7 +822,9 @@ public class RewardOptionScreen extends Screen {
                         RewardOptionDataManager.saveRewardOption();
                     }
                 }, new Reward(new ItemStack(Items.AIR), ERewardType.ITEM), () -> StringUtils.isNullOrEmpty(key[0]));
-                if (rule != ERewardRule.BASE_REWARD) {
+                if (rule == ERewardRule.CDK_REWARD) {
+                    Minecraft.getInstance().setScreen(this.getCdkRuleKeyInputScreen(callbackScreen, rule, key));
+                } else if (rule != ERewardRule.BASE_REWARD) {
                     Minecraft.getInstance().setScreen(this.getRuleKeyInputScreen(callbackScreen, rule, key));
                 } else {
                     key[0] = "base";
@@ -744,7 +839,9 @@ public class RewardOptionScreen extends Screen {
                         RewardOptionDataManager.saveRewardOption();
                     }
                 }, new Reward(new MobEffectInstance(MobEffects.LUCK), ERewardType.EFFECT), () -> StringUtils.isNullOrEmpty(key[0]));
-                if (rule != ERewardRule.BASE_REWARD) {
+                if (rule == ERewardRule.CDK_REWARD) {
+                    Minecraft.getInstance().setScreen(this.getCdkRuleKeyInputScreen(callbackScreen, rule, key));
+                } else if (rule != ERewardRule.BASE_REWARD) {
                     Minecraft.getInstance().setScreen(this.getRuleKeyInputScreen(callbackScreen, rule, key));
                 } else {
                     key[0] = "base";
@@ -772,7 +869,9 @@ public class RewardOptionScreen extends Screen {
                     }
                     return result;
                 }, () -> StringUtils.isNullOrEmpty(key[0]));
-                if (rule != ERewardRule.BASE_REWARD) {
+                if (rule == ERewardRule.CDK_REWARD) {
+                    Minecraft.getInstance().setScreen(this.getCdkRuleKeyInputScreen(callbackScreen, rule, key));
+                } else if (rule != ERewardRule.BASE_REWARD) {
                     Minecraft.getInstance().setScreen(this.getRuleKeyInputScreen(callbackScreen, rule, key));
                 } else {
                     key[0] = "base";
@@ -800,7 +899,9 @@ public class RewardOptionScreen extends Screen {
                     }
                     return result;
                 }, () -> StringUtils.isNullOrEmpty(key[0]));
-                if (rule != ERewardRule.BASE_REWARD) {
+                if (rule == ERewardRule.CDK_REWARD) {
+                    Minecraft.getInstance().setScreen(this.getCdkRuleKeyInputScreen(callbackScreen, rule, key));
+                } else if (rule != ERewardRule.BASE_REWARD) {
                     Minecraft.getInstance().setScreen(this.getRuleKeyInputScreen(callbackScreen, rule, key));
                 } else {
                     key[0] = "base";
@@ -828,7 +929,9 @@ public class RewardOptionScreen extends Screen {
                     }
                     return result;
                 }, () -> StringUtils.isNullOrEmpty(key[0]));
-                if (rule != ERewardRule.BASE_REWARD) {
+                if (rule == ERewardRule.CDK_REWARD) {
+                    Minecraft.getInstance().setScreen(this.getCdkRuleKeyInputScreen(callbackScreen, rule, key));
+                } else if (rule != ERewardRule.BASE_REWARD) {
                     Minecraft.getInstance().setScreen(this.getRuleKeyInputScreen(callbackScreen, rule, key));
                 } else {
                     key[0] = "base";
@@ -843,7 +946,9 @@ public class RewardOptionScreen extends Screen {
                         RewardOptionDataManager.saveRewardOption();
                     }
                 }, new Reward(new ResourceLocation(""), ERewardType.ADVANCEMENT), () -> StringUtils.isNullOrEmpty(key[0]));
-                if (rule != ERewardRule.BASE_REWARD) {
+                if (rule == ERewardRule.CDK_REWARD) {
+                    Minecraft.getInstance().setScreen(this.getCdkRuleKeyInputScreen(callbackScreen, rule, key));
+                } else if (rule != ERewardRule.BASE_REWARD) {
                     Minecraft.getInstance().setScreen(this.getRuleKeyInputScreen(callbackScreen, rule, key));
                 } else {
                     key[0] = "base";
@@ -865,7 +970,9 @@ public class RewardOptionScreen extends Screen {
                         RewardOptionDataManager.saveRewardOption();
                     }
                 }, () -> StringUtils.isNullOrEmpty(key[0]));
-                if (rule != ERewardRule.BASE_REWARD) {
+                if (rule == ERewardRule.CDK_REWARD) {
+                    Minecraft.getInstance().setScreen(this.getCdkRuleKeyInputScreen(callbackScreen, rule, key));
+                } else if (rule != ERewardRule.BASE_REWARD) {
                     Minecraft.getInstance().setScreen(this.getRuleKeyInputScreen(callbackScreen, rule, key));
                 } else {
                     key[0] = "base";
@@ -890,7 +997,9 @@ public class RewardOptionScreen extends Screen {
                     }
                     return result;
                 }, () -> StringUtils.isNullOrEmpty(key[0]));
-                if (rule != ERewardRule.BASE_REWARD) {
+                if (rule == ERewardRule.CDK_REWARD) {
+                    Minecraft.getInstance().setScreen(this.getCdkRuleKeyInputScreen(callbackScreen, rule, key));
+                } else if (rule != ERewardRule.BASE_REWARD) {
                     Minecraft.getInstance().setScreen(this.getRuleKeyInputScreen(callbackScreen, rule, key));
                 } else {
                     key[0] = "base";
@@ -904,14 +1013,14 @@ public class RewardOptionScreen extends Screen {
                 String key = id.substring(3);
                 if (getByZh("编辑").equalsIgnoreCase(selectedString)) {
                     if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-                        Minecraft.getInstance().setScreen(new StringInputScreen(this, Text.i18n("请输入规则名称").setShadow(true), Text.i18n("请输入"), "[\\d +~/:T-]*", key, input -> {
+                        Minecraft.getInstance().setScreen(new StringInputScreen(this, Text.i18n("请输入规则名称").setShadow(true), Text.i18n("请输入"), "[\\d +~/:.T-]*", key, input -> {
                             StringList result = new StringList();
                             if (CollectionUtils.isNotNullOrEmpty(input)) {
                                 if (RewardOptionDataManager.validateKeyName(rule, input.get(0))) {
                                     RewardOptionDataManager.updateKeyName(rule, key, input.get(0));
                                     RewardOptionDataManager.saveRewardOption();
                                 } else {
-                                    result.add(getByZh("规则名称[%s]输入有误", input));
+                                    result.add(getByZh("规则名称[%s]输入有误", input.get(0)));
                                 }
                             }
                             return result;
@@ -1356,6 +1465,12 @@ public class RewardOptionScreen extends Screen {
         OP_BUTTONS.put(OperationButtonType.CUMULATIVE_REWARD.getCode()
                 , new OperationButton(OperationButtonType.CUMULATIVE_REWARD.getCode(), this.generateCustomRenderFunction("累计签到奖励"))
                         .setX(0).setY(this.leftBarTitleHeight + (this.leftBarTitleHeight - 1) * 7).setWidth(100).setHeight(this.leftBarTitleHeight - 2));
+        OP_BUTTONS.put(OperationButtonType.RANDOM_REWARD.getCode()
+                , new OperationButton(OperationButtonType.RANDOM_REWARD.getCode(), this.generateCustomRenderFunction("随机奖励池"))
+                        .setX(0).setY(this.leftBarTitleHeight + (this.leftBarTitleHeight - 1) * 8).setWidth(100).setHeight(this.leftBarTitleHeight - 2));
+        OP_BUTTONS.put(OperationButtonType.CDK_REWARD.getCode()
+                , new OperationButton(OperationButtonType.CDK_REWARD.getCode(), this.generateCustomRenderFunction("兑换码奖励池"))
+                        .setX(0).setY(this.leftBarTitleHeight + (this.leftBarTitleHeight - 1) * 9).setWidth(100).setHeight(this.leftBarTitleHeight - 2));
         OP_BUTTONS.put(OperationButtonType.OFFSET_Y.getCode(), new OperationButton(OperationButtonType.OFFSET_Y.getCode(), context -> {
             AbstractGuiUtils.drawString(context.poseStack(), super.font, "OY:", super.width - rightBarWidth + 1, super.height - font.lineHeight * 2 - 2, 0xFFACACAC);
             AbstractGuiUtils.drawLimitedText(context.poseStack(), super.font, String.valueOf((int) yOffset), super.width - rightBarWidth + 1, super.height - font.lineHeight - 2, rightBarWidth, 0xFFACACAC);
