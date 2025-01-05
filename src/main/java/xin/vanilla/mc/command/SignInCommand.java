@@ -26,7 +26,10 @@ import xin.vanilla.mc.config.ServerConfig;
 import xin.vanilla.mc.enums.ESignInType;
 import xin.vanilla.mc.enums.ETimeCoolingMethod;
 import xin.vanilla.mc.network.SignInPacket;
+import xin.vanilla.mc.rewards.RewardList;
 import xin.vanilla.mc.rewards.RewardManager;
+import xin.vanilla.mc.screen.component.Text;
+import xin.vanilla.mc.util.AbstractGuiUtils;
 import xin.vanilla.mc.util.DateUtils;
 import xin.vanilla.mc.util.StringUtils;
 
@@ -36,6 +39,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
+import static xin.vanilla.mc.util.I18nUtils.getByZh;
 import static xin.vanilla.mc.util.I18nUtils.getI18nKey;
 
 public class SignInCommand {
@@ -47,9 +51,11 @@ public class SignInCommand {
         add(new KeyValue<>("/sign[ <year> <month> <day>]", "sign"));                                         // 签到简洁版本
         add(new KeyValue<>("/reward[ <year> <month> <day>]", "reward"));                                     // 领取今天的奖励简洁版本
         add(new KeyValue<>("/signex[ <year> <month> <day>]", "signex"));                                     // 签到并领取奖励简洁版本
+        add(new KeyValue<>("/cdk <key>", "cdk"));                                                            // 领取兑换码奖励
         add(new KeyValue<>("/va sign <year> <month> <day>", "va_sign"));                                     // 签到/补签指定日期
         add(new KeyValue<>("/va reward[ <year> <month> <day>]", "va_reward"));                               // 领取指定日期奖励
         add(new KeyValue<>("/va signex[ <year> <month> <day>]", "va_signex"));                               // 签到/补签并领取指定日期奖励
+        add(new KeyValue<>("/va cdk <key>", "va_cdk"));                                                      // 签到/补签并领取指定日期奖励
         add(new KeyValue<>("/va card give <num>[ <player>]", "va_card_give"));                               // 给予玩家补签卡
         add(new KeyValue<>("/va card set <num>[ <player>]", "va_card_set"));                                 // 设置玩家补签卡
         add(new KeyValue<>("/va card get <player>", "va_card_get"));                                         // 获取玩家补签卡
@@ -171,6 +177,49 @@ public class SignInCommand {
             }
             return 1;
         };
+        Command<CommandSource> cdkCommand = context -> {
+            ServerPlayerEntity player = context.getSource().getPlayerOrException();
+            IPlayerSignInData signInData = PlayerSignInDataCapability.getData(player);
+            String string = StringArgumentType.getString(context, "key");
+            if (signInData.getCdkErrorRecords().stream()
+                    .filter(keyValue -> DateUtils.toDateInt(keyValue.getValue().getKey()) == DateUtils.toDateInt(DateUtils.getServerDate()))
+                    .filter(keyValue -> !keyValue.getValue().getValue())
+                    .count() >= 5) {
+                player.sendMessage(AbstractGuiUtils.textToComponent(Text.i18n("今日CDK输入错误次数过多，请明日再试").setColor(0xFFFF0000)));
+            } else if (signInData.getCdkErrorRecords().stream()
+                    .filter(keyValue -> keyValue.getKey().equals(string))
+                    .anyMatch(keyValue -> keyValue.getValue().getValue())) {
+                player.sendMessage(AbstractGuiUtils.textToComponent(Text.i18n("阁下已领取过当前CDK的奖励，请勿重复领取").setColor(0xFFFFFF00)));
+            } else {
+                KeyValue<String, KeyValue<String, RewardList>> rewardKeyValue = RewardOptionDataManager.getRewardOptionData().getCdkRewards().stream()
+                        .filter(keyValue -> keyValue.getKey().equals(string))
+                        .findFirst().orElse(null);
+                boolean error = true;
+                if (rewardKeyValue == null) {
+                    player.sendMessage(AbstractGuiUtils.textToComponent(Text.i18n("输入的CDK不存在或已被领取").setColor(0xFFFF0000)));
+                } else {
+                    Date format = DateUtils.format(rewardKeyValue.getValue().getKey());
+                    if (format.before(DateUtils.getServerDate())) {
+                        player.sendMessage(AbstractGuiUtils.textToComponent(Text.i18n("输入的CDK已过期").setColor(0xFFFF0000)));
+                    } else {
+                        StringTextComponent msg = new StringTextComponent(getByZh("奖励领取详情:"));
+                        rewardKeyValue.getValue().getValue().forEach(reward -> {
+                            ITextComponent detail = new StringTextComponent(reward.getName(true));
+                            if (RewardManager.giveRewardToPlayer(player, signInData, reward)) {
+                                detail.withStyle(style -> style.setColor(TextFormatting.GREEN));
+                            } else {
+                                detail.withStyle(style -> style.setColor(TextFormatting.RED));
+                            }
+                            msg.append(", ").append(detail);
+                        });
+                        player.sendMessage(msg);
+                        error = false;
+                    }
+                }
+                signInData.getCdkErrorRecords().add(new KeyValue<>(string, new KeyValue<>(DateUtils.getServerDate(), !error)));
+            }
+            return 1;
+        };
         Command<CommandSource> helpCommand = context -> {
             int page = 1;
             try {
@@ -225,6 +274,14 @@ public class SignInCommand {
                 )
         );
 
+        // 領取CDK獎勵 /cdk
+        dispatcher.register(Commands.literal("cdk")
+                // 带有日期参数 -> 补签
+                .then(Commands.argument("key", StringArgumentType.word())
+                        .executes(cdkCommand)
+                )
+        );
+
         // 注册有前缀的指令
         dispatcher.register(Commands.literal("va")
                 .executes(helpCommand)
@@ -263,6 +320,13 @@ public class SignInCommand {
                         .then(Commands.argument("date", StringArgumentType.greedyString())
                                 .suggests(dateSuggestions)
                                 .executes(signAndRewardCommand)
+                        )
+                )
+                // 領取CDK獎勵 /va cdk
+                .then(Commands.literal("cdk")
+                        // 补签 /va signex <year> <month> <day>
+                        .then(Commands.argument("key", StringArgumentType.greedyString())
+                                .executes(cdkCommand)
                         )
                 )
                 // 获取补签卡数量 /va card
