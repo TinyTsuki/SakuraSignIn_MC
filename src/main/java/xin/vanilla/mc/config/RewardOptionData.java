@@ -1,5 +1,6 @@
 package xin.vanilla.mc.config;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.annotations.Expose;
 import lombok.Data;
@@ -17,6 +18,7 @@ import xin.vanilla.mc.util.DateUtils;
 import xin.vanilla.mc.util.StringUtils;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -137,6 +139,20 @@ public class RewardOptionData implements Serializable {
     @NonNull
     private Map<String, RewardList> cumulativeRewards;
 
+    /**
+     * 随机奖励<p>
+     * 在每次签到时随机获得一组奖励
+     */
+    @NonNull
+    private Map<String, RewardList> randomRewards;
+
+    /**
+     * 兑换码奖励<p>
+     * 输入正确的兑换码进行兑换，每个兑换码仅可使用一次<p>
+     * key : expiration date : rewards
+     */
+    private List<KeyValue<String, KeyValue<String, RewardList>>> cdkRewards;
+
     public RewardOptionData() {
         this.baseRewards = new RewardList();
         this.continuousRewards = new LinkedHashMap<>();
@@ -149,6 +165,8 @@ public class RewardOptionData implements Serializable {
         this.dateTimeRewards = new LinkedHashMap<>();
         this.dateTimeRewardsRelation = new LinkedHashMap<>();
         this.cumulativeRewards = new LinkedHashMap<>();
+        this.randomRewards = new LinkedHashMap<>();
+        this.cdkRewards = new ArrayList<>();
     }
 
     /**
@@ -401,6 +419,62 @@ public class RewardOptionData implements Serializable {
         }
     }
 
+    /**
+     * 设置随机签到奖励
+     */
+    public void setRandomRewards(@NonNull Map<String, RewardList> randomRewards) {
+        this.randomRewards = new LinkedHashMap<>();
+        randomRewards.forEach((key, value) -> {
+            if (StringUtils.isNotNullOrEmpty(key)) {
+                this.addRandomReward(key, value);
+            }
+        });
+    }
+
+    /**
+     * 添加随机签到奖励
+     */
+    @SuppressWarnings("ConstantConditions")
+    public void addRandomReward(@NonNull String key, @NonNull RewardList value) {
+        if (this.randomRewards == null) this.randomRewards = new LinkedHashMap<>();
+        BigDecimal probability = StringUtils.toBigDecimal(key);
+        if (probability.compareTo(BigDecimal.ZERO) > 0 && probability.compareTo(BigDecimal.ONE) <= 0) {
+            String fixedKey = StringUtils.toFixedEx(probability, 5);
+            if (this.randomRewards.containsKey(fixedKey)) {
+                this.randomRewards.get(fixedKey).addAll(value);
+            } else {
+                this.randomRewards.put(fixedKey, value);
+            }
+        }
+    }
+
+    /**
+     * 设置兑换码签到奖励
+     */
+    public void setCdkRewards(@NonNull List<KeyValue<String, KeyValue<String, RewardList>>> cdkRewards) {
+        this.cdkRewards = new ArrayList<>();
+        cdkRewards.forEach((keyValue) -> {
+            if (StringUtils.isNotNullOrEmpty(keyValue.getKey())) {
+                this.addCdkReward(keyValue);
+            }
+        });
+    }
+
+    /**
+     * 添加兑换码签到奖励
+     */
+    @SuppressWarnings("ConstantConditions")
+    public void addCdkReward(@NonNull KeyValue<String, KeyValue<String, RewardList>> keyValue) {
+        if (this.cdkRewards == null) this.cdkRewards = new ArrayList<>();
+        if (StringUtils.isNotNullOrEmpty(keyValue.getKey())) {
+            if (StringUtils.isNullOrEmptyEx(keyValue.getValue().getKey())) {
+                String year = StringUtils.getString("9", String.valueOf(DateUtils.getYearPart(new Date())).length());
+                keyValue.getValue().setKey(year + "-12-31");
+            }
+            this.cdkRewards.add(keyValue);
+        }
+    }
+
     public static RewardOptionData getDefault() {
         return new RewardOptionData() {{
             setBaseRewards(new RewardList() {{
@@ -625,6 +699,22 @@ public class RewardOptionData implements Serializable {
             cumulativeRewardJson.add(entry.getKey(), entry.getValue().toJsonArray());
         }
         json.add("cumulativeRewards", cumulativeRewardJson);
+
+        JsonObject randomRewardsJson = new JsonObject();
+        for (Map.Entry<String, RewardList> entry : randomRewards.entrySet()) {
+            randomRewardsJson.add(entry.getKey(), entry.getValue().toJsonArray());
+        }
+        json.add("randomRewards", randomRewardsJson);
+
+        JsonArray cdkRewardsArray = new JsonArray();
+        for (KeyValue<String, KeyValue<String, RewardList>> entry : cdkRewards) {
+            JsonObject keyValueJson = new JsonObject();
+            keyValueJson.addProperty("key", entry.getKey());
+            keyValueJson.addProperty("date", entry.getValue().getKey());
+            keyValueJson.add("value", entry.getValue().getValue().toJsonArray());
+            cdkRewardsArray.add(keyValueJson);
+        }
+        json.add("cdkRewards", cdkRewardsArray);
         return json;
     }
 }
