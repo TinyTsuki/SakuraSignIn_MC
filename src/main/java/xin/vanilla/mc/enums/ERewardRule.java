@@ -16,7 +16,9 @@ public enum ERewardRule {
     MONTH_REWARD(5),
     WEEK_REWARD(6),
     DATE_TIME_REWARD(7),
-    CUMULATIVE_REWARD(8);
+    CUMULATIVE_REWARD(8),
+    RANDOM_REWARD(9),
+    CDK_REWARD(10);
 
     private final int code;
 
