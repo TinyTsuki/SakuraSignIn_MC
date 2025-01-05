@@ -33,8 +33,10 @@ import xin.vanilla.mc.util.StringUtils;
 
 import java.awt.*;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 import static xin.vanilla.mc.util.I18nUtils.getByZh;
@@ -228,7 +230,7 @@ public class RewardManager {
                 day = i - daysOfCurrentMonth - nextOffset;
             }
             int key = year * 10000 + month * 100 + day;
-            RewardList rewardList = RewardManager.getRewardListByDate(DateUtils.getDate(year, month, day, DateUtils.getHourOfDay(currentMonth), DateUtils.getMinuteOfHour(currentMonth), DateUtils.getSecondOfMinute(currentMonth)), playerData, false);
+            RewardList rewardList = RewardManager.getRewardListByDate(DateUtils.getDate(year, month, day, DateUtils.getHourOfDay(currentMonth), DateUtils.getMinuteOfHour(currentMonth), DateUtils.getSecondOfMinute(currentMonth)), playerData, false, false);
             result.put(key, rewardList);
         }
         return result;
@@ -242,7 +244,7 @@ public class RewardManager {
      * @param onlyHistory 是否仅获取玩家签到记录中的奖励
      */
     @NonNull
-    public static RewardList getRewardListByDate(Date currentDay, IPlayerSignInData playerData, boolean onlyHistory) {
+    public static RewardList getRewardListByDate(Date currentDay, IPlayerSignInData playerData, boolean onlyHistory, boolean withRandom) {
         RewardList result = new RewardList();
         RewardOptionData serverData = RewardOptionDataManager.getRewardOptionData();
         int nowCompensate8 = RewardManager.getCompensateDateInt();
@@ -285,66 +287,97 @@ public class RewardManager {
             result.addAll(rewardRecords);
         }
         // 若日期小于当前日期 且 补签仅计算基础奖励
-        else if (!onlyHistory && key < nowCompensate8 && ServerConfig.SIGN_IN_CARD_ONLY_BASE_REWARD.get()) {
-            // 基础奖励
-            result.addAll(serverData.getBaseRewards());
-            // 累计签到奖励
-            result.addAll(serverData.getCumulativeRewards().getOrDefault(String.valueOf(playerData.getTotalSignInDays() + 1), new RewardList()));
-        } else if (!onlyHistory) {
-            // 基础奖励
-            result.addAll(serverData.getBaseRewards());
-            // 年度签到奖励(正数第几天)
-            result.addAll(serverData.getYearRewards().getOrDefault(String.valueOf(curDayOfYear), new RewardList()));
-            // 年度签到奖励(倒数第几天)
-            result.addAll(serverData.getYearRewards().getOrDefault(String.valueOf(curDayOfYear - 1 - daysOfCurrentYear), new RewardList()));
-            // 月度签到奖励(正数第几天)
-            result.addAll(serverData.getMonthRewards().getOrDefault(String.valueOf(curDayOfMonth), new RewardList()));
-            // 月度签到奖励(倒数第几天)
-            result.addAll(serverData.getMonthRewards().getOrDefault(String.valueOf(curDayOfMonth - 1 - daysOfCurrentMonth), new RewardList()));
-            // 周度签到奖励(每周固定7天, 没有倒数的说法)
-            result.addAll(serverData.getWeekRewards().getOrDefault(String.valueOf(curDayOfWeek), new RewardList()));
-            // 自定义日期奖励
-            List<Reward> dateTimeRewards = serverData.getDateTimeRewardsRelation().keySet().stream()
-                    .filter(getDateStringList(currentDay)::contains)
-                    .map(serverData.getDateTimeRewardsRelation()::get)
-                    .distinct()
-                    .map(serverData.getDateTimeRewards()::get)
-                    .flatMap(Collection::stream)
-                    .collect(Collectors.toList());
-            if (CollectionUtils.isNotNullOrEmpty(dateTimeRewards)) result.addAll(dateTimeRewards);
-            // 累计签到奖励
-            result.addAll(serverData.getCumulativeRewards().getOrDefault(String.valueOf(playerData.getTotalSignInDays() + 1), new RewardList()));
+        else {
+            if (!onlyHistory && key < nowCompensate8 && ServerConfig.SIGN_IN_CARD_ONLY_BASE_REWARD.get()) {
+                // 基础奖励
+                result.addAll(serverData.getBaseRewards());
+                // 累计签到奖励
+                result.addAll(serverData.getCumulativeRewards().getOrDefault(String.valueOf(playerData.getTotalSignInDays() + 1), new RewardList()));
+            } else if (!onlyHistory) {
+                // 基础奖励
+                result.addAll(serverData.getBaseRewards());
+                // 年度签到奖励(正数第几天)
+                result.addAll(serverData.getYearRewards().getOrDefault(String.valueOf(curDayOfYear), new RewardList()));
+                // 年度签到奖励(倒数第几天)
+                result.addAll(serverData.getYearRewards().getOrDefault(String.valueOf(curDayOfYear - 1 - daysOfCurrentYear), new RewardList()));
+                // 月度签到奖励(正数第几天)
+                result.addAll(serverData.getMonthRewards().getOrDefault(String.valueOf(curDayOfMonth), new RewardList()));
+                // 月度签到奖励(倒数第几天)
+                result.addAll(serverData.getMonthRewards().getOrDefault(String.valueOf(curDayOfMonth - 1 - daysOfCurrentMonth), new RewardList()));
+                // 周度签到奖励(每周固定7天, 没有倒数的说法)
+                result.addAll(serverData.getWeekRewards().getOrDefault(String.valueOf(curDayOfWeek), new RewardList()));
+                // 自定义日期奖励
+                List<Reward> dateTimeRewards = serverData.getDateTimeRewardsRelation().keySet().stream()
+                        .filter(getDateStringList(currentDay)::contains)
+                        .map(serverData.getDateTimeRewardsRelation()::get)
+                        .distinct()
+                        .map(serverData.getDateTimeRewards()::get)
+                        .flatMap(Collection::stream)
+                        .collect(Collectors.toList());
+                if (CollectionUtils.isNotNullOrEmpty(dateTimeRewards)) result.addAll(dateTimeRewards);
+                // 累计签到奖励
+                result.addAll(serverData.getCumulativeRewards().getOrDefault(String.valueOf(playerData.getTotalSignInDays() + 1), new RewardList()));
 
-            //  若日历日期>=当前日期，则添加连续签到奖励(不同玩家不一样)
-            if (key >= nowCompensate8) {
-                // 连续签到天数
-                int continuousSignInDays = playerData.getContinuousSignInDays();
-                if (DateUtils.toDateInt(playerData.getLastSignInTime()) < nowCompensate8) {
-                    continuousSignInDays++;
-                }
-                continuousSignInDays += key - nowCompensate8;
-                // 连续签到奖励
-                int continuousMax = serverData.getContinuousRewardsRelation().keySet().stream().map(Integer::parseInt).max(Comparator.naturalOrder()).orElse(0);
-                RewardList continuousRewards = serverData.getContinuousRewards().get(
-                        serverData.getContinuousRewardsRelation().get(
-                                String.valueOf(Math.min(continuousMax, continuousSignInDays))
-                        )
-                );
-                if (CollectionUtils.isNotNullOrEmpty(continuousRewards)) result.addAll(continuousRewards);
-                // 签到周期奖励
-                int cycleMax = serverData.getCycleRewardsRelation().keySet().stream().map(Integer::parseInt).max(Comparator.naturalOrder()).orElse(0);
-                RewardList cycleRewards = new RewardList();
-                if (cycleMax > 0) {
-                    cycleRewards = serverData.getCycleRewards().get(
-                            serverData.getCycleRewardsRelation().get(
-                                    String.valueOf(continuousSignInDays % cycleMax == 0 ? cycleMax : continuousSignInDays % cycleMax)
+                //  若日历日期>=当前日期，则添加连续签到奖励(不同玩家不一样)
+                if (key >= nowCompensate8) {
+                    // 连续签到天数
+                    int continuousSignInDays = playerData.getContinuousSignInDays();
+                    if (DateUtils.toDateInt(playerData.getLastSignInTime()) < nowCompensate8) {
+                        continuousSignInDays++;
+                    }
+                    continuousSignInDays += key - nowCompensate8;
+                    // 连续签到奖励
+                    int continuousMax = serverData.getContinuousRewardsRelation().keySet().stream().map(Integer::parseInt).max(Comparator.naturalOrder()).orElse(0);
+                    RewardList continuousRewards = serverData.getContinuousRewards().get(
+                            serverData.getContinuousRewardsRelation().get(
+                                    String.valueOf(Math.min(continuousMax, continuousSignInDays))
                             )
                     );
+                    if (CollectionUtils.isNotNullOrEmpty(continuousRewards)) result.addAll(continuousRewards);
+                    // 签到周期奖励
+                    int cycleMax = serverData.getCycleRewardsRelation().keySet().stream().map(Integer::parseInt).max(Comparator.naturalOrder()).orElse(0);
+                    RewardList cycleRewards = new RewardList();
+                    if (cycleMax > 0) {
+                        cycleRewards = serverData.getCycleRewards().get(
+                                serverData.getCycleRewardsRelation().get(
+                                        String.valueOf(continuousSignInDays % cycleMax == 0 ? cycleMax : continuousSignInDays % cycleMax)
+                                )
+                        );
+                    }
+                    if (CollectionUtils.isNotNullOrEmpty(cycleRewards)) result.addAll(cycleRewards);
                 }
-                if (CollectionUtils.isNotNullOrEmpty(cycleRewards)) result.addAll(cycleRewards);
             }
+            result.addAll(getRandomRewardList());
         }
         return RewardManager.mergeRewards(result);
+    }
+
+    public static RewardList getRandomRewardList() {
+        RewardList result = new RewardList();
+        Map<String, RewardList> randomRewards = RewardOptionDataManager.getRewardOptionData().getRandomRewards();
+        // 将概率字符串转换为 BigDecimal，并计算总概率
+        Set<Map.Entry<BigDecimal, RewardList>> entries = randomRewards.entrySet().stream()
+                .collect(Collectors.toMap(entry -> new BigDecimal(entry.getKey()), Map.Entry::getValue)).entrySet();
+        BigDecimal totalProbability = entries.stream()
+                .map(Map.Entry::getKey)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        // 如果总概率为 0，则返回空结果
+        if (totalProbability.compareTo(BigDecimal.ZERO) != 0) {
+            // 生成 0 到 totalProbability 之间的随机值
+            BigDecimal randomValue = BigDecimal.valueOf(ThreadLocalRandom.current().nextDouble())
+                    .multiply(totalProbability)
+                    .setScale(10, RoundingMode.HALF_UP);
+            // 遍历概率池，找到对应的奖励
+            BigDecimal cumulative = BigDecimal.ZERO;
+            for (Map.Entry<BigDecimal, RewardList> entry : entries) {
+                cumulative = cumulative.add(entry.getKey());
+                if (randomValue.compareTo(cumulative) <= 0) {
+                    result = entry.getValue();
+                    break;
+                }
+            }
+        }
+        return result;
     }
 
     /**
@@ -522,7 +555,7 @@ public class RewardManager {
         }
         // 签到/补签
         else {
-            RewardList rewardList = RewardManager.getRewardListByDate(clientCompensateDate, signInData, false).clone();
+            RewardList rewardList = RewardManager.getRewardListByDate(clientCompensateDate, signInData, false, true).clone();
             if (ESignInType.RE_SIGN_IN.equals(packet.getSignInType())) signInData.subSignInCard();
             SignInRecord signInRecord = new SignInRecord();
             signInRecord.setRewarded(packet.isAutoRewarded());
@@ -563,7 +596,7 @@ public class RewardManager {
         PlayerSignInDataCapability.syncPlayerData(player);
     }
 
-    private static boolean giveRewardToPlayer(ServerPlayer player, IPlayerSignInData signInData, Reward reward) {
+    public static boolean giveRewardToPlayer(ServerPlayer player, IPlayerSignInData signInData, Reward reward) {
         reward.setRewarded(true);
         Object object = RewardManager.deserializeReward(reward);
         // 判断是否启用

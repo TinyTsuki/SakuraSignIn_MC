@@ -188,17 +188,6 @@ public class StringUtils {
     }
 
     /**
-     * 获取tap指令限制时间key
-     *
-     * @param group  群号
-     * @param sender 发送者
-     * @return tap指令限制时间 key
-     */
-    public static String getTapTimeKey(long group, long sender) {
-        return group + "." + sender + ".tap";
-    }
-
-    /**
      * 将字符串转为逻辑真假
      *
      * @param s 0|1|真|假|是|否|true|false|y|n|t|f
@@ -437,11 +426,11 @@ public class StringUtils {
         return result;
     }
 
-    public static double toFloat(String s) {
+    public static float toFloat(String s) {
         return toFloat(s, 0);
     }
 
-    public static double toFloat(String s, float defaultValue) {
+    public static float toFloat(String s, float defaultValue) {
         float result = defaultValue;
         if (StringUtils.isNotNullOrEmpty(s)) {
             try {
@@ -536,5 +525,16 @@ public class StringUtils {
 
     public static String toFixedEx(BigDecimal d, int scale) {
         return d.setScale(scale, RoundingMode.HALF_UP).toString().replaceAll("0+$", "").replaceAll("[.]$", "");
+    }
+
+    /**
+     * 获取指定数量的某个字符串
+     */
+    public static String getString(String s, int count) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < count; i++) {
+            sb.append(s);
+        }
+        return sb.toString();
     }
 }
