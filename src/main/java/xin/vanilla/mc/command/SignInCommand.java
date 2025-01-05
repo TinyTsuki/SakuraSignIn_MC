@@ -30,6 +30,7 @@ import xin.vanilla.mc.rewards.RewardList;
 import xin.vanilla.mc.rewards.RewardManager;
 import xin.vanilla.mc.screen.component.Text;
 import xin.vanilla.mc.util.AbstractGuiUtils;
+import xin.vanilla.mc.util.CollectionUtils;
 import xin.vanilla.mc.util.DateUtils;
 import xin.vanilla.mc.util.StringUtils;
 
@@ -39,6 +40,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import static xin.vanilla.mc.util.I18nUtils.getByZh;
 import static xin.vanilla.mc.util.I18nUtils.getI18nKey;
@@ -192,32 +194,39 @@ public class SignInCommand {
                     .anyMatch(keyValue -> keyValue.getValue().getValue())) {
                 player.sendSystemMessage(AbstractGuiUtils.textToComponent(Text.i18n("阁下已领取过当前CDK的奖励，请勿重复领取").setColor(0xFFFFFF00)));
             } else {
-                KeyValue<String, KeyValue<String, RewardList>> rewardKeyValue = RewardOptionDataManager.getRewardOptionData().getCdkRewards().stream()
-                        .filter(keyValue -> keyValue.getKey().equals(string))
-                        .findFirst().orElse(null);
-                boolean error = true;
-                if (rewardKeyValue == null) {
-                    player.sendSystemMessage(AbstractGuiUtils.textToComponent(Text.i18n("输入的CDK不存在或已被领取").setColor(0xFFFF0000)));
-                } else {
-                    Date format = DateUtils.format(rewardKeyValue.getValue().getKey());
-                    if (format.before(DateUtils.getServerDate())) {
-                        player.sendSystemMessage(AbstractGuiUtils.textToComponent(Text.i18n("输入的CDK已过期").setColor(0xFFFF0000)));
+                List<KeyValue<String, KeyValue<String, RewardList>>> cdkRewards = RewardOptionDataManager.getRewardOptionData().getCdkRewards();
+                if (CollectionUtils.isNotNullOrEmpty(cdkRewards)) {
+                    // 找到第一个匹配的项的下标
+                    int indexToRemove = IntStream.range(0, cdkRewards.size())
+                            .filter(i -> cdkRewards.get(i).getKey().equals(string))
+                            .findFirst()
+                            .orElse(-1);
+                    boolean error = true;
+                    if (indexToRemove < 0) {
+                        player.sendSystemMessage(AbstractGuiUtils.textToComponent(Text.i18n("输入的CDK不存在或已被领取").setColor(0xFFFF0000)));
                     } else {
-                        MutableComponent msg = Component.literal(getByZh("奖励领取详情:"));
-                        rewardKeyValue.getValue().getValue().forEach(reward -> {
-                            MutableComponent detail = Component.literal(reward.getName(true));
-                            if (RewardManager.giveRewardToPlayer(player, signInData, reward)) {
-                                detail.withStyle(style -> style.withColor(Color.GREEN.getRGB()));
-                            } else {
-                                detail.withStyle(style -> style.withColor(Color.RED.getRGB()));
-                            }
-                            msg.append(", ").append(detail);
-                        });
-                        player.sendSystemMessage(msg);
-                        error = false;
+                        KeyValue<String, KeyValue<String, RewardList>> rewardKeyValue = RewardOptionDataManager.getRewardOptionData().getCdkRewards().remove(indexToRemove);
+                        RewardOptionDataManager.saveRewardOption();
+                        Date format = DateUtils.format(rewardKeyValue.getValue().getKey());
+                        if (format.before(DateUtils.getServerDate())) {
+                            player.sendSystemMessage(AbstractGuiUtils.textToComponent(Text.i18n("输入的CDK已过期").setColor(0xFFFF0000)));
+                        } else {
+                            MutableComponent msg = Component.literal(getByZh("奖励领取详情:"));
+                            rewardKeyValue.getValue().getValue().forEach(reward -> {
+                                MutableComponent detail = Component.literal(reward.getName(true));
+                                if (RewardManager.giveRewardToPlayer(player, signInData, reward)) {
+                                    detail.withStyle(style -> style.withColor(Color.GREEN.getRGB()));
+                                } else {
+                                    detail.withStyle(style -> style.withColor(Color.RED.getRGB()));
+                                }
+                                msg.append(", ").append(detail);
+                            });
+                            player.sendSystemMessage(msg);
+                            error = false;
+                        }
                     }
+                    signInData.getCdkErrorRecords().add(new KeyValue<>(string, new KeyValue<>(DateUtils.getServerDate(), !error)));
                 }
-                signInData.getCdkErrorRecords().add(new KeyValue<>(string, new KeyValue<>(DateUtils.getServerDate(), !error)));
             }
             return 1;
         };
