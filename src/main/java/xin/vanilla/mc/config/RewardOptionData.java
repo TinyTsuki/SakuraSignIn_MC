@@ -438,7 +438,7 @@ public class RewardOptionData implements Serializable {
         if (this.randomRewards == null) this.randomRewards = new LinkedHashMap<>();
         BigDecimal probability = StringUtils.toBigDecimal(key);
         if (probability.compareTo(BigDecimal.ZERO) > 0 && probability.compareTo(BigDecimal.ONE) <= 0) {
-            String fixedKey = StringUtils.toFixedEx(probability, 5);
+            String fixedKey = StringUtils.toFixedEx(probability, 10);
             if (this.randomRewards.containsKey(fixedKey)) {
                 this.randomRewards.get(fixedKey).addAll(value);
             } else {

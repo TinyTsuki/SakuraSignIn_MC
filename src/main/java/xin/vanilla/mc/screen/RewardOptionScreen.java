@@ -324,7 +324,8 @@ public class RewardOptionScreen extends Screen {
     }
 
     private StringInputScreen getRuleKeyInputScreen(Screen callbackScreen, ERewardRule rule, String[] key) {
-        return new StringInputScreen(callbackScreen, Text.i18n("请输入规则名称").setShadow(true), Text.i18n("请输入"), "[\\d +~/:.T-]*", "", input -> {
+        String validator = rule == ERewardRule.RANDOM_REWARD ? "(0?1(\\.0{0,10})?|0(\\.\\d{0,10})?)?" : "[\\d +~/:.T-]*";
+        return new StringInputScreen(callbackScreen, Text.i18n("请输入规则名称").setShadow(true), Text.i18n("请输入"), validator, "", input -> {
             StringList result = new StringList();
             if (CollectionUtils.isNotNullOrEmpty(input)) {
                 if (RewardOptionDataManager.validateKeyName(rule, input.get(0))) {
@@ -470,7 +471,7 @@ public class RewardOptionScreen extends Screen {
                     if (rewardListIndex.get() > 0) {
                         rewardListIndex.set((int) ((Math.floor((double) rewardListIndex.get() / lineItemCount) + 1) * lineItemCount));
                     }
-                    this.addRewardTitleButton(String.format("%.3f%%", new BigDecimal(key).multiply(new BigDecimal(100)).floatValue()), key, titleIndex, rewardListIndex.get());
+                    this.addRewardTitleButton(String.format("%s%%", StringUtils.toFixedEx(new BigDecimal(key).multiply(new BigDecimal(100)), 10)), key, titleIndex, rewardListIndex.get());
                     rewardListIndex.addAndGet(lineItemCount);
                     this.addRewardButton(rewardOptionData.getRandomRewards(), key, rewardListIndex);
                     titleIndex--;
@@ -604,9 +605,10 @@ public class RewardOptionScreen extends Screen {
         else if (value.getOperation() == OperationButtonType.UPLOAD.getCode()) {
             // 仅管理员可上传
             if (!Minecraft.getInstance().isLocalServer()) {
-                if (Minecraft.getInstance().player != null) {
-                    if (Minecraft.getInstance().player.hasPermissions(3)) {
-                        for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardOptionDataManager.toSyncPacket().split()) {
+                LocalPlayer player = Minecraft.getInstance().player;
+                if (player != null) {
+                    if (player.hasPermissions(3)) {
+                        for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardOptionDataManager.toSyncPacket(player.hasPermissions(3)).split()) {
                             ModNetworkHandler.INSTANCE.send(rewardOptionSyncPacket, PacketDistributor.SERVER.noArg());
                         }
                         flag.set(true);
@@ -792,10 +794,11 @@ public class RewardOptionScreen extends Screen {
                             return result;
                         }));
                     } else if (rule != ERewardRule.BASE_REWARD) {
+                        String validator = rule == ERewardRule.RANDOM_REWARD ? "(0?1(\\.0{0,10})?|0(\\.\\d{0,10})?)?" : "[\\d +~/:.T-]*";
                         Minecraft.getInstance().setScreen(new StringInputScreen(this
                                 , Text.i18n("请输入规则名称").setShadow(true)
                                 , Text.i18n("请输入")
-                                , "[\\d +~/:.T-]*"
+                                , validator
                                 , ""
                                 , input -> {
                             StringList result = new StringList();
@@ -856,7 +859,7 @@ public class RewardOptionScreen extends Screen {
                 StringInputScreen callbackScreen = new StringInputScreen(this
                         , new TextList(Text.i18n("请输入经验点值").setShadow(true), Text.i18n("请输入奖励概率").setShadow(true))
                         , new TextList(Text.i18n("请输入"))
-                        , new StringList("-?\\d*", "(1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                        , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                         , new StringList("1")
                         , input -> {
                     StringList result = new StringList();
@@ -886,7 +889,7 @@ public class RewardOptionScreen extends Screen {
                 StringInputScreen callbackScreen = new StringInputScreen(this
                         , new TextList(Text.i18n("请输入经验等级").setShadow(true), Text.i18n("请输入奖励概率").setShadow(true))
                         , new TextList(Text.i18n("请输入"))
-                        , new StringList("-?\\d*", "(1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                        , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                         , new StringList("1")
                         , input -> {
                     StringList result = new StringList();
@@ -916,7 +919,7 @@ public class RewardOptionScreen extends Screen {
                 StringInputScreen callbackScreen = new StringInputScreen(this
                         , new TextList(Text.i18n("请输入补签卡数量").setShadow(true), Text.i18n("请输入奖励概率").setShadow(true))
                         , new TextList(Text.i18n("请输入"))
-                        , new StringList("-?\\d*", "(1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                        , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                         , new StringList("1")
                         , input -> {
                     StringList result = new StringList();
@@ -963,7 +966,7 @@ public class RewardOptionScreen extends Screen {
                 StringInputScreen callbackScreen = new StringInputScreen(this
                         , new TextList(Text.i18n("请输入消息").setShadow(true), Text.i18n("请输入奖励概率").setShadow(true))
                         , new TextList(Text.i18n("请输入"))
-                        , new StringList("", "(1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                        , new StringList("", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                         , new StringList("", "1")
                         , input -> {
                     if (CollectionUtils.isNotNullOrEmpty(input) && StringUtils.isNotNullOrEmpty(key[0])) {
@@ -987,7 +990,7 @@ public class RewardOptionScreen extends Screen {
                 StringInputScreen callbackScreen = new StringInputScreen(this
                         , new TextList(Text.i18n("请输入指令").setShadow(true), Text.i18n("请输入奖励概率").setShadow(true))
                         , new TextList(Text.i18n("请输入"))
-                        , new StringList("", "(1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                        , new StringList("", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                         , new StringList("", "1")
                         , input -> {
                     StringList result = new StringList();
@@ -1016,18 +1019,48 @@ public class RewardOptionScreen extends Screen {
                 String key = id.substring(3);
                 if (getByZh("编辑").equalsIgnoreCase(selectedString)) {
                     if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-                        Minecraft.getInstance().setScreen(new StringInputScreen(this, Text.i18n("请输入规则名称").setShadow(true), Text.i18n("请输入"), "[\\d +~/:.T-]*", key, input -> {
-                            StringList result = new StringList();
-                            if (CollectionUtils.isNotNullOrEmpty(input)) {
-                                if (RewardOptionDataManager.validateKeyName(rule, input.get(0))) {
-                                    RewardOptionDataManager.updateKeyName(rule, key, input.get(0));
-                                    RewardOptionDataManager.saveRewardOption();
-                                } else {
-                                    result.add(getByZh("规则名称[%s]输入有误", input.get(0)));
+                        if (rule == ERewardRule.CDK_REWARD) {
+                            String[] split = key.split("\\|");
+                            if (split.length != 3 && split.length != 2)
+                                split = new String[]{"", DateUtils.toString(DateUtils.addMonth(new Date(), 1))};
+                            Minecraft.getInstance().setScreen(new StringInputScreen(this
+                                    , new TextList(Text.i18n("请输入规则名称").setShadow(true), Text.i18n("请输入有效期").setShadow(true))
+                                    , new TextList(Text.i18n("请输入"))
+                                    , new StringList("\\w*", "")
+                                    , new StringList(split[0], split[1])
+                                    , input -> {
+                                StringList result = new StringList("", "");
+                                if (CollectionUtils.isNotNullOrEmpty(input)) {
+                                    if (!RewardOptionDataManager.validateKeyName(rule, input.get(0))) {
+                                        result.set(0, getByZh("规则名称[%s]输入有误", input.get(0)));
+                                    }
+                                    if (StringUtils.isNotNullOrEmpty(input.get(1))) {
+                                        if (DateUtils.format(input.get(1)) == null) {
+                                            result.set(1, getByZh("有效期[%s]输入有误", input.get(1)));
+                                        }
+                                    }
+                                    if (result.stream().allMatch(StringUtils::isNullOrEmptyEx)) {
+                                        RewardOptionDataManager.updateKeyName(rule, key, String.format("%s|%s|-1", input.get(0), input.get(1)));
+                                        RewardOptionDataManager.saveRewardOption();
+                                    }
                                 }
-                            }
-                            return result;
-                        }));
+                                return result;
+                            }));
+                        } else {
+                            String validator = rule == ERewardRule.RANDOM_REWARD ? "(0?1(\\.0{0,10})?|0(\\.\\d{0,10})?)?" : "[\\d +~/:.T-]*";
+                            Minecraft.getInstance().setScreen(new StringInputScreen(this, Text.i18n("请输入规则名称").setShadow(true), Text.i18n("请输入"), validator, key, input -> {
+                                StringList result = new StringList();
+                                if (CollectionUtils.isNotNullOrEmpty(input)) {
+                                    if (RewardOptionDataManager.validateKeyName(rule, input.get(0))) {
+                                        RewardOptionDataManager.updateKeyName(rule, key, input.get(0));
+                                        RewardOptionDataManager.saveRewardOption();
+                                    } else {
+                                        result.add(getByZh("规则名称[%s]输入有误", input.get(0)));
+                                    }
+                                }
+                                return result;
+                            }));
+                        }
                     }
                 } else if (getByZh("复制").equalsIgnoreCase(selectedString)) {
                     if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
@@ -1089,7 +1122,7 @@ public class RewardOptionScreen extends Screen {
                     Minecraft.getInstance().setScreen(new StringInputScreen(this
                             , new TextList(Text.i18n("请输入经验点值").setShadow(true), Text.i18n("请输入奖励概率").setShadow(true))
                             , new TextList(Text.i18n("请输入"))
-                            , new StringList("-?\\d*", "(1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                            , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                             , new StringList("1")
                             , input -> {
                         StringList result = new StringList();
@@ -1111,7 +1144,7 @@ public class RewardOptionScreen extends Screen {
                     Minecraft.getInstance().setScreen(new StringInputScreen(this
                             , new TextList(Text.i18n("请输入经验等级").setShadow(true), Text.i18n("请输入奖励概率").setShadow(true))
                             , new TextList(Text.i18n("请输入"))
-                            , new StringList("-?\\d*", "(1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                            , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                             , new StringList("1")
                             , input -> {
                         StringList result = new StringList();
@@ -1133,7 +1166,7 @@ public class RewardOptionScreen extends Screen {
                     Minecraft.getInstance().setScreen(new StringInputScreen(this
                             , new TextList(Text.i18n("请输入补签卡数量").setShadow(true), Text.i18n("请输入奖励概率").setShadow(true))
                             , new TextList(Text.i18n("请输入"))
-                            , new StringList("-?\\d*", "(1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                            , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                             , new StringList("1")
                             , input -> {
                         StringList result = new StringList();
@@ -1165,7 +1198,7 @@ public class RewardOptionScreen extends Screen {
                     Minecraft.getInstance().setScreen(new StringInputScreen(this
                             , new TextList(Text.i18n("请输入消息").setShadow(true), Text.i18n("请输入奖励概率").setShadow(true))
                             , new TextList(Text.i18n("请输入"))
-                            , new StringList("", "(1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                            , new StringList("", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                             , new StringList("", "1")
                             , input -> {
                         if (CollectionUtils.isNotNullOrEmpty(input)) {
@@ -1181,7 +1214,7 @@ public class RewardOptionScreen extends Screen {
                     Minecraft.getInstance().setScreen(new StringInputScreen(this
                             , new TextList(Text.i18n("请输入指令").setShadow(true), Text.i18n("请输入奖励概率").setShadow(true))
                             , new TextList(Text.i18n("请输入"))
-                            , new StringList("", "(1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                            , new StringList("", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                             , new StringList("", "1")
                             , input -> {
                         StringList result = new StringList();
@@ -1229,7 +1262,7 @@ public class RewardOptionScreen extends Screen {
                             Minecraft.getInstance().setScreen(new StringInputScreen(this
                                     , new TextList(Text.i18n("请输入经验点值").setShadow(true), Text.i18n("请输入奖励概率").setShadow(true))
                                     , new TextList(Text.i18n("请输入"))
-                                    , new StringList("-?\\d*", "(1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                    , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                                     , new StringList(String.valueOf((Integer) RewardManager.deserializeReward(reward)), StringUtils.toFixedEx(reward.getProbability(), 5))
                                     , input -> {
                                 StringList result = new StringList();
@@ -1252,7 +1285,7 @@ public class RewardOptionScreen extends Screen {
                             Minecraft.getInstance().setScreen(new StringInputScreen(this
                                     , new TextList(Text.i18n("请输入经验等级").setShadow(true), Text.i18n("请输入奖励概率").setShadow(true))
                                     , new TextList(Text.i18n("请输入"))
-                                    , new StringList("-?\\d*", "(1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                    , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                                     , new StringList(String.valueOf((Integer) RewardManager.deserializeReward(reward)), StringUtils.toFixedEx(reward.getProbability(), 5))
                                     , input -> {
                                 StringList result = new StringList();
@@ -1275,7 +1308,7 @@ public class RewardOptionScreen extends Screen {
                             Minecraft.getInstance().setScreen(new StringInputScreen(this
                                     , new TextList(Text.i18n("请输入补签卡数量").setShadow(true), Text.i18n("请输入奖励概率").setShadow(true))
                                     , new TextList(Text.i18n("请输入"))
-                                    , new StringList("-?\\d*", "(1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                    , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                                     , new StringList(String.valueOf((Integer) RewardManager.deserializeReward(reward)), StringUtils.toFixedEx(reward.getProbability(), 5))
                                     , input -> {
                                 StringList result = new StringList();
@@ -1307,7 +1340,7 @@ public class RewardOptionScreen extends Screen {
                             Minecraft.getInstance().setScreen(new StringInputScreen(this
                                     , new TextList(Text.i18n("请输入消息").setShadow(true), Text.i18n("请输入奖励概率").setShadow(true))
                                     , new TextList(Text.i18n("请输入"))
-                                    , new StringList("", "(1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                    , new StringList("", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                                     , new StringList(((MutableComponent) RewardManager.deserializeReward(reward)).getString(), StringUtils.toFixedEx(reward.getProbability(), 5))
                                     , input -> {
                                 if (CollectionUtils.isNotNullOrEmpty(input)) {
@@ -1324,7 +1357,7 @@ public class RewardOptionScreen extends Screen {
                             Minecraft.getInstance().setScreen(new StringInputScreen(this
                                     , new TextList(Text.i18n("请输入指令").setShadow(true), Text.i18n("请输入奖励概率").setShadow(true))
                                     , new TextList(Text.i18n("请输入"))
-                                    , new StringList("", "(1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                    , new StringList("", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                                     , new StringList(RewardManager.deserializeReward(reward), StringUtils.toFixedEx(reward.getProbability(), 5))
                                     , input -> {
                                 StringList result = new StringList();
@@ -1584,7 +1617,7 @@ public class RewardOptionScreen extends Screen {
             // 绘制其他按钮
             else {
                 if (op == OperationButtonType.OFFSET_Y.getCode()) {
-                    button.setTooltip(getByZh("Y轴偏移:\n%.1f\n点击重置", this.yOffset));
+                    button.setTooltip(getByZh("Y轴偏移:\n%.1f\n点击重置", StringUtils.toFixedEx(this.yOffset, 1)));
                 }
                 button.render(graphics, mouseX, mouseY);
             }
@@ -1607,7 +1640,7 @@ public class RewardOptionScreen extends Screen {
             // 绘制其他按钮
             else {
                 if (op == OperationButtonType.OFFSET_Y.getCode()) {
-                    button.setTooltip(getByZh("Y轴偏移:\n%.1f\n点击重置", this.yOffset));
+                    button.setTooltip(getByZh("Y轴偏移:\n%.1f\n点击重置", StringUtils.toFixedEx(this.yOffset, 1)));
                 }
                 // 帮助按钮
                 else if (op == OperationButtonType.HELP.getCode()) {

@@ -63,12 +63,19 @@ public class RewardOptionSyncPacket extends SplitPacket {
                             RewardOptionDataManager.saveRewardOption();
 
                             // 同步 RewardOption 至所有在线玩家
-                            for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardOptionDataManager.toSyncPacket().split()) {
-                                for (ServerPlayer player : sender.server.getPlayerList().getPlayers()) {
-                                    // 排除发送者
-                                    if (player.getStringUUID().equalsIgnoreCase(sender.getStringUUID())) continue;
-                                    ModNetworkHandler.INSTANCE.send(rewardOptionSyncPacket, PacketDistributor.PLAYER.with(player));
-                                }
+                            for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardOptionDataManager.toSyncPacket(true).split()) {
+                                sender.server.getPlayerList().getPlayers().stream()
+                                        // 排除发送者
+                                        .filter(player -> !player.getStringUUID().equalsIgnoreCase(sender.getStringUUID()))
+                                        .filter(player -> player.hasPermissions(3))
+                                        .forEach(player -> ModNetworkHandler.INSTANCE.send(rewardOptionSyncPacket, PacketDistributor.PLAYER.with(player)));
+                            }
+                            for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardOptionDataManager.toSyncPacket(false).split()) {
+                                sender.server.getPlayerList().getPlayers().stream()
+                                        // 排除发送者
+                                        .filter(player -> !player.getStringUUID().equalsIgnoreCase(sender.getStringUUID()))
+                                        .filter(player -> !player.hasPermissions(3))
+                                        .forEach(player -> ModNetworkHandler.INSTANCE.send(rewardOptionSyncPacket, PacketDistributor.PLAYER.with(player)));
                             }
                         }
                     }
