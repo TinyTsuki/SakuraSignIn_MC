@@ -346,7 +346,9 @@ public class RewardManager {
                     if (CollectionUtils.isNotNullOrEmpty(cycleRewards)) result.addAll(cycleRewards);
                 }
             }
-            result.addAll(getRandomRewardList());
+            if (withRandom) {
+                result.addAll(RewardManager.getRandomRewardList());
+            }
         }
         return RewardManager.mergeRewards(result);
     }
