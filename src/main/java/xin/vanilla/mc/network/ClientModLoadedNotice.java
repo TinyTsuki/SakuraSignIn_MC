@@ -29,7 +29,7 @@ public class ClientModLoadedNotice {
                 // 同步玩家签到数据到客户端
                 PlayerSignInDataCapability.syncPlayerData(player);
                 // 同步签到奖励配置到客户端
-                for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardOptionDataManager.toSyncPacket().split()) {
+                for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardOptionDataManager.toSyncPacket(player.hasPermissions(3)).split()) {
                     ModNetworkHandler.INSTANCE.send(rewardOptionSyncPacket, PacketDistributor.PLAYER.with(player));
                 }
                 // 同步进度列表到客户端
