@@ -516,7 +516,7 @@ public class StringUtils {
     }
 
     public static String toFixed(double d, int scale) {
-        return new BigDecimal(d).setScale(scale, RoundingMode.HALF_UP).toString();
+        return new BigDecimal(d).setScale(scale, RoundingMode.HALF_UP).toPlainString();
     }
 
     public static String toFixedEx(double d, int scale) {
@@ -524,7 +524,7 @@ public class StringUtils {
     }
 
     public static String toFixedEx(BigDecimal d, int scale) {
-        return d.setScale(scale, RoundingMode.HALF_UP).toString().replaceAll("0+$", "").replaceAll("[.]$", "");
+        return d.setScale(scale, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString().replaceAll("0+$", "").replaceAll("[.]$", "");
     }
 
     /**
