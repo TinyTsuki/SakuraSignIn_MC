@@ -448,7 +448,8 @@ public class SignInScreen extends Screen {
                     }
                     // 如果坐标与月份相同，则将坐标设置为月份右边的位置
                     if (button.getX() == textureCoordinate.getMonthCoordinate().getX() && button.getY() == textureCoordinate.getMonthCoordinate().getY()) {
-                        button.setX((monthX - bgX + font.width(monthTitle) + 1) / this.scale);
+                        String localStringMonth = DateUtils.toLocalStringMonth(DateUtils.format(String.format("%d-12-01", DateUtils.getYearPart(SakuraSignIn.getCalendarCurrentDate()))), Minecraft.getInstance().options.languageCode);
+                        button.setX((monthX - bgX + font.width(localStringMonth) + 1) / this.scale);
                     }
                     break;
                 case DOWN_ARROW:
