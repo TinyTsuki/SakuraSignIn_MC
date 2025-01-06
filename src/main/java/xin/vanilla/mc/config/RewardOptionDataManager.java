@@ -222,7 +222,7 @@ public class RewardOptionDataManager {
             break;
             case RANDOM_REWARD: {
                 BigDecimal property = StringUtils.toBigDecimal(keyName);
-                result = property.compareTo(BigDecimal.ZERO) > 0 && property.compareTo(BigDecimal.ONE) <= 0;
+                result = property.compareTo(new BigDecimal("0.0000000001")) >= 0 && property.compareTo(BigDecimal.ONE) <= 0;
             }
             break;
             case CDK_REWARD: {
@@ -278,7 +278,7 @@ public class RewardOptionDataManager {
                 if (split.length == 3) {
                     key = StringUtils.toInt(split[2]);
                 }
-                if (rewardOptionData.getCdkRewards().size() <= key) {
+                if (rewardOptionData.getCdkRewards().size() <= key || key < 0) {
                     result = null;
                 } else {
                     result = rewardOptionData.getCdkRewards().get(key).getValue().getValue();
@@ -334,7 +334,7 @@ public class RewardOptionDataManager {
                     date = split[1];
                     index = StringUtils.toInt(split[2]);
                 }
-                if (rewardOptionData.getCdkRewards().size() <= index) {
+                if (rewardOptionData.getCdkRewards().size() <= index || index < 0) {
                     rewardOptionData.addCdkReward(new KeyValue<>(split[0], new KeyValue<>(date, rewardList)));
                 } else {
                     rewardOptionData.getCdkRewards().get(index).getValue().getValue().addAll(rewardList);
@@ -406,6 +406,7 @@ public class RewardOptionDataManager {
                     String[] split = newKeyName.replaceAll("\\|", ",").split(",");
                     KeyValue<String, KeyValue<String, RewardList>> remove = rewardOptionData.getCdkRewards().remove(oldIndex);
                     remove.setKey(split[0]);
+                    remove.getValue().setKey(split[1]);
                     rewardOptionData.addCdkReward(remove);
                 }
             }
@@ -559,7 +560,7 @@ public class RewardOptionDataManager {
                     if (split.length == 3) {
                         key = StringUtils.toInt(split[2]);
                     }
-                    if (rewardOptionData.getCdkRewards().size() <= key) {
+                    if (rewardOptionData.getCdkRewards().size() <= key || key < 0) {
                         result = null;
                     } else {
                         result = rewardOptionData.getCdkRewards().get(key).getValue().getValue().get(index);
@@ -740,7 +741,7 @@ public class RewardOptionDataManager {
                     if (split.length == 3) {
                         key = StringUtils.toInt(split[2]);
                     }
-                    if (rewardOptionData.getCdkRewards().size() <= key) {
+                    if (rewardOptionData.getCdkRewards().size() <= key || key < 0) {
                         rewardOptionData.getCdkRewards().add(new KeyValue<>(split[0], new KeyValue<>(split[1], new RewardList() {{
                             add(reward);
                         }})));
@@ -798,7 +799,7 @@ public class RewardOptionDataManager {
                     if (split.length == 3) {
                         key = StringUtils.toInt(split[2]);
                     }
-                    if (rewardOptionData.getCdkRewards().size() <= key) {
+                    if (rewardOptionData.getCdkRewards().size() <= key || key < 0) {
                         rewardOptionData.getCdkRewards().add(new KeyValue<>(split[0], new KeyValue<>(split[1], new RewardList())));
                     } else {
                         rewardOptionData.getCdkRewards().get(key).getValue().getValue().remove(index);
@@ -1030,9 +1031,16 @@ public class RewardOptionDataManager {
         }
     }
 
-    public static RewardOptionSyncPacket toSyncPacket() {
+    /**
+     * 获取奖励配置数据包
+     *
+     * @param op 是否管理员
+     */
+    public static RewardOptionSyncPacket toSyncPacket(boolean op) {
         List<RewardOptionSyncData> dataList = new ArrayList<>();
         for (ERewardRule rule : ERewardRule.values()) {
+            // 如果不是管理员，则过滤掉兑换码奖励
+            if (!op && rule == ERewardRule.CDK_REWARD) continue;
             RewardOptionDataManager.getRewardMap(rule).forEach((key, value) -> {
                 List<RewardOptionSyncData> list = value.stream()
                         .map(reward -> new RewardOptionSyncData(rule, key, reward))
