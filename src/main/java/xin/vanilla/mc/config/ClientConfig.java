@@ -59,7 +59,7 @@ public class ClientConfig {
         SPECIAL_THEME = CLIENT_BUILDER
                 .comment("Whether or not to use the built-in theme special icons."
                         , "是否使用内置主题特殊图标。")
-                .define("specialTheme", false);
+                .define("specialTheme", true);
 
         // 签到页面显示上月奖励
         SHOW_LAST_REWARD = CLIENT_BUILDER
