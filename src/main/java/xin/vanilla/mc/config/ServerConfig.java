@@ -1,7 +1,6 @@
 package xin.vanilla.mc.config;
 
 import net.minecraftforge.common.ForgeConfigSpec;
-import xin.vanilla.mc.SakuraSignIn;
 import xin.vanilla.mc.enums.ETimeCoolingMethod;
 import xin.vanilla.mc.util.DateUtils;
 
@@ -11,7 +10,6 @@ import java.util.Date;
  * 服务器配置
  */
 public class ServerConfig {
-    public static final String SIGN_IN_CARD_ITEM_NAME = SakuraSignIn.MODID + ":sign_in_card";
 
     public static final ForgeConfigSpec SERVER_CONFIG;
     /**
@@ -79,7 +77,7 @@ public class ServerConfig {
         AUTO_SIGN_IN = SERVER_BUILDER
                 .comment("Players automatically sign in when they enter the server."
                         , "是否允许玩家在进入服务器时自动签到。")
-                .define("autoSignIn", false);
+                .define("autoSignIn", true);
 
         // 签到时间冷却方式
         TIME_COOLING_METHOD = SERVER_BUILDER
@@ -95,7 +93,7 @@ public class ServerConfig {
                         , "签到时间冷却时间，以小数表示时间，整数部分为小时，小数部分为分钟。"
                         , "若timeCoolingMethod=FIXED_TIME(默认)，则表示每天4.00(默认)刷新签到冷却；"
                         , "若timeCoolingMethod=MIXED，则表示每天4.00(默认)刷新签到冷却，并且需要距离上次签到12小时34分钟(默认)后才能再次签到。")
-                .defineInRange("timeCoolingTime", 4.00, -23.59, 23.59);
+                .defineInRange("timeCoolingTime", 0.00, -23.59, 23.59);
 
         // 签到冷却刷新间隔
         TIME_COOLING_INTERVAL = SERVER_BUILDER
@@ -125,7 +123,7 @@ public class ServerConfig {
         SIGN_IN_CARD_ONLY_BASE_REWARD = SERVER_BUILDER
                 .comment("Whether the player only gets the base rewards when using the Sign-in Card."
                         , "使用补签卡进行补签时是否仅获得基础奖励。")
-                .define("signInCardOnlyBaseReward", false);
+                .define("signInCardOnlyBaseReward", true);
 
         // 服务器时间
         SERVER_TIME = SERVER_BUILDER
