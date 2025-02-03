@@ -1,7 +1,7 @@
 {
   "required": true,
   "minVersion": "0.8",
-  "package": "xin.vanilla.mc.mixin",
+  "package": "xin.vanilla.sakura.mixin",
   "compatibilityLevel": "JAVA_8",
   "refmap": "sakura_sign_in.refmap.json",
   "mixins": [],
