@@ -79,8 +79,8 @@ public class Reward implements Cloneable, Serializable {
             cloned.probability = this.probability;
             cloned.content = GSON.fromJson(GSON.toJson(this.content), JsonObject.class);
             return cloned;
-        } catch (CloneNotSupportedException e) {
-            throw new AssertionError();
+        } catch (Exception e) {
+            return new Reward();
         }
     }
 
