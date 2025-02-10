@@ -76,7 +76,7 @@ public class ClientEventHandler {
             SakuraSignIn.setThemeTextureCoordinate(PNGUtils.readLastPrivateChunk(inputStream, PNG_CHUNK_NAME));
         } catch (IOException | ClassNotFoundException ignored) {
         }
-        if (SakuraSignIn.getThemeTexture() == null) {
+        if (SakuraSignIn.getThemeTexture() == null || SakuraSignIn.getThemeTextureCoordinate() == null) {
             // 使用默认配置
             SakuraSignIn.setThemeTextureCoordinate(TextureCoordinate.getDefault());
         }
