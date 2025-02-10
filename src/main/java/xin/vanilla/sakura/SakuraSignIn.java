@@ -159,7 +159,6 @@ public class SakuraSignIn {
      */
     @SubscribeEvent
     public void onClientSetup(final FMLClientSetupEvent event) {
-        LOGGER.debug("Got game settings {}", event.getMinecraftSupplier().get().options);
         // 注册键绑定
         LOGGER.debug("Registering key bindings");
         ClientEventHandler.registerKeyBindings();
