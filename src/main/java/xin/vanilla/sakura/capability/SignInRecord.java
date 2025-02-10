@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.NonNull;
 import net.minecraft.nbt.CompoundNBT;
 import xin.vanilla.sakura.rewards.RewardList;
+import xin.vanilla.sakura.util.CollectionUtils;
 import xin.vanilla.sakura.util.DateUtils;
 
 import java.io.Serializable;
@@ -83,10 +84,13 @@ public class SignInRecord implements Serializable, Cloneable {
             cloned.signInTime = (Date) this.signInTime.clone();
             cloned.signInUUID = this.signInUUID;
             cloned.rewarded = this.rewarded;
-            cloned.rewardList = this.rewardList.clone();
+            if (!CollectionUtils.isNullOrEmpty(this.rewardList))
+                cloned.rewardList = this.rewardList.clone();
+            else
+                cloned.rewardList = new RewardList();
             return cloned;
         } catch (CloneNotSupportedException e) {
-            throw new AssertionError();
+            return new SignInRecord();
         }
     }
 }
