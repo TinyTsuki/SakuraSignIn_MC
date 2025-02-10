@@ -56,7 +56,11 @@ public class ForgeEventHandler {
             if (SakuraSignIn.getPlayerCapabilityStatus().containsKey(player.getUUID().toString())) {
                 // 同步玩家签到数据到客户端
                 if (!SakuraSignIn.getPlayerCapabilityStatus().getOrDefault(player.getUUID().toString(), true)) {
-                    PlayerSignInDataCapability.syncPlayerData(player);
+                    try {
+                        PlayerSignInDataCapability.syncPlayerData(player);
+                    } catch (Exception e) {
+                        LOGGER.error("Failed to sync player data: ", e);
+                    }
                 }
                 // 同步服务器时间到客户端
                 ModNetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), new ServerTimeSyncPacket());
