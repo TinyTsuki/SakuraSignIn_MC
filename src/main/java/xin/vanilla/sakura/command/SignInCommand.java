@@ -120,7 +120,12 @@ public class SignInCommand {
                     }
                 } else {
                     long date = getRelativeLong(string, "date");
-                    signInTimeList.add(new KeyValue<>(DateUtils.getDate(date), ESignInType.RE_SIGN_IN));
+                    Date signDate = DateUtils.getDate(date);
+                    if (DateUtils.toDateInt(signDate) == RewardManager.getCompensateDateInt()) {
+                        signInTimeList.add(new KeyValue<>(signDate, ESignInType.RE_SIGN_IN));
+                    } else {
+                        signInTimeList.add(new KeyValue<>(signDate, ESignInType.SIGN_IN));
+                    }
                 }
             } catch (IllegalArgumentException ignored) {
                 signInTimeList.add(new KeyValue<>(DateUtils.getServerDate(), ESignInType.SIGN_IN));
@@ -169,7 +174,12 @@ public class SignInCommand {
                     }
                 } else {
                     long date = getRelativeLong(string, "date");
-                    signInTimeList.add(new KeyValue<>(DateUtils.getDate(date), ESignInType.RE_SIGN_IN));
+                    Date signDate = DateUtils.getDate(date);
+                    if (DateUtils.toDateInt(signDate) == RewardManager.getCompensateDateInt()) {
+                        signInTimeList.add(new KeyValue<>(signDate, ESignInType.RE_SIGN_IN));
+                    } else {
+                        signInTimeList.add(new KeyValue<>(signDate, ESignInType.SIGN_IN));
+                    }
                 }
             } catch (IllegalArgumentException ignored) {
                 signInTimeList.add(new KeyValue<>(DateUtils.getServerDate(), ESignInType.SIGN_IN));
