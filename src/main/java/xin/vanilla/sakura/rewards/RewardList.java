@@ -1,6 +1,7 @@
 package xin.vanilla.sakura.rewards;
 
 import com.google.gson.JsonArray;
+import xin.vanilla.sakura.util.CollectionUtils;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -19,8 +20,10 @@ public class RewardList extends ArrayList<Reward> implements Serializable, Clone
     public RewardList clone() {
         RewardList cloned = (RewardList) super.clone();
         List<Reward> clonedRewards = new ArrayList<>();
-        for (Reward reward : this) {
-            clonedRewards.add(reward.clone());
+        if (!CollectionUtils.isNullOrEmpty(this)) {
+            for (Reward reward : this) {
+                clonedRewards.add(reward.clone());
+            }
         }
         cloned.clear();
         cloned.addAll(clonedRewards);
