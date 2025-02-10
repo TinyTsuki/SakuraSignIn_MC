@@ -476,9 +476,8 @@ public class RewardManager {
     public static void signIn(ServerPlayerEntity player, SignInPacket packet) {
         IPlayerSignInData signInData = PlayerSignInDataCapability.getData(player);
         Date serverDate = DateUtils.getServerDate();
-        Date signDate = DateUtils.getServerValidDate(DateUtils.format(packet.getSignInTime()));
         Date serverCompensateDate = getCompensateDate(serverDate);
-        Date signCompensateDate = packet.getSignInType() == ESignInType.SIGN_IN ? getCompensateDate(signDate) : signDate;
+        Date signCompensateDate = packet.getSignInType() == ESignInType.SIGN_IN ? serverCompensateDate : DateUtils.format(packet.getSignInTime());
         int serverCompensateDateInt = DateUtils.toDateInt(serverCompensateDate);
         int signCompensateDateInt = DateUtils.toDateInt(signCompensateDate);
 
@@ -500,7 +499,7 @@ public class RewardManager {
         // 判断签到CD
         if (ESignInType.SIGN_IN.equals(packet.getSignInType()) && coolingMethod.getCode() >= ETimeCoolingMethod.FIXED_INTERVAL.getCode()) {
             Date lastSignInTime = DateUtils.addDate(signInData.getLastSignInTime(), ServerConfig.TIME_COOLING_INTERVAL.get());
-            if (signDate.before(lastSignInTime)) {
+            if (serverDate.before(lastSignInTime)) {
                 player.sendMessage(new TranslationTextComponent(getI18nKey("签到冷却中，签到失败，请稍后再试")), player.getUUID());
                 return;
             }
@@ -559,7 +558,7 @@ public class RewardManager {
             SignInRecord signInRecord = new SignInRecord();
             signInRecord.setRewarded(packet.isAutoRewarded());
             signInRecord.setRewardList(new RewardList());
-            signInRecord.setSignInTime(signDate);
+            signInRecord.setSignInTime(serverDate);
             signInRecord.setCompensateTime(signCompensateDate);
             signInRecord.setSignInUUID(player.getUUID().toString());
             // 是否自动领取
@@ -579,7 +578,7 @@ public class RewardManager {
             } else {
                 signInRecord.getRewardList().addAll(rewardList);
             }
-            signInData.setLastSignInTime(signDate);
+            signInData.setLastSignInTime(serverDate);
             signInData.getSignInRecords().add(signInRecord);
             signInData.setContinuousSignInDays(DateUtils.calculateContinuousDays(signInData.getSignInRecords().stream().map(SignInRecord::getCompensateTime).collect(Collectors.toList()), serverCompensateDate));
             signInData.plusTotalSignInDays();
