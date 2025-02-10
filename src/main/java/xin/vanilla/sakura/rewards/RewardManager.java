@@ -477,15 +477,19 @@ public class RewardManager {
         // 判断签到/补签时间合法性
         if (ESignInType.SIGN_IN.equals(packet.getSignInType()) && serverCompensateDateInt < signCompensateDateInt) {
             player.sendSystemMessage(Component.translatable(getI18nKey("签到日期晚于服务器当前日期，签到失败")));
+            PlayerSignInDataCapability.syncPlayerData(player);
             return;
         } else if (ESignInType.SIGN_IN.equals(packet.getSignInType()) && serverCompensateDateInt > signCompensateDateInt) {
             player.sendSystemMessage(Component.translatable(getI18nKey("签到日期早于服务器当前日期，签到失败")));
+            PlayerSignInDataCapability.syncPlayerData(player);
             return;
         } else if (ESignInType.SIGN_IN.equals(packet.getSignInType()) && signInData.getSignInRecords().stream().anyMatch(record -> DateUtils.toDateInt(record.getCompensateTime()) == signCompensateDateInt)) {
             player.sendSystemMessage(Component.translatable(getI18nKey("已经签过到了哦")));
+            PlayerSignInDataCapability.syncPlayerData(player);
             return;
         } else if (ESignInType.RE_SIGN_IN.equals(packet.getSignInType()) && serverCompensateDateInt <= signCompensateDateInt) {
             player.sendSystemMessage(Component.translatable(getI18nKey("补签日期需早于服务器当前日期，补签失败")));
+            PlayerSignInDataCapability.syncPlayerData(player);
             return;
         }
         // 判断签到CD
@@ -493,27 +497,33 @@ public class RewardManager {
             Date lastSignInTime = DateUtils.addDate(signInData.getLastSignInTime(), ServerConfig.TIME_COOLING_INTERVAL.get());
             if (serverDate.before(lastSignInTime)) {
                 player.sendSystemMessage(Component.translatable(getI18nKey("签到冷却中，签到失败，请稍后再试")));
+                PlayerSignInDataCapability.syncPlayerData(player);
                 return;
             }
         }
         // 判断补签
         if (ESignInType.RE_SIGN_IN.equals(packet.getSignInType()) && !ServerConfig.SIGN_IN_CARD.get()) {
             player.sendSystemMessage(Component.translatable(getI18nKey("服务器补签功能被禁用了哦，补签失败")));
+            PlayerSignInDataCapability.syncPlayerData(player);
             return;
         } else if (ESignInType.RE_SIGN_IN.equals(packet.getSignInType()) && signInData.getSignInCard() <= 0) {
             player.sendSystemMessage(Component.translatable(getI18nKey("补签卡不足，补签失败")));
+            PlayerSignInDataCapability.syncPlayerData(player);
             return;
         } else if (ESignInType.RE_SIGN_IN.equals(packet.getSignInType()) && isSignedIn(signInData, signCompensateDate, false)) {
             player.sendSystemMessage(Component.translatable(getI18nKey("已经签过到了哦")));
+            PlayerSignInDataCapability.syncPlayerData(player);
             return;
         }
         // 判断领取奖励
         if (ESignInType.REWARD.equals(packet.getSignInType())) {
             if (isRewarded(signInData, signCompensateDate, false)) {
                 player.sendSystemMessage(Component.translatable(getI18nKey("%s的奖励已经领取过啦"), DateUtils.toString(signCompensateDate)));
+                PlayerSignInDataCapability.syncPlayerData(player);
                 return;
             } else if (!isSignedIn(signInData, signCompensateDate, false)) {
                 player.sendSystemMessage(Component.translatable(getI18nKey("没有查询到[%s]的签到记录哦，鉴定为阁下没有签到！"), DateUtils.toString(signCompensateDate)));
+                PlayerSignInDataCapability.syncPlayerData(player);
                 return;
             } else {
                 MutableComponent msg = Component.literal(getByZh("奖励领取详情:"));
