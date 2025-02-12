@@ -47,10 +47,13 @@ public class ServerForgeEventHandler {
             if (SakuraSignIn.getPlayerCapabilityStatus().containsKey(player.getUUID().toString())) {
                 // 同步玩家签到数据到客户端
                 if (!SakuraSignIn.getPlayerCapabilityStatus().getOrDefault(player.getUUID().toString(), true)) {
-                    try {
-                        PlayerSignInDataCapability.syncPlayerData(player);
-                    } catch (Exception e) {
-                        LOGGER.error("Failed to sync player data: ", e);
+                    // 如果玩家还活着则同步玩家传送数据到客户端
+                    if (player.isAlive()) {
+                        try {
+                            PlayerSignInDataCapability.syncPlayerData(player);
+                        } catch (Exception e) {
+                            LOGGER.error("Failed to sync player data: ", e);
+                        }
                     }
                 }
                 // 同步服务器时间到客户端
@@ -105,6 +108,17 @@ public class ServerForgeEventHandler {
             if (ServerConfig.AUTO_SIGN_IN.get() && !RewardManager.isSignedIn(data, DateUtils.getServerDate(), true)) {
                 RewardManager.signIn(player, new SignInPacket(DateUtils.toDateTimeString(DateUtils.getServerDate()), ClientConfig.AUTO_REWARDED.get(), ESignInType.SIGN_IN));
             }
+        }
+    }
+
+    /**
+     * 玩家登出事件
+     */
+    @SubscribeEvent
+    public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        // 玩家退出服务器时移除键(移除mod安装状态)
+        if (event.getEntity() instanceof ServerPlayer) {
+            SakuraSignIn.getPlayerCapabilityStatus().remove(event.getEntity().getStringUUID());
         }
     }
 
