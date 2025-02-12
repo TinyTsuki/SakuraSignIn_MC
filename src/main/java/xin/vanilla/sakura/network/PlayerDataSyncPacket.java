@@ -128,6 +128,13 @@ public class PlayerDataSyncPacket extends SplitPacket {
             result.add(packet);
         }
         result.forEach(packet -> packet.setTotal(result.size()));
+        if (result.isEmpty()) {
+            PlayerDataSyncPacket packet = new PlayerDataSyncPacket(this.playerUUID, this.totalSignInDays, this.continuousSignInDays, this.lastSignInTime, this.signInCard, this.autoRewarded);
+            packet.setSort(0);
+            packet.setId(this.getId());
+            packet.setTotal(1);
+            result.add(packet);
+        }
         return result;
     }
 

@@ -63,6 +63,7 @@ public class RewardOptionSyncPacket extends SplitPacket {
                             RewardOptionDataManager.setRewardOptionData(RewardOptionDataManager.fromSyncPacketList(packets));
                             RewardOptionDataManager.saveRewardOption();
 
+                            // TODO 返回同步成功与否回馈包
                             // 同步 RewardOption 至所有在线玩家
                             for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardOptionDataManager.toSyncPacket(true).split()) {
                                 sender.server.getPlayerList().getPlayers().stream()
