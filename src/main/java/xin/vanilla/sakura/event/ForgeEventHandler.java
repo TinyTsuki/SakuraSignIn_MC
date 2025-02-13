@@ -127,8 +127,8 @@ public class ForgeEventHandler {
     @SubscribeEvent
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         // 玩家退出服务器时移除键(移除mod安装状态)
-        if (event.getPlayer() instanceof ServerPlayerEntity) {
-            SakuraSignIn.getPlayerCapabilityStatus().remove(event.getPlayer().getStringUUID());
+        if (event.getEntity() instanceof ServerPlayer) {
+            SakuraSignIn.getPlayerCapabilityStatus().remove(event.getEntity().getStringUUID());
         }
     }
 }

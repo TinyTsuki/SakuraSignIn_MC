@@ -1,43 +1,31 @@
 package xin.vanilla.sakura.network;
 
-import lombok.Data;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 import net.minecraft.advancements.Advancement;
 import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.advancements.FrameType;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import xin.vanilla.sakura.util.Component;
+
+import java.util.Objects;
 
 /**
  * 进度信息
  */
-@Data
 @Accessors(chain = true)
-public class AdvancementData {
-    @NonNull
-    private final ResourceLocation id;
-    @NonNull
-    private final DisplayInfo displayInfo;
-
+public record AdvancementData(@NonNull ResourceLocation id, @NonNull DisplayInfo displayInfo) {
     public AdvancementData(@NonNull ResourceLocation id, DisplayInfo displayInfo) {
         this.id = id;
-        if (displayInfo == null) {
-            this.displayInfo = emptyDisplayInfo();
-        } else {
-            this.displayInfo = displayInfo;
-        }
+        this.displayInfo = Objects.requireNonNullElseGet(displayInfo, AdvancementData::emptyDisplayInfo);
     }
 
     public static AdvancementData fromAdvancement(Advancement advancement) {
         DisplayInfo displayInfo = advancement.getDisplay();
-        if (displayInfo == null) {
-            return new AdvancementData(advancement.getId(), createDisplayInfo(advancement.getId().toString()));
-        }
-        return new AdvancementData(advancement.getId(), displayInfo);
+        return new AdvancementData(advancement.getId(), Objects.requireNonNullElseGet(displayInfo, () -> createDisplayInfo(advancement.getId().toString())));
     }
 
     public static AdvancementData readFromBuffer(FriendlyByteBuf buffer) {
@@ -59,7 +47,7 @@ public class AdvancementData {
 
     public static DisplayInfo createDisplayInfo(String title, String description, ItemStack itemStack) {
         return new DisplayInfo(itemStack
-                , Component.literal(title), Component.literal(description)
+                , Component.literal(title).toTextComponent(), Component.literal(description).toTextComponent()
                 , new ResourceLocation(""), FrameType.TASK
                 , false, false, false);
     }
