@@ -5,7 +5,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.EffectRenderingInventoryScreen;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.ClientRegistry;
 import net.minecraftforge.client.event.ScreenEvent;
@@ -18,6 +17,7 @@ import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.ClientConfig;
+import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.rewards.RewardManager;
 import xin.vanilla.sakura.screen.RewardOptionScreen;
 import xin.vanilla.sakura.screen.SignInScreen;
@@ -30,7 +30,6 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import static xin.vanilla.sakura.SakuraSignIn.PNG_CHUNK_NAME;
-import static xin.vanilla.sakura.util.I18nUtils.getI18nKey;
 
 /**
  * 客户端事件处理器
@@ -155,14 +154,14 @@ public class ClientEventHandler {
                 InventoryButton signInButton = new InventoryButton((int) signInX, (int) signInY,
                         AbstractGuiUtils.ITEM_ICON_SIZE,
                         AbstractGuiUtils.ITEM_ICON_SIZE,
-                        I18nUtils.get("key.sakura_sign_in.sign_in"))
+                        I18nUtils.getTranslationClient(EI18nType.KEY, "sign_in"))
                         .setUV(SakuraSignIn.getThemeTextureCoordinate().getSignInBtnUV(), SakuraSignIn.getThemeTextureCoordinate().getTotalWidth(), SakuraSignIn.getThemeTextureCoordinate().getTotalHeight())
                         .setOnClick((button) -> ClientEventHandler.openSignInScreen(event.getScreen()))
                         .setOnDragEnd((coordinate) -> ClientConfig.INVENTORY_SIGN_IN_BUTTON_COORDINATE.set(String.format("%.6f,%.6f", coordinate.getX(), coordinate.getY())));
                 InventoryButton rewardOptionButton = new InventoryButton((int) rewardOptionX, (int) rewardOptionY,
                         AbstractGuiUtils.ITEM_ICON_SIZE,
                         AbstractGuiUtils.ITEM_ICON_SIZE,
-                        I18nUtils.get("key.sakura_sign_in.reward_option"))
+                        I18nUtils.getTranslationClient(EI18nType.KEY, "reward_option"))
                         .setUV(SakuraSignIn.getThemeTextureCoordinate().getRewardOptionBtnUV(), SakuraSignIn.getThemeTextureCoordinate().getTotalWidth(), SakuraSignIn.getThemeTextureCoordinate().getTotalHeight())
                         .setOnClick((button) -> Minecraft.getInstance().setScreen(new RewardOptionScreen().setPreviousScreen(event.getScreen())))
                         .setOnDragEnd((coordinate) -> ClientConfig.INVENTORY_REWARD_OPTION_BUTTON_COORDINATE.set(String.format("%.6f,%.6f", coordinate.getX(), coordinate.getY())));
@@ -234,7 +233,7 @@ public class ClientEventHandler {
         } else {
             LocalPlayer player = Minecraft.getInstance().player;
             if (player != null) {
-                player.sendMessage(new TranslatableComponent(getI18nKey("SakuraSignIn server is offline!")), player.getUUID());
+                SakuraUtils.sendMessage(player, Component.translatableClient(EI18nType.MESSAGE, "sakura_is_offline"));
             }
         }
     }

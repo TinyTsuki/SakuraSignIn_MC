@@ -13,8 +13,6 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.searchtree.SearchRegistry;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.Registry;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TextComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -27,6 +25,7 @@ import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
 import xin.vanilla.sakura.config.ArraySet;
 import xin.vanilla.sakura.config.StringList;
+import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ERewardType;
 import xin.vanilla.sakura.rewards.Reward;
 import xin.vanilla.sakura.rewards.RewardManager;
@@ -35,6 +34,7 @@ import xin.vanilla.sakura.screen.component.OperationButton;
 import xin.vanilla.sakura.screen.component.Text;
 import xin.vanilla.sakura.util.AbstractGuiUtils;
 import xin.vanilla.sakura.util.CollectionUtils;
+import xin.vanilla.sakura.util.Component;
 import xin.vanilla.sakura.util.StringUtils;
 
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -48,9 +48,9 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static xin.vanilla.sakura.config.RewardOptionDataManager.GSON;
-import static xin.vanilla.sakura.util.I18nUtils.getByZh;
 
 public class ItemSelectScreen extends Screen {
+    private final static Component TITLE = Component.literal("ItemSelectScreen");
     private static final Logger LOGGER = LogManager.getLogger();
 
     private final NonNullList<ItemStack> allItemList = this.getAllItemList();
@@ -172,7 +172,7 @@ public class ItemSelectScreen extends Screen {
     }
 
     public ItemSelectScreen(@NonNull Screen callbackScreen, @NonNull Consumer<Reward> onDataReceived, @NonNull Reward defaultItem, Supplier<Boolean> shouldClose) {
-        super(new TextComponent("ItemSelectScreen"));
+        super(TITLE.toTextComponent());
         this.previousScreen = callbackScreen;
         this.onDataReceived1 = onDataReceived;
         this.onDataReceived2 = null;
@@ -183,7 +183,7 @@ public class ItemSelectScreen extends Screen {
     }
 
     public ItemSelectScreen(@NonNull Screen callbackScreen, @NonNull Function<Reward, String> onDataReceived, @NonNull Reward defaultItem, Supplier<Boolean> shouldClose) {
-        super(new TextComponent("ItemSelectScreen"));
+        super(TITLE.toTextComponent());
         this.previousScreen = callbackScreen;
         this.onDataReceived1 = null;
         this.onDataReceived2 = onDataReceived;
@@ -194,7 +194,7 @@ public class ItemSelectScreen extends Screen {
     }
 
     public ItemSelectScreen(@NonNull Screen callbackScreen, @NonNull Consumer<Reward> onDataReceived, @NonNull Reward defaultItem) {
-        super(new TextComponent("ItemSelectScreen"));
+        super(TITLE.toTextComponent());
         this.previousScreen = callbackScreen;
         this.onDataReceived1 = onDataReceived;
         this.onDataReceived2 = null;
@@ -205,7 +205,7 @@ public class ItemSelectScreen extends Screen {
     }
 
     public ItemSelectScreen(@NonNull Screen callbackScreen, @NonNull Function<Reward, String> onDataReceived, @NonNull Reward defaultItem) {
-        super(new TextComponent("ItemSelectScreen"));
+        super(TITLE.toTextComponent());
         this.previousScreen = callbackScreen;
         this.onDataReceived1 = null;
         this.onDataReceived2 = onDataReceived;
@@ -216,7 +216,7 @@ public class ItemSelectScreen extends Screen {
     }
 
     public ItemSelectScreen(@NonNull Screen callbackScreen, @NonNull Consumer<Reward> onDataReceived) {
-        super(new TextComponent("ItemSelectScreen"));
+        super(TITLE.toTextComponent());
         this.previousScreen = callbackScreen;
         this.onDataReceived1 = onDataReceived;
         this.onDataReceived2 = null;
@@ -224,7 +224,7 @@ public class ItemSelectScreen extends Screen {
     }
 
     public ItemSelectScreen(@NonNull Screen callbackScreen, @NonNull Function<Reward, String> onDataReceived) {
-        super(new TextComponent("ItemSelectScreen"));
+        super(TITLE.toTextComponent());
         this.previousScreen = callbackScreen;
         this.onDataReceived1 = null;
         this.onDataReceived2 = onDataReceived;
@@ -238,13 +238,13 @@ public class ItemSelectScreen extends Screen {
         this.updateSearchResults();
         this.updateLayout();
         // 创建文本输入框
-        this.inputField = AbstractGuiUtils.newTextFieldWidget(this.font, bgX, bgY, 180, 15, new TextComponent(""));
+        this.inputField = AbstractGuiUtils.newTextFieldWidget(this.font, bgX, bgY, 180, 15, Component.empty());
         this.inputField.setValue(this.inputFieldText);
         this.addRenderableWidget(this.inputField);
         // 创建提交按钮
         this.addRenderableWidget(AbstractGuiUtils.newButton((int) (this.bgX + 90 + this.margin), (int) (this.bgY + (20 + (AbstractGuiUtils.ITEM_ICON_SIZE + 3) * 5 + margin))
                 , (int) (90 - this.margin * 2), 20
-                , AbstractGuiUtils.textToComponent(Text.i18n("提交")), button -> {
+                , Component.translatableClient(EI18nType.OPTION, "submit"), button -> {
                     if (this.currentItem == null) {
                         // 关闭当前屏幕并返回到调用者的 Screen
                         Minecraft.getInstance().setScreen(previousScreen);
@@ -267,7 +267,7 @@ public class ItemSelectScreen extends Screen {
         // 创建取消按钮
         this.addRenderableWidget(AbstractGuiUtils.newButton((int) (this.bgX + this.margin), (int) (this.bgY + (20 + (AbstractGuiUtils.ITEM_ICON_SIZE + 3) * 5 + margin))
                 , (int) (90 - this.margin * 2), 20
-                , AbstractGuiUtils.textToComponent(Text.i18n("取消"))
+                , Component.translatableClient(EI18nType.OPTION, "cancel")
                 , button -> Minecraft.getInstance().setScreen(previousScreen)));
     }
 
@@ -423,7 +423,7 @@ public class ItemSelectScreen extends Screen {
             AbstractGuiUtils.fillOutLine(context.poseStack(), (int) context.button().getX(), (int) context.button().getY(), (int) context.button().getWidth(), (int) context.button().getHeight(), 1, lineColor, 2);
             ItemStack itemStack = new ItemStack(this.inventoryMode ? Items.CHEST : Items.COMPASS);
             this.itemRenderer.renderGuiItem(itemStack, (int) context.button().getX() + 2, (int) context.button().getY() + 2);
-            Text text = this.inventoryMode ? Text.i18n("列出模式\n物品栏 (%s)", playerItemList.size()) : Text.i18n("列出模式\n所有物品 (%s)", allItemList.size());
+            Text text = Text.translatable(EI18nType.TIPS, (this.inventoryMode ? "item_select_list_inventory_mode" : "item_select_list_all_mode"), (this.inventoryMode ? playerItemList.size() : allItemList.size()));
             context.button().setTooltip(text);
         }).setX(this.bgX - AbstractGuiUtils.ITEM_ICON_SIZE - 2 - margin - 3).setY(this.bgY + margin).setWidth(AbstractGuiUtils.ITEM_ICON_SIZE + 4).setHeight(AbstractGuiUtils.ITEM_ICON_SIZE + 4));
         this.OP_BUTTONS.put(OperationButtonType.ITEM.getCode(), new OperationButton(OperationButtonType.ITEM.getCode(), context -> {
@@ -432,7 +432,7 @@ public class ItemSelectScreen extends Screen {
             AbstractGuiUtils.fill(context.poseStack(), (int) context.button().getX(), (int) context.button().getY(), (int) context.button().getWidth(), (int) context.button().getHeight(), 0xEE707070, 2);
             AbstractGuiUtils.fillOutLine(context.poseStack(), (int) context.button().getX(), (int) context.button().getY(), (int) context.button().getWidth(), (int) context.button().getHeight(), 1, lineColor, 2);
             this.itemRenderer.renderGuiItem(RewardManager.deserializeReward(this.currentItem), (int) context.button().getX() + 2, (int) context.button().getY() + 2);
-            context.button().setTooltip(AbstractGuiUtils.componentToText(((ItemStack) RewardManager.deserializeReward(this.currentItem)).getHoverName().copy()));
+            context.button().setTooltip(Text.fromTextComponent(((ItemStack) RewardManager.deserializeReward(this.currentItem)).getHoverName().copy()));
         }).setX(this.bgX - AbstractGuiUtils.ITEM_ICON_SIZE - 2 - margin - 3).setY(this.bgY + margin + AbstractGuiUtils.ITEM_ICON_SIZE + 4 + 1).setWidth(AbstractGuiUtils.ITEM_ICON_SIZE + 4).setHeight(AbstractGuiUtils.ITEM_ICON_SIZE + 4));
         this.OP_BUTTONS.put(OperationButtonType.COUNT.getCode(), new OperationButton(OperationButtonType.COUNT.getCode(), context -> {
             // 绘制背景
@@ -441,7 +441,7 @@ public class ItemSelectScreen extends Screen {
             AbstractGuiUtils.fillOutLine(context.poseStack(), (int) context.button().getX(), (int) context.button().getY(), (int) context.button().getWidth(), (int) context.button().getHeight(), 1, lineColor, 2);
             ItemStack itemStack = new ItemStack(Items.WRITABLE_BOOK);
             this.itemRenderer.renderGuiItem(itemStack, (int) context.button().getX() + 2, (int) context.button().getY() + 2);
-            Text text = Text.i18n("设置数量\n当前 %s", ((ItemStack) RewardManager.deserializeReward(this.currentItem)).getCount());
+            Text text = Text.translatable(EI18nType.TIPS, "set_count_s", ((ItemStack) RewardManager.deserializeReward(this.currentItem)).getCount());
             context.button().setTooltip(text);
         }).setX(this.bgX - AbstractGuiUtils.ITEM_ICON_SIZE - 2 - margin - 3).setY(this.bgY + margin + (AbstractGuiUtils.ITEM_ICON_SIZE + 4 + 1) * 2).setWidth(AbstractGuiUtils.ITEM_ICON_SIZE + 4).setHeight(AbstractGuiUtils.ITEM_ICON_SIZE + 4));
         this.OP_BUTTONS.put(OperationButtonType.NBT.getCode(), new OperationButton(OperationButtonType.NBT.getCode(), context -> {
@@ -451,7 +451,7 @@ public class ItemSelectScreen extends Screen {
             AbstractGuiUtils.fillOutLine(context.poseStack(), (int) context.button().getX(), (int) context.button().getY(), (int) context.button().getWidth(), (int) context.button().getHeight(), 1, lineColor, 2);
             ItemStack itemStack = new ItemStack(Items.NAME_TAG);
             this.itemRenderer.renderGuiItem(itemStack, (int) context.button().getX() + 2, (int) context.button().getY() + 2);
-            Text text = Text.i18n("编辑NBT");
+            Text text = Text.translatable(EI18nType.TIPS, "edit_nbt");
             context.button().setTooltip(text);
         }).setX(this.bgX - AbstractGuiUtils.ITEM_ICON_SIZE - 2 - margin - 3).setY(this.bgY + margin + (AbstractGuiUtils.ITEM_ICON_SIZE + 4 + 1) * 3).setWidth(AbstractGuiUtils.ITEM_ICON_SIZE + 4).setHeight(AbstractGuiUtils.ITEM_ICON_SIZE + 4));
         this.OP_BUTTONS.put(OperationButtonType.PROBABILITY.getCode(), new OperationButton(OperationButtonType.PROBABILITY.getCode(), context -> {
@@ -460,7 +460,7 @@ public class ItemSelectScreen extends Screen {
             AbstractGuiUtils.fill(context.poseStack(), (int) context.button().getX(), (int) context.button().getY(), (int) context.button().getWidth(), (int) context.button().getHeight(), 0xEE707070, 2);
             AbstractGuiUtils.fillOutLine(context.poseStack(), (int) context.button().getX(), (int) context.button().getY(), (int) context.button().getWidth(), (int) context.button().getHeight(), 1, lineColor, 2);
             AbstractGuiUtils.drawEffectIcon(context.poseStack(), super.font, new MobEffectInstance(MobEffects.LUCK), (int) context.button().getX() + 2, (int) context.button().getY() + 2, false);
-            Text text = Text.i18n("设置概率\n当前 %.3f%%", this.probability.multiply(new BigDecimal(100)).floatValue());
+            Text text = Text.translatable(EI18nType.TIPS, "set_probability_f", this.probability.multiply(new BigDecimal(100)).floatValue());
             context.button().setTooltip(text);
         }).setX(this.bgX - AbstractGuiUtils.ITEM_ICON_SIZE - 2 - margin - 3).setY(this.bgY + margin + (AbstractGuiUtils.ITEM_ICON_SIZE + 4 + 1) * 4).setWidth(AbstractGuiUtils.ITEM_ICON_SIZE + 4).setHeight(AbstractGuiUtils.ITEM_ICON_SIZE + 4));
 
@@ -522,8 +522,8 @@ public class ItemSelectScreen extends Screen {
                         // 绘制物品详情悬浮窗
                         context.button().setCustomPopupFunction(() -> {
                             if (context.button().isHovered()) {
-                                List<Component> list = itemStack.getTooltipLines(Minecraft.getInstance().player, Minecraft.getInstance().options.advancedItemTooltips ? TooltipFlag.Default.ADVANCED : TooltipFlag.Default.NORMAL);
-                                List<Component> list1 = Lists.newArrayList(list);
+                                List<net.minecraft.network.chat.Component> list = itemStack.getTooltipLines(Minecraft.getInstance().player, Minecraft.getInstance().options.advancedItemTooltips ? TooltipFlag.Default.ADVANCED : TooltipFlag.Default.NORMAL);
+                                List<net.minecraft.network.chat.Component> list1 = Lists.newArrayList(list);
                                 Item item = itemStack.getItem();
                                 CreativeModeTab itemgroup = item.getItemCategory();
                                 if (itemgroup == null && item == Items.ENCHANTED_BOOK) {
@@ -540,7 +540,7 @@ public class ItemSelectScreen extends Screen {
                                 }
                                 this.visibleTags.forEach((itemITag) -> {
                                     if (itemStack.is(itemITag)) {
-                                        list1.add(1, (new TextComponent("#" + itemITag.location())).withStyle(ChatFormatting.DARK_PURPLE));
+                                        list1.add(1, Component.literal("#" + itemITag.location()).setColor(ChatFormatting.DARK_PURPLE.getColor()).toTextComponent());
                                     }
 
                                 });
@@ -652,8 +652,8 @@ public class ItemSelectScreen extends Screen {
         else if (bt.getOperation() == OperationButtonType.ITEM.getCode()) {
             String itemRewardJsonString = GSON.toJson(this.currentItem.getContent());
             Minecraft.getInstance().setScreen(new StringInputScreen(this
-                    , Text.i18n("请输入物品Json").setShadow(true)
-                    , Text.i18n("请输入")
+                    , Text.translatable(EI18nType.TIPS, "enter_item_json").setShadow(true)
+                    , Text.translatable(EI18nType.TIPS, "enter_something")
                     , ""
                     , itemRewardJsonString
                     , input -> {
@@ -672,7 +672,7 @@ public class ItemSelectScreen extends Screen {
                         this.currentItem = new Reward(itemStack, ERewardType.ITEM, this.probability);
                         this.selectedItemId = ItemRewardParser.getId(itemStack);
                     } else {
-                        result.add(getByZh("物品Json[%s]输入有误", json));
+                        result.add(Component.translatableClient(EI18nType.TIPS, "item_json_s_error", json).toString());
                     }
                 }
                 return result;
@@ -681,8 +681,8 @@ public class ItemSelectScreen extends Screen {
         // 编辑数量
         else if (bt.getOperation() == OperationButtonType.COUNT.getCode()) {
             Minecraft.getInstance().setScreen(new StringInputScreen(this
-                    , Text.i18n("请输入物品数量").setShadow(true)
-                    , Text.i18n("请输入")
+                    , Text.translatable(EI18nType.TIPS, "enter_item_count").setShadow(true)
+                    , Text.translatable(EI18nType.TIPS, "enter_something")
                     , "\\d{0,4}"
                     , String.valueOf(((ItemStack) RewardManager.deserializeReward(this.currentItem)).getCount())
                     , input -> {
@@ -695,7 +695,7 @@ public class ItemSelectScreen extends Screen {
                         itemStack.setCount(count);
                         this.currentItem = new Reward(itemStack, ERewardType.ITEM, this.probability);
                     } else {
-                        result.add(getByZh("物品数量[%s]输入有误", num));
+                        result.add(Component.translatableClient(EI18nType.TIPS, "item_count_s_error", num).toString());
                     }
                 }
                 return result;
@@ -705,8 +705,8 @@ public class ItemSelectScreen extends Screen {
         else if (bt.getOperation() == OperationButtonType.NBT.getCode()) {
             String itemNbtJsonString = ItemRewardParser.getNbtString(RewardManager.deserializeReward(this.currentItem));
             Minecraft.getInstance().setScreen(new StringInputScreen(this
-                    , Text.i18n("请输入物品NBT").setShadow(true)
-                    , Text.i18n("请输入")
+                    , Text.translatable(EI18nType.TIPS, "enter_item_nbt").setShadow(true)
+                    , Text.translatable(EI18nType.TIPS, "enter_something")
                     , ""
                     , itemNbtJsonString
                     , input -> {
@@ -725,7 +725,7 @@ public class ItemSelectScreen extends Screen {
                         this.currentItem = new Reward(itemStack, ERewardType.ITEM, this.probability);
                         this.selectedItemId = ItemRewardParser.getId(itemStack);
                     } else {
-                        result.add(getByZh("物品NBT[%s]输入有误", nbt));
+                        result.add(Component.translatableClient(EI18nType.TIPS, "item_nbt_s_error", nbt).toString());
                     }
                 }
                 return result;
@@ -734,8 +734,8 @@ public class ItemSelectScreen extends Screen {
         // 编辑概率
         else if (bt.getOperation() == OperationButtonType.PROBABILITY.getCode()) {
             Minecraft.getInstance().setScreen(new StringInputScreen(this
-                    , Text.i18n("请输入奖励概率").setShadow(true)
-                    , Text.i18n("请输入")
+                    , Text.translatable(EI18nType.TIPS, "enter_reward_probability").setShadow(true)
+                    , Text.translatable(EI18nType.TIPS, "enter_something")
                     , "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?"
                     , StringUtils.toFixedEx(this.probability, 5)
                     , input -> {
@@ -745,7 +745,7 @@ public class ItemSelectScreen extends Screen {
                     if (p.compareTo(BigDecimal.ZERO) > 0 && p.compareTo(BigDecimal.ONE) <= 0) {
                         this.probability = p;
                     } else {
-                        result.add(getByZh("奖励概率[%s]输入有误", input.get(0)));
+                        result.add(Component.translatableClient(EI18nType.TIPS, "reward_probability_s_error", input.get(0)).toString());
                     }
                 }
                 return result;

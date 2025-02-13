@@ -5,11 +5,11 @@ import lombok.NonNull;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.TextComponent;
 import org.lwjgl.glfw.GLFW;
+import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.screen.component.Text;
 import xin.vanilla.sakura.util.AbstractGuiUtils;
-import xin.vanilla.sakura.util.I18nUtils;
+import xin.vanilla.sakura.util.Component;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.function.Supplier;
@@ -18,6 +18,7 @@ import java.util.function.Supplier;
  * 操作确认 Screen
  */
 public class ConfirmationScreen extends Screen {
+    private final static Component TITLE = Component.literal("ConfirmationScreen");
 
     /**
      * 父级 Screen
@@ -38,7 +39,7 @@ public class ConfirmationScreen extends Screen {
 
 
     public ConfirmationScreen(Screen callbackScreen, Text titleText, @NonNull Runnable onConfirm) {
-        super(new TextComponent("ConfirmationScreen"));
+        super(TITLE.toTextComponent());
         this.previousScreen = callbackScreen;
         this.onConfirm = onConfirm;
         this.titleText = titleText;
@@ -46,7 +47,7 @@ public class ConfirmationScreen extends Screen {
     }
 
     public ConfirmationScreen(Screen callbackScreen, Text titleText, @NonNull Runnable onConfirm, Supplier<Boolean> shouldClose) {
-        super(new TextComponent("ConfirmationScreen"));
+        super(TITLE.toTextComponent());
         this.previousScreen = callbackScreen;
         this.onConfirm = onConfirm;
         this.titleText = titleText;
@@ -58,13 +59,13 @@ public class ConfirmationScreen extends Screen {
         if (this.shouldClose != null && Boolean.TRUE.equals(this.shouldClose.get()))
             Minecraft.getInstance().setScreen(previousScreen);
         // 创建提交按钮
-        Button submitButton = AbstractGuiUtils.newButton(this.width / 2 + 5, this.height / 2 + 10, 95, 20, new TextComponent(I18nUtils.getByZh("确认")), button -> {
+        Button submitButton = AbstractGuiUtils.newButton(this.width / 2 + 5, this.height / 2 + 10, 95, 20, Component.translatableClient(EI18nType.OPTION, "confirm"), button -> {
             onConfirm.run();
             Minecraft.getInstance().setScreen(previousScreen);
         });
         this.addRenderableWidget(submitButton);
         // 创建取消按钮
-        this.addRenderableWidget(AbstractGuiUtils.newButton(this.width / 2 - 100, this.height / 2 + 10, 95, 20, new TextComponent(I18nUtils.getByZh("取消")), button -> {
+        this.addRenderableWidget(AbstractGuiUtils.newButton(this.width / 2 - 100, this.height / 2 + 10, 95, 20, Component.translatableClient(EI18nType.OPTION, "cancel"), button -> {
             // 关闭当前屏幕并返回到调用者的 Screen
             Minecraft.getInstance().setScreen(previousScreen);
         }));

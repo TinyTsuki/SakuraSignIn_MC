@@ -2,6 +2,7 @@ package xin.vanilla.sakura.rewards.impl;
 
 import com.google.gson.JsonObject;
 import lombok.NonNull;
+import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ERewardType;
 import xin.vanilla.sakura.rewards.RewardParser;
 import xin.vanilla.sakura.util.I18nUtils;
@@ -26,12 +27,12 @@ public class CommandRewardParser implements RewardParser<String> {
     }
 
     @Override
-    public @NonNull String getDisplayName(JsonObject json) {
-        return getDisplayName(json, false);
+    public @NonNull String getDisplayName(String languageCode, JsonObject json) {
+        return getDisplayName(languageCode, json, false);
     }
 
     @Override
-    public @NonNull String getDisplayName(JsonObject json, boolean withNum) {
-        return I18nUtils.get(String.format("reward.sakura_sign_in.reward_type_%s", ERewardType.COMMAND.getCode()));
+    public @NonNull String getDisplayName(String languageCode, JsonObject json, boolean withNum) {
+        return I18nUtils.getTranslation(EI18nType.WORD, "reward_type_" + ERewardType.COMMAND.getCode(), languageCode);
     }
 }

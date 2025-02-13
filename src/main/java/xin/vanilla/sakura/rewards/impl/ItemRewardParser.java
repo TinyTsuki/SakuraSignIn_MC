@@ -66,12 +66,12 @@ public class ItemRewardParser implements RewardParser<ItemStack> {
     }
 
     @Override
-    public @NonNull String getDisplayName(JsonObject json) {
-        return getDisplayName(json, false);
+    public @NonNull String getDisplayName(String languageCode, JsonObject json) {
+        return getDisplayName(languageCode, json, false);
     }
 
     @Override
-    public @NonNull String getDisplayName(JsonObject json, boolean withNum) {
+    public @NonNull String getDisplayName(String languageCode, JsonObject json, boolean withNum) {
         ItemStack itemStack = this.deserialize(json);
         return itemStack.getDisplayName().getString().replaceAll("\\[(.*)]", "$1") + (withNum ? "x" + itemStack.getCount() : "");
     }
