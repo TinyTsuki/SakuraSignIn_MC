@@ -6,15 +6,12 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.gui.widget.Widget;
 import net.minecraft.client.gui.widget.button.Button;
-import net.minecraft.util.text.StringTextComponent;
 import org.lwjgl.glfw.GLFW;
 import xin.vanilla.sakura.config.StringList;
+import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.screen.component.Text;
 import xin.vanilla.sakura.screen.component.TextList;
-import xin.vanilla.sakura.util.AbstractGuiUtils;
-import xin.vanilla.sakura.util.CollectionUtils;
-import xin.vanilla.sakura.util.I18nUtils;
-import xin.vanilla.sakura.util.StringUtils;
+import xin.vanilla.sakura.util.*;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.ArrayList;
@@ -27,6 +24,7 @@ import java.util.function.Supplier;
  * 字符串输入 Screen
  */
 public class StringInputScreen extends Screen {
+    private final static Component TITLE = Component.literal("StringInputScreen");
 
     /**
      * 父级 Screen
@@ -86,7 +84,7 @@ public class StringInputScreen extends Screen {
 
 
     public StringInputScreen(Screen callbackScreen, TextList titleText, TextList messageText, StringList validator, Consumer<StringList> onDataReceived) {
-        super(new StringTextComponent("StringInputScreen"));
+        super(TITLE.toTextComponent());
         this.previousScreen = callbackScreen;
         this.onDataReceived1 = onDataReceived;
         this.onDataReceived2 = null;
@@ -102,7 +100,7 @@ public class StringInputScreen extends Screen {
     }
 
     public StringInputScreen(Screen callbackScreen, TextList titleText, TextList messageText, StringList validator, StringList defaultValue, Consumer<StringList> onDataReceived) {
-        super(new StringTextComponent("StringInputScreen"));
+        super(TITLE.toTextComponent());
         this.previousScreen = callbackScreen;
         this.onDataReceived1 = onDataReceived;
         this.onDataReceived2 = null;
@@ -118,7 +116,7 @@ public class StringInputScreen extends Screen {
     }
 
     public StringInputScreen(Screen callbackScreen, TextList titleText, TextList messageText, StringList validator, StringList defaultValue, Consumer<StringList> onDataReceived, Supplier<Boolean> shouldClose) {
-        super(new StringTextComponent("StringInputScreen"));
+        super(TITLE.toTextComponent());
         this.previousScreen = callbackScreen;
         this.onDataReceived1 = onDataReceived;
         this.onDataReceived2 = null;
@@ -134,7 +132,7 @@ public class StringInputScreen extends Screen {
     }
 
     public StringInputScreen(Screen callbackScreen, TextList titleText, TextList messageText, StringList validator, Function<StringList, StringList> onDataReceived) {
-        super(new StringTextComponent("StringInputScreen"));
+        super(TITLE.toTextComponent());
         this.previousScreen = callbackScreen;
         this.onDataReceived1 = null;
         this.onDataReceived2 = onDataReceived;
@@ -150,7 +148,7 @@ public class StringInputScreen extends Screen {
     }
 
     public StringInputScreen(Screen callbackScreen, TextList titleText, TextList messageText, StringList validator, StringList defaultValue, Function<StringList, StringList> onDataReceived) {
-        super(new StringTextComponent("StringInputScreen"));
+        super(TITLE.toTextComponent());
         this.previousScreen = callbackScreen;
         this.onDataReceived1 = null;
         this.onDataReceived2 = onDataReceived;
@@ -166,7 +164,7 @@ public class StringInputScreen extends Screen {
     }
 
     public StringInputScreen(Screen callbackScreen, TextList titleText, TextList messageText, StringList validator, StringList defaultValue, Function<StringList, StringList> onDataReceived, Supplier<Boolean> shouldClose) {
-        super(new StringTextComponent("StringInputScreen"));
+        super(TITLE.toTextComponent());
         this.previousScreen = callbackScreen;
         this.onDataReceived1 = null;
         this.onDataReceived2 = onDataReceived;
@@ -190,7 +188,7 @@ public class StringInputScreen extends Screen {
         for (int i = 0; i < this.titleText.size(); i++) {
             Text text = this.messageText.get(i);
             TextFieldWidget input = AbstractGuiUtils.newTextFieldWidget(this.font, this.width / 2 - 100, this.yStart + 15 + 45 * i, 200, 20
-                    , AbstractGuiUtils.textToComponent(text));
+                    , text.toComponent());
             input.setMaxLength(Integer.MAX_VALUE);
             if (CollectionUtils.isNotNullOrEmpty(this.validator)) {
                 String regex = this.validator.get(i);
@@ -208,10 +206,10 @@ public class StringInputScreen extends Screen {
         }
 
         // 创建提交按钮
-        this.submitButton = AbstractGuiUtils.newButton(this.width / 2 + 5, this.yStart + this.layoutHeight - 28, 95, 20, new StringTextComponent(I18nUtils.getByZh("取消")), button -> {
+        this.submitButton = AbstractGuiUtils.newButton(this.width / 2 + 5, this.yStart + this.layoutHeight - 28, 95, 20, Component.translatableClient(EI18nType.OPTION, "cancel"), button -> {
             StringList value = new StringList();
             this.inputField.stream().map(TextFieldWidget::getValue).forEach(value::add);
-            if (CollectionUtils.isNullOrEmpty(value) || button.getMessage().getString().equals(I18nUtils.getByZh("取消"))) {
+            if (CollectionUtils.isNullOrEmpty(value) || button.getMessage().getString().equals(I18nUtils.getTranslationClient(EI18nType.OPTION, "cancel"))) {
                 // 关闭当前屏幕并返回到调用者的 Screen
                 Minecraft.getInstance().setScreen(previousScreen);
             } else {
@@ -236,7 +234,7 @@ public class StringInputScreen extends Screen {
         });
         this.addButton(this.submitButton);
         // 创建取消按钮
-        this.addButton(AbstractGuiUtils.newButton(this.width / 2 - 100, this.yStart + this.layoutHeight - 28, 95, 20, new StringTextComponent(I18nUtils.getByZh("取消")), button -> {
+        this.addButton(AbstractGuiUtils.newButton(this.width / 2 - 100, this.yStart + this.layoutHeight - 28, 95, 20, Component.translatableClient(EI18nType.OPTION, "cancel"), button -> {
             // 关闭当前屏幕并返回到调用者的 Screen
             Minecraft.getInstance().setScreen(previousScreen);
         }));
@@ -263,9 +261,9 @@ public class StringInputScreen extends Screen {
             }
         }
         if (this.inputField.stream().allMatch(in -> StringUtils.isNotNullOrEmpty(in.getValue()))) {
-            this.submitButton.setMessage(new StringTextComponent(I18nUtils.getByZh("提交")));
+            this.submitButton.setMessage(Component.translatableClient(EI18nType.OPTION, "submit").toTextComponent());
         } else {
-            this.submitButton.setMessage(new StringTextComponent(I18nUtils.getByZh("取消")));
+            this.submitButton.setMessage(Component.translatableClient(EI18nType.OPTION, "cancel").toTextComponent());
         }
     }
 
