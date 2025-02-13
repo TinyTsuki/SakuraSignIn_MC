@@ -14,10 +14,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.StringTextComponent;
-import net.minecraft.util.text.Style;
-import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
@@ -217,7 +213,7 @@ public class AbstractGuiUtils {
         GL11.glPushMatrix();
         // 添加偏移
         if (tremblingAmplitude > 0) {
-            if (!affectLight || WorldUtils.getEnvironmentBrightness(Minecraft.getInstance().player) > 4) {
+            if (!affectLight || SakuraUtils.getEnvironmentBrightness(Minecraft.getInstance().player) > 4) {
                 x += (random.nextFloat() - 0.5) * tremblingAmplitude;
                 y += (random.nextFloat() - 0.5) * tremblingAmplitude;
             }
@@ -232,47 +228,6 @@ public class AbstractGuiUtils {
     // endregion 绘制纹理
 
     // region 绘制文字
-
-    public static TextFormatting colorFromRgb(int color) {
-        TextFormatting textFormatting = TextFormatting.getById(color);
-        if (textFormatting == null) {
-            LOGGER.warn("Invalid color code: {}", color);
-        }
-        return textFormatting;
-    }
-
-    public static ITextComponent setTextComponentColor(ITextComponent textComponent, int color) {
-        return textComponent.withStyle(style -> style.setColor(colorFromRgb(color)));
-    }
-
-    public static int getTextComponentColor(ITextComponent textComponent) {
-        return AbstractGuiUtils.getTextComponentColor(textComponent, 0xFFFFFFFF);
-    }
-
-    public static int getTextComponentColor(ITextComponent textComponent, int defaultColor) {
-        return textComponent.getStyle().getColor() == null ? defaultColor : textComponent.getStyle().getColor().getColor();
-    }
-
-    public static ITextComponent textToComponent(Text text) {
-        return new StringTextComponent(text.getContent()).setStyle(new Style()
-                .setColor(colorFromRgb(text.getColor()))
-                .setBold(text.isBold())
-                .setItalic(text.isItalic())
-                .setUnderlined(text.isUnderlined())
-                .setStrikethrough(text.isStrikethrough())
-                .setObfuscated(text.isObfuscated())
-        );
-    }
-
-    public static Text componentToText(ITextComponent component) {
-        return Text.literal(component.getString())
-                .setColor(AbstractGuiUtils.getTextComponentColor(component))
-                .setBold(component.getStyle().isBold())
-                .setItalic(component.getStyle().isItalic())
-                .setUnderlined(component.getStyle().isUnderlined())
-                .setStrikethrough(component.getStyle().isStrikethrough())
-                .setObfuscated(component.getStyle().isObfuscated());
-    }
 
     public static void drawString(FontRenderer font, String text, float x, float y) {
         AbstractGuiUtils.drawString(Text.literal(text).setFont(font), x, y);
@@ -618,9 +573,9 @@ public class AbstractGuiUtils {
                 // 重置为白色, 避免颜色叠加问题
                 GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
                 if (text.isShadow()) {
-                    font.drawShadow(line, (float) x + xOffset, (float) y + index * font.lineHeight, text.getColor());
+                    font.drawShadow(text.copy().setText(line).toComponent().getString(SakuraUtils.getClientLanguage()), (float) x + xOffset, (float) y + index * font.lineHeight, text.getColor());
                 } else {
-                    font.draw(line, (float) x + xOffset, (float) y + index * font.lineHeight, text.getColor());
+                    font.draw(text.copy().setText(line).toComponent().getString(SakuraUtils.getClientLanguage()), (float) x + xOffset, (float) y + index * font.lineHeight, text.getColor());
                 }
                 // 绘制下划线
                 if (text.isUnderlined()) {
@@ -665,23 +620,23 @@ public class AbstractGuiUtils {
         if (showText) {
             // 效果等级
             if (effectInstance.getAmplifier() >= 0) {
-                String amplifierString = StringUtils.intToRoman(effectInstance.getAmplifier() + 1);
-                int amplifierWidth = font.width(amplifierString);
+                Component amplifierString = Component.literal(StringUtils.intToRoman(effectInstance.getAmplifier() + 1));
+                int amplifierWidth = font.width(amplifierString.toString());
                 float fontX = x + width - (float) amplifierWidth / 2;
                 float fontY = y - 1;
                 // 重置为白色, 避免颜色叠加问题
                 GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-                font.drawShadow(amplifierString, fontX, fontY, 0xFFFFFF);
+                font.drawShadow(amplifierString.toString(), fontX, fontY, 0xFFFFFF);
             }
             // 效果持续时间
             if (effectInstance.getDuration() > 0) {
-                String durationString = DateUtils.toMaxUnitString(effectInstance.getDuration(), DateUtils.DateUnit.SECOND, 0, 1);
-                int durationWidth = font.width(durationString);
+                Component durationString = Component.literal(DateUtils.toMaxUnitString(effectInstance.getDuration(), DateUtils.DateUnit.SECOND, 0, 1));
+                int durationWidth = font.width(durationString.toString());
                 float fontX = x + width - (float) durationWidth / 2 - 2;
                 float fontY = y + (float) height / 2 + 1;
                 // 重置为白色, 避免颜色叠加问题
                 GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-                font.drawShadow(durationString, fontX, fontY, 0xFFFFFF);
+                font.drawShadow(durationString.toString(), fontX, fontY, 0xFFFFFF);
             }
         }
     }
@@ -731,13 +686,13 @@ public class AbstractGuiUtils {
         Minecraft.getInstance().getTextureManager().bind(textureLocation);
         AbstractGuiUtils.blit(x, y, ITEM_ICON_SIZE, ITEM_ICON_SIZE, (float) textureUV.getU0(), (float) textureUV.getV0(), (int) textureUV.getUWidth(), (int) textureUV.getVHeight(), totalWidth, totalHeight);
         if (showText) {
-            String num = String.valueOf((Integer) RewardManager.deserializeReward(reward));
-            int numWidth = font.width(num);
+            Component num = Component.literal(String.valueOf((Integer) RewardManager.deserializeReward(reward)));
+            int numWidth = font.width(num.toString());
             float fontX = x + ITEM_ICON_SIZE - (float) numWidth / 2 - 2;
             float fontY = y + (float) ITEM_ICON_SIZE - font.lineHeight + 2;
             // 重置为白色, 避免颜色叠加问题
             GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-            font.drawShadow(num, fontX, fontY, 0xFFFFFF);
+            font.drawShadow(num.toString(), fontX, fontY, 0xFFFFFF);
         }
     }
 
@@ -1233,12 +1188,12 @@ public class AbstractGuiUtils {
 
     // region 重写方法签名
 
-    public static TextFieldWidget newTextFieldWidget(FontRenderer font, int x, int y, int width, int height, ITextComponent content) {
-        return new TextFieldWidget(font, x, y, width, height, content.getString());
+    public static TextFieldWidget newTextFieldWidget(FontRenderer font, int x, int y, int width, int height, Component content) {
+        return new TextFieldWidget(font, x, y, width, height, content.toString());
     }
 
-    public static Button newButton(int x, int y, int width, int height, ITextComponent content, Button.IPressable onPress) {
-        return new Button(x, y, width, height, content.getString(), onPress);
+    public static Button newButton(int x, int y, int width, int height, Component content, Button.IPressable onPress) {
+        return new Button(x, y, width, height, content.toString(), onPress);
     }
 
     // endregion 重写方法签名

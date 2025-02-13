@@ -169,7 +169,7 @@ tasks.named('jar', Jar).configure {
     // 自定义打包路径与输出格式
     archiveBaseName.set(mod_id)
     archiveVersion.set("forge-${mod_version}")
-    destinationDirectory.set(file("${projectDir}/builds"))
+    destinationDirectory.set(file("${projectDir}/builds/${mod_version.split('-')[1]}"))
 
     manifest {
         attributes(["Specification-Title"     : mod_id,
