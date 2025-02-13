@@ -84,12 +84,12 @@ public class Reward implements Cloneable, Serializable {
         }
     }
 
-    public String getName() {
-        return getName(true);
+    public String getName(String languageCode) {
+        return getName(languageCode, true);
     }
 
-    public String getName(boolean withNum) {
-        return RewardManager.getRewardName(this, withNum);
+    public String getName(String languageCode, boolean withNum) {
+        return RewardManager.getRewardName(languageCode, this, withNum);
     }
 
     public static Reward getDefault() {

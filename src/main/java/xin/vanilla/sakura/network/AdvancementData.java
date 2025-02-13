@@ -6,10 +6,10 @@ import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.AdvancementType;
 import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import xin.vanilla.sakura.util.Component;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -48,7 +48,7 @@ public record AdvancementData(@NonNull ResourceLocation id, @NonNull DisplayInfo
 
     public static DisplayInfo createDisplayInfo(String title, String description, ItemStack itemStack) {
         return new DisplayInfo(itemStack
-                , Component.literal(title), Component.literal(description)
+                , Component.literal(title).toTextComponent(), Component.literal(description).toTextComponent()
                 , Optional.of(new ResourceLocation("")), AdvancementType.TASK
                 , false, false, false);
     }
