@@ -21,8 +21,8 @@ public interface RewardParser<T> {
     JsonObject serialize(T reward);
 
     @NonNull
-    String getDisplayName(JsonObject json);
+    String getDisplayName(String languageCode, JsonObject json);
 
     @NonNull
-    String getDisplayName(JsonObject json, boolean withNum);
+    String getDisplayName(String languageCode, JsonObject json, boolean withNum);
 }

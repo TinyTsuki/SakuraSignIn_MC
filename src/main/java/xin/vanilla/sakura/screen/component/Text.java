@@ -8,7 +8,9 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import xin.vanilla.sakura.util.I18nUtils;
+import xin.vanilla.sakura.enums.EI18nType;
+import xin.vanilla.sakura.util.Component;
+import xin.vanilla.sakura.util.SakuraUtils;
 
 @Setter
 @Accessors(chain = true)
@@ -28,81 +30,17 @@ public class Text {
      */
     private boolean hovered;
     /**
-     * 文本颜色
-     */
-    private int color = 0xFFFFFFFF;
-    /**
-     * 文本背景色
-     */
-    private int bgColor = 0x00000000;
-    /**
      * 文本
      */
-    private String text;
-    /**
-     * 是否有阴影
-     */
-    private boolean shadow;
-    /**
-     * 是否粗体
-     */
-    private boolean bold;
-    /**
-     * 是否斜体
-     */
-    private boolean italic;
-    /**
-     * 是否删除线
-     */
-    private boolean underlined;
-    /**
-     * 是否中划线
-     */
-    private boolean strikethrough;
-    /**
-     * 是否混淆
-     */
-    private boolean obfuscated;
+    private Component text = Component.empty();
     /**
      * 文本对齐方式(仅多行绘制时)
      */
     private Align align = Align.LEFT;
     /**
-     * 鼠标悬浮时文本颜色
-     */
-    private int hoverColor = 0xFFFFFFFF;
-    /**
-     * 鼠标悬浮时文本背景色
-     */
-    private int hoverBgColor = 0x00000000;
-    /**
      * 鼠标悬浮时文本
      */
-    private String hoverText;
-    /**
-     * 鼠标悬浮时是否有阴影
-     */
-    private boolean hoverShadow;
-    /**
-     * 鼠标悬浮时是否粗体
-     */
-    private boolean hoverBold;
-    /**
-     * 鼠标悬浮时是否斜体
-     */
-    private boolean hoverItalic;
-    /**
-     * 鼠标悬浮时是否删除线
-     */
-    private boolean hoverUnderlined;
-    /**
-     * 鼠标悬浮时是否中划线
-     */
-    private boolean hoverStrikethrough;
-    /**
-     * 鼠标悬浮时是否混淆
-     */
-    private boolean hoverObfuscated;
+    private Component hoverText = Component.empty();
     /**
      * 鼠标悬浮时对齐方式(仅多行绘制时)
      */
@@ -119,6 +57,11 @@ public class Text {
     }
 
     private Text(String text) {
+        this.text = Component.literal(text);
+        this.hoverText = Component.literal(text);
+    }
+
+    private Text(Component text) {
         this.text = text;
         this.hoverText = text;
     }
@@ -127,36 +70,16 @@ public class Text {
         return new Text(text);
     }
 
-    public static Text translatable(String key) {
-        return new Text(I18nUtils.get(key));
-    }
-
-    public static Text i18n(String key, Object... args) {
-        return new Text(I18nUtils.getByZh(key, args));
+    public static Text translatable(EI18nType type, String key, Object... args) {
+        return new Text(Component.translatableClient(type, key, args));
     }
 
     public Text copy() {
         return new Text()
+                .setText(this.text.clone())
+                .setHoverText(this.hoverText.clone())
                 .setHovered(this.hovered)
-                .setColor(this.color)
-                .setBgColor(this.bgColor)
-                .setText(this.text)
-                .setShadow(this.shadow)
-                .setBold(this.bold)
-                .setItalic(this.italic)
-                .setUnderlined(this.underlined)
-                .setStrikethrough(this.strikethrough)
-                .setObfuscated(this.obfuscated)
                 .setAlign(this.align)
-                .setHoverColor(this.hoverColor)
-                .setHoverBgColor(this.hoverBgColor)
-                .setHoverText(this.hoverText)
-                .setHoverShadow(this.hoverShadow)
-                .setHoverBold(this.hoverBold)
-                .setHoverItalic(this.hoverItalic)
-                .setHoverUnderlined(this.hoverUnderlined)
-                .setHoverStrikethrough(this.hoverStrikethrough)
-                .setHoverObfuscated(this.hoverObfuscated)
                 .setHoverAlign(this.hoverAlign)
                 .setGraphics(this.graphics)
                 .setFont(this.font);
@@ -167,39 +90,39 @@ public class Text {
     }
 
     public int getColor() {
-        return this.hovered ? this.hoverColor : this.color;
+        return this.hovered ? this.hoverText.getColor() : this.text.getColor();
     }
 
     public int getBgColor() {
-        return this.hovered ? this.hoverBgColor : this.bgColor;
+        return this.hovered ? this.hoverText.getBgColor() : this.text.getBgColor();
     }
 
     public String getContent() {
-        return this.hovered ? this.hoverText : this.text;
+        return this.hovered ? this.hoverText.getString(SakuraUtils.getClientLanguage()) : this.text.getString(SakuraUtils.getClientLanguage());
     }
 
     public boolean isShadow() {
-        return this.hovered ? this.hoverShadow : this.shadow;
+        return this.hovered ? this.hoverText.isShadow() : this.text.isShadow();
     }
 
     public boolean isBold() {
-        return this.hovered ? this.hoverBold : this.bold;
+        return this.hovered ? this.hoverText.isBold() : this.text.isBold();
     }
 
     public boolean isItalic() {
-        return this.hovered ? this.hoverItalic : this.italic;
+        return this.hovered ? this.hoverText.isItalic() : this.text.isItalic();
     }
 
     public boolean isUnderlined() {
-        return this.hovered ? this.hoverUnderlined : this.underlined;
+        return this.hovered ? this.hoverText.isUnderlined() : this.text.isUnderlined();
     }
 
     public boolean isStrikethrough() {
-        return this.hovered ? this.hoverStrikethrough : this.strikethrough;
+        return this.hovered ? this.hoverText.isStrikethrough() : this.text.isStrikethrough();
     }
 
     public boolean isObfuscated() {
-        return this.hovered ? this.hoverObfuscated : this.obfuscated;
+        return this.hovered ? this.hoverText.isObfuscated() : this.text.isObfuscated();
     }
 
     public Align getAlign() {
@@ -207,56 +130,72 @@ public class Text {
     }
 
     public Text setColor(int color) {
-        this.color = color;
-        this.hoverColor = color;
+        this.text.setColor(color);
+        this.hoverText.setColor(color);
         return this;
     }
 
     public Text setBgColor(int bgColor) {
-        this.bgColor = bgColor;
-        this.hoverBgColor = bgColor;
+        this.text.setBgColor(bgColor);
+        this.hoverText.setBgColor(bgColor);
         return this;
     }
 
     public Text setText(String text) {
+        this.text = Component.literal(text);
+        this.hoverText = Component.literal(text);
+        return this;
+    }
+
+    public Text setText(Component text) {
         this.text = text;
         this.hoverText = text;
         return this;
     }
 
+    public Text setHoverText(String text) {
+        this.hoverText = Component.literal(text);
+        return this;
+    }
+
+    public Text setHoverText(Component text) {
+        this.hoverText = text;
+        return this;
+    }
+
     public Text setShadow(boolean shadow) {
-        this.shadow = shadow;
-        this.hoverShadow = shadow;
+        this.text.setShadow(shadow);
+        this.hoverText.setShadow(shadow);
         return this;
     }
 
     public Text setBold(boolean bold) {
-        this.bold = bold;
-        this.hoverBold = bold;
+        this.text.setBold(bold);
+        this.hoverText.setBold(bold);
         return this;
     }
 
     public Text setItalic(boolean italic) {
-        this.italic = italic;
-        this.hoverItalic = italic;
+        this.text.setItalic(italic);
+        this.hoverText.setItalic(italic);
         return this;
     }
 
     public Text setUnderlined(boolean underlined) {
-        this.underlined = underlined;
-        this.hoverUnderlined = underlined;
+        this.text.setUnderlined(underlined);
+        this.hoverText.setUnderlined(underlined);
         return this;
     }
 
     public Text setStrikethrough(boolean strikethrough) {
-        this.strikethrough = strikethrough;
-        this.hoverStrikethrough = strikethrough;
+        this.text.setStrikethrough(strikethrough);
+        this.hoverText.setStrikethrough(strikethrough);
         return this;
     }
 
     public Text setObfuscated(boolean obfuscated) {
-        this.obfuscated = obfuscated;
-        this.hoverObfuscated = obfuscated;
+        this.text.setObfuscated(obfuscated);
+        this.hoverText.setObfuscated(obfuscated);
         return this;
     }
 
@@ -264,5 +203,27 @@ public class Text {
         this.align = align;
         this.hoverAlign = align;
         return this;
+    }
+
+    public Component toComponent() {
+        return this.hovered ? this.hoverText : this.text;
+    }
+
+    public static int getTextComponentColor(net.minecraft.network.chat.Component textComponent) {
+        return getTextComponentColor(textComponent, 0xFFFFFFFF);
+    }
+
+    public static int getTextComponentColor(net.minecraft.network.chat.Component textComponent, int defaultColor) {
+        return textComponent.getStyle().getColor() == null ? defaultColor : textComponent.getStyle().getColor().getValue();
+    }
+
+    public static Text fromTextComponent(net.minecraft.network.chat.Component component) {
+        return Text.literal(component.getString())
+                .setColor(getTextComponentColor(component))
+                .setBold(component.getStyle().isBold())
+                .setItalic(component.getStyle().isItalic())
+                .setUnderlined(component.getStyle().isUnderlined())
+                .setStrikethrough(component.getStyle().isStrikethrough())
+                .setObfuscated(component.getStyle().isObfuscated());
     }
 }

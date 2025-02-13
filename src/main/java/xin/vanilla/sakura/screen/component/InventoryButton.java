@@ -8,13 +8,14 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
 import xin.vanilla.sakura.SakuraSignIn;
+import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.util.AbstractGuiUtils;
+import xin.vanilla.sakura.util.Component;
 import xin.vanilla.sakura.util.StringUtils;
 
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -64,7 +65,7 @@ public class InventoryButton extends AbstractWidget {
     private Consumer<Coordinate> onDragEnd;
 
     public InventoryButton(int x, int y, int width, int height, String title) {
-        super(x, y, width, height, Component.nullToEmpty(title));
+        super(x, y, width, height, Component.literal(title).toTextComponent());
         this.x_ = x;
         this.y_ = y;
     }
@@ -114,9 +115,9 @@ public class InventoryButton extends AbstractWidget {
             AbstractGuiUtils.drawPopupMessage(text.setGraphics(graphics), super.getX() + (AbstractGuiUtils.multilineTextWidth(text) - this.width) / 2, super.getY() + this.height / 2, screenWidth, screenHeight);
         } else if (this.isHovered) {
             if (this.modifiers == GLFW.GLFW_MOD_SHIFT) {
-                AbstractGuiUtils.drawPopupMessage(Text.i18n("按住Ctrl或Alt键可拖动按钮\nCtrl: 绝对位置坐标\nAlt: 屏幕百分比位置").setGraphics(graphics), mouseX, mouseY, screenWidth, screenHeight);
+                AbstractGuiUtils.drawPopupMessage(Text.translatable(EI18nType.TIPS, "drag_inventory_button").setGraphics(graphics), mouseX, mouseY, screenWidth, screenHeight);
             } else {
-                AbstractGuiUtils.drawPopupMessage(AbstractGuiUtils.componentToText(this.getMessage().copy()).setGraphics(graphics), mouseX, mouseY, screenWidth, screenHeight);
+                AbstractGuiUtils.drawPopupMessage(Text.fromTextComponent(this.getMessage().copy()).setGraphics(graphics), mouseX, mouseY, screenWidth, screenHeight);
             }
         }
     }
