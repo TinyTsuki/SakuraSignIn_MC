@@ -6,6 +6,7 @@ import net.minecraft.advancements.Advancement;
 import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.util.ResourceLocation;
 import xin.vanilla.sakura.SakuraSignIn;
+import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ERewardType;
 import xin.vanilla.sakura.network.AdvancementData;
 import xin.vanilla.sakura.rewards.RewardParser;
@@ -71,14 +72,15 @@ public class AdvancementRewardParser implements RewardParser<ResourceLocation> {
     }
 
     @Override
-    public @NonNull String getDisplayName(JsonObject json) {
-        return getDisplayName(json, false);
+    public @NonNull String getDisplayName(String languageCode, JsonObject json) {
+        return getDisplayName(languageCode, json, false);
     }
 
     @Override
-    public @NonNull String getDisplayName(JsonObject json, boolean withNum) {
+    public @NonNull String getDisplayName(String languageCode, JsonObject json, boolean withNum) {
         ResourceLocation deserialize = deserialize(json);
-        return String.format("%s: %s", I18nUtils.get(String.format("reward.sakura_sign_in.reward_type_%s", ERewardType.ADVANCEMENT.getCode()))
+        String rewardType = I18nUtils.getTranslation(EI18nType.WORD, "reward_type_" + ERewardType.ADVANCEMENT.getCode(), languageCode);
+        return String.format("%s: %s", rewardType
                 , SakuraSignIn.getAdvancementData().stream()
                         .filter(data -> data.getId().equals(deserialize))
                         .findFirst().orElse(new AdvancementData(deserialize, null))

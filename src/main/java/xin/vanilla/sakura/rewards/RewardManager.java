@@ -11,10 +11,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.potion.Effects;
 import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.StringTextComponent;
-import net.minecraft.util.text.TextFormatting;
-import net.minecraft.util.text.TranslationTextComponent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.capability.IPlayerSignInData;
@@ -23,23 +19,22 @@ import xin.vanilla.sakura.capability.SignInRecord;
 import xin.vanilla.sakura.config.RewardOptionData;
 import xin.vanilla.sakura.config.RewardOptionDataManager;
 import xin.vanilla.sakura.config.ServerConfig;
+import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ERewardType;
 import xin.vanilla.sakura.enums.ESignInType;
 import xin.vanilla.sakura.enums.ETimeCoolingMethod;
 import xin.vanilla.sakura.network.SignInPacket;
 import xin.vanilla.sakura.rewards.impl.*;
-import xin.vanilla.sakura.util.CollectionUtils;
-import xin.vanilla.sakura.util.DateUtils;
-import xin.vanilla.sakura.util.StringUtils;
+import xin.vanilla.sakura.util.Component;
+import xin.vanilla.sakura.util.*;
 
+import java.awt.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
-
-import static xin.vanilla.sakura.util.I18nUtils.getByZh;
-import static xin.vanilla.sakura.util.I18nUtils.getI18nKey;
 
 /**
  * 奖励管理器
@@ -86,12 +81,12 @@ public class RewardManager {
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> String getRewardName(Reward reward, boolean withNum) {
+    public static <T> String getRewardName(String languageCode, Reward reward, boolean withNum) {
         RewardParser<T> parser = (RewardParser<T>) rewardParsers.get(reward.getType());
         if (parser == null) {
             throw new JsonParseException("Unknown reward type: " + reward.getType());
         }
-        return parser.getDisplayName(reward.getContent(), withNum).trim();
+        return parser.getDisplayName(languageCode, reward.getContent(), withNum).trim();
     }
 
     /**
@@ -483,19 +478,19 @@ public class RewardManager {
         ETimeCoolingMethod coolingMethod = ServerConfig.TIME_COOLING_METHOD.get();
         // 判断签到/补签时间合法性
         if (ESignInType.SIGN_IN.equals(packet.getSignInType()) && serverCompensateDateInt < signCompensateDateInt) {
-            player.sendMessage(new TranslationTextComponent(getI18nKey("签到日期晚于服务器当前日期，签到失败")));
+            SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "sign_in_date_late_server_current_date_fail"));
             PlayerSignInDataCapability.syncPlayerData(player);
             return;
         } else if (ESignInType.SIGN_IN.equals(packet.getSignInType()) && serverCompensateDateInt > signCompensateDateInt) {
-            player.sendMessage(new TranslationTextComponent(getI18nKey("签到日期早于服务器当前日期，签到失败")));
+            SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "sign_in_date_early_server_current_date_fail"));
             PlayerSignInDataCapability.syncPlayerData(player);
             return;
         } else if (ESignInType.SIGN_IN.equals(packet.getSignInType()) && signInData.getSignInRecords().stream().anyMatch(record -> DateUtils.toDateInt(record.getCompensateTime()) == signCompensateDateInt)) {
-            player.sendMessage(new TranslationTextComponent(getI18nKey("已经签过到了哦")));
+            SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "already_signed"));
             PlayerSignInDataCapability.syncPlayerData(player);
             return;
         } else if (ESignInType.RE_SIGN_IN.equals(packet.getSignInType()) && serverCompensateDateInt <= signCompensateDateInt) {
-            player.sendMessage(new TranslationTextComponent(getI18nKey("补签日期需早于服务器当前日期，补签失败")));
+            SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "compensate_date_not_early_server_current_date_fail"));
             PlayerSignInDataCapability.syncPlayerData(player);
             return;
         }
@@ -503,37 +498,37 @@ public class RewardManager {
         if (ESignInType.SIGN_IN.equals(packet.getSignInType()) && coolingMethod.getCode() >= ETimeCoolingMethod.FIXED_INTERVAL.getCode()) {
             Date lastSignInTime = DateUtils.addDate(signInData.getLastSignInTime(), ServerConfig.TIME_COOLING_INTERVAL.get());
             if (serverDate.before(lastSignInTime)) {
-                player.sendMessage(new TranslationTextComponent(getI18nKey("签到冷却中，签到失败，请稍后再试")));
+                SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "sign_in_cool_down_fail"));
                 PlayerSignInDataCapability.syncPlayerData(player);
                 return;
             }
         }
         // 判断补签
         if (ESignInType.RE_SIGN_IN.equals(packet.getSignInType()) && !ServerConfig.SIGN_IN_CARD.get()) {
-            player.sendMessage(new TranslationTextComponent(getI18nKey("服务器补签功能被禁用了哦，补签失败")));
+            SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "server_not_enable_sign_in_card_fail"));
             PlayerSignInDataCapability.syncPlayerData(player);
             return;
         } else if (ESignInType.RE_SIGN_IN.equals(packet.getSignInType()) && signInData.getSignInCard() <= 0) {
-            player.sendMessage(new TranslationTextComponent(getI18nKey("补签卡不足，补签失败")));
+            SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "not_enough_sign_in_card_fail"));
             PlayerSignInDataCapability.syncPlayerData(player);
             return;
         } else if (ESignInType.RE_SIGN_IN.equals(packet.getSignInType()) && isSignedIn(signInData, signCompensateDate, false)) {
-            player.sendMessage(new TranslationTextComponent(getI18nKey("已经签过到了哦")));
+            SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "already_signed"));
             PlayerSignInDataCapability.syncPlayerData(player);
             return;
         }
         // 判断领取奖励
         if (ESignInType.REWARD.equals(packet.getSignInType())) {
             if (isRewarded(signInData, signCompensateDate, false)) {
-                player.sendMessage(new TranslationTextComponent(getI18nKey("%s的奖励已经领取过啦"), DateUtils.toString(signCompensateDate)));
+                SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "already_receive_reward_s", DateUtils.toString(signCompensateDate)));
                 PlayerSignInDataCapability.syncPlayerData(player);
                 return;
             } else if (!isSignedIn(signInData, signCompensateDate, false)) {
-                player.sendMessage(new TranslationTextComponent(getI18nKey("没有查询到[%s]的签到记录哦，鉴定为阁下没有签到！"), DateUtils.toString(signCompensateDate)));
+                SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "not_sign_in", DateUtils.toString(signCompensateDate)));
                 PlayerSignInDataCapability.syncPlayerData(player);
                 return;
             } else {
-                StringTextComponent msg = new StringTextComponent(getByZh("奖励领取详情:"));
+                Component msg = Component.translatable(player, EI18nType.MESSAGE, "receive_reward_success");
                 signInData.getSignInRecords().stream()
                         // 若签到日期等于当前日期
                         .filter(record -> DateUtils.toDateInt(record.getCompensateTime()) == DateUtils.toDateInt(signCompensateDate))
@@ -548,16 +543,16 @@ public class RewardManager {
                                     .forEach(reward -> {
                                         reward.setDisabled(true);
                                         reward.setRewarded(true);
-                                        ITextComponent detail = new StringTextComponent(reward.getName(true));
+                                        Component detail = Component.literal(reward.getName(SakuraUtils.getPlayerLanguage(player), true));
                                         if (giveRewardToPlayer(player, signInData, reward)) {
-                                            detail.withStyle(style -> style.setColor(TextFormatting.GREEN));
+                                            detail.setColor(Color.GREEN.getRGB());
                                         } else {
-                                            detail.withStyle(style -> style.setColor(TextFormatting.RED));
+                                            detail.setColor(Color.RED.getRGB());
                                         }
                                         msg.append(", ").append(detail);
                                     });
                         });
-                player.sendMessage(msg);
+                SakuraUtils.sendMessage(player, msg);
             }
         }
         // 签到/补签
@@ -572,18 +567,18 @@ public class RewardManager {
             signInRecord.setSignInUUID(player.getUUID().toString());
             // 是否自动领取
             if (packet.isAutoRewarded()) {
-                StringTextComponent msg = new StringTextComponent(getByZh("奖励领取详情:"));
+                Component msg = Component.translatable(player, EI18nType.MESSAGE, "receive_reward_success");
                 rewardList.forEach(reward -> {
-                    ITextComponent detail = new StringTextComponent(reward.getName(true));
+                    Component detail = Component.literal(reward.getName(SakuraUtils.getPlayerLanguage(player), true));
                     if (giveRewardToPlayer(player, signInData, reward)) {
-                        detail.withStyle(style -> style.setColor(TextFormatting.GREEN));
+                        detail.setColor(Color.GREEN.getRGB());
                     } else {
-                        detail.withStyle(style -> style.setColor(TextFormatting.RED));
+                        detail.setColor(Color.RED.getRGB());
                     }
                     signInRecord.getRewardList().add(reward);
                     msg.append(", ").append(detail);
                 });
-                player.sendMessage(msg);
+                SakuraUtils.sendMessage(player, msg);
             } else {
                 signInRecord.getRewardList().addAll(rewardList);
             }
@@ -591,7 +586,7 @@ public class RewardManager {
             signInData.getSignInRecords().add(signInRecord);
             signInData.setContinuousSignInDays(DateUtils.calculateContinuousDays(signInData.getSignInRecords().stream().map(SignInRecord::getCompensateTime).collect(Collectors.toList()), serverCompensateDate));
             signInData.plusTotalSignInDays();
-            player.sendMessage(new TranslationTextComponent(getI18nKey("%s 签到成功, %s/%s"), DateUtils.toString(signInRecord.getCompensateTime()), signInData.getContinuousSignInDays(), getTotalSignInDays(signInData)));
+            SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "sign_in_success_s", DateUtils.toString(signInRecord.getCompensateTime()), signInData.getContinuousSignInDays(), getTotalSignInDays(signInData)));
         }
         signInData.save(player);
         // 同步数据至客户端
@@ -639,7 +634,7 @@ public class RewardManager {
                 }
                 break;
             case MESSAGE:
-                player.sendMessage((ITextComponent) object);
+                SakuraUtils.sendMessage(player, (Component) object);
                 break;
             case COMMAND:
                 String command = (String) object;

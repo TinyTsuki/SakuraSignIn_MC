@@ -17,6 +17,7 @@ import xin.vanilla.sakura.rewards.RewardList;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
 import xin.vanilla.sakura.util.AbstractGuiUtils;
+import xin.vanilla.sakura.util.Component;
 import xin.vanilla.sakura.util.DateUtils;
 
 import java.util.Date;
@@ -127,24 +128,23 @@ public class SignInCell {
             // 绘制日期
             Date date = DateUtils.getClientDate();
             int color = textureCoordinate.getTextColorDefault();
-            boolean underLine = false;
-            String dayStr = String.valueOf(day);
+            Component dayComponent = Component.literal(String.valueOf(day));
             if (year == DateUtils.getYearPart(date) && month == DateUtils.getMonthOfDate(date)) {
                 if (day == DateUtils.getDayOfMonth(date)) {
                     color = textureCoordinate.getTextColorToday();
-                    underLine = true;
+                    dayComponent.setUnderlined(true);
                 } else {
                     color = textureCoordinate.getTextColorCurrent();
                 }
             } else if (status == ESignInStatus.CAN_REPAIR.getCode()) {
                 color = textureCoordinate.getTextColorCanRepair();
             }
-            float dayWidth = font.width(dayStr);
+            float dayWidth = font.width(dayComponent.toString());
             float fontX = (float) (x + (width - dayWidth) / 2);
             float fontY = (float) (y + height + 0.1f);
-            font.draw(dayStr, fontX, fontY, color);
+            font.draw(dayComponent.toString(), fontX, fontY, color);
             // 绘制下划线
-            if (underLine) {
+            if (dayComponent.isUnderlined()) {
                 AbstractGui.fill((int) fontX, (int) (fontY + font.lineHeight), (int) (fontX + dayWidth), (int) (fontY + font.lineHeight + 1), color);
             }
         }
@@ -218,12 +218,12 @@ public class SignInCell {
         // 绘制文字
         String monthTitle = DateUtils.toLocalStringMonth(DateUtils.getDate(year, month, day), Minecraft.getInstance().options.languageCode);
         String dayTitle = DateUtils.toLocalStringDay(DateUtils.getDate(year, month, day), Minecraft.getInstance().options.languageCode);
-        String title = String.format("%s %s", monthTitle, dayTitle);
-        double fontWidth = fontRenderer.width(title);
+        Component title = Component.literal(String.format("%s %s", monthTitle, dayTitle));
+        double fontWidth = fontRenderer.width(title.toString());
         Coordinate dateCoordinate = textureCoordinate.getTooltipDateCoordinate();
         double tooltipDateX = tooltipX0 + (tooltipWidth - fontWidth) / 2;
         double tooltipDateY = tooltipY0 + (dateCoordinate.getY() * tooltipScale);
-        fontRenderer.draw(title, (int) tooltipDateX, (int) tooltipDateY, 0xFFFFFF);
+        fontRenderer.draw(title.toString(), (int) tooltipDateX, (int) tooltipDateY, 0xFFFFFF);
 
         // 恢复原来的矩阵状态
         GL11.glPopMatrix();

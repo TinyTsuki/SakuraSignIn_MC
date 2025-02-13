@@ -10,8 +10,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
 import xin.vanilla.sakura.SakuraSignIn;
+import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.util.AbstractGuiUtils;
+import xin.vanilla.sakura.util.Component;
 import xin.vanilla.sakura.util.StringUtils;
 
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -61,7 +63,7 @@ public class InventoryButton extends Widget {
     private Consumer<Coordinate> onDragEnd;
 
     public InventoryButton(int x, int y, int width, int height, String title) {
-        super(x, y, width, height, title);
+        super(x, y, width, height, Component.literal(title).toString());
         this.x_ = x;
         this.y_ = y;
     }
@@ -112,7 +114,7 @@ public class InventoryButton extends Widget {
             AbstractGuiUtils.drawPopupMessage(text, this.x + (AbstractGuiUtils.multilineTextWidth(text) - this.width) / 2, this.y + this.height / 2, screenWidth, screenHeight);
         } else if (this.isHovered) {
             if (this.modifiers == GLFW.GLFW_MOD_SHIFT) {
-                AbstractGuiUtils.drawPopupMessage(Text.i18n("按住Ctrl或Alt键可拖动按钮\nCtrl: 绝对位置坐标\nAlt: 屏幕百分比位置"), mouseX, mouseY, screenWidth, screenHeight);
+                AbstractGuiUtils.drawPopupMessage(Text.translatable(EI18nType.TIPS, "drag_inventory_button"), mouseX, mouseY, screenWidth, screenHeight);
             } else {
                 AbstractGuiUtils.drawPopupMessage(Text.literal(this.getMessage()), mouseX, mouseY, screenWidth, screenHeight);
             }
