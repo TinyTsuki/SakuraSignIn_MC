@@ -28,6 +28,6 @@ public class ModNetworkHandler {
         INSTANCE.messageBuilder(DownloadRewardOptionNotice.class, nextID()).encoder(DownloadRewardOptionNotice::toBytes).decoder(DownloadRewardOptionNotice::new).consumerMainThread(DownloadRewardOptionNotice::handle).add();
         INSTANCE.messageBuilder(PlayerDataReceivedNotice.class, nextID()).encoder(PlayerDataReceivedNotice::toBytes).decoder(PlayerDataReceivedNotice::new).consumerMainThread(PlayerDataReceivedNotice::handle).add();
         INSTANCE.messageBuilder(ClientModLoadedNotice.class, nextID()).encoder(ClientModLoadedNotice::toBytes).decoder(ClientModLoadedNotice::new).consumerMainThread(ClientModLoadedNotice::handle).add();
-        INSTANCE.messageBuilder(ServerTimeSyncPacket.class, nextID()).encoder(ServerTimeSyncPacket::toBytes).decoder(ServerTimeSyncPacket::new).consumerMainThread(ServerTimeSyncPacket::handle);
+        INSTANCE.messageBuilder(ServerTimeSyncPacket.class, nextID()).encoder(ServerTimeSyncPacket::toBytes).decoder(ServerTimeSyncPacket::new).consumerMainThread(ServerTimeSyncPacket::handle).add();
     }
 }

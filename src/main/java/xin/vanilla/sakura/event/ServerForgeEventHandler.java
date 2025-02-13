@@ -20,7 +20,6 @@ import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.capability.IPlayerSignInData;
 import xin.vanilla.sakura.capability.PlayerSignInDataCapability;
 import xin.vanilla.sakura.capability.PlayerSignInDataProvider;
-import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.config.ServerConfig;
 import xin.vanilla.sakura.enums.ESignInType;
 import xin.vanilla.sakura.network.ModNetworkHandler;
@@ -106,7 +105,7 @@ public class ServerForgeEventHandler {
             IPlayerSignInData data = PlayerSignInDataCapability.getData(player);
             // 服务器是否启用自动签到, 且玩家未签到
             if (ServerConfig.AUTO_SIGN_IN.get() && !RewardManager.isSignedIn(data, DateUtils.getServerDate(), true)) {
-                RewardManager.signIn(player, new SignInPacket(DateUtils.toDateTimeString(DateUtils.getServerDate()), ClientConfig.AUTO_REWARDED.get(), ESignInType.SIGN_IN));
+                RewardManager.signIn(player, new SignInPacket(DateUtils.toDateTimeString(DateUtils.getServerDate()), data.isAutoRewarded(), ESignInType.SIGN_IN));
             }
         }
     }
