@@ -9,6 +9,7 @@ import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraftforge.registries.ForgeRegistries;
+import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ERewardType;
 import xin.vanilla.sakura.rewards.RewardParser;
 import xin.vanilla.sakura.util.I18nUtils;
@@ -45,14 +46,14 @@ public class EffectRewardParser implements RewardParser<MobEffectInstance> {
     }
 
     @Override
-    public @NonNull String getDisplayName(JsonObject json) {
-        return getDisplayName(json, false);
+    public @NonNull String getDisplayName(String languageCode, JsonObject json) {
+        return getDisplayName(languageCode, json, false);
     }
 
     @Override
-    public @NonNull String getDisplayName(JsonObject json, boolean withNum) {
-        return String.format("%s: %s", I18nUtils.get(String.format("reward.sakura_sign_in.reward_type_%s", ERewardType.EFFECT.getCode()))
-                , this.deserialize(json).getEffect().getDisplayName().getString());
+    public @NonNull String getDisplayName(String languageCode, JsonObject json, boolean withNum) {
+        String rewardType = I18nUtils.getTranslation(EI18nType.WORD, "reward_type_" + ERewardType.EFFECT.getCode(), languageCode);
+        return String.format("%s: %s", rewardType, this.deserialize(json).getEffect().getDisplayName().getString());
     }
 
     public static @NonNull String getDisplayName(MobEffectInstance instance) {

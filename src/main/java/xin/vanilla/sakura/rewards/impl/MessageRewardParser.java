@@ -2,68 +2,31 @@ package xin.vanilla.sakura.rewards.impl;
 
 import com.google.gson.JsonObject;
 import lombok.NonNull;
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.Style;
-import net.minecraft.network.chat.TextColor;
-import net.minecraft.network.chat.TextComponent;
-import net.minecraft.resources.ResourceLocation;
+import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ERewardType;
 import xin.vanilla.sakura.rewards.RewardParser;
-import xin.vanilla.sakura.screen.component.Text;
-import xin.vanilla.sakura.util.AbstractGuiUtils;
+import xin.vanilla.sakura.util.Component;
 import xin.vanilla.sakura.util.I18nUtils;
 
-public class MessageRewardParser implements RewardParser<MutableComponent> {
+public class MessageRewardParser implements RewardParser<Component> {
 
     @Override
-    public @NonNull MutableComponent deserialize(JsonObject json) {
-        MutableComponent message;
-        try {
-            message = new TextComponent(json.get("contents").getAsString());
-            JsonObject styleJson = json.getAsJsonObject("style");
-            Style style = Style.EMPTY;
-            if (styleJson.has("color"))
-                style.withColor(TextColor.fromRgb(styleJson.get("color").getAsInt()));
-            style.withBold(styleJson.get("bold").getAsBoolean());
-            style.withItalic(styleJson.get("italic").getAsBoolean());
-            style.withUnderlined(styleJson.get("underlined").getAsBoolean());
-            style.setStrikethrough(styleJson.get("strikethrough").getAsBoolean());
-            style.setObfuscated(styleJson.get("obfuscated").getAsBoolean());
-            style.withFont(new ResourceLocation(styleJson.get("font").getAsString()));
-            message.setStyle(style);
-        } catch (Exception e) {
-            LOGGER.error("Failed to parse message reward", e);
-            message = AbstractGuiUtils.textToComponent(Text.literal("Failed to parse message reward").setColor(0xFFFF0000));
-        }
-        return message;
+    public @NonNull Component deserialize(JsonObject json) {
+        return Component.deserialize(json);
     }
 
     @Override
-    public JsonObject serialize(MutableComponent reward) {
-        JsonObject result = new JsonObject();
-        JsonObject styleJson = new JsonObject();
-        Style style = reward.getStyle();
-        if (style.getColor() != null) {
-            styleJson.addProperty("color", style.getColor().getValue());
-        }
-        styleJson.addProperty("bold", style.isBold());
-        styleJson.addProperty("italic", style.isItalic());
-        styleJson.addProperty("underlined", style.isUnderlined());
-        styleJson.addProperty("strikethrough", style.isStrikethrough());
-        styleJson.addProperty("obfuscated", style.isObfuscated());
-        styleJson.addProperty("font", style.getFont().toString());
-        result.addProperty("contents", reward.getContents());
-        result.add("style", styleJson);
-        return result;
+    public JsonObject serialize(Component reward) {
+        return Component.serialize(reward);
     }
 
     @Override
-    public @NonNull String getDisplayName(JsonObject json) {
-        return getDisplayName(json, false);
+    public @NonNull String getDisplayName(String languageCode, JsonObject json) {
+        return getDisplayName(languageCode, json, false);
     }
 
     @Override
-    public @NonNull String getDisplayName(JsonObject json, boolean withNum) {
-        return I18nUtils.get(String.format("reward.sakura_sign_in.reward_type_%s", ERewardType.MESSAGE.getCode()));
+    public @NonNull String getDisplayName(String languageCode, JsonObject json, boolean withNum) {
+        return I18nUtils.getTranslation(EI18nType.WORD, "reward_type_" + ERewardType.MESSAGE.getCode(), languageCode);
     }
 }
