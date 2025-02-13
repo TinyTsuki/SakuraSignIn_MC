@@ -11,10 +11,6 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.Style;
-import net.minecraft.network.chat.TextColor;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.item.ItemStack;
@@ -213,7 +209,7 @@ public class AbstractGuiUtils {
         poseStack.pushPose();
         // 添加偏移
         if (tremblingAmplitude > 0) {
-            if (!affectLight || WorldUtils.getEnvironmentBrightness(Minecraft.getInstance().player) > 4) {
+            if (!affectLight || SakuraUtils.getEnvironmentBrightness(Minecraft.getInstance().player) > 4) {
                 x += (random.nextFloat() - 0.5) * tremblingAmplitude;
                 y += (random.nextFloat() - 0.5) * tremblingAmplitude;
             }
@@ -228,38 +224,6 @@ public class AbstractGuiUtils {
     // endregion 绘制纹理
 
     // region 绘制文字
-    public static MutableComponent setTextComponentColor(MutableComponent textComponent, int color) {
-        return textComponent.withStyle(style -> style.withColor(TextColor.fromRgb(color)));
-    }
-
-    public static int getTextComponentColor(MutableComponent textComponent) {
-        return AbstractGuiUtils.getTextComponentColor(textComponent, 0xFFFFFFFF);
-    }
-
-    public static int getTextComponentColor(MutableComponent textComponent, int defaultColor) {
-        return textComponent.getStyle().getColor() == null ? defaultColor : textComponent.getStyle().getColor().getValue();
-    }
-
-    public static MutableComponent textToComponent(Text text) {
-        return Component.literal(text.getContent()).setStyle(Style.EMPTY
-                .withColor(TextColor.fromRgb(text.getColor()))
-                .withBold(text.isBold())
-                .withItalic(text.isItalic())
-                .withUnderlined(text.isUnderlined())
-                .withStrikethrough(text.isStrikethrough())
-                .withObfuscated(text.isObfuscated())
-        );
-    }
-
-    public static Text componentToText(MutableComponent component) {
-        return Text.literal(component.getString())
-                .setColor(AbstractGuiUtils.getTextComponentColor(component))
-                .setBold(component.getStyle().isBold())
-                .setItalic(component.getStyle().isItalic())
-                .setUnderlined(component.getStyle().isUnderlined())
-                .setStrikethrough(component.getStyle().isStrikethrough())
-                .setObfuscated(component.getStyle().isObfuscated());
-    }
 
     public static void drawString(PoseStack poseStack, Font font, String text, float x, float y) {
         AbstractGuiUtils.drawString(Text.literal(text).setPoseStack(poseStack).setFont(font), x, y);
@@ -595,25 +559,18 @@ public class AbstractGuiUtils {
                 }
 
                 // 计算水平偏移
-                float xOffset;
-                switch (text.getAlign()) {
-                    case CENTER:
-                        xOffset = (maxLineWidth - font.width(line)) / 2.0f;
-                        break;
-                    case RIGHT:
-                        xOffset = maxLineWidth - font.width(line);
-                        break;
-                    default:
-                        xOffset = 0;
-                        break;
-                }
+                float xOffset = switch (text.getAlign()) {
+                    case CENTER -> (maxLineWidth - font.width(line)) / 2.0f;
+                    case RIGHT -> maxLineWidth - font.width(line);
+                    default -> 0;
+                };
 
                 // 绘制每行文本
                 PoseStack poseStack = text.getPoseStack();
                 if (text.isShadow()) {
-                    font.drawShadow(poseStack, AbstractGuiUtils.textToComponent(text.copy().setText(line)), (float) x + xOffset, (float) y + index * font.lineHeight, text.getColor());
+                    font.drawShadow(poseStack, text.copy().setText(line).toComponent().toTextComponent(SakuraUtils.getClientLanguage()), (float) x + xOffset, (float) y + index * font.lineHeight, text.getColor());
                 } else {
-                    font.draw(poseStack, AbstractGuiUtils.textToComponent(text.copy().setText(line)), (float) x + xOffset, (float) y + index * font.lineHeight, text.getColor());
+                    font.draw(poseStack, text.copy().setText(line).toComponent().toTextComponent(SakuraUtils.getClientLanguage()), (float) x + xOffset, (float) y + index * font.lineHeight, text.getColor());
                 }
 
                 index++;
@@ -651,18 +608,18 @@ public class AbstractGuiUtils {
             // 效果等级
             if (mobEffectInstance.getAmplifier() >= 0) {
                 Component amplifierString = Component.literal(StringUtils.intToRoman(mobEffectInstance.getAmplifier() + 1));
-                int amplifierWidth = font.width(amplifierString);
+                int amplifierWidth = font.width(amplifierString.toString());
                 float fontX = x + width - (float) amplifierWidth / 2;
                 float fontY = y - 1;
-                font.drawShadow(poseStack, amplifierString, fontX, fontY, 0xFFFFFF);
+                font.drawShadow(poseStack, amplifierString.toTextComponent(), fontX, fontY, 0xFFFFFF);
             }
             // 效果持续时间
             if (mobEffectInstance.getDuration() > 0) {
-                MutableComponent durationString = Component.literal(DateUtils.toMaxUnitString(mobEffectInstance.getDuration(), DateUtils.DateUnit.SECOND, 0, 1));
-                int durationWidth = font.width(durationString);
+                Component durationString = Component.literal(DateUtils.toMaxUnitString(mobEffectInstance.getDuration(), DateUtils.DateUnit.SECOND, 0, 1));
+                int durationWidth = font.width(durationString.toString());
                 float fontX = x + width - (float) durationWidth / 2 - 2;
                 float fontY = y + (float) height / 2 + 1;
-                font.drawShadow(poseStack, durationString, fontX, fontY, 0xFFFFFF);
+                font.drawShadow(poseStack, durationString.toTextComponent(), fontX, fontY, 0xFFFFFF);
             }
         }
     }
@@ -715,11 +672,11 @@ public class AbstractGuiUtils {
         AbstractGuiUtils.bindTexture(textureLocation);
         AbstractGuiUtils.blit(poseStack, x, y, ITEM_ICON_SIZE, ITEM_ICON_SIZE, (float) textureUV.getU0(), (float) textureUV.getV0(), (int) textureUV.getUWidth(), (int) textureUV.getVHeight(), totalWidth, totalHeight);
         if (showText) {
-            MutableComponent num = Component.literal(String.valueOf((Integer) RewardManager.deserializeReward(reward)));
-            int numWidth = font.width(num);
+            Component num = Component.literal(String.valueOf((Integer) RewardManager.deserializeReward(reward)));
+            int numWidth = font.width(num.toString());
             float fontX = x + ITEM_ICON_SIZE - (float) numWidth / 2 - 2;
             float fontY = y + (float) ITEM_ICON_SIZE - font.lineHeight + 2;
-            font.drawShadow(poseStack, num, fontX, fontY, 0xFFFFFF);
+            font.drawShadow(poseStack, num.toTextComponent(), fontX, fontY, 0xFFFFFF);
         }
     }
 
@@ -773,9 +730,9 @@ public class AbstractGuiUtils {
         else if (reward.getType().equals(ERewardType.ADVANCEMENT)) {
             ResourceLocation resourceLocation = RewardManager.deserializeReward(reward);
             AdvancementData advancementData = SakuraSignIn.getAdvancementData().stream()
-                    .filter(data -> data.getId().toString().equalsIgnoreCase(resourceLocation.toString()))
+                    .filter(data -> data.id().toString().equalsIgnoreCase(resourceLocation.toString()))
                     .findFirst().orElse(new AdvancementData(resourceLocation, null));
-            itemRenderer.renderGuiItem(poseStack, advancementData.getDisplayInfo().getIcon(), x, y);
+            itemRenderer.renderGuiItem(poseStack, advancementData.displayInfo().getIcon(), x, y);
         }
         // 指令
         else if (reward.getType().equals(ERewardType.COMMAND)) {
@@ -1204,11 +1161,11 @@ public class AbstractGuiUtils {
     // region 重写方法签名
 
     public static EditBox newTextFieldWidget(Font font, int x, int y, int width, int height, Component content) {
-        return new EditBox(font, x, y, width, height, content);
+        return new EditBox(font, x, y, width, height, content.toTextComponent());
     }
 
     public static Button newButton(int x, int y, int width, int height, Component content, Button.OnPress onPress) {
-        return Button.builder(content, onPress).pos(x, y).size(width, height).build();
+        return Button.builder(content.toTextComponent(), onPress).pos(x, y).size(width, height).build();
     }
 
     // endregion 重写方法签名
