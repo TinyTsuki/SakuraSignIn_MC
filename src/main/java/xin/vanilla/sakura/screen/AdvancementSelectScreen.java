@@ -7,7 +7,6 @@ import lombok.NonNull;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -18,6 +17,7 @@ import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.StringList;
+import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ERewardType;
 import xin.vanilla.sakura.network.AdvancementData;
 import xin.vanilla.sakura.rewards.Reward;
@@ -27,6 +27,7 @@ import xin.vanilla.sakura.screen.component.OperationButton;
 import xin.vanilla.sakura.screen.component.Text;
 import xin.vanilla.sakura.util.AbstractGuiUtils;
 import xin.vanilla.sakura.util.CollectionUtils;
+import xin.vanilla.sakura.util.Component;
 import xin.vanilla.sakura.util.StringUtils;
 
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -39,13 +40,13 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static xin.vanilla.sakura.config.RewardOptionDataManager.GSON;
-import static xin.vanilla.sakura.util.I18nUtils.getByZh;
 
 public class AdvancementSelectScreen extends Screen {
     private static final Logger LOGGER = LogManager.getLogger();
+    private static final Component TITLE = Component.literal("AdvancementSelectScreen");
 
     private final List<AdvancementData> allAdvancementList = SakuraSignIn.getAdvancementData();
-    private final List<AdvancementData> displayableAdvancementList = SakuraSignIn.getAdvancementData().stream().filter(o -> o.getDisplayInfo().getIcon().getItem() != Items.AIR).toList();
+    private final List<AdvancementData> displayableAdvancementList = SakuraSignIn.getAdvancementData().stream().filter(o -> o.displayInfo().getIcon().getItem() != Items.AIR).toList();
     // 每页显示行数
     private final int maxLine = 5;
 
@@ -150,7 +151,7 @@ public class AdvancementSelectScreen extends Screen {
     }
 
     public AdvancementSelectScreen(@NonNull Screen callbackScreen, @NonNull Consumer<Reward> onDataReceived, @NonNull Reward defaultAdvancement, Supplier<Boolean> shouldClose) {
-        super(Component.literal("AdvancementSelectScreen"));
+        super(TITLE.toTextComponent());
         this.previousScreen = callbackScreen;
         this.onDataReceived1 = onDataReceived;
         this.onDataReceived2 = null;
@@ -160,7 +161,7 @@ public class AdvancementSelectScreen extends Screen {
     }
 
     public AdvancementSelectScreen(@NonNull Screen callbackScreen, @NonNull Function<Reward, String> onDataReceived, @NonNull Reward defaultAdvancement, Supplier<Boolean> shouldClose) {
-        super(Component.literal("AdvancementSelectScreen"));
+        super(TITLE.toTextComponent());
         this.previousScreen = callbackScreen;
         this.onDataReceived1 = null;
         this.onDataReceived2 = onDataReceived;
@@ -170,7 +171,7 @@ public class AdvancementSelectScreen extends Screen {
     }
 
     public AdvancementSelectScreen(@NonNull Screen callbackScreen, @NonNull Consumer<Reward> onDataReceived, @NonNull Reward defaultAdvancement) {
-        super(Component.literal("AdvancementSelectScreen"));
+        super(TITLE.toTextComponent());
         this.previousScreen = callbackScreen;
         this.onDataReceived1 = onDataReceived;
         this.onDataReceived2 = null;
@@ -180,7 +181,7 @@ public class AdvancementSelectScreen extends Screen {
     }
 
     public AdvancementSelectScreen(@NonNull Screen callbackScreen, @NonNull Function<Reward, String> onDataReceived, @NonNull Reward defaultAdvancement) {
-        super(Component.literal("AdvancementSelectScreen"));
+        super(TITLE.toTextComponent());
         this.previousScreen = callbackScreen;
         this.onDataReceived1 = null;
         this.onDataReceived2 = onDataReceived;
@@ -190,7 +191,7 @@ public class AdvancementSelectScreen extends Screen {
     }
 
     public AdvancementSelectScreen(@NonNull Screen callbackScreen, @NonNull Consumer<Reward> onDataReceived) {
-        super(Component.literal("AdvancementSelectScreen"));
+        super(TITLE.toTextComponent());
         this.previousScreen = callbackScreen;
         this.onDataReceived1 = onDataReceived;
         this.onDataReceived2 = null;
@@ -198,7 +199,7 @@ public class AdvancementSelectScreen extends Screen {
     }
 
     public AdvancementSelectScreen(@NonNull Screen callbackScreen, @NonNull Function<Reward, String> onDataReceived) {
-        super(Component.literal("AdvancementSelectScreen"));
+        super(TITLE.toTextComponent());
         this.previousScreen = callbackScreen;
         this.onDataReceived1 = null;
         this.onDataReceived2 = onDataReceived;
@@ -212,13 +213,13 @@ public class AdvancementSelectScreen extends Screen {
         this.updateSearchResults();
         this.updateLayout();
         // 创建文本输入框
-        this.inputField = AbstractGuiUtils.newTextFieldWidget(this.font, bgX, bgY, 112, 15, Component.literal(""));
+        this.inputField = AbstractGuiUtils.newTextFieldWidget(this.font, bgX, bgY, 112, 15, Component.empty());
         this.inputField.setValue(this.inputFieldText);
         this.addRenderableWidget(this.inputField);
         // 创建提交按钮
         this.addRenderableWidget(AbstractGuiUtils.newButton((int) (this.bgX + 56 + this.margin), (int) (this.bgY + (20 + (AbstractGuiUtils.ITEM_ICON_SIZE + 3) * 5 + margin))
                 , (int) (56 - this.margin * 2), 20
-                , AbstractGuiUtils.textToComponent(Text.i18n("提交")), button -> {
+                , Component.translatableClient(EI18nType.OPTION, "submit"), button -> {
                     if (this.currentAdvancement == null) {
                         // 关闭当前屏幕并返回到调用者的 Screen
                         Minecraft.getInstance().setScreen(previousScreen);
@@ -241,7 +242,7 @@ public class AdvancementSelectScreen extends Screen {
         // 创建取消按钮
         this.addRenderableWidget(AbstractGuiUtils.newButton((int) (this.bgX + this.margin), (int) (this.bgY + (20 + (AbstractGuiUtils.ITEM_ICON_SIZE + 3) * 5 + margin))
                 , (int) (56 - this.margin * 2), 20
-                , AbstractGuiUtils.textToComponent(Text.i18n("取消"))
+                , Component.translatableClient(EI18nType.OPTION, "cancel")
                 , button -> Minecraft.getInstance().setScreen(previousScreen)));
     }
 
@@ -375,7 +376,7 @@ public class AdvancementSelectScreen extends Screen {
             AbstractGuiUtils.fillOutLine(context.poseStack(), (int) context.button().getX(), (int) context.button().getY(), (int) context.button().getWidth(), (int) context.button().getHeight(), 1, lineColor, 2);
             ItemStack itemStack = new ItemStack(this.displayMode ? Items.CHEST : Items.COMPASS);
             this.itemRenderer.renderGuiItem(itemStack, (int) context.button().getX() + 2, (int) context.button().getY() + 2);
-            Text text = this.displayMode ? Text.i18n("列出模式\n有图标的 (%s)", displayableAdvancementList.size()) : Text.i18n("列出模式\n所有进度 (%s)", allAdvancementList.size());
+            Text text = Text.translatable(EI18nType.TIPS, (this.displayMode ? "advancement_select_list_icon_mode" : "advancement_select_list_all_mode"), (this.displayMode ? displayableAdvancementList.size() : allAdvancementList.size()));
             context.button().setTooltip(text);
         }).setX(this.bgX - AbstractGuiUtils.ITEM_ICON_SIZE - 2 - margin - 3).setY(this.bgY + margin).setWidth(AbstractGuiUtils.ITEM_ICON_SIZE + 4).setHeight(AbstractGuiUtils.ITEM_ICON_SIZE + 4));
         this.OP_BUTTONS.put(OperationButtonType.ADVANCEMENT.getCode(), new OperationButton(OperationButtonType.ADVANCEMENT.getCode(), context -> {
@@ -383,8 +384,8 @@ public class AdvancementSelectScreen extends Screen {
             int lineColor = context.button().isHovered() ? 0xEEFFFFFF : 0xEE000000;
             AbstractGuiUtils.fill(context.poseStack(), (int) context.button().getX(), (int) context.button().getY(), (int) context.button().getWidth(), (int) context.button().getHeight(), 0xEE707070, 2);
             AbstractGuiUtils.fillOutLine(context.poseStack(), (int) context.button().getX(), (int) context.button().getY(), (int) context.button().getWidth(), (int) context.button().getHeight(), 1, lineColor, 2);
-            this.itemRenderer.renderGuiItem(AdvancementRewardParser.getAdvancementData((ResourceLocation) RewardManager.deserializeReward(this.currentAdvancement)).getDisplayInfo().getIcon(), (int) context.button().getX() + 2, (int) context.button().getY() + 2);
-            context.button().setTooltip(Text.literal(AdvancementRewardParser.getAdvancementData(((ResourceLocation) RewardManager.deserializeReward(this.currentAdvancement))).getDisplayInfo().getTitle().getString()));
+            this.itemRenderer.renderGuiItem(AdvancementRewardParser.getAdvancementData((ResourceLocation) RewardManager.deserializeReward(this.currentAdvancement)).displayInfo().getIcon(), (int) context.button().getX() + 2, (int) context.button().getY() + 2);
+            context.button().setTooltip(Text.literal(AdvancementRewardParser.getAdvancementData(((ResourceLocation) RewardManager.deserializeReward(this.currentAdvancement))).displayInfo().getTitle().getString()));
         }).setX(this.bgX - AbstractGuiUtils.ITEM_ICON_SIZE - 2 - margin - 3).setY(this.bgY + margin + AbstractGuiUtils.ITEM_ICON_SIZE + 4 + 1).setWidth(AbstractGuiUtils.ITEM_ICON_SIZE + 4).setHeight(AbstractGuiUtils.ITEM_ICON_SIZE + 4));
         this.OP_BUTTONS.put(OperationButtonType.PROBABILITY.getCode(), new OperationButton(OperationButtonType.PROBABILITY.getCode(), context -> {
             // 绘制背景
@@ -392,7 +393,7 @@ public class AdvancementSelectScreen extends Screen {
             AbstractGuiUtils.fill(context.poseStack(), (int) context.button().getX(), (int) context.button().getY(), (int) context.button().getWidth(), (int) context.button().getHeight(), 0xEE707070, 2);
             AbstractGuiUtils.fillOutLine(context.poseStack(), (int) context.button().getX(), (int) context.button().getY(), (int) context.button().getWidth(), (int) context.button().getHeight(), 1, lineColor, 2);
             AbstractGuiUtils.drawEffectIcon(context.poseStack(), super.font, new MobEffectInstance(MobEffects.LUCK), (int) context.button().getX() + 2, (int) context.button().getY() + 2, false);
-            Text text = Text.i18n("设置概率\n当前 %.3f%%", this.probability.multiply(new BigDecimal(100)).floatValue());
+            Text text = Text.translatable(EI18nType.TIPS, "set_probability_f", this.probability.multiply(new BigDecimal(100)).floatValue());
             context.button().setTooltip(text);
         }).setX(this.bgX - AbstractGuiUtils.ITEM_ICON_SIZE - 2 - margin - 3).setY(this.bgY + margin + (AbstractGuiUtils.ITEM_ICON_SIZE + 4 + 1) * 2).setWidth(AbstractGuiUtils.ITEM_ICON_SIZE + 4).setHeight(AbstractGuiUtils.ITEM_ICON_SIZE + 4));
 
@@ -439,7 +440,7 @@ public class AdvancementSelectScreen extends Screen {
                     double effectY = effectBgY + i1 * (AbstractGuiUtils.ITEM_ICON_SIZE + margin);
                     // 绘制背景
                     int bgColor;
-                    if (context.button().isHovered() || advancementData.getId().toString().equalsIgnoreCase(this.currentAdvancement.toString())) {
+                    if (context.button().isHovered() || advancementData.id().toString().equalsIgnoreCase(this.currentAdvancement.toString())) {
                         bgColor = 0xEE7CAB7C;
                     } else {
                         bgColor = 0xEE707070;
@@ -449,7 +450,7 @@ public class AdvancementSelectScreen extends Screen {
 
                     AbstractGuiUtils.fill(context.poseStack(), (int) context.button().getX(), (int) context.button().getY(), (int) context.button().getWidth(), (int) context.button().getHeight(), bgColor);
                     AbstractGuiUtils.drawLimitedText(Text.literal(AdvancementRewardParser.getDisplayName(advancementData)).setPoseStack(context.poseStack()).setFont(this.font), context.button().getX() + AbstractGuiUtils.ITEM_ICON_SIZE + this.margin * 2, context.button().getY() + (AbstractGuiUtils.ITEM_ICON_SIZE + 4 - this.font.lineHeight) / 2.0, (int) context.button().getWidth() - AbstractGuiUtils.ITEM_ICON_SIZE - 4);
-                    this.itemRenderer.renderGuiItem(advancementData.getDisplayInfo().getIcon(), (int) (context.button().getX() + this.margin), (int) context.button().getY());
+                    this.itemRenderer.renderGuiItem(advancementData.displayInfo().getIcon(), (int) (context.button().getX() + this.margin), (int) context.button().getY());
                     context.button().setTooltip(AdvancementRewardParser.getDisplayName(advancementData) + "\n" + AdvancementRewardParser.getDescription(advancementData));
                 } else {
                     context.button().setX(0).setY(0).setWidth(0).setHeight(0).setId("");
@@ -497,7 +498,7 @@ public class AdvancementSelectScreen extends Screen {
             if (StringUtils.isNotNullOrEmpty(bt.getId())) {
                 ResourceLocation resourceLocation = new ResourceLocation(bt.getId());
                 this.currentAdvancement = new Reward(resourceLocation, ERewardType.ADVANCEMENT, this.probability);
-                LOGGER.debug("Select effect: {}", AdvancementRewardParser.getAdvancementData(resourceLocation).getDisplayInfo().getTitle().getString());
+                LOGGER.debug("Select effect: {}", AdvancementRewardParser.getAdvancementData(resourceLocation).displayInfo().getTitle().getString());
                 flag.set(true);
             }
         }
@@ -513,8 +514,8 @@ public class AdvancementSelectScreen extends Screen {
         else if (bt.getOperation() == OperationButtonType.ADVANCEMENT.getCode()) {
             String effectRewardJsonString = GSON.toJson(this.currentAdvancement.getContent());
             Minecraft.getInstance().setScreen(new StringInputScreen(this
-                    , Text.i18n("请输入进度Json").setShadow(true)
-                    , Text.i18n("请输入")
+                    , Text.translatable(EI18nType.TIPS, "enter_advancement_json").setShadow(true)
+                    , Text.translatable(EI18nType.TIPS, "enter_something")
                     , ""
                     , effectRewardJsonString
                     , input -> {
@@ -532,7 +533,7 @@ public class AdvancementSelectScreen extends Screen {
                     if (instance != null) {
                         this.currentAdvancement = new Reward(instance, ERewardType.ADVANCEMENT, this.probability);
                     } else {
-                        result.add(getByZh("进度Json[%s]输入有误", json));
+                        result.add(Component.translatableClient(EI18nType.TIPS, "advancement_json_s_error", json).toString());
                     }
                 }
                 return result;
@@ -541,8 +542,8 @@ public class AdvancementSelectScreen extends Screen {
         // 编辑概率
         else if (bt.getOperation() == OperationButtonType.PROBABILITY.getCode()) {
             Minecraft.getInstance().setScreen(new StringInputScreen(this
-                    , Text.i18n("请输入奖励概率").setShadow(true)
-                    , Text.i18n("请输入")
+                    , Text.translatable(EI18nType.TIPS, "enter_reward_probability").setShadow(true)
+                    , Text.translatable(EI18nType.TIPS, "enter_something")
                     , "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?"
                     , StringUtils.toFixedEx(this.probability, 5)
                     , input -> {
@@ -552,7 +553,7 @@ public class AdvancementSelectScreen extends Screen {
                     if (p.compareTo(BigDecimal.ZERO) > 0 && p.compareTo(BigDecimal.ONE) <= 0) {
                         this.probability = p;
                     } else {
-                        result.add(getByZh("奖励概率[%s]输入有误", input.get(0)));
+                        result.add(Component.translatableClient(EI18nType.TIPS, "reward_probability_s_error", input.get(0)).toString());
                     }
                 }
                 return result;

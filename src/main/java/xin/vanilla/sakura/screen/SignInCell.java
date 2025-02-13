@@ -9,8 +9,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiComponent;
 import net.minecraft.client.renderer.entity.ItemRenderer;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.enums.ESignInStatus;
@@ -19,6 +17,7 @@ import xin.vanilla.sakura.rewards.RewardList;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
 import xin.vanilla.sakura.util.AbstractGuiUtils;
+import xin.vanilla.sakura.util.Component;
 import xin.vanilla.sakura.util.DateUtils;
 
 import java.util.Date;
@@ -129,19 +128,19 @@ public class SignInCell {
             // 绘制日期
             Date date = DateUtils.getClientDate();
             int color = textureCoordinate.getTextColorDefault();
-            MutableComponent dayStr = Component.literal(String.valueOf(day));
+            Component dayComponent = Component.literal(String.valueOf(day));
             if (year == DateUtils.getYearPart(date) && month == DateUtils.getMonthOfDate(date)) {
                 if (day == DateUtils.getDayOfMonth(date)) {
                     color = textureCoordinate.getTextColorToday();
-                    dayStr.setStyle(dayStr.getStyle().withUnderlined(true));
+                    dayComponent.setUnderlined(true);
                 } else {
                     color = textureCoordinate.getTextColorCurrent();
                 }
             } else if (status == ESignInStatus.CAN_REPAIR.getCode()) {
                 color = textureCoordinate.getTextColorCanRepair();
             }
-            float dayWidth = font.width(dayStr);
-            font.draw(poseStack, dayStr, (float) (x + (width - dayWidth) / 2), (float) (y + textureCoordinate.getDateOffset() * this.scale + 0.1f), color);
+            float dayWidth = font.width(dayComponent.toString());
+            font.draw(poseStack, dayComponent.toTextComponent(), (float) (x + (width - dayWidth) / 2), (float) (y + textureCoordinate.getDateOffset() * this.scale + 0.1f), color);
         }
     }
 
@@ -213,12 +212,12 @@ public class SignInCell {
         // 绘制文字
         String monthTitle = DateUtils.toLocalStringMonth(DateUtils.getDate(year, month, day), Minecraft.getInstance().options.languageCode);
         String dayTitle = DateUtils.toLocalStringDay(DateUtils.getDate(year, month, day), Minecraft.getInstance().options.languageCode);
-        MutableComponent title = Component.literal(String.format("%s %s", monthTitle, dayTitle));
-        double fontWidth = font.width(title);
+        Component title = Component.literal(String.format("%s %s", monthTitle, dayTitle));
+        double fontWidth = font.width(title.toString());
         Coordinate dateCoordinate = textureCoordinate.getTooltipDateCoordinate();
         double tooltipDateX = tooltipX0 + (tooltipWidth - fontWidth) / 2;
         double tooltipDateY = tooltipY0 + (dateCoordinate.getY() * tooltipScale);
-        font.draw(poseStack, title, (int) tooltipDateX, (int) tooltipDateY, 0xFFFFFF);
+        font.draw(poseStack, title.toTextComponent(), (int) tooltipDateX, (int) tooltipDateY, 0xFFFFFF);
 
         // 恢复原来的矩阵状态
         poseStack.popPose();

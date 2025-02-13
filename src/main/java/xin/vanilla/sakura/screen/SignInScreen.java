@@ -9,8 +9,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -23,6 +21,7 @@ import xin.vanilla.sakura.capability.IPlayerSignInData;
 import xin.vanilla.sakura.capability.PlayerSignInDataCapability;
 import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.config.ServerConfig;
+import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ESignInStatus;
 import xin.vanilla.sakura.enums.ESignInType;
 import xin.vanilla.sakura.event.ClientEventHandler;
@@ -42,8 +41,6 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static xin.vanilla.sakura.screen.SignInScreen.OperationButtonType.*;
-import static xin.vanilla.sakura.util.I18nUtils.getByZh;
-import static xin.vanilla.sakura.util.I18nUtils.getI18nKey;
 
 @OnlyIn(Dist.CLIENT)
 public class SignInScreen extends Screen {
@@ -161,7 +158,7 @@ public class SignInScreen extends Screen {
     }
 
     public SignInScreen() {
-        super(Component.translatable("screen.sakura_sign_in.sign_in_title"));
+        super(Component.translatableClient(EI18nType.TITLE, "sign_in_title").toTextComponent());
     }
 
     @Override
@@ -176,11 +173,11 @@ public class SignInScreen extends Screen {
         // 初始化布局信息
         this.updateLayout();
 
-        tips = Text.i18n("签到页面开屏提示");
+        tips = Text.translatable(EI18nType.TIPS, "sign_in_screen_tips");
         Button submit = AbstractGuiUtils.newButton(0, 0, 0, 20,
-                AbstractGuiUtils.textToComponent(Text.i18n("确认")), button -> this.SIGN_IN_SCREEN_TIPS = false);
+                Component.translatableClient(EI18nType.OPTION, "confirm"), button -> this.SIGN_IN_SCREEN_TIPS = false);
         Button notAgain = AbstractGuiUtils.newButton(0, 0, 0, 20,
-                AbstractGuiUtils.textToComponent(Text.i18n("不再提醒")), button -> {
+                Component.translatableClient(EI18nType.OPTION, "no_remind"), button -> {
                     this.SIGN_IN_SCREEN_TIPS = false;
                     ClientConfig.SHOW_SIGN_IN_SCREEN_TIPS.set(false);
                 });
@@ -209,7 +206,7 @@ public class SignInScreen extends Screen {
                 .setTextureWidth(textureCoordinate.getTotalWidth())
                 .setTextureHeight(textureCoordinate.getTotalHeight())
                 .setFlipHorizontal(true)
-                .setTooltip(getByZh("使用键盘%s键也可以哦", "←"))
+                .setTooltip(Text.translatable(EI18nType.TIPS, "use_s_key", "←"))
                 .setKeyCode(GLFW.GLFW_KEY_LEFT_SHIFT)
                 .setModifiers(GLFW.GLFW_MOD_SHIFT));
         BUTTONS.put(RIGHT_ARROW.getCode(), new OperationButton(RIGHT_ARROW.getCode(), texture)
@@ -217,7 +214,7 @@ public class SignInScreen extends Screen {
                 .setNormal(textureCoordinate.getArrowUV()).setHover(textureCoordinate.getArrowHoverUV()).setTap(textureCoordinate.getArrowTapUV())
                 .setTextureWidth(textureCoordinate.getTotalWidth())
                 .setTextureHeight(textureCoordinate.getTotalHeight())
-                .setTooltip(getByZh("使用键盘%s键也可以哦", "→"))
+                .setTooltip(Text.translatable(EI18nType.TIPS, "use_s_key", "→"))
                 .setKeyCode(GLFW.GLFW_KEY_LEFT_SHIFT)
                 .setModifiers(GLFW.GLFW_MOD_SHIFT));
         BUTTONS.put(UP_ARROW.getCode(), new OperationButton(UP_ARROW.getCode(), texture)
@@ -226,7 +223,7 @@ public class SignInScreen extends Screen {
                 .setTextureWidth(textureCoordinate.getTotalWidth())
                 .setTextureHeight(textureCoordinate.getTotalHeight())
                 .setRotatedAngle(270)
-                .setTooltip(getByZh("使用键盘%s键也可以哦", "↑"))
+                .setTooltip(Text.translatable(EI18nType.TIPS, "use_s_key", "↑"))
                 .setKeyCode(GLFW.GLFW_KEY_LEFT_SHIFT)
                 .setModifiers(GLFW.GLFW_MOD_SHIFT));
         BUTTONS.put(DOWN_ARROW.getCode(), new OperationButton(DOWN_ARROW.getCode(), texture)
@@ -235,7 +232,7 @@ public class SignInScreen extends Screen {
                 .setTextureWidth(textureCoordinate.getTotalWidth())
                 .setTextureHeight(textureCoordinate.getTotalHeight())
                 .setRotatedAngle(90).setFlipVertical(true)
-                .setTooltip(getByZh("使用键盘%s键也可以哦", "↓"))
+                .setTooltip(Text.translatable(EI18nType.TIPS, "use_s_key", "↓"))
                 .setKeyCode(GLFW.GLFW_KEY_LEFT_SHIFT)
                 .setModifiers(GLFW.GLFW_MOD_SHIFT));
         BUTTONS.put(INFO.getCode(), new OperationButton(INFO.getCode(), texture)
@@ -250,32 +247,32 @@ public class SignInScreen extends Screen {
                 .setNormal(textureCoordinate.getThemeUV()).setHover(textureCoordinate.getThemeHoverUV()).setTap(textureCoordinate.getThemeTapUV())
                 .setTextureWidth(textureCoordinate.getTotalWidth())
                 .setTextureHeight(textureCoordinate.getTotalHeight())
-                .setTooltip(getByZh("点击切换主题")));
+                .setTooltip(Text.translatable(EI18nType.TIPS, "click_to_change_theme")));
         BUTTONS.put(THEME_SAKURA_BUTTON.getCode(), new OperationButton(THEME_SAKURA_BUTTON.getCode(), texture)
                 .setCoordinate(textureCoordinate.getThemeCoordinate())
                 .setNormal(textureCoordinate.getThemeUV()).setHover(textureCoordinate.getThemeHoverUV()).setTap(textureCoordinate.getThemeTapUV())
                 .setTextureWidth(textureCoordinate.getTotalWidth())
                 .setTextureHeight(textureCoordinate.getTotalHeight())
-                .setTooltip(getByZh("点击切换主题")));
+                .setTooltip(Text.translatable(EI18nType.TIPS, "click_to_change_theme")));
         BUTTONS.put(THEME_CLOVER_BUTTON.getCode(), new OperationButton(THEME_CLOVER_BUTTON.getCode(), texture)
                 .setCoordinate(textureCoordinate.getThemeCoordinate())
                 .setNormal(textureCoordinate.getThemeUV()).setHover(textureCoordinate.getThemeHoverUV()).setTap(textureCoordinate.getThemeTapUV())
                 .setTextureWidth(textureCoordinate.getTotalWidth())
                 .setTextureHeight(textureCoordinate.getTotalHeight())
-                .setTooltip(getByZh("点击切换主题")));
+                .setTooltip(Text.translatable(EI18nType.TIPS, "click_to_change_theme")));
         BUTTONS.put(THEME_MAPLE_BUTTON.getCode(), new OperationButton(THEME_MAPLE_BUTTON.getCode(), texture)
                 .setCoordinate(textureCoordinate.getThemeCoordinate())
                 .setNormal(textureCoordinate.getThemeUV()).setHover(textureCoordinate.getThemeHoverUV()).setTap(textureCoordinate.getThemeTapUV())
                 .setTextureWidth(textureCoordinate.getTotalWidth())
                 .setTextureHeight(textureCoordinate.getTotalHeight())
-                .setTooltip(getByZh("点击切换主题")));
+                .setTooltip(Text.translatable(EI18nType.TIPS, "click_to_change_theme")));
         BUTTONS.put(THEME_CHAOS_BUTTON.getCode(), new OperationButton(THEME_CHAOS_BUTTON.getCode(), texture)
                 .setCoordinate(textureCoordinate.getThemeCoordinate())
                 .setNormal(textureCoordinate.getThemeUV()).setHover(textureCoordinate.getThemeHoverUV()).setTap(textureCoordinate.getThemeTapUV())
                 .setTextureWidth(textureCoordinate.getTotalWidth())
                 .setTextureHeight(textureCoordinate.getTotalHeight())
                 .setTremblingAmplitude(3.5)
-                .setTooltip(Text.i18n("左键点击切换主题\n右键点击选择外部主题").setAlign(Text.Align.CENTER)));
+                .setTooltip(Text.translatable(EI18nType.TIPS, "click_to_change_theme_or_select_external_theme").setAlign(Text.Align.CENTER)));
     }
 
     /**
@@ -521,7 +518,7 @@ public class SignInScreen extends Screen {
             for (SignInCell cell : signInCells) {
                 if (cell.isShowHover() && cell.isMouseOver(mouseX, mouseY)) {
                     if ((this.keyCode == GLFW.GLFW_KEY_LEFT_SHIFT || this.keyCode == GLFW.GLFW_KEY_RIGHT_SHIFT) && this.modifiers == GLFW.GLFW_MOD_SHIFT) {
-                        AbstractGuiUtils.drawPopupMessage(Text.i18n("鼠标左键签到\n右键补签/领取奖励").setPoseStack(poseStack).setFont(this.font).setAlign(Text.Align.CENTER), mouseX, mouseY, super.width, super.height);
+                        AbstractGuiUtils.drawPopupMessage(Text.translatable(EI18nType.TIPS, "how_to_sign_in").setPoseStack(poseStack).setFont(this.font).setAlign(Text.Align.CENTER), mouseX, mouseY, super.width, super.height);
                     } else {
                         cell.renderTooltip(poseStack, super.font, this.itemRenderer, mouseX, mouseY);
                     }
@@ -538,7 +535,7 @@ public class SignInScreen extends Screen {
                     if (Minecraft.getInstance().player != null) {
                         IPlayerSignInData signInData = PlayerSignInDataCapability.getData(Minecraft.getInstance().player);
                         button.setTooltip(
-                                Text.i18n("补签卡: %s\n连续签到: %sd\n累计签到: %sd"
+                                Text.translatable(EI18nType.TIPS, "sign_in_info"
                                                 , signInData.getSignInCard()
                                                 , signInData.getContinuousSignInDays()
                                                 , signInData.getTotalSignInDays())
@@ -562,9 +559,9 @@ public class SignInScreen extends Screen {
             y = (super.height - (textHeight + 4 + 20)) / 2.0f;
             AbstractGuiUtils.drawString(tips, x, y);
             super.renderables.stream().filter(button -> button instanceof Button
-                    && (((Button) button).getMessage().getString().equalsIgnoreCase(Text.i18n("确认").getContent())
-                    || (((Button) button).getMessage().getString().equalsIgnoreCase(Text.i18n("不再提醒").getContent())))).forEach(button -> {
-                if (((Button) button).getMessage().getString().equalsIgnoreCase(Text.i18n("确认").getContent())) {
+                    && (((Button) button).getMessage().getString().equalsIgnoreCase(Text.translatable(EI18nType.OPTION, "confirm").getContent())
+                    || (((Button) button).getMessage().getString().equalsIgnoreCase(Text.translatable(EI18nType.OPTION, "no_remind").getContent())))).forEach(button -> {
+                if (((Button) button).getMessage().getString().equalsIgnoreCase(Text.translatable(EI18nType.OPTION, "confirm").getContent())) {
                     ((Button) button).setX((int) x);
                 } else {
                     ((Button) button).setX((int) x + textWidth - buttonWidth);
@@ -610,7 +607,7 @@ public class SignInScreen extends Screen {
                 LocalPlayer player = Minecraft.getInstance().player;
                 String selectedFile = themeFileList.get(popupOption.getSelectedIndex()).getPath();
                 if (player != null) {
-                    player.sendSystemMessage(Component.translatable(getI18nKey("已选择主题文件: %s"), selectedFile));
+                    SakuraUtils.sendMessage(player, Component.translatableClient(EI18nType.MESSAGE, "selected_theme_file_s", selectedFile));
                     ClientConfig.THEME.set(selectedFile);
                     updateTextureAndCoordinate.set(true);
                     updateLayout.set(true);
@@ -741,8 +738,8 @@ public class SignInScreen extends Screen {
                 popupOption.clear();
                 // 若文件夹为空, 绘制提示, 并在点击时打开主题文件夹
                 if (CollectionUtils.isNullOrEmpty(themeFileList)) {
-                    MutableComponent textComponent = Component.translatable("screen.sakura_sign_in.theme_selector.empty");
-                    popupOption.addOption(StringUtils.replaceLine(textComponent.getString()).split("\n"));
+                    Component component = Component.translatableClient(EI18nType.TITLE, "theme_selector_empty");
+                    popupOption.addOption(StringUtils.replaceLine(component.toString()).split("\n"));
                 } else {
                     popupOption.addOption(themeFileList.stream().map(file -> {
                         String name = file.getName();
@@ -750,7 +747,7 @@ public class SignInScreen extends Screen {
                         return name;
                     }).toArray(String[]::new));
                 }
-                popupOption.setMaxWidth(AbstractGuiUtils.multilineTextWidth(Text.i18n("screen.sakura_sign_in.theme_selector.empty")))
+                popupOption.setMaxWidth(AbstractGuiUtils.multilineTextWidth(Text.translatable(EI18nType.TITLE, "theme_selector_empty")))
                         .setMaxLines(5)
                         .build(super.font, mouseX, mouseY, String.format("主题选择按钮:%s", value.getOperation()));
             }
@@ -763,7 +760,7 @@ public class SignInScreen extends Screen {
         if (cell.status == ESignInStatus.NOT_SIGNED_IN.getCode()) {
             if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
                 if (RewardManager.getCompensateDateInt() < DateUtils.toDateInt(RewardManager.getCompensateDate(DateUtils.getClientDate()))) {
-                    player.sendSystemMessage(Component.translatable(getI18nKey("前面的的日期以后再来探索吧。")));
+                    SakuraUtils.sendMessage(player, Component.translatableClient(EI18nType.MESSAGE, "next_day_cannot_operate"));
                 } else {
                     cell.status = ClientConfig.AUTO_REWARDED.get() ? ESignInStatus.REWARDED.getCode() : ESignInStatus.SIGNED_IN.getCode();
                     ModNetworkHandler.INSTANCE.sendToServer(new SignInPacket(DateUtils.toDateTimeString(DateUtils.getClientDate()), ClientConfig.AUTO_REWARDED.get(), ESignInType.SIGN_IN));
@@ -771,10 +768,10 @@ public class SignInScreen extends Screen {
             }
         } else if (cell.status == ESignInStatus.SIGNED_IN.getCode()) {
             if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-                player.sendSystemMessage(Component.translatable(getI18nKey("已经签过到了哦。")));
+                SakuraUtils.sendMessage(player, Component.translatableClient(EI18nType.MESSAGE, "already_signed"));
             } else {
                 if (RewardManager.isRewarded(PlayerSignInDataCapability.getData(player), cellDate, false)) {
-                    player.sendSystemMessage(Component.translatable(getI18nKey("不论怎么点也不会获取俩次奖励吧。")));
+                    SakuraUtils.sendMessage(player, Component.translatableClient(EI18nType.MESSAGE, "already_get_reward"));
                 } else {
                     cell.status = ESignInStatus.REWARDED.getCode();
                     ModNetworkHandler.INSTANCE.sendToServer(new SignInPacket(DateUtils.toDateTimeString(cellDate), ClientConfig.AUTO_REWARDED.get(), ESignInType.REWARD));
@@ -783,10 +780,10 @@ public class SignInScreen extends Screen {
         } else if (cell.status == ESignInStatus.CAN_REPAIR.getCode()) {
             if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
                 if (!ServerConfig.SIGN_IN_CARD.get()) {
-                    player.sendSystemMessage(Component.translatable(getI18nKey("服务器补签功能被禁用了哦。")));
+                    SakuraUtils.sendMessage(player, Component.translatableClient(EI18nType.MESSAGE, "server_not_enable_sign_in_card"));
                 } else {
                     if (PlayerSignInDataCapability.getData(player).getSignInCard() <= 0) {
-                        player.sendSystemMessage(Component.translatable(getI18nKey("补签卡不足了哦。")));
+                        SakuraUtils.sendMessage(player, Component.translatableClient(EI18nType.MESSAGE, "not_enough_sign_in_card"));
                     } else {
                         cell.status = ClientConfig.AUTO_REWARDED.get() ? ESignInStatus.REWARDED.getCode() : ESignInStatus.SIGNED_IN.getCode();
                         ModNetworkHandler.INSTANCE.sendToServer(new SignInPacket(DateUtils.toDateTimeString(cellDate), ClientConfig.AUTO_REWARDED.get(), ESignInType.RE_SIGN_IN));
@@ -795,15 +792,15 @@ public class SignInScreen extends Screen {
             }
         } else if (cell.status == ESignInStatus.NO_ACTION.getCode()) {
             if (cellDate.after(RewardManager.getCompensateDate(DateUtils.getClientDate()))) {
-                player.sendSystemMessage(Component.translatable(getI18nKey("前面的的日期以后再来探索吧。")));
+                SakuraUtils.sendMessage(player, Component.translatableClient(EI18nType.MESSAGE, "next_day_cannot_operate"));
             } else {
-                player.sendSystemMessage(Component.translatable(getI18nKey("过去的的日期怎么想也回不去了吧。")));
+                SakuraUtils.sendMessage(player, Component.translatableClient(EI18nType.MESSAGE, "past_day_cannot_operate"));
             }
         } else if (cell.status == ESignInStatus.REWARDED.getCode()) {
-            player.sendSystemMessage(Component.translatable(getI18nKey("不论怎么点也不会获取俩次奖励吧。")));
+            SakuraUtils.sendMessage(player, Component.translatableClient(EI18nType.MESSAGE, "already_get_reward"));
         } else {
             if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-                player.sendSystemMessage(Component.literal(ESignInStatus.valueOf(cell.status).getDescription() + ": " + DateUtils.toString(cellDate)));
+                SakuraUtils.sendMessage(player, Component.literal(ESignInStatus.valueOf(cell.status).getDescription() + ": " + DateUtils.toString(cellDate)));
             }
         }
     }

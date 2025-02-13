@@ -2,11 +2,14 @@ package xin.vanilla.sakura.util;
 
 
 import lombok.NonNull;
+import xin.vanilla.sakura.enums.EMCColor;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.security.SecureRandom;
 import java.util.Collection;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @SuppressWarnings("unused")
 public class StringUtils {
@@ -536,5 +539,90 @@ public class StringUtils {
             sb.append(s);
         }
         return sb.toString();
+    }
+
+    public static final String FORMAT_REGEX = "%(\\d+\\$)?([-#+ 0,(<]*)?(\\d+)?(\\.\\d+)?([tT])?([a-zA-Z%])";
+
+    /**
+     * 自定义格式化方法，支持位置重排
+     *
+     * @param string 格式化字符串
+     * @param args   参数
+     * @return 格式化后的字符串
+     */
+    public static String format(String string, Object... args) {
+        StringBuilder result = new StringBuilder();
+        // 使用正则匹配格式化占位符
+        Pattern pattern = Pattern.compile(FORMAT_REGEX);
+        Matcher matcher = pattern.matcher(string);
+        int i = 0;
+        while (matcher.find()) {
+            // 获取当前占位符
+            String placeholder = matcher.group();
+
+            // 获取位置标识符，如 %1$s 中的 1
+            int index = placeholder.contains("$") ? toInt(placeholder.split("\\$")[0].substring(1)) - 1 : -1;
+            // 如果占位符中没有显式的数字索引，则默认按顺序处理
+            if (index == -1) {
+                index = i;
+            }
+            // 检查是否有足够的参数
+            String formattedArg = placeholder;
+            if (index < args.length) {
+                formattedArg = formatArgument(placeholder, args[index]);
+            }
+            // 替换占位符为对应的参数
+            string = string.replaceFirst(Pattern.quote(placeholder), formattedArg.replaceAll("\\$", "\\\\\\$"));
+            i++;
+        }
+        return string;
+    }
+
+    /**
+     * 根据占位符的类型格式化参数
+     *
+     * @param placeholder 占位符
+     * @param arg         参数
+     */
+    private static String formatArgument(String placeholder, Object arg) {
+        if (arg == null) return "null";  // 如果参数是 null，直接返回 null
+        try {
+            return String.format(placeholder.replaceAll("^%\\d+\\$", "%"), arg);  // 默认处理
+        } catch (Exception e) {
+            // 如果出现异常，直接转换为字符串
+            return arg.toString();
+        }
+    }
+
+    /**
+     * RGB颜色转换为Minecraft颜色代码
+     *
+     * @param color 颜色值
+     * @return 颜色代码
+     */
+    public static String rgbToMinecraftColor(int color) {
+        int rgb = color >> 24 != 0 ? color : color & 0xFFFFFF;
+        // 获取RGB各分量
+        int red = (rgb >> 16) & 0xFF;
+        int green = (rgb >> 8) & 0xFF;
+        int blue = rgb & 0xFF;
+        // 计算与每个Minecraft颜色的差异
+        int closestDistance = Integer.MAX_VALUE;
+        // 默认为白色
+        char closestColor = 'f';
+        for (EMCColor mcColor : EMCColor.values()) {
+            // 获取对应的RGB值
+            int colorRGB = mcColor.getColor();
+            int r = (colorRGB >> 16) & 0xFF;
+            int g = (colorRGB >> 8) & 0xFF;
+            int b = colorRGB & 0xFF;
+            // 计算色差，使用欧几里得距离公式
+            int distance = (int) Math.sqrt(Math.pow(red - r, 2) + Math.pow(green - g, 2) + Math.pow(blue - b, 2));
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                closestColor = mcColor.getCode();
+            }
+        }
+        return "§" + closestColor;
     }
 }
