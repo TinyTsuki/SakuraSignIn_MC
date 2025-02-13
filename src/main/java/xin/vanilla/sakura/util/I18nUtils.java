@@ -1,174 +1,103 @@
 package xin.vanilla.sakura.util;
 
-import net.minecraft.client.resources.I18n;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import xin.vanilla.sakura.SakuraSignIn;
+import xin.vanilla.sakura.enums.EI18nType;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 public class I18nUtils {
-    // 如你所见，这代码与翻译写得并不好
-    private static final Map<String, String> ZH_CN_KEY_MAP = new HashMap<String, String>() {{
-        put("奖励规则类型", "title.sakura_sign_in.reward_rule_type");
-        put("基础奖励", "title.sakura_sign_in.base_reward");
-        put("第%s天", "title.sakura_sign_in.day_s");
-        put("年度第%s天", "title.sakura_sign_in.year_day_s");
-        put("月度第%s天", "title.sakura_sign_in.month_day_s");
-        put("%s, 有效期至: %s", "title.sakura_sign_in.s_valid_until_s");
-        put("周1", "title.sakura_sign_in.week_1");
-        put("周2", "title.sakura_sign_in.week_2");
-        put("周3", "title.sakura_sign_in.week_3");
-        put("周4", "title.sakura_sign_in.week_4");
-        put("周5", "title.sakura_sign_in.week_5");
-        put("周6", "title.sakura_sign_in.week_6");
-        put("周7", "title.sakura_sign_in.week_7");
-        put("签到基础奖励", "button.sakura_sign_in.reward_base");
-        put("连续签到奖励", "button.sakura_sign_in.reward_continuous");
-        put("签到周期奖励", "button.sakura_sign_in.reward_cycle");
-        put("年度签到奖励", "button.sakura_sign_in.reward_year");
-        put("月度签到奖励", "button.sakura_sign_in.reward_month");
-        put("周度签到奖励", "button.sakura_sign_in.reward_week");
-        put("具体时间奖励", "button.sakura_sign_in.reward_time");
-        put("累计签到奖励", "button.sakura_sign_in.reward_cumulative");
-        put("随机奖励池", "button.sakura_sign_in.reward_random");
-        put("兑换码奖励池", "button.sakura_sign_in.reward_cdk");
-        put("编辑", "option.sakura_sign_in.edit");
-        put("复制", "option.sakura_sign_in.copy");
-        put("剪切", "option.sakura_sign_in.cut");
-        put("粘贴", "option.sakura_sign_in.paste");
-        put("删除", "option.sakura_sign_in.delete");
-        put("清空", "option.sakura_sign_in.clear");
-        put("取消", "option.sakura_sign_in.cancel");
-        put("提交", "option.sakura_sign_in.submit");
-        put("确认", "option.sakura_sign_in.confirm");
-        put("不再提醒", "option.sakura_sign_in.no_remind");
-        put("请输入", "tips.sakura_sign_in.enter_something");
-        put("请输入规则名称", "tips.sakura_sign_in.enter_reward_rule_key");
-        put("请输入物品Json", "tips.sakura_sign_in.enter_item_json");
-        put("请输入物品数量", "tips.sakura_sign_in.enter_item_count");
-        put("请输入物品NBT", "tips.sakura_sign_in.enter_item_nbt");
-        put("请输入效果Json", "tips.sakura_sign_in.enter_effect_json");
-        put("请输入持续时间", "tips.sakura_sign_in.enter_effect_duration");
-        put("请输入效果等级", "tips.sakura_sign_in.enter_effect_amplifier");
-        put("请输入经验点值", "tips.sakura_sign_in.enter_exp_point");
-        put("请输入经验等级", "tips.sakura_sign_in.enter_exp_level");
-        put("请输入补签卡数量", "tips.sakura_sign_in.enter_sign_in_card");
-        put("请输入进度Json", "tips.sakura_sign_in.enter_advancement_json");
-        put("请输入消息", "tips.sakura_sign_in.enter_message");
-        put("请输入指令", "tips.sakura_sign_in.enter_command");
-        put("请输入奖励概率", "tips.sakura_sign_in.enter_reward_probability");
-        put("请输入有效期", "tips.sakura_sign_in.enter_valid_until");
-        put("规则名称[%s]输入有误", "tips.sakura_sign_in.reward_rule_s_error");
-        put("物品Json[%s]输入有误", "tips.sakura_sign_in.item_json_s_error");
-        put("物品数量[%s]输入有误", "tips.sakura_sign_in.item_count_s_error");
-        put("物品NBT[%s]输入有误", "tips.sakura_sign_in.item_nbt_s_error");
-        put("效果Json[%s]输入有误", "tips.sakura_sign_in.effect_json_s_error");
-        put("持续时间[%s]输入有误", "tips.sakura_sign_in.effect_duration_s_error");
-        put("效果等级[%s]输入有误", "tips.sakura_sign_in.effect_amplifier_s_error");
-        put("进度Json[%s]输入有误", "tips.sakura_sign_in.advancement_json_s_error");
-        put("奖励概率[%s]输入有误", "tips.sakura_sign_in.reward_probability_s_error");
-        put("有效期[%s]输入有误", "tips.sakura_sign_in.valid_until_s_error");
-        put("输入值[%s]有误", "tips.sakura_sign_in.enter_value_s_error");
-        put("展开侧边栏", "tips.sakura_sign_in.open_sidebar");
-        put("收起侧边栏", "tips.sakura_sign_in.close_sidebar");
-        put("Y轴偏移:\n%.1f\n点击重置", "tips.sakura_sign_in.y_offset");
-        put("Ctrl + 鼠标右键确认", "tips.sakura_sign_in.cancel_or_confirm");
-        put("列出模式\n物品栏 (%s)", "tips.sakura_sign_in.item_select_list_inventory_mode");
-        put("列出模式\n所有物品 (%s)", "tips.sakura_sign_in.item_select_list_all_mode");
-        put("列出模式\n所有效果 (%s)", "tips.sakura_sign_in.effect_select_list_all_mode");
-        put("列出模式\n玩家拥有 (%s)", "tips.sakura_sign_in.effect_select_list_player_mode");
-        put("列出模式\n所有进度 (%s)", "tips.sakura_sign_in.advancement_select_list_all_mode");
-        put("列出模式\n有图标的 (%s)", "tips.sakura_sign_in.advancement_select_list_icon_mode");
-        put("设置数量\n当前 %s", "tips.sakura_sign_in.set_count_s");
-        put("设置持续时间\n当前 %s", "tips.sakura_sign_in.set_duration_s");
-        put("设置效果等级\n当前 %s", "tips.sakura_sign_in.set_amplifier_s");
-        put("设置概率\n当前 %.3f%%", "tips.sakura_sign_in.set_probability_f");
-        put("编辑NBT", "tips.sakura_sign_in.edit_nbt");
-        put("页面上部分元素\n按住Shift键可查看帮助信息", "tips.sakura_sign_in.help_button");
-        put("比如红色字体按钮, 按住Shift时会给予帮助信息:\n按住Control键 并且 鼠标右键点击以确认\n直接点击是取消哦", "tips.sakura_sign_in.help_button_shift");
-        put("从服务器同步配置文件", "tips.sakura_sign_in.download_reward_config");
-        put("将配置文件同步至服务器", "tips.sakura_sign_in.upload_reward_config");
-        put("将配置文件同步至服务器\n权限不足", "tips.sakura_sign_in.upload_reward_config_no_permission");
-        put("打开配置文件夹", "tips.sakura_sign_in.open_config_folder");
-        put("奖励规则排序", "tips.sakura_sign_in.reward_rule_sort");
-        put("使用键盘%s键也可以哦", "tips.sakura_sign_in.use_s_key");
-        put("点击切换主题", "tips.sakura_sign_in.click_to_change_theme");
-        put("左键点击切换主题\n右键点击选择外部主题", "tips.sakura_sign_in.click_to_change_theme_or_select_external_theme");
-        put("按住Ctrl或Alt键可拖动按钮\nCtrl: 绝对位置坐标\nAlt: 屏幕百分比位置", "tips.sakura_sign_in.drag_inventory_button");
-        put("鼠标左键签到\n右键补签/领取奖励", "tips.sakura_sign_in.how_to_sign_in");
-        put("补签卡: %s\n连续签到: %sd\n累计签到: %sd", "tips.sakura_sign_in.sign_in_info");
-        put("签到页面开屏提示", "tips.sakura_sign_in.sign_in_screen_tips");
-        put("奖励配置页面开屏提示", "tips.sakura_sign_in.reward_option_screen_tips");
-        put("已选择主题文件: %s", "message.sakura_sign_in.selected_theme_file_s");
-        put("前面的的日期以后再来探索吧。", "message.sakura_sign_in.next_day_cannot_operate");
-        put("已经签过到了哦。", "message.sakura_sign_in.already_signed");
-        put("不论怎么点也不会获取俩次奖励吧。", "message.sakura_sign_in.already_get_reward");
-        put("服务器补签功能被禁用了哦。", "message.sakura_sign_in.server_not_enable_sign_in_card");
-        put("补签卡不足了哦。", "message.sakura_sign_in.not_enough_sign_in_card");
-        put("过去的的日期怎么想也回不去了吧。", "message.sakura_sign_in.past_day_cannot_operate");
+    private static final Map<String, JsonObject> LANGUAGES = new HashMap<>();
+    private static final String DEFAULT_LANGUAGE = "en_us";
+    private static final Gson GSON = new Gson();
+    private static final Logger LOGGER = LogManager.getLogger();
+    private static final String LANG_PATH = String.format("/assets/%s/lang/", SakuraSignIn.MODID);
+    private static final String LANG_FILE_PATH = String.format("%s%%s.json", LANG_PATH);
 
-        put("SakuraSignIn server is offline!", "message.sakura_sign_in.sakurasignin_server_is_offline");
-        put("当前拥有%d张补签卡", "message.sakura_sign_in.has_sign_in_card_d");
-        put("给予%d张补签卡", "message.sakura_sign_in.give_sign_in_card_d");
-        put("获得%d张补签卡", "message.sakura_sign_in.get_sign_in_card_d");
-        put("补签卡被设置为了%d张", "message.sakura_sign_in.set_sign_in_card_d");
-        put("玩家[%s]拥有%d张补签卡", "message.sakura_sign_in.set_player_s_sign_in_card_d");
-        put("服务器已启用自动签到", "message.sakura_sign_in.server_enabled_auto_sign");
-        put("服务器已禁用自动签到", "message.sakura_sign_in.server_disabled_auto_sign");
-        put("服务器签到时间冷却方式为: %s", "message.sakura_sign_in.sign_in_time_cool_down_mode_s");
-        put("服务器签到冷却刷新时间为: %05.2f", "message.sakura_sign_in.sign_in_time_cool_down_refresh_time_f");
-        put("服务器签到冷却刷新间隔为: %05.2f", "message.sakura_sign_in.sign_in_time_cool_down_refresh_interval_f");
-        put("服务器已启用补签卡", "message.sakura_sign_in.server_enabled_sign_in_card");
-        put("服务器已禁用补签卡", "message.sakura_sign_in.server_disabled_sign_in_card");
-        put("服务器最大补签天数为: %d", "message.sakura_sign_in.max_sign_in_day_d");
-        put("服务器已启用补签仅获得基础奖励", "message.sakura_sign_in.server_enabled_sign_in_card_only_basic_reward");
-        put("服务器已禁用补签仅获得基础奖励", "message.sakura_sign_in.server_disabled_sign_in_card_only_basic_reward");
-        put("服务器当前时间: %s", "message.sakura_sign_in.server_current_time_s");
-        put("玩家签到数据同步网络包大小为: %d", "message.sakura_sign_in.player_data_sync_packet_size_d");
-        put("服务器已启用奖励领取受幸运影响", "message.sakura_sign_in.server_enabled_reward_affected_by_luck");
-        put("服务器已禁用奖励领取受幸运影响", "message.sakura_sign_in.server_disabled_reward_affected_by_luck");
-        put("服务器已启用连续签到奖励持续领取", "message.sakura_sign_in.server_enabled_continuous_rewards_repeatable");
-        put("服务器已禁用连续签到奖励持续领取", "message.sakura_sign_in.server_disabled_continuous_rewards_repeatable");
-        put("服务器已启用循环签到奖励持续领取", "message.sakura_sign_in.server_enabled_cycle_rewards_repeatable");
-        put("服务器已禁用循环签到奖励持续领取", "message.sakura_sign_in.server_disabled_cycle_rewards_repeatable");
-
-        put("服务器时间已设置为: %s", "message.sakura_sign_in.set_server_time_s");
-        put("服务器最大补签天数已被设置为: %d", "message.sakura_sign_in.set_max_sign_in_day_d");
-        put("服务器签到时间冷却方式已被设置为: %s", "message.sakura_sign_in.set_sign_in_time_cool_down_mode_s");
-        put("服务器签到冷却刷新时间已被设置为: %05.2f", "message.sakura_sign_in.set_sign_in_time_cool_down_refresh_time_f");
-        put("服务器签到冷却刷新间隔已被设置为: %05.2f", "message.sakura_sign_in.set_sign_in_time_cool_down_refresh_interval_f");
-        put("玩家签到数据同步网络包大小已被设置为: %d", "message.sakura_sign_in.set_player_data_sync_packet_size_d");
-
-        put("要到今天的%05.2f后才能签到哦", "message.sakura_sign_in.next_sign_in_time_f");
-        put("签到日期晚于服务器当前日期，签到失败", "message.sakura_sign_in.sign_in_date_late_server_current_date_fail");
-        put("签到日期早于服务器当前日期，签到失败", "message.sakura_sign_in.sign_in_date_early_server_current_date_fail");
-        put("补签日期需早于服务器当前日期，补签失败", "message.sakura_sign_in.compensate_date_not_early_server_current_date_fail");
-        put("签到冷却中，签到失败，请稍后再试", "message.sakura_sign_in.sign_in_cool_down_fail");
-        put("服务器补签功能被禁用了哦，补签失败", "message.sakura_sign_in.server_not_enable_sign_in_card_fail");
-        put("补签卡不足，补签失败", "message.sakura_sign_in.not_enough_sign_in_card_fail");
-        put("%s的奖励已经领取过啦", "message.sakura_sign_in.already_receive_reward_s");
-        put("没有查询到[%s]的签到记录哦，鉴定为阁下没有签到！", "message.sakura_sign_in.not_sign_in");
-        put("奖励领取详情:", "message.sakura_sign_in.receive_reward_success");
-        put("%s 签到成功, %s/%s", "message.sakura_sign_in.sign_in_success_s");
-        put("今日CDK输入错误次数过多，请明日再试", "message.sakura_sign_in.cdk_error_too_many_times");
-        put("阁下已领取过当前CDK的奖励，请勿重复领取", "message.sakura_sign_in.cdk_already_received");
-        put("输入的CDK不存在或已被领取", "message.sakura_sign_in.cdk_not_exist_or_already_received");
-        put("输入的CDK已过期", "message.sakura_sign_in.cdk_expired");
-
-    }};
-
-    public static String getI18nKey(String key) {
-        return ZH_CN_KEY_MAP.getOrDefault(key, key);
+    static {
+        loadLanguage(DEFAULT_LANGUAGE);
+        getI18nFiles().forEach(I18nUtils::loadLanguage);
     }
 
-    public static String get(String key, Object... args) {
-        return I18n.get(key, args);
-    }
-
-    public static String getByZh(String key, Object... args) {
-        try {
-            return I18n.get(ZH_CN_KEY_MAP.get(key), args);
-        } catch (Exception e) {
-            return String.format(key, args);
+    /**
+     * 加载语言文件
+     */
+    public static void loadLanguage(String languageCode) {
+        if (!LANGUAGES.containsKey(languageCode)) {
+            try {
+                try (InputStreamReader reader = new InputStreamReader(Objects.requireNonNull(I18nUtils.class.getResourceAsStream(String.format(LANG_FILE_PATH, languageCode))), StandardCharsets.UTF_8)) {
+                    JsonObject jsonObject = GSON.fromJson(reader, JsonObject.class);
+                    LANGUAGES.put(languageCode, jsonObject);
+                }
+            } catch (Exception e) {
+                LOGGER.error("Failed to load language file: {}", languageCode, e);
+            }
         }
+    }
+
+    /**
+     * 获取翻译文本
+     */
+    public static String getTranslationClient(EI18nType type, String key) {
+        return getTranslation(getKey(type, key), SakuraUtils.getClientLanguage());
+    }
+
+    /**
+     * 获取翻译文本
+     */
+    public static String getTranslation(EI18nType type, String key, String languageCode) {
+        return getTranslation(getKey(type, key), languageCode);
+    }
+
+    /**
+     * 获取翻译文本
+     */
+    public static String getTranslation(String key, String languageCode) {
+        JsonObject language = LANGUAGES.getOrDefault(languageCode, LANGUAGES.get(DEFAULT_LANGUAGE));
+        if (language != null && language.has(key)) {
+            return language.get(key).getAsString();
+        }
+        return key;
+    }
+
+    public static String getKey(EI18nType type, String key) {
+        String result;
+        if (type == EI18nType.PLAIN || type == EI18nType.NONE) {
+            result = key;
+        } else {
+            result = String.format("%s.%s.%s", type.name().toLowerCase(), SakuraSignIn.MODID, key);
+        }
+        return result;
+    }
+
+    public static Component enabled(String languageCode, boolean enabled) {
+        return Component.translatable(languageCode, EI18nType.WORD, enabled ? "enabled" : "disabled");
+    }
+
+    /**
+     * 获取I18n文件列表
+     */
+    public static List<String> getI18nFiles() {
+        List<String> result = new ArrayList<>();
+        try (InputStreamReader reader = new InputStreamReader(
+                Objects.requireNonNull(I18nUtils.class.getResourceAsStream(LANG_PATH + "0_i18n_files.txt")),
+                StandardCharsets.UTF_8);
+             BufferedReader bufferedReader = new BufferedReader(reader)) {
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                // 将每一行添加到列表中
+                if (StringUtils.isNotNullOrEmpty(line))
+                    result.add(line);
+            }
+        } catch (Exception e) {
+            LOGGER.error("Failed to get I18n file name list", e);
+        }
+        return result;
     }
 }

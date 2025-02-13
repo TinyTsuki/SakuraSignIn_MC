@@ -16,7 +16,6 @@ import net.minecraft.item.Items;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.vector.Vector3f;
-import net.minecraft.util.text.*;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import xin.vanilla.sakura.SakuraSignIn;
@@ -203,7 +202,7 @@ public class AbstractGuiUtils {
         matrixStack.pushPose();
         // 添加偏移
         if (tremblingAmplitude > 0) {
-            if (!affectLight || WorldUtils.getEnvironmentBrightness(Minecraft.getInstance().player) > 4) {
+            if (!affectLight || SakuraUtils.getEnvironmentBrightness(Minecraft.getInstance().player) > 4) {
                 x += (random.nextFloat() - 0.5) * tremblingAmplitude;
                 y += (random.nextFloat() - 0.5) * tremblingAmplitude;
             }
@@ -218,38 +217,6 @@ public class AbstractGuiUtils {
     // endregion 绘制纹理
 
     // region 绘制文字
-    public static IFormattableTextComponent setTextComponentColor(IFormattableTextComponent textComponent, int color) {
-        return textComponent.withStyle(style -> style.withColor(Color.fromRgb(color)));
-    }
-
-    public static int getTextComponentColor(IFormattableTextComponent textComponent) {
-        return AbstractGuiUtils.getTextComponentColor(textComponent, 0xFFFFFFFF);
-    }
-
-    public static int getTextComponentColor(IFormattableTextComponent textComponent, int defaultColor) {
-        return textComponent.getStyle().getColor() == null ? defaultColor : textComponent.getStyle().getColor().getValue();
-    }
-
-    public static IFormattableTextComponent textToComponent(Text text) {
-        return new StringTextComponent(text.getContent()).setStyle(Style.EMPTY
-                .withColor(Color.fromRgb(text.getColor()))
-                .withBold(text.isBold())
-                .withItalic(text.isItalic())
-                .withUnderlined(text.isUnderlined())
-                .setStrikethrough(text.isStrikethrough())
-                .setObfuscated(text.isObfuscated())
-        );
-    }
-
-    public static Text componentToText(IFormattableTextComponent component) {
-        return Text.literal(component.getString())
-                .setColor(AbstractGuiUtils.getTextComponentColor(component))
-                .setBold(component.getStyle().isBold())
-                .setItalic(component.getStyle().isItalic())
-                .setUnderlined(component.getStyle().isUnderlined())
-                .setStrikethrough(component.getStyle().isStrikethrough())
-                .setObfuscated(component.getStyle().isObfuscated());
-    }
 
     public static void drawString(MatrixStack matrixStack, FontRenderer font, String text, float x, float y) {
         AbstractGuiUtils.drawString(Text.literal(text).setMatrixStack(matrixStack).setFont(font), x, y);
@@ -601,9 +568,9 @@ public class AbstractGuiUtils {
                 // 绘制每行文本
                 MatrixStack matrixStack = text.getMatrixStack();
                 if (text.isShadow()) {
-                    font.drawShadow(matrixStack, AbstractGuiUtils.textToComponent(text.copy().setText(line)), (float) x + xOffset, (float) y + index * font.lineHeight, text.getColor());
+                    font.drawShadow(matrixStack, text.copy().setText(line).toComponent().toTextComponent(SakuraUtils.getClientLanguage()), (float) x + xOffset, (float) y + index * font.lineHeight, text.getColor());
                 } else {
-                    font.draw(matrixStack, AbstractGuiUtils.textToComponent(text.copy().setText(line)), (float) x + xOffset, (float) y + index * font.lineHeight, text.getColor());
+                    font.draw(matrixStack, text.copy().setText(line).toComponent().toTextComponent(SakuraUtils.getClientLanguage()), (float) x + xOffset, (float) y + index * font.lineHeight, text.getColor());
                 }
 
                 index++;
@@ -640,19 +607,19 @@ public class AbstractGuiUtils {
         if (showText) {
             // 效果等级
             if (effectInstance.getAmplifier() >= 0) {
-                StringTextComponent amplifierString = new StringTextComponent(StringUtils.intToRoman(effectInstance.getAmplifier() + 1));
-                int amplifierWidth = font.width(amplifierString);
+                Component amplifierString = Component.literal(StringUtils.intToRoman(effectInstance.getAmplifier() + 1));
+                int amplifierWidth = font.width(amplifierString.toString());
                 float fontX = x + width - (float) amplifierWidth / 2;
                 float fontY = y - 1;
-                font.drawShadow(matrixStack, amplifierString, fontX, fontY, 0xFFFFFF);
+                font.drawShadow(matrixStack, amplifierString.toTextComponent(), fontX, fontY, 0xFFFFFF);
             }
             // 效果持续时间
             if (effectInstance.getDuration() > 0) {
-                StringTextComponent durationString = new StringTextComponent(DateUtils.toMaxUnitString(effectInstance.getDuration(), DateUtils.DateUnit.SECOND, 0, 1));
-                int durationWidth = font.width(durationString);
+                Component durationString = Component.literal(DateUtils.toMaxUnitString(effectInstance.getDuration(), DateUtils.DateUnit.SECOND, 0, 1));
+                int durationWidth = font.width(durationString.toString());
                 float fontX = x + width - (float) durationWidth / 2 - 2;
                 float fontY = y + (float) height / 2 + 1;
-                font.drawShadow(matrixStack, durationString, fontX, fontY, 0xFFFFFF);
+                font.drawShadow(matrixStack, durationString.toTextComponent(), fontX, fontY, 0xFFFFFF);
             }
         }
     }
@@ -705,11 +672,11 @@ public class AbstractGuiUtils {
         Minecraft.getInstance().getTextureManager().bind(textureLocation);
         AbstractGuiUtils.blit(matrixStack, x, y, ITEM_ICON_SIZE, ITEM_ICON_SIZE, (float) textureUV.getU0(), (float) textureUV.getV0(), (int) textureUV.getUWidth(), (int) textureUV.getVHeight(), totalWidth, totalHeight);
         if (showText) {
-            StringTextComponent num = new StringTextComponent(String.valueOf((Integer) RewardManager.deserializeReward(reward)));
-            int numWidth = font.width(num);
+            Component num = Component.literal(String.valueOf((Integer) RewardManager.deserializeReward(reward)));
+            int numWidth = font.width(num.toString());
             float fontX = x + ITEM_ICON_SIZE - (float) numWidth / 2 - 2;
             float fontY = y + (float) ITEM_ICON_SIZE - font.lineHeight + 2;
-            font.drawShadow(matrixStack, num, fontX, fontY, 0xFFFFFF);
+            font.drawShadow(matrixStack, num.toTextComponent(), fontX, fontY, 0xFFFFFF);
         }
     }
 
@@ -1196,12 +1163,12 @@ public class AbstractGuiUtils {
 
     // region 重写方法签名
 
-    public static TextFieldWidget newTextFieldWidget(FontRenderer font, int x, int y, int width, int height, ITextComponent content) {
-        return new TextFieldWidget(font, x, y, width, height, content);
+    public static TextFieldWidget newTextFieldWidget(FontRenderer font, int x, int y, int width, int height, Component content) {
+        return new TextFieldWidget(font, x, y, width, height, content.toTextComponent());
     }
 
-    public static Button newButton(int x, int y, int width, int height, ITextComponent content, Button.IPressable onPress) {
-        return new Button(x, y, width, height, content, onPress);
+    public static Button newButton(int x, int y, int width, int height, Component content, Button.IPressable onPress) {
+        return new Button(x, y, width, height, content.toTextComponent(), onPress);
     }
 
     // endregion 重写方法签名

@@ -3,7 +3,9 @@ package xin.vanilla.sakura;
 import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -48,6 +50,19 @@ public class SakuraSignIn {
     public static final String PNG_CHUNK_NAME = "vacb";
 
     public static final Logger LOGGER = LogManager.getLogger();
+
+    /**
+     * 服务端实例
+     */
+    @Getter
+    private static MinecraftServer serverInstance;
+
+    /**
+     * 玩家默认语言
+     */
+    @Getter
+    @Setter
+    private static String defaultLanguage = "en_us";
 
     /**
      * 是否有对应的服务端
@@ -143,6 +158,7 @@ public class SakuraSignIn {
 
     // 服务器启动时加载数据
     private void onServerStarting(FMLServerStartingEvent event) {
+        serverInstance = event.getServer();
         RewardOptionDataManager.loadRewardOption();
         LOGGER.debug("SignIn data loaded.");
     }
@@ -193,7 +209,8 @@ public class SakuraSignIn {
         PlayerEntity player = event.getPlayer();
         // 判断是否在客户端并且退出的玩家是客户端的当前玩家
         if (player.getCommandSenderWorld().isClientSide) {
-            if (Minecraft.getInstance().player.getUUID().equals(player.getUUID())) {
+            ClientPlayerEntity clientPlayer = Minecraft.getInstance().player;
+            if (clientPlayer != null && clientPlayer.getUUID().equals(player.getUUID())) {
                 LOGGER.debug("Current player has logged out.");
                 // 当前客户端玩家与退出的玩家相同
                 enabled = false;
