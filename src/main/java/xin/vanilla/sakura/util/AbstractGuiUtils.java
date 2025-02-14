@@ -692,7 +692,7 @@ public class AbstractGuiUtils {
             float fontY = y + (float) ITEM_ICON_SIZE - font.lineHeight + 2;
             // 重置为白色, 避免颜色叠加问题
             GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-            font.drawShadow(num.toString(), fontX, fontY, 0xFFFFFF);
+            font.drawShadow(num.toString(), fontX, fontY, 0xFFFFFFFF);
         }
     }
 
