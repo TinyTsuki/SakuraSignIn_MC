@@ -650,7 +650,7 @@ public class AbstractGuiUtils {
             int numWidth = font.width(num.toString());
             float fontX = x + ITEM_ICON_SIZE - (float) numWidth / 2 - 2;
             float fontY = y + (float) ITEM_ICON_SIZE - font.lineHeight + 2;
-            graphics.drawString(font, num.toTextComponent(), (int) fontX, (int) fontY, 0xFFFFFF);
+            graphics.drawString(font, num.toTextComponent(), (int) fontX, (int) fontY, 0xFFFFFFFF);
         }
     }
 

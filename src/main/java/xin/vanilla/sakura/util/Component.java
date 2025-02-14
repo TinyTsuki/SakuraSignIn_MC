@@ -62,12 +62,10 @@ public class Component implements Cloneable, Serializable {
     /**
      * 文本颜色
      */
-    @Setter
     private Integer color;
     /**
      * 文本背景色
      */
-    @Setter
     private Integer bgColor;
     /**
      * 是否有阴影
@@ -125,6 +123,36 @@ public class Component implements Cloneable, Serializable {
         this.i18nType = i18nType;
     }
 
+    /**
+     * 设置文本颜色，若为RGB，则转换为ARGB
+     * 无法判断全透明的情况
+     *
+     * @param color 颜色
+     */
+    public Component setColor(Integer color) {
+        if (color == null || (color >> 24) != 0) {
+            this.color = color;
+        } else {
+            this.color = color | 0xFF000000;
+        }
+        return this;
+    }
+
+    /**
+     * 设置文本颜色，若为RGB，则转换为ARGB
+     * 无法判断全透明的情况
+     *
+     * @param bgColor 颜色
+     */
+    public Component setBgColor(Integer bgColor) {
+        if (bgColor == null || (bgColor >> 24) != 0) {
+            this.bgColor = bgColor;
+        } else {
+            this.bgColor = bgColor | 0xFF000000;
+        }
+        return this;
+    }
+
     // region NonNull Getter
 
     /**
@@ -136,16 +164,18 @@ public class Component implements Cloneable, Serializable {
 
     /**
      * 获取文本颜色
+     * 无法判断全透明的情况，默认将01的Alpha通道视为00
      */
     public int getColor() {
-        return this.color == null ? 0xFFFFFFFF : this.color;
+        return this.color == null ? 0x01FFFFFF : this.color;
     }
 
     /**
      * 获取文本背景色
+     * 无法判断全透明的情况，默认将01的Alpha通道视为00
      */
     public int getBgColor() {
-        return this.bgColor == null ? 0x00000000 : this.bgColor;
+        return this.bgColor == null ? 0x01FFFFFF : this.bgColor;
     }
 
     /**
@@ -203,16 +233,18 @@ public class Component implements Cloneable, Serializable {
 
     /**
      * 文本颜色是否为空
+     * 无法判断全透明的情况，默认将01的Alpha通道视为00
      */
     public boolean isColorEmpty() {
-        return this.color == null;
+        return this.color == null || (this.color >> 24 == 0x01);
     }
 
     /**
      * 文本背景色是否为空
+     * 无法判断全透明的情况，默认将01的Alpha通道视为00
      */
     public boolean isBgColorEmpty() {
-        return this.bgColor == null;
+        return this.bgColor == null || (this.bgColor >> 24 == 0x01);
     }
 
     /**
@@ -375,7 +407,16 @@ public class Component implements Cloneable, Serializable {
      * 获取文本
      */
     public String toString() {
-        return this.getString(this.getLanguageCode());
+        return this.getString(this.getLanguageCode(), false);
+    }
+
+    /**
+     * 获取文本
+     *
+     * @param ignoreStyle 是否忽略样式
+     */
+    public String toString(boolean ignoreStyle) {
+        return this.getString(this.getLanguageCode(), ignoreStyle);
     }
 
     /**
@@ -384,37 +425,49 @@ public class Component implements Cloneable, Serializable {
      * @param languageCode 语言代码
      */
     public String getString(String languageCode) {
+        return this.getString(languageCode, false);
+    }
+
+    /**
+     * 获取指定语言文本
+     *
+     * @param languageCode 语言代码
+     * @param ignoreStyle  是否忽略样式
+     */
+    public String getString(String languageCode, boolean ignoreStyle) {
         StringBuilder result = new StringBuilder();
-        if (!isColorEmpty()) {
-            result.append(StringUtils.rgbToMinecraftColor(getColor()));
-        }
-        // 添加样式：粗体
-        if (isBold()) {
-            result.append("§l");
-        }
-        // 添加样式：斜体
-        if (isItalic()) {
-            result.append("§o");
-        }
-        // 添加样式：下划线
-        if (isUnderlined()) {
-            result.append("§n");
-        }
-        // 添加样式：中划线
-        if (isStrikethrough()) {
-            result.append("§m");
-        }
-        // 添加样式：混淆
-        if (isObfuscated()) {
-            result.append("§k");
+        if (!ignoreStyle) {
+            if (!isColorEmpty()) {
+                result.append(StringUtils.argbToMinecraftColor(getColor()));
+            }
+            // 添加样式：粗体
+            if (isBold()) {
+                result.append("§l");
+            }
+            // 添加样式：斜体
+            if (isItalic()) {
+                result.append("§o");
+            }
+            // 添加样式：下划线
+            if (isUnderlined()) {
+                result.append("§n");
+            }
+            // 添加样式：中划线
+            if (isStrikethrough()) {
+                result.append("§m");
+            }
+            // 添加样式：混淆
+            if (isObfuscated()) {
+                result.append("§k");
+            }
         }
         if (this.i18nType == EI18nType.PLAIN) {
             result.append(this.text);
         } else {
             result.append(I18nUtils.getTranslation(I18nUtils.getKey(this.i18nType, this.text), languageCode));
         }
-        this.children.forEach(component -> result.append(component.getString(languageCode)));
-        return StringUtils.format(result.toString(), this.args.stream().map(component -> component.getString(languageCode)).toArray());
+        this.children.forEach(component -> result.append(component.getString(languageCode, ignoreStyle)));
+        return StringUtils.format(result.toString(), this.args.stream().map(component -> component.getString(languageCode, ignoreStyle)).toArray());
     }
 
     /**
