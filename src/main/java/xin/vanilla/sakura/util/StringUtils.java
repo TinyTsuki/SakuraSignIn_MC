@@ -600,12 +600,12 @@ public class StringUtils {
      * @param color 颜色值
      * @return 颜色代码
      */
-    public static String rgbToMinecraftColor(int color) {
-        int rgb = color >> 24 != 0 ? color : color & 0xFFFFFF;
-        // 获取RGB各分量
-        int red = (rgb >> 16) & 0xFF;
-        int green = (rgb >> 8) & 0xFF;
-        int blue = rgb & 0xFF;
+    public static String argbToMinecraftColor(int color) {
+        // 获取ARGB各分量
+        // int alpha = color >> 24 & 0xFF;
+        int red = (color >> 16) & 0xFF;
+        int green = (color >> 8) & 0xFF;
+        int blue = color & 0xFF;
         // 计算与每个Minecraft颜色的差异
         int closestDistance = Integer.MAX_VALUE;
         // 默认为白色
