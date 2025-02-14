@@ -19,7 +19,12 @@ public class ItemRewardParser implements RewardParser<ItemStack> {
     public @NonNull ItemStack deserialize(JsonObject json) {
         ItemStack itemStack;
         try {
-            String itemId = json.get("item").getAsString();
+            String itemId;
+            if (json.has("id")) {
+                itemId = json.get("id").getAsString();
+            } else {
+                itemId = json.get("item").getAsString();
+            }
             int count = json.get("count").getAsInt();
             count = Math.max(count, 1);
             Item item = ForgeRegistries.ITEMS.getValue(new ResourceLocation(itemId));
@@ -34,7 +39,7 @@ public class ItemRewardParser implements RewardParser<ItemStack> {
                     CompoundNBT nbt = JsonToNBT.parseTag(json.get("nbt").getAsString());
                     itemStack.setTag(nbt);
                 } catch (CommandSyntaxException e) {
-                    throw new JsonParseException("Failed to parse NBT data", e);
+                    LOGGER.warn("Failed to parse NBT data");
                 }
             }
         } catch (Exception e) {
@@ -87,22 +92,6 @@ public class ItemRewardParser implements RewardParser<ItemStack> {
     }
 
     public static String getNbtString(ItemStack itemStack) {
-        // Map<String, INBT> nbtMap = new HashMap<>();
-        // try {
-        //     if (itemStack.hasTag()) {
-        //         if (itemStack.getTag() != null) {
-        //             for (String key : itemStack.getTag().getAllKeys()) {
-        //                 INBT inbt = itemStack.getTag().get(key);
-        //                 if (inbt != null) {
-        //                     nbtMap.put(key, inbt);
-        //                 }
-        //             }
-        //         }
-        //     }
-        // } catch (Exception e) {
-        //     LOGGER.error("Failed to get nbt string", e);
-        // }
-        // return GSON.toJson(nbtMap);
         String json = "";
         if (itemStack.hasTag() && itemStack.getTag() != null) {
             json = itemStack.getTag().toString();
