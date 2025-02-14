@@ -101,7 +101,16 @@ public class Text {
     }
 
     public String getContent() {
-        return this.hovered ? this.hoverText.getString(SakuraUtils.getClientLanguage()) : this.text.getString(SakuraUtils.getClientLanguage());
+        return getContent(true);
+    }
+
+    /**
+     * 获取文本内容, 忽略样式
+     *
+     * @param ignoreStyle 是否忽略样式
+     */
+    public String getContent(boolean ignoreStyle) {
+        return this.hovered ? this.hoverText.getString(SakuraUtils.getClientLanguage(), ignoreStyle) : this.text.getString(SakuraUtils.getClientLanguage(), ignoreStyle);
     }
 
     public boolean isShadow() {
@@ -205,6 +214,12 @@ public class Text {
     public Text setAlign(Align align) {
         this.align = align;
         this.hoverAlign = align;
+        return this;
+    }
+
+    public Text withStyle(Text text) {
+        this.text.withStyle(text.text);
+        this.hoverText.withStyle(text.hoverText);
         return this;
     }
 
