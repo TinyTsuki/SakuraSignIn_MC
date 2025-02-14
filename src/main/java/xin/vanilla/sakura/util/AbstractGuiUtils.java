@@ -675,7 +675,7 @@ public class AbstractGuiUtils {
             int numWidth = font.width(num.toString());
             float fontX = x + ITEM_ICON_SIZE - (float) numWidth / 2 - 2;
             float fontY = y + (float) ITEM_ICON_SIZE - font.lineHeight + 2;
-            font.drawShadow(poseStack, num.toTextComponent(), fontX, fontY, 0xFFFFFF);
+            font.drawShadow(poseStack, num.toTextComponent(), fontX, fontY, 0xFFFFFFFF);
         }
     }
 

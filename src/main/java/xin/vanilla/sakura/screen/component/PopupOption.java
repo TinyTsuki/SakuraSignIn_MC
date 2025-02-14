@@ -135,7 +135,9 @@ public class PopupOption {
     public PopupOption addOption(@NonNull Text text) {
         if (this.x >= 0 || this.y >= 0)
             throw new RuntimeException("The addOption method must be called after the clear/init method and before the resize method.");
-        List<Text> renderList = Arrays.stream(StringUtils.replaceLine(text.getContent()).split("\n")).map(s -> text.copy().setText(s).setHoverText(s)).collect(Collectors.toList());
+        List<Text> renderList = Arrays.stream(StringUtils.replaceLine(text.getContent()).split("\n"))
+                .map(s -> text.copy().setText(s).setHoverText(s).withStyle(text))
+                .collect(Collectors.toList());
         for (int i = 0; i < renderList.size(); i++) {
             this.relationMap.put(this.renderList.size() + i, optionList.size());
         }
