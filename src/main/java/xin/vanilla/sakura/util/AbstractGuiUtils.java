@@ -589,7 +589,8 @@ public class AbstractGuiUtils {
                 int amplifierWidth = font.width(amplifierString.toString());
                 float fontX = x + width - (float) amplifierWidth / 2;
                 float fontY = y - 1;
-                graphics.drawString(font, amplifierString.toTextComponent(), (int) fontX, (int) fontY, 0xFFFFFF, true);
+                int color = 0xFFFFFFFF;
+                graphics.drawString(font, amplifierString.setColor(color).toTextComponent(), (int) fontX, (int) fontY, color, true);
             }
             // 效果持续时间
             if (mobEffectInstance.getDuration() > 0) {
@@ -597,7 +598,8 @@ public class AbstractGuiUtils {
                 int durationWidth = font.width(durationString.toString());
                 float fontX = x + width - (float) durationWidth / 2 - 2;
                 float fontY = y + (float) height / 2 + 1;
-                graphics.drawString(font, durationString.toTextComponent(), (int) fontX, (int) fontY, 0xFFFFFF, true);
+                int color = 0xFFFFFFFF;
+                graphics.drawString(font, durationString.setColor(color).toTextComponent(), (int) fontX, (int) fontY, color, true);
             }
         }
     }
@@ -650,7 +652,8 @@ public class AbstractGuiUtils {
             int numWidth = font.width(num.toString());
             float fontX = x + ITEM_ICON_SIZE - (float) numWidth / 2 - 2;
             float fontY = y + (float) ITEM_ICON_SIZE - font.lineHeight + 2;
-            graphics.drawString(font, num.toTextComponent(), (int) fontX, (int) fontY, 0xFFFFFFFF);
+            int color = 0xFFFFFFFF;
+            graphics.drawString(font, num.setColor(color).toTextComponent(), (int) fontX, (int) fontY, color);
         }
     }
 
