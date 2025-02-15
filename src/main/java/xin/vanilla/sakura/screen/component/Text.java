@@ -30,7 +30,7 @@ public class Text {
     /**
      * 文本
      */
-    private Component text = Component.empty();
+    private Component text = Component.empty().clone();
     /**
      * 文本对齐方式(仅多行绘制时)
      */
@@ -38,7 +38,7 @@ public class Text {
     /**
      * 鼠标悬浮时文本
      */
-    private Component hoverText = Component.empty();
+    private Component hoverText = Component.empty().clone();
     /**
      * 鼠标悬浮时对齐方式(仅多行绘制时)
      */
@@ -109,7 +109,7 @@ public class Text {
      * @param ignoreStyle 是否忽略样式
      */
     public String getContent(boolean ignoreStyle) {
-        return this.hovered ? this.hoverText.getString(SakuraUtils.getClientLanguage(), ignoreStyle) : this.text.getString(SakuraUtils.getClientLanguage(), ignoreStyle);
+        return this.hovered ? this.hoverText.getString(SakuraUtils.getClientLanguage(), ignoreStyle, true) : this.text.getString(SakuraUtils.getClientLanguage(), ignoreStyle, true);
     }
 
     public boolean isShadow() {
@@ -153,8 +153,8 @@ public class Text {
     }
 
     public Text setText(String text) {
-        this.text = Component.literal(text);
-        this.hoverText = Component.literal(text);
+        this.text.setI18nType(EI18nType.PLAIN).setText(text);
+        this.hoverText.setI18nType(EI18nType.PLAIN).setText(text);
         return this;
     }
 
@@ -165,7 +165,7 @@ public class Text {
     }
 
     public Text setHoverText(String text) {
-        this.hoverText = Component.literal(text);
+        this.hoverText.setI18nType(EI18nType.PLAIN).setText(text);
         return this;
     }
 
