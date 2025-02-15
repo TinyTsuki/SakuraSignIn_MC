@@ -611,7 +611,8 @@ public class AbstractGuiUtils {
                 int amplifierWidth = font.width(amplifierString.toString());
                 float fontX = x + width - (float) amplifierWidth / 2;
                 float fontY = y - 1;
-                font.drawShadow(matrixStack, amplifierString.toTextComponent(), fontX, fontY, 0xFFFFFF);
+                int color = 0xFFFFFFFF;
+                font.drawShadow(matrixStack, amplifierString.setColor(color).toTextComponent(), fontX, fontY, color);
             }
             // 效果持续时间
             if (effectInstance.getDuration() > 0) {
@@ -619,7 +620,8 @@ public class AbstractGuiUtils {
                 int durationWidth = font.width(durationString.toString());
                 float fontX = x + width - (float) durationWidth / 2 - 2;
                 float fontY = y + (float) height / 2 + 1;
-                font.drawShadow(matrixStack, durationString.toTextComponent(), fontX, fontY, 0xFFFFFF);
+                int color = 0xFFFFFFFF;
+                font.drawShadow(matrixStack, durationString.setColor(color).toTextComponent(), fontX, fontY, color);
             }
         }
     }
@@ -676,7 +678,8 @@ public class AbstractGuiUtils {
             int numWidth = font.width(num.toString());
             float fontX = x + ITEM_ICON_SIZE - (float) numWidth / 2 - 2;
             float fontY = y + (float) ITEM_ICON_SIZE - font.lineHeight + 2;
-            font.drawShadow(matrixStack, num.toTextComponent(), fontX, fontY, 0xFFFFFFFF);
+            int color = 0xFFFFFFFF;
+            font.drawShadow(matrixStack, num.setColor(color).toTextComponent(), fontX, fontY, color);
         }
     }
 

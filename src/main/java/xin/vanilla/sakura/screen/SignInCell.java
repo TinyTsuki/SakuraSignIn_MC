@@ -140,12 +140,12 @@ public class SignInCell {
                 color = textureCoordinate.getTextColorCanRepair();
             }
             float dayWidth = font.width(dayComponent.toString());
-            font.draw(matrixStack, dayComponent.toTextComponent(), (float) (x + (width - dayWidth) / 2), (float) (y + textureCoordinate.getDateOffset() * this.scale + 0.1f), color);
+            font.draw(matrixStack, dayComponent.setColor(color).toTextComponent(), (float) (x + (width - dayWidth) / 2), (float) (y + textureCoordinate.getDateOffset() * this.scale + 0.1f), color);
         }
     }
 
     // 绘制奖励详情弹出层
-    public void renderTooltip(MatrixStack matrixStack, FontRenderer fontRenderer, ItemRenderer itemRenderer, int mouseX, int mouseY) {
+    public void renderTooltip(MatrixStack matrixStack, FontRenderer font, ItemRenderer itemRenderer, int mouseX, int mouseY) {
         // 禁用深度测试
         RenderSystem.disableDepthTest();
         matrixStack.pushPose();
@@ -206,18 +206,19 @@ public class SignInCell {
                 // 物品图标在弹出层中的 y 位置
                 double itemY = tooltipY0 + cellCoordinate.getY() * tooltipScale;
                 // 渲染物品图标
-                AbstractGuiUtils.renderCustomReward(matrixStack, itemRenderer, fontRenderer, BACKGROUND_TEXTURE, textureCoordinate, reward, (int) itemX, (int) itemY, true);
+                AbstractGuiUtils.renderCustomReward(matrixStack, itemRenderer, font, BACKGROUND_TEXTURE, textureCoordinate, reward, (int) itemX, (int) itemY, true);
             }
         }
         // 绘制文字
         String monthTitle = DateUtils.toLocalStringMonth(DateUtils.getDate(year, month, day), Minecraft.getInstance().options.languageCode);
         String dayTitle = DateUtils.toLocalStringDay(DateUtils.getDate(year, month, day), Minecraft.getInstance().options.languageCode);
         Component title = Component.literal(String.format("%s %s", monthTitle, dayTitle));
-        double fontWidth = fontRenderer.width(title.toString());
+        double fontWidth = font.width(title.toString());
         Coordinate dateCoordinate = textureCoordinate.getTooltipDateCoordinate();
         double tooltipDateX = tooltipX0 + (tooltipWidth - fontWidth) / 2;
         double tooltipDateY = tooltipY0 + (dateCoordinate.getY() * tooltipScale);
-        fontRenderer.draw(matrixStack, title.toTextComponent(), (int) tooltipDateX, (int) tooltipDateY, 0xFFFFFF);
+        int color = 0xFFFFFFFF;
+        font.draw(matrixStack, title.setColor(color).toTextComponent(), (int) tooltipDateX, (int) tooltipDateY, color);
 
         // 恢复原来的矩阵状态
         matrixStack.popPose();
