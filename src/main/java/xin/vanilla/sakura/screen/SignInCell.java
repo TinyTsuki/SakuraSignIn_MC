@@ -140,7 +140,7 @@ public class SignInCell {
                 color = textureCoordinate.getTextColorCanRepair();
             }
             float dayWidth = font.width(dayComponent.toString());
-            font.draw(poseStack, dayComponent.toTextComponent(), (float) (x + (width - dayWidth) / 2), (float) (y + textureCoordinate.getDateOffset() * this.scale + 0.1f), color);
+            font.draw(poseStack, dayComponent.setColor(color).toTextComponent(), (float) (x + (width - dayWidth) / 2), (float) (y + textureCoordinate.getDateOffset() * this.scale + 0.1f), color);
         }
     }
 
@@ -217,7 +217,8 @@ public class SignInCell {
         Coordinate dateCoordinate = textureCoordinate.getTooltipDateCoordinate();
         double tooltipDateX = tooltipX0 + (tooltipWidth - fontWidth) / 2;
         double tooltipDateY = tooltipY0 + (dateCoordinate.getY() * tooltipScale);
-        font.draw(poseStack, title.toTextComponent(), (int) tooltipDateX, (int) tooltipDateY, 0xFFFFFF);
+        int color = 0xFFFFFFFF;
+        font.draw(poseStack, title.setColor(color).toTextComponent(), (int) tooltipDateX, (int) tooltipDateY, color);
 
         // 恢复原来的矩阵状态
         poseStack.popPose();
