@@ -142,7 +142,7 @@ public class SignInCell {
             float dayWidth = font.width(dayComponent.toString());
             float fontX = (float) (x + (width - dayWidth) / 2);
             float fontY = (float) (y + height + 0.1f);
-            font.draw(dayComponent.toString(), fontX, fontY, color);
+            font.draw(dayComponent.setColor(color).toString(), fontX, fontY, color);
             // 绘制下划线
             if (dayComponent.isUnderlined()) {
                 // 重置为白色, 避免颜色叠加问题
@@ -236,7 +236,8 @@ public class SignInCell {
         // 重置为白色, 避免颜色叠加问题
         GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
         GlStateManager.disableLighting();
-        font.draw(title.toString(), (int) tooltipDateX, (int) tooltipDateY, 0xFFFFFF);
+        int color = 0xFFFFFFFF;
+        font.draw(title.setColor(color).toString(), (int) tooltipDateX, (int) tooltipDateY, color);
 
         // 恢复原来的矩阵状态
         GL11.glPopMatrix();

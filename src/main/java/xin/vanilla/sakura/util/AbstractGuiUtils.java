@@ -573,9 +573,9 @@ public class AbstractGuiUtils {
                 // 重置为白色, 避免颜色叠加问题
                 GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
                 if (text.isShadow()) {
-                    font.drawShadow(text.copy().setText(line).toComponent().getString(SakuraUtils.getClientLanguage()), (float) x + xOffset, (float) y + index * font.lineHeight, text.getColor());
+                    font.drawShadow(text.copy().setText(line).getContent(), (float) x + xOffset, (float) y + index * font.lineHeight, text.getColor());
                 } else {
-                    font.draw(text.copy().setText(line).toComponent().getString(SakuraUtils.getClientLanguage()), (float) x + xOffset, (float) y + index * font.lineHeight, text.getColor());
+                    font.draw(text.copy().setText(line).getContent(), (float) x + xOffset, (float) y + index * font.lineHeight, text.getColor());
                 }
                 // 绘制下划线
                 if (text.isUnderlined()) {
@@ -626,7 +626,8 @@ public class AbstractGuiUtils {
                 float fontY = y - 1;
                 // 重置为白色, 避免颜色叠加问题
                 GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-                font.drawShadow(amplifierString.toString(), fontX, fontY, 0xFFFFFF);
+                int color = 0xFFFFFFFF;
+                font.drawShadow(amplifierString.setColor(color).toString(), fontX, fontY, color);
             }
             // 效果持续时间
             if (effectInstance.getDuration() > 0) {
@@ -636,7 +637,8 @@ public class AbstractGuiUtils {
                 float fontY = y + (float) height / 2 + 1;
                 // 重置为白色, 避免颜色叠加问题
                 GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-                font.drawShadow(durationString.toString(), fontX, fontY, 0xFFFFFF);
+                int color = 0xFFFFFFFF;
+                font.drawShadow(durationString.setColor(color).toString(), fontX, fontY, color);
             }
         }
     }
@@ -692,7 +694,8 @@ public class AbstractGuiUtils {
             float fontY = y + (float) ITEM_ICON_SIZE - font.lineHeight + 2;
             // 重置为白色, 避免颜色叠加问题
             GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-            font.drawShadow(num.toString(), fontX, fontY, 0xFFFFFFFF);
+            int color = 0xFFFFFFFF;
+            font.drawShadow(num.setColor(color).toString(), fontX, fontY, color);
         }
     }
 
