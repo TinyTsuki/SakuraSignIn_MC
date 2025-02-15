@@ -142,7 +142,7 @@ public class SignInCell {
             float dayWidth = font.width(dayComponent.toString());
             float fontX = (float) (x + (width - dayWidth) / 2);
             float fontY = (float) (y + height + 0.1f);
-            font.draw(dayComponent.toString(), fontX, fontY, color);
+            font.draw(dayComponent.setColor(color).toString(), fontX, fontY, color);
             // 绘制下划线
             if (dayComponent.isUnderlined()) {
                 AbstractGui.fill((int) fontX, (int) (fontY + font.lineHeight), (int) (fontX + dayWidth), (int) (fontY + font.lineHeight + 1), color);
@@ -151,7 +151,7 @@ public class SignInCell {
     }
 
     // 绘制奖励详情弹出层
-    public void renderTooltip(FontRenderer fontRenderer, ItemRenderer itemRenderer, int mouseX, int mouseY) {
+    public void renderTooltip(FontRenderer font, ItemRenderer itemRenderer, int mouseX, int mouseY) {
         // 禁用深度测试
         RenderSystem.disableDepthTest();
         GL11.glPushMatrix();
@@ -212,18 +212,19 @@ public class SignInCell {
                 // 物品图标在弹出层中的 y 位置
                 double itemY = tooltipY0 + cellCoordinate.getY() * tooltipScale;
                 // 渲染物品图标
-                AbstractGuiUtils.renderCustomReward(itemRenderer, fontRenderer, BACKGROUND_TEXTURE, textureCoordinate, reward, (int) itemX, (int) itemY, true);
+                AbstractGuiUtils.renderCustomReward(itemRenderer, font, BACKGROUND_TEXTURE, textureCoordinate, reward, (int) itemX, (int) itemY, true);
             }
         }
         // 绘制文字
         String monthTitle = DateUtils.toLocalStringMonth(DateUtils.getDate(year, month, day), Minecraft.getInstance().options.languageCode);
         String dayTitle = DateUtils.toLocalStringDay(DateUtils.getDate(year, month, day), Minecraft.getInstance().options.languageCode);
         Component title = Component.literal(String.format("%s %s", monthTitle, dayTitle));
-        double fontWidth = fontRenderer.width(title.toString());
+        double fontWidth = font.width(title.toString());
         Coordinate dateCoordinate = textureCoordinate.getTooltipDateCoordinate();
         double tooltipDateX = tooltipX0 + (tooltipWidth - fontWidth) / 2;
         double tooltipDateY = tooltipY0 + (dateCoordinate.getY() * tooltipScale);
-        fontRenderer.draw(title.toString(), (int) tooltipDateX, (int) tooltipDateY, 0xFFFFFF);
+        int color = 0xFFFFFFFF;
+        font.draw(title.setColor(color).toString(), (int) tooltipDateX, (int) tooltipDateY, color);
 
         // 恢复原来的矩阵状态
         GL11.glPopMatrix();
