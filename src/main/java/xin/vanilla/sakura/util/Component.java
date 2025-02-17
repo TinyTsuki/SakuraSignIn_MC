@@ -160,7 +160,7 @@ public class Component implements Cloneable, Serializable {
      * 获取语言代码
      */
     public @NonNull String getLanguageCode() {
-        return this.languageCode == null ? SakuraSignIn.getDefaultLanguage() : this.languageCode;
+        return this.languageCode == null ? SakuraSignIn.DEFAULT_LANGUAGE : this.languageCode;
     }
 
     /**
