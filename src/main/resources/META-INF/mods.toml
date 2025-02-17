@@ -23,9 +23,9 @@ version = "${mod_version}" #mandatory
 # A display name for the mod
 displayName = "${mod_name}" #mandatory
 # A URL to query for updates for this mod. See the JSON update specification https://docs.minecraftforge.net/en/latest/misc/updatechecker/
-#updateJSONURL="https://change.me.example.invalid/updates.json" #optional
+updateJSONURL = "https://update.mc.vanilla.xin/${mod_id}/forge/${minecraft_version}" #optional
 # A URL for the "homepage" for this mod, displayed in the mod UI
-displayURL = "https://mc.vanilla.xin/sakura_sign_in" #optional
+displayURL = "https://mc.vanilla.xin/${mod_id}" #optional
 # A file name (in the root of the mod JAR) containing a logo for display
 #logoFile="sakura_sign_in.png" #optional
 # A text field displayed in the mod UI
