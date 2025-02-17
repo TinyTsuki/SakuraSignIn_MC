@@ -26,6 +26,10 @@ import xin.vanilla.sakura.enums.ESignInType;
 import xin.vanilla.sakura.network.*;
 import xin.vanilla.sakura.rewards.RewardManager;
 import xin.vanilla.sakura.util.DateUtils;
+import xin.vanilla.sakura.util.SakuraUtils;
+
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Forge 事件处理
@@ -110,12 +114,41 @@ public class ClientForgeEventHandler {
             if (SakuraSignIn.getPlayerCapabilityStatus().containsKey(player.getUUID().toString())) {
                 SakuraSignIn.getPlayerCapabilityStatus().put(player.getUUID().toString(), false);
             }
-            // 获取玩家的自定义数据
-            IPlayerSignInData data = PlayerSignInDataCapability.getData(player);
-            // 服务器是否启用自动签到, 且玩家未签到
-            if (ServerConfig.AUTO_SIGN_IN.get() && !RewardManager.isSignedIn(data, DateUtils.getServerDate(), true)) {
-                RewardManager.signIn(player, new SignInPacket(DateUtils.toDateTimeString(DateUtils.getServerDate()), data.isAutoRewarded(), ESignInType.SIGN_IN));
-            }
+            SakuraSignIn.EXECUTOR_SERVICE.submit(() -> {
+                // IDEA 又开始了
+                for (int i = 0; i < 120 && player.getChatVisibility() == null; i++) {
+                    try {
+                        TimeUnit.MILLISECONDS.sleep(500);
+                    } catch (InterruptedException e) {
+                        // 恢复中断状态
+                        Thread.currentThread().interrupt();
+                        LOGGER.warn("Thread interrupted while waiting for player client settings.", e);
+                        return;
+                    }
+                    LOGGER.debug("Waiting for player client setting: {}, {}.", SakuraUtils.getPlayerLanguage(player), i);
+                }
+
+                try {
+                    TimeUnit.MILLISECONDS.sleep(500);
+                } catch (InterruptedException e) {
+                    // 恢复中断状态
+                    Thread.currentThread().interrupt();
+                    LOGGER.warn("Thread interrupted before processing sign in.", e);
+                    return;
+                }
+
+                Objects.requireNonNull(player.getServer()).execute(() -> {
+                    LOGGER.debug("Player language: {}.", SakuraUtils.getPlayerLanguage(player));
+                    IPlayerSignInData data = PlayerSignInDataCapability.getData(player);
+                    if (ServerConfig.AUTO_SIGN_IN.get() && !RewardManager.isSignedIn(data, DateUtils.getServerDate(), true)) {
+                        RewardManager.signIn(player, new SignInPacket(
+                                DateUtils.toDateTimeString(DateUtils.getServerDate()),
+                                data.isAutoRewarded(),
+                                ESignInType.SIGN_IN
+                        ));
+                    }
+                });
+            });
         }
     }
 

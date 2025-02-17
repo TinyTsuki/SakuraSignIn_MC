@@ -25,7 +25,23 @@ public class ItemRewardParser implements RewardParser<ItemStack> {
         if (jsonObject.has("nbt")) {
             jsonObject.add("components", jsonObject.remove("nbt"));
         }
-        return ItemStack.CODEC.decode(JsonOps.INSTANCE, jsonObject).result().orElse(new Pair<>(new ItemStack(Items.AIR), null)).getFirst();
+        ItemStack first = ItemStack.CODEC.decode(JsonOps.INSTANCE, jsonObject).result().orElse(new Pair<>(null, null)).getFirst();
+        if (first == null) {
+            try {
+                String itemId = jsonObject.get("id").getAsString();
+                int count = jsonObject.get("count").getAsInt();
+                count = Math.max(count, 1);
+                Item item = ForgeRegistries.ITEMS.getValue(new ResourceLocation(itemId));
+                if (item == null) {
+                    item = Items.AIR;
+                }
+                first = new ItemStack(item, count);
+            } catch (Exception e) {
+                LOGGER.warn("Failed to parse item reward");
+                first = new ItemStack(Items.AIR);
+            }
+        }
+        return first;
     }
 
     private static JsonObject getJsonObject(ItemStack reward) {
