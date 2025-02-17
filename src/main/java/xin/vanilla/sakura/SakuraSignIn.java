@@ -44,12 +44,16 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Mod(SakuraSignIn.MODID)
 public class SakuraSignIn {
 
     public static final String MODID = "sakura_sign_in";
     public static final String PNG_CHUNK_NAME = "vacb";
+
+    public static final ExecutorService EXECUTOR_SERVICE = Executors.newCachedThreadPool();
 
     public static final Logger LOGGER = LogManager.getLogger();
 
@@ -60,11 +64,9 @@ public class SakuraSignIn {
     private static MinecraftServer serverInstance;
 
     /**
-     * 玩家默认语言
+     * 默认语言
      */
-    @Getter
-    @Setter
-    private static String defaultLanguage = "en_us";
+    public static final String DEFAULT_LANGUAGE = "en_us";
 
     /**
      * 是否有对应的服务端
