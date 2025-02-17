@@ -15,7 +15,7 @@ import java.util.*;
 
 public class I18nUtils {
     private static final Map<String, JsonObject> LANGUAGES = new HashMap<>();
-    private static final String DEFAULT_LANGUAGE = "en_us";
+    private static final String DEFAULT_LANGUAGE = SakuraSignIn.DEFAULT_LANGUAGE;
     private static final Gson GSON = new Gson();
     private static final Logger LOGGER = LogManager.getLogger();
     private static final String LANG_PATH = String.format("/assets/%s/lang/", SakuraSignIn.MODID);
