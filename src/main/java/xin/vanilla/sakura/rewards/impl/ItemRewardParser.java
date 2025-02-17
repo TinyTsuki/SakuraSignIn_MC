@@ -38,7 +38,7 @@ public class ItemRewardParser implements RewardParser<ItemStack> {
                 try {
                     CompoundTag nbt = TagParser.parseTag(json.get("nbt").getAsString());
                     itemStack.setTag(nbt);
-                } catch (CommandSyntaxException e) {
+                } catch (Exception e) {
                     LOGGER.warn("Failed to parse NBT data");
                 }
             }
