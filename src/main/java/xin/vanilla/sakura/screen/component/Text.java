@@ -59,7 +59,7 @@ public class Text {
         this.hoverText = Component.literal(text);
     }
 
-    private Text(Component text) {
+    public Text(Component text) {
         this.text = text;
         this.hoverText = text;
     }
