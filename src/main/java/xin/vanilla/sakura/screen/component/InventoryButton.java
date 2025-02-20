@@ -8,6 +8,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
@@ -23,6 +25,7 @@ import java.util.function.Consumer;
 
 @Getter
 @Setter
+@OnlyIn(Dist.CLIENT)
 @Accessors(chain = true)
 public class InventoryButton extends AbstractWidget {
     private static final Logger LOGGER = LogManager.getLogger();

@@ -7,6 +7,7 @@ import net.minecraft.client.gui.screens.inventory.EffectRenderingInventoryScreen
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
+import net.minecraftforge.client.event.RenderGuiEvent;
 import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -22,6 +23,7 @@ import xin.vanilla.sakura.rewards.RewardManager;
 import xin.vanilla.sakura.screen.RewardOptionScreen;
 import xin.vanilla.sakura.screen.SignInScreen;
 import xin.vanilla.sakura.screen.component.InventoryButton;
+import xin.vanilla.sakura.screen.component.NotificationManager;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
 import xin.vanilla.sakura.util.*;
 
@@ -225,6 +227,15 @@ public class ClientEventHandler {
                         ));
             }
         }
+        if (event instanceof ScreenEvent.Render.Post) {
+            NotificationManager.getInstance().render(((ScreenEvent.Render.Post) event).getGuiGraphics());
+        }
+    }
+
+    @SubscribeEvent()
+    public static void onRenderOverlay(RenderGuiEvent.Post event) {
+        if (Minecraft.getInstance().screen != null) return;
+        NotificationManager.getInstance().render(event.getGuiGraphics());
     }
 
     public static void openSignInScreen(Screen previousScreen) {
@@ -234,7 +245,8 @@ public class ClientEventHandler {
         } else {
             LocalPlayer player = Minecraft.getInstance().player;
             if (player != null) {
-                SakuraUtils.sendMessage(player, Component.translatableClient(EI18nType.MESSAGE, "sakura_is_offline"));
+                Component component = Component.translatableClient(EI18nType.MESSAGE, "sakura_is_offline");
+                NotificationManager.getInstance().addNotification(new NotificationManager.Notification(component).setBgColor(0x88FF5555));
             }
         }
     }

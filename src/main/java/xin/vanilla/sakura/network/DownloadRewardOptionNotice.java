@@ -29,7 +29,7 @@ public class DownloadRewardOptionNotice {
             ServerPlayer player = ctx.getSender();
             if (player != null) {
                 // 同步签到奖励配置到客户端
-                for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardOptionDataManager.toSyncPacket(player.hasPermissions(3)).split()) {
+                for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardOptionDataManager.toSyncPacket(player).split()) {
                     ModNetworkHandler.INSTANCE.send(rewardOptionSyncPacket, PacketDistributor.PLAYER.with(player));
                 }
             }
