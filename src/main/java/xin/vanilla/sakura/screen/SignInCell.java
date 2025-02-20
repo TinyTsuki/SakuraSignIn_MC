@@ -11,6 +11,7 @@ import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.ItemRenderer;
 import net.minecraft.util.ResourceLocation;
 import xin.vanilla.sakura.config.ClientConfig;
+import xin.vanilla.sakura.config.ServerConfig;
 import xin.vanilla.sakura.enums.ESignInStatus;
 import xin.vanilla.sakura.rewards.Reward;
 import xin.vanilla.sakura.rewards.RewardList;
@@ -197,6 +198,10 @@ public class SignInCell {
         double inScrollY1 = outScrollY1;
         AbstractGui.fill(matrixStack, (int) inScrollX0 + 1, (int) inScrollY0, (int) inScrollX1 - 1, (int) inScrollY1, 0xCCCCCCCC);
 
+        boolean showQuality = true;
+        if (Minecraft.getInstance().player != null) {
+            showQuality = Minecraft.getInstance().player.hasPermissions(ServerConfig.PERMISSION_REWARD_PROBABILITY.get());
+        }
         for (int i = 0; i < TOOLTIP_MAX_VISIBLE_ITEMS; i++) {
             int index = i + (rewardList.size() > TOOLTIP_MAX_VISIBLE_ITEMS ? tooltipScrollOffset : 0);
             if (index >= 0 && index < rewardList.size()) {
@@ -206,7 +211,7 @@ public class SignInCell {
                 // 物品图标在弹出层中的 y 位置
                 double itemY = tooltipY0 + cellCoordinate.getY() * tooltipScale;
                 // 渲染物品图标
-                AbstractGuiUtils.renderCustomReward(matrixStack, itemRenderer, font, BACKGROUND_TEXTURE, textureCoordinate, reward, (int) itemX, (int) itemY, true);
+                AbstractGuiUtils.renderCustomReward(matrixStack, itemRenderer, font, BACKGROUND_TEXTURE, textureCoordinate, reward, (int) itemX, (int) itemY, true, showQuality);
             }
         }
         // 绘制文字

@@ -174,5 +174,10 @@
   "message.sakura_sign_in.cdk_error_too_many_times": "今日CDK输入错误次数过多，请明日再试。",
   "message.sakura_sign_in.cdk_already_received": "该CDK奖励已领取，请勿重复领取。",
   "message.sakura_sign_in.cdk_not_exist_or_already_received": "输入的CDK无效，可能已被领取或已过期。",
-  "message.sakura_sign_in.cdk_expired": "输入的CDK已过期或无效。"
+  "message.sakura_sign_in.cdk_expired": "输入的CDK已过期或无效。",
+  "message.sakura_sign_in.reward_option_download_failed": "奖励配置下载失败。",
+  "message.sakura_sign_in.reward_option_download_success": "奖励配置下载成功。",
+  "message.sakura_sign_in.reward_option_upload_failed": "奖励配置上传失败。",
+  "message.sakura_sign_in.reward_option_upload_success": "奖励配置上传成功。",
+  "message.sakura_sign_in.local_server_not_support_this_operation": "本地集成服务器无需进行此操作。"
 }

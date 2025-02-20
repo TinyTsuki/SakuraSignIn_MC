@@ -528,6 +528,7 @@ public class RewardManager {
                 PlayerSignInDataCapability.syncPlayerData(player);
                 return;
             } else {
+                boolean showFailed = player.hasPermissions(ServerConfig.PERMISSION_REWARD_FAILED_TIPS.get());
                 Component msg = Component.translatable(player, EI18nType.MESSAGE, "receive_reward_success");
                 signInData.getSignInRecords().stream()
                         // 若签到日期等于当前日期
@@ -546,10 +547,11 @@ public class RewardManager {
                                         Component detail = Component.literal(reward.getName(SakuraUtils.getPlayerLanguage(player), true));
                                         if (giveRewardToPlayer(player, signInData, reward)) {
                                             detail.setColor(Color.GREEN.getRGB());
-                                        } else {
+                                            msg.append(", ").append(detail);
+                                        } else if (showFailed) {
                                             detail.setColor(Color.RED.getRGB());
+                                            msg.append(", ").append(detail);
                                         }
-                                        msg.append(", ").append(detail);
                                     });
                         });
                 SakuraUtils.sendMessage(player, msg);
@@ -567,16 +569,18 @@ public class RewardManager {
             signInRecord.setSignInUUID(player.getUUID().toString());
             // 是否自动领取
             if (packet.isAutoRewarded()) {
+                boolean showFailed = player.hasPermissions(ServerConfig.PERMISSION_REWARD_FAILED_TIPS.get());
                 Component msg = Component.translatable(player, EI18nType.MESSAGE, "receive_reward_success");
                 rewardList.forEach(reward -> {
                     Component detail = Component.literal(reward.getName(SakuraUtils.getPlayerLanguage(player), true));
                     if (giveRewardToPlayer(player, signInData, reward)) {
                         detail.setColor(Color.GREEN.getRGB());
-                    } else {
+                        signInRecord.getRewardList().add(reward);
+                        msg.append(", ").append(detail);
+                    } else if (showFailed) {
                         detail.setColor(Color.RED.getRGB());
+                        msg.append(", ").append(detail);
                     }
-                    signInRecord.getRewardList().add(reward);
-                    msg.append(", ").append(detail);
                 });
                 SakuraUtils.sendMessage(player, msg);
             } else {
