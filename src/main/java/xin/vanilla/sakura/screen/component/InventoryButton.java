@@ -6,6 +6,8 @@ import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.Widget;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
@@ -21,6 +23,7 @@ import java.util.function.Consumer;
 
 @Getter
 @Setter
+@OnlyIn(Dist.CLIENT)
 @Accessors(chain = true)
 public class InventoryButton extends Widget {
     private static final Logger LOGGER = LogManager.getLogger();

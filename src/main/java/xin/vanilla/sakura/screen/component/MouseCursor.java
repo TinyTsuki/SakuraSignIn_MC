@@ -3,12 +3,15 @@ package xin.vanilla.sakura.screen.component;
 import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.AbstractGui;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import org.lwjgl.glfw.GLFW;
 import xin.vanilla.sakura.util.AbstractGuiUtils;
 
 /**
  * 自定义的鼠标光标
  */
+@OnlyIn(Dist.CLIENT)
 public class MouseCursor {
 
     /**

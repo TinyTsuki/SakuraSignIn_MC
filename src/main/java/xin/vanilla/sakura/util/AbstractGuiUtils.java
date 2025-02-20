@@ -721,6 +721,21 @@ public class AbstractGuiUtils {
      * @param showText     是否显示物品数量等信息
      */
     public static void renderCustomReward(ItemRenderer itemRenderer, FontRenderer fontRenderer, ResourceLocation textureLocation, TextureCoordinate textureUV, Reward reward, int x, int y, boolean showText) {
+        AbstractGuiUtils.renderCustomReward(itemRenderer, fontRenderer, textureLocation, textureUV, reward, x, y, showText, true);
+    }
+
+    /**
+     * 渲染奖励图标
+     *
+     * @param itemRenderer 物品渲染器
+     * @param fontRenderer 字体渲染器
+     * @param reward       待绘制的奖励
+     * @param x            图标的x坐标
+     * @param y            图标的y坐标
+     * @param showText     是否显示物品数量等信息
+     * @param showQuality  是否显示奖励概率品质颜色
+     */
+    public static void renderCustomReward(ItemRenderer itemRenderer, FontRenderer fontRenderer, ResourceLocation textureLocation, TextureCoordinate textureUV, Reward reward, int x, int y, boolean showText, boolean showQuality) {
         // 重置为白色, 避免颜色叠加问题
         GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
         GlStateManager.disableLighting();
@@ -763,7 +778,7 @@ public class AbstractGuiUtils {
         else if (reward.getType().equals(ERewardType.COMMAND)) {
             renderItem(itemRenderer, fontRenderer, new ItemStack(Items.REPEATING_COMMAND_BLOCK), x, y, false);
         }
-        if (showText && reward.getProbability().compareTo(BigDecimal.ONE) != 0) {
+        if (showText && showQuality && reward.getProbability().compareTo(BigDecimal.ONE) != 0) {
             AbstractGuiUtils.setDepth(EDepth.FOREGROUND);
             AbstractGuiUtils.drawString(fontRenderer, "?", x - 1, y - 1, AbstractGuiUtils.getProbabilityColor(reward.getProbability().doubleValue()));
             AbstractGuiUtils.resetDepth();
@@ -1140,40 +1155,50 @@ public class AbstractGuiUtils {
     }
 
     public static void drawPopupMessage(Text text, int x, int y, int screenWidth, int screenHeight, int margin, int padding, int bgColor) {
+        AbstractGuiUtils.drawPopupMessage(text, x, y, screenWidth, screenHeight, margin, padding, bgColor, true);
+    }
+
+    public static void drawPopupMessage(Text text, int x, int y, int screenWidth, int screenHeight, int margin, int padding, int bgColor, boolean inScreen) {
         // 计算消息宽度和高度, 并添加一些边距
         int msgWidth = AbstractGuiUtils.multilineTextWidth(text) + padding;
         int msgHeight = AbstractGuiUtils.multilineTextHeight(text) + padding;
 
-        if (msgWidth >= screenWidth) msgWidth = screenWidth - padding * 2;
-        if (msgHeight >= screenHeight) msgHeight = screenHeight - padding * 2;
+        // 计算调整后的坐标
+        int adjustedX = x;
+        int adjustedY = y;
+        if (inScreen) {
+            if (msgWidth >= screenWidth) msgWidth = screenWidth - padding * 2;
+            if (msgHeight >= screenHeight) msgHeight = screenHeight - padding * 2;
 
-        // 初始化调整后的坐标
-        int adjustedX = x - msgWidth / 2; // 横向居中
-        int adjustedY = y - msgHeight - 5; // 放置在鼠标上方（默认偏移 5 像素）
+            // 初始化调整后的坐标
+            adjustedX -= msgWidth / 2; // 横向居中
+            adjustedY -= msgHeight - 5; // 放置在鼠标上方（默认偏移 5 像素）
 
-        // 检查顶部空间是否充足
-        boolean hasTopSpace = adjustedY >= margin;
-        // 检查左右空间是否充足
-        boolean hasLeftSpace = adjustedX >= margin;
-        boolean hasRightSpace = adjustedX + msgWidth <= screenWidth - margin;
+            // 检查顶部空间是否充足
+            boolean hasTopSpace = adjustedY >= margin;
+            // 检查左右空间是否充足
+            boolean hasLeftSpace = adjustedX >= margin;
+            boolean hasRightSpace = adjustedX + msgWidth <= screenWidth - margin;
 
-        if (!hasTopSpace) {
-            // 如果顶部空间不足，调整到鼠标下方
-            adjustedY = y + 1 + 5;
-        } else {
-            // 如果顶部空间充足
-            if (!hasLeftSpace) {
-                // 如果左侧空间不足，靠右
-                adjustedX = margin;
-            } else if (!hasRightSpace) {
-                // 如果右侧空间不足，靠左
-                adjustedX = screenWidth - msgWidth - margin;
+            if (!hasTopSpace) {
+                // 如果顶部空间不足，调整到鼠标下方
+                adjustedY = y + 1 + 5;
+            } else {
+                // 如果顶部空间充足
+                if (!hasLeftSpace) {
+                    // 如果左侧空间不足，靠右
+                    adjustedX = margin;
+                } else if (!hasRightSpace) {
+                    // 如果右侧空间不足，靠左
+                    adjustedX = screenWidth - msgWidth - margin;
+                }
             }
+
+            // 如果调整后仍然超出屏幕范围，强制限制在屏幕内
+            adjustedX = Math.max(margin, Math.min(adjustedX, screenWidth - msgWidth - margin));
+            adjustedY = Math.max(margin, Math.min(adjustedY, screenHeight - msgHeight - margin));
         }
 
-        // 如果调整后仍然超出屏幕范围，强制限制在屏幕内
-        adjustedX = Math.max(margin, Math.min(adjustedX, screenWidth - msgWidth - margin));
-        adjustedY = Math.max(margin, Math.min(adjustedY, screenHeight - msgHeight - margin));
         AbstractGuiUtils.setDepth(EDepth.POPUP_TIPS);
         // 重置为白色, 避免颜色叠加问题
         GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);

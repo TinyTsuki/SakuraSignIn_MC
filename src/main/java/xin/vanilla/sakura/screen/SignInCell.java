@@ -11,6 +11,7 @@ import net.minecraft.client.renderer.ItemRenderer;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 import xin.vanilla.sakura.config.ClientConfig;
+import xin.vanilla.sakura.config.ServerConfig;
 import xin.vanilla.sakura.enums.ESignInStatus;
 import xin.vanilla.sakura.rewards.Reward;
 import xin.vanilla.sakura.rewards.RewardList;
@@ -211,6 +212,10 @@ public class SignInCell {
         GlStateManager.disableLighting();
         AbstractGui.fill((int) inScrollX0 + 1, (int) inScrollY0, (int) inScrollX1 - 1, (int) inScrollY1, 0xCCCCCCCC);
 
+        boolean showQuality = true;
+        if (Minecraft.getInstance().player != null) {
+            showQuality = Minecraft.getInstance().player.hasPermissions(ServerConfig.PERMISSION_REWARD_PROBABILITY.get());
+        }
         for (int i = 0; i < TOOLTIP_MAX_VISIBLE_ITEMS; i++) {
             int index = i + (rewardList.size() > TOOLTIP_MAX_VISIBLE_ITEMS ? tooltipScrollOffset : 0);
             if (index >= 0 && index < rewardList.size()) {
@@ -222,7 +227,7 @@ public class SignInCell {
                 // 绘制原版物品会导致深度测试被启用, 所以需要再次禁用深度测试
                 GlStateManager.disableDepthTest();
                 // 渲染物品图标
-                AbstractGuiUtils.renderCustomReward(itemRenderer, font, BACKGROUND_TEXTURE, textureCoordinate, reward, (int) itemX, (int) itemY, true);
+                AbstractGuiUtils.renderCustomReward(itemRenderer, font, BACKGROUND_TEXTURE, textureCoordinate, reward, (int) itemX, (int) itemY, true, showQuality);
             }
         }
         // 绘制文字

@@ -29,6 +29,7 @@ import xin.vanilla.sakura.network.ModNetworkHandler;
 import xin.vanilla.sakura.network.SignInPacket;
 import xin.vanilla.sakura.rewards.RewardList;
 import xin.vanilla.sakura.rewards.RewardManager;
+import xin.vanilla.sakura.screen.component.NotificationManager;
 import xin.vanilla.sakura.screen.component.OperationButton;
 import xin.vanilla.sakura.screen.component.PopupOption;
 import xin.vanilla.sakura.screen.component.Text;
@@ -312,10 +313,15 @@ public class SignInScreen extends Screen {
         int daysOfCurrentMonth = DateUtils.getDaysOfMonth(current);
 
         // 获取奖励列表
-        if (Minecraft.getInstance().player != null) {
-            IPlayerSignInData signInData = PlayerSignInDataCapability.getData(Minecraft.getInstance().player);
-            Map<Integer, RewardList> monthRewardList = RewardManager.getMonthRewardList(current, signInData, lastOffset, nextOffset);
-
+        ClientPlayerEntity player = Minecraft.getInstance().player;
+        if (player != null) {
+            IPlayerSignInData signInData = PlayerSignInDataCapability.getData(player);
+            Map<Integer, RewardList> monthRewardList;
+            if ((player.hasPermissions(ServerConfig.PERMISSION_REWARD_DETAIL.get()))) {
+                monthRewardList = RewardManager.getMonthRewardList(current, signInData, lastOffset, nextOffset);
+            } else {
+                monthRewardList = new HashMap<>();
+            }
             boolean allCurrentDaysDisplayed = false;
             boolean showLastReward = ClientConfig.SHOW_LAST_REWARD.get();
             boolean showNextReward = ClientConfig.SHOW_NEXT_REWARD.get();
@@ -514,13 +520,19 @@ public class SignInScreen extends Screen {
         }
 
         if (!this.SIGN_IN_SCREEN_TIPS) {
-            // 渲染格子弹出层
-            for (SignInCell cell : signInCells) {
-                if (cell.isShowHover() && cell.isMouseOver(mouseX, mouseY)) {
-                    if ((this.keyCode == GLFW.GLFW_KEY_LEFT_SHIFT || this.keyCode == GLFW.GLFW_KEY_RIGHT_SHIFT) && this.modifiers == GLFW.GLFW_MOD_SHIFT) {
-                        AbstractGuiUtils.drawPopupMessage(Text.translatable(EI18nType.TIPS, "how_to_sign_in").setFont(this.font).setAlign(Text.Align.CENTER), mouseX, mouseY, super.width, super.height);
-                    } else {
-                        cell.renderTooltip(super.font, this.itemRenderer, mouseX, mouseY);
+            boolean showRewardDetail = true;
+            if (Minecraft.getInstance().player != null) {
+                showRewardDetail = Minecraft.getInstance().player.hasPermissions(ServerConfig.PERMISSION_REWARD_DETAIL.get());
+            }
+            if (showRewardDetail) {
+                // 渲染格子弹出层
+                for (SignInCell cell : signInCells) {
+                    if (cell.isShowHover() && cell.isMouseOver(mouseX, mouseY)) {
+                        if ((this.keyCode == GLFW.GLFW_KEY_LEFT_SHIFT || this.keyCode == GLFW.GLFW_KEY_RIGHT_SHIFT) && this.modifiers == GLFW.GLFW_MOD_SHIFT) {
+                            AbstractGuiUtils.drawPopupMessage(Text.translatable(EI18nType.TIPS, "how_to_sign_in").setFont(this.font).setAlign(Text.Align.CENTER), mouseX, mouseY, super.width, super.height);
+                        } else {
+                            cell.renderTooltip(super.font, this.itemRenderer, mouseX, mouseY);
+                        }
                     }
                 }
             }
@@ -606,7 +618,8 @@ public class SignInScreen extends Screen {
                 ClientPlayerEntity player = Minecraft.getInstance().player;
                 String selectedFile = themeFileList.get(popupOption.getSelectedIndex()).getPath();
                 if (player != null) {
-                    SakuraUtils.sendMessage(player, Component.translatableClient(EI18nType.MESSAGE, "selected_theme_file_s", selectedFile));
+                    Component component = Component.translatableClient(EI18nType.MESSAGE, "selected_theme_file_s", selectedFile);
+                    NotificationManager.getInstance().addNotification(new NotificationManager.Notification(component));
                     ResourceLocation resourceLocation = TextureUtils.loadCustomTexture(selectedFile);
                     if (TextureUtils.isTextureAvailable(resourceLocation)) {
                         ClientConfig.THEME.set(selectedFile);
@@ -762,7 +775,8 @@ public class SignInScreen extends Screen {
         if (cell.status == ESignInStatus.NOT_SIGNED_IN.getCode()) {
             if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
                 if (RewardManager.getCompensateDateInt() < DateUtils.toDateInt(RewardManager.getCompensateDate(DateUtils.getClientDate()))) {
-                    SakuraUtils.sendMessage(player, Component.translatableClient(EI18nType.MESSAGE, "next_day_cannot_operate"));
+                    Component component = Component.translatableClient(EI18nType.MESSAGE, "next_day_cannot_operate");
+                    NotificationManager.getInstance().addNotification(new NotificationManager.Notification(component).setBgColor(0xAAFCFCB9));
                 } else {
                     cell.status = ClientConfig.AUTO_REWARDED.get() ? ESignInStatus.REWARDED.getCode() : ESignInStatus.SIGNED_IN.getCode();
                     ModNetworkHandler.INSTANCE.sendToServer(new SignInPacket(DateUtils.toDateTimeString(DateUtils.getClientDate()), ClientConfig.AUTO_REWARDED.get(), ESignInType.SIGN_IN));
@@ -770,10 +784,12 @@ public class SignInScreen extends Screen {
             }
         } else if (cell.status == ESignInStatus.SIGNED_IN.getCode()) {
             if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-                SakuraUtils.sendMessage(player, Component.translatableClient(EI18nType.MESSAGE, "already_signed"));
+                Component component = Component.translatableClient(EI18nType.MESSAGE, "already_signed");
+                NotificationManager.getInstance().addNotification(new NotificationManager.Notification(component).setBgColor(0xAAFCFCB9));
             } else {
                 if (RewardManager.isRewarded(PlayerSignInDataCapability.getData(player), cellDate, false)) {
-                    SakuraUtils.sendMessage(player, Component.translatableClient(EI18nType.MESSAGE, "already_get_reward"));
+                    Component component = Component.translatableClient(EI18nType.MESSAGE, "already_get_reward");
+                    NotificationManager.getInstance().addNotification(new NotificationManager.Notification(component).setBgColor(0xAAFCFCB9));
                 } else {
                     cell.status = ESignInStatus.REWARDED.getCode();
                     ModNetworkHandler.INSTANCE.sendToServer(new SignInPacket(DateUtils.toDateTimeString(cellDate), ClientConfig.AUTO_REWARDED.get(), ESignInType.REWARD));
@@ -782,10 +798,12 @@ public class SignInScreen extends Screen {
         } else if (cell.status == ESignInStatus.CAN_REPAIR.getCode()) {
             if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
                 if (!ServerConfig.SIGN_IN_CARD.get()) {
-                    SakuraUtils.sendMessage(player, Component.translatableClient(EI18nType.MESSAGE, "server_not_enable_sign_in_card"));
+                    Component component = Component.translatableClient(EI18nType.MESSAGE, "server_not_enable_sign_in_card");
+                    NotificationManager.getInstance().addNotification(new NotificationManager.Notification(component).setBgColor(0xAAFCFCB9));
                 } else {
                     if (PlayerSignInDataCapability.getData(player).getSignInCard() <= 0) {
-                        SakuraUtils.sendMessage(player, Component.translatableClient(EI18nType.MESSAGE, "not_enough_sign_in_card"));
+                        Component component = Component.translatableClient(EI18nType.MESSAGE, "not_enough_sign_in_card");
+                        NotificationManager.getInstance().addNotification(new NotificationManager.Notification(component).setBgColor(0xAAFCFCB9));
                     } else {
                         cell.status = ClientConfig.AUTO_REWARDED.get() ? ESignInStatus.REWARDED.getCode() : ESignInStatus.SIGNED_IN.getCode();
                         ModNetworkHandler.INSTANCE.sendToServer(new SignInPacket(DateUtils.toDateTimeString(cellDate), ClientConfig.AUTO_REWARDED.get(), ESignInType.RE_SIGN_IN));
@@ -794,15 +812,19 @@ public class SignInScreen extends Screen {
             }
         } else if (cell.status == ESignInStatus.NO_ACTION.getCode()) {
             if (cellDate.after(RewardManager.getCompensateDate(DateUtils.getClientDate()))) {
-                SakuraUtils.sendMessage(player, Component.translatableClient(EI18nType.MESSAGE, "next_day_cannot_operate"));
+                Component component = Component.translatableClient(EI18nType.MESSAGE, "next_day_cannot_operate");
+                NotificationManager.getInstance().addNotification(new NotificationManager.Notification(component).setBgColor(0xAAFCFCB9));
             } else {
-                SakuraUtils.sendMessage(player, Component.translatableClient(EI18nType.MESSAGE, "past_day_cannot_operate"));
+                Component component = Component.translatableClient(EI18nType.MESSAGE, "past_day_cannot_operate");
+                NotificationManager.getInstance().addNotification(new NotificationManager.Notification(component).setBgColor(0xAAFCFCB9));
             }
         } else if (cell.status == ESignInStatus.REWARDED.getCode()) {
-            SakuraUtils.sendMessage(player, Component.translatableClient(EI18nType.MESSAGE, "already_get_reward"));
+            Component component = Component.translatableClient(EI18nType.MESSAGE, "already_get_reward");
+            NotificationManager.getInstance().addNotification(new NotificationManager.Notification(component).setBgColor(0xAAFCFCB9));
         } else {
             if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-                SakuraUtils.sendMessage(player, Component.literal(ESignInStatus.valueOf(cell.status).getDescription() + ": " + DateUtils.toString(cellDate)));
+                Component component = Component.literal(ESignInStatus.valueOf(cell.status).getDescription() + ": " + DateUtils.toString(cellDate));
+                NotificationManager.getInstance().addNotification(new NotificationManager.Notification(component).setBgColor(0x88FF5555));
             }
         }
     }
