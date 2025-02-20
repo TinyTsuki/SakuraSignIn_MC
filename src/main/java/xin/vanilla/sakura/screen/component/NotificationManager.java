@@ -126,6 +126,10 @@ public class NotificationManager {
          * 上次y坐标
          */
         private double lastY = 0;
+        /**
+         * 上次渲染时间
+         */
+        private long lastRenderTime = 0;
 
         public Notification(Component component) {
             if (component.getColor() == 0xFFFFFFFF) {
@@ -225,18 +229,25 @@ public class NotificationManager {
 
             // 若前N位执行完毕，则进行移动至第一位的动画
             if (this.getLastIndex() > 0 && this.getIndex() == 0 && this.getLastY() != y) {
+                // 剩余高度
+                double h = Math.abs(y - this.lastY);
+                // 每tick耗时
+                double timePerTick = currentTime - this.getLastRenderTime();
+                // 剩余tick
+                double tick = (this.getStartTime() + this.getDurationTime() + this.getAnimationTime() * 1.75 - currentTime) / timePerTick;
+                double v = Math.min(h / 5, this.getLastRenderTime() == 0 ? 0 : Math.max(1, h / tick));
                 switch (this.getPosition()) {
                     case TOP_LEFT:
                     case TOP_CENTER:
                     case TOP_RIGHT:
                         this.setIndex(1);
-                        y = Math.max(y, this.lastY - 1);
+                        y = Math.max(y, this.lastY - v);
                         break;
                     case BOTTOM_LEFT:
                     case BOTTOM_CENTER:
                     case BOTTOM_RIGHT:
                         this.setIndex(1);
-                        y = Math.min(y, this.lastY + 1);
+                        y = Math.min(y, this.lastY + v);
                         break;
                 }
             }
@@ -252,6 +263,7 @@ public class NotificationManager {
 
             this.setLastY(y);
             this.setLastIndex(this.getIndex());
+            this.setLastRenderTime(currentTime);
             preY[0] = y;
             preHeight[0] = height;
             // LOGGER.debug("Render notification: {}, x:{}, y:{}, i:{}, at:{}, dt:{}", this.getComponent().toString(), x, y, this.getIndex(), this.getCurrentAnimationTick(), this.getCurrentDurationTick());
