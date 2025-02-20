@@ -6,10 +6,15 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.fmllegacy.network.NetworkEvent;
 import net.minecraftforge.fmllegacy.network.PacketDistributor;
+import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.RewardOptionDataManager;
+import xin.vanilla.sakura.config.ServerConfig;
+import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ERewardRule;
 import xin.vanilla.sakura.rewards.Reward;
+import xin.vanilla.sakura.screen.component.NotificationManager;
 import xin.vanilla.sakura.util.CollectionUtils;
+import xin.vanilla.sakura.util.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -46,41 +51,51 @@ public class RewardOptionSyncPacket extends SplitPacket {
             List<RewardOptionSyncPacket> packets = SplitPacket.handle(packet);
             if (CollectionUtils.isNotNullOrEmpty(packets)) {
                 if (ctx.get().getDirection().getReceptionSide().isClient()) {
-                    // 备份 RewardOption
-                    RewardOptionDataManager.backupRewardOption();
-                    // 更新 RewardOption
-                    RewardOptionDataManager.setRewardOptionData(RewardOptionDataManager.fromSyncPacketList(packets));
-                    RewardOptionDataManager.setRewardOptionDataChanged(true);
-                    RewardOptionDataManager.saveRewardOption();
+                    try {
+                        // 备份 RewardOption
+                        RewardOptionDataManager.backupRewardOption();
+                        // 更新 RewardOption
+                        RewardOptionDataManager.setRewardOptionData(RewardOptionDataManager.fromSyncPacketList(packets));
+                        RewardOptionDataManager.setRewardOptionDataChanged(true);
+                        RewardOptionDataManager.saveRewardOption();
+                    } catch (Exception e) {
+                        Component component = Component.translatable(EI18nType.MESSAGE, "reward_option_download_failed");
+                        NotificationManager.getInstance().addNotification(new NotificationManager.Notification(component).setBgColor(0x88FF5555));
+                        throw e;
+                    }
+                    Component component = Component.translatable(EI18nType.MESSAGE, "reward_option_download_success");
+                    NotificationManager.getInstance().addNotification(new NotificationManager.Notification(component));
                 } else if (ctx.get().getDirection().getReceptionSide().isServer()) {
                     ServerPlayer sender = ctx.get().getSender();
                     if (sender != null) {
-                        // 判断是否为管理员
-                        if (sender.hasPermissions(3)) {
-                            // 备份 RewardOption
-                            RewardOptionDataManager.backupRewardOption(false);
-                            // 更新 RewardOption
-                            RewardOptionDataManager.setRewardOptionData(RewardOptionDataManager.fromSyncPacketList(packets));
-                            RewardOptionDataManager.saveRewardOption();
+                        try {
+                            // 判断是否拥有修改权限
+                            if (sender.hasPermissions(ServerConfig.PERMISSION_EDIT_REWARD.get())) {
+                                // 备份 RewardOption
+                                RewardOptionDataManager.backupRewardOption(false);
+                                // 更新 RewardOption
+                                RewardOptionDataManager.setRewardOptionData(RewardOptionDataManager.fromSyncPacketList(packets));
+                                RewardOptionDataManager.saveRewardOption();
 
-                            // TODO 返回同步成功与否回馈包
-                            // 同步 RewardOption 至所有在线玩家
-                            for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardOptionDataManager.toSyncPacket(true).split()) {
-                                sender.server.getPlayerList().getPlayers().stream()
-                                        // 排除发送者
-                                        .filter(player -> !player.getStringUUID().equalsIgnoreCase(sender.getStringUUID()))
-                                        .filter(player -> player.hasPermissions(3))
-                                        .forEach(player -> ModNetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), rewardOptionSyncPacket));
+                                // 同步 RewardOption 至所有在线玩家
+                                for (ServerPlayer player : sender.server.getPlayerList().getPlayers()) {
+                                    if (player.getStringUUID().equals(sender.getStringUUID()))
+                                        continue;
+                                    // 仅给客户端已安装mod的玩家同步数据
+                                    if (!SakuraSignIn.getPlayerCapabilityStatus().containsKey(player.getUUID().toString()))
+                                        continue;
+                                    for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardOptionDataManager.toSyncPacket(player).split()) {
+                                        ModNetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), rewardOptionSyncPacket);
+                                    }
+                                }
                             }
-                            for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardOptionDataManager.toSyncPacket(false).split()) {
-                                sender.server.getPlayerList().getPlayers().stream()
-                                        // 排除发送者
-                                        .filter(player -> !player.getStringUUID().equalsIgnoreCase(sender.getStringUUID()))
-                                        .filter(player -> !player.hasPermissions(3))
-                                        .forEach(player -> ModNetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), rewardOptionSyncPacket));
-                            }
+                        } catch (Exception e) {
+                            ModNetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> sender), new RewardOptionDataReceivedNotice(false));
+                            throw e;
                         }
+                        ModNetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> sender), new RewardOptionDataReceivedNotice(true));
                     }
+
                 }
             }
         });
@@ -107,18 +122,20 @@ public class RewardOptionSyncPacket extends SplitPacket {
      */
     public List<RewardOptionSyncPacket> split() {
         List<RewardOptionSyncPacket> result = new ArrayList<>();
-        for (int i = 0, index = 0; i < rewardOptionData.size() / getChunkSize() + 1; i++) {
-            RewardOptionSyncPacket packet = new RewardOptionSyncPacket(new ArrayList<>());
-            for (int j = 0; j < getChunkSize(); j++) {
-                if (index >= rewardOptionData.size()) break;
-                packet.rewardOptionData.add(this.rewardOptionData.get(index));
-                index++;
+        if (CollectionUtils.isNotNullOrEmpty(this.rewardOptionData)) {
+            for (int i = 0, index = 0; i < this.rewardOptionData.size() / getChunkSize() + 1; i++) {
+                RewardOptionSyncPacket packet = new RewardOptionSyncPacket(new ArrayList<>());
+                for (int j = 0; j < getChunkSize(); j++) {
+                    if (index >= this.rewardOptionData.size()) break;
+                    packet.rewardOptionData.add(this.rewardOptionData.get(index));
+                    index++;
+                }
+                packet.setId(this.getId());
+                packet.setSort(i);
+                result.add(packet);
             }
-            packet.setId(this.getId());
-            packet.setSort(i);
-            result.add(packet);
+            result.forEach(packet -> packet.setTotal(result.size()));
         }
-        result.forEach(packet -> packet.setTotal(result.size()));
         return result;
     }
 }
