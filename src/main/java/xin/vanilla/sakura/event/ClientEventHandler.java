@@ -7,6 +7,7 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.GuiScreenEvent;
+import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
@@ -22,6 +23,7 @@ import xin.vanilla.sakura.rewards.RewardManager;
 import xin.vanilla.sakura.screen.RewardOptionScreen;
 import xin.vanilla.sakura.screen.SignInScreen;
 import xin.vanilla.sakura.screen.component.InventoryButton;
+import xin.vanilla.sakura.screen.component.NotificationManager;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
 import xin.vanilla.sakura.util.*;
 
@@ -224,6 +226,16 @@ public class ClientEventHandler {
                         ));
             }
         }
+        if (event instanceof GuiScreenEvent.DrawScreenEvent.Post) {
+            NotificationManager.getInstance().render(((GuiScreenEvent.DrawScreenEvent.Post) event).getMatrixStack());
+        }
+    }
+
+    @SubscribeEvent()
+    public static void onRenderOverlay(RenderGameOverlayEvent.Post event) {
+        if (event.getType() != RenderGameOverlayEvent.ElementType.TEXT) return;
+        if (Minecraft.getInstance().screen != null) return;
+        NotificationManager.getInstance().render(event.getMatrixStack());
     }
 
     public static void openSignInScreen(Screen previousScreen) {
@@ -233,7 +245,8 @@ public class ClientEventHandler {
         } else {
             ClientPlayerEntity player = Minecraft.getInstance().player;
             if (player != null) {
-                SakuraUtils.sendMessage(player, Component.translatableClient(EI18nType.MESSAGE, "sakura_is_offline"));
+                Component component = Component.translatableClient(EI18nType.MESSAGE, "sakura_is_offline");
+                NotificationManager.getInstance().addNotification(new NotificationManager.Notification(component).setBgColor(0x88FF5555));
             }
         }
     }
