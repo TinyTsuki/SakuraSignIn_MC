@@ -5,6 +5,7 @@ import com.google.gson.reflect.TypeToken;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.fml.loading.FMLPaths;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -15,6 +16,7 @@ import xin.vanilla.sakura.network.RewardOptionSyncPacket;
 import xin.vanilla.sakura.rewards.Reward;
 import xin.vanilla.sakura.rewards.RewardList;
 import xin.vanilla.sakura.util.DateUtils;
+import xin.vanilla.sakura.util.SakuraUtils;
 import xin.vanilla.sakura.util.StringUtils;
 
 import java.io.File;
@@ -82,6 +84,13 @@ public class RewardOptionDataManager {
      */
     public static Path getConfigDirectory() {
         return FMLPaths.CONFIGDIR.get().resolve(SakuraSignIn.MODID);
+    }
+
+    /**
+     * 获取服务端配置文件路径
+     */
+    public static Path getServerConfigDirectory() {
+        return new File(SakuraSignIn.getServerInstance().getServerDirectory(), "serverconfig" + File.separator + SakuraSignIn.MODID).toPath();
     }
 
     /**
@@ -1034,13 +1043,13 @@ public class RewardOptionDataManager {
     /**
      * 获取奖励配置数据包
      *
-     * @param op 是否管理员
+     * @param player 玩家，用于判断是否有权限
      */
-    public static RewardOptionSyncPacket toSyncPacket(boolean op) {
+    public static RewardOptionSyncPacket toSyncPacket(Player player) {
         List<RewardOptionSyncData> dataList = new ArrayList<>();
         for (ERewardRule rule : ERewardRule.values()) {
-            // 如果不是管理员，则过滤掉兑换码奖励
-            if (!op && rule == ERewardRule.CDK_REWARD) continue;
+            // 如果对应查看权限不足则跳过
+            if (!player.hasPermissions(SakuraUtils.getRewardPermissionLevel(rule))) continue;
             RewardOptionDataManager.getRewardMap(rule).forEach((key, value) -> {
                 List<RewardOptionSyncData> list = value.stream()
                         .map(reward -> new RewardOptionSyncData(rule, key, reward))
