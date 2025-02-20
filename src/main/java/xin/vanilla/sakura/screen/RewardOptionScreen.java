@@ -24,10 +24,7 @@ import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL11;
 import xin.vanilla.sakura.SakuraSignIn;
-import xin.vanilla.sakura.config.KeyValue;
-import xin.vanilla.sakura.config.RewardOptionData;
-import xin.vanilla.sakura.config.RewardOptionDataManager;
-import xin.vanilla.sakura.config.StringList;
+import xin.vanilla.sakura.config.*;
 import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ERewardRule;
 import xin.vanilla.sakura.enums.ERewardType;
@@ -598,13 +595,16 @@ public class RewardOptionScreen extends Screen {
             if (!Minecraft.getInstance().isLocalServer()) {
                 ClientPlayerEntity player = Minecraft.getInstance().player;
                 if (player != null) {
-                    if (player.hasPermissions(3)) {
-                        for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardOptionDataManager.toSyncPacket(player.hasPermissions(3)).split()) {
+                    if (player.hasPermissions(ServerConfig.PERMISSION_EDIT_REWARD.get())) {
+                        for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardOptionDataManager.toSyncPacket(player).split()) {
                             ModNetworkHandler.INSTANCE.sendToServer(rewardOptionSyncPacket);
                         }
                         flag.set(true);
                     }
                 }
+            } else {
+                Component component = Component.translatable(EI18nType.MESSAGE, "local_server_not_support_this_operation");
+                NotificationManager.getInstance().addNotification(new NotificationManager.Notification(component).setBgColor(0xAAFCFCB9));
             }
         }
         // 下载奖励配置
@@ -616,6 +616,9 @@ public class RewardOptionScreen extends Screen {
                     // 同步签到奖励配置到客户端
                     ModNetworkHandler.INSTANCE.sendToServer(new DownloadRewardOptionNotice());
                     flag.set(true);
+                } else {
+                    Component component = Component.translatable(EI18nType.MESSAGE, "local_server_not_support_this_operation");
+                    NotificationManager.getInstance().addNotification(new NotificationManager.Notification(component).setBgColor(0xAAFCFCB9));
                 }
             }
         }
