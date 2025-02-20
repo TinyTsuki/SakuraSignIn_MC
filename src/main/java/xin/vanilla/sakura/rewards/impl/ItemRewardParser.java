@@ -37,7 +37,7 @@ public class ItemRewardParser implements RewardParser<ItemStack> {
                 }
                 first = new ItemStack(item, count);
             } catch (Exception e) {
-                LOGGER.warn("Failed to parse item reward");
+                LOGGER.debug("Failed to parse item reward");
                 first = new ItemStack(Items.AIR);
             }
         }

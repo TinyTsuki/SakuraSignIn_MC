@@ -16,6 +16,8 @@ import net.minecraftforge.fml.ModList;
 import net.minecraftforge.forgespi.language.IModInfo;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import xin.vanilla.sakura.SakuraSignIn;
+import xin.vanilla.sakura.config.ServerConfig;
+import xin.vanilla.sakura.enums.ERewardRule;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -197,6 +199,47 @@ public class SakuraUtils {
     }
 
     // endregion 消息相关
+
+    // region 权限相关
+
+    public static int getRewardPermissionLevel(ERewardRule rule) {
+        int result = 0;
+        switch (rule) {
+            case BASE_REWARD:
+                result = ServerConfig.PERMISSION_BASE_REWARD.get();
+                break;
+            case CONTINUOUS_REWARD:
+                result = ServerConfig.PERMISSION_CONTINUOUS_REWARD.get();
+                break;
+            case CYCLE_REWARD:
+                result = ServerConfig.PERMISSION_CYCLE_REWARD.get();
+                break;
+            case YEAR_REWARD:
+                result = ServerConfig.PERMISSION_YEAR_REWARD.get();
+                break;
+            case MONTH_REWARD:
+                result = ServerConfig.PERMISSION_MONTH_REWARD.get();
+                break;
+            case WEEK_REWARD:
+                result = ServerConfig.PERMISSION_WEEK_REWARD.get();
+                break;
+            case DATE_TIME_REWARD:
+                result = ServerConfig.PERMISSION_DATE_TIME_REWARD.get();
+                break;
+            case CUMULATIVE_REWARD:
+                result = ServerConfig.PERMISSION_CUMULATIVE_REWARD.get();
+                break;
+            case RANDOM_REWARD:
+                result = ServerConfig.PERMISSION_RANDOM_REWARD.get();
+                break;
+            case CDK_REWARD:
+                result = ServerConfig.PERMISSION_CDK_REWARD.get();
+                break;
+        }
+        return result;
+    }
+
+    // endregion 权限相关
 
     // region 杂项
 
