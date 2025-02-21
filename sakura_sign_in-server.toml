@@ -1,0 +1,147 @@
+#Server Settings
+#服务器设置
+[server]
+
+#Make-up Sign-In
+#补签
+[server.makeUp]
+#How many days can the Sign-in Card be renewed for.
+#补签卡最远可补签多少天以前的漏签。
+#Range: 1 ~ 365
+reSignInDays = 30
+#Whether the player only gets the base rewards when using the Sign-in Card.
+#使用补签卡进行补签时是否仅获得基础奖励。
+signInCardOnlyBaseReward = true
+#Allow players to use a Sign-in Card for missed sign-ins? (SIGN_IN_CARD not a sign in card, it's a Make-up Sign-in Card.)
+#To obtain a Sign-in Card, you can add a reward of type SIGN_IN_CARD to the sign-in rewards.
+#是否允许玩家使用补签卡进行补签。(不是签到卡哦)
+#可以在签到奖励里面添加类型为SIGN_IN_CARD的奖励来获得补签卡。
+signInCard = true
+
+#Server time
+#服务器时间
+[server.dateTime]
+#Calculate the server time offset by matching the original time with the actual time to calibrate the server time.
+#实际时间，与 服务器原时间 配合计算服务器时间偏移以校准服务器时间。
+serverCalibrationTime = "2025-02-19 20:37:05"
+#Calculate the server time offset by matching the original time with the actual time to calibrate the server time.
+#服务器原时间，与 实际时间 配合计算服务器时间偏移以校准服务器时间。
+serverTime = "2025-02-19 20:37:05"
+
+#Reward-related
+#奖励相关
+[server.reward]
+#Whether the Cycle-Rewards can be repeatedly obtained after reaching the standard.
+#签到周期奖励 天数达标后是否允许一直领取该标准奖励。
+cycleRewardsRepeatable = false
+#Whether the Continuous-Rewards can be repeatedly obtained after reaching the standard.
+#连续签到奖励 天数达标后是否允许一直领取该标准奖励。
+continuousRewardsRepeatable = false
+#Whether the rewards will be affected by the player's luck/unluck.
+#奖励领取是否受玩家幸运/霉运影响。
+rewardAffectedByLuck = true
+
+#etc
+#杂项
+[server.etc]
+#Players automatically sign in when they enter the server.
+#是否允许玩家在进入服务器时自动签到。
+autoSignIn = true
+#The maximum size of the player data synchronization network packet.
+#When the amount of player sign-in data is too large,
+#causing the player to enter the server with an error message 'Invalid Player Data',
+#please reduce this value.
+#玩家数据同步网络包的大小。当玩家签到数据量过大，导致玩家进入服务器报错『无效的玩家数据』时请将此值改小。
+#Range: 1 ~ 1024
+playerDataSyncPacketSize = 100
+
+#Sign-In cooling
+#签到冷却
+[server.cooling]
+#Sign in time cooldown time, expressed as a decimal, with the integer part in hours and the decimal part in minutes.
+#If timeCoolingMethod=FIXED_INTERVAL, it means that the player refreshed the sign-in cooldown 12 hours and 34 minutes(default) after the last sign-in;
+#If timeCoolingMethod=MIXED, it means that the sign-in cooldown is refreshed at 4.00 (default) every day, and it will take 12 hours and 34 minutes (default) since the last sign-in before it can be signed in again.
+#签到时间冷却时间，以小数表示时间，整数部分为小时，小数部分为分钟。
+#若timeCoolingMethod=FIXED_INTERVAL，则表示玩家在上次签到12小时34分钟(默认)后刷新签到冷却；
+#若timeCoolingMethod=MIXED，则表示每天4.00(默认)刷新签到冷却，并且需要距离上次签到12小时34分钟(默认)后才能再次签到。
+#Range: 0.0 ~ 23.59
+timeCoolingInterval = 12.34
+#Sign in time cooldown time, expressed as a decimal, with the integer part in hours and the decimal part in minutes.
+#If timeCoolingMethod=FIXED_TIME(default), it means that the sign-in cooldown is refreshed at 4.00(default) every day.
+#If timeCoolingMethod=MIXED, it means that the sign-in cooldown is refreshed at 4.00 (default) every day, and it will take 12 hours and 34 minutes (default) since the last sign-in before it can be signed in again.
+#签到时间冷却时间，以小数表示时间，整数部分为小时，小数部分为分钟。
+#若timeCoolingMethod=FIXED_TIME(默认)，则表示每天4.00(默认)刷新签到冷却；
+#若timeCoolingMethod=MIXED，则表示每天4.00(默认)刷新签到冷却，并且需要距离上次签到12小时34分钟(默认)后才能再次签到。
+#Range: -23.59 ~ 23.59
+timeCoolingTime = 0.0
+#Sign in time cooling method. FIXED_TIME: Fixed time point, FIXED_INTERVAL: Fixed time interval.
+#签到时间冷却方式。 FIXED_TIME: 固定时间， FIXED_INTERVAL: 固定时间间隔， MIXED: 混合模式。
+#Allowed Values: FIXED_TIME, FIXED_INTERVAL, MIXED
+timeCoolingMethod = "FIXED_TIME"
+
+#Permission
+#If a player does not have permission to view the configuration of a specific reward rule (such as the basic reward)
+#but has permission to edit the reward configuration, then when the player uploads the reward configuration,
+#the server will ignore the configuration of that reward rule and retain the original server-side configuration without overwriting it.
+#权限相关
+#如果玩家没有某个奖励规则（例如基础奖励）的配置查看权限，但拥有编辑奖励配置的权限，
+#则当该玩家上传奖励配置时，服务器将忽略该奖励规则的配置，并保留服务器原有的配置，不会被覆盖。
+[server.permission]
+#The permission level required to view the reward detail on the client, even if the player has the permission to view the reward,
+#but does not have the permission to view the corresponding reward configuration, he will not be able to see the reward.
+#客户端显示奖励详情所需的权限，即使玩家拥有显示奖励的权限，但若没有查看对应奖励配置的权限也是看不到奖励的。
+#Range: 0 ~ 4
+permissionRewardDetail = 0
+#The permission level required to edit the reward configuration.
+#编辑奖励配置所需的权限。
+#Range: 0 ~ 4
+permissionEditReward = 3
+#The permission level required to view the base reward configuration.
+#查看基础奖励配置所需的权限。
+#Range: 0 ~ 4
+permissionBaseReward = 0
+#The permission level required to view the reward failed tips on the client.
+#显示领取失败的奖励提示所需的权限。
+#Range: 0 ~ 4
+permissionRewardFailedTips = 0
+#The permission level required to view the week reward configuration.
+#查看周度奖励配置所需的权限。
+#Range: 0 ~ 4
+permissionWeekReward = 0
+#The permission level required to view the date-time reward configuration.
+#查看具体时间奖励配置所需的权限。
+#Range: 0 ~ 4
+permissionDateTimeReward = 0
+#The permission level required to view the random reward configuration.
+#查看随机奖励池配置所需的权限。
+#Range: 0 ~ 4
+permissionRandomReward = 0
+#The permission level required to view the year reward configuration.
+#查看年度奖励配置所需的权限。
+#Range: 0 ~ 4
+permissionYearReward = 0
+#The permission level required to view the month reward configuration.
+#查看阅读奖励配置所需的权限。
+#Range: 0 ~ 4
+permissionMonthReward = 0
+#The permission level required to view the cumulative reward configuration.
+#查看累计奖励配置所需的权限。
+#Range: 0 ~ 4
+permissionCumulativeReward = 0
+#The permission level required to view the cycle reward configuration.
+#查看循环奖励配置所需的权限。
+#Range: 0 ~ 4
+permissionCycleReward = 0
+#The permission level required to view the continuous reward configuration.
+#查看连续奖励配置所需的权限。
+#Range: 0 ~ 4
+permissionContinuousReward = 0
+#The permission level required to view the cdk reward configuration.
+#查看兑换码奖励池配置所需的权限。
+#Range: 0 ~ 4
+permissionCdkReward = 3
+#The permission level required to view the reward probability on the client.
+#客户端显示奖励概率所需的权限。
+#Range: 0 ~ 4
+permissionRewardProbability = 0
+
