@@ -7,11 +7,11 @@
 - [Sakura Sign-In](#sakura_sign_in)
     - [目录](#目录)
   - [释义](#释义)
-    - [介绍](#介绍)
-    - [特性](#特性)
-    - [配置说明](#配置说明)
-    - [注意事项](#注意事项)
-    - [许可证](#许可证)
+      - [介绍](#介绍)
+      - [特性](#特性)
+      - [配置说明](#配置说明)
+      - [注意事项](#注意事项)
+      - [许可证](#许可证)
 
 ## 释义
 
@@ -51,181 +51,21 @@
 
 1. **Mod基本设置**：
 
-    - 客户端配置文件 `config/sakura_sign_in-client.toml`。
-      ```toml
-      [client]
-      	#签到或补签时是否自动领取奖励。
-      	autoRewarded = false
-      	#签到页面是否显示上个月的奖励。
-      	showLastReward = false
-      	#签到页面是否显示下个月的奖励。
-      	showNextReward = false
-      	#主题材质路径，可为外部路径： config/sakura_sign_in/themes/your_theme.png
-      	theme = "textures/gui/sign_in_calendar_original.png"
-      	#是否使用内置主题特殊图标。
-      	specialTheme = true
-      ```
-
-    - 服务端配置文件 `world/serverconfig/sakura_sign_in-server.toml`。
-      ```toml
-      [server]
-      	#签到时间冷却时间，以小数表示时间，整数部分为小时，小数部分为分钟。
-      	#若timeCoolingMethod=FIXED_INTERVAL，则表示玩家在上次签到12小时34分钟(默认)后刷新签到冷却；
-      	#若timeCoolingMethod=MIXED，则表示每天4.00(默认)刷新签到冷却，并且需要距离上次签到12小时34分钟(默认)后才能再次签到。
-      	#Range: 0.0 ~ 23.59
-      	timeCoolingInterval = 12.34
-      	#是否允许玩家在进入服务器时自动签到。
-      	autoSignIn = false
-      	#签到时间冷却时间，以小数表示时间，整数部分为小时，小数部分为分钟。
-      	#若timeCoolingMethod=FIXED_TIME(默认)，则表示每天4.00(默认)刷新签到冷却；
-      	#若timeCoolingMethod=MIXED，则表示每天4.00(默认)刷新签到冷却，并且需要距离上次签到12小时34分钟(默认)后才能再次签到。
-      	#Range: 0.0 ~ 23.59
-      	timeCoolingTime = 4.0
-      	#签到时间冷却方式。 FIXED_TIME: 固定时间， FIXED_INTERVAL: 固定时间间隔， MIXED: 混合模式。
-      	#Allowed Values: FIXED_TIME, FIXED_INTERVAL, MIXED
-      	timeCoolingMethod = "FIXED_TIME"
-      	#补签卡最远可补签多少天以前的漏签。
-      	#Range: 1 ~ 365
-      	reSignInDays = 30
-      	#使用补签卡进行补签时是否仅获得基础奖励。
-      	signInCardOnlyBaseReward = false
-      	#是否允许玩家使用补签卡进行补签。(不是签到卡哦)
-      	#可以在签到奖励里面添加物品[sakura_sign_in:sign_in_card]来获得补签卡。
-      	signInCard = true
-      	#实际时间，与 服务器原时间 配合计算服务器时间偏移以校准服务器时间。
-      	serverCalibrationTime = "2024-01-01 00:00:00"
-      	#服务器原时间，与 实际时间 配合计算服务器时间偏移以校准服务器时间。
-      	serverTime = "2024-01-01 00:00:00"
-      ```
+    - 客户端配置文件 `config/sakura_sign_in-client.toml`
+      ，其他的信息不再赘述，请参考 [默认配置文件](sakura_sign_in-client.toml) 中的注释。
+    - 服务端配置文件 `world/serverconfig/sakura_sign_in-server.toml`
+      ，其他的信息不再赘述，请参考 [默认配置文件](sakura_sign_in-server.toml) 中的注释。
 
 2. **签到奖励配置**：
 
-    - 打开配置文件 `config/sakura_sign_in/sign_in_data.json`。
-      ```json
-      {
-        "baseRewards": [
-          {
-            "type": "ITEM",
-            "content": {
-              "item": "minecraft:apple",
-              "count": 1
-            }
-          }
-        ],
-        "continuousRewards": {
-          "1": [
-            {
-              "type": "EXP_POINT",
-              "content": {
-                "expPoint": 5
-              }
-            }
-          ],
-          "4": [
-            {
-              "type": "ITEM",
-              "content": {
-                "item": "minecraft:cake",
-                "count": 1
-              }
-            }
-          ],
-          "8": [
-            {
-              "type": "SIGN_IN_CARD",
-              "content": {
-                "signInCard": 1
-              }
-            }
-          ]
-        },
-        "cycleRewards": {
-          "2": [
-            {
-              "type": "EXP_POINT",
-              "content": {
-                "expPoint": 3
-              }
-            }
-          ],
-          "5": [
-            {
-              "type": "EXP_LEVEL",
-              "content": {
-                "expPoint": 1
-              }
-            }
-          ]
-        },
-        "yearRewards": {
-        },
-        "monthRewards": {
-        },
-        "weekRewards": {
-          "6": [
-            {
-              "type": "EFFECT",
-              "content": {
-                "effect": "minecraft:luck",
-                "duration": 6000,
-                "amplifier": 1
-              }
-            }
-          ],
-          "7": [
-            {
-              "type": "EFFECT",
-              "content": {
-                "effect": "minecraft:heal",
-                "duration": 6000,
-                "amplifier": 0
-              }
-            },
-            {
-              "type": "EFFECT",
-              "content": {
-                "effect": "minecraft:jump",
-                "duration": 6000,
-                "amplifier": 0
-              }
-            },
-            {
-              "type": "ITEM",
-              "content": {
-                "item": "minecraft:enchanted_golden_apple",
-                "count": 1
-              }
-            }
-          ]
-        },
-        "dateTimeRewards": {
-          "0000-10-06~1": [
-            {
-              "type": "ITEM",
-              "content": {
-                "item": "minecraft:experience_bottle",
-                "count": 1
-              }
-            },
-            {
-              "type": "EFFECT",
-              "content": {
-                "effect": "minecraft:damage_resistance",
-                "duration": 1,
-                "amplifier": 300
-              }
-            }
-          ]
-        }
-      }
-      ```
-      以上是一个示例配置，你可以根据你的需求进行修改。
+    - 打开配置文件 `config/sakura_sign_in/reward_option_data.json`，请参考 [默认配置文件](reward_option_data.json)
+      ，你可以根据你的需求进行修改。
     - 参数解读：
         - `baseRewards`：基础签到奖励，每次签到都会获得。
         - `continuousRewards`
-          ：连续签到奖励，连续签到一定天数后，会获得相应的奖励。签到天数不足下一个奖励标准但是满足上一个标准时将一直会获得上一个标准的奖励（可在服务器配置开启），例如：按照示例配置，连续签到到第1、2、3天，会获得5点经验值；连续签到到第4、5、6、7天，会获得1块蛋糕；连续签到8天及以后会获得1个补签卡。
+          ：连续签到奖励，连续签到一定天数后，会获得相应的奖励。签到天数不足下一个奖励标准但是满足上一个标准时将一直会获得上一个标准的奖励（可在服务器配置开启），例如：按照示例配置，连续签到到第1天，会获得5点经验值；连续签到到第4天，会获得1块蛋糕；连续签到8天会获得1个补签卡。
         - `cycleRewards`
-          ：连续签到循环奖励，连续签到一定天数后，会获得相应的奖励，连续签到天数大于最大天数时重新从第一个奖励开始计算（可在服务器配置开启），例如：按照示例配置，连续签到到第2、3、4、7、8、9天，会获得3点经验值；连续签到到第5、10天，会获得1级经验等级。
+          ：连续签到循环奖励，连续签到一定天数后，会获得相应的奖励，连续签到天数大于最大天数时重新从第一个奖励开始计算（可在服务器配置开启），例如：按照示例配置，连续签到到第2、7、...天，会获得3点经验值；连续签到到第5、10、...天，会获得1级经验等级。
         - `yearRewards`：按年签到奖励，签到该年的第x天，会获得相应的奖励。
         - `monthRewards`：按月签到奖励，签到该月的第x天，会获得相应的奖励。
         - `weekRewards`
@@ -237,6 +77,9 @@
           yyyy-MM\~n-00, 0000-MM\~n-00, yyyy-MM-ddTHH:mm, yyyy-MM-ddTHH\~n:mm\~n。
           指定具体时间时, 日期与时间需要'T'分隔；\~n表示区间, 例 2024-10-05\~5 表示 2024年10月05日到10日的5天；0000(yyyy)
           表示不限年份, 00(MM) 表示不限月份, 00(dd) 表示不限日期。
+      - `cumulativeRewards`：累计签到奖励，累计签到一定天数后，会获得相应的奖励。
+      - `randomRewards`：随机奖励池，每次签到时根据设置的概率随机获得一个随机组奖励。
+      - `cdkRewards`：兑换码奖励池，指令输入兑换码进行兑换，每个兑换码仅可使用一次。
 
 ## 注意事项
 
