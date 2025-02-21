@@ -1,0 +1,145 @@
+{
+  "baseRewards": [
+    {
+      "type": "ITEM",
+      "probability": 1,
+      "content": {
+        "item": "minecraft:apple",
+        "count": 1
+      }
+    }
+  ],
+  "continuousRewards": {
+    "1": [
+      {
+        "type": "EXP_POINT",
+        "probability": 1,
+        "content": {
+          "expPoint": 5
+        }
+      }
+    ],
+    "4": [
+      {
+        "type": "ITEM",
+        "probability": 1,
+        "content": {
+          "item": "minecraft:cake",
+          "count": 1
+        }
+      }
+    ],
+    "8": [
+      {
+        "type": "SIGN_IN_CARD",
+        "probability": 1,
+        "content": {
+          "signInCard": 1
+        }
+      }
+    ]
+  },
+  "cycleRewards": {
+    "2": [
+      {
+        "type": "EXP_POINT",
+        "probability": 1,
+        "content": {
+          "expPoint": 3
+        }
+      }
+    ],
+    "5": [
+      {
+        "type": "EXP_LEVEL",
+        "probability": 1,
+        "content": {
+          "expLevel": 1
+        }
+      }
+    ]
+  },
+  "yearRewards": {},
+  "monthRewards": {},
+  "weekRewards": {
+    "6": [
+      {
+        "type": "EFFECT",
+        "probability": 1,
+        "content": {
+          "effect": "minecraft:luck",
+          "duration": 6000,
+          "amplifier": 1
+        }
+      }
+    ],
+    "7": [
+      {
+        "type": "EFFECT",
+        "probability": 1,
+        "content": {
+          "effect": "minecraft:instant_health",
+          "duration": 6000,
+          "amplifier": 0
+        }
+      },
+      {
+        "type": "EFFECT",
+        "probability": 1,
+        "content": {
+          "effect": "minecraft:jump_boost",
+          "duration": 6000,
+          "amplifier": 0
+        }
+      },
+      {
+        "type": "ITEM",
+        "probability": 1,
+        "content": {
+          "item": "minecraft:enchanted_golden_apple",
+          "count": 1
+        }
+      }
+    ]
+  },
+  "dateTimeRewards": {
+    "0000-10-06~1": [
+      {
+        "type": "ITEM",
+        "probability": 1,
+        "content": {
+          "item": "minecraft:experience_bottle",
+          "count": 1
+        }
+      },
+      {
+        "type": "EFFECT",
+        "probability": 1,
+        "content": {
+          "effect": "minecraft:resistance",
+          "duration": 300,
+          "amplifier": 1
+        }
+      }
+    ]
+  },
+  "dateTimeRewardsRelation": {
+    "0000-10-6": "0000-10-06~1",
+    "0000-10-7": "0000-10-06~1"
+  },
+  "cumulativeRewards": {
+    "100": [
+      {
+        "type": "EFFECT",
+        "probability": 1,
+        "content": {
+          "effect": "minecraft:luck",
+          "duration": 99999,
+          "amplifier": 2
+        }
+      }
+    ]
+  },
+  "randomRewards": {},
+  "cdkRewards": []
+}
