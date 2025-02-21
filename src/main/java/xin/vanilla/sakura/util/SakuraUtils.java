@@ -203,40 +203,18 @@ public class SakuraUtils {
     // region 权限相关
 
     public static int getRewardPermissionLevel(ERewardRule rule) {
-        int result = 0;
-        switch (rule) {
-            case BASE_REWARD:
-                result = ServerConfig.PERMISSION_BASE_REWARD.get();
-                break;
-            case CONTINUOUS_REWARD:
-                result = ServerConfig.PERMISSION_CONTINUOUS_REWARD.get();
-                break;
-            case CYCLE_REWARD:
-                result = ServerConfig.PERMISSION_CYCLE_REWARD.get();
-                break;
-            case YEAR_REWARD:
-                result = ServerConfig.PERMISSION_YEAR_REWARD.get();
-                break;
-            case MONTH_REWARD:
-                result = ServerConfig.PERMISSION_MONTH_REWARD.get();
-                break;
-            case WEEK_REWARD:
-                result = ServerConfig.PERMISSION_WEEK_REWARD.get();
-                break;
-            case DATE_TIME_REWARD:
-                result = ServerConfig.PERMISSION_DATE_TIME_REWARD.get();
-                break;
-            case CUMULATIVE_REWARD:
-                result = ServerConfig.PERMISSION_CUMULATIVE_REWARD.get();
-                break;
-            case RANDOM_REWARD:
-                result = ServerConfig.PERMISSION_RANDOM_REWARD.get();
-                break;
-            case CDK_REWARD:
-                result = ServerConfig.PERMISSION_CDK_REWARD.get();
-                break;
-        }
-        return result;
+        return switch (rule) {
+            case BASE_REWARD -> ServerConfig.PERMISSION_BASE_REWARD.get();
+            case CONTINUOUS_REWARD -> ServerConfig.PERMISSION_CONTINUOUS_REWARD.get();
+            case CYCLE_REWARD -> ServerConfig.PERMISSION_CYCLE_REWARD.get();
+            case YEAR_REWARD -> ServerConfig.PERMISSION_YEAR_REWARD.get();
+            case MONTH_REWARD -> ServerConfig.PERMISSION_MONTH_REWARD.get();
+            case WEEK_REWARD -> ServerConfig.PERMISSION_WEEK_REWARD.get();
+            case DATE_TIME_REWARD -> ServerConfig.PERMISSION_DATE_TIME_REWARD.get();
+            case CUMULATIVE_REWARD -> ServerConfig.PERMISSION_CUMULATIVE_REWARD.get();
+            case RANDOM_REWARD -> ServerConfig.PERMISSION_RANDOM_REWARD.get();
+            case CDK_REWARD -> ServerConfig.PERMISSION_CDK_REWARD.get();
+        };
     }
 
     // endregion 权限相关
@@ -358,6 +336,21 @@ public class SakuraUtils {
             int moonLight = 9 - moonPhase;
             return isThundering ? Math.max(moonLight - 3, 1) : isRaining ? Math.max(moonLight - 2, 1) : moonLight;
         }
+    }
+
+    public static String getRewardRuleI18nKeyName(ERewardRule rule) {
+        return switch (rule) {
+            case BASE_REWARD -> "reward_base";
+            case CONTINUOUS_REWARD -> "reward_continuous";
+            case CYCLE_REWARD -> "reward_cycle";
+            case YEAR_REWARD -> "reward_year";
+            case MONTH_REWARD -> "reward_month";
+            case WEEK_REWARD -> "reward_week";
+            case DATE_TIME_REWARD -> "reward_time";
+            case CUMULATIVE_REWARD -> "reward_cumulative";
+            case RANDOM_REWARD -> "reward_random";
+            case CDK_REWARD -> "reward_cdk";
+        };
     }
 
     // endregion 杂项
