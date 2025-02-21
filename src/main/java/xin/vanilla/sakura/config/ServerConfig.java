@@ -217,7 +217,13 @@ public class ServerConfig {
                 .define("cycleRewardsRepeatable", false);
         SERVER_BUILDER.pop();
 
-        SERVER_BUILDER.comment("Permission", "权限相关").push("permission");
+        SERVER_BUILDER.comment("Permission"
+                , "If a player does not have permission to view the configuration of a specific reward rule (such as the basic reward) "
+                , "but has permission to edit the reward configuration, then when the player uploads the reward configuration, "
+                , "the server will ignore the configuration of that reward rule and retain the original server-side configuration without overwriting it."
+                , "权限相关"
+                , "如果玩家没有某个奖励规则（例如基础奖励）的配置查看权限，但拥有编辑奖励配置的权限，"
+                , "则当该玩家上传奖励配置时，服务器将忽略该奖励规则的配置，并保留服务器原有的配置，不会被覆盖。").push("permission");
 
         // 编辑奖励配置所需的权限
         PERMISSION_EDIT_REWARD = SERVER_BUILDER

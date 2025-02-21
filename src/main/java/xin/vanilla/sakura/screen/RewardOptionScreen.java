@@ -547,6 +547,20 @@ public class RewardOptionScreen extends Screen {
             if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
                 this.currOpButton = value.getOperation();
                 updateLayout.set(true);
+                try {
+                    ClientPlayerEntity player = Minecraft.getInstance().player;
+                    assert player != null;
+                    ERewardRule rewardRule = ERewardRule.valueOf(OperationButtonType.valueOf(value.getOperation()).name());
+                    if (!player.hasPermissions(SakuraUtils.getRewardPermissionLevel(rewardRule))) {
+                        Component component = Component.translatableClient(EI18nType.MESSAGE, "no_permission_to_view_reward", Component.translatableClient(EI18nType.WORD, SakuraUtils.getRewardRuleI18nKeyName(rewardRule)));
+                        NotificationManager.getInstance().addNotification(new NotificationManager.Notification(component).setBgColor(0x88FF5555));
+                    }
+                    if (!player.hasPermissions(ServerConfig.PERMISSION_EDIT_REWARD.get())) {
+                        Component component = Component.translatableClient(EI18nType.MESSAGE, "no_permission_to_edit_reward");
+                        NotificationManager.getInstance().addNotification(new NotificationManager.Notification(component).setBgColor(0xAAFCFCB9));
+                    }
+                } catch (Exception ignored) {
+                }
             } else {
                 // 绘制弹出层选项
                 this.popupOption.clear();
@@ -1475,34 +1489,34 @@ public class RewardOptionScreen extends Screen {
                 .setTransparentCheck(false)
                 .setTooltip(Component.translatableClient(EI18nType.TIPS, "close_sidebar").toString()));
         OP_BUTTONS.put(OperationButtonType.BASE_REWARD.getCode()
-                , new OperationButton(OperationButtonType.BASE_REWARD.getCode(), this.generateCustomRenderFunction("reward_base"))
+                , new OperationButton(OperationButtonType.BASE_REWARD.getCode(), this.generateCustomRenderFunction(SakuraUtils.getRewardRuleI18nKeyName(ERewardRule.BASE_REWARD)))
                         .setX(0).setY(this.leftBarTitleHeight).setWidth(100).setHeight(this.leftBarTitleHeight - 2));
         OP_BUTTONS.put(OperationButtonType.CONTINUOUS_REWARD.getCode()
-                , new OperationButton(OperationButtonType.CONTINUOUS_REWARD.getCode(), this.generateCustomRenderFunction("reward_continuous"))
+                , new OperationButton(OperationButtonType.CONTINUOUS_REWARD.getCode(), this.generateCustomRenderFunction(SakuraUtils.getRewardRuleI18nKeyName(ERewardRule.CONTINUOUS_REWARD)))
                         .setX(0).setY(this.leftBarTitleHeight + (this.leftBarTitleHeight - 1)).setWidth(100).setHeight(this.leftBarTitleHeight - 2));
         OP_BUTTONS.put(OperationButtonType.CYCLE_REWARD.getCode()
-                , new OperationButton(OperationButtonType.CYCLE_REWARD.getCode(), this.generateCustomRenderFunction("reward_cycle"))
+                , new OperationButton(OperationButtonType.CYCLE_REWARD.getCode(), this.generateCustomRenderFunction(SakuraUtils.getRewardRuleI18nKeyName(ERewardRule.CYCLE_REWARD)))
                         .setX(0).setY(this.leftBarTitleHeight + (this.leftBarTitleHeight - 1) * 2).setWidth(100).setHeight(this.leftBarTitleHeight - 2));
         OP_BUTTONS.put(OperationButtonType.YEAR_REWARD.getCode()
-                , new OperationButton(OperationButtonType.YEAR_REWARD.getCode(), this.generateCustomRenderFunction("reward_year"))
+                , new OperationButton(OperationButtonType.YEAR_REWARD.getCode(), this.generateCustomRenderFunction(SakuraUtils.getRewardRuleI18nKeyName(ERewardRule.YEAR_REWARD)))
                         .setX(0).setY(this.leftBarTitleHeight + (this.leftBarTitleHeight - 1) * 3).setWidth(100).setHeight(this.leftBarTitleHeight - 2));
         OP_BUTTONS.put(OperationButtonType.MONTH_REWARD.getCode()
-                , new OperationButton(OperationButtonType.MONTH_REWARD.getCode(), this.generateCustomRenderFunction("reward_month"))
+                , new OperationButton(OperationButtonType.MONTH_REWARD.getCode(), this.generateCustomRenderFunction(SakuraUtils.getRewardRuleI18nKeyName(ERewardRule.MONTH_REWARD)))
                         .setX(0).setY(this.leftBarTitleHeight + (this.leftBarTitleHeight - 1) * 4).setWidth(100).setHeight(this.leftBarTitleHeight - 2));
         OP_BUTTONS.put(OperationButtonType.WEEK_REWARD.getCode()
-                , new OperationButton(OperationButtonType.WEEK_REWARD.getCode(), this.generateCustomRenderFunction("reward_week"))
+                , new OperationButton(OperationButtonType.WEEK_REWARD.getCode(), this.generateCustomRenderFunction(SakuraUtils.getRewardRuleI18nKeyName(ERewardRule.WEEK_REWARD)))
                         .setX(0).setY(this.leftBarTitleHeight + (this.leftBarTitleHeight - 1) * 5).setWidth(100).setHeight(this.leftBarTitleHeight - 2));
         OP_BUTTONS.put(OperationButtonType.DATE_TIME_REWARD.getCode()
-                , new OperationButton(OperationButtonType.DATE_TIME_REWARD.getCode(), this.generateCustomRenderFunction("reward_time"))
+                , new OperationButton(OperationButtonType.DATE_TIME_REWARD.getCode(), this.generateCustomRenderFunction(SakuraUtils.getRewardRuleI18nKeyName(ERewardRule.DATE_TIME_REWARD)))
                         .setX(0).setY(this.leftBarTitleHeight + (this.leftBarTitleHeight - 1) * 6).setWidth(100).setHeight(this.leftBarTitleHeight - 2));
         OP_BUTTONS.put(OperationButtonType.CUMULATIVE_REWARD.getCode()
-                , new OperationButton(OperationButtonType.CUMULATIVE_REWARD.getCode(), this.generateCustomRenderFunction("reward_cumulative"))
+                , new OperationButton(OperationButtonType.CUMULATIVE_REWARD.getCode(), this.generateCustomRenderFunction(SakuraUtils.getRewardRuleI18nKeyName(ERewardRule.CUMULATIVE_REWARD)))
                         .setX(0).setY(this.leftBarTitleHeight + (this.leftBarTitleHeight - 1) * 7).setWidth(100).setHeight(this.leftBarTitleHeight - 2));
         OP_BUTTONS.put(OperationButtonType.RANDOM_REWARD.getCode()
-                , new OperationButton(OperationButtonType.RANDOM_REWARD.getCode(), this.generateCustomRenderFunction("reward_random"))
+                , new OperationButton(OperationButtonType.RANDOM_REWARD.getCode(), this.generateCustomRenderFunction(SakuraUtils.getRewardRuleI18nKeyName(ERewardRule.RANDOM_REWARD)))
                         .setX(0).setY(this.leftBarTitleHeight + (this.leftBarTitleHeight - 1) * 8).setWidth(100).setHeight(this.leftBarTitleHeight - 2));
         OP_BUTTONS.put(OperationButtonType.CDK_REWARD.getCode()
-                , new OperationButton(OperationButtonType.CDK_REWARD.getCode(), this.generateCustomRenderFunction("reward_cdk"))
+                , new OperationButton(OperationButtonType.CDK_REWARD.getCode(), this.generateCustomRenderFunction(SakuraUtils.getRewardRuleI18nKeyName(ERewardRule.CDK_REWARD)))
                         .setX(0).setY(this.leftBarTitleHeight + (this.leftBarTitleHeight - 1) * 9).setWidth(100).setHeight(this.leftBarTitleHeight - 2));
         OP_BUTTONS.put(OperationButtonType.OFFSET_Y.getCode(), new OperationButton(OperationButtonType.OFFSET_Y.getCode(), context -> {
             AbstractGuiUtils.drawString(context.matrixStack, super.font, "OY:", super.width - rightBarWidth + 1, super.height - font.lineHeight * 2 - 2, 0xFFACACAC);
@@ -1650,7 +1664,7 @@ public class RewardOptionScreen extends Screen {
                     }
                 } else if (op == OperationButtonType.UPLOAD.getCode()) {
                     ClientPlayerEntity player = Minecraft.getInstance().player;
-                    if (player != null && player.hasPermissions(3)) {
+                    if (player != null && player.hasPermissions(ServerConfig.PERMISSION_EDIT_REWARD.get())) {
                         button.setTooltip(Component.translatableClient(EI18nType.TIPS, "upload_reward_config").toString())
                                 .setHoverFgColor(0xAA808080).setTapFgColor(0xAAA0A0A0);
                     } else {
