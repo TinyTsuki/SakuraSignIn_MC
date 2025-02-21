@@ -1,0 +1,27 @@
+#Client Settings
+[client]
+#The coordinate of the reward option button in the inventory screen. If the coordinate is 0~1, it is the percentage position.
+#背包界面奖励配置按钮坐标，若坐标为0~1之间的小数则为百分比位置。
+inventoryRewardOptionButtonCoordinate = "1.000000,1.000000"
+#Whether or not to display a prompt for action when you open the sign-in screen.
+#打开签到页面时是否显示操作提示。
+showSignInScreenTips = false
+#Whether the rewards will be automatically claimed when you sign-in or re-sign-in.
+#签到或补签时是否自动领取奖励。
+autoRewarded = false
+#The sign-in page displays last month's rewards. Someone said it didn't look good on display.
+#签到页面是否显示上个月的奖励，有人说它显示出来不好看。
+showLastReward = false
+#The sign-in page displays next month's rewards. Someone said it didn't look good on display.
+#签到页面是否显示下个月的奖励，有人说它显示出来不好看。
+showNextReward = false
+#theme textures path, can be external path: config/sakura_sign_in/themes/your_theme.png
+#主题材质路径，可为外部路径： config/sakura_sign_in/themes/your_theme.png
+theme = "textures/gui/sign_in_calendar_sakura.png"
+#The coordinate of the sign-in button in the inventory screen. If the coordinate is 0~1, it is the percentage position.
+#背包界面签到按钮坐标，若坐标为0~1之间的小数则为百分比位置。
+inventorySignInButtonCoordinate = "2.000000,2.000000"
+#Whether or not to use the built-in theme special icons.
+#是否使用内置主题特殊图标。
+specialTheme = false
+
