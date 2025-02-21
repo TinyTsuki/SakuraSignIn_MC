@@ -6,11 +6,14 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import net.minecraft.world.entity.player.Player;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLPaths;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.enums.ERewardRule;
+import xin.vanilla.sakura.enums.ERewardType;
 import xin.vanilla.sakura.network.RewardOptionSyncData;
 import xin.vanilla.sakura.network.RewardOptionSyncPacket;
 import xin.vanilla.sakura.rewards.Reward;
@@ -143,51 +146,54 @@ public class RewardOptionDataManager {
         // 备份文件
         long dateTimeInt = DateUtils.toDateTimeInt(new Date());
         File sourceFolder = FMLPaths.CONFIGDIR.get().resolve(SakuraSignIn.MODID).toFile();
-        try {
-            File target = new File(new File(sourceFolder, "backups"), String.format("%s_%s.%s", RewardOptionDataManager.FILE_NAME, dateTimeInt, "old"));
-            if (target.getParent() != null && !Files.exists(target.getParentFile().toPath())) {
-                Files.createDirectories(target.getParentFile().toPath());
-            }
-            Files.move(new File(sourceFolder, RewardOptionDataManager.FILE_NAME).toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException e) {
-            LOGGER.error("Error moving file: ", e);
-        }
-        // 备份最新编辑的文件
-        if (save) {
-            RewardOptionDataManager.saveRewardOption();
+        File sourceFile = new File(sourceFolder, RewardOptionDataManager.FILE_NAME);
+        if (sourceFile.exists()) {
             try {
-                File target = new File(new File(sourceFolder, "backups"), String.format("%s_%s.%s", RewardOptionDataManager.FILE_NAME, dateTimeInt, "bak"));
+                File target = new File(new File(sourceFolder, "backups"), String.format("%s_%s.%s", RewardOptionDataManager.FILE_NAME, dateTimeInt, "old"));
                 if (target.getParent() != null && !Files.exists(target.getParentFile().toPath())) {
                     Files.createDirectories(target.getParentFile().toPath());
                 }
-                Files.move(new File(sourceFolder, RewardOptionDataManager.FILE_NAME).toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                Files.move(sourceFile.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException e) {
                 LOGGER.error("Error moving file: ", e);
             }
-        }
-        // 删除旧文件
-        try (Stream<Path> pathStream = Files.walk(sourceFolder.toPath())) {
-            pathStream.filter(path -> Files.isRegularFile(path) && path.getFileName().toString().startsWith(RewardOptionDataManager.FILE_NAME))
-                    .sorted((path1, path2) -> {
-                        try {
-                            return Files.readAttributes(path2, BasicFileAttributes.class).creationTime()
-                                    .compareTo(Files.readAttributes(path1, BasicFileAttributes.class).creationTime());
-                        } catch (IOException e) {
-                            LOGGER.error("Error reading file attributes: ", e);
-                            return 0;
-                        }
-                    })
-                    // 跳过最新的20个文件
-                    .skip(20)
-                    .forEach(file -> {
-                        try {
-                            Files.delete(file);
-                        } catch (IOException e) {
-                            LOGGER.error("Error deleting file: ", e);
-                        }
-                    });
-        } catch (IOException e) {
-            LOGGER.error("Error walking directory: ", e);
+            // 备份最新编辑的文件
+            if (save) {
+                RewardOptionDataManager.saveRewardOption();
+                try {
+                    File target = new File(new File(sourceFolder, "backups"), String.format("%s_%s.%s", RewardOptionDataManager.FILE_NAME, dateTimeInt, "bak"));
+                    if (target.getParent() != null && !Files.exists(target.getParentFile().toPath())) {
+                        Files.createDirectories(target.getParentFile().toPath());
+                    }
+                    Files.move(sourceFile.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                } catch (IOException e) {
+                    LOGGER.error("Error moving file: ", e);
+                }
+            }
+            // 删除旧文件
+            try (Stream<Path> pathStream = Files.walk(sourceFolder.toPath())) {
+                pathStream.filter(path -> Files.isRegularFile(path) && path.getFileName().toString().startsWith(RewardOptionDataManager.FILE_NAME))
+                        .sorted((path1, path2) -> {
+                            try {
+                                return Files.readAttributes(path2, BasicFileAttributes.class).creationTime()
+                                        .compareTo(Files.readAttributes(path1, BasicFileAttributes.class).creationTime());
+                            } catch (IOException e) {
+                                LOGGER.error("Error reading file attributes: ", e);
+                                return 0;
+                            }
+                        })
+                        // 跳过最新的20个文件
+                        .skip(20)
+                        .forEach(file -> {
+                            try {
+                                Files.delete(file);
+                            } catch (IOException e) {
+                                LOGGER.error("Error deleting file: ", e);
+                            }
+                        });
+            } catch (IOException e) {
+                LOGGER.error("Error walking directory: ", e);
+            }
         }
     }
 
@@ -992,6 +998,7 @@ public class RewardOptionDataManager {
                 result = new LinkedHashMap<>();
                 for (int i = 0; i < rewardOptionData.getCdkRewards().size(); i++) {
                     KeyValue<String, KeyValue<String, RewardList>> keyValue = rewardOptionData.getCdkRewards().get(i);
+                    // key | 过期时间 | 序号
                     result.put(String.format("%s|%s|%d", keyValue.getKey(), keyValue.getValue().getKey(), i), keyValue.getValue().getValue());
                 }
                 break;
@@ -1002,7 +1009,7 @@ public class RewardOptionDataManager {
     public static void setRewardMap(RewardOptionData data, ERewardRule rule, Map<String, RewardList> map) {
         switch (rule) {
             case BASE_REWARD:
-                data.setBaseRewards(map.get("base"));
+                data.setBaseRewards(map.getOrDefault("base", new RewardList()));
                 break;
             case CONTINUOUS_REWARD:
                 data.setContinuousRewards(map);
@@ -1030,7 +1037,10 @@ public class RewardOptionDataManager {
                 break;
             case CDK_REWARD:
                 List<KeyValue<String, KeyValue<String, RewardList>>> cdkRewards = new ArrayList<>();
+                // key | 过期时间 | 序号
                 map.keySet().stream()
+                        .filter(StringUtils::isNotNullOrEmpty)
+                        .filter(s -> s.replaceAll("\\|", ",").split(",").length >= 3)
                         .sorted(Comparator.comparingInt(s -> Integer.parseInt(s.replaceAll("\\|", ",").split(",")[2])))
                         .forEach(key -> {
                             String[] split = key.replaceAll("\\|", ",").split(",");
@@ -1048,28 +1058,43 @@ public class RewardOptionDataManager {
     public static RewardOptionSyncPacket toSyncPacket(Player player) {
         List<RewardOptionSyncData> dataList = new ArrayList<>();
         for (ERewardRule rule : ERewardRule.values()) {
-            // 如果对应查看权限不足则跳过
-            if (!player.hasPermissions(SakuraUtils.getRewardPermissionLevel(rule))) continue;
-            RewardOptionDataManager.getRewardMap(rule).forEach((key, value) -> {
-                List<RewardOptionSyncData> list = value.stream()
-                        .map(reward -> new RewardOptionSyncData(rule, key, reward))
-                        .toList();
-                dataList.addAll(list);
-            });
+            // 如果对应查看权限不足则将数据置为空，并在服务端解析时不进行该数据的覆盖
+            if (!player.hasPermissions(SakuraUtils.getRewardPermissionLevel(rule))) {
+                dataList.add(new RewardOptionSyncData(rule, "", new Reward(0, ERewardType.SIGN_IN_CARD).setDisabled(true)));
+            } else {
+                RewardOptionDataManager.getRewardMap(rule).forEach((key, value) -> {
+                    List<RewardOptionSyncData> list = value.stream()
+                            .map(reward -> new RewardOptionSyncData(rule, key, reward))
+                            .toList();
+                    dataList.addAll(list);
+                });
+            }
         }
         return new RewardOptionSyncPacket(dataList);
     }
 
     public static RewardOptionData fromSyncPacketList(List<RewardOptionSyncPacket> packetList) {
         RewardOptionData result = new RewardOptionData();
-        packetList.stream().flatMap(packet -> packet.getRewardOptionData().stream()).collect(Collectors.groupingBy(RewardOptionSyncData::getRule)).forEach((rule, dataList) -> {
-            Map<String, RewardList> rewardMap = new LinkedHashMap<>();
-            dataList.forEach(data -> {
-                RewardList rewardList = rewardMap.computeIfAbsent(data.getKey(), key -> new RewardList());
-                rewardList.add(data.getReward());
-            });
-            RewardOptionDataManager.setRewardMap(result, rule, rewardMap);
-        });
+        packetList.stream().flatMap(packet -> packet.getRewardOptionData().stream())
+                .collect(Collectors.groupingBy(RewardOptionSyncData::getRule))
+                .forEach((rule, dataList) -> {
+                    Map<String, RewardList> rewardMap = new LinkedHashMap<>();
+                    for (RewardOptionSyncData data : dataList) {
+                        RewardList rewardList = rewardMap.computeIfAbsent(data.getKey(), key -> new RewardList());
+                        rewardList.add(data.getReward());
+                    }
+                    // 如果当前为服务器环境，且玩家发送的数据为空则使用原数据，不进行覆盖
+                    if (FMLEnvironment.dist == Dist.DEDICATED_SERVER
+                            && rewardMap.size() == 1
+                            && rewardMap.containsKey("")
+                            && rewardMap.get("").size() == 1
+                            && rewardMap.get("").get(0).getType() == ERewardType.SIGN_IN_CARD
+                            && rewardMap.get("").get(0).isDisabled()) {
+                        rewardMap = RewardOptionDataManager.getRewardMap(rule);
+                    }
+                    rewardMap.keySet().removeIf(StringUtils::isNullOrEmpty);
+                    RewardOptionDataManager.setRewardMap(result, rule, rewardMap);
+                });
         return result;
     }
 }

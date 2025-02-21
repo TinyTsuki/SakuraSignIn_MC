@@ -26,14 +26,13 @@ public class RewardOptionDataReceivedNotice {
     public static void handle(RewardOptionDataReceivedNotice packet, Supplier<NetworkEvent.Context> ctx) {
         // 获取网络事件上下文并排队执行工作
         ctx.get().enqueueWork(() -> {
-            String key;
+            NotificationManager.Notification notification;
             if (packet.success) {
-                key = "reward_option_upload_success";
+                notification = new NotificationManager.Notification(Component.translatable(EI18nType.MESSAGE, "reward_option_upload_success"));
             } else {
-                key = "reward_option_upload_failed";
+                notification = new NotificationManager.Notification(Component.translatable(EI18nType.MESSAGE, "reward_option_upload_failed")).setBgColor(0x88FF5555);
             }
-            Component component = Component.translatable(EI18nType.MESSAGE, key);
-            NotificationManager.getInstance().addNotification(new NotificationManager.Notification(component).setBgColor(0x88FF5555));
+            NotificationManager.getInstance().addNotification(notification);
         });
         // 设置数据包已处理状态，防止重复处理
         ctx.get().setPacketHandled(true);
