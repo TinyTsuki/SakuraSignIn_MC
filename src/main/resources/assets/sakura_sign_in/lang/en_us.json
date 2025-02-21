@@ -117,7 +117,7 @@
   "tips.sakura_sign_in.drag_inventory_button": "Hold Ctrl or Alt to drag buttons\nCtrl: Absolute Position, Alt: Percentage of Screen",
   "tips.sakura_sign_in.how_to_sign_in": "Left-click to sign in, Right-click to make up sign-in / claim rewards",
   "tips.sakura_sign_in.sign_in_info": "Sign-In Cards: %s\nConsecutive Sign-ins: %sd\nTotal Sign-ins: %sd",
-  "tips.sakura_sign_in.sign_in_screen_tips": "Instructions:\n1. Left-click to sign in (only for today)\n2. Right-click to make up sign-ins and claim rewards\n3. Left and right-clicking the theme selector will yield different effects\n4. You can use the keyboard arrow keys '↑', '→', '↓', '←' to flip through the calendar\n5. Hold the 'Shift' key and hover the mouse over different buttons to see various tooltips\n6. Nyaa!",
+  "tips.sakura_sign_in.sign_in_screen_tips": "Instructions:\n1. Left-click to sign in (only for today)\n2. Right-click to make up sign-ins and claim rewards\n3. Left and right-clicking the theme selector will yield\n  different effects\n4. You can use the keyboard arrow keys '↑', '→', '↓', '←'\n  to flip through the calendar\n5. Hold the 'Shift' key and hover the mouse over\n  different buttons to see various tooltips\n6. Nyaa!",
   "tips.sakura_sign_in.reward_option_screen_tips": "Friendly Reminder:\n1. While playing on the server, after modifying the configuration,\n  click the 'Sync configuration to server' button in the right sidebar\n2. When entering the server, your local configuration file will be\n  overridden by the server's configuration\n3. To 'Delete' or 'Clear' reward configurations, hold the 'Ctrl' key\n  and right-click to confirm (a bit tedious, right?)\n4. For more information, use the '?' button at the top right",
   "tips.sakura_sign_in.reward_rule_description_1": "Base Sign-In Reward: Awarded on every sign-in.",
   "tips.sakura_sign_in.reward_rule_description_2": "Continuous Sign-In Reward: After signing in consecutively for a certain\n    number of days, you will receive corresponding rewards.\n    If your sign-in days fall short of the next reward threshold\n    but meet the previous one, you will receive the previous reward.\n    (Requires modification of the server configuration\n    option continuousRewardsRepeatable)\n    Default config: Sign in on days 1, 2, and 3 to earn 5 XP;\n    sign in on days 4, 5, 6, and 7 to receive 1 cake;\n    After day 8, you will receive 1 make-up sign-in card.",
@@ -179,5 +179,7 @@
   "message.sakura_sign_in.reward_option_download_success": "Reward option download successful.",
   "message.sakura_sign_in.reward_option_upload_failed": "Reward option upload failed.",
   "message.sakura_sign_in.reward_option_upload_success": "Reward option upload successful.",
-  "message.sakura_sign_in.local_server_not_support_this_operation": "The local server does not support this operation."
+  "message.sakura_sign_in.local_server_not_support_this_operation": "The local server does not support this operation.",
+  "message.sakura_sign_in.no_permission_to_edit_reward": "Insufficient permissions to modify the server-side reward config.\nChanges will only apply to the client.",
+  "message.sakura_sign_in.no_permission_to_view_reward": "Insufficient permissions to view the reward config: %s."
 }
