@@ -232,7 +232,7 @@ public class ClientEventHandler {
 
     @SubscribeEvent()
     public static void onRenderOverlay(RenderGameOverlayEvent.Post event) {
-        if (event.getType() != RenderGameOverlayEvent.ElementType.TEXT) return;
+        if (event.getType() != RenderGameOverlayEvent.ElementType.ALL) return;
         if (Minecraft.getInstance().screen != null) return;
         NotificationManager.getInstance().render();
     }
