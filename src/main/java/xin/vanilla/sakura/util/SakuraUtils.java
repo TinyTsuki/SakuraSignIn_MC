@@ -366,5 +366,42 @@ public class SakuraUtils {
         }
     }
 
+    public static String getRewardRuleI18nKeyName(ERewardRule rule) {
+        String result = "";
+        switch (rule) {
+            case BASE_REWARD:
+                result = "reward_base";
+                break;
+            case CONTINUOUS_REWARD:
+                result = "reward_continuous";
+                break;
+            case CYCLE_REWARD:
+                result = "reward_cycle";
+                break;
+            case YEAR_REWARD:
+                result = "reward_year";
+                break;
+            case MONTH_REWARD:
+                result = "reward_month";
+                break;
+            case WEEK_REWARD:
+                result = "reward_week";
+                break;
+            case DATE_TIME_REWARD:
+                result = "reward_time";
+                break;
+            case CUMULATIVE_REWARD:
+                result = "reward_cumulative";
+                break;
+            case RANDOM_REWARD:
+                result = "reward_random";
+                break;
+            case CDK_REWARD:
+                result = "reward_cdk";
+                break;
+        }
+        return result;
+    }
+
     // endregion 杂项
 }
