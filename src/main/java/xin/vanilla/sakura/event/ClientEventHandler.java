@@ -228,14 +228,14 @@ public class ClientEventHandler {
             }
         }
         if (event instanceof ScreenEvent.Render.Post) {
-            NotificationManager.getInstance().render(((ScreenEvent.Render.Post) event).getPoseStack());
+            NotificationManager.get().render(((ScreenEvent.Render.Post) event).getPoseStack());
         }
     }
 
     @SubscribeEvent()
     public static void onRenderOverlay(RenderGuiEvent.Post event) {
         if (Minecraft.getInstance().screen != null) return;
-        NotificationManager.getInstance().render(event.getPoseStack());
+        NotificationManager.get().render(event.getPoseStack());
     }
 
     public static void openSignInScreen(Screen previousScreen) {
@@ -246,7 +246,7 @@ public class ClientEventHandler {
             LocalPlayer player = Minecraft.getInstance().player;
             if (player != null) {
                 Component component = Component.translatableClient(EI18nType.MESSAGE, "sakura_is_offline");
-                NotificationManager.getInstance().addNotification(new NotificationManager.Notification(component).setBgColor(0x88FF5555));
+                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0x88FF5555));
             }
         }
     }
