@@ -59,11 +59,11 @@ public class RewardOptionSyncPacket extends SplitPacket {
                         RewardOptionDataManager.saveRewardOption();
                     } catch (Exception e) {
                         Component component = Component.translatable(EI18nType.MESSAGE, "reward_option_download_failed");
-                        NotificationManager.getInstance().addNotification(new NotificationManager.Notification(component).setBgColor(0x88FF5555));
+                        NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0x88FF5555));
                         throw e;
                     }
                     Component component = Component.translatable(EI18nType.MESSAGE, "reward_option_download_success");
-                    NotificationManager.getInstance().addNotification(new NotificationManager.Notification(component));
+                    NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component));
                 } else if (ctx.isServerSide()) {
                     ServerPlayer sender = ctx.getSender();
                     if (sender != null) {
