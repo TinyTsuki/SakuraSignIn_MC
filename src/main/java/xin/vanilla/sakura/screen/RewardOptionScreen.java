@@ -550,11 +550,11 @@ public class RewardOptionScreen extends Screen {
                     ERewardRule rewardRule = ERewardRule.valueOf(OperationButtonType.valueOf(value.getOperation()).name());
                     if (!player.hasPermissions(SakuraUtils.getRewardPermissionLevel(rewardRule))) {
                         Component component = Component.translatableClient(EI18nType.MESSAGE, "no_permission_to_view_reward", Component.translatableClient(EI18nType.WORD, SakuraUtils.getRewardRuleI18nKeyName(rewardRule)));
-                        NotificationManager.getInstance().addNotification(new NotificationManager.Notification(component).setBgColor(0x88FF5555));
+                        NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0x88FF5555));
                     }
                     if (!player.hasPermissions(ServerConfig.PERMISSION_EDIT_REWARD.get())) {
                         Component component = Component.translatableClient(EI18nType.MESSAGE, "no_permission_to_edit_reward");
-                        NotificationManager.getInstance().addNotification(new NotificationManager.Notification(component).setBgColor(0xAAFCFCB9));
+                        NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
                     }
                 } catch (Exception ignored) {
                 }
@@ -618,7 +618,7 @@ public class RewardOptionScreen extends Screen {
                 }
             } else {
                 Component component = Component.translatable(EI18nType.MESSAGE, "local_server_not_support_this_operation");
-                NotificationManager.getInstance().addNotification(new NotificationManager.Notification(component).setBgColor(0xAAFCFCB9));
+                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
             }
         }
         // 下载奖励配置
@@ -632,7 +632,7 @@ public class RewardOptionScreen extends Screen {
                     flag.set(true);
                 } else {
                     Component component = Component.translatable(EI18nType.MESSAGE, "local_server_not_support_this_operation");
-                    NotificationManager.getInstance().addNotification(new NotificationManager.Notification(component).setBgColor(0xAAFCFCB9));
+                    NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
                 }
             }
         }
