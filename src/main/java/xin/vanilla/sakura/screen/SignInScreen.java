@@ -620,7 +620,7 @@ public class SignInScreen extends Screen {
                 String selectedFile = themeFileList.get(popupOption.getSelectedIndex()).getPath();
                 if (player != null) {
                     Component component = Component.translatableClient(EI18nType.MESSAGE, "selected_theme_file_s", selectedFile);
-                    NotificationManager.getInstance().addNotification(new NotificationManager.Notification(component));
+                    NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component));
                     ClientConfig.THEME.set(selectedFile);
                     updateTextureAndCoordinate.set(true);
                     updateLayout.set(true);
@@ -774,7 +774,7 @@ public class SignInScreen extends Screen {
             if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
                 if (RewardManager.getCompensateDateInt() < DateUtils.toDateInt(RewardManager.getCompensateDate(DateUtils.getClientDate()))) {
                     Component component = Component.translatableClient(EI18nType.MESSAGE, "next_day_cannot_operate");
-                    NotificationManager.getInstance().addNotification(new NotificationManager.Notification(component).setBgColor(0xAAFCFCB9));
+                    NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
                 } else {
                     cell.status = ClientConfig.AUTO_REWARDED.get() ? ESignInStatus.REWARDED.getCode() : ESignInStatus.SIGNED_IN.getCode();
                     ModNetworkHandler.INSTANCE.sendToServer(new SignInPacket(DateUtils.toDateTimeString(DateUtils.getClientDate()), ClientConfig.AUTO_REWARDED.get(), ESignInType.SIGN_IN));
@@ -783,11 +783,11 @@ public class SignInScreen extends Screen {
         } else if (cell.status == ESignInStatus.SIGNED_IN.getCode()) {
             if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
                 Component component = Component.translatableClient(EI18nType.MESSAGE, "already_signed");
-                NotificationManager.getInstance().addNotification(new NotificationManager.Notification(component).setBgColor(0xAAFCFCB9));
+                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
             } else {
                 if (RewardManager.isRewarded(PlayerSignInDataCapability.getData(player), cellDate, false)) {
                     Component component = Component.translatableClient(EI18nType.MESSAGE, "already_get_reward");
-                    NotificationManager.getInstance().addNotification(new NotificationManager.Notification(component).setBgColor(0xAAFCFCB9));
+                    NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
                 } else {
                     cell.status = ESignInStatus.REWARDED.getCode();
                     ModNetworkHandler.INSTANCE.sendToServer(new SignInPacket(DateUtils.toDateTimeString(cellDate), ClientConfig.AUTO_REWARDED.get(), ESignInType.REWARD));
@@ -797,11 +797,11 @@ public class SignInScreen extends Screen {
             if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
                 if (!ServerConfig.SIGN_IN_CARD.get()) {
                     Component component = Component.translatableClient(EI18nType.MESSAGE, "server_not_enable_sign_in_card");
-                    NotificationManager.getInstance().addNotification(new NotificationManager.Notification(component).setBgColor(0xAAFCFCB9));
+                    NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
                 } else {
                     if (PlayerSignInDataCapability.getData(player).getSignInCard() <= 0) {
                         Component component = Component.translatableClient(EI18nType.MESSAGE, "not_enough_sign_in_card");
-                        NotificationManager.getInstance().addNotification(new NotificationManager.Notification(component).setBgColor(0xAAFCFCB9));
+                        NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
                     } else {
                         cell.status = ClientConfig.AUTO_REWARDED.get() ? ESignInStatus.REWARDED.getCode() : ESignInStatus.SIGNED_IN.getCode();
                         ModNetworkHandler.INSTANCE.sendToServer(new SignInPacket(DateUtils.toDateTimeString(cellDate), ClientConfig.AUTO_REWARDED.get(), ESignInType.RE_SIGN_IN));
@@ -811,18 +811,18 @@ public class SignInScreen extends Screen {
         } else if (cell.status == ESignInStatus.NO_ACTION.getCode()) {
             if (cellDate.after(RewardManager.getCompensateDate(DateUtils.getClientDate()))) {
                 Component component = Component.translatableClient(EI18nType.MESSAGE, "next_day_cannot_operate");
-                NotificationManager.getInstance().addNotification(new NotificationManager.Notification(component).setBgColor(0xAAFCFCB9));
+                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
             } else {
                 Component component = Component.translatableClient(EI18nType.MESSAGE, "past_day_cannot_operate");
-                NotificationManager.getInstance().addNotification(new NotificationManager.Notification(component).setBgColor(0xAAFCFCB9));
+                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
             }
         } else if (cell.status == ESignInStatus.REWARDED.getCode()) {
             Component component = Component.translatableClient(EI18nType.MESSAGE, "already_get_reward");
-            NotificationManager.getInstance().addNotification(new NotificationManager.Notification(component).setBgColor(0xAAFCFCB9));
+            NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
         } else {
             if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
                 Component component = Component.literal(ESignInStatus.valueOf(cell.status).getDescription() + ": " + DateUtils.toString(cellDate));
-                NotificationManager.getInstance().addNotification(new NotificationManager.Notification(component).setBgColor(0x88FF5555));
+                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0x88FF5555));
             }
         }
     }
