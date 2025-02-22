@@ -26,11 +26,11 @@ public class RewardOptionDataReceivedNotice {
         ctx.enqueueWork(() -> {
             NotificationManager.Notification notification;
             if (packet.success) {
-                notification = new NotificationManager.Notification(Component.translatable(EI18nType.MESSAGE, "reward_option_upload_success"));
+                notification = NotificationManager.Notification.ofComponentWithBlack(Component.translatable(EI18nType.MESSAGE, "reward_option_upload_success"));
             } else {
-                notification = new NotificationManager.Notification(Component.translatable(EI18nType.MESSAGE, "reward_option_upload_failed")).setBgColor(0x88FF5555);
+                notification = NotificationManager.Notification.ofComponentWithBlack(Component.translatable(EI18nType.MESSAGE, "reward_option_upload_failed")).setBgColor(0x88FF5555);
             }
-            NotificationManager.getInstance().addNotification(notification);
+            NotificationManager.get().addNotification(notification);
         });
         // 设置数据包已处理状态，防止重复处理
         ctx.setPacketHandled(true);
