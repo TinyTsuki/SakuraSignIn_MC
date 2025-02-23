@@ -594,13 +594,31 @@ public class StringUtils {
         }
     }
 
+    public static int argbToHex(String argb) {
+        try {
+            if (argb.startsWith("#")) {
+                return (int) Long.parseLong(argb.substring(1), 16);
+            } else if (argb.startsWith("0x")) {
+                return (int) Long.parseLong(argb.substring(2), 16);
+            } else {
+                return (int) Long.parseLong(argb, 16);
+            }
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
     /**
      * RGB颜色转换为Minecraft颜色代码
      *
      * @param color 颜色值 (ARGB: 0xAARRGGBB 或 RGB: 0xRRGGBB)
      * @return 颜色代码
      */
-    public static String argbToMinecraftColor(int color) {
+    public static String argbToMinecraftColorString(int color) {
+        return "§" + argbToMinecraftColor(color).getCode();
+    }
+
+    public static EMCColor argbToMinecraftColor(int color) {
         // 获取 RGB 分量
         int red = (color >> 16) & 0xFF;
         int green = (color >> 8) & 0xFF;
@@ -608,7 +626,7 @@ public class StringUtils {
         // 颜色匹配
         double closestDistance = Double.MAX_VALUE;
         // 默认为白色
-        char closestColor = 'f';
+        EMCColor result = EMCColor.WHITE;
         for (EMCColor mcColor : EMCColor.values()) {
             int colorRGB = mcColor.getColor();
             int r = (colorRGB >> 16) & 0xFF;
@@ -618,9 +636,9 @@ public class StringUtils {
             double distance = Math.sqrt(2 * Math.pow(red - r, 2) + 4 * Math.pow(green - g, 2) + 3 * Math.pow(blue - b, 2));
             if (distance < closestDistance) {
                 closestDistance = distance;
-                closestColor = mcColor.getCode();
+                result = mcColor;
             }
         }
-        return "§" + closestColor;
+        return result;
     }
 }

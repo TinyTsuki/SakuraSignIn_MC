@@ -144,7 +144,7 @@ public class SakuraUtils {
      * @param message 消息
      */
     public static void broadcastMessage(ServerPlayer player, Component message) {
-        player.server.getPlayerList().broadcastSystemMessage(net.minecraft.network.chat.Component.translatable("chat.type.announcement", player.getDisplayName(), message.toTextComponent()), false);
+        player.server.getPlayerList().broadcastSystemMessage(net.minecraft.network.chat.Component.translatable("chat.type.announcement", player.getDisplayName(), message.toChatComponent()), false);
     }
 
     /**
@@ -154,7 +154,7 @@ public class SakuraUtils {
      * @param message 消息
      */
     public static void broadcastMessage(MinecraftServer server, Component message) {
-        server.getPlayerList().broadcastSystemMessage(net.minecraft.network.chat.Component.translatable("chat.type.announcement", "Server", message.toTextComponent()), false);
+        server.getPlayerList().broadcastSystemMessage(net.minecraft.network.chat.Component.translatable("chat.type.announcement", "Server", message.toChatComponent()), false);
     }
 
     /**
@@ -164,7 +164,7 @@ public class SakuraUtils {
      * @param message 消息
      */
     public static void sendMessage(ServerPlayer player, Component message) {
-        player.sendSystemMessage(message.toTextComponent(player.getLanguage()), false);
+        player.sendSystemMessage(message.toChatComponent(player.getLanguage()), false);
     }
 
     /**
@@ -174,7 +174,7 @@ public class SakuraUtils {
      * @param message 消息
      */
     public static void sendMessage(LocalPlayer player, Component message) {
-        player.sendSystemMessage(message.toTextComponent(SakuraUtils.getClientLanguage()));
+        player.sendSystemMessage(message.toChatComponent(SakuraUtils.getClientLanguage()));
     }
 
     /**
@@ -184,7 +184,7 @@ public class SakuraUtils {
      * @param message 消息
      */
     public static void sendMessage(ServerPlayer player, String message) {
-        player.sendSystemMessage(Component.literal(message).toTextComponent(), false);
+        player.sendSystemMessage(Component.literal(message).toChatComponent(), false);
     }
 
     /**
@@ -195,7 +195,7 @@ public class SakuraUtils {
      * @param args   参数
      */
     public static void sendTranslatableMessage(ServerPlayer player, String key, Object... args) {
-        player.sendSystemMessage(Component.translatable(key, args).setLanguageCode(player.getLanguage()).toTextComponent(), false);
+        player.sendSystemMessage(Component.translatable(key, args).setLanguageCode(player.getLanguage()).toChatComponent(), false);
     }
 
     // endregion 消息相关
