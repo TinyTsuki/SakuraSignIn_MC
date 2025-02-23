@@ -24,8 +24,8 @@ import java.util.stream.Collectors;
 
 @Accessors(chain = true)
 @NoArgsConstructor
+// TODO 优化掉这玩意
 public class Component implements Cloneable, Serializable {
-    private static final Component EMPTY = new Component();
 
     // region 属性定义
     /**
@@ -376,7 +376,7 @@ public class Component implements Cloneable, Serializable {
 
     public Style getStyle() {
         Style style = Style.EMPTY;
-        if (!isColorEmpty())
+        if (!isColorEmpty() && getColor() != 0xFFFFFFFF)
             style = style.withColor(Color.fromRgb(getColor()));
         style = style.setUnderlined(this.isUnderlined())
                 .setStrikethrough(this.isStrikethrough())
@@ -422,7 +422,7 @@ public class Component implements Cloneable, Serializable {
      */
     public String getString(String languageCode, boolean igStyle, boolean igColor) {
         StringBuilder result = new StringBuilder();
-        String colorStr = isColorEmpty() ? "§f" : StringUtils.argbToMinecraftColor(getColor());
+        String colorStr = isColorEmpty() ? "§f" : StringUtils.argbToMinecraftColorString(getColor());
         igColor = igColor && colorStr.equalsIgnoreCase("§f");
         // 如果颜色值为null则说明为透明，则不显示内容，所以返回空文本
         if (!this.isColorEmpty()) {
@@ -499,11 +499,23 @@ public class Component implements Cloneable, Serializable {
                             formattedArg = new Component();
                         } else {
                             Component argComponent = this.args.get(index);
-                            try {
-                                // 颜色代码传递
-                                String colorCode = split[i].replaceAll("^.*?((?:§[\\da-fA-FKLMNORklmnor])*)$", "$1");
-                                formattedArg = new Component(String.format(placeholder.replaceAll("^%\\d+\\$", "%"), colorCode + argComponent.toString())).withStyle(argComponent);
-                            } catch (Exception e) {
+                            if (argComponent.getI18nType() != EI18nType.PLAIN) {
+                                try {
+                                    // 颜色代码传递
+                                    String colorCode = split[i].replaceAll("^.*?((?:§[\\da-fA-FKLMNORklmnor])*)$", "$1");
+                                    formattedArg = new Component(String.format(placeholder.replaceAll("^%\\d+\\$", "%"), colorCode + argComponent)).withStyle(argComponent);
+                                } catch (Exception e) {
+                                    // 颜色传递
+                                    if (argComponent.isColorEmpty()) {
+                                        argComponent.setColor(this.color);
+                                    }
+                                    formattedArg = argComponent;
+                                }
+                            } else {
+                                // 颜色传递
+                                if (argComponent.isColorEmpty()) {
+                                    argComponent.setColor(this.color);
+                                }
                                 formattedArg = argComponent;
                             }
                         }
@@ -553,10 +565,43 @@ public class Component implements Cloneable, Serializable {
     }
 
     /**
+     * 获取聊天文本组件
+     *
+     * @return 格式化颜色后的文本组件
+     */
+    public ITextComponent toChatComponent() {
+        return this.toChatComponent(this.getLanguageCode());
+    }
+
+    /**
+     * 获取聊天文本组件
+     *
+     * @return 格式化颜色后的文本组件
+     */
+    public ITextComponent toChatComponent(String languageCode) {
+        return rewriteColor(this.toTextComponent(languageCode));
+    }
+
+    // 😵‍💫
+    public static ITextComponent rewriteColor(ITextComponent component) {
+        if (component instanceof IFormattableTextComponent) {
+            Color color = component.getStyle().getColor();
+            if (color != null && color.serialize().startsWith("#")) {
+                Style style = component.getStyle().withColor(Color.parseColor(StringUtils.argbToMinecraftColor(StringUtils.argbToHex(color.serialize())).name().toLowerCase()));
+                ((IFormattableTextComponent) component).setStyle(style);
+            }
+        }
+        for (ITextComponent sibling : component.getSiblings()) {
+            rewriteColor(sibling);
+        }
+        return component;
+    }
+
+    /**
      * 获取空文本组件
      */
     public static Component empty() {
-        return EMPTY;
+        return new Component();
     }
 
     /**

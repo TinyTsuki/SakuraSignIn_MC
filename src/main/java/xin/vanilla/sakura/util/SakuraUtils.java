@@ -147,7 +147,7 @@ public class SakuraUtils {
      * @param message 消息
      */
     public static void broadcastMessage(ServerPlayerEntity player, Component message) {
-        player.server.getPlayerList().broadcastMessage(new TranslationTextComponent("chat.type.announcement", player.getDisplayName(), message.toTextComponent()), ChatType.SYSTEM, Util.NIL_UUID);
+        player.server.getPlayerList().broadcastMessage(new TranslationTextComponent("chat.type.announcement", player.getDisplayName(), message.toChatComponent()), ChatType.SYSTEM, Util.NIL_UUID);
     }
 
     /**
@@ -157,7 +157,7 @@ public class SakuraUtils {
      * @param message 消息
      */
     public static void broadcastMessage(MinecraftServer server, Component message) {
-        server.getPlayerList().broadcastMessage(new TranslationTextComponent("chat.type.announcement", "Server", message.toTextComponent()), ChatType.SYSTEM, Util.NIL_UUID);
+        server.getPlayerList().broadcastMessage(new TranslationTextComponent("chat.type.announcement", "Server", message.toChatComponent()), ChatType.SYSTEM, Util.NIL_UUID);
     }
 
     /**
@@ -167,7 +167,7 @@ public class SakuraUtils {
      * @param message 消息
      */
     public static void sendMessage(ServerPlayerEntity player, Component message) {
-        player.sendMessage(message.toTextComponent(player.getLanguage()), player.getUUID());
+        player.sendMessage(message.toChatComponent(player.getLanguage()), player.getUUID());
     }
 
     /**
@@ -177,7 +177,7 @@ public class SakuraUtils {
      * @param message 消息
      */
     public static void sendMessage(ClientPlayerEntity player, Component message) {
-        player.sendMessage(message.toTextComponent(SakuraUtils.getClientLanguage()), player.getUUID());
+        player.sendMessage(message.toChatComponent(SakuraUtils.getClientLanguage()), player.getUUID());
     }
 
     /**
@@ -187,7 +187,7 @@ public class SakuraUtils {
      * @param message 消息
      */
     public static void sendMessage(ServerPlayerEntity player, String message) {
-        player.sendMessage(Component.literal(message).toTextComponent(), player.getUUID());
+        player.sendMessage(Component.literal(message).toChatComponent(), player.getUUID());
     }
 
     /**
@@ -198,7 +198,7 @@ public class SakuraUtils {
      * @param args   参数
      */
     public static void sendTranslatableMessage(ServerPlayerEntity player, String key, Object... args) {
-        player.sendMessage(Component.translatable(key, args).setLanguageCode(player.getLanguage()).toTextComponent(), player.getUUID());
+        player.sendMessage(Component.translatable(key, args).setLanguageCode(player.getLanguage()).toChatComponent(), player.getUUID());
     }
 
     // endregion 消息相关
