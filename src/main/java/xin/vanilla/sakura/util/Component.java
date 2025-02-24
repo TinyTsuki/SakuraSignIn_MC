@@ -18,7 +18,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Accessors(chain = true)
 @NoArgsConstructor
@@ -478,7 +477,7 @@ public class Component implements Cloneable, Serializable {
         if (!this.isColorEmpty()) {
             if (this.i18nType != EI18nType.PLAIN) {
                 String text = I18nUtils.getTranslation(I18nUtils.getKey(this.i18nType, this.text), languageCode);
-                String[] split = text.split(StringUtils.FORMAT_REGEX);
+                String[] split = text.split(StringUtils.FORMAT_REGEX, -1);
                 for (String s : split) {
                     components.add(new TextComponent(s).withStyle(this.getStyle()));
                 }
@@ -518,14 +517,19 @@ public class Component implements Cloneable, Serializable {
                             }
                         }
                     }
-                    components.get(i).append(formattedArg.toTextComponent());
+                    if (components.size() > i) {
+                        components.get(i).append(formattedArg.toTextComponent());
+                    }
                     i++;
                 }
             } else {
                 components.add(new TextComponent(this.text).withStyle(this.getStyle()));
             }
         }
-        components.addAll(this.children.stream().map(component -> (MutableComponent) component.toTextComponent(languageCode)).collect(Collectors.toList()));
+        components.addAll(this.children.stream().map(component -> (MutableComponent) component.toTextComponent(languageCode)).toList());
+        if (components.isEmpty()) {
+            components.add(new TextComponent(""));
+        }
         MutableComponent result = components.get(0);
         for (int j = 1; j < components.size(); j++) {
             result.append(components.get(j));
