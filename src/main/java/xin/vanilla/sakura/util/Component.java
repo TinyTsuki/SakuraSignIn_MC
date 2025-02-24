@@ -480,14 +480,14 @@ public class Component implements Cloneable, Serializable {
      * @param languageCode 语言代码
      */
     public ITextComponent toTextComponent(String languageCode) {
-        List<ITextComponent> components = new ArrayList<>();
+        List<TextComponent> components = new ArrayList<>();
         // 如果颜色值为null则说明为透明，则不显示内容，所以返回空文本组件
         if (!this.isColorEmpty()) {
             if (this.i18nType != EI18nType.PLAIN) {
                 String text = I18nUtils.getTranslation(I18nUtils.getKey(this.i18nType, this.text), languageCode);
-                String[] split = text.split(StringUtils.FORMAT_REGEX);
+                String[] split = text.split(StringUtils.FORMAT_REGEX, -1);
                 for (String s : split) {
-                    components.add(new StringTextComponent(s).setStyle(this.getStyle()));
+                    components.add((StringTextComponent) new StringTextComponent(s).setStyle(this.getStyle()));
                 }
                 Pattern pattern = Pattern.compile(StringUtils.FORMAT_REGEX);
                 Matcher matcher = pattern.matcher(text);
@@ -525,15 +525,20 @@ public class Component implements Cloneable, Serializable {
                             }
                         }
                     }
-                    components.get(i).append(formattedArg.toTextComponent());
+                    if (components.size() > i) {
+                        components.get(i).append(formattedArg.toTextComponent());
+                    }
                     i++;
                 }
             } else {
-                components.add(new StringTextComponent(this.text).setStyle(this.getStyle()));
+                components.add((StringTextComponent) new StringTextComponent(this.text).setStyle(this.getStyle()));
             }
         }
-        components.addAll(this.children.stream().map(component -> component.toTextComponent(languageCode)).collect(Collectors.toList()));
-        ITextComponent result = components.get(0);
+        components.addAll(this.children.stream().map(component -> (TextComponent) component.toTextComponent(languageCode)).collect(Collectors.toList()));
+        if (components.isEmpty()) {
+            components.add(new StringTextComponent(""));
+        }
+        TextComponent result = components.get(0);
         for (int j = 1; j < components.size(); j++) {
             result.append(components.get(j));
         }
