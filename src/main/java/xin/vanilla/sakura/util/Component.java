@@ -3,6 +3,7 @@ package xin.vanilla.sakura.util;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.mojang.serialization.DataResult;
 import com.mojang.serialization.JsonOps;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -478,7 +479,7 @@ public class Component implements Cloneable, Serializable {
         if (!this.isColorEmpty()) {
             if (this.i18nType != EI18nType.PLAIN) {
                 String text = I18nUtils.getTranslation(I18nUtils.getKey(this.i18nType, this.text), languageCode);
-                String[] split = text.split(StringUtils.FORMAT_REGEX);
+                String[] split = text.split(StringUtils.FORMAT_REGEX, -1);
                 for (String s : split) {
                     components.add(net.minecraft.network.chat.Component.literal(s).withStyle(this.getStyle()));
                 }
@@ -518,7 +519,9 @@ public class Component implements Cloneable, Serializable {
                             }
                         }
                     }
-                    components.get(i).append(formattedArg.toTextComponent());
+                    if (components.size() > i) {
+                        components.get(i).append(formattedArg.toTextComponent());
+                    }
                     i++;
                 }
             } else {
@@ -588,8 +591,11 @@ public class Component implements Cloneable, Serializable {
         if (component instanceof MutableComponent) {
             TextColor color = component.getStyle().getColor();
             if (color != null && color.serialize().startsWith("#")) {
-                Style style = component.getStyle().withColor(TextColor.parseColor(StringUtils.argbToMinecraftColor(StringUtils.argbToHex(color.serialize())).name().toLowerCase()));
-                ((MutableComponent) component).setStyle(style);
+                DataResult<TextColor> result = TextColor.parseColor(StringUtils.argbToMinecraftColor(StringUtils.argbToHex(color.serialize())).name().toLowerCase());
+                result.result().ifPresent(textColor -> {
+                    Style style = component.getStyle().withColor(textColor);
+                    ((MutableComponent) component).setStyle(style);
+                });
             }
         }
         for (net.minecraft.network.chat.Component sibling : component.getSiblings()) {
