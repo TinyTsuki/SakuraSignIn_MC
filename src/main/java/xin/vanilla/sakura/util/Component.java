@@ -53,6 +53,13 @@ public class Component implements Cloneable, Serializable {
     @Getter
     private final List<Component> args = new ArrayList<>();
 
+    /**
+     * 原始组件
+     */
+    @Getter
+    @Setter
+    private Object original = null;
+
     // region 样式属性
 
     /**
@@ -481,57 +488,61 @@ public class Component implements Cloneable, Serializable {
      */
     public ITextComponent toTextComponent(String languageCode) {
         List<TextComponent> components = new ArrayList<>();
-        // 如果颜色值为null则说明为透明，则不显示内容，所以返回空文本组件
-        if (!this.isColorEmpty()) {
-            if (this.i18nType != EI18nType.PLAIN) {
-                String text = I18nUtils.getTranslation(I18nUtils.getKey(this.i18nType, this.text), languageCode);
-                String[] split = text.split(StringUtils.FORMAT_REGEX, -1);
-                for (String s : split) {
-                    components.add((StringTextComponent) new StringTextComponent(s).setStyle(this.getStyle()));
-                }
-                Pattern pattern = Pattern.compile(StringUtils.FORMAT_REGEX);
-                Matcher matcher = pattern.matcher(text);
-                int i = 0;
-                while (matcher.find()) {
-                    String placeholder = matcher.group();
-                    int index = placeholder.contains("$") ? StringUtils.toInt(placeholder.split("\\$")[0].substring(1)) - 1 : -1;
-                    if (index == -1) {
-                        index = i;
+        if (this.i18nType == EI18nType.ORIGINAL) {
+            components.add((TextComponent) this.original);
+        } else {
+            // 如果颜色值为null则说明为透明，则不显示内容，所以返回空文本组件
+            if (!this.isColorEmpty()) {
+                if (this.i18nType != EI18nType.PLAIN) {
+                    String text = I18nUtils.getTranslation(I18nUtils.getKey(this.i18nType, this.text), languageCode);
+                    String[] split = text.split(StringUtils.FORMAT_REGEX, -1);
+                    for (String s : split) {
+                        components.add((StringTextComponent) new StringTextComponent(s).setStyle(this.getStyle()));
                     }
-                    Component formattedArg = new Component(placeholder).withStyle(this);
-                    if (index < this.args.size()) {
-                        if (this.args.get(index) == null) {
-                            formattedArg = new Component();
-                        } else {
-                            Component argComponent = this.args.get(index);
-                            if (argComponent.getI18nType() != EI18nType.PLAIN) {
-                                try {
-                                    // 颜色代码传递
-                                    String colorCode = split[i].replaceAll("^.*?((?:§[\\da-fA-FKLMNORklmnor])*)$", "$1");
-                                    formattedArg = new Component(String.format(placeholder.replaceAll("^%\\d+\\$", "%"), colorCode + argComponent)).withStyle(argComponent);
-                                } catch (Exception e) {
+                    Pattern pattern = Pattern.compile(StringUtils.FORMAT_REGEX);
+                    Matcher matcher = pattern.matcher(text);
+                    int i = 0;
+                    while (matcher.find()) {
+                        String placeholder = matcher.group();
+                        int index = placeholder.contains("$") ? StringUtils.toInt(placeholder.split("\\$")[0].substring(1)) - 1 : -1;
+                        if (index == -1) {
+                            index = i;
+                        }
+                        Component formattedArg = new Component(placeholder).withStyle(this);
+                        if (index < this.args.size()) {
+                            if (this.args.get(index) == null) {
+                                formattedArg = new Component();
+                            } else {
+                                Component argComponent = this.args.get(index);
+                                if (argComponent.getI18nType() != EI18nType.PLAIN) {
+                                    try {
+                                        // 颜色代码传递
+                                        String colorCode = split[i].replaceAll("^.*?((?:§[\\da-fA-FKLMNORklmnor])*)$", "$1");
+                                        formattedArg = new Component(String.format(placeholder.replaceAll("^%\\d+\\$", "%"), colorCode + argComponent)).withStyle(argComponent);
+                                    } catch (Exception e) {
+                                        // 颜色传递
+                                        if (argComponent.isColorEmpty()) {
+                                            argComponent.setColor(this.color);
+                                        }
+                                        formattedArg = argComponent;
+                                    }
+                                } else {
                                     // 颜色传递
                                     if (argComponent.isColorEmpty()) {
                                         argComponent.setColor(this.color);
                                     }
                                     formattedArg = argComponent;
                                 }
-                            } else {
-                                // 颜色传递
-                                if (argComponent.isColorEmpty()) {
-                                    argComponent.setColor(this.color);
-                                }
-                                formattedArg = argComponent;
                             }
                         }
+                        if (components.size() > i) {
+                            components.get(i).append(formattedArg.toTextComponent());
+                        }
+                        i++;
                     }
-                    if (components.size() > i) {
-                        components.get(i).append(formattedArg.toTextComponent());
-                    }
-                    i++;
+                } else {
+                    components.add((StringTextComponent) new StringTextComponent(this.text).setStyle(this.getStyle()));
                 }
-            } else {
-                components.add((StringTextComponent) new StringTextComponent(this.text).setStyle(this.getStyle()));
             }
         }
         components.addAll(this.children.stream().map(component -> (TextComponent) component.toTextComponent(languageCode)).collect(Collectors.toList()));
@@ -612,6 +623,13 @@ public class Component implements Cloneable, Serializable {
      */
     public static Component empty() {
         return new Component();
+    }
+
+    /**
+     * 获取原始组件
+     */
+    public static Component original(Object original) {
+        return empty().setOriginal(original).setI18nType(EI18nType.ORIGINAL);
     }
 
     /**
