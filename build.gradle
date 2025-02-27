@@ -87,7 +87,7 @@ minecraft {
 
         server {
             property 'forge.enabledGameTestNamespaces', mod_id
-            args '--nogui'
+            // args '--nogui' // 不禁用gui方便指令调试
         }
 
         // This run config launches GameTestServer and runs all registered gametests, then exits.

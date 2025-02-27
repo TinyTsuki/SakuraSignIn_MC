@@ -12,6 +12,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraftforge.registries.ForgeRegistries;
 import xin.vanilla.sakura.rewards.RewardParser;
+import xin.vanilla.sakura.util.Component;
 
 import static xin.vanilla.sakura.config.RewardOptionDataManager.GSON;
 
@@ -76,14 +77,15 @@ public class ItemRewardParser implements RewardParser<ItemStack> {
     }
 
     @Override
-    public @NonNull String getDisplayName(String languageCode, JsonObject json) {
+    public @NonNull Component getDisplayName(String languageCode, JsonObject json) {
         return getDisplayName(languageCode, json, false);
     }
 
     @Override
-    public @NonNull String getDisplayName(String languageCode, JsonObject json, boolean withNum) {
+    public @NonNull Component getDisplayName(String languageCode, JsonObject json, boolean withNum) {
         ItemStack itemStack = this.deserialize(json);
-        return itemStack.getDisplayName().getString().replaceAll("\\[(.*)]", "$1") + (withNum ? "x" + itemStack.getCount() : "");
+        return Component.original(itemStack.getHoverName())
+                .append(withNum ? "x" + itemStack.getCount() : "");
     }
 
     public @NonNull

@@ -13,7 +13,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ERewardType;
 import xin.vanilla.sakura.rewards.RewardParser;
-import xin.vanilla.sakura.util.I18nUtils;
+import xin.vanilla.sakura.util.Component;
 
 import java.util.Optional;
 
@@ -49,14 +49,15 @@ public class EffectRewardParser implements RewardParser<MobEffectInstance> {
     }
 
     @Override
-    public @NonNull String getDisplayName(String languageCode, JsonObject json) {
+    public @NonNull Component getDisplayName(String languageCode, JsonObject json) {
         return getDisplayName(languageCode, json, false);
     }
 
     @Override
-    public @NonNull String getDisplayName(String languageCode, JsonObject json, boolean withNum) {
-        String rewardType = I18nUtils.getTranslation(EI18nType.WORD, "reward_type_" + ERewardType.EFFECT.getCode(), languageCode);
-        return String.format("%s: %s", rewardType, this.deserialize(json).getEffect().value().getDisplayName().getString());
+    public @NonNull Component getDisplayName(String languageCode, JsonObject json, boolean withNum) {
+        return Component.translatable(languageCode, EI18nType.WORD, "reward_type_" + ERewardType.EFFECT.getCode())
+                .append(": ")
+                .append(Component.original(this.deserialize(json).getEffect().value().getDisplayName()));
     }
 
     public static @NonNull String getDisplayName(MobEffectInstance instance) {
