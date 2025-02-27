@@ -10,7 +10,7 @@ import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ERewardType;
 import xin.vanilla.sakura.network.AdvancementData;
 import xin.vanilla.sakura.rewards.RewardParser;
-import xin.vanilla.sakura.util.I18nUtils;
+import xin.vanilla.sakura.util.Component;
 
 public class AdvancementRewardParser implements RewardParser<ResourceLocation> {
 
@@ -72,19 +72,19 @@ public class AdvancementRewardParser implements RewardParser<ResourceLocation> {
     }
 
     @Override
-    public @NonNull String getDisplayName(String languageCode, JsonObject json) {
+    public @NonNull Component getDisplayName(String languageCode, JsonObject json) {
         return getDisplayName(languageCode, json, false);
     }
 
     @Override
-    public @NonNull String getDisplayName(String languageCode, JsonObject json, boolean withNum) {
+    public @NonNull Component getDisplayName(String languageCode, JsonObject json, boolean withNum) {
         ResourceLocation deserialize = deserialize(json);
-        String rewardType = I18nUtils.getTranslation(EI18nType.WORD, "reward_type_" + ERewardType.ADVANCEMENT.getCode(), languageCode);
-        return String.format("%s: %s", rewardType
-                , SakuraSignIn.getAdvancementData().stream()
+        return Component.translatable(languageCode, EI18nType.WORD, "reward_type_" + ERewardType.ADVANCEMENT.getCode())
+                .append(": ")
+                .append(Component.original(SakuraSignIn.getAdvancementData().stream()
                         .filter(data -> data.getId().equals(deserialize))
                         .findFirst().orElse(new AdvancementData(deserialize, null))
-                        .getDisplayInfo().getTitle().getString());
+                        .getDisplayInfo().getTitle()));
     }
 
     public @NonNull
