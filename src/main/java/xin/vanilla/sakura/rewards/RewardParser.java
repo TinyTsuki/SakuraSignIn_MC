@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import lombok.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.sakura.util.Component;
 
 public interface RewardParser<T> {
     Logger LOGGER = LogManager.getLogger();
@@ -21,8 +22,8 @@ public interface RewardParser<T> {
     JsonObject serialize(T reward);
 
     @NonNull
-    String getDisplayName(String languageCode, JsonObject json);
+    Component getDisplayName(String languageCode, JsonObject json);
 
     @NonNull
-    String getDisplayName(String languageCode, JsonObject json, boolean withNum);
+    Component getDisplayName(String languageCode, JsonObject json, boolean withNum);
 }
