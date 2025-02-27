@@ -82,12 +82,12 @@ public class RewardManager {
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> String getRewardName(String languageCode, Reward reward, boolean withNum) {
+    public static <T> Component getRewardName(String languageCode, Reward reward, boolean withNum) {
         RewardParser<T> parser = (RewardParser<T>) rewardParsers.get(reward.getType());
         if (parser == null) {
             throw new JsonParseException("Unknown reward type: " + reward.getType());
         }
-        return parser.getDisplayName(languageCode, reward.getContent(), withNum).trim();
+        return parser.getDisplayName(languageCode, reward.getContent(), withNum);
     }
 
     /**
@@ -213,7 +213,8 @@ public class RewardManager {
                 day = i - daysOfCurrentMonth - nextOffset;
             }
             int key = year * 10000 + month * 100 + day;
-            RewardList rewardList = RewardManager.getRewardListByDate(DateUtils.getDate(year, month, day, DateUtils.getHourOfDay(currentMonth), DateUtils.getMinuteOfHour(currentMonth), DateUtils.getSecondOfMinute(currentMonth)), playerData, false, false);
+            Date currentDay = DateUtils.getDate(year, month, day, DateUtils.getHourOfDay(currentMonth), DateUtils.getMinuteOfHour(currentMonth), DateUtils.getSecondOfMinute(currentMonth));
+            RewardList rewardList = RewardManager.getRewardListByDate(currentDay, playerData, false, false).clone();
             result.put(key, rewardList);
         }
         return result;
@@ -222,7 +223,7 @@ public class RewardManager {
     /**
      * 获取指定日期的奖励列表
      *
-     * @param currentDay  日期
+     * @param currentDay  已校准后的日期
      * @param playerData  玩家签到数据
      * @param onlyHistory 是否仅获取玩家签到记录中的奖励
      */
@@ -238,7 +239,7 @@ public class RewardManager {
         int daysOfCurrentYear = DateUtils.getDaysOfYear(currentDay);
 
         // 计算本月+上月最后offset天+下月开始offset的奖励
-        int month, day, year;
+        int year, month, day;
         // 属于当前月的日期
         year = DateUtils.getYearPart(currentDay);
         month = DateUtils.getMonthOfDate(currentDay);
@@ -251,7 +252,7 @@ public class RewardManager {
 
         // 已签到的奖励记录
         List<Reward> rewardRecords = null;
-        // 如果日历日期小于当前日期, 则从签到记录中获取已签到的奖励记录
+        // 如果日历日期小于等于当前日期, 则从签到记录中查找已签到的奖励记录
         if (key <= nowCompensate8) {
             rewardRecords = playerData.getSignInRecords().stream()
                     .map(SignInRecord::clone)
@@ -265,12 +266,13 @@ public class RewardManager {
                     .toList();
         }
 
-        // 若签到记录存在，则添加签到奖励记录
+        // 若签到记录存在，则添加签到奖励记录并直接返回
         if (CollectionUtils.isNotNullOrEmpty(rewardRecords)) {
             result.addAll(rewardRecords);
         }
-        // 若日期小于当前日期 且 补签仅计算基础奖励
+        // 若签到记录不存在，则计算
         else {
+            // 若日期小于当前日期 且 补签仅计算基础奖励
             if (!onlyHistory && key < nowCompensate8 && ServerConfig.SIGN_IN_CARD_ONLY_BASE_REWARD.get()) {
                 // 基础奖励
                 result.addAll(serverData.getBaseRewards());
@@ -529,7 +531,7 @@ public class RewardManager {
                                     .forEach(reward -> {
                                         reward.setDisabled(true);
                                         reward.setRewarded(true);
-                                        Component detail = Component.literal(reward.getName(SakuraUtils.getPlayerLanguage(player), true));
+                                        Component detail = reward.getName(SakuraUtils.getPlayerLanguage(player), true);
                                         if (giveRewardToPlayer(player, signInData, reward)) {
                                             detail.setColor(Color.GREEN.getRGB());
                                             msg.append(", ").append(detail);
@@ -557,7 +559,7 @@ public class RewardManager {
                 boolean showFailed = player.hasPermissions(ServerConfig.PERMISSION_REWARD_FAILED_TIPS.get());
                 Component msg = Component.translatable(player, EI18nType.MESSAGE, "receive_reward_success");
                 rewardList.forEach(reward -> {
-                    Component detail = Component.literal(reward.getName(SakuraUtils.getPlayerLanguage(player), true));
+                    Component detail = reward.getName(SakuraUtils.getPlayerLanguage(player), true);
                     if (giveRewardToPlayer(player, signInData, reward)) {
                         detail.setColor(Color.GREEN.getRGB());
                         signInRecord.getRewardList().add(reward);
