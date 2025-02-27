@@ -57,7 +57,7 @@ public class SignInRecord implements Serializable, Cloneable {
         tag.putString("signInTime", DateUtils.toDateTimeString(signInTime));
         tag.putString("signInUUID", signInUUID);
         tag.putBoolean("rewarded", rewarded);
-        tag.putString("rewardList", GSON.toJson(rewardList));
+        tag.putString("rewardList", GSON.toJson(rewardList.toJsonArray()));
         return tag;
     }
 
