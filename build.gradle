@@ -85,7 +85,7 @@ minecraft {
         client {}
 
         server {
-            args '--nogui'
+            // args '--nogui' // 不禁用gui方便指令调试
         }
 
         data {
