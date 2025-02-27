@@ -6,7 +6,6 @@ import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ERewardType;
 import xin.vanilla.sakura.rewards.RewardParser;
 import xin.vanilla.sakura.util.Component;
-import xin.vanilla.sakura.util.I18nUtils;
 
 public class MessageRewardParser implements RewardParser<Component> {
 
@@ -21,12 +20,12 @@ public class MessageRewardParser implements RewardParser<Component> {
     }
 
     @Override
-    public @NonNull String getDisplayName(String languageCode, JsonObject json) {
+    public @NonNull Component getDisplayName(String languageCode, JsonObject json) {
         return getDisplayName(languageCode, json, false);
     }
 
     @Override
-    public @NonNull String getDisplayName(String languageCode, JsonObject json, boolean withNum) {
-        return I18nUtils.getTranslation(EI18nType.WORD, "reward_type_" + ERewardType.MESSAGE.getCode(), languageCode);
+    public @NonNull Component getDisplayName(String languageCode, JsonObject json, boolean withNum) {
+        return Component.translatable(languageCode, EI18nType.WORD, "reward_type_" + ERewardType.MESSAGE.getCode());
     }
 }
