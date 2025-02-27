@@ -213,7 +213,7 @@ public class SignInCommand {
                         } else {
                             Component msg = Component.translatable(player, EI18nType.MESSAGE, "receive_reward_success");
                             rewardKeyValue.getValue().getValue().forEach(reward -> {
-                                Component detail = Component.literal(reward.getName(SakuraUtils.getPlayerLanguage(player), true));
+                                Component detail = reward.getName(SakuraUtils.getPlayerLanguage(player), true);
                                 if (RewardManager.giveRewardToPlayer(player, signInData, reward)) {
                                     detail.setColor(Color.GREEN.getRGB());
                                 } else {
