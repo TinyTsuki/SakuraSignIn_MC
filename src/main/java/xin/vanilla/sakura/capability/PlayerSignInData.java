@@ -6,7 +6,6 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.sakura.config.KeyValue;
-import xin.vanilla.sakura.util.CollectionUtils;
 import xin.vanilla.sakura.util.DateUtils;
 
 import java.util.ArrayList;
@@ -115,21 +114,41 @@ public class PlayerSignInData implements IPlayerSignInData {
 
     @Override
     public @NonNull List<SignInRecord> getSignInRecords() {
-        return signInRecords = CollectionUtils.isNullOrEmpty(signInRecords) ? new ArrayList<>() : signInRecords;
+        if (this.signInRecords == null) {
+            this.signInRecords = new ArrayList<>();
+        } else {
+            this.signInRecords.removeIf(Objects::isNull);
+        }
+        return this.signInRecords;
     }
 
     @Override
     public void setSignInRecords(List<SignInRecord> records) {
+        if (records == null) {
+            records = new ArrayList<>();
+        } else {
+            records.removeIf(Objects::isNull);
+        }
         this.signInRecords = records;
     }
 
     @Override
     public @NonNull List<KeyValue<String, KeyValue<Date, Boolean>>> getCdkErrorRecords() {
-        return cdkRecords = CollectionUtils.isNullOrEmpty(cdkRecords) ? new ArrayList<>() : cdkRecords;
+        if (this.cdkRecords == null) {
+            this.cdkRecords = new ArrayList<>();
+        } else {
+            this.cdkRecords.removeIf(Objects::isNull);
+        }
+        return this.cdkRecords;
     }
 
     @Override
     public void setCdkErrorRecords(List<KeyValue<String, KeyValue<Date, Boolean>>> cdkRecords) {
+        if (cdkRecords == null) {
+            cdkRecords = new ArrayList<>();
+        } else {
+            cdkRecords.removeIf(Objects::isNull);
+        }
         this.cdkRecords = cdkRecords;
     }
 
@@ -173,8 +192,8 @@ public class PlayerSignInData implements IPlayerSignInData {
         this.lastSignInTime = capability.getLastSignInTime();
         this.signInCard.set(capability.getSignInCard());
         this.autoRewarded = capability.isAutoRewarded();
-        this.signInRecords = capability.getSignInRecords();
-        this.cdkRecords = capability.getCdkErrorRecords();
+        this.setSignInRecords(capability.getSignInRecords());
+        this.setCdkErrorRecords(capability.getCdkErrorRecords());
     }
 
     @Override
