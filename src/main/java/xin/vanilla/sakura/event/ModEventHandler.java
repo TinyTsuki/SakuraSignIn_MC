@@ -2,13 +2,11 @@ package xin.vanilla.sakura.event;
 
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.capability.PlayerSignInDataCapability;
-import xin.vanilla.sakura.config.ServerConfig;
 
 /**
  * Mod 事件处理器
@@ -21,13 +19,6 @@ public class ModEventHandler {
     public static void onCommonSetup(FMLCommonSetupEvent event) {
         // 注册 PlayerDataCapability
         PlayerSignInDataCapability.register();
-    }
-
-    @SubscribeEvent
-    public void onConfigLoadOrReload(ModConfig.ModConfigEvent event) {
-        if (event.getConfig().getSpec() == ServerConfig.SERVER_CONFIG) {
-            LOGGER.debug("Server Config loaded/reloaded.");
-        }
     }
 
 }
