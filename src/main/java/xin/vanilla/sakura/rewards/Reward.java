@@ -75,10 +75,6 @@ public class Reward implements Cloneable, Serializable {
     public Reward clone() {
         try {
             Reward cloned = (Reward) super.clone();
-            cloned.rewarded = this.rewarded;
-            cloned.disabled = this.disabled;
-            cloned.type = this.type;
-            cloned.probability = this.probability;
             cloned.content = GSON.fromJson(GSON.toJson(this.content), JsonObject.class);
             return cloned;
         } catch (Exception e) {

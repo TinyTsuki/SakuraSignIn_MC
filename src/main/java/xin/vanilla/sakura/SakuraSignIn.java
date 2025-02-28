@@ -55,7 +55,7 @@ public class SakuraSignIn {
 
     public static final ExecutorService EXECUTOR_SERVICE = Executors.newCachedThreadPool();
 
-    public static final Logger LOGGER = LogManager.getLogger();
+    private static final Logger LOGGER = LogManager.getLogger();
 
     /**
      * 服务端实例
