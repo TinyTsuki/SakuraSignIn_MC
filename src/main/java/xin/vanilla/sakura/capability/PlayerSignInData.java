@@ -127,6 +127,7 @@ public class PlayerSignInData implements IPlayerSignInData {
         if (records == null) {
             records = new ArrayList<>();
         } else {
+            records = new ArrayList<>(records);
             records.removeIf(Objects::isNull);
         }
         this.signInRecords = records;
@@ -147,6 +148,7 @@ public class PlayerSignInData implements IPlayerSignInData {
         if (cdkRecords == null) {
             cdkRecords = new ArrayList<>();
         } else {
+            cdkRecords = new ArrayList<>(cdkRecords);
             cdkRecords.removeIf(Objects::isNull);
         }
         this.cdkRecords = cdkRecords;
