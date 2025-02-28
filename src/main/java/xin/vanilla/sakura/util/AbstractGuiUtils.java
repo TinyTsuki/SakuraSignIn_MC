@@ -567,9 +567,9 @@ public class AbstractGuiUtils {
                 // 绘制每行文本
                 PoseStack poseStack = text.getPoseStack();
                 if (text.isShadow()) {
-                    font.drawShadow(poseStack, text.copy().setText(line).toComponent().toTextComponent(SakuraUtils.getClientLanguage()), (float) x + xOffset, (float) y + index * font.lineHeight, text.getColor());
+                    font.drawShadow(poseStack, text.copyWithoutChildren().setText(line).toComponent().toTextComponent(SakuraUtils.getClientLanguage()), (float) x + xOffset, (float) y + index * font.lineHeight, text.getColor());
                 } else {
-                    font.draw(poseStack, text.copy().setText(line).toComponent().toTextComponent(SakuraUtils.getClientLanguage()), (float) x + xOffset, (float) y + index * font.lineHeight, text.getColor());
+                    font.draw(poseStack, text.copyWithoutChildren().setText(line).toComponent().toTextComponent(SakuraUtils.getClientLanguage()), (float) x + xOffset, (float) y + index * font.lineHeight, text.getColor());
                 }
 
                 index++;
@@ -1146,8 +1146,8 @@ public class AbstractGuiUtils {
             if (msgHeight >= screenHeight) msgHeight = screenHeight - padding * 2;
 
             // 初始化调整后的坐标
-            adjustedX -= msgWidth / 2; // 横向居中
-            adjustedY -= msgHeight - 5; // 放置在鼠标上方（默认偏移 5 像素）
+            adjustedX = x - msgWidth / 2; // 横向居中
+            adjustedY = y - msgHeight - 5; // 放置在鼠标上方（默认偏移 5 像素）
 
             // 检查顶部空间是否充足
             boolean hasTopSpace = adjustedY >= margin;
