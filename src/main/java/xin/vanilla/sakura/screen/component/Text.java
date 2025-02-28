@@ -63,7 +63,7 @@ public class Text {
 
     public Text(Component text) {
         this.text = text;
-        this.hoverText = text;
+        this.hoverText = text.clone();
     }
 
     public static Text literal(String text) {
@@ -78,6 +78,17 @@ public class Text {
         return new Text()
                 .setText(this.text.clone())
                 .setHoverText(this.hoverText.clone())
+                .setHovered(this.hovered)
+                .setAlign(this.align)
+                .setHoverAlign(this.hoverAlign)
+                .setGraphics(this.graphics)
+                .setFont(this.font);
+    }
+
+    public Text copyWithoutChildren() {
+        return new Text()
+                .setText(this.text.clone().clearChildren().clearArgs())
+                .setHoverText(this.hoverText.clone().clearChildren().clearArgs())
                 .setHovered(this.hovered)
                 .setAlign(this.align)
                 .setHoverAlign(this.hoverAlign)
@@ -158,7 +169,7 @@ public class Text {
 
     public Text setText(Component text) {
         this.text = text;
-        this.hoverText = text;
+        this.hoverText = text.clone();
         return this;
     }
 
