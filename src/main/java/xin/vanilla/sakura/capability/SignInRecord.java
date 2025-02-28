@@ -82,8 +82,6 @@ public class SignInRecord implements Serializable, Cloneable {
             SignInRecord cloned = (SignInRecord) super.clone();
             cloned.compensateTime = (Date) this.compensateTime.clone();
             cloned.signInTime = (Date) this.signInTime.clone();
-            cloned.signInUUID = this.signInUUID;
-            cloned.rewarded = this.rewarded;
             if (CollectionUtils.isNotNullOrEmpty(this.rewardList))
                 cloned.rewardList = this.rewardList.clone();
             else
