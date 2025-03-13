@@ -130,4 +130,6 @@ public interface IPlayerSignInData extends INBTSerializable<CompoundNBT> {
     void copyFrom(IPlayerSignInData capability);
 
     void save(ServerPlayerEntity player);
+
+    int calculateContinuousDays();
 }
