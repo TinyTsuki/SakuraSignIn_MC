@@ -212,7 +212,9 @@ public class RewardOptionData implements Serializable {
                     this.continuousRewardsRelation.put(String.valueOf(i), String.valueOf(cur));
                 }
             } else {
-                this.continuousRewardsRelation.put(String.valueOf(keyList.get(0)), String.valueOf(keyList.get(0)));
+                for (int i : keyList) {
+                    this.continuousRewardsRelation.put(String.valueOf(i), String.valueOf(i));
+                }
             }
         }
     }
@@ -260,7 +262,9 @@ public class RewardOptionData implements Serializable {
                     this.cycleRewardsRelation.put(String.valueOf(i), String.valueOf(cur));
                 }
             } else {
-                this.cycleRewardsRelation.put(String.valueOf(keyList.get(0)), String.valueOf(keyList.get(0)));
+                for (int i : keyList) {
+                    this.cycleRewardsRelation.put(String.valueOf(i), String.valueOf(i));
+                }
             }
         }
     }
