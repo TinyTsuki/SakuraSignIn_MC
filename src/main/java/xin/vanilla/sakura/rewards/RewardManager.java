@@ -309,11 +309,11 @@ public class RewardManager {
                 //  若日历日期>=当前日期，则添加连续签到奖励(不同玩家不一样)
                 if (key >= nowCompensate8) {
                     // 连续签到天数
-                    int continuousSignInDays = playerData.getContinuousSignInDays();
-                    if (DateUtils.toDateInt(playerData.getLastSignInTime()) < nowCompensate8) {
-                        continuousSignInDays++;
-                    }
-                    continuousSignInDays += key - nowCompensate8;
+                    int continuousSignInDays = playerData.calculateContinuousDays();
+                    // if (DateUtils.toDateInt(playerData.getLastSignInTime()) < nowCompensate8) {
+                    //     continuousSignInDays++;
+                    // }
+                    continuousSignInDays += (int) DateUtils.daysOfTwo(DateUtils.toTheDayStart(getCompensateDate(DateUtils.getServerDate())), DateUtils.toTheDayStart(currentDay));
                     // 连续签到奖励
                     int continuousMax = serverData.getContinuousRewardsRelation().keySet().stream().map(Integer::parseInt).max(Comparator.naturalOrder()).orElse(0);
                     RewardList continuousRewards = serverData.getContinuousRewards().get(
@@ -581,7 +581,7 @@ public class RewardManager {
             signInData.getSignInRecords().add(signInRecord);
             signInData.setContinuousSignInDays(DateUtils.calculateContinuousDays(signInData.getSignInRecords().stream().map(SignInRecord::getCompensateTime).collect(Collectors.toList()), serverCompensateDate));
             signInData.plusTotalSignInDays();
-            SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "sign_in_success_s", DateUtils.toString(signInRecord.getCompensateTime()), signInData.getContinuousSignInDays(), getTotalSignInDays(signInData)));
+            SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "sign_in_success_s", DateUtils.toString(signInRecord.getCompensateTime()), signInData.calculateContinuousDays(), getTotalSignInDays(signInData)));
         }
         signInData.save(player);
         // 同步数据至客户端

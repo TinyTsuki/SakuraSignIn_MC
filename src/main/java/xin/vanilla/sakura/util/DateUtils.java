@@ -178,6 +178,26 @@ public class DateUtils {
         return format.format(date);
     }
 
+    public static Date toTheDayStart(Date date) {
+        Calendar ca = Calendar.getInstance();
+        ca.setTime(date);
+        ca.set(Calendar.HOUR_OF_DAY, 0);
+        ca.set(Calendar.MINUTE, 0);
+        ca.set(Calendar.SECOND, 0);
+        ca.set(Calendar.MILLISECOND, 0);
+        return ca.getTime();
+    }
+
+    public static Date toTheDayEnd(Date date) {
+        Calendar ca = Calendar.getInstance();
+        ca.setTime(date);
+        ca.set(Calendar.HOUR_OF_DAY, 23);
+        ca.set(Calendar.MINUTE, 59);
+        ca.set(Calendar.SECOND, 59);
+        ca.set(Calendar.MILLISECOND, 999);
+        return ca.getTime();
+    }
+
     public static int toDateInt(Date date) {
         return date == null ? 0 : Integer.parseInt(toString(date, ISO_DATE_FORMAT));
     }
