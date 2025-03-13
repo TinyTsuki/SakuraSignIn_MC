@@ -35,7 +35,7 @@ public class PlayerSignInDataStorage implements IStorage<IPlayerSignInData> {
         // 创建一个CompoundNBT对象，并将玩家的分数和活跃状态写入其中
         CompoundNBT tag = new CompoundNBT();
         tag.putInt("totalSignInDays", instance.getTotalSignInDays());
-        tag.putInt("continuousSignInDays", instance.getContinuousSignInDays());
+        tag.putInt("continuousSignInDays", instance.calculateContinuousDays());
         tag.putString("lastSignInTime", DateUtils.toDateTimeString(instance.getLastSignInTime()));
         tag.putInt("signInCard", instance.getSignInCard());
         tag.putBoolean("autoRewarded", instance.isAutoRewarded());

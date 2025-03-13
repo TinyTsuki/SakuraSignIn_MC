@@ -6,6 +6,7 @@ import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
 import net.minecraft.network.PacketBuffer;
 import xin.vanilla.sakura.config.KeyValue;
+import xin.vanilla.sakura.rewards.RewardManager;
 import xin.vanilla.sakura.util.DateUtils;
 
 import java.util.ArrayList;
@@ -13,6 +14,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
  * 玩家签到数据
@@ -156,7 +158,7 @@ public class PlayerSignInData implements IPlayerSignInData {
 
     public void writeToBuffer(PacketBuffer buffer) {
         buffer.writeInt(this.getTotalSignInDays());
-        buffer.writeInt(this.getContinuousSignInDays());
+        buffer.writeInt(this.calculateContinuousDays());
         buffer.writeUtf(DateUtils.toDateTimeString(this.getLastSignInTime()));
         buffer.writeInt(this.getSignInCard());
         buffer.writeBoolean(this.isAutoRewarded());
@@ -190,7 +192,7 @@ public class PlayerSignInData implements IPlayerSignInData {
 
     public void copyFrom(IPlayerSignInData capability) {
         this.totalSignInDays.set(capability.getTotalSignInDays());
-        this.continuousSignInDays.set(capability.getContinuousSignInDays());
+        this.continuousSignInDays.set(capability.calculateContinuousDays());
         this.lastSignInTime = capability.getLastSignInTime();
         this.signInCard.set(capability.getSignInCard());
         this.autoRewarded = capability.isAutoRewarded();
@@ -203,7 +205,7 @@ public class PlayerSignInData implements IPlayerSignInData {
         // 创建一个CompoundNBT对象，并将玩家的分数和活跃状态写入其中
         CompoundNBT tag = new CompoundNBT();
         tag.putInt("totalSignInDays", this.getTotalSignInDays());
-        tag.putInt("continuousSignInDays", this.getContinuousSignInDays());
+        tag.putInt("continuousSignInDays", this.calculateContinuousDays());
         tag.putString("lastSignInTime", DateUtils.toDateTimeString(this.getLastSignInTime()));
         tag.putInt("signInCard", this.getSignInCard());
         tag.putBoolean("autoRewarded", this.isAutoRewarded());
@@ -252,5 +254,14 @@ public class PlayerSignInData implements IPlayerSignInData {
     @Override
     public void save(ServerPlayerEntity player) {
         player.getCapability(PlayerSignInDataCapability.PLAYER_DATA).ifPresent(this::copyFrom);
+    }
+
+    public int calculateContinuousDays() {
+        try {
+            return DateUtils.calculateContinuousDays(this.getSignInRecords().stream().map(SignInRecord::getCompensateTime).collect(Collectors.toList())
+                    , RewardManager.getCompensateDate(DateUtils.getServerDate()));
+        } catch (Exception e) {
+            return 0;
+        }
     }
 }
