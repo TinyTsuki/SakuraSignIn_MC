@@ -184,12 +184,12 @@ public class SignInCommand {
             ServerPlayerEntity player = context.getSource().getPlayerOrException();
             IPlayerSignInData signInData = PlayerSignInDataCapability.getData(player);
             String string = StringArgumentType.getString(context, "key");
-            if (signInData.getCdkErrorRecords().stream()
+            if (signInData.getCdkRecords().stream()
                     .filter(keyValue -> DateUtils.toDateInt(keyValue.getValue().getKey()) == DateUtils.toDateInt(DateUtils.getServerDate()))
                     .filter(keyValue -> !keyValue.getValue().getValue())
                     .count() >= 5) {
                 SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "cdk_error_too_many_times").setColor(0xFFFF0000));
-            } else if (signInData.getCdkErrorRecords().stream()
+            } else if (signInData.getCdkRecords().stream()
                     .filter(keyValue -> keyValue.getKey().equals(string))
                     .anyMatch(keyValue -> keyValue.getValue().getValue())) {
                 SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "cdk_already_received").setColor(0xFFFFFF00));
@@ -225,7 +225,7 @@ public class SignInCommand {
                             error = false;
                         }
                     }
-                    signInData.getCdkErrorRecords().add(new KeyValue<>(string, new KeyValue<>(DateUtils.getServerDate(), !error)));
+                    signInData.getCdkRecords().add(new KeyValue<>(string, new KeyValue<>(DateUtils.getServerDate(), !error)));
                 }
             }
             return 1;

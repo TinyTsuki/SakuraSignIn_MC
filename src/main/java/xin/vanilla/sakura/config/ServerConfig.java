@@ -117,6 +117,10 @@ public class ServerConfig {
      * 显示领取失败的奖励提示所需的权限
      */
     public static final ForgeConfigSpec.IntValue PERMISSION_REWARD_FAILED_TIPS;
+    /**
+     * 指令奖励执行的权限
+     */
+    public static final ForgeConfigSpec.IntValue PERMISSION_COMMAND_REWARD;
 
     /**
      * 自动签到
@@ -310,7 +314,11 @@ public class ServerConfig {
                         , "显示领取失败的奖励提示所需的权限。")
                 .defineInRange("permissionRewardFailedTips", 0, 0, 4);
 
-        // 显示领取失败的奖励提示所需的权限
+        // 指令类型奖励执行时使用的权限等级
+        PERMISSION_COMMAND_REWARD = SERVER_BUILDER
+                .comment("The permission level to execute the command type reward."
+                        , "指令类型奖励执行时使用的权限等级。")
+                .defineInRange("permissionCommandReward", 2, 0, 4);
 
         SERVER_BUILDER.pop();
 
