@@ -113,15 +113,15 @@ public interface IPlayerSignInData extends INBTSerializable<CompoundNBT> {
     void setSignInRecords(List<SignInRecord> records);
 
     /**
-     * 获取CDK领取记录
+     * 获取CDK输入记录
      */
     @NonNull
-    List<KeyValue<String, KeyValue<Date, Boolean>>> getCdkErrorRecords();
+    List<KeyValue<String, KeyValue<Date, Boolean>>> getCdkRecords();
 
     /**
-     * 设置CDK领取记录
+     * 设置CDK输入记录
      */
-    void setCdkErrorRecords(List<KeyValue<String, KeyValue<Date, Boolean>>> records);
+    void setCdkRecords(List<KeyValue<String, KeyValue<Date, Boolean>>> records);
 
     void writeToBuffer(PacketBuffer buffer);
 

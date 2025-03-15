@@ -45,13 +45,14 @@ public class PlayerSignInDataStorage implements IStorage<IPlayerSignInData> {
             recordsNBT.add(record.writeToNBT());
         }
         tag.put("signInRecords", recordsNBT);
-        // 序列化CDK输错记录
+        // 序列化CDK输入记录
         ListNBT cdkRecordsNBT = new ListNBT();
-        for (KeyValue<String, KeyValue<Date, Boolean>> record : instance.getCdkErrorRecords()) {
-            CompoundNBT cdkErrorRecordNBT = new CompoundNBT();
-            cdkErrorRecordNBT.putString("key", record.getKey());
-            cdkErrorRecordNBT.putString("date", DateUtils.toDateTimeString(record.getValue().getKey()));
-            cdkErrorRecordNBT.putBoolean("value", record.getValue().getValue());
+        for (KeyValue<String, KeyValue<Date, Boolean>> record : instance.getCdkRecords()) {
+            CompoundNBT cdkRecordNBT = new CompoundNBT();
+            cdkRecordNBT.putString("key", record.getKey());
+            cdkRecordNBT.putString("date", DateUtils.toDateTimeString(record.getValue().getKey()));
+            cdkRecordNBT.putBoolean("value", record.getValue().getValue());
+            cdkRecordsNBT.add(cdkRecordNBT);
         }
         tag.put("cdkRecords", cdkRecordsNBT);
         return tag;
@@ -86,13 +87,13 @@ public class PlayerSignInDataStorage implements IStorage<IPlayerSignInData> {
             ListNBT cdkRecordsNBT = nbtTag.getList("cdkRecords", 10); // 10 是 CompoundNBT 的类型ID
             List<KeyValue<String, KeyValue<Date, Boolean>>> cdkRecords = new ArrayList<>();
             for (int i = 0; i < cdkRecordsNBT.size(); i++) {
-                CompoundNBT cdkErrorRecordNBT = cdkRecordsNBT.getCompound(i);
-                cdkRecords.add(new KeyValue<>(cdkErrorRecordNBT.getString("key")
-                        , new KeyValue<>(DateUtils.format(cdkErrorRecordNBT.getString("date"))
-                        , cdkErrorRecordNBT.getBoolean("value")))
+                CompoundNBT cdkRecordNBT = cdkRecordsNBT.getCompound(i);
+                cdkRecords.add(new KeyValue<>(cdkRecordNBT.getString("key")
+                        , new KeyValue<>(DateUtils.format(cdkRecordNBT.getString("date"))
+                        , cdkRecordNBT.getBoolean("value")))
                 );
             }
-            instance.setCdkErrorRecords(cdkRecords);
+            instance.setCdkRecords(cdkRecords);
         }
     }
 }
