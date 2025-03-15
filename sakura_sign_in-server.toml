@@ -1,3 +1,4 @@
+
 #Server Settings
 #服务器设置
 [server]
@@ -112,6 +113,10 @@ permissionWeekReward = 0
 #查看具体时间奖励配置所需的权限。
 #Range: 0 ~ 4
 permissionDateTimeReward = 0
+#The permission level to execute the command type reward.
+#指令类型奖励执行时使用的权限等级。
+#Range: 0 ~ 4
+permissionCommandReward = 2
 #The permission level required to view the random reward configuration.
 #查看随机奖励池配置所需的权限。
 #Range: 0 ~ 4

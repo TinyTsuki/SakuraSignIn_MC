@@ -631,7 +631,7 @@ public class RewardManager {
                 String command = (String) object;
                 command = command.replaceAll("@s", player.getName().getString());
                 if (StringUtils.isNotNullOrEmpty(command)) {
-                    player.server.getCommands().performPrefixedCommand(player.createCommandSourceStack().withSuppressedOutput().withPermission(2), command);
+                    player.server.getCommands().performPrefixedCommand(player.createCommandSourceStack().withSuppressedOutput().withPermission(ServerConfig.PERMISSION_COMMAND_REWARD.get()), command);
                 }
                 break;
             default:
