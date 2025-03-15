@@ -26,6 +26,7 @@ public class PlayerSignInData implements IPlayerSignInData {
     private final AtomicInteger signInCard = new AtomicInteger();
     private boolean autoRewarded;
     private List<SignInRecord> signInRecords;
+    // 兑换码:输入日期:是否有效
     private List<KeyValue<String, KeyValue<Date, Boolean>>> cdkRecords;
 
     @Override
@@ -136,7 +137,7 @@ public class PlayerSignInData implements IPlayerSignInData {
     }
 
     @Override
-    public @NonNull List<KeyValue<String, KeyValue<Date, Boolean>>> getCdkErrorRecords() {
+    public @NonNull List<KeyValue<String, KeyValue<Date, Boolean>>> getCdkRecords() {
         if (this.cdkRecords == null) {
             this.cdkRecords = new ArrayList<>();
         } else {
@@ -146,7 +147,7 @@ public class PlayerSignInData implements IPlayerSignInData {
     }
 
     @Override
-    public void setCdkErrorRecords(List<KeyValue<String, KeyValue<Date, Boolean>>> cdkRecords) {
+    public void setCdkRecords(List<KeyValue<String, KeyValue<Date, Boolean>>> cdkRecords) {
         if (cdkRecords == null) {
             cdkRecords = new ArrayList<>();
         } else {
@@ -166,8 +167,8 @@ public class PlayerSignInData implements IPlayerSignInData {
         for (SignInRecord record : this.getSignInRecords()) {
             buffer.writeNbt(record.writeToNBT());
         }
-        buffer.writeInt(this.getCdkErrorRecords().size());
-        for (KeyValue<String, KeyValue<Date, Boolean>> record : this.getCdkErrorRecords()) {
+        buffer.writeInt(this.getCdkRecords().size());
+        for (KeyValue<String, KeyValue<Date, Boolean>> record : this.getCdkRecords()) {
             buffer.writeUtf(record.getKey());
             buffer.writeUtf(DateUtils.toDateTimeString(record.getValue().getKey()));
             buffer.writeBoolean(record.getValue().getValue());
@@ -197,7 +198,7 @@ public class PlayerSignInData implements IPlayerSignInData {
         this.signInCard.set(capability.getSignInCard());
         this.autoRewarded = capability.isAutoRewarded();
         this.setSignInRecords(capability.getSignInRecords());
-        this.setCdkErrorRecords(capability.getCdkErrorRecords());
+        this.setCdkRecords(capability.getCdkRecords());
     }
 
     @Override
@@ -215,13 +216,14 @@ public class PlayerSignInData implements IPlayerSignInData {
             recordsNBT.add(record.writeToNBT());
         }
         tag.put("signInRecords", recordsNBT);
-        // 序列化CDK输错记录
+        // 序列化CDK输入记录
         ListTag cdkRecordsNBT = new ListTag();
-        for (KeyValue<String, KeyValue<Date, Boolean>> record : this.getCdkErrorRecords()) {
-            CompoundTag cdkErrorRecordNBT = new CompoundTag();
-            cdkErrorRecordNBT.putString("key", record.getKey());
-            cdkErrorRecordNBT.putString("date", DateUtils.toDateTimeString(record.getValue().getKey()));
-            cdkErrorRecordNBT.putBoolean("value", record.getValue().getValue());
+        for (KeyValue<String, KeyValue<Date, Boolean>> record : this.getCdkRecords()) {
+            CompoundTag cdkRecordNBT = new CompoundTag();
+            cdkRecordNBT.putString("key", record.getKey());
+            cdkRecordNBT.putString("date", DateUtils.toDateTimeString(record.getValue().getKey()));
+            cdkRecordNBT.putBoolean("value", record.getValue().getValue());
+            cdkRecordsNBT.add(cdkRecordNBT);
         }
         tag.put("cdkRecords", cdkRecordsNBT);
         return tag;
@@ -245,10 +247,10 @@ public class PlayerSignInData implements IPlayerSignInData {
         ListTag cdkRecordsNBT = nbt.getList("cdkRecords", 10); // 10 是 CompoundNBT 的类型ID
         List<KeyValue<String, KeyValue<Date, Boolean>>> cdkRecords = new ArrayList<>();
         for (int i = 0; i < cdkRecordsNBT.size(); i++) {
-            CompoundTag cdkErrorRecordNBT = cdkRecordsNBT.getCompound(i);
-            cdkRecords.add(new KeyValue<>(cdkErrorRecordNBT.getString("key"), new KeyValue<>(DateUtils.format(cdkErrorRecordNBT.getString("date")), cdkErrorRecordNBT.getBoolean("value"))));
+            CompoundTag cdkRecordNBT = cdkRecordsNBT.getCompound(i);
+            cdkRecords.add(new KeyValue<>(cdkRecordNBT.getString("key"), new KeyValue<>(DateUtils.format(cdkRecordNBT.getString("date")), cdkRecordNBT.getBoolean("value"))));
         }
-        this.setCdkErrorRecords(cdkRecords);
+        this.setCdkRecords(cdkRecords);
     }
 
     @Override
