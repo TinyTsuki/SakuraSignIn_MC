@@ -1,4 +1,4 @@
-package xin.vanilla.sakura.network;
+package xin.vanilla.sakura.network.data;
 
 import lombok.Data;
 import xin.vanilla.sakura.enums.ERewardRule;

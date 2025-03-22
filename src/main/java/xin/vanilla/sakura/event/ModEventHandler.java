@@ -6,7 +6,7 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
-import xin.vanilla.sakura.capability.PlayerSignInDataCapability;
+import xin.vanilla.sakura.data.PlayerSignInDataCapability;
 
 /**
  * Mod 事件处理器
