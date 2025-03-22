@@ -761,6 +761,8 @@ public class RewardOptionScreen extends Screen {
                 // 并且按住了Control按钮
                 if ((this.keyCode == GLFW.GLFW_KEY_LEFT_CONTROL || this.keyCode == GLFW.GLFW_KEY_RIGHT_CONTROL) && this.modifiers == GLFW.GLFW_MOD_CONTROL) {
                     if (opCode > 200 && opCode <= 299) {
+                        RewardOptionDataManager.addUndoRewardOption(rule);
+                        RewardOptionDataManager.clearRedoList();
                         switch (OperationButtonType.valueOf(opCode)) {
                             case BASE_REWARD: {
                                 RewardOptionDataManager.getRewardOptionData().getBaseRewards().clear();
@@ -818,6 +820,8 @@ public class RewardOptionScreen extends Screen {
             else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.ITEM.getCode()).equalsIgnoreCase(selectedString)) {
                 ItemSelectScreen callbackScreen = new ItemSelectScreen(this, input -> {
                     if (input != null && ((ItemStack) RewardManager.deserializeReward(input)).getItem() != Items.AIR && StringUtils.isNotNullOrEmpty(key[0])) {
+                        RewardOptionDataManager.addUndoRewardOption(rule);
+                        RewardOptionDataManager.clearRedoList();
                         RewardOptionDataManager.addReward(rule, key[0], input);
                         RewardOptionDataManager.saveRewardOption();
                     }
@@ -835,6 +839,8 @@ public class RewardOptionScreen extends Screen {
             else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.EFFECT.getCode()).equalsIgnoreCase(selectedString)) {
                 EffecrSelectScreen callbackScreen = new EffecrSelectScreen(this, input -> {
                     if (input != null && ((MobEffectInstance) RewardManager.deserializeReward(input)).getDuration() > 0 && StringUtils.isNotNullOrEmpty(key[0])) {
+                        RewardOptionDataManager.addUndoRewardOption(rule);
+                        RewardOptionDataManager.clearRedoList();
                         RewardOptionDataManager.addReward(rule, key[0], input);
                         RewardOptionDataManager.saveRewardOption();
                     }
@@ -861,6 +867,8 @@ public class RewardOptionScreen extends Screen {
                         int count = StringUtils.toInt(input.get(0));
                         BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                         if (count != 0) {
+                            RewardOptionDataManager.addUndoRewardOption(rule);
+                            RewardOptionDataManager.clearRedoList();
                             RewardOptionDataManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(count, ERewardType.EXP_POINT), ERewardType.EXP_POINT, p));
                             RewardOptionDataManager.saveRewardOption();
                         } else {
@@ -891,6 +899,8 @@ public class RewardOptionScreen extends Screen {
                         int count = StringUtils.toInt(input.get(0));
                         BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                         if (count != 0) {
+                            RewardOptionDataManager.addUndoRewardOption(rule);
+                            RewardOptionDataManager.clearRedoList();
                             RewardOptionDataManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(count, ERewardType.EXP_LEVEL), ERewardType.EXP_LEVEL, p));
                             RewardOptionDataManager.saveRewardOption();
                         } else {
@@ -921,6 +931,8 @@ public class RewardOptionScreen extends Screen {
                         int count = StringUtils.toInt(input.get(0));
                         BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                         if (count != 0) {
+                            RewardOptionDataManager.addUndoRewardOption(rule);
+                            RewardOptionDataManager.clearRedoList();
                             RewardOptionDataManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(count, ERewardType.SIGN_IN_CARD), ERewardType.SIGN_IN_CARD, p));
                             RewardOptionDataManager.saveRewardOption();
                         } else {
@@ -942,6 +954,8 @@ public class RewardOptionScreen extends Screen {
             else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.ADVANCEMENT.getCode()).equalsIgnoreCase(selectedString)) {
                 AdvancementSelectScreen callbackScreen = new AdvancementSelectScreen(this, input -> {
                     if (input != null && StringUtils.isNotNullOrEmpty(input.toString()) && StringUtils.isNotNullOrEmpty(key[0])) {
+                        RewardOptionDataManager.addUndoRewardOption(rule);
+                        RewardOptionDataManager.clearRedoList();
                         RewardOptionDataManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(input, ERewardType.ADVANCEMENT), ERewardType.ADVANCEMENT));
                         RewardOptionDataManager.saveRewardOption();
                     }
@@ -964,6 +978,8 @@ public class RewardOptionScreen extends Screen {
                         , new StringList("", "1")
                         , input -> {
                     if (CollectionUtils.isNotNullOrEmpty(input) && StringUtils.isNotNullOrEmpty(key[0])) {
+                        RewardOptionDataManager.addUndoRewardOption(rule);
+                        RewardOptionDataManager.clearRedoList();
                         Component component = Component.literal(input.get(0));
                         BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                         RewardOptionDataManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(component, ERewardType.MESSAGE), ERewardType.MESSAGE, p));
@@ -989,6 +1005,8 @@ public class RewardOptionScreen extends Screen {
                         , input -> {
                     StringList result = new StringList();
                     if (CollectionUtils.isNotNullOrEmpty(input) && input.get(0).startsWith("/") && StringUtils.isNotNullOrEmpty(key[0])) {
+                        RewardOptionDataManager.addUndoRewardOption(rule);
+                        RewardOptionDataManager.clearRedoList();
                         BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                         RewardOptionDataManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(input.get(0), ERewardType.COMMAND), ERewardType.COMMAND, p));
                         RewardOptionDataManager.saveRewardOption();
@@ -1034,6 +1052,8 @@ public class RewardOptionScreen extends Screen {
                                         }
                                     }
                                     if (result.stream().allMatch(StringUtils::isNullOrEmptyEx)) {
+                                        RewardOptionDataManager.addUndoRewardOption(rule);
+                                        RewardOptionDataManager.clearRedoList();
                                         RewardOptionDataManager.updateKeyName(rule, key, String.format("%s|%s|-1", input.get(0), input.get(1)));
                                         RewardOptionDataManager.saveRewardOption();
                                     }
@@ -1046,6 +1066,8 @@ public class RewardOptionScreen extends Screen {
                                 StringList result = new StringList();
                                 if (CollectionUtils.isNotNullOrEmpty(input)) {
                                     if (RewardOptionDataManager.validateKeyName(rule, input.get(0))) {
+                                        RewardOptionDataManager.addUndoRewardOption(rule);
+                                        RewardOptionDataManager.clearRedoList();
                                         RewardOptionDataManager.updateKeyName(rule, key, input.get(0));
                                         RewardOptionDataManager.saveRewardOption();
                                     } else {
@@ -1071,6 +1093,8 @@ public class RewardOptionScreen extends Screen {
                 } else if (Component.translatableClient(EI18nType.OPTION, "clear").toString().equalsIgnoreCase(selectedString)) {
                     if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
                         if ((this.keyCode == GLFW.GLFW_KEY_LEFT_CONTROL || this.keyCode == GLFW.GLFW_KEY_RIGHT_CONTROL) && this.modifiers == GLFW.GLFW_MOD_CONTROL) {
+                            RewardOptionDataManager.addUndoRewardOption(rule);
+                            RewardOptionDataManager.clearRedoList();
                             RewardOptionDataManager.clearKey(rule, key);
                             RewardOptionDataManager.saveRewardOption();
                         }
@@ -1086,6 +1110,8 @@ public class RewardOptionScreen extends Screen {
                 else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.ITEM.getCode()).equalsIgnoreCase(selectedString)) {
                     Minecraft.getInstance().setScreen(new ItemSelectScreen(this, input -> {
                         if (input != null && ((ItemStack) RewardManager.deserializeReward(input)).getItem() != Items.AIR) {
+                            RewardOptionDataManager.addUndoRewardOption(rule);
+                            RewardOptionDataManager.clearRedoList();
                             RewardOptionDataManager.addReward(rule, key, input);
                             RewardOptionDataManager.saveRewardOption();
                         }
@@ -1095,6 +1121,8 @@ public class RewardOptionScreen extends Screen {
                 else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.EFFECT.getCode()).equalsIgnoreCase(selectedString)) {
                     Minecraft.getInstance().setScreen(new EffecrSelectScreen(this, input -> {
                         if (input != null && ((MobEffectInstance) RewardManager.deserializeReward(input)).getDuration() > 0) {
+                            RewardOptionDataManager.addUndoRewardOption(rule);
+                            RewardOptionDataManager.clearRedoList();
                             RewardOptionDataManager.addReward(rule, key, input);
                             RewardOptionDataManager.saveRewardOption();
                         }
@@ -1113,6 +1141,8 @@ public class RewardOptionScreen extends Screen {
                             int count = StringUtils.toInt(input.get(0));
                             BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                             if (count != 0) {
+                                RewardOptionDataManager.addUndoRewardOption(rule);
+                                RewardOptionDataManager.clearRedoList();
                                 RewardOptionDataManager.addReward(rule, key, new Reward(RewardManager.serializeReward(count, ERewardType.EXP_POINT), ERewardType.EXP_POINT, p));
                                 RewardOptionDataManager.saveRewardOption();
                             } else {
@@ -1135,6 +1165,8 @@ public class RewardOptionScreen extends Screen {
                             int count = StringUtils.toInt(input.get(0));
                             BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                             if (count != 0) {
+                                RewardOptionDataManager.addUndoRewardOption(rule);
+                                RewardOptionDataManager.clearRedoList();
                                 RewardOptionDataManager.addReward(rule, key, new Reward(RewardManager.serializeReward(count, ERewardType.EXP_LEVEL), ERewardType.EXP_LEVEL, p));
                                 RewardOptionDataManager.saveRewardOption();
                             } else {
@@ -1157,6 +1189,8 @@ public class RewardOptionScreen extends Screen {
                             int count = StringUtils.toInt(input.get(0));
                             BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                             if (count != 0) {
+                                RewardOptionDataManager.addUndoRewardOption(rule);
+                                RewardOptionDataManager.clearRedoList();
                                 RewardOptionDataManager.addReward(rule, key, new Reward(RewardManager.serializeReward(count, ERewardType.SIGN_IN_CARD), ERewardType.SIGN_IN_CARD, p));
                                 RewardOptionDataManager.saveRewardOption();
                             } else {
@@ -1170,6 +1204,8 @@ public class RewardOptionScreen extends Screen {
                 else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.ADVANCEMENT.getCode()).equalsIgnoreCase(selectedString)) {
                     Minecraft.getInstance().setScreen(new AdvancementSelectScreen(this, input -> {
                         if (input != null && StringUtils.isNotNullOrEmpty(((ResourceLocation) RewardManager.deserializeReward(input)).toString())) {
+                            RewardOptionDataManager.addUndoRewardOption(rule);
+                            RewardOptionDataManager.clearRedoList();
                             RewardOptionDataManager.addReward(rule, key, input);
                             RewardOptionDataManager.saveRewardOption();
                         }
@@ -1185,6 +1221,8 @@ public class RewardOptionScreen extends Screen {
                             , new StringList("", "1")
                             , input -> {
                         if (CollectionUtils.isNotNullOrEmpty(input)) {
+                            RewardOptionDataManager.addUndoRewardOption(rule);
+                            RewardOptionDataManager.clearRedoList();
                             Component component = Component.literal(input.get(0));
                             BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                             RewardOptionDataManager.addReward(rule, key, new Reward(RewardManager.serializeReward(component, ERewardType.MESSAGE), ERewardType.MESSAGE, p));
@@ -1202,6 +1240,8 @@ public class RewardOptionScreen extends Screen {
                             , input -> {
                         StringList result = new StringList();
                         if (CollectionUtils.isNotNullOrEmpty(input) && input.get(0).startsWith("/")) {
+                            RewardOptionDataManager.addUndoRewardOption(rule);
+                            RewardOptionDataManager.clearRedoList();
                             BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                             RewardOptionDataManager.addReward(rule, key, new Reward(RewardManager.serializeReward(input.get(0), ERewardType.COMMAND), ERewardType.COMMAND, p));
                             RewardOptionDataManager.saveRewardOption();
@@ -1226,6 +1266,8 @@ public class RewardOptionScreen extends Screen {
                         if (reward.getType() == ERewardType.ITEM) {
                             Minecraft.getInstance().setScreen(new ItemSelectScreen(this, input -> {
                                 if (input != null && ((ItemStack) RewardManager.deserializeReward(input)).getItem() != Items.AIR) {
+                                    RewardOptionDataManager.addUndoRewardOption(rule);
+                                    RewardOptionDataManager.clearRedoList();
                                     RewardOptionDataManager.updateReward(rule, key, Integer.parseInt(index), input);
                                     RewardOptionDataManager.saveRewardOption();
                                 }
@@ -1235,6 +1277,8 @@ public class RewardOptionScreen extends Screen {
                         else if (reward.getType() == ERewardType.EFFECT) {
                             Minecraft.getInstance().setScreen(new EffecrSelectScreen(this, input -> {
                                 if (input != null && ((MobEffectInstance) RewardManager.deserializeReward(input)).getDuration() > 0) {
+                                    RewardOptionDataManager.addUndoRewardOption(rule);
+                                    RewardOptionDataManager.clearRedoList();
                                     RewardOptionDataManager.updateReward(rule, key, Integer.parseInt(index), input);
                                     RewardOptionDataManager.saveRewardOption();
                                 }
@@ -1253,6 +1297,8 @@ public class RewardOptionScreen extends Screen {
                                     int count = StringUtils.toInt(input.get(0));
                                     BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                                     if (count != 0) {
+                                        RewardOptionDataManager.addUndoRewardOption(rule);
+                                        RewardOptionDataManager.clearRedoList();
                                         RewardOptionDataManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(count, ERewardType.EXP_POINT), ERewardType.EXP_POINT, p));
                                         RewardOptionDataManager.saveRewardOption();
                                     } else {
@@ -1276,6 +1322,8 @@ public class RewardOptionScreen extends Screen {
                                     int count = StringUtils.toInt(input.get(0));
                                     BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                                     if (count != 0) {
+                                        RewardOptionDataManager.addUndoRewardOption(rule);
+                                        RewardOptionDataManager.clearRedoList();
                                         RewardOptionDataManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(count, ERewardType.EXP_LEVEL), ERewardType.EXP_LEVEL, p));
                                         RewardOptionDataManager.saveRewardOption();
                                     } else {
@@ -1299,6 +1347,8 @@ public class RewardOptionScreen extends Screen {
                                     int count = StringUtils.toInt(input.get(0));
                                     BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                                     if (count != 0) {
+                                        RewardOptionDataManager.addUndoRewardOption(rule);
+                                        RewardOptionDataManager.clearRedoList();
                                         RewardOptionDataManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(count, ERewardType.SIGN_IN_CARD), ERewardType.SIGN_IN_CARD, p));
                                         RewardOptionDataManager.saveRewardOption();
                                     } else {
@@ -1313,6 +1363,8 @@ public class RewardOptionScreen extends Screen {
                         else if (reward.getType() == ERewardType.ADVANCEMENT) {
                             Minecraft.getInstance().setScreen(new AdvancementSelectScreen(this, input -> {
                                 if (input != null && StringUtils.isNotNullOrEmpty(((ResourceLocation) RewardManager.deserializeReward(input)).toString()) && StringUtils.isNotNullOrEmpty(key)) {
+                                    RewardOptionDataManager.addUndoRewardOption(rule);
+                                    RewardOptionDataManager.clearRedoList();
                                     RewardOptionDataManager.updateReward(rule, key, Integer.parseInt(index), input);
                                     RewardOptionDataManager.saveRewardOption();
                                 }
@@ -1327,6 +1379,8 @@ public class RewardOptionScreen extends Screen {
                                     , new StringList(RewardManager.deserializeReward(reward).toString(), StringUtils.toFixedEx(reward.getProbability(), 5))
                                     , input -> {
                                 if (CollectionUtils.isNotNullOrEmpty(input)) {
+                                    RewardOptionDataManager.addUndoRewardOption(rule);
+                                    RewardOptionDataManager.clearRedoList();
                                     Component textToComponent = Component.literal(input.get(0));
                                     BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                                     RewardOptionDataManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(textToComponent, ERewardType.MESSAGE), ERewardType.MESSAGE, p));
@@ -1345,6 +1399,8 @@ public class RewardOptionScreen extends Screen {
                                     , input -> {
                                 StringList result = new StringList();
                                 if (CollectionUtils.isNotNullOrEmpty(input) && input.get(0).startsWith("/")) {
+                                    RewardOptionDataManager.addUndoRewardOption(rule);
+                                    RewardOptionDataManager.clearRedoList();
                                     BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                                     RewardOptionDataManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(input.get(0), ERewardType.COMMAND), ERewardType.COMMAND, p));
                                     RewardOptionDataManager.saveRewardOption();
@@ -1485,6 +1541,8 @@ public class RewardOptionScreen extends Screen {
             }
             // 标题
             else if (currRewardButton.startsWith("标题")) {
+                RewardOptionDataManager.addUndoRewardOption(rule);
+                RewardOptionDataManager.clearRedoList();
                 RewardList rewardList = RewardOptionDataManager.getKeyName(rule, key).clone();
                 RewardClipboardManager.setClipboard(rewardList, key);
                 RewardOptionDataManager.deleteKey(rule, key);
@@ -1492,6 +1550,8 @@ public class RewardOptionScreen extends Screen {
             }
             // 普通按钮
             else {
+                RewardOptionDataManager.addUndoRewardOption(rule);
+                RewardOptionDataManager.clearRedoList();
                 Reward reward = RewardOptionDataManager.getReward(rule, key, Integer.parseInt(index)).clone();
                 RewardClipboardManager.setClipboard(reward, key);
                 RewardOptionDataManager.deleteReward(rule, key, Integer.parseInt(index));
@@ -1527,6 +1587,8 @@ public class RewardOptionScreen extends Screen {
                                     }
                                 }
                                 if (result.stream().allMatch(StringUtils::isNullOrEmptyEx)) {
+                                    RewardOptionDataManager.addUndoRewardOption(rule);
+                                    RewardOptionDataManager.clearRedoList();
                                     RewardList rewardList = RewardClipboardManager.deSerializeRewardList().toRewardList();
                                     RewardOptionDataManager.addKeyName(rule, String.format("%s|%s|-1", input.get(0), input.get(1)), rewardList);
                                     RewardOptionDataManager.saveRewardOption();
@@ -1545,6 +1607,8 @@ public class RewardOptionScreen extends Screen {
                             StringList result = new StringList();
                             if (CollectionUtils.isNotNullOrEmpty(input)) {
                                 if (RewardOptionDataManager.validateKeyName(rule, input.get(0))) {
+                                    RewardOptionDataManager.addUndoRewardOption(rule);
+                                    RewardOptionDataManager.clearRedoList();
                                     RewardList rewardList = RewardClipboardManager.deSerializeRewardList().toRewardList();
                                     RewardOptionDataManager.addKeyName(rule, input.get(0), rewardList);
                                     RewardOptionDataManager.saveRewardOption();
@@ -1555,6 +1619,8 @@ public class RewardOptionScreen extends Screen {
                             return result;
                         }));
                     } else {
+                        RewardOptionDataManager.addUndoRewardOption(rule);
+                        RewardOptionDataManager.clearRedoList();
                         RewardList rewardList = RewardClipboardManager.deSerializeRewardList().toRewardList();
                         RewardOptionDataManager.addKeyName(rule, "", rewardList);
                         RewardOptionDataManager.saveRewardOption();
@@ -1563,12 +1629,16 @@ public class RewardOptionScreen extends Screen {
                 }
                 // 标题
                 else if (currRewardButton.startsWith("标题")) {
+                    RewardOptionDataManager.addUndoRewardOption(rule);
+                    RewardOptionDataManager.clearRedoList();
                     RewardList rewardList = RewardClipboardManager.deSerializeRewardList().toRewardList();
                     RewardOptionDataManager.addKeyName(rule, key, rewardList);
                     RewardOptionDataManager.saveRewardOption();
                 }
                 // 普通按钮
                 else {
+                    RewardOptionDataManager.addUndoRewardOption(rule);
+                    RewardOptionDataManager.clearRedoList();
                     for (Reward reward : RewardClipboardManager.deSerializeRewardList()) {
                         RewardOptionDataManager.addReward(rule, key, reward);
                     }
@@ -1589,11 +1659,15 @@ public class RewardOptionScreen extends Screen {
             }
             // 标题
             else if (currRewardButton.startsWith("标题")) {
+                RewardOptionDataManager.addUndoRewardOption(rule);
+                RewardOptionDataManager.clearRedoList();
                 RewardOptionDataManager.deleteKey(rule, key);
                 RewardOptionDataManager.saveRewardOption();
             }
             // 普通按钮
             else {
+                RewardOptionDataManager.addUndoRewardOption(rule);
+                RewardOptionDataManager.clearRedoList();
                 RewardOptionDataManager.deleteReward(rule, key, Integer.parseInt(index));
                 RewardOptionDataManager.saveRewardOption();
             }
@@ -1601,42 +1675,37 @@ public class RewardOptionScreen extends Screen {
             return true;
         }
 
+        /**
+         * 撤销
+         */
         public boolean handleUndo() {
             if (update()) return false;
-
-            // 面板
-            if (currRewardButton.equalsIgnoreCase("panel")) {
-
+            Map<String, RewardList> map = RewardOptionDataManager.getUnDoRewardOption(rule);
+            if (!map.isEmpty()) {
+                RewardOptionDataManager.addRedoRewardOption(rule);
+                RewardOptionDataManager.setRewardMap(RewardOptionDataManager.getRewardOptionData(), rule, map);
+                RewardOptionDataManager.saveRewardOption();
+                updateLayout();
+                return true;
             }
-            // 标题
-            else if (currRewardButton.startsWith("标题")) {
-
-            }
-            // 普通按钮
-            else {
-
-            }
-            updateLayout();
-            return true;
+            return false;
         }
 
+        /**
+         * 重做
+         */
         public boolean handleRedo() {
             if (update()) return false;
 
-            // 面板
-            if (currRewardButton.equalsIgnoreCase("panel")) {
-
+            Map<String, RewardList> map = RewardOptionDataManager.getReDoRewardOption(rule);
+            if (!map.isEmpty()) {
+                RewardOptionDataManager.addUndoRewardOption(rule);
+                RewardOptionDataManager.setRewardMap(RewardOptionDataManager.getRewardOptionData(), rule, map);
+                RewardOptionDataManager.saveRewardOption();
+                updateLayout();
+                return true;
             }
-            // 标题
-            else if (currRewardButton.startsWith("标题")) {
-
-            }
-            // 普通按钮
-            else {
-
-            }
-            updateLayout();
-            return true;
+            return false;
         }
 
     }
