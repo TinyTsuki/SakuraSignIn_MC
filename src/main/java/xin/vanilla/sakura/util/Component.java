@@ -12,7 +12,7 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.network.chat.*;
 import net.minecraft.server.level.ServerPlayer;
-import xin.vanilla.sakura.SakuraSignIn;
+import xin.vanilla.sakura.config.ServerConfig;
 import xin.vanilla.sakura.enums.EI18nType;
 
 import java.io.Serializable;
@@ -166,7 +166,7 @@ public class Component implements Cloneable, Serializable {
      * 获取语言代码
      */
     public @NonNull String getLanguageCode() {
-        return this.languageCode == null ? SakuraSignIn.DEFAULT_LANGUAGE : this.languageCode;
+        return this.languageCode == null ? ServerConfig.DEFAULT_LANGUAGE.get() : this.languageCode;
     }
 
     /**
