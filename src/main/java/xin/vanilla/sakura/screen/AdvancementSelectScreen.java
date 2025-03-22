@@ -18,7 +18,7 @@ import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.StringList;
 import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ERewardType;
-import xin.vanilla.sakura.network.AdvancementData;
+import xin.vanilla.sakura.network.data.AdvancementData;
 import xin.vanilla.sakura.rewards.Reward;
 import xin.vanilla.sakura.rewards.RewardManager;
 import xin.vanilla.sakura.rewards.impl.AdvancementRewardParser;

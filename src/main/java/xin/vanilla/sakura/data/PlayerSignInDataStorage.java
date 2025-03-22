@@ -1,4 +1,4 @@
-package xin.vanilla.sakura.capability;
+package xin.vanilla.sakura.data;
 
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.INBT;
@@ -39,12 +39,15 @@ public class PlayerSignInDataStorage implements IStorage<IPlayerSignInData> {
         tag.putString("lastSignInTime", DateUtils.toDateTimeString(instance.getLastSignInTime()));
         tag.putInt("signInCard", instance.getSignInCard());
         tag.putBoolean("autoRewarded", instance.isAutoRewarded());
+        tag.putString("language", instance.getLanguage());
+
         // 序列化签到记录
         ListNBT recordsNBT = new ListNBT();
         for (SignInRecord record : instance.getSignInRecords()) {
             recordsNBT.add(record.writeToNBT());
         }
         tag.put("signInRecords", recordsNBT);
+
         // 序列化CDK输入记录
         ListNBT cdkRecordsNBT = new ListNBT();
         for (KeyValue<String, KeyValue<Date, Boolean>> record : instance.getCdkRecords()) {
@@ -77,6 +80,8 @@ public class PlayerSignInDataStorage implements IStorage<IPlayerSignInData> {
             instance.setLastSignInTime(DateUtils.format(nbtTag.getString("lastSignInTime")));
             instance.setSignInCard(nbtTag.getInt("signInCard"));
             instance.setAutoRewarded(nbtTag.getBoolean("autoRewarded"));
+            instance.setLanguage(nbtTag.getString("language"));
+
             // 反序列化签到记录
             ListNBT recordsNBT = nbtTag.getList("signInRecords", 10); // 10 是 CompoundNBT 的类型ID
             List<SignInRecord> records = new ArrayList<>();
@@ -84,6 +89,7 @@ public class PlayerSignInDataStorage implements IStorage<IPlayerSignInData> {
                 records.add(SignInRecord.readFromNBT(recordsNBT.getCompound(i)));
             }
             instance.setSignInRecords(records);
+
             ListNBT cdkRecordsNBT = nbtTag.getList("cdkRecords", 10); // 10 是 CompoundNBT 的类型ID
             List<KeyValue<String, KeyValue<Date, Boolean>>> cdkRecords = new ArrayList<>();
             for (int i = 0; i < cdkRecordsNBT.size(); i++) {

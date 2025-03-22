@@ -21,7 +21,7 @@ import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL11;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.enums.ERewardType;
-import xin.vanilla.sakura.network.AdvancementData;
+import xin.vanilla.sakura.network.data.AdvancementData;
 import xin.vanilla.sakura.rewards.Reward;
 import xin.vanilla.sakura.rewards.RewardManager;
 import xin.vanilla.sakura.screen.component.Text;
