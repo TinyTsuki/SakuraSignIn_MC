@@ -19,7 +19,7 @@ import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.StringList;
 import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ERewardType;
-import xin.vanilla.sakura.network.AdvancementData;
+import xin.vanilla.sakura.network.data.AdvancementData;
 import xin.vanilla.sakura.rewards.Reward;
 import xin.vanilla.sakura.rewards.RewardManager;
 import xin.vanilla.sakura.rewards.impl.AdvancementRewardParser;
@@ -37,7 +37,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static xin.vanilla.sakura.config.RewardOptionDataManager.GSON;
 
@@ -470,7 +469,7 @@ public class AdvancementSelectScreen extends Screen {
                     .filter(data -> AdvancementRewardParser.getDisplayName(data).contains(s)
                             || AdvancementRewardParser.getId(data).contains(s)
                             || AdvancementRewardParser.getDescription(data).contains(s))
-                    .collect(Collectors.toList()));
+                    .toList());
         } else {
             this.advancementList.addAll(new ArrayList<>(this.displayMode ? this.displayableAdvancementList : this.allAdvancementList));
         }

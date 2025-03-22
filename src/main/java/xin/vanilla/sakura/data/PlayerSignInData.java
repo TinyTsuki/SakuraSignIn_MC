@@ -1,14 +1,17 @@
-package xin.vanilla.sakura.capability;
+package xin.vanilla.sakura.data;
 
 import lombok.NonNull;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
 import xin.vanilla.sakura.config.KeyValue;
 import xin.vanilla.sakura.rewards.RewardManager;
 import xin.vanilla.sakura.util.DateUtils;
+import xin.vanilla.sakura.util.SakuraUtils;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -28,6 +31,7 @@ public class PlayerSignInData implements IPlayerSignInData {
     private List<SignInRecord> signInRecords;
     // 兑换码:输入日期:是否有效
     private List<KeyValue<String, KeyValue<Date, Boolean>>> cdkRecords;
+    private String language = "client";
 
     @Override
     public int getTotalSignInDays() {
@@ -157,16 +161,35 @@ public class PlayerSignInData implements IPlayerSignInData {
         this.cdkRecords = cdkRecords;
     }
 
+    @Override
+    public String getLanguage() {
+        return this.language;
+    }
+
+    @Override
+    public void setLanguage(String language) {
+        this.language = language;
+    }
+
+    @NonNull
+    @Override
+    public String getValidLanguage(@Nullable Player player) {
+        return SakuraUtils.getValidLanguage(player, this.getLanguage());
+    }
+
     public void writeToBuffer(FriendlyByteBuf buffer) {
         buffer.writeInt(this.getTotalSignInDays());
         buffer.writeInt(this.calculateContinuousDays());
         buffer.writeUtf(DateUtils.toDateTimeString(this.getLastSignInTime()));
         buffer.writeInt(this.getSignInCard());
         buffer.writeBoolean(this.isAutoRewarded());
+        buffer.writeUtf(this.getLanguage());
+
         buffer.writeInt(this.getSignInRecords().size());
         for (SignInRecord record : this.getSignInRecords()) {
             buffer.writeNbt(record.writeToNBT());
         }
+
         buffer.writeInt(this.getCdkRecords().size());
         for (KeyValue<String, KeyValue<Date, Boolean>> record : this.getCdkRecords()) {
             buffer.writeUtf(record.getKey());
@@ -181,10 +204,13 @@ public class PlayerSignInData implements IPlayerSignInData {
         this.lastSignInTime = DateUtils.format(buffer.readUtf());
         this.signInCard.set(buffer.readInt());
         this.autoRewarded = buffer.readBoolean();
+        this.language = buffer.readUtf();
+
         this.signInRecords = new ArrayList<>();
         for (int i = 0; i < buffer.readInt(); i++) {
             this.signInRecords.add(SignInRecord.readFromNBT(Objects.requireNonNull(buffer.readNbt())));
         }
+
         this.cdkRecords = new ArrayList<>();
         for (int i = 0; i < buffer.readInt(); i++) {
             this.cdkRecords.add(new KeyValue<>(buffer.readUtf(), new KeyValue<>(DateUtils.format(buffer.readUtf()), buffer.readBoolean())));
@@ -197,6 +223,7 @@ public class PlayerSignInData implements IPlayerSignInData {
         this.lastSignInTime = capability.getLastSignInTime();
         this.signInCard.set(capability.getSignInCard());
         this.autoRewarded = capability.isAutoRewarded();
+        this.language = capability.getLanguage();
         this.setSignInRecords(capability.getSignInRecords());
         this.setCdkRecords(capability.getCdkRecords());
     }
@@ -210,12 +237,15 @@ public class PlayerSignInData implements IPlayerSignInData {
         tag.putString("lastSignInTime", DateUtils.toDateTimeString(this.getLastSignInTime()));
         tag.putInt("signInCard", this.getSignInCard());
         tag.putBoolean("autoRewarded", this.isAutoRewarded());
+        tag.putString("language", this.getLanguage());
+
         // 序列化签到记录
         ListTag recordsNBT = new ListTag();
         for (SignInRecord record : this.getSignInRecords()) {
             recordsNBT.add(record.writeToNBT());
         }
         tag.put("signInRecords", recordsNBT);
+
         // 序列化CDK输入记录
         ListTag cdkRecordsNBT = new ListTag();
         for (KeyValue<String, KeyValue<Date, Boolean>> record : this.getCdkRecords()) {
@@ -237,6 +267,8 @@ public class PlayerSignInData implements IPlayerSignInData {
         this.setLastSignInTime(DateUtils.format(nbt.getString("lastSignInTime")));
         this.setSignInCard(nbt.getInt("signInCard"));
         this.setAutoRewarded(nbt.getBoolean("autoRewarded"));
+        this.setLanguage(nbt.getString("language"));
+
         // 反序列化签到记录
         ListTag recordsNBT = nbt.getList("signInRecords", 10); // 10 是 CompoundNBT 的类型ID
         List<SignInRecord> records = new ArrayList<>();
@@ -244,6 +276,7 @@ public class PlayerSignInData implements IPlayerSignInData {
             records.add(SignInRecord.readFromNBT(recordsNBT.getCompound(i)));
         }
         this.setSignInRecords(records);
+
         ListTag cdkRecordsNBT = nbt.getList("cdkRecords", 10); // 10 是 CompoundNBT 的类型ID
         List<KeyValue<String, KeyValue<Date, Boolean>>> cdkRecords = new ArrayList<>();
         for (int i = 0; i < cdkRecordsNBT.size(); i++) {

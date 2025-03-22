@@ -1,4 +1,4 @@
-package xin.vanilla.sakura.network;
+package xin.vanilla.sakura.network.packet;
 
 import lombok.Getter;
 import net.minecraft.advancements.Advancement;
@@ -6,6 +6,8 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
+import xin.vanilla.sakura.network.ClientProxy;
+import xin.vanilla.sakura.network.data.AdvancementData;
 import xin.vanilla.sakura.util.CollectionUtils;
 
 import java.util.ArrayList;
