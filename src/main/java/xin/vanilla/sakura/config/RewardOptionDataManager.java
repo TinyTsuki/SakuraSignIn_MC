@@ -33,6 +33,8 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -100,17 +102,66 @@ public class RewardOptionDataManager {
      * 加载 JSON 数据
      */
     public static void loadRewardOption() {
-        File file = new File(RewardOptionDataManager.getConfigDirectory().toFile(), FILE_NAME);
-        if (file.exists()) {
-            try {
-                rewardOptionData = RewardOptionDataManager.deserializeRewardOption(new String(Files.readAllBytes(Paths.get(file.getPath()))));
-            } catch (IOException e) {
-                LOGGER.error("Error loading sign-in data: ", e);
+        {
+            File file = new File(RewardOptionDataManager.getConfigDirectory().toFile(), FILE_NAME);
+            if (file.exists()) {
+                try {
+                    rewardOptionData = RewardOptionDataManager.deserializeRewardOption(new String(Files.readAllBytes(Paths.get(file.getPath()))));
+                } catch (IOException e) {
+                    LOGGER.error("Error loading sign-in data: ", e);
+                }
+            } else {
+                // 如果文件不存在，初始化默认值
+                rewardOptionData = RewardOptionData.getDefault();
+                RewardOptionDataManager.saveRewardOption();
             }
-        } else {
-            // 如果文件不存在，初始化默认值
-            rewardOptionData = RewardOptionData.getDefault();
-            RewardOptionDataManager.saveRewardOption();
+        }
+        {
+            File undoHistoryFile = new File(RewardOptionDataManager.getConfigDirectory().toFile(), "history/undo_history.json");
+            if (undoHistoryFile.exists()) {
+                try {
+                    deserializeHistoryFile(undoHistoryFile, undoList);
+                } catch (IOException e) {
+                    LOGGER.error("Error loading undo history: ", e);
+                }
+            }
+            File redoHistoryFile = new File(RewardOptionDataManager.getConfigDirectory().toFile(), "history/redo_history.json");
+            if (redoHistoryFile.exists()) {
+                try {
+                    deserializeHistoryFile(redoHistoryFile, redoList);
+                } catch (IOException e) {
+                    LOGGER.error("Error loading redo history: ", e);
+                }
+            }
+        }
+    }
+
+    private static void deserializeHistoryFile(File redoHistoryFile, Map<ERewardRule, ConcurrentLinkedDeque<String>> redoList) throws IOException {
+        String jsonString = new String(Files.readAllBytes(Paths.get(redoHistoryFile.getPath())));
+        JsonObject jsonObject = GSON.fromJson(jsonString, JsonObject.class);
+        for (ERewardRule rule : ERewardRule.values()) {
+            JsonArray jsonArray = jsonObject.getAsJsonArray(rule.name().toLowerCase());
+            if (jsonArray != null) {
+                for (JsonElement jsonElement : jsonArray) {
+                    redoList.computeIfAbsent(rule, k -> new ConcurrentLinkedDeque<>()).add(jsonElement.getAsString());
+                }
+            }
+        }
+    }
+
+    private static void serializeHistoryFile(File historyFile, Map<ERewardRule, ConcurrentLinkedDeque<String>> list) {
+        JsonObject jsonObject = new JsonObject();
+        for (ERewardRule rule : ERewardRule.values()) {
+            JsonArray jsonArray = new JsonArray();
+            for (String string : list.getOrDefault(rule, new ConcurrentLinkedDeque<>())) {
+                jsonArray.add(string);
+            }
+            jsonObject.add(rule.name().toLowerCase(), jsonArray);
+        }
+        try (FileWriter writer = new FileWriter(historyFile)) {
+            writer.write(GSON.toJson(jsonObject));
+        } catch (IOException e) {
+            LOGGER.error("Error saving history file: ", e);
         }
     }
 
@@ -118,18 +169,140 @@ public class RewardOptionDataManager {
      * 保存 JSON 数据
      */
     public static void saveRewardOption() {
-        File dir = RewardOptionDataManager.getConfigDirectory().toFile();
+        {
+            File dir = RewardOptionDataManager.getConfigDirectory().toFile();
+            if (!dir.exists()) {
+                dir.mkdirs();
+            }
+            File file = new File(dir, FILE_NAME);
+            try (FileWriter writer = new FileWriter(file)) {
+                // 格式化输出
+                Gson gson = new GsonBuilder().setPrettyPrinting().enableComplexMapKeySerialization().create();
+                writer.write(gson.toJson(rewardOptionData.toJsonObject()));
+            } catch (IOException e) {
+                LOGGER.error("Error saving sign-in data: ", e);
+            }
+        }
+        {
+            File dir = new File(RewardOptionDataManager.getConfigDirectory().toFile(), "history");
+            if (!dir.exists()) {
+                dir.mkdirs();
+            }
+            File undoHistoryFile = new File(dir, "undo_history.json");
+            serializeHistoryFile(undoHistoryFile, undoList);
+            File redoHistoryFile = new File(dir, "redo_history.json");
+            serializeHistoryFile(redoHistoryFile, redoList);
+        }
+    }
+
+
+    private static final Random random = new Random();
+    /**
+     * 撤销列表
+     */
+    private static final Map<ERewardRule, ConcurrentLinkedDeque<String>> undoList = new ConcurrentHashMap<>();
+    /**
+     * 恢复列表
+     */
+    private static final Map<ERewardRule, ConcurrentLinkedDeque<String>> redoList = new ConcurrentHashMap<>();
+
+    public static void clearUndoList() {
+        undoList.clear();
+    }
+
+    public static void clearRedoList() {
+        redoList.clear();
+    }
+
+    /**
+     * 添加撤销数据
+     * 数据修改前调用
+     */
+    public static void addUndoRewardOption(ERewardRule rule) {
+        File dir = new File(RewardOptionDataManager.getConfigDirectory().toFile(), "history/undo/" + rule.name().toLowerCase());
         if (!dir.exists()) {
             dir.mkdirs();
         }
-        File file = new File(dir, FILE_NAME);
-        try (FileWriter writer = new FileWriter(file)) {
-            // 格式化输出
-            Gson gson = new GsonBuilder().setPrettyPrinting().enableComplexMapKeySerialization().create();
-            writer.write(gson.toJson(rewardOptionData.toJsonObject()));
+        String historyId = System.currentTimeMillis() + "." + random.nextInt(1000000);
+        File dataFile = new File(dir, historyId + "." + FILE_NAME);
+        try (FileWriter writer = new FileWriter(dataFile)) {
+            Gson gson = new GsonBuilder().enableComplexMapKeySerialization().create();
+            writer.write(gson.toJson(getRewardMap(rule)));
+            undoList.computeIfAbsent(rule, k -> new ConcurrentLinkedDeque<>()).push(historyId);
         } catch (IOException e) {
-            LOGGER.error("Error saving sign-in data: ", e);
+            LOGGER.error("Error saving undo data: ", e);
         }
+        // 删除旧文件
+        deleteOldFile(dir, 100);
+    }
+
+    /**
+     * 获取撤销数据
+     * Ctrl Z 时调用
+     */
+    public static Map<String, RewardList> getUnDoRewardOption(ERewardRule rule) {
+        File dir = new File(RewardOptionDataManager.getConfigDirectory().toFile(), "history/undo/" + rule.name().toLowerCase());
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+        // 移除队列末尾
+        File dataFile = new File(dir, undoList.getOrDefault(rule, new ConcurrentLinkedDeque<>()).poll() + "." + FILE_NAME);
+        if (!dataFile.exists()) {
+            return new LinkedHashMap<>();
+        }
+        try {
+            String jsonString = new String(Files.readAllBytes(Paths.get(dataFile.getPath())));
+            return GSON.fromJson(jsonString, new TypeToken<LinkedHashMap<String, RewardList>>() {
+            }.getType());
+        } catch (IOException e) {
+            LOGGER.error("Error loading undo data: ", e);
+        }
+        return new LinkedHashMap<>();
+    }
+
+    /**
+     * 添加重做数据
+     * 撤销时修改数据前调用
+     */
+    public static void addRedoRewardOption(ERewardRule rule) {
+        File dir = new File(RewardOptionDataManager.getConfigDirectory().toFile(), "history/redo/" + rule.name().toLowerCase());
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+        String historyId = System.currentTimeMillis() + "." + random.nextInt(1000000);
+        File dataFile = new File(dir, historyId + "." + FILE_NAME);
+        try (FileWriter writer = new FileWriter(dataFile)) {
+            Gson gson = new GsonBuilder().enableComplexMapKeySerialization().create();
+            writer.write(gson.toJson(getRewardMap(rule)));
+            redoList.computeIfAbsent(rule, k -> new ConcurrentLinkedDeque<>()).push(historyId);
+        } catch (IOException e) {
+            LOGGER.error("Error saving redo data: ", e);
+        }
+        // 删除旧文件
+        deleteOldFile(dir, 100);
+    }
+
+    /**
+     * 获取重做数据
+     * Ctrl Shift Z 时调用
+     */
+    public static Map<String, RewardList> getReDoRewardOption(ERewardRule rule) {
+        File dir = new File(RewardOptionDataManager.getConfigDirectory().toFile(), "history/redo/" + rule.name().toLowerCase());
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+        File dataFile = new File(dir, redoList.getOrDefault(rule, new ConcurrentLinkedDeque<>()).poll() + "." + FILE_NAME);
+        if (!dataFile.exists()) {
+            return new LinkedHashMap<>();
+        }
+        try {
+            String jsonString = new String(Files.readAllBytes(Paths.get(dataFile.getPath())));
+            return GSON.fromJson(jsonString, new TypeToken<LinkedHashMap<String, RewardList>>() {
+            }.getType());
+        } catch (IOException e) {
+            LOGGER.error("Error loading redo data: ", e);
+        }
+        return new LinkedHashMap<>();
     }
 
     /**
@@ -171,29 +344,33 @@ public class RewardOptionDataManager {
                 }
             }
             // 删除旧文件
-            try (Stream<Path> pathStream = Files.walk(sourceFolder.toPath())) {
-                pathStream.filter(path -> Files.isRegularFile(path) && path.getFileName().toString().startsWith(RewardOptionDataManager.FILE_NAME))
-                        .sorted((path1, path2) -> {
-                            try {
-                                return Files.readAttributes(path2, BasicFileAttributes.class).creationTime()
-                                        .compareTo(Files.readAttributes(path1, BasicFileAttributes.class).creationTime());
-                            } catch (IOException e) {
-                                LOGGER.error("Error reading file attributes: ", e);
-                                return 0;
-                            }
-                        })
-                        // 跳过最新的20个文件
-                        .skip(20)
-                        .forEach(file -> {
-                            try {
-                                Files.delete(file);
-                            } catch (IOException e) {
-                                LOGGER.error("Error deleting file: ", e);
-                            }
-                        });
-            } catch (IOException e) {
-                LOGGER.error("Error walking directory: ", e);
-            }
+            deleteOldFile(sourceFolder, 20);
+        }
+    }
+
+    private static void deleteOldFile(File dir, int num) {
+        try (Stream<Path> pathStream = Files.walk(dir.toPath())) {
+            pathStream.filter(path -> Files.isRegularFile(path) && path.getFileName().toString().startsWith(RewardOptionDataManager.FILE_NAME))
+                    .sorted((path1, path2) -> {
+                        try {
+                            return Files.readAttributes(path2, BasicFileAttributes.class).creationTime()
+                                    .compareTo(Files.readAttributes(path1, BasicFileAttributes.class).creationTime());
+                        } catch (IOException e) {
+                            LOGGER.error("Error reading file attributes: ", e);
+                            return 0;
+                        }
+                    })
+                    // 跳过最新的num个文件
+                    .skip(num)
+                    .forEach(file -> {
+                        try {
+                            Files.delete(file);
+                        } catch (IOException e) {
+                            LOGGER.error("Error deleting file: ", e);
+                        }
+                    });
+        } catch (IOException e) {
+            LOGGER.error("Error walking directory: ", e);
         }
     }
 
