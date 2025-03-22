@@ -1,12 +1,14 @@
-package xin.vanilla.sakura.capability;
+package xin.vanilla.sakura.data;
 
 import lombok.NonNull;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.PacketBuffer;
 import net.minecraftforge.common.util.INBTSerializable;
 import xin.vanilla.sakura.config.KeyValue;
 
+import javax.annotation.Nullable;
 import java.util.Date;
 import java.util.List;
 
@@ -122,6 +124,22 @@ public interface IPlayerSignInData extends INBTSerializable<CompoundNBT> {
      * 设置CDK输入记录
      */
     void setCdkRecords(List<KeyValue<String, KeyValue<Date, Boolean>>> records);
+
+    /**
+     * 获取语言
+     */
+    String getLanguage();
+
+    /**
+     * 设置语言
+     */
+    void setLanguage(String language);
+
+    /**
+     * 获取有效的语言
+     */
+    @NonNull
+    String getValidLanguage(@Nullable PlayerEntity player);
 
     void writeToBuffer(PacketBuffer buffer);
 

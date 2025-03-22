@@ -1,4 +1,4 @@
-package xin.vanilla.sakura.network;
+package xin.vanilla.sakura.network.packet;
 
 import lombok.Getter;
 import net.minecraft.entity.item.ItemEntity;

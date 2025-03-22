@@ -190,8 +190,8 @@ public class RewardOptionData implements Serializable {
         if (this.continuousRewards == null) this.continuousRewards = new LinkedHashMap<>();
         int keyInt = StringUtils.toInt(key);
         if (keyInt > 0) {
-            if (this.cumulativeRewards.containsKey(String.valueOf(keyInt))) {
-                this.cumulativeRewards.get(String.valueOf(keyInt)).addAll(value);
+            if (this.continuousRewards.containsKey(String.valueOf(keyInt))) {
+                this.continuousRewards.get(String.valueOf(keyInt)).addAll(value);
             } else {
                 this.continuousRewards.put(String.valueOf(keyInt), value);
             }
@@ -698,11 +698,11 @@ public class RewardOptionData implements Serializable {
         }
         json.add("dateTimeRewardsRelation", dateTimeRewardsRelationJson);
 
-        JsonObject cumulativeRewardJson = new JsonObject();
+        JsonObject cumulativeRewardsJson = new JsonObject();
         for (Map.Entry<String, RewardList> entry : cumulativeRewards.entrySet()) {
-            cumulativeRewardJson.add(entry.getKey(), entry.getValue().toJsonArray());
+            cumulativeRewardsJson.add(entry.getKey(), entry.getValue().toJsonArray());
         }
-        json.add("cumulativeRewards", cumulativeRewardJson);
+        json.add("cumulativeRewards", cumulativeRewardsJson);
 
         JsonObject randomRewardsJson = new JsonObject();
         for (Map.Entry<String, RewardList> entry : randomRewards.entrySet()) {
