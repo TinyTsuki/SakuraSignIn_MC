@@ -523,11 +523,11 @@ public class StringUtils {
     }
 
     public static String toFixedEx(double d, int scale) {
-        return toFixed(d, scale).replaceAll("0+$", "").replaceAll("[.]$", "");
+        return toFixed(d, scale).replaceAll("(\\.\\d*?)0+$", "$1").replaceAll("[.]$", "");
     }
 
     public static String toFixedEx(BigDecimal d, int scale) {
-        return d.setScale(scale, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString().replaceAll("0+$", "").replaceAll("[.]$", "");
+        return d.setScale(scale, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString().replaceAll("(\\.\\d*?)0+$", "$1").replaceAll("[.]$", "");
     }
 
     /**
