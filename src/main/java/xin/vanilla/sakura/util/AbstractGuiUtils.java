@@ -20,7 +20,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import org.joml.Quaternionf;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.enums.ERewardType;
-import xin.vanilla.sakura.network.AdvancementData;
+import xin.vanilla.sakura.network.data.AdvancementData;
 import xin.vanilla.sakura.rewards.Reward;
 import xin.vanilla.sakura.rewards.RewardManager;
 import xin.vanilla.sakura.screen.component.Text;

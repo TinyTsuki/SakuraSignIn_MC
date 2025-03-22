@@ -1,4 +1,4 @@
-package xin.vanilla.sakura.network;
+package xin.vanilla.sakura.network.packet;
 
 import com.google.gson.reflect.TypeToken;
 import lombok.Getter;
@@ -11,6 +11,8 @@ import xin.vanilla.sakura.config.RewardOptionDataManager;
 import xin.vanilla.sakura.config.ServerConfig;
 import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ERewardRule;
+import xin.vanilla.sakura.network.ModNetworkHandler;
+import xin.vanilla.sakura.network.data.RewardOptionSyncData;
 import xin.vanilla.sakura.rewards.Reward;
 import xin.vanilla.sakura.screen.component.NotificationManager;
 import xin.vanilla.sakura.util.CollectionUtils;

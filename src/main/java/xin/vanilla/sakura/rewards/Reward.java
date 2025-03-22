@@ -96,8 +96,12 @@ public class Reward implements Cloneable, Serializable {
 
     public JsonObject toJsonObject() {
         JsonObject json = new JsonObject();
-        json.addProperty("rewarded", this.rewarded);
-        json.addProperty("disabled", this.disabled);
+        if (this.rewarded) {
+            json.addProperty("rewarded", this.rewarded);
+        }
+        if (this.disabled) {
+            json.addProperty("disabled", this.disabled);
+        }
         json.addProperty("type", this.type.name());
         json.addProperty("probability", this.probability);
         json.add("content", this.content);
