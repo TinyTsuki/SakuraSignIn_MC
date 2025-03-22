@@ -19,7 +19,9 @@ public class RewardList extends ArrayList<Reward> implements Serializable, Clone
         try {
             RewardList cloned = new RewardList();
             for (Reward reward : this) {
-                cloned.add(reward != null ? reward.clone() : null);
+                if (reward != null) {
+                    cloned.add(reward.clone());
+                }
             }
             return cloned;
         } catch (Exception e) {

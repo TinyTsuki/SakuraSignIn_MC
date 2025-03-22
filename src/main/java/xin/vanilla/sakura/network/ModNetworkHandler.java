@@ -4,6 +4,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
 import xin.vanilla.sakura.SakuraSignIn;
+import xin.vanilla.sakura.network.packet.*;
 
 public class ModNetworkHandler {
     private static final String PROTOCOL_VERSION = "1";
