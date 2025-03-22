@@ -20,8 +20,10 @@ import net.minecraftforge.forgespi.language.IModInfo;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.ServerConfig;
+import xin.vanilla.sakura.data.PlayerSignInDataCapability;
 import xin.vanilla.sakura.enums.ERewardRule;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -29,6 +31,15 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class SakuraUtils {
+
+
+    public static String getCommandPrefix() {
+        String commandPrefix = ServerConfig.COMMAND_PREFIX.get();
+        if (StringUtils.isNullOrEmptyEx(commandPrefix) || !commandPrefix.matches("^(\\w ?)+$")) {
+            ServerConfig.COMMAND_PREFIX.set(SakuraSignIn.DEFAULT_COMMAND_PREFIX);
+        }
+        return ServerConfig.COMMAND_PREFIX.get().trim();
+    }
 
     // region 玩家与玩家背包
 
@@ -167,7 +178,7 @@ public class SakuraUtils {
      * @param message 消息
      */
     public static void sendMessage(ServerPlayerEntity player, Component message) {
-        player.sendMessage(message.toChatComponent(player.getLanguage()), player.getUUID());
+        player.sendMessage(message.toChatComponent(SakuraUtils.getPlayerLanguage(player)), player.getUUID());
     }
 
     /**
@@ -198,7 +209,7 @@ public class SakuraUtils {
      * @param args   参数
      */
     public static void sendTranslatableMessage(ServerPlayerEntity player, String key, Object... args) {
-        player.sendMessage(Component.translatable(key, args).setLanguageCode(player.getLanguage()).toChatComponent(), player.getUUID());
+        player.sendMessage(Component.translatable(key, args).setLanguageCode(SakuraUtils.getPlayerLanguage(player)).toChatComponent(), player.getUUID());
     }
 
     // endregion 消息相关
@@ -247,6 +258,26 @@ public class SakuraUtils {
     // region 杂项
 
     public static String getPlayerLanguage(ServerPlayerEntity player) {
+        return PlayerSignInDataCapability.getData(player).getValidLanguage(player);
+    }
+
+    public static String getValidLanguage(@Nullable PlayerEntity player, @Nullable String language) {
+        String result;
+        if (StringUtils.isNullOrEmptyEx(language) || "client".equalsIgnoreCase(language)) {
+            if (player instanceof ServerPlayerEntity) {
+                result = SakuraUtils.getServerPlayerLanguage((ServerPlayerEntity) player);
+            } else {
+                result = SakuraUtils.getClientLanguage();
+            }
+        } else if ("server".equalsIgnoreCase(language)) {
+            result = ServerConfig.DEFAULT_LANGUAGE.get();
+        } else {
+            result = language;
+        }
+        return result;
+    }
+
+    public static String getServerPlayerLanguage(ServerPlayerEntity player) {
         return player.getLanguage();
     }
 
@@ -256,7 +287,7 @@ public class SakuraUtils {
      * @param originalPlayer 原始玩家
      * @param targetPlayer   目标玩家
      */
-    public static void clonePlayerLanguage(ServerPlayerEntity originalPlayer, ServerPlayerEntity targetPlayer) {
+    public static void cloneServerPlayerLanguage(ServerPlayerEntity originalPlayer, ServerPlayerEntity targetPlayer) {
         FieldUtils.setPrivateFieldValue(ServerPlayerEntity.class, targetPlayer, FieldUtils.getPlayerLanguageFieldName(originalPlayer), originalPlayer.getLanguage());
     }
 

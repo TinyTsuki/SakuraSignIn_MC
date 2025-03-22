@@ -1,4 +1,4 @@
-package xin.vanilla.sakura.capability;
+package xin.vanilla.sakura.data;
 
 import lombok.Data;
 import lombok.NonNull;

@@ -1,4 +1,4 @@
-package xin.vanilla.sakura.network;
+package xin.vanilla.sakura.network.packet;
 
 import net.minecraft.network.PacketBuffer;
 import net.minecraftforge.fml.network.NetworkEvent;

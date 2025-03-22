@@ -6,6 +6,7 @@ import lombok.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
+import xin.vanilla.sakura.config.ServerConfig;
 import xin.vanilla.sakura.enums.EI18nType;
 
 import java.io.BufferedReader;
@@ -15,14 +16,13 @@ import java.util.*;
 
 public class I18nUtils {
     private static final Map<String, JsonObject> LANGUAGES = new HashMap<>();
-    private static final String DEFAULT_LANGUAGE = SakuraSignIn.DEFAULT_LANGUAGE;
     private static final Gson GSON = new Gson();
     private static final Logger LOGGER = LogManager.getLogger();
     private static final String LANG_PATH = String.format("/assets/%s/lang/", SakuraSignIn.MODID);
     private static final String LANG_FILE_PATH = String.format("%s%%s.json", LANG_PATH);
 
     static {
-        loadLanguage(DEFAULT_LANGUAGE);
+        loadLanguage(ServerConfig.DEFAULT_LANGUAGE.get());
         getI18nFiles().forEach(I18nUtils::loadLanguage);
     }
 
@@ -62,7 +62,7 @@ public class I18nUtils {
      */
     public static String getTranslation(@NonNull String key, @NonNull String languageCode) {
         languageCode = languageCode.toLowerCase(Locale.ROOT);
-        JsonObject language = LANGUAGES.getOrDefault(languageCode, LANGUAGES.get(DEFAULT_LANGUAGE));
+        JsonObject language = LANGUAGES.getOrDefault(languageCode, LANGUAGES.get(ServerConfig.DEFAULT_LANGUAGE.get()));
         if (language != null && language.has(key)) {
             return language.get(key).getAsString();
         }
