@@ -5,7 +5,10 @@ import net.minecraft.client.player.LocalPlayer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
-import xin.vanilla.sakura.capability.PlayerSignInDataCapability;
+import xin.vanilla.sakura.data.PlayerSignInDataCapability;
+import xin.vanilla.sakura.network.packet.AdvancementPacket;
+import xin.vanilla.sakura.network.packet.PlayerDataReceivedNotice;
+import xin.vanilla.sakura.network.packet.PlayerDataSyncPacket;
 
 public class ClientProxy {
     public static final Logger LOGGER = LogManager.getLogger();

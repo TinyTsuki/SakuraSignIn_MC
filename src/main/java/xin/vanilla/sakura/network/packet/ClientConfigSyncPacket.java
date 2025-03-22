@@ -1,12 +1,12 @@
-package xin.vanilla.sakura.network;
+package xin.vanilla.sakura.network.packet;
 
 import lombok.Getter;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
-import xin.vanilla.sakura.capability.IPlayerSignInData;
-import xin.vanilla.sakura.capability.PlayerSignInDataCapability;
 import xin.vanilla.sakura.config.ClientConfig;
+import xin.vanilla.sakura.data.IPlayerSignInData;
+import xin.vanilla.sakura.data.PlayerSignInDataCapability;
 
 import java.util.function.Supplier;
 

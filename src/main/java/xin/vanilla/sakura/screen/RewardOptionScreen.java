@@ -5,6 +5,7 @@ import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -30,10 +31,11 @@ import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ERewardRule;
 import xin.vanilla.sakura.enums.ERewardType;
 import xin.vanilla.sakura.event.ClientEventHandler;
-import xin.vanilla.sakura.network.DownloadRewardOptionNotice;
 import xin.vanilla.sakura.network.ModNetworkHandler;
-import xin.vanilla.sakura.network.RewardOptionSyncPacket;
+import xin.vanilla.sakura.network.packet.DownloadRewardOptionNotice;
+import xin.vanilla.sakura.network.packet.RewardOptionSyncPacket;
 import xin.vanilla.sakura.rewards.Reward;
+import xin.vanilla.sakura.rewards.RewardClipboardManager;
 import xin.vanilla.sakura.rewards.RewardList;
 import xin.vanilla.sakura.rewards.RewardManager;
 import xin.vanilla.sakura.screen.component.*;
@@ -62,6 +64,7 @@ public class RewardOptionScreen extends Screen {
     @Setter
     @Accessors(chain = true)
     private Screen previousScreen;
+    private final EditCommandHandler editHandler = new EditCommandHandler(this);
 
     private Text tips;
 
@@ -130,6 +133,14 @@ public class RewardOptionScreen extends Screen {
      * 当前选中的操作按钮
      */
     private int currOpButton;
+    /**
+     * 当前选中的奖励按钮
+     */
+    private String currRewardButton;
+    /**
+     * 是否已处理过奖励按钮选中
+     */
+    private boolean handeledRewardButton;
 
     /**
      * 操作按钮集合
@@ -498,6 +509,16 @@ public class RewardOptionScreen extends Screen {
         // 直接渲染奖励列表 REWARD_BUTTONS
         for (String key : REWARD_BUTTONS.keySet()) {
             OperationButton operationButton = REWARD_BUTTONS.get(key);
+            // 绘制选中边框
+            if (key.equals(this.currRewardButton)) {
+                AbstractGuiUtils.fillOutLine(graphics,
+                        (int) operationButton.getRealX() - 1,
+                        (int) operationButton.getRealY() - 1,
+                        (int) operationButton.getRealWidth() + 2,
+                        (int) operationButton.getRealHeight() + 2,
+                        1,
+                        0x88FFF13B);
+            }
             // 渲染物品图标
             operationButton.setBaseY(yOffset).render(graphics, mouseX, mouseY);
         }
@@ -514,7 +535,7 @@ public class RewardOptionScreen extends Screen {
         if (paste.equalsIgnoreCase(option.getSelectedString())) {
             option.getRenderList().stream()
                     .filter(item -> paste.equalsIgnoreCase(item.getContent()))
-                    .forEach(item -> item.setColor(!SakuraSignIn.getClipboard().isEmpty() ? 0xFFFFFFFF : 0xFF999999));
+                    .forEach(item -> item.setColor(RewardClipboardManager.isClipboardValid() ? 0xFFFFFFFF : 0xFF999999));
         }
     };
 
@@ -550,6 +571,7 @@ public class RewardOptionScreen extends Screen {
             if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
                 this.currOpButton = value.getOperation();
                 updateLayout.set(true);
+                flag.set(true);
                 try {
                     LocalPlayer player = Minecraft.getInstance().player;
                     assert player != null;
@@ -580,6 +602,11 @@ public class RewardOptionScreen extends Screen {
         }
         // 奖励配置列表面板
         else if (value.getOperation() == OperationButtonType.REWARD_PANEL.getCode()) {
+            if (!this.handeledRewardButton) {
+                this.handeledRewardButton = true;
+                this.currRewardButton = button == GLFW.GLFW_MOUSE_BUTTON_LEFT && "panel".equalsIgnoreCase(this.currRewardButton) ? null : "panel";
+            }
+
             if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
                 if (this.currOpButton > 200 && this.currOpButton <= 299) {
                     this.popupOption.clear();
@@ -668,7 +695,13 @@ public class RewardOptionScreen extends Screen {
      */
     private void handleRewardOption(double mouseX, double mouseY, int button, String key, OperationButton value, AtomicBoolean updateLayout, AtomicBoolean flag) {
         LOGGER.debug("选择了奖励配置:\tButton: {}\tOperation: {}\tKey: {}\tIndex: {}", button, this.currOpButton, key, value.getOperation());
-        if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
+
+        if (!this.handeledRewardButton) {
+            this.handeledRewardButton = true;
+            this.currRewardButton = button == GLFW.GLFW_MOUSE_BUTTON_LEFT && key.equalsIgnoreCase(this.currRewardButton) ? null : key;
+        }
+
+        if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && !isMouseMoved(mouseX, mouseY)) {
             if (key.startsWith("标题")) {
                 this.popupOption.clear();
                 if (!"标题,base".equalsIgnoreCase(key)) {
@@ -781,58 +814,7 @@ public class RewardOptionScreen extends Screen {
         } else if (popupOption.getId().startsWith("奖励面板按钮:")) {
             String[] key = new String[]{""};
             if (Component.translatableClient(EI18nType.OPTION, "paste").toString().equalsIgnoreCase(selectedString)) {
-                if (!SakuraSignIn.getClipboard().isEmpty()) {
-                    if (rule == ERewardRule.CDK_REWARD) {
-                        Minecraft.getInstance().setScreen(new StringInputScreen(this
-                                , new TextList(Text.translatable(EI18nType.TIPS, "enter_reward_rule_key").setShadow(true), Text.translatable(EI18nType.TIPS, "enter_valid_until").setShadow(true))
-                                , new TextList(Text.translatable(EI18nType.TIPS, "enter_something"))
-                                , new StringList("\\w*", "")
-                                , new StringList("", DateUtils.toString(DateUtils.addMonth(DateUtils.getClientDate(), 1)))
-                                , input -> {
-                            StringList result = new StringList("", "");
-                            if (CollectionUtils.isNotNullOrEmpty(input)) {
-                                if (!RewardOptionDataManager.validateKeyName(rule, input.get(0))) {
-                                    result.set(0, Component.translatableClient(EI18nType.TIPS, "reward_rule_s_error", input.get(0)).toString());
-                                }
-                                if (StringUtils.isNotNullOrEmpty(input.get(1))) {
-                                    if (DateUtils.format(input.get(1)) == null) {
-                                        result.set(1, Component.translatableClient(EI18nType.TIPS, "valid_until_s_error", input.get(1)).toString());
-                                    }
-                                }
-                                if (result.stream().allMatch(StringUtils::isNullOrEmptyEx)) {
-                                    RewardList rewardList = SakuraSignIn.getClipboard().clone();
-                                    RewardOptionDataManager.addKeyName(rule, String.format("%s|%s|-1", input.get(0), input.get(1)), rewardList);
-                                    RewardOptionDataManager.saveRewardOption();
-                                }
-                            }
-                            return result;
-                        }));
-                    } else if (rule != ERewardRule.BASE_REWARD) {
-                        String validator = rule == ERewardRule.RANDOM_REWARD ? "(0?1(\\.0{0,10})?|0(\\.\\d{0,10})?)?" : "[\\d +~/:.T-]*";
-                        Minecraft.getInstance().setScreen(new StringInputScreen(this
-                                , Text.translatable(EI18nType.TIPS, "enter_reward_rule_key").setShadow(true)
-                                , Text.translatable(EI18nType.TIPS, "enter_something")
-                                , validator
-                                , ""
-                                , input -> {
-                            StringList result = new StringList();
-                            if (CollectionUtils.isNotNullOrEmpty(input)) {
-                                if (RewardOptionDataManager.validateKeyName(rule, input.get(0))) {
-                                    RewardList rewardList = SakuraSignIn.getClipboard().clone();
-                                    RewardOptionDataManager.addKeyName(rule, input.get(0), rewardList);
-                                    RewardOptionDataManager.saveRewardOption();
-                                } else {
-                                    result.add(Component.translatableClient(EI18nType.TIPS, "reward_rule_s_error", input.get(0)).toString());
-                                }
-                            }
-                            return result;
-                        }));
-                    } else {
-                        RewardList rewardList = SakuraSignIn.getClipboard().clone();
-                        RewardOptionDataManager.addKeyName(rule, "", rewardList);
-                        RewardOptionDataManager.saveRewardOption();
-                    }
-                }
+                editHandler.handlePaste();
             }
             // 物品
             else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.ITEM.getCode()).equalsIgnoreCase(selectedString)) {
@@ -1078,25 +1060,15 @@ public class RewardOptionScreen extends Screen {
                     }
                 } else if (Component.translatableClient(EI18nType.OPTION, "copy").toString().equalsIgnoreCase(selectedString)) {
                     if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-                        RewardList rewardList = RewardOptionDataManager.getKeyName(rule, key).clone();
-                        SakuraSignIn.getClipboard().clear();
-                        SakuraSignIn.getClipboard().addAll(rewardList);
+                        editHandler.handleCopy();
                     }
                 } else if (Component.translatableClient(EI18nType.OPTION, "cut").toString().equalsIgnoreCase(selectedString)) {
                     if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-                        RewardList rewardList = RewardOptionDataManager.getKeyName(rule, key).clone();
-                        RewardOptionDataManager.deleteKey(rule, key);
-                        RewardOptionDataManager.saveRewardOption();
-                        SakuraSignIn.getClipboard().clear();
-                        SakuraSignIn.getClipboard().addAll(rewardList);
+                        editHandler.handleCut();
                     }
                 } else if (Component.translatableClient(EI18nType.OPTION, "paste").toString().equalsIgnoreCase(selectedString)) {
                     if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-                        if (!SakuraSignIn.getClipboard().isEmpty()) {
-                            RewardList rewardList = SakuraSignIn.getClipboard().clone();
-                            RewardOptionDataManager.addKeyName(rule, key, rewardList);
-                            RewardOptionDataManager.saveRewardOption();
-                        }
+                        editHandler.handlePaste();
                     }
                 } else if (Component.translatableClient(EI18nType.OPTION, "clear").toString().equalsIgnoreCase(selectedString)) {
                     if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
@@ -1108,8 +1080,7 @@ public class RewardOptionScreen extends Screen {
                 } else if (Component.translatableClient(EI18nType.OPTION, "delete").toString().equalsIgnoreCase(selectedString)) {
                     if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
                         if ((this.keyCode == GLFW.GLFW_KEY_LEFT_CONTROL || this.keyCode == GLFW.GLFW_KEY_RIGHT_CONTROL) && this.modifiers == GLFW.GLFW_MOD_CONTROL) {
-                            RewardOptionDataManager.deleteKey(rule, key);
-                            RewardOptionDataManager.saveRewardOption();
+                            editHandler.handleDelete();
                         }
                     }
                 }
@@ -1389,32 +1360,20 @@ public class RewardOptionScreen extends Screen {
                     }
                 } else if (Component.translatableClient(EI18nType.OPTION, "copy").toString().equalsIgnoreCase(selectedString)) {
                     if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-                        Reward reward = RewardOptionDataManager.getReward(rule, key, Integer.parseInt(index)).clone();
-                        SakuraSignIn.getClipboard().clear();
-                        SakuraSignIn.getClipboard().add(reward);
+                        editHandler.handleCopy();
                     }
                 } else if (Component.translatableClient(EI18nType.OPTION, "cut").toString().equalsIgnoreCase(selectedString)) {
                     if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-                        Reward reward = RewardOptionDataManager.getReward(rule, key, Integer.parseInt(index)).clone();
-                        RewardOptionDataManager.deleteReward(rule, key, Integer.parseInt(index));
-                        RewardOptionDataManager.saveRewardOption();
-                        SakuraSignIn.getClipboard().clear();
-                        SakuraSignIn.getClipboard().add(reward);
+                        editHandler.handleCut();
                     }
                 } else if (Component.translatableClient(EI18nType.OPTION, "paste").toString().equalsIgnoreCase(selectedString)) {
                     if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-                        if (!SakuraSignIn.getClipboard().isEmpty()) {
-                            for (Reward reward : SakuraSignIn.getClipboard().clone()) {
-                                RewardOptionDataManager.addReward(rule, key, reward);
-                            }
-                            RewardOptionDataManager.saveRewardOption();
-                        }
+                        editHandler.handlePaste();
                     }
                 } else if (Component.translatableClient(EI18nType.OPTION, "delete").toString().equalsIgnoreCase(selectedString)) {
                     if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
                         if ((this.keyCode == GLFW.GLFW_KEY_LEFT_CONTROL || this.keyCode == GLFW.GLFW_KEY_RIGHT_CONTROL) && this.modifiers == GLFW.GLFW_MOD_CONTROL) {
-                            RewardOptionDataManager.deleteReward(rule, key, Integer.parseInt(index));
-                            RewardOptionDataManager.saveRewardOption();
+                            editHandler.handleDelete();
                         }
                     }
                 }
@@ -1459,6 +1418,229 @@ public class RewardOptionScreen extends Screen {
     private void setYOffset(double offset) {
         // y坐标往上(-)不应该超过奖励高度+屏幕高度, 往下(+)不应该超过屏幕高度
         this.yOffset = Math.min(Math.max(offset, -(this.topMargin + (double) this.rewardListIndex.get() / this.lineItemCount * (this.itemIconSize + this.itemBottomMargin) + super.height)), super.height);
+    }
+
+    private boolean isMouseMoved(double mouseX, double mouseY) {
+        return Math.abs(mouseX - this.mouseDownX) > 1 || Math.abs(mouseY - this.mouseDownY) > 1;
+    }
+
+    @Data
+    class EditCommandHandler {
+        private final Screen screen;
+
+        private ERewardRule rule;
+        private String key;
+        private String index;
+
+        /**
+         * 更新参数
+         *
+         * @return 是否更新失败
+         */
+        private boolean update() {
+            if (StringUtils.isNullOrEmptyEx(currRewardButton)) return true;
+
+            OperationButtonType buttonType = OperationButtonType.valueOf(currOpButton);
+            if (buttonType == null) return true;
+            rule = ERewardRule.valueOf(buttonType.toString());
+
+            if (currRewardButton.startsWith("标题")) {
+                key = currRewardButton.substring(3);
+            } else if (!currRewardButton.equalsIgnoreCase("panel")) {
+                String[] split = currRewardButton.split(",");
+                if (split.length != 2) {
+                    LOGGER.error("Invalid popup option id: {}", currRewardButton);
+                    return true;
+                }
+                key = split[0];
+                index = split[1];
+            }
+            return false;
+        }
+
+        public boolean handleCopy() {
+            if (update()) return false;
+
+            // 面板
+            if (currRewardButton.equalsIgnoreCase("panel")) {
+                return false;
+            }
+            // 标题
+            else if (currRewardButton.startsWith("标题")) {
+                RewardList rewardList = RewardOptionDataManager.getKeyName(rule, key).clone();
+                RewardClipboardManager.setClipboard(rewardList, key);
+            }
+            // 普通按钮
+            else {
+                Reward reward = RewardOptionDataManager.getReward(rule, key, Integer.parseInt(index)).clone();
+                RewardClipboardManager.setClipboard(reward, key);
+            }
+            return true;
+        }
+
+        public boolean handleCut() {
+            if (update()) return false;
+
+            // 面板
+            if (currRewardButton.equalsIgnoreCase("panel")) {
+                return false;
+            }
+            // 标题
+            else if (currRewardButton.startsWith("标题")) {
+                RewardList rewardList = RewardOptionDataManager.getKeyName(rule, key).clone();
+                RewardClipboardManager.setClipboard(rewardList, key);
+                RewardOptionDataManager.deleteKey(rule, key);
+                RewardOptionDataManager.saveRewardOption();
+            }
+            // 普通按钮
+            else {
+                Reward reward = RewardOptionDataManager.getReward(rule, key, Integer.parseInt(index)).clone();
+                RewardClipboardManager.setClipboard(reward, key);
+                RewardOptionDataManager.deleteReward(rule, key, Integer.parseInt(index));
+                RewardOptionDataManager.saveRewardOption();
+            }
+            updateLayout();
+            return true;
+        }
+
+        public boolean handlePaste() {
+            if (update()) return false;
+
+            if (RewardClipboardManager.isClipboardValid()) {
+                // 面板
+                if (currRewardButton.equalsIgnoreCase("panel")) {
+                    if (rule == ERewardRule.CDK_REWARD) {
+                        Minecraft.getInstance().setScreen(new StringInputScreen(screen
+                                , new TextList(Text.translatable(EI18nType.TIPS, "enter_reward_rule_key").setShadow(true), Text.translatable(EI18nType.TIPS, "enter_valid_until").setShadow(true))
+                                , new TextList(Text.translatable(EI18nType.TIPS, "enter_something"))
+                                , new StringList("\\w*"
+                                , "")
+                                , new StringList(RewardOptionDataManager.getCdkRewardKey(RewardClipboardManager.deSerializeRewardList().getKey())
+                                , DateUtils.toString(DateUtils.addMonth(DateUtils.getClientDate(), 1)))
+                                , input -> {
+                            StringList result = new StringList("", "");
+                            if (CollectionUtils.isNotNullOrEmpty(input)) {
+                                if (!RewardOptionDataManager.validateKeyName(rule, input.get(0))) {
+                                    result.set(0, Component.translatableClient(EI18nType.TIPS, "reward_rule_s_error", input.get(0)).toString());
+                                }
+                                if (StringUtils.isNotNullOrEmpty(input.get(1))) {
+                                    if (DateUtils.format(input.get(1)) == null) {
+                                        result.set(1, Component.translatableClient(EI18nType.TIPS, "valid_until_s_error", input.get(1)).toString());
+                                    }
+                                }
+                                if (result.stream().allMatch(StringUtils::isNullOrEmptyEx)) {
+                                    RewardList rewardList = RewardClipboardManager.deSerializeRewardList().toRewardList();
+                                    RewardOptionDataManager.addKeyName(rule, String.format("%s|%s|-1", input.get(0), input.get(1)), rewardList);
+                                    RewardOptionDataManager.saveRewardOption();
+                                }
+                            }
+                            return result;
+                        }));
+                    } else if (rule != ERewardRule.BASE_REWARD) {
+                        String validator = rule == ERewardRule.RANDOM_REWARD ? "(0?1(\\.0{0,10})?|0(\\.\\d{0,10})?)?" : "[\\d +~/:.T-]*";
+                        Minecraft.getInstance().setScreen(new StringInputScreen(screen
+                                , Text.translatable(EI18nType.TIPS, "enter_reward_rule_key").setShadow(true)
+                                , Text.translatable(EI18nType.TIPS, "enter_something")
+                                , validator
+                                , RewardClipboardManager.deSerializeRewardList().getKey()
+                                , input -> {
+                            StringList result = new StringList();
+                            if (CollectionUtils.isNotNullOrEmpty(input)) {
+                                if (RewardOptionDataManager.validateKeyName(rule, input.get(0))) {
+                                    RewardList rewardList = RewardClipboardManager.deSerializeRewardList().toRewardList();
+                                    RewardOptionDataManager.addKeyName(rule, input.get(0), rewardList);
+                                    RewardOptionDataManager.saveRewardOption();
+                                } else {
+                                    result.add(Component.translatableClient(EI18nType.TIPS, "reward_rule_s_error", input.get(0)).toString());
+                                }
+                            }
+                            return result;
+                        }));
+                    } else {
+                        RewardList rewardList = RewardClipboardManager.deSerializeRewardList().toRewardList();
+                        RewardOptionDataManager.addKeyName(rule, "", rewardList);
+                        RewardOptionDataManager.saveRewardOption();
+                    }
+
+                }
+                // 标题
+                else if (currRewardButton.startsWith("标题")) {
+                    RewardList rewardList = RewardClipboardManager.deSerializeRewardList().toRewardList();
+                    RewardOptionDataManager.addKeyName(rule, key, rewardList);
+                    RewardOptionDataManager.saveRewardOption();
+                }
+                // 普通按钮
+                else {
+                    for (Reward reward : RewardClipboardManager.deSerializeRewardList()) {
+                        RewardOptionDataManager.addReward(rule, key, reward);
+                    }
+                    RewardOptionDataManager.saveRewardOption();
+                }
+                updateLayout();
+                return true;
+            }
+            return false;
+        }
+
+        public boolean handleDelete() {
+            if (update()) return false;
+
+            // 面板
+            if (currRewardButton.equalsIgnoreCase("panel")) {
+                return false;
+            }
+            // 标题
+            else if (currRewardButton.startsWith("标题")) {
+                RewardOptionDataManager.deleteKey(rule, key);
+                RewardOptionDataManager.saveRewardOption();
+            }
+            // 普通按钮
+            else {
+                RewardOptionDataManager.deleteReward(rule, key, Integer.parseInt(index));
+                RewardOptionDataManager.saveRewardOption();
+            }
+            updateLayout();
+            return true;
+        }
+
+        public boolean handleUndo() {
+            if (update()) return false;
+
+            // 面板
+            if (currRewardButton.equalsIgnoreCase("panel")) {
+
+            }
+            // 标题
+            else if (currRewardButton.startsWith("标题")) {
+
+            }
+            // 普通按钮
+            else {
+
+            }
+            updateLayout();
+            return true;
+        }
+
+        public boolean handleRedo() {
+            if (update()) return false;
+
+            // 面板
+            if (currRewardButton.equalsIgnoreCase("panel")) {
+
+            }
+            // 标题
+            else if (currRewardButton.startsWith("标题")) {
+
+            }
+            // 普通按钮
+            else {
+
+            }
+            updateLayout();
+            return true;
+        }
+
     }
 
     public RewardOptionScreen() {
@@ -1634,6 +1816,17 @@ public class RewardOptionScreen extends Screen {
             else {
                 if (op == OperationButtonType.OFFSET_Y.getCode()) {
                     button.setTooltip(Component.translatableClient(EI18nType.TIPS, "y_offset", StringUtils.toFixedEx(this.yOffset, 1)).toString());
+                } else if (op == OperationButtonType.REWARD_PANEL.getCode()) {
+                    // 绘制选中边框
+                    if ("panel".equals(this.currRewardButton)) {
+                        AbstractGuiUtils.fillOutLine(graphics,
+                                (int) button.getRealX() - 1,
+                                (int) button.getRealY(),
+                                (int) button.getRealWidth() + 2,
+                                (int) button.getRealHeight(),
+                                1,
+                                0x88FFF13B);
+                    }
                 }
                 button.render(graphics, mouseX, mouseY);
             }
@@ -1700,6 +1893,10 @@ public class RewardOptionScreen extends Screen {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         cursor.mouseClicked(mouseX, mouseY, button);
+        this.yOffsetOld = this.yOffset;
+        this.mouseDownX = mouseX;
+        this.mouseDownY = mouseY;
+        this.handeledRewardButton = false;
         // 清空弹出选项
         if (!popupOption.isHovered()) {
             popupOption.clear();
@@ -1707,11 +1904,6 @@ public class RewardOptionScreen extends Screen {
                 OP_BUTTONS.forEach((key, value) -> {
                     if (value.isHovered()) {
                         value.setPressed(true);
-                        if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT && key == OperationButtonType.REWARD_PANEL.getCode()) {
-                            this.yOffsetOld = this.yOffset;
-                            this.mouseDownX = mouseX;
-                            this.mouseDownY = mouseY;
-                        }
                     }
                 });
                 REWARD_BUTTONS.forEach((key, value) -> {
@@ -1732,41 +1924,46 @@ public class RewardOptionScreen extends Screen {
         cursor.mouseReleased(mouseX, mouseY, button);
         AtomicBoolean updateLayout = new AtomicBoolean(false);
         AtomicBoolean flag = new AtomicBoolean(false);
-        if (popupOption.isHovered()) {
-            this.handlePopupOption(mouseX, mouseY, button, updateLayout, flag);
-            popupOption.clear();
-        } else if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT || button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
-            // 控制按钮
-            OP_BUTTONS.forEach((key, value) -> {
-                // 忽略奖励配置列表面板, 后置处理
-                if (key != OperationButtonType.REWARD_PANEL.getCode()) {
-                    if (value.isHovered() && value.isPressed()) {
-                        this.handleOperation(mouseX, mouseY, button, value, updateLayout, flag);
+        if (!isMouseMoved(mouseX, mouseY)) {
+            if (popupOption.isHovered()) {
+                this.handlePopupOption(mouseX, mouseY, button, updateLayout, flag);
+                popupOption.clear();
+            } else if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT || button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
+                // 控制按钮
+                OP_BUTTONS.forEach((key, value) -> {
+                    // 忽略奖励配置列表面板, 后置处理
+                    if (key != OperationButtonType.REWARD_PANEL.getCode()) {
+                        if (value.isHovered() && value.isPressed()) {
+                            this.handleOperation(mouseX, mouseY, button, value, updateLayout, flag);
+                            if (flag.get()) {
+                                this.currRewardButton = null;
+                            }
+                        }
+                        value.setPressed(false);
                     }
-                    value.setPressed(false);
-                }
-            });
-            // 奖励按钮
-            if (!flag.get()) {
-                REWARD_BUTTONS.forEach((key, value) -> {
-                    if (value.isHovered() && value.isPressed()) {
-                        this.handleRewardOption(mouseX, mouseY, button, key, value, updateLayout, flag);
-                    }
-                    value.setPressed(false);
                 });
-            }
-            // 奖励配置列表面板
-            if (!flag.get()) {
-                OperationButton rewardPanel = OP_BUTTONS.get(OperationButtonType.REWARD_PANEL.getCode());
-                if (rewardPanel.isHovered() && rewardPanel.isPressed()) {
-                    this.handleOperation(mouseX, mouseY, button, rewardPanel, updateLayout, flag);
-                    rewardPanel.setPressed(false);
+                // 奖励按钮
+                if (!flag.get()) {
+                    REWARD_BUTTONS.forEach((key, value) -> {
+                        if (value.isHovered() && value.isPressed()) {
+                            this.handleRewardOption(mouseX, mouseY, button, key, value, updateLayout, flag);
+                        }
+                        value.setPressed(false);
+                    });
+                }
+                // 奖励配置列表面板
+                if (!flag.get()) {
+                    OperationButton rewardPanel = OP_BUTTONS.get(OperationButtonType.REWARD_PANEL.getCode());
+                    if (rewardPanel.isHovered() && rewardPanel.isPressed()) {
+                        this.handleOperation(mouseX, mouseY, button, rewardPanel, updateLayout, flag);
+                        rewardPanel.setPressed(false);
+                    }
                 }
             }
-            this.mouseDownX = -1;
-            this.mouseDownY = -1;
         }
         if (updateLayout.get()) this.updateLayout();
+        this.mouseDownX = -1;
+        this.mouseDownY = -1;
         return flag.get() ? flag.get() : super.mouseReleased(mouseX, mouseY, button);
     }
 
@@ -1839,9 +2036,39 @@ public class RewardOptionScreen extends Screen {
     @Override
     public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
         // LOGGER.debug("keyReleased: keyCode = {}, scanCode = {}, modifiers = {}", keyCode, scanCode, modifiers);
+        boolean consumed = false;
+
+        // Ctrl + C
+        if (keyCode == GLFW.GLFW_KEY_C && modifiers == GLFW.GLFW_MOD_CONTROL) {
+            consumed = editHandler.handleCopy();
+        }
+        // Ctrl + V
+        else if (keyCode == GLFW.GLFW_KEY_V && modifiers == GLFW.GLFW_MOD_CONTROL) {
+            consumed = editHandler.handlePaste();
+        }
+        // Ctrl + X
+        else if (keyCode == GLFW.GLFW_KEY_X && modifiers == GLFW.GLFW_MOD_CONTROL) {
+            consumed = editHandler.handleCut();
+        }
+        // Ctrl + Y / DELETE
+        else if ((keyCode == GLFW.GLFW_KEY_Y && modifiers == GLFW.GLFW_MOD_CONTROL)
+                || (keyCode == GLFW.GLFW_KEY_DELETE && modifiers == 0)) {
+            consumed = editHandler.handleDelete();
+        }
+        // Ctrl + Shift + Z
+        else if (keyCode == GLFW.GLFW_KEY_Z
+                && (modifiers & (GLFW.GLFW_MOD_CONTROL | GLFW.GLFW_MOD_SHIFT))
+                == (GLFW.GLFW_MOD_CONTROL | GLFW.GLFW_MOD_SHIFT)) {
+            consumed = editHandler.handleRedo();
+        }
+        // Ctrl + Z
+        else if (keyCode == GLFW.GLFW_KEY_Z && modifiers == GLFW.GLFW_MOD_CONTROL) {
+            consumed = editHandler.handleUndo();
+        }
+
         this.keyCode = -1;
         this.modifiers = -1;
-        return super.keyReleased(keyCode, scanCode, modifiers);
+        return consumed || super.keyReleased(keyCode, scanCode, modifiers);
     }
 
     @Override
@@ -1856,4 +2083,5 @@ public class RewardOptionScreen extends Screen {
     public boolean isPauseScreen() {
         return false;
     }
+
 }

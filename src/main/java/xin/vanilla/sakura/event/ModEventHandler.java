@@ -6,7 +6,7 @@ import net.minecraftforge.fml.common.Mod;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
-import xin.vanilla.sakura.capability.IPlayerSignInData;
+import xin.vanilla.sakura.data.IPlayerSignInData;
 
 /**
  * Mod 事件处理器

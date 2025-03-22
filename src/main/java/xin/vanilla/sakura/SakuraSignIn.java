@@ -30,10 +30,9 @@ import xin.vanilla.sakura.config.KeyValue;
 import xin.vanilla.sakura.config.RewardOptionDataManager;
 import xin.vanilla.sakura.config.ServerConfig;
 import xin.vanilla.sakura.event.ClientEventHandler;
-import xin.vanilla.sakura.network.AdvancementData;
 import xin.vanilla.sakura.network.ModNetworkHandler;
-import xin.vanilla.sakura.network.SplitPacket;
-import xin.vanilla.sakura.rewards.RewardList;
+import xin.vanilla.sakura.network.data.AdvancementData;
+import xin.vanilla.sakura.network.packet.SplitPacket;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
 import xin.vanilla.sakura.util.DateUtils;
 
@@ -50,6 +49,8 @@ import java.util.concurrent.Executors;
 @Mod(SakuraSignIn.MODID)
 public class SakuraSignIn {
 
+    public final static String DEFAULT_COMMAND_PREFIX = "sakura";
+
     public static final String MODID = "sakura_sign_in";
     public static final String PNG_CHUNK_NAME = "vacb";
 
@@ -62,11 +63,6 @@ public class SakuraSignIn {
      */
     @Getter
     private static MinecraftServer serverInstance;
-
-    /**
-     * 默认语言
-     */
-    public static final String DEFAULT_LANGUAGE = "en_us";
 
     /**
      * 是否有对应的服务端
@@ -134,9 +130,6 @@ public class SakuraSignIn {
      */
     @Getter
     private static final KeyValue<String, String> clientServerTime = new KeyValue<>(DateUtils.toDateTimeString(new Date(0)), DateUtils.toString(new Date(0)));
-
-    @Getter
-    private static final RewardList clipboard = new RewardList();
 
     public SakuraSignIn() {
 
