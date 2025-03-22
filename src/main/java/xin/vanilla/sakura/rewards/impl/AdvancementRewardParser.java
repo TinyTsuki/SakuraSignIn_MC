@@ -8,7 +8,7 @@ import net.minecraft.util.ResourceLocation;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ERewardType;
-import xin.vanilla.sakura.network.AdvancementData;
+import xin.vanilla.sakura.network.data.AdvancementData;
 import xin.vanilla.sakura.rewards.RewardParser;
 import xin.vanilla.sakura.util.Component;
 
