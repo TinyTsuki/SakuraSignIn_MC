@@ -14,8 +14,8 @@ import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.enums.ERewardRule;
 import xin.vanilla.sakura.enums.ERewardType;
-import xin.vanilla.sakura.network.RewardOptionSyncData;
-import xin.vanilla.sakura.network.RewardOptionSyncPacket;
+import xin.vanilla.sakura.network.data.RewardOptionSyncData;
+import xin.vanilla.sakura.network.packet.RewardOptionSyncPacket;
 import xin.vanilla.sakura.rewards.Reward;
 import xin.vanilla.sakura.rewards.RewardList;
 import xin.vanilla.sakura.util.DateUtils;
@@ -342,15 +342,10 @@ public class RewardOptionDataManager {
                 rewardOptionData.addRandomReward(keyName, rewardList);
                 break;
             case CDK_REWARD:
-                String[] split = keyName.replaceAll("\\|", ",").split(",");
-                String date = "";
-                int index = rewardOptionData.getCdkRewards().size();
-                if (split.length == 3) {
-                    date = split[1];
-                    index = StringUtils.toInt(split[2]);
-                }
+                String date = getCdkRewardDate(keyName);
+                int index = getCdkRewardIndex(keyName);
                 if (rewardOptionData.getCdkRewards().size() <= index || index < 0) {
-                    rewardOptionData.addCdkReward(new KeyValue<>(split[0], new KeyValue<>(date, rewardList)));
+                    rewardOptionData.addCdkReward(new KeyValue<>(getCdkRewardKey(keyName), new KeyValue<>(date, rewardList)));
                 } else {
                     rewardOptionData.getCdkRewards().get(index).getValue().getValue().addAll(rewardList);
                 }
@@ -1076,12 +1071,12 @@ public class RewardOptionDataManager {
     public static RewardOptionData fromSyncPacketList(List<RewardOptionSyncPacket> packetList) {
         RewardOptionData result = new RewardOptionData();
         packetList.stream().flatMap(packet -> packet.getRewardOptionData().stream())
-                .collect(Collectors.groupingBy(RewardOptionSyncData::getRule))
+                .collect(Collectors.groupingBy(RewardOptionSyncData::rule))
                 .forEach((rule, dataList) -> {
                     Map<String, RewardList> rewardMap = new LinkedHashMap<>();
                     for (RewardOptionSyncData data : dataList) {
-                        RewardList rewardList = rewardMap.computeIfAbsent(data.getKey(), key -> new RewardList());
-                        rewardList.add(data.getReward());
+                        RewardList rewardList = rewardMap.computeIfAbsent(data.key(), key -> new RewardList());
+                        rewardList.add(data.reward());
                     }
                     // 如果当前为服务器环境，且玩家发送的数据为空则使用原数据，不进行覆盖
                     if (FMLEnvironment.dist == Dist.DEDICATED_SERVER
@@ -1097,4 +1092,38 @@ public class RewardOptionDataManager {
                 });
         return result;
     }
+
+    @NonNull
+    public static String getCdkRewardKey(String key) {
+        String result = "";
+        if (StringUtils.isNotNullOrEmpty(key)) {
+            result = key.replaceAll("\\|", ",").split(",")[0];
+        }
+        return result;
+    }
+
+    @NonNull
+    public static String getCdkRewardDate(String key) {
+        String date = "";
+        if (StringUtils.isNotNullOrEmpty(key)) {
+            String[] split = key.replaceAll("\\|", ",").split(",");
+            if (split.length == 3) {
+                date = split[1];
+            }
+        }
+        return date;
+    }
+
+    public static int getCdkRewardIndex(String key) {
+        int index = 0;
+        if (StringUtils.isNotNullOrEmpty(key)) {
+            String[] split = key.replaceAll("\\|", ",").split(",");
+            index = rewardOptionData.getCdkRewards().size();
+            if (split.length == 3) {
+                index = StringUtils.toInt(split[2]);
+            }
+        }
+        return index;
+    }
+
 }

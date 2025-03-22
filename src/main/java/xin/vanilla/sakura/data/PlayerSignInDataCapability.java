@@ -1,4 +1,4 @@
-package xin.vanilla.sakura.capability;
+package xin.vanilla.sakura.data;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
@@ -8,7 +8,7 @@ import net.minecraftforge.common.capabilities.CapabilityToken;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.fmllegacy.network.PacketDistributor;
 import xin.vanilla.sakura.network.ModNetworkHandler;
-import xin.vanilla.sakura.network.PlayerDataSyncPacket;
+import xin.vanilla.sakura.network.packet.PlayerDataSyncPacket;
 
 /**
  * 玩家签到数据能力

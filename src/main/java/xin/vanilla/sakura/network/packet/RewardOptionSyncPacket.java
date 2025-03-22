@@ -1,4 +1,4 @@
-package xin.vanilla.sakura.network;
+package xin.vanilla.sakura.network.packet;
 
 import com.google.gson.reflect.TypeToken;
 import lombok.Getter;
@@ -11,6 +11,8 @@ import xin.vanilla.sakura.config.RewardOptionDataManager;
 import xin.vanilla.sakura.config.ServerConfig;
 import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ERewardRule;
+import xin.vanilla.sakura.network.ModNetworkHandler;
+import xin.vanilla.sakura.network.data.RewardOptionSyncData;
 import xin.vanilla.sakura.rewards.Reward;
 import xin.vanilla.sakura.screen.component.NotificationManager;
 import xin.vanilla.sakura.util.CollectionUtils;
@@ -106,9 +108,9 @@ public class RewardOptionSyncPacket extends SplitPacket {
         super.toBytes(buf);
         buf.writeInt(rewardOptionData.size());
         for (RewardOptionSyncData data : rewardOptionData) {
-            buf.writeInt(data.getRule().getCode());
-            buf.writeUtf(data.getKey());
-            buf.writeByteArray(GSON.toJson(data.getReward().toJsonObject()).getBytes(StandardCharsets.UTF_8));
+            buf.writeInt(data.rule().getCode());
+            buf.writeUtf(data.key());
+            buf.writeByteArray(GSON.toJson(data.reward().toJsonObject()).getBytes(StandardCharsets.UTF_8));
         }
     }
 

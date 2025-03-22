@@ -1,4 +1,4 @@
-package xin.vanilla.sakura.network;
+package xin.vanilla.sakura.network.packet;
 
 import lombok.Getter;
 import net.minecraft.advancements.Advancement;
@@ -6,6 +6,8 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fmllegacy.network.NetworkEvent;
+import xin.vanilla.sakura.network.ClientProxy;
+import xin.vanilla.sakura.network.data.AdvancementData;
 import xin.vanilla.sakura.util.CollectionUtils;
 
 import java.util.ArrayList;
@@ -40,7 +42,7 @@ public class AdvancementPacket extends SplitPacket {
     private AdvancementPacket(List<AdvancementPacket> packets) {
         super();
         this.advancements = new ArrayList<>();
-        this.advancements.addAll(packets.stream().flatMap(packet -> packet.getAdvancements().stream()).collect(Collectors.toList()));
+        this.advancements.addAll(packets.stream().flatMap(packet -> packet.getAdvancements().stream()).toList());
     }
 
     public static void handle(AdvancementPacket packet, Supplier<NetworkEvent.Context> ctx) {

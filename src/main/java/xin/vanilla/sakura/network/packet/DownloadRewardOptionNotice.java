@@ -1,4 +1,4 @@
-package xin.vanilla.sakura.network;
+package xin.vanilla.sakura.network.packet;
 
 import lombok.Getter;
 import net.minecraft.network.FriendlyByteBuf;
@@ -6,6 +6,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.fmllegacy.network.NetworkEvent;
 import net.minecraftforge.fmllegacy.network.PacketDistributor;
 import xin.vanilla.sakura.config.RewardOptionDataManager;
+import xin.vanilla.sakura.network.ModNetworkHandler;
 
 import java.util.function.Supplier;
 
