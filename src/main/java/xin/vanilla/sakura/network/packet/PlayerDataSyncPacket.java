@@ -1,14 +1,15 @@
-package xin.vanilla.sakura.network;
+package xin.vanilla.sakura.network.packet;
 
 import lombok.Getter;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
-import xin.vanilla.sakura.capability.IPlayerSignInData;
-import xin.vanilla.sakura.capability.PlayerSignInData;
-import xin.vanilla.sakura.capability.SignInRecord;
 import xin.vanilla.sakura.config.ServerConfig;
+import xin.vanilla.sakura.data.IPlayerSignInData;
+import xin.vanilla.sakura.data.PlayerSignInData;
+import xin.vanilla.sakura.data.SignInRecord;
+import xin.vanilla.sakura.network.ClientProxy;
 import xin.vanilla.sakura.util.CollectionUtils;
 import xin.vanilla.sakura.util.DateUtils;
 
