@@ -7,7 +7,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.network.CustomPayloadEvent;
 import net.minecraftforge.network.PacketDistributor;
 import xin.vanilla.sakura.SakuraSignIn;
-import xin.vanilla.sakura.config.RewardOptionDataManager;
+import xin.vanilla.sakura.config.RewardConfigManager;
 import xin.vanilla.sakura.config.ServerConfig;
 import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ERewardRule;
@@ -22,7 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-import static xin.vanilla.sakura.config.RewardOptionDataManager.GSON;
+import static xin.vanilla.sakura.config.RewardConfigManager.GSON;
 
 @Getter
 public class RewardOptionSyncPacket extends SplitPacket {
@@ -54,11 +54,11 @@ public class RewardOptionSyncPacket extends SplitPacket {
                 if (ctx.isClientSide()) {
                     try {
                         // 备份 RewardOption
-                        RewardOptionDataManager.backupRewardOption();
+                        RewardConfigManager.backupRewardOption();
                         // 更新 RewardOption
-                        RewardOptionDataManager.setRewardOptionData(RewardOptionDataManager.fromSyncPacketList(packets));
-                        RewardOptionDataManager.setRewardOptionDataChanged(true);
-                        RewardOptionDataManager.saveRewardOption();
+                        RewardConfigManager.setRewardConfig(RewardConfigManager.fromSyncPacketList(packets));
+                        RewardConfigManager.setRewardOptionDataChanged(true);
+                        RewardConfigManager.saveRewardOption();
                     } catch (Exception e) {
                         Component component = Component.translatable(EI18nType.MESSAGE, "reward_option_download_failed");
                         NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0x88FF5555));
@@ -73,10 +73,10 @@ public class RewardOptionSyncPacket extends SplitPacket {
                             // 判断是否拥有修改权限
                             if (sender.hasPermissions(ServerConfig.PERMISSION_EDIT_REWARD.get())) {
                                 // 备份 RewardOption
-                                RewardOptionDataManager.backupRewardOption(false);
+                                RewardConfigManager.backupRewardOption(false);
                                 // 更新 RewardOption
-                                RewardOptionDataManager.setRewardOptionData(RewardOptionDataManager.fromSyncPacketList(packets));
-                                RewardOptionDataManager.saveRewardOption();
+                                RewardConfigManager.setRewardConfig(RewardConfigManager.fromSyncPacketList(packets));
+                                RewardConfigManager.saveRewardOption();
 
                                 // 同步 RewardOption 至所有在线玩家
                                 for (ServerPlayer player : sender.server.getPlayerList().getPlayers()) {
@@ -85,7 +85,7 @@ public class RewardOptionSyncPacket extends SplitPacket {
                                     // 仅给客户端已安装mod的玩家同步数据
                                     if (!SakuraSignIn.getPlayerCapabilityStatus().containsKey(player.getUUID().toString()))
                                         continue;
-                                    for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardOptionDataManager.toSyncPacket(player).split()) {
+                                    for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardConfigManager.toSyncPacket(player).split()) {
                                         ModNetworkHandler.INSTANCE.send(rewardOptionSyncPacket, PacketDistributor.PLAYER.with(player));
                                     }
                                 }

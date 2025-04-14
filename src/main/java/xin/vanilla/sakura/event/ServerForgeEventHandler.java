@@ -27,6 +27,7 @@ import xin.vanilla.sakura.network.packet.ServerTimeSyncPacket;
 import xin.vanilla.sakura.network.packet.SignInPacket;
 import xin.vanilla.sakura.rewards.RewardManager;
 import xin.vanilla.sakura.util.DateUtils;
+import xin.vanilla.sakura.util.SakuraUtils;
 
 /**
  * Forge 事件处理
@@ -83,13 +84,17 @@ public class ServerForgeEventHandler {
      */
     @SubscribeEvent
     public static void onPlayerCloned(PlayerEvent.Clone event) {
-        Player original = event.getOriginal();
-        Player newPlayer = event.getEntity();
+        ServerPlayer original = (ServerPlayer) event.getOriginal();
+        ServerPlayer newPlayer = (ServerPlayer) event.getEntity();
         original.revive();
+
+        SakuraUtils.cloneServerPlayerLanguage(original, newPlayer);
         LazyOptional<IPlayerSignInData> oldDataCap = original.getCapability(PlayerSignInDataCapability.PLAYER_DATA);
         LazyOptional<IPlayerSignInData> newDataCap = newPlayer.getCapability(PlayerSignInDataCapability.PLAYER_DATA);
         oldDataCap.ifPresent(oldData -> newDataCap.ifPresent(newData -> newData.copyFrom(oldData)));
-        SakuraSignIn.getPlayerCapabilityStatus().put(newPlayer.getUUID().toString(), false);
+        if (SakuraSignIn.getPlayerCapabilityStatus().containsKey(newPlayer.getUUID().toString())) {
+            SakuraSignIn.getPlayerCapabilityStatus().put(newPlayer.getUUID().toString(), false);
+        }
     }
 
     /**

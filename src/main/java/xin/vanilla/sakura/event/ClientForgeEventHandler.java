@@ -100,8 +100,9 @@ public class ClientForgeEventHandler {
     public static void onPlayerCloned(PlayerEvent.Clone event) {
         ServerPlayer original = (ServerPlayer) event.getOriginal();
         ServerPlayer newPlayer = (ServerPlayer) event.getEntity();
-        SakuraUtils.cloneServerPlayerLanguage(original, newPlayer);
         original.revive();
+
+        SakuraUtils.cloneServerPlayerLanguage(original, newPlayer);
         LazyOptional<IPlayerSignInData> oldDataCap = original.getCapability(PlayerSignInDataCapability.PLAYER_DATA);
         LazyOptional<IPlayerSignInData> newDataCap = newPlayer.getCapability(PlayerSignInDataCapability.PLAYER_DATA);
         oldDataCap.ifPresent(oldData -> newDataCap.ifPresent(newData -> newData.copyFrom(oldData)));
