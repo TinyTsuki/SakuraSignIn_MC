@@ -5,7 +5,7 @@ import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.PacketBuffer;
 import net.minecraftforge.fml.network.NetworkEvent;
 import net.minecraftforge.fml.network.PacketDistributor;
-import xin.vanilla.sakura.config.RewardOptionDataManager;
+import xin.vanilla.sakura.config.RewardConfigManager;
 import xin.vanilla.sakura.network.ModNetworkHandler;
 
 import java.util.function.Supplier;
@@ -32,7 +32,7 @@ public class DownloadRewardOptionNotice {
             ServerPlayerEntity player = ctx.get().getSender();
             if (player != null) {
                 // 同步签到奖励配置到客户端
-                for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardOptionDataManager.toSyncPacket(player).split()) {
+                for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardConfigManager.toSyncPacket(player).split()) {
                     ModNetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), rewardOptionSyncPacket);
                 }
             }
