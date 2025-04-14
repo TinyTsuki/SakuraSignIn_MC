@@ -5,7 +5,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.fmllegacy.network.NetworkEvent;
 import net.minecraftforge.fmllegacy.network.PacketDistributor;
 import xin.vanilla.sakura.SakuraSignIn;
-import xin.vanilla.sakura.config.RewardOptionDataManager;
+import xin.vanilla.sakura.config.RewardConfigManager;
 import xin.vanilla.sakura.data.PlayerSignInDataCapability;
 import xin.vanilla.sakura.network.ModNetworkHandler;
 
@@ -32,7 +32,7 @@ public class ClientModLoadedNotice {
                 // 同步玩家签到数据到客户端
                 PlayerSignInDataCapability.syncPlayerData(player);
                 // 同步签到奖励配置到客户端
-                for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardOptionDataManager.toSyncPacket(player).split()) {
+                for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardConfigManager.toSyncPacket(player).split()) {
                     ModNetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), rewardOptionSyncPacket);
                 }
                 // 同步进度列表到客户端

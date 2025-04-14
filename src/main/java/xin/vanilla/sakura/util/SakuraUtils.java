@@ -266,7 +266,7 @@ public class SakuraUtils {
      * @param targetPlayer   目标玩家
      */
     public static void cloneServerPlayerLanguage(ServerPlayer originalPlayer, ServerPlayer targetPlayer) {
-        FieldUtils.setPrivateFieldValue(ServerPlayer.class, targetPlayer, FieldUtils.getPlayerLanguageFieldName(originalPlayer), originalPlayer.getLanguage());
+        FieldUtils.setPrivateFieldValue(ServerPlayer.class, targetPlayer, FieldUtils.getPlayerLanguageFieldName(originalPlayer), getServerPlayerLanguage(originalPlayer));
     }
 
     public static String getClientLanguage() {
