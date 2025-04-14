@@ -15,7 +15,7 @@ import net.minecraft.command.Commands;
 import net.minecraft.command.arguments.EntityArgument;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import xin.vanilla.sakura.config.KeyValue;
-import xin.vanilla.sakura.config.RewardOptionDataManager;
+import xin.vanilla.sakura.config.RewardConfigManager;
 import xin.vanilla.sakura.config.ServerConfig;
 import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.data.PlayerSignInDataCapability;
@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
 public class SignInCommand {
@@ -222,25 +223,33 @@ public class SignInCommand {
                     .anyMatch(keyValue -> keyValue.getValue().getValue())) {
                 SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "cdk_already_received").setColor(0xFFFFFF00));
             } else {
-                List<KeyValue<String, KeyValue<String, RewardList>>> cdkRewards = RewardOptionDataManager.getRewardOptionData().getCdkRewards();
+                List<KeyValue<KeyValue<String, String>, KeyValue<RewardList, AtomicInteger>>> cdkRewards = RewardConfigManager.getRewardConfig().getCdkRewards();
                 if (CollectionUtils.isNotNullOrEmpty(cdkRewards)) {
                     // 找到第一个匹配的项的下标
                     int indexToRemove = IntStream.range(0, cdkRewards.size())
-                            .filter(i -> cdkRewards.get(i).getKey().equals(string))
+                            .filter(i -> cdkRewards.get(i).getKey().getKey().equals(string))
+                            .filter(i -> cdkRewards.get(i).getValue().getValue().get() > 0)
                             .findFirst()
                             .orElse(-1);
                     boolean error = true;
                     if (indexToRemove < 0) {
                         SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "cdk_not_exist_or_already_received").setColor(0xFFFF0000));
                     } else {
-                        KeyValue<String, KeyValue<String, RewardList>> rewardKeyValue = RewardOptionDataManager.getRewardOptionData().getCdkRewards().remove(indexToRemove);
-                        RewardOptionDataManager.saveRewardOption();
-                        Date format = DateUtils.format(rewardKeyValue.getValue().getKey());
+                        KeyValue<KeyValue<String, String>, KeyValue<RewardList, AtomicInteger>> rewardKeyValue;
+                        if (RewardConfigManager.getRewardConfig().getCdkRewards().get(indexToRemove).getValue().getValue().get() > 1) {
+                            KeyValue<KeyValue<String, String>, KeyValue<RewardList, AtomicInteger>> value = RewardConfigManager.getRewardConfig().getCdkRewards().get(indexToRemove);
+                            value.getValue().getValue().decrementAndGet();
+                            rewardKeyValue = new KeyValue<>(value.getKey(), new KeyValue<>(value.getValue().getKey(), new AtomicInteger(1)));
+                        } else {
+                            rewardKeyValue = RewardConfigManager.getRewardConfig().getCdkRewards().remove(indexToRemove);
+                        }
+                        RewardConfigManager.saveRewardOption();
+                        Date format = DateUtils.format(rewardKeyValue.getKey().getValue());
                         if (format.before(DateUtils.getServerDate())) {
                             SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "cdk_expired").setColor(0xFFFF0000));
                         } else {
                             Component msg = Component.translatable(player, EI18nType.MESSAGE, "receive_reward_success");
-                            rewardKeyValue.getValue().getValue().forEach(reward -> {
+                            rewardKeyValue.getValue().getKey().forEach(reward -> {
                                 Component detail = reward.getName(SakuraUtils.getPlayerLanguage(player), true);
                                 if (RewardManager.giveRewardToPlayer(player, signInData, reward)) {
                                     detail.setColor(Color.GREEN.getRGB());
@@ -679,7 +688,7 @@ public class SignInCommand {
                                             String boolString = StringArgumentType.getString(context, "bool");
                                             boolean bool = StringUtils.stringToBoolean(boolString);
                                             ServerConfig.CONTINUOUS_REWARDS_REPEATABLE.set(bool);
-                                            RewardOptionDataManager.getRewardOptionData().refreshContinuousRewardsRelation();
+                                            RewardConfigManager.getRewardConfig().refreshContinuousRewardsRelation();
                                             ServerPlayerEntity player = context.getSource().getPlayerOrException();
                                             SakuraUtils.broadcastMessage(player, Component.translatable(player, EI18nType.MESSAGE, "server_enabled_or_not_continuous_rewards_repeatable", I18nUtils.enabled(SakuraUtils.getPlayerLanguage(player), bool)));
                                             return 1;
@@ -693,7 +702,7 @@ public class SignInCommand {
                                             String boolString = StringArgumentType.getString(context, "bool");
                                             boolean bool = StringUtils.stringToBoolean(boolString);
                                             ServerConfig.CYCLE_REWARDS_REPEATABLE.set(bool);
-                                            RewardOptionDataManager.getRewardOptionData().refreshCycleRewardsRelation();
+                                            RewardConfigManager.getRewardConfig().refreshCycleRewardsRelation();
                                             ServerPlayerEntity player = context.getSource().getPlayerOrException();
                                             SakuraUtils.broadcastMessage(player, Component.translatable(player, EI18nType.MESSAGE, "server_enabled_or_not_cycle_rewards_repeatable", I18nUtils.enabled(SakuraUtils.getPlayerLanguage(player), bool)));
                                             return 1;
@@ -709,7 +718,6 @@ public class SignInCommand {
                                         .executes(context -> {
                                             String code = StringArgumentType.getString(context, "language");
                                             ServerConfig.DEFAULT_LANGUAGE.set(code);
-                                            RewardOptionDataManager.getRewardOptionData().refreshCycleRewardsRelation();
                                             ServerPlayerEntity player = context.getSource().getPlayerOrException();
                                             SakuraUtils.broadcastMessage(player, Component.translatable(player, EI18nType.MESSAGE, "server_default_language", ServerConfig.DEFAULT_LANGUAGE.get()));
                                             return 1;
