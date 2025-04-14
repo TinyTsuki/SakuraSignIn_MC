@@ -10,7 +10,7 @@ import xin.vanilla.sakura.util.DateUtils;
 import java.io.Serializable;
 import java.util.Date;
 
-import static xin.vanilla.sakura.config.RewardOptionDataManager.GSON;
+import static xin.vanilla.sakura.config.RewardConfigManager.GSON;
 
 /**
  * 签到记录
