@@ -14,8 +14,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.sakura.config.RewardOptionData;
-import xin.vanilla.sakura.config.RewardOptionDataManager;
+import xin.vanilla.sakura.config.RewardConfig;
+import xin.vanilla.sakura.config.RewardConfigManager;
 import xin.vanilla.sakura.config.ServerConfig;
 import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.data.PlayerSignInDataCapability;
@@ -230,7 +230,7 @@ public class RewardManager {
     @NonNull
     public static RewardList getRewardListByDate(Date currentDay, IPlayerSignInData playerData, boolean onlyHistory, boolean withRandom) {
         RewardList result = new RewardList();
-        RewardOptionData serverData = RewardOptionDataManager.getRewardOptionData();
+        RewardConfig serverData = RewardConfigManager.getRewardConfig();
         int nowCompensate8 = RewardManager.getCompensateDateInt();
         // long nowCompensate14 = DateUtils.toDateTimeInt(nowCompensate);
         // 本月总天数
@@ -341,7 +341,7 @@ public class RewardManager {
 
     public static RewardList getRandomRewardList() {
         RewardList result = new RewardList();
-        Map<String, RewardList> randomRewards = RewardOptionDataManager.getRewardOptionData().getRandomRewards();
+        Map<String, RewardList> randomRewards = RewardConfigManager.getRewardConfig().getRandomRewards();
         // 将概率字符串转换为 BigDecimal，并计算总概率
         Set<Map.Entry<BigDecimal, RewardList>> entries = randomRewards.entrySet().stream()
                 .collect(Collectors.toMap(entry -> new BigDecimal(entry.getKey()), Map.Entry::getValue)).entrySet();

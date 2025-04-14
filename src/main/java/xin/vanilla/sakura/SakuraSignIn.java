@@ -1,10 +1,12 @@
 package xin.vanilla.sakura;
 
+import com.mojang.brigadier.CommandDispatcher;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.player.Player;
@@ -27,7 +29,7 @@ import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.command.SignInCommand;
 import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.config.KeyValue;
-import xin.vanilla.sakura.config.RewardOptionDataManager;
+import xin.vanilla.sakura.config.RewardConfigManager;
 import xin.vanilla.sakura.config.ServerConfig;
 import xin.vanilla.sakura.event.ClientEventHandler;
 import xin.vanilla.sakura.network.ModNetworkHandler;
@@ -158,9 +160,11 @@ public class SakuraSignIn {
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
         serverInstance = event.getServer();
-        // 服务器启动时加载数据
-        RewardOptionDataManager.loadRewardOption();
+        RewardConfigManager.loadRewardOption();
         LOGGER.debug("SignIn data loaded.");
+        // 注册传送命令到事件调度器
+        LOGGER.debug("Registering commands");
+        SignInCommand.register(commandDispatcher);
     }
 
     @SubscribeEvent
@@ -189,18 +193,18 @@ public class SakuraSignIn {
         ClientEventHandler.createConfigPath();
     }
 
+    private static CommandDispatcher<CommandSourceStack> commandDispatcher;
+
     /**
      * 注册命令事件的处理方法
      * 当注册命令事件被触发时，此方法将被调用
-     * 该方法主要用于注册签到命令到事件调度器
+     * 该方法主要用于注册传送命令到事件调度器
      *
      * @param event 注册命令事件对象，通过该对象可以获取到事件调度器
      */
     @SubscribeEvent
     public void onRegisterCommands(RegisterCommandsEvent event) {
-        LOGGER.debug("Registering commands");
-        // 注册签到命令到事件调度器
-        SignInCommand.register(event.getDispatcher());
+        commandDispatcher = event.getDispatcher();
     }
 
     /**

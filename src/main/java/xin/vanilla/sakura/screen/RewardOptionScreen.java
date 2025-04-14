@@ -62,17 +62,9 @@ public class RewardOptionScreen extends Screen {
     @Accessors(chain = true)
     private Screen previousScreen;
     private final EditCommandHandler editHandler = new EditCommandHandler(this);
+    private final KeyEventManager keyManager = new KeyEventManager();
 
     private Text tips;
-
-    /**
-     * 当前按下的按键
-     */
-    private int keyCode = -1;
-    /**
-     * 按键的组合键 Shift 1, Ctrl 2, Alt 4
-     */
-    private int modifiers = -1;
 
     /**
      * 左侧边栏标题高度
@@ -115,11 +107,7 @@ public class RewardOptionScreen extends Screen {
      */
     AtomicInteger rewardListIndex = new AtomicInteger(0);
     // Y坐标偏移
-    private double yOffset, yOffsetOld;
-    // 鼠标按下时的X坐标
-    private double mouseDownX = -1;
-    // 鼠标按下时的Y坐标
-    private double mouseDownY = -1;
+    private double yOffset, yOffsetOld, yOffsetResetTime;
     // endregion 奖励列表相关参数
 
     /**
@@ -137,7 +125,7 @@ public class RewardOptionScreen extends Screen {
     /**
      * 是否已处理过奖励按钮选中
      */
-    private boolean handeledRewardButton;
+    private boolean handledRewardButton;
 
     /**
      * 操作按钮集合
@@ -327,10 +315,10 @@ public class RewardOptionScreen extends Screen {
 
     private StringInputScreen getRuleKeyInputScreen(Screen callbackScreen, ERewardRule rule, String[] key) {
         String validator = rule == ERewardRule.RANDOM_REWARD ? "(0?1(\\.0{0,10})?|0(\\.\\d{0,10})?)?" : "[\\d +~/:.T-]*";
-        return new StringInputScreen(callbackScreen, Text.translatable(EI18nType.TIPS, "enter_reward_rule_key").setShadow(true), Text.translatable(EI18nType.TIPS, "enter_something"), validator, "", input -> {
+        return new StringInputScreen(callbackScreen, Text.translatable(EI18nType.TIPS, "enter_reward_rule_key_" + rule.getCode()).setShadow(true), Text.translatable(EI18nType.TIPS, "enter_something"), validator, "", input -> {
             StringList result = new StringList();
             if (CollectionUtils.isNotNullOrEmpty(input)) {
-                if (RewardOptionDataManager.validateKeyName(rule, input.get(0))) {
+                if (RewardConfigManager.validateKeyName(rule, input.get(0))) {
                     key[0] = input.get(0);
                 } else {
                     result.add(Component.translatableClient(EI18nType.TIPS, "reward_rule_s_error", input.get(0)).toString());
@@ -342,14 +330,16 @@ public class RewardOptionScreen extends Screen {
 
     private StringInputScreen getCdkRuleKeyInputScreen(Screen callbackScreen, ERewardRule rule, String[] key) {
         return new StringInputScreen(callbackScreen
-                , new TextList(Text.translatable(EI18nType.TIPS, "enter_reward_rule_key").setShadow(true), Text.translatable(EI18nType.TIPS, "enter_valid_until").setShadow(true))
+                , new TextList(Text.translatable(EI18nType.TIPS, "enter_reward_rule_key_" + rule.getCode()).setShadow(true)
+                , Text.translatable(EI18nType.TIPS, "enter_valid_until").setShadow(true)
+                , Text.translatable(EI18nType.TIPS, "enter_num").setShadow(true))
                 , new TextList(Text.translatable(EI18nType.TIPS, "enter_something"))
-                , new StringList("\\w*", "")
-                , new StringList("", DateUtils.toString(DateUtils.addMonth(DateUtils.getClientDate(), 1)))
+                , new StringList("\\w*", "", "\\d*")
+                , new StringList("", DateUtils.toString(DateUtils.addMonth(DateUtils.getClientDate(), 1)), "1")
                 , input -> {
-            StringList result = new StringList("", "");
+            StringList result = new StringList("", "", "");
             if (CollectionUtils.isNotNullOrEmpty(input)) {
-                if (!RewardOptionDataManager.validateKeyName(rule, input.get(0))) {
+                if (!RewardConfigManager.validateKeyName(rule, input.get(0))) {
                     result.set(0, Component.translatableClient(EI18nType.TIPS, "reward_rule_s_error", input.get(0)).toString());
                 }
                 if (StringUtils.isNotNullOrEmpty(input.get(1))) {
@@ -357,8 +347,13 @@ public class RewardOptionScreen extends Screen {
                         result.set(1, Component.translatableClient(EI18nType.TIPS, "valid_until_s_error", input.get(1)).toString());
                     }
                 }
+                if (StringUtils.isNotNullOrEmpty(input.get(2))) {
+                    if (StringUtils.toInt(input.get(2)) == 0) {
+                        result.set(2, Component.translatableClient(EI18nType.TIPS, "num_s_error", input.get(2)).toString());
+                    }
+                }
                 if (result.stream().allMatch(StringUtils::isNullOrEmptyEx)) {
-                    key[0] = String.format("%s|%s|-1", input.get(0), input.get(1));
+                    key[0] = String.format("%s|%s|-1|%d", input.get(0), input.get(1), StringUtils.toInt(input.get(2), 1));
                 }
             }
             return result;
@@ -369,10 +364,10 @@ public class RewardOptionScreen extends Screen {
      * 更新奖励列表渲染方法集合
      */
     private void updateRewardList() {
+        RewardConfigManager.setRewardOptionDataChanged(false);
         if (OperationButtonType.valueOf(currOpButton) == null) return;
         REWARD_BUTTONS.clear();
-        RewardOptionDataManager.setRewardOptionDataChanged(false);
-        RewardOptionData rewardOptionData = RewardOptionDataManager.getRewardOptionData();
+        RewardConfig rewardConfig = RewardConfigManager.getRewardConfig();
         int titleIndex = -1;
         rewardListIndex.set(0);
         switch (OperationButtonType.valueOf(currOpButton)) {
@@ -380,117 +375,117 @@ public class RewardOptionScreen extends Screen {
                 this.addRewardTitleButton(Component.translatableClient(EI18nType.TITLE, "base_reward").toString(), "base", titleIndex, rewardListIndex.get());
                 rewardListIndex.addAndGet(lineItemCount);
                 this.addRewardButton(new HashMap<>() {{
-                    put("base", rewardOptionData.getBaseRewards());
+                    put("base", rewardConfig.getBaseRewards());
                 }}, "base", rewardListIndex);
             }
             break;
             case CONTINUOUS_REWARD: {
-                for (String key : rewardOptionData.getContinuousRewards().keySet()) {
+                for (String key : rewardConfig.getContinuousRewards().keySet()) {
                     if (rewardListIndex.get() > 0) {
                         rewardListIndex.set((int) ((Math.floor((double) rewardListIndex.get() / lineItemCount) + 1) * lineItemCount));
                     }
                     this.addRewardTitleButton(Component.translatableClient(EI18nType.TITLE, "day_s", key).toString(), key, titleIndex, rewardListIndex.get());
                     rewardListIndex.addAndGet(lineItemCount);
-                    this.addRewardButton(rewardOptionData.getContinuousRewards(), key, rewardListIndex);
+                    this.addRewardButton(rewardConfig.getContinuousRewards(), key, rewardListIndex);
                     titleIndex--;
                 }
             }
             break;
             case CYCLE_REWARD: {
-                for (String key : rewardOptionData.getCycleRewards().keySet()) {
+                for (String key : rewardConfig.getCycleRewards().keySet()) {
                     if (rewardListIndex.get() > 0) {
                         rewardListIndex.set((int) ((Math.floor((double) rewardListIndex.get() / lineItemCount) + 1) * lineItemCount));
                     }
                     this.addRewardTitleButton(Component.translatableClient(EI18nType.TITLE, "day_s", key).toString(), key, titleIndex, rewardListIndex.get());
                     rewardListIndex.addAndGet(lineItemCount);
-                    this.addRewardButton(rewardOptionData.getCycleRewards(), key, rewardListIndex);
+                    this.addRewardButton(rewardConfig.getCycleRewards(), key, rewardListIndex);
                     titleIndex--;
                 }
             }
             break;
             case YEAR_REWARD: {
-                for (String key : rewardOptionData.getYearRewards().keySet()) {
+                for (String key : rewardConfig.getYearRewards().keySet()) {
                     if (rewardListIndex.get() > 0) {
                         rewardListIndex.set((int) ((Math.floor((double) rewardListIndex.get() / lineItemCount) + 1) * lineItemCount));
                     }
                     this.addRewardTitleButton(Component.translatableClient(EI18nType.TITLE, "year_day_s", key).toString(), key, titleIndex, rewardListIndex.get());
                     rewardListIndex.addAndGet(lineItemCount);
-                    this.addRewardButton(rewardOptionData.getYearRewards(), key, rewardListIndex);
+                    this.addRewardButton(rewardConfig.getYearRewards(), key, rewardListIndex);
                     titleIndex--;
                 }
             }
             break;
             case MONTH_REWARD: {
-                for (String key : rewardOptionData.getMonthRewards().keySet()) {
+                for (String key : rewardConfig.getMonthRewards().keySet()) {
                     if (rewardListIndex.get() > 0) {
                         rewardListIndex.set((int) ((Math.floor((double) rewardListIndex.get() / lineItemCount) + 1) * lineItemCount));
                     }
                     this.addRewardTitleButton(Component.translatableClient(EI18nType.TITLE, "month_day_s", key).toString(), key, titleIndex, rewardListIndex.get());
                     rewardListIndex.addAndGet(lineItemCount);
-                    this.addRewardButton(rewardOptionData.getMonthRewards(), key, rewardListIndex);
+                    this.addRewardButton(rewardConfig.getMonthRewards(), key, rewardListIndex);
                     titleIndex--;
                 }
             }
             break;
             case WEEK_REWARD: {
-                for (String key : rewardOptionData.getWeekRewards().keySet()) {
+                for (String key : rewardConfig.getWeekRewards().keySet()) {
                     if (rewardListIndex.get() > 0) {
                         rewardListIndex.set((int) ((Math.floor((double) rewardListIndex.get() / lineItemCount) + 1) * lineItemCount));
                     }
                     this.addRewardTitleButton(Component.translatableClient(EI18nType.TITLE, "week_" + key).toString(), key, titleIndex, rewardListIndex.get());
                     rewardListIndex.addAndGet(lineItemCount);
-                    this.addRewardButton(rewardOptionData.getWeekRewards(), key, rewardListIndex);
+                    this.addRewardButton(rewardConfig.getWeekRewards(), key, rewardListIndex);
                     titleIndex--;
                 }
             }
             break;
             case DATE_TIME_REWARD: {
-                for (String key : rewardOptionData.getDateTimeRewards().keySet()) {
+                for (String key : rewardConfig.getDateTimeRewards().keySet()) {
                     if (rewardListIndex.get() > 0) {
                         rewardListIndex.set((int) ((Math.floor((double) rewardListIndex.get() / lineItemCount) + 1) * lineItemCount));
                     }
                     this.addRewardTitleButton(String.format("%s", key), key, titleIndex, rewardListIndex.get());
                     rewardListIndex.addAndGet(lineItemCount);
-                    this.addRewardButton(rewardOptionData.getDateTimeRewards(), key, rewardListIndex);
+                    this.addRewardButton(rewardConfig.getDateTimeRewards(), key, rewardListIndex);
                     titleIndex--;
                 }
             }
             break;
             case CUMULATIVE_REWARD: {
-                for (String key : rewardOptionData.getCumulativeRewards().keySet()) {
+                for (String key : rewardConfig.getCumulativeRewards().keySet()) {
                     if (rewardListIndex.get() > 0) {
                         rewardListIndex.set((int) ((Math.floor((double) rewardListIndex.get() / lineItemCount) + 1) * lineItemCount));
                     }
                     this.addRewardTitleButton(Component.translatableClient(EI18nType.TITLE, "day_s", key).toString(), key, titleIndex, rewardListIndex.get());
                     rewardListIndex.addAndGet(lineItemCount);
-                    this.addRewardButton(rewardOptionData.getCumulativeRewards(), key, rewardListIndex);
+                    this.addRewardButton(rewardConfig.getCumulativeRewards(), key, rewardListIndex);
                     titleIndex--;
                 }
             }
             break;
             case RANDOM_REWARD: {
-                for (String key : rewardOptionData.getRandomRewards().keySet()) {
+                for (String key : rewardConfig.getRandomRewards().keySet()) {
                     if (rewardListIndex.get() > 0) {
                         rewardListIndex.set((int) ((Math.floor((double) rewardListIndex.get() / lineItemCount) + 1) * lineItemCount));
                     }
                     this.addRewardTitleButton(String.format("%s%%", StringUtils.toFixedEx(new BigDecimal(key).multiply(new BigDecimal(100)), 10)), key, titleIndex, rewardListIndex.get());
                     rewardListIndex.addAndGet(lineItemCount);
-                    this.addRewardButton(rewardOptionData.getRandomRewards(), key, rewardListIndex);
+                    this.addRewardButton(rewardConfig.getRandomRewards(), key, rewardListIndex);
                     titleIndex--;
                 }
             }
             break;
             case CDK_REWARD: {
-                for (int i = 0; i < rewardOptionData.getCdkRewards().size(); i++) {
-                    KeyValue<String, KeyValue<String, RewardList>> keyValue = rewardOptionData.getCdkRewards().get(i);
-                    String key = String.format("%s|%s|%d", keyValue.getKey(), keyValue.getValue().getKey(), i);
+                for (int i = 0; i < rewardConfig.getCdkRewards().size(); i++) {
+                    KeyValue<KeyValue<String, String>, KeyValue<RewardList, AtomicInteger>> keyValue = rewardConfig.getCdkRewards().get(i);
+                    String key = String.format("%s|%s|%d|%d", keyValue.getKey().getKey(), keyValue.getKey().getValue(), i, keyValue.getValue().getValue().get());
                     if (rewardListIndex.get() > 0) {
                         rewardListIndex.set((int) ((Math.floor((double) rewardListIndex.get() / lineItemCount) + 1) * lineItemCount));
                     }
-                    this.addRewardTitleButton(Component.translatableClient(EI18nType.TITLE, "s_valid_until_s", keyValue.getKey(), keyValue.getValue().getKey()).toString(), key, titleIndex, rewardListIndex.get());
+                    this.addRewardTitleButton(Component.translatableClient(EI18nType.TITLE, "s_valid_until_s", keyValue.getKey().getKey(), keyValue.getKey().getValue(), keyValue.getValue().getValue()).toString(), key, titleIndex, rewardListIndex.get());
                     rewardListIndex.addAndGet(lineItemCount);
                     this.addRewardButton(new HashMap<>() {{
-                        put(key, keyValue.getValue().getValue());
+                        put(key, keyValue.getValue().getKey());
                     }}, key, rewardListIndex);
                 }
             }
@@ -501,7 +496,7 @@ public class RewardOptionScreen extends Screen {
     /**
      * 渲染奖励列表
      */
-    private void renderRewardList(PoseStack poseStack, double mouseX, double mouseY) {
+    private void renderRewardList(PoseStack poseStack) {
         if (REWARD_BUTTONS.isEmpty()) return;
 
         // 直接渲染奖励列表 REWARD_BUTTONS
@@ -518,13 +513,13 @@ public class RewardOptionScreen extends Screen {
                         0x88FFF13B);
             }
             // 渲染物品图标
-            operationButton.setBaseY(yOffset).render(poseStack, mouseX, mouseY);
+            operationButton.setBaseY(yOffset).render(poseStack, keyManager);
         }
         // 渲染Tips
         for (String key : REWARD_BUTTONS.keySet()) {
             OperationButton operationButton = REWARD_BUTTONS.get(key);
             // 渲染物品图标
-            operationButton.setBaseY(yOffset).renderPopup(poseStack, mouseX, mouseY, this.keyCode, this.modifiers);
+            operationButton.setBaseY(yOffset).renderPopup(poseStack, keyManager);
         }
     }
 
@@ -589,19 +584,21 @@ public class RewardOptionScreen extends Screen {
                 this.popupOption.clear();
                 this.popupOption.addOption(Text.translatable(EI18nType.OPTION, "clear").setColor(0xFFFF0000))
                         .addTips(Text.translatable(EI18nType.TIPS, "cancel_or_confirm"))
-                        .setTipsKeyCode(GLFW.GLFW_KEY_LEFT_SHIFT)
-                        .setTipsModifiers(GLFW.GLFW_MOD_SHIFT)
+                        .setTipsKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFW.GLFW_KEY_LEFT_SHIFT))
                         .build(super.font, mouseX, mouseY, String.format("奖励规则类型按钮:%s", value.getOperation()));
+                flag.set(true);
             }
         }
         // 重置偏移量
         else if (value.getOperation() == OperationButtonType.OFFSET_Y.getCode()) {
-            this.setYOffset(0);
+            this.yOffsetResetTime = System.currentTimeMillis();
+            this.yOffsetOld = this.yOffset;
+            flag.set(true);
         }
         // 奖励配置列表面板
         else if (value.getOperation() == OperationButtonType.REWARD_PANEL.getCode()) {
-            if (!this.handeledRewardButton) {
-                this.handeledRewardButton = true;
+            if (!this.handledRewardButton) {
+                this.handledRewardButton = true;
                 this.currRewardButton = button == GLFW.GLFW_MOUSE_BUTTON_LEFT && "panel".equalsIgnoreCase(this.currRewardButton) ? null : "panel";
             }
 
@@ -633,6 +630,7 @@ public class RewardOptionScreen extends Screen {
                     .addOption(Text.translatable(EI18nType.TIPS, "reward_rule_description_9"))
                     .addOption(Text.translatable(EI18nType.TIPS, "reward_rule_description_10"))
                     .build(super.font, mouseX, mouseY, "reward_rule_description");
+            flag.set(true);
         }
         // 上传奖励配置
         else if (value.getOperation() == OperationButtonType.UPLOAD.getCode()) {
@@ -641,7 +639,7 @@ public class RewardOptionScreen extends Screen {
                 LocalPlayer player = Minecraft.getInstance().player;
                 if (player != null) {
                     if (player.hasPermissions(ServerConfig.PERMISSION_EDIT_REWARD.get())) {
-                        for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardOptionDataManager.toSyncPacket(player).split()) {
+                        for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardConfigManager.toSyncPacket(player).split()) {
                             ModNetworkHandler.INSTANCE.sendToServer(rewardOptionSyncPacket);
                         }
                         flag.set(true);
@@ -657,7 +655,7 @@ public class RewardOptionScreen extends Screen {
             if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
                 if (!Minecraft.getInstance().isLocalServer()) {
                     // 备份签到奖励配置
-                    RewardOptionDataManager.backupRewardOption();
+                    RewardConfigManager.backupRewardOption();
                     // 同步签到奖励配置到客户端
                     ModNetworkHandler.INSTANCE.sendToServer(new DownloadRewardOptionNotice());
                     flag.set(true);
@@ -669,14 +667,14 @@ public class RewardOptionScreen extends Screen {
         }
         // 排序
         else if (value.getOperation() == OperationButtonType.SORT.getCode()) {
-            RewardOptionDataManager.sortRewards();
-            RewardOptionDataManager.saveRewardOption();
+            RewardConfigManager.sortRewards();
+            RewardConfigManager.saveRewardOption();
             updateLayout.set(true);
             flag.set(true);
         }
         // 打开配置文件夹
         else if (value.getOperation() == OperationButtonType.FOLDER.getCode()) {
-            SakuraSignIn.openFileInFolder(new File(FMLPaths.CONFIGDIR.get().resolve(SakuraSignIn.MODID).toFile(), RewardOptionDataManager.FILE_NAME).toPath());
+            SakuraSignIn.openFileInFolder(new File(FMLPaths.CONFIGDIR.get().resolve(SakuraSignIn.MODID).toFile(), RewardConfigManager.FILE_NAME).toPath());
             flag.set(true);
         }
     }
@@ -694,12 +692,12 @@ public class RewardOptionScreen extends Screen {
     private void handleRewardOption(double mouseX, double mouseY, int button, String key, OperationButton value, AtomicBoolean updateLayout, AtomicBoolean flag) {
         LOGGER.debug("选择了奖励配置:\tButton: {}\tOperation: {}\tKey: {}\tIndex: {}", button, this.currOpButton, key, value.getOperation());
 
-        if (!this.handeledRewardButton) {
-            this.handeledRewardButton = true;
+        if (!this.handledRewardButton) {
+            this.handledRewardButton = true;
             this.currRewardButton = button == GLFW.GLFW_MOUSE_BUTTON_LEFT && key.equalsIgnoreCase(this.currRewardButton) ? null : key;
         }
 
-        if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && !isMouseMoved(mouseX, mouseY)) {
+        if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && !keyManager.isMouseMoved()) {
             if (key.startsWith("标题")) {
                 this.popupOption.clear();
                 if (!"标题,base".equalsIgnoreCase(key)) {
@@ -719,8 +717,7 @@ public class RewardOptionScreen extends Screen {
                 }
                 this.popupOption.addTips(Text.translatable(EI18nType.TIPS, "cancel_or_confirm"), -1)
                         .addTips(Text.translatable(EI18nType.TIPS, "cancel_or_confirm"), -2)
-                        .setTipsKeyCode(GLFW.GLFW_KEY_LEFT_SHIFT)
-                        .setTipsModifiers(GLFW.GLFW_MOD_SHIFT)
+                        .setTipsKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFW.GLFW_KEY_LEFT_SHIFT))
                         .build(super.font, mouseX, mouseY, String.format("奖励按钮:%s", key));
             } else {
                 this.popupOption.clear();
@@ -730,8 +727,7 @@ public class RewardOptionScreen extends Screen {
                         .addOption(Text.translatable(EI18nType.OPTION, "paste"))
                         .addOption(Text.translatable(EI18nType.OPTION, "delete").setColor(0xFFFF0000))
                         .addTips(Text.translatable(EI18nType.TIPS, "cancel_or_confirm"), -1)
-                        .setTipsKeyCode(GLFW.GLFW_KEY_LEFT_SHIFT)
-                        .setTipsModifiers(GLFW.GLFW_MOD_SHIFT)
+                        .setTipsKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFW.GLFW_KEY_LEFT_SHIFT))
                         .build(super.font, mouseX, mouseY, String.format("奖励按钮:%s", key));
             }
             this.popupOption.setBeforeRender(pasteConsumer);
@@ -759,53 +755,53 @@ public class RewardOptionScreen extends Screen {
             // 若选择了清空
             if (popupOption.getSelectedIndex() == 0 && button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
                 // 并且按住了Control按钮
-                if ((this.keyCode == GLFW.GLFW_KEY_LEFT_CONTROL || this.keyCode == GLFW.GLFW_KEY_RIGHT_CONTROL) && this.modifiers == GLFW.GLFW_MOD_CONTROL) {
+                if (keyManager.onlyCtrlPressed()) {
                     if (opCode > 200 && opCode <= 299) {
-                        RewardOptionDataManager.addUndoRewardOption(rule);
-                        RewardOptionDataManager.clearRedoList();
+                        RewardConfigManager.addUndoRewardOption(rule);
+                        RewardConfigManager.clearRedoList();
                         switch (OperationButtonType.valueOf(opCode)) {
                             case BASE_REWARD: {
-                                RewardOptionDataManager.getRewardOptionData().getBaseRewards().clear();
+                                RewardConfigManager.getRewardConfig().getBaseRewards().clear();
                             }
                             break;
                             case CONTINUOUS_REWARD: {
-                                RewardOptionDataManager.getRewardOptionData().getContinuousRewards().clear();
+                                RewardConfigManager.getRewardConfig().getContinuousRewards().clear();
                             }
                             break;
                             case CYCLE_REWARD: {
-                                RewardOptionDataManager.getRewardOptionData().getCycleRewards().clear();
+                                RewardConfigManager.getRewardConfig().getCycleRewards().clear();
                             }
                             break;
                             case YEAR_REWARD: {
-                                RewardOptionDataManager.getRewardOptionData().getYearRewards().clear();
+                                RewardConfigManager.getRewardConfig().getYearRewards().clear();
                             }
                             break;
                             case MONTH_REWARD: {
-                                RewardOptionDataManager.getRewardOptionData().getMonthRewards().clear();
+                                RewardConfigManager.getRewardConfig().getMonthRewards().clear();
                             }
                             break;
                             case WEEK_REWARD: {
-                                RewardOptionDataManager.getRewardOptionData().getWeekRewards().clear();
+                                RewardConfigManager.getRewardConfig().getWeekRewards().clear();
                             }
                             break;
                             case DATE_TIME_REWARD: {
-                                RewardOptionDataManager.getRewardOptionData().getDateTimeRewards().clear();
+                                RewardConfigManager.getRewardConfig().getDateTimeRewards().clear();
                             }
                             break;
                             case CUMULATIVE_REWARD: {
-                                RewardOptionDataManager.getRewardOptionData().getCumulativeRewards().clear();
+                                RewardConfigManager.getRewardConfig().getCumulativeRewards().clear();
                             }
                             break;
                             case RANDOM_REWARD: {
-                                RewardOptionDataManager.getRewardOptionData().getRandomRewards().clear();
+                                RewardConfigManager.getRewardConfig().getRandomRewards().clear();
                             }
                             break;
                             case CDK_REWARD: {
-                                RewardOptionDataManager.getRewardOptionData().getCdkRewards().clear();
+                                RewardConfigManager.getRewardConfig().getCdkRewards().clear();
                             }
                             break;
                         }
-                        RewardOptionDataManager.saveRewardOption();
+                        RewardConfigManager.saveRewardOption();
                         updateLayout.set(true);
                         flag.set(true);
                     }
@@ -820,10 +816,10 @@ public class RewardOptionScreen extends Screen {
             else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.ITEM.getCode()).equalsIgnoreCase(selectedString)) {
                 ItemSelectScreen callbackScreen = new ItemSelectScreen(this, input -> {
                     if (input != null && ((ItemStack) RewardManager.deserializeReward(input)).getItem() != Items.AIR && StringUtils.isNotNullOrEmpty(key[0])) {
-                        RewardOptionDataManager.addUndoRewardOption(rule);
-                        RewardOptionDataManager.clearRedoList();
-                        RewardOptionDataManager.addReward(rule, key[0], input);
-                        RewardOptionDataManager.saveRewardOption();
+                        RewardConfigManager.addUndoRewardOption(rule);
+                        RewardConfigManager.clearRedoList();
+                        RewardConfigManager.addReward(rule, key[0], input);
+                        RewardConfigManager.saveRewardOption();
                     }
                 }, new Reward(new ItemStack(Items.AIR), ERewardType.ITEM), () -> StringUtils.isNullOrEmpty(key[0]));
                 if (rule == ERewardRule.CDK_REWARD) {
@@ -839,10 +835,10 @@ public class RewardOptionScreen extends Screen {
             else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.EFFECT.getCode()).equalsIgnoreCase(selectedString)) {
                 EffecrSelectScreen callbackScreen = new EffecrSelectScreen(this, input -> {
                     if (input != null && ((MobEffectInstance) RewardManager.deserializeReward(input)).getDuration() > 0 && StringUtils.isNotNullOrEmpty(key[0])) {
-                        RewardOptionDataManager.addUndoRewardOption(rule);
-                        RewardOptionDataManager.clearRedoList();
-                        RewardOptionDataManager.addReward(rule, key[0], input);
-                        RewardOptionDataManager.saveRewardOption();
+                        RewardConfigManager.addUndoRewardOption(rule);
+                        RewardConfigManager.clearRedoList();
+                        RewardConfigManager.addReward(rule, key[0], input);
+                        RewardConfigManager.saveRewardOption();
                     }
                 }, new Reward(new MobEffectInstance(MobEffects.LUCK), ERewardType.EFFECT), () -> StringUtils.isNullOrEmpty(key[0]));
                 if (rule == ERewardRule.CDK_REWARD) {
@@ -867,10 +863,10 @@ public class RewardOptionScreen extends Screen {
                         int count = StringUtils.toInt(input.get(0));
                         BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                         if (count != 0) {
-                            RewardOptionDataManager.addUndoRewardOption(rule);
-                            RewardOptionDataManager.clearRedoList();
-                            RewardOptionDataManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(count, ERewardType.EXP_POINT), ERewardType.EXP_POINT, p));
-                            RewardOptionDataManager.saveRewardOption();
+                            RewardConfigManager.addUndoRewardOption(rule);
+                            RewardConfigManager.clearRedoList();
+                            RewardConfigManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(count, ERewardType.EXP_POINT), ERewardType.EXP_POINT, p));
+                            RewardConfigManager.saveRewardOption();
                         } else {
                             result.add(Component.translatableClient(EI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
                         }
@@ -899,10 +895,10 @@ public class RewardOptionScreen extends Screen {
                         int count = StringUtils.toInt(input.get(0));
                         BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                         if (count != 0) {
-                            RewardOptionDataManager.addUndoRewardOption(rule);
-                            RewardOptionDataManager.clearRedoList();
-                            RewardOptionDataManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(count, ERewardType.EXP_LEVEL), ERewardType.EXP_LEVEL, p));
-                            RewardOptionDataManager.saveRewardOption();
+                            RewardConfigManager.addUndoRewardOption(rule);
+                            RewardConfigManager.clearRedoList();
+                            RewardConfigManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(count, ERewardType.EXP_LEVEL), ERewardType.EXP_LEVEL, p));
+                            RewardConfigManager.saveRewardOption();
                         } else {
                             result.add(Component.translatableClient(EI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
                         }
@@ -931,10 +927,10 @@ public class RewardOptionScreen extends Screen {
                         int count = StringUtils.toInt(input.get(0));
                         BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                         if (count != 0) {
-                            RewardOptionDataManager.addUndoRewardOption(rule);
-                            RewardOptionDataManager.clearRedoList();
-                            RewardOptionDataManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(count, ERewardType.SIGN_IN_CARD), ERewardType.SIGN_IN_CARD, p));
-                            RewardOptionDataManager.saveRewardOption();
+                            RewardConfigManager.addUndoRewardOption(rule);
+                            RewardConfigManager.clearRedoList();
+                            RewardConfigManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(count, ERewardType.SIGN_IN_CARD), ERewardType.SIGN_IN_CARD, p));
+                            RewardConfigManager.saveRewardOption();
                         } else {
                             result.add(Component.translatableClient(EI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
                         }
@@ -954,10 +950,10 @@ public class RewardOptionScreen extends Screen {
             else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.ADVANCEMENT.getCode()).equalsIgnoreCase(selectedString)) {
                 AdvancementSelectScreen callbackScreen = new AdvancementSelectScreen(this, input -> {
                     if (input != null && StringUtils.isNotNullOrEmpty(input.toString()) && StringUtils.isNotNullOrEmpty(key[0])) {
-                        RewardOptionDataManager.addUndoRewardOption(rule);
-                        RewardOptionDataManager.clearRedoList();
-                        RewardOptionDataManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(input, ERewardType.ADVANCEMENT), ERewardType.ADVANCEMENT));
-                        RewardOptionDataManager.saveRewardOption();
+                        RewardConfigManager.addUndoRewardOption(rule);
+                        RewardConfigManager.clearRedoList();
+                        RewardConfigManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(input, ERewardType.ADVANCEMENT), ERewardType.ADVANCEMENT));
+                        RewardConfigManager.saveRewardOption();
                     }
                 }, new Reward(new ResourceLocation(""), ERewardType.ADVANCEMENT), () -> StringUtils.isNullOrEmpty(key[0]));
                 if (rule == ERewardRule.CDK_REWARD) {
@@ -978,12 +974,12 @@ public class RewardOptionScreen extends Screen {
                         , new StringList("", "1")
                         , input -> {
                     if (CollectionUtils.isNotNullOrEmpty(input) && StringUtils.isNotNullOrEmpty(key[0])) {
-                        RewardOptionDataManager.addUndoRewardOption(rule);
-                        RewardOptionDataManager.clearRedoList();
+                        RewardConfigManager.addUndoRewardOption(rule);
+                        RewardConfigManager.clearRedoList();
                         Component component = Component.literal(input.get(0));
                         BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
-                        RewardOptionDataManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(component, ERewardType.MESSAGE), ERewardType.MESSAGE, p));
-                        RewardOptionDataManager.saveRewardOption();
+                        RewardConfigManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(component, ERewardType.MESSAGE), ERewardType.MESSAGE, p));
+                        RewardConfigManager.saveRewardOption();
                     }
                 }, () -> StringUtils.isNullOrEmpty(key[0]));
                 if (rule == ERewardRule.CDK_REWARD) {
@@ -1005,11 +1001,11 @@ public class RewardOptionScreen extends Screen {
                         , input -> {
                     StringList result = new StringList();
                     if (CollectionUtils.isNotNullOrEmpty(input) && input.get(0).startsWith("/") && StringUtils.isNotNullOrEmpty(key[0])) {
-                        RewardOptionDataManager.addUndoRewardOption(rule);
-                        RewardOptionDataManager.clearRedoList();
+                        RewardConfigManager.addUndoRewardOption(rule);
+                        RewardConfigManager.clearRedoList();
                         BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
-                        RewardOptionDataManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(input.get(0), ERewardType.COMMAND), ERewardType.COMMAND, p));
-                        RewardOptionDataManager.saveRewardOption();
+                        RewardConfigManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(input.get(0), ERewardType.COMMAND), ERewardType.COMMAND, p));
+                        RewardConfigManager.saveRewardOption();
                     } else {
                         result.add(Component.translatableClient(EI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
                     }
@@ -1033,17 +1029,19 @@ public class RewardOptionScreen extends Screen {
                     if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
                         if (rule == ERewardRule.CDK_REWARD) {
                             String[] split = key.split("\\|");
-                            if (split.length != 3 && split.length != 2)
-                                split = new String[]{"", DateUtils.toString(DateUtils.addMonth(DateUtils.getClientDate(), 1))};
+                            if (split.length != 4 && split.length != 3 && split.length != 2)
+                                split = new String[]{"", DateUtils.toString(DateUtils.addMonth(DateUtils.getClientDate(), 1)), "-1", "1"};
                             Minecraft.getInstance().setScreen(new StringInputScreen(this
-                                    , new TextList(Text.translatable(EI18nType.TIPS, "enter_reward_rule_key").setShadow(true), Text.translatable(EI18nType.TIPS, "enter_valid_until").setShadow(true))
+                                    , new TextList(Text.translatable(EI18nType.TIPS, "enter_reward_rule_key_" + rule.getCode()).setShadow(true)
+                                    , Text.translatable(EI18nType.TIPS, "enter_valid_until").setShadow(true)
+                                    , Text.translatable(EI18nType.TIPS, "enter_num").setShadow(true))
                                     , new TextList(Text.translatable(EI18nType.TIPS, "enter_something"))
-                                    , new StringList("\\w*", "")
-                                    , new StringList(split[0], split[1])
+                                    , new StringList("\\w*", "", "\\d*")
+                                    , new StringList(split[0], split[1], split[3])
                                     , input -> {
-                                StringList result = new StringList("", "");
+                                StringList result = new StringList("", "", "");
                                 if (CollectionUtils.isNotNullOrEmpty(input)) {
-                                    if (!RewardOptionDataManager.validateKeyName(rule, input.get(0))) {
+                                    if (!RewardConfigManager.validateKeyName(rule, input.get(0))) {
                                         result.set(0, Component.translatableClient(EI18nType.TIPS, "reward_rule_s_error", input.get(0)).toString());
                                     }
                                     if (StringUtils.isNotNullOrEmpty(input.get(1))) {
@@ -1051,25 +1049,30 @@ public class RewardOptionScreen extends Screen {
                                             result.set(1, Component.translatableClient(EI18nType.TIPS, "valid_until_s_error", input.get(1)).toString());
                                         }
                                     }
+                                    if (StringUtils.isNotNullOrEmpty(input.get(2))) {
+                                        if (StringUtils.toInt(input.get(2)) == 0) {
+                                            result.set(2, Component.translatableClient(EI18nType.TIPS, "num_s_error", input.get(2)).toString());
+                                        }
+                                    }
                                     if (result.stream().allMatch(StringUtils::isNullOrEmptyEx)) {
-                                        RewardOptionDataManager.addUndoRewardOption(rule);
-                                        RewardOptionDataManager.clearRedoList();
-                                        RewardOptionDataManager.updateKeyName(rule, key, String.format("%s|%s|-1", input.get(0), input.get(1)));
-                                        RewardOptionDataManager.saveRewardOption();
+                                        RewardConfigManager.addUndoRewardOption(rule);
+                                        RewardConfigManager.clearRedoList();
+                                        RewardConfigManager.updateKeyName(rule, key, String.format("%s|%s|-1|%d", input.get(0), input.get(1), StringUtils.toInt(input.get(2), 1)));
+                                        RewardConfigManager.saveRewardOption();
                                     }
                                 }
                                 return result;
                             }));
                         } else {
                             String validator = rule == ERewardRule.RANDOM_REWARD ? "(0?1(\\.0{0,10})?|0(\\.\\d{0,10})?)?" : "[\\d +~/:.T-]*";
-                            Minecraft.getInstance().setScreen(new StringInputScreen(this, Text.translatable(EI18nType.TIPS, "enter_reward_rule_key").setShadow(true), Text.translatable(EI18nType.TIPS, "enter_something"), validator, key, input -> {
+                            Minecraft.getInstance().setScreen(new StringInputScreen(this, Text.translatable(EI18nType.TIPS, "enter_reward_rule_key_" + rule.getCode()).setShadow(true), Text.translatable(EI18nType.TIPS, "enter_something"), validator, key, input -> {
                                 StringList result = new StringList();
                                 if (CollectionUtils.isNotNullOrEmpty(input)) {
-                                    if (RewardOptionDataManager.validateKeyName(rule, input.get(0))) {
-                                        RewardOptionDataManager.addUndoRewardOption(rule);
-                                        RewardOptionDataManager.clearRedoList();
-                                        RewardOptionDataManager.updateKeyName(rule, key, input.get(0));
-                                        RewardOptionDataManager.saveRewardOption();
+                                    if (RewardConfigManager.validateKeyName(rule, input.get(0))) {
+                                        RewardConfigManager.addUndoRewardOption(rule);
+                                        RewardConfigManager.clearRedoList();
+                                        RewardConfigManager.updateKeyName(rule, key, input.get(0));
+                                        RewardConfigManager.saveRewardOption();
                                     } else {
                                         result.add(Component.translatableClient(EI18nType.TIPS, "reward_rule_s_error", input.get(0)).toString());
                                     }
@@ -1092,28 +1095,26 @@ public class RewardOptionScreen extends Screen {
                     }
                 } else if (Component.translatableClient(EI18nType.OPTION, "clear").toString().equalsIgnoreCase(selectedString)) {
                     if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
-                        if ((this.keyCode == GLFW.GLFW_KEY_LEFT_CONTROL || this.keyCode == GLFW.GLFW_KEY_RIGHT_CONTROL) && this.modifiers == GLFW.GLFW_MOD_CONTROL) {
-                            RewardOptionDataManager.addUndoRewardOption(rule);
-                            RewardOptionDataManager.clearRedoList();
-                            RewardOptionDataManager.clearKey(rule, key);
-                            RewardOptionDataManager.saveRewardOption();
+                        if (keyManager.onlyCtrlPressed()) {
+                            RewardConfigManager.addUndoRewardOption(rule);
+                            RewardConfigManager.clearRedoList();
+                            RewardConfigManager.clearKey(rule, key);
+                            RewardConfigManager.saveRewardOption();
                         }
                     }
                 } else if (Component.translatableClient(EI18nType.OPTION, "delete").toString().equalsIgnoreCase(selectedString)) {
-                    if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
-                        if ((this.keyCode == GLFW.GLFW_KEY_LEFT_CONTROL || this.keyCode == GLFW.GLFW_KEY_RIGHT_CONTROL) && this.modifiers == GLFW.GLFW_MOD_CONTROL) {
-                            editHandler.handleDelete();
-                        }
+                    if (ClientConfig.KEY_REWARD_OPTION_DELETE.get().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
+                        editHandler.handleDelete();
                     }
                 }
                 // 添加物品
                 else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.ITEM.getCode()).equalsIgnoreCase(selectedString)) {
                     Minecraft.getInstance().setScreen(new ItemSelectScreen(this, input -> {
                         if (input != null && ((ItemStack) RewardManager.deserializeReward(input)).getItem() != Items.AIR) {
-                            RewardOptionDataManager.addUndoRewardOption(rule);
-                            RewardOptionDataManager.clearRedoList();
-                            RewardOptionDataManager.addReward(rule, key, input);
-                            RewardOptionDataManager.saveRewardOption();
+                            RewardConfigManager.addUndoRewardOption(rule);
+                            RewardConfigManager.clearRedoList();
+                            RewardConfigManager.addReward(rule, key, input);
+                            RewardConfigManager.saveRewardOption();
                         }
                     }, new Reward(new ItemStack(Items.AIR), ERewardType.ITEM)));
                 }
@@ -1121,10 +1122,10 @@ public class RewardOptionScreen extends Screen {
                 else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.EFFECT.getCode()).equalsIgnoreCase(selectedString)) {
                     Minecraft.getInstance().setScreen(new EffecrSelectScreen(this, input -> {
                         if (input != null && ((MobEffectInstance) RewardManager.deserializeReward(input)).getDuration() > 0) {
-                            RewardOptionDataManager.addUndoRewardOption(rule);
-                            RewardOptionDataManager.clearRedoList();
-                            RewardOptionDataManager.addReward(rule, key, input);
-                            RewardOptionDataManager.saveRewardOption();
+                            RewardConfigManager.addUndoRewardOption(rule);
+                            RewardConfigManager.clearRedoList();
+                            RewardConfigManager.addReward(rule, key, input);
+                            RewardConfigManager.saveRewardOption();
                         }
                     }, new Reward(new MobEffectInstance(MobEffects.LUCK), ERewardType.EFFECT)));
                 }
@@ -1141,10 +1142,10 @@ public class RewardOptionScreen extends Screen {
                             int count = StringUtils.toInt(input.get(0));
                             BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                             if (count != 0) {
-                                RewardOptionDataManager.addUndoRewardOption(rule);
-                                RewardOptionDataManager.clearRedoList();
-                                RewardOptionDataManager.addReward(rule, key, new Reward(RewardManager.serializeReward(count, ERewardType.EXP_POINT), ERewardType.EXP_POINT, p));
-                                RewardOptionDataManager.saveRewardOption();
+                                RewardConfigManager.addUndoRewardOption(rule);
+                                RewardConfigManager.clearRedoList();
+                                RewardConfigManager.addReward(rule, key, new Reward(RewardManager.serializeReward(count, ERewardType.EXP_POINT), ERewardType.EXP_POINT, p));
+                                RewardConfigManager.saveRewardOption();
                             } else {
                                 result.add(Component.translatableClient(EI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
                             }
@@ -1165,10 +1166,10 @@ public class RewardOptionScreen extends Screen {
                             int count = StringUtils.toInt(input.get(0));
                             BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                             if (count != 0) {
-                                RewardOptionDataManager.addUndoRewardOption(rule);
-                                RewardOptionDataManager.clearRedoList();
-                                RewardOptionDataManager.addReward(rule, key, new Reward(RewardManager.serializeReward(count, ERewardType.EXP_LEVEL), ERewardType.EXP_LEVEL, p));
-                                RewardOptionDataManager.saveRewardOption();
+                                RewardConfigManager.addUndoRewardOption(rule);
+                                RewardConfigManager.clearRedoList();
+                                RewardConfigManager.addReward(rule, key, new Reward(RewardManager.serializeReward(count, ERewardType.EXP_LEVEL), ERewardType.EXP_LEVEL, p));
+                                RewardConfigManager.saveRewardOption();
                             } else {
                                 result.add(Component.translatableClient(EI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
                             }
@@ -1189,10 +1190,10 @@ public class RewardOptionScreen extends Screen {
                             int count = StringUtils.toInt(input.get(0));
                             BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                             if (count != 0) {
-                                RewardOptionDataManager.addUndoRewardOption(rule);
-                                RewardOptionDataManager.clearRedoList();
-                                RewardOptionDataManager.addReward(rule, key, new Reward(RewardManager.serializeReward(count, ERewardType.SIGN_IN_CARD), ERewardType.SIGN_IN_CARD, p));
-                                RewardOptionDataManager.saveRewardOption();
+                                RewardConfigManager.addUndoRewardOption(rule);
+                                RewardConfigManager.clearRedoList();
+                                RewardConfigManager.addReward(rule, key, new Reward(RewardManager.serializeReward(count, ERewardType.SIGN_IN_CARD), ERewardType.SIGN_IN_CARD, p));
+                                RewardConfigManager.saveRewardOption();
                             } else {
                                 result.add(Component.translatableClient(EI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
                             }
@@ -1204,10 +1205,10 @@ public class RewardOptionScreen extends Screen {
                 else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.ADVANCEMENT.getCode()).equalsIgnoreCase(selectedString)) {
                     Minecraft.getInstance().setScreen(new AdvancementSelectScreen(this, input -> {
                         if (input != null && StringUtils.isNotNullOrEmpty(((ResourceLocation) RewardManager.deserializeReward(input)).toString())) {
-                            RewardOptionDataManager.addUndoRewardOption(rule);
-                            RewardOptionDataManager.clearRedoList();
-                            RewardOptionDataManager.addReward(rule, key, input);
-                            RewardOptionDataManager.saveRewardOption();
+                            RewardConfigManager.addUndoRewardOption(rule);
+                            RewardConfigManager.clearRedoList();
+                            RewardConfigManager.addReward(rule, key, input);
+                            RewardConfigManager.saveRewardOption();
                         }
                     }, new Reward(new ResourceLocation(""), ERewardType.ADVANCEMENT)));
 
@@ -1221,12 +1222,12 @@ public class RewardOptionScreen extends Screen {
                             , new StringList("", "1")
                             , input -> {
                         if (CollectionUtils.isNotNullOrEmpty(input)) {
-                            RewardOptionDataManager.addUndoRewardOption(rule);
-                            RewardOptionDataManager.clearRedoList();
+                            RewardConfigManager.addUndoRewardOption(rule);
+                            RewardConfigManager.clearRedoList();
                             Component component = Component.literal(input.get(0));
                             BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
-                            RewardOptionDataManager.addReward(rule, key, new Reward(RewardManager.serializeReward(component, ERewardType.MESSAGE), ERewardType.MESSAGE, p));
-                            RewardOptionDataManager.saveRewardOption();
+                            RewardConfigManager.addReward(rule, key, new Reward(RewardManager.serializeReward(component, ERewardType.MESSAGE), ERewardType.MESSAGE, p));
+                            RewardConfigManager.saveRewardOption();
                         }
                     }));
                 }
@@ -1240,11 +1241,11 @@ public class RewardOptionScreen extends Screen {
                             , input -> {
                         StringList result = new StringList();
                         if (CollectionUtils.isNotNullOrEmpty(input) && input.get(0).startsWith("/")) {
-                            RewardOptionDataManager.addUndoRewardOption(rule);
-                            RewardOptionDataManager.clearRedoList();
+                            RewardConfigManager.addUndoRewardOption(rule);
+                            RewardConfigManager.clearRedoList();
                             BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
-                            RewardOptionDataManager.addReward(rule, key, new Reward(RewardManager.serializeReward(input.get(0), ERewardType.COMMAND), ERewardType.COMMAND, p));
-                            RewardOptionDataManager.saveRewardOption();
+                            RewardConfigManager.addReward(rule, key, new Reward(RewardManager.serializeReward(input.get(0), ERewardType.COMMAND), ERewardType.COMMAND, p));
+                            RewardConfigManager.saveRewardOption();
                         } else {
                             result.add(Component.translatableClient(EI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
                         }
@@ -1262,14 +1263,14 @@ public class RewardOptionScreen extends Screen {
                 String index = split[1];
                 if (Component.translatableClient(EI18nType.OPTION, "edit").toString().equalsIgnoreCase(selectedString)) {
                     if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-                        Reward reward = RewardOptionDataManager.getReward(rule, key, Integer.parseInt(index)).clone();
+                        Reward reward = RewardConfigManager.getReward(rule, key, Integer.parseInt(index)).clone();
                         if (reward.getType() == ERewardType.ITEM) {
                             Minecraft.getInstance().setScreen(new ItemSelectScreen(this, input -> {
                                 if (input != null && ((ItemStack) RewardManager.deserializeReward(input)).getItem() != Items.AIR) {
-                                    RewardOptionDataManager.addUndoRewardOption(rule);
-                                    RewardOptionDataManager.clearRedoList();
-                                    RewardOptionDataManager.updateReward(rule, key, Integer.parseInt(index), input);
-                                    RewardOptionDataManager.saveRewardOption();
+                                    RewardConfigManager.addUndoRewardOption(rule);
+                                    RewardConfigManager.clearRedoList();
+                                    RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), input);
+                                    RewardConfigManager.saveRewardOption();
                                 }
                             }, reward));
                         }
@@ -1277,10 +1278,10 @@ public class RewardOptionScreen extends Screen {
                         else if (reward.getType() == ERewardType.EFFECT) {
                             Minecraft.getInstance().setScreen(new EffecrSelectScreen(this, input -> {
                                 if (input != null && ((MobEffectInstance) RewardManager.deserializeReward(input)).getDuration() > 0) {
-                                    RewardOptionDataManager.addUndoRewardOption(rule);
-                                    RewardOptionDataManager.clearRedoList();
-                                    RewardOptionDataManager.updateReward(rule, key, Integer.parseInt(index), input);
-                                    RewardOptionDataManager.saveRewardOption();
+                                    RewardConfigManager.addUndoRewardOption(rule);
+                                    RewardConfigManager.clearRedoList();
+                                    RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), input);
+                                    RewardConfigManager.saveRewardOption();
                                 }
                             }, reward));
                         }
@@ -1297,10 +1298,10 @@ public class RewardOptionScreen extends Screen {
                                     int count = StringUtils.toInt(input.get(0));
                                     BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                                     if (count != 0) {
-                                        RewardOptionDataManager.addUndoRewardOption(rule);
-                                        RewardOptionDataManager.clearRedoList();
-                                        RewardOptionDataManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(count, ERewardType.EXP_POINT), ERewardType.EXP_POINT, p));
-                                        RewardOptionDataManager.saveRewardOption();
+                                        RewardConfigManager.addUndoRewardOption(rule);
+                                        RewardConfigManager.clearRedoList();
+                                        RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(count, ERewardType.EXP_POINT), ERewardType.EXP_POINT, p));
+                                        RewardConfigManager.saveRewardOption();
                                     } else {
                                         result.add(Component.translatableClient(EI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
                                     }
@@ -1322,10 +1323,10 @@ public class RewardOptionScreen extends Screen {
                                     int count = StringUtils.toInt(input.get(0));
                                     BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                                     if (count != 0) {
-                                        RewardOptionDataManager.addUndoRewardOption(rule);
-                                        RewardOptionDataManager.clearRedoList();
-                                        RewardOptionDataManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(count, ERewardType.EXP_LEVEL), ERewardType.EXP_LEVEL, p));
-                                        RewardOptionDataManager.saveRewardOption();
+                                        RewardConfigManager.addUndoRewardOption(rule);
+                                        RewardConfigManager.clearRedoList();
+                                        RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(count, ERewardType.EXP_LEVEL), ERewardType.EXP_LEVEL, p));
+                                        RewardConfigManager.saveRewardOption();
                                     } else {
                                         result.add(Component.translatableClient(EI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
                                     }
@@ -1347,10 +1348,10 @@ public class RewardOptionScreen extends Screen {
                                     int count = StringUtils.toInt(input.get(0));
                                     BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                                     if (count != 0) {
-                                        RewardOptionDataManager.addUndoRewardOption(rule);
-                                        RewardOptionDataManager.clearRedoList();
-                                        RewardOptionDataManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(count, ERewardType.SIGN_IN_CARD), ERewardType.SIGN_IN_CARD, p));
-                                        RewardOptionDataManager.saveRewardOption();
+                                        RewardConfigManager.addUndoRewardOption(rule);
+                                        RewardConfigManager.clearRedoList();
+                                        RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(count, ERewardType.SIGN_IN_CARD), ERewardType.SIGN_IN_CARD, p));
+                                        RewardConfigManager.saveRewardOption();
                                     } else {
                                         result.add(Component.translatableClient(EI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
                                     }
@@ -1363,10 +1364,10 @@ public class RewardOptionScreen extends Screen {
                         else if (reward.getType() == ERewardType.ADVANCEMENT) {
                             Minecraft.getInstance().setScreen(new AdvancementSelectScreen(this, input -> {
                                 if (input != null && StringUtils.isNotNullOrEmpty(((ResourceLocation) RewardManager.deserializeReward(input)).toString()) && StringUtils.isNotNullOrEmpty(key)) {
-                                    RewardOptionDataManager.addUndoRewardOption(rule);
-                                    RewardOptionDataManager.clearRedoList();
-                                    RewardOptionDataManager.updateReward(rule, key, Integer.parseInt(index), input);
-                                    RewardOptionDataManager.saveRewardOption();
+                                    RewardConfigManager.addUndoRewardOption(rule);
+                                    RewardConfigManager.clearRedoList();
+                                    RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), input);
+                                    RewardConfigManager.saveRewardOption();
                                 }
                             }, reward));
                         }
@@ -1379,12 +1380,12 @@ public class RewardOptionScreen extends Screen {
                                     , new StringList(RewardManager.deserializeReward(reward).toString(), StringUtils.toFixedEx(reward.getProbability(), 5))
                                     , input -> {
                                 if (CollectionUtils.isNotNullOrEmpty(input)) {
-                                    RewardOptionDataManager.addUndoRewardOption(rule);
-                                    RewardOptionDataManager.clearRedoList();
+                                    RewardConfigManager.addUndoRewardOption(rule);
+                                    RewardConfigManager.clearRedoList();
                                     Component textToComponent = Component.literal(input.get(0));
                                     BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
-                                    RewardOptionDataManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(textToComponent, ERewardType.MESSAGE), ERewardType.MESSAGE, p));
-                                    RewardOptionDataManager.saveRewardOption();
+                                    RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(textToComponent, ERewardType.MESSAGE), ERewardType.MESSAGE, p));
+                                    RewardConfigManager.saveRewardOption();
                                 }
                             }
                             ));
@@ -1399,11 +1400,11 @@ public class RewardOptionScreen extends Screen {
                                     , input -> {
                                 StringList result = new StringList();
                                 if (CollectionUtils.isNotNullOrEmpty(input) && input.get(0).startsWith("/")) {
-                                    RewardOptionDataManager.addUndoRewardOption(rule);
-                                    RewardOptionDataManager.clearRedoList();
+                                    RewardConfigManager.addUndoRewardOption(rule);
+                                    RewardConfigManager.clearRedoList();
                                     BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
-                                    RewardOptionDataManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(input.get(0), ERewardType.COMMAND), ERewardType.COMMAND, p));
-                                    RewardOptionDataManager.saveRewardOption();
+                                    RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(input.get(0), ERewardType.COMMAND), ERewardType.COMMAND, p));
+                                    RewardConfigManager.saveRewardOption();
                                 } else {
                                     result.add(Component.translatableClient(EI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
                                 }
@@ -1425,10 +1426,8 @@ public class RewardOptionScreen extends Screen {
                         editHandler.handlePaste();
                     }
                 } else if (Component.translatableClient(EI18nType.OPTION, "delete").toString().equalsIgnoreCase(selectedString)) {
-                    if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
-                        if ((this.keyCode == GLFW.GLFW_KEY_LEFT_CONTROL || this.keyCode == GLFW.GLFW_KEY_RIGHT_CONTROL) && this.modifiers == GLFW.GLFW_MOD_CONTROL) {
-                            editHandler.handleDelete();
-                        }
+                    if (ClientConfig.KEY_REWARD_OPTION_DELETE.get().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
+                        editHandler.handleDelete();
                     }
                 }
             }
@@ -1465,6 +1464,8 @@ public class RewardOptionScreen extends Screen {
         this.lineItemCount = (super.width - leftBarWidth - leftMargin - rightMargin - rightBarWidth) / (itemIconSize + itemRightMargin);
         // 重置奖励面板坐标
         OP_BUTTONS.get(OperationButtonType.REWARD_PANEL.getCode()).setX(leftBarWidth).setY(0).setWidth(super.width - leftBarWidth - rightBarWidth).setHeight(super.height);
+        // 清空弹出层选项
+        popupOption.clear();
         // 更新奖励面板列表内容
         this.updateRewardList();
     }
@@ -1472,10 +1473,6 @@ public class RewardOptionScreen extends Screen {
     private void setYOffset(double offset) {
         // y坐标往上(-)不应该超过奖励高度+屏幕高度, 往下(+)不应该超过屏幕高度
         this.yOffset = Math.min(Math.max(offset, -(this.topMargin + (double) this.rewardListIndex.get() / this.lineItemCount * (this.itemIconSize + this.itemBottomMargin) + super.height)), super.height);
-    }
-
-    private boolean isMouseMoved(double mouseX, double mouseY) {
-        return Math.abs(mouseX - this.mouseDownX) > 1 || Math.abs(mouseY - this.mouseDownY) > 1;
     }
 
     @Data
@@ -1521,12 +1518,12 @@ public class RewardOptionScreen extends Screen {
             }
             // 标题
             else if (currRewardButton.startsWith("标题")) {
-                RewardList rewardList = RewardOptionDataManager.getKeyName(rule, key).clone();
+                RewardList rewardList = RewardConfigManager.getKeyName(rule, key).clone();
                 RewardClipboardManager.setClipboard(rewardList, key);
             }
             // 普通按钮
             else {
-                Reward reward = RewardOptionDataManager.getReward(rule, key, Integer.parseInt(index)).clone();
+                Reward reward = RewardConfigManager.getReward(rule, key, Integer.parseInt(index)).clone();
                 RewardClipboardManager.setClipboard(reward, key);
             }
             return true;
@@ -1541,21 +1538,21 @@ public class RewardOptionScreen extends Screen {
             }
             // 标题
             else if (currRewardButton.startsWith("标题")) {
-                RewardOptionDataManager.addUndoRewardOption(rule);
-                RewardOptionDataManager.clearRedoList();
-                RewardList rewardList = RewardOptionDataManager.getKeyName(rule, key).clone();
+                RewardConfigManager.addUndoRewardOption(rule);
+                RewardConfigManager.clearRedoList();
+                RewardList rewardList = RewardConfigManager.getKeyName(rule, key).clone();
                 RewardClipboardManager.setClipboard(rewardList, key);
-                RewardOptionDataManager.deleteKey(rule, key);
-                RewardOptionDataManager.saveRewardOption();
+                RewardConfigManager.deleteKey(rule, key);
+                RewardConfigManager.saveRewardOption();
             }
             // 普通按钮
             else {
-                RewardOptionDataManager.addUndoRewardOption(rule);
-                RewardOptionDataManager.clearRedoList();
-                Reward reward = RewardOptionDataManager.getReward(rule, key, Integer.parseInt(index)).clone();
+                RewardConfigManager.addUndoRewardOption(rule);
+                RewardConfigManager.clearRedoList();
+                Reward reward = RewardConfigManager.getReward(rule, key, Integer.parseInt(index)).clone();
                 RewardClipboardManager.setClipboard(reward, key);
-                RewardOptionDataManager.deleteReward(rule, key, Integer.parseInt(index));
-                RewardOptionDataManager.saveRewardOption();
+                RewardConfigManager.deleteReward(rule, key, Integer.parseInt(index));
+                RewardConfigManager.saveRewardOption();
             }
             updateLayout();
             return true;
@@ -1569,16 +1566,20 @@ public class RewardOptionScreen extends Screen {
                 if (currRewardButton.equalsIgnoreCase("panel")) {
                     if (rule == ERewardRule.CDK_REWARD) {
                         Minecraft.getInstance().setScreen(new StringInputScreen(screen
-                                , new TextList(Text.translatable(EI18nType.TIPS, "enter_reward_rule_key").setShadow(true), Text.translatable(EI18nType.TIPS, "enter_valid_until").setShadow(true))
+                                , new TextList(Text.translatable(EI18nType.TIPS, "enter_reward_rule_key_" + rule.getCode()).setShadow(true)
+                                , Text.translatable(EI18nType.TIPS, "enter_valid_until").setShadow(true)
+                                , Text.translatable(EI18nType.TIPS, "enter_num").setShadow(true))
                                 , new TextList(Text.translatable(EI18nType.TIPS, "enter_something"))
                                 , new StringList("\\w*"
-                                , "")
-                                , new StringList(RewardOptionDataManager.getCdkRewardKey(RewardClipboardManager.deSerializeRewardList().getKey())
-                                , DateUtils.toString(DateUtils.addMonth(DateUtils.getClientDate(), 1)))
+                                , ""
+                                , "\\d*")
+                                , new StringList(RewardConfigManager.getCdkRewardKey(RewardClipboardManager.deSerializeRewardList().getKey())
+                                , DateUtils.toString(DateUtils.addMonth(DateUtils.getClientDate(), 1))
+                                , RewardConfigManager.getCdkRewardNum(RewardClipboardManager.deSerializeRewardList().getKey()) + "")
                                 , input -> {
-                            StringList result = new StringList("", "");
+                            StringList result = new StringList("", "", "");
                             if (CollectionUtils.isNotNullOrEmpty(input)) {
-                                if (!RewardOptionDataManager.validateKeyName(rule, input.get(0))) {
+                                if (!RewardConfigManager.validateKeyName(rule, input.get(0))) {
                                     result.set(0, Component.translatableClient(EI18nType.TIPS, "reward_rule_s_error", input.get(0)).toString());
                                 }
                                 if (StringUtils.isNotNullOrEmpty(input.get(1))) {
@@ -1586,12 +1587,17 @@ public class RewardOptionScreen extends Screen {
                                         result.set(1, Component.translatableClient(EI18nType.TIPS, "valid_until_s_error", input.get(1)).toString());
                                     }
                                 }
+                                if (StringUtils.isNotNullOrEmpty(input.get(2))) {
+                                    if (StringUtils.toInt(input.get(2)) == 0) {
+                                        result.set(2, Component.translatableClient(EI18nType.TIPS, "num_s_error", input.get(2)).toString());
+                                    }
+                                }
                                 if (result.stream().allMatch(StringUtils::isNullOrEmptyEx)) {
-                                    RewardOptionDataManager.addUndoRewardOption(rule);
-                                    RewardOptionDataManager.clearRedoList();
+                                    RewardConfigManager.addUndoRewardOption(rule);
+                                    RewardConfigManager.clearRedoList();
                                     RewardList rewardList = RewardClipboardManager.deSerializeRewardList().toRewardList();
-                                    RewardOptionDataManager.addKeyName(rule, String.format("%s|%s|-1", input.get(0), input.get(1)), rewardList);
-                                    RewardOptionDataManager.saveRewardOption();
+                                    RewardConfigManager.addKeyName(rule, String.format("%s|%s|-1|%d", input.get(0), input.get(1), StringUtils.toInt(input.get(2), 1)), rewardList);
+                                    RewardConfigManager.saveRewardOption();
                                 }
                             }
                             return result;
@@ -1599,19 +1605,19 @@ public class RewardOptionScreen extends Screen {
                     } else if (rule != ERewardRule.BASE_REWARD) {
                         String validator = rule == ERewardRule.RANDOM_REWARD ? "(0?1(\\.0{0,10})?|0(\\.\\d{0,10})?)?" : "[\\d +~/:.T-]*";
                         Minecraft.getInstance().setScreen(new StringInputScreen(screen
-                                , Text.translatable(EI18nType.TIPS, "enter_reward_rule_key").setShadow(true)
+                                , Text.translatable(EI18nType.TIPS, "enter_reward_rule_key_" + rule.getCode()).setShadow(true)
                                 , Text.translatable(EI18nType.TIPS, "enter_something")
                                 , validator
                                 , RewardClipboardManager.deSerializeRewardList().getKey()
                                 , input -> {
                             StringList result = new StringList();
                             if (CollectionUtils.isNotNullOrEmpty(input)) {
-                                if (RewardOptionDataManager.validateKeyName(rule, input.get(0))) {
-                                    RewardOptionDataManager.addUndoRewardOption(rule);
-                                    RewardOptionDataManager.clearRedoList();
+                                if (RewardConfigManager.validateKeyName(rule, input.get(0))) {
+                                    RewardConfigManager.addUndoRewardOption(rule);
+                                    RewardConfigManager.clearRedoList();
                                     RewardList rewardList = RewardClipboardManager.deSerializeRewardList().toRewardList();
-                                    RewardOptionDataManager.addKeyName(rule, input.get(0), rewardList);
-                                    RewardOptionDataManager.saveRewardOption();
+                                    RewardConfigManager.addKeyName(rule, input.get(0), rewardList);
+                                    RewardConfigManager.saveRewardOption();
                                 } else {
                                     result.add(Component.translatableClient(EI18nType.TIPS, "reward_rule_s_error", input.get(0)).toString());
                                 }
@@ -1619,30 +1625,30 @@ public class RewardOptionScreen extends Screen {
                             return result;
                         }));
                     } else {
-                        RewardOptionDataManager.addUndoRewardOption(rule);
-                        RewardOptionDataManager.clearRedoList();
+                        RewardConfigManager.addUndoRewardOption(rule);
+                        RewardConfigManager.clearRedoList();
                         RewardList rewardList = RewardClipboardManager.deSerializeRewardList().toRewardList();
-                        RewardOptionDataManager.addKeyName(rule, "", rewardList);
-                        RewardOptionDataManager.saveRewardOption();
+                        RewardConfigManager.addKeyName(rule, "", rewardList);
+                        RewardConfigManager.saveRewardOption();
                     }
 
                 }
                 // 标题
                 else if (currRewardButton.startsWith("标题")) {
-                    RewardOptionDataManager.addUndoRewardOption(rule);
-                    RewardOptionDataManager.clearRedoList();
+                    RewardConfigManager.addUndoRewardOption(rule);
+                    RewardConfigManager.clearRedoList();
                     RewardList rewardList = RewardClipboardManager.deSerializeRewardList().toRewardList();
-                    RewardOptionDataManager.addKeyName(rule, key, rewardList);
-                    RewardOptionDataManager.saveRewardOption();
+                    RewardConfigManager.addKeyName(rule, key, rewardList);
+                    RewardConfigManager.saveRewardOption();
                 }
                 // 普通按钮
                 else {
-                    RewardOptionDataManager.addUndoRewardOption(rule);
-                    RewardOptionDataManager.clearRedoList();
+                    RewardConfigManager.addUndoRewardOption(rule);
+                    RewardConfigManager.clearRedoList();
                     for (Reward reward : RewardClipboardManager.deSerializeRewardList()) {
-                        RewardOptionDataManager.addReward(rule, key, reward);
+                        RewardConfigManager.addReward(rule, key, reward);
                     }
-                    RewardOptionDataManager.saveRewardOption();
+                    RewardConfigManager.saveRewardOption();
                 }
                 updateLayout();
                 return true;
@@ -1659,17 +1665,17 @@ public class RewardOptionScreen extends Screen {
             }
             // 标题
             else if (currRewardButton.startsWith("标题")) {
-                RewardOptionDataManager.addUndoRewardOption(rule);
-                RewardOptionDataManager.clearRedoList();
-                RewardOptionDataManager.deleteKey(rule, key);
-                RewardOptionDataManager.saveRewardOption();
+                RewardConfigManager.addUndoRewardOption(rule);
+                RewardConfigManager.clearRedoList();
+                RewardConfigManager.deleteKey(rule, key);
+                RewardConfigManager.saveRewardOption();
             }
             // 普通按钮
             else {
-                RewardOptionDataManager.addUndoRewardOption(rule);
-                RewardOptionDataManager.clearRedoList();
-                RewardOptionDataManager.deleteReward(rule, key, Integer.parseInt(index));
-                RewardOptionDataManager.saveRewardOption();
+                RewardConfigManager.addUndoRewardOption(rule);
+                RewardConfigManager.clearRedoList();
+                RewardConfigManager.deleteReward(rule, key, Integer.parseInt(index));
+                RewardConfigManager.saveRewardOption();
             }
             updateLayout();
             return true;
@@ -1680,11 +1686,11 @@ public class RewardOptionScreen extends Screen {
          */
         public boolean handleUndo() {
             if (update()) return false;
-            Map<String, RewardList> map = RewardOptionDataManager.getUnDoRewardOption(rule);
+            Map<String, RewardList> map = RewardConfigManager.getUnDoRewardOption(rule);
             if (!map.isEmpty()) {
-                RewardOptionDataManager.addRedoRewardOption(rule);
-                RewardOptionDataManager.setRewardMap(RewardOptionDataManager.getRewardOptionData(), rule, map);
-                RewardOptionDataManager.saveRewardOption();
+                RewardConfigManager.addRedoRewardOption(rule);
+                RewardConfigManager.setRewardMap(RewardConfigManager.getRewardConfig(), rule, map);
+                RewardConfigManager.saveRewardOption();
                 updateLayout();
                 return true;
             }
@@ -1697,11 +1703,11 @@ public class RewardOptionScreen extends Screen {
         public boolean handleRedo() {
             if (update()) return false;
 
-            Map<String, RewardList> map = RewardOptionDataManager.getReDoRewardOption(rule);
+            Map<String, RewardList> map = RewardConfigManager.getReDoRewardOption(rule);
             if (!map.isEmpty()) {
-                RewardOptionDataManager.addUndoRewardOption(rule);
-                RewardOptionDataManager.setRewardMap(RewardOptionDataManager.getRewardOptionData(), rule, map);
-                RewardOptionDataManager.saveRewardOption();
+                RewardConfigManager.addUndoRewardOption(rule);
+                RewardConfigManager.setRewardMap(RewardConfigManager.getRewardConfig(), rule, map);
+                RewardConfigManager.saveRewardOption();
                 updateLayout();
                 return true;
             }
@@ -1828,13 +1834,26 @@ public class RewardOptionScreen extends Screen {
     @ParametersAreNonnullByDefault
     public void render(PoseStack poseStack, int mouseX, int mouseY, float partialTicks) {
         this.ms = poseStack;
-        // 绘制背景
-        // this.renderBackground(poseStack);
+        this.keyManager.refresh(mouseX, mouseY);
         // 绘制缩放背景纹理
         this.renderBackgroundTexture(poseStack);
 
+        // 重置Y轴偏移
+        if (this.yOffsetResetTime > 0) {
+            double elapsed = System.currentTimeMillis() - this.yOffsetResetTime;
+            if (elapsed >= 1000) {
+                this.yOffsetResetTime = 0;
+                this.yOffsetOld = 0;
+                this.setYOffset(0);
+            } else {
+                double t = elapsed / 1000.0;
+                double progress = 1 - Math.pow(1 - t, 3);
+                this.setYOffset((1 - progress) * this.yOffsetOld);
+            }
+        }
+
         // 刷新数据
-        if (RewardOptionDataManager.isRewardOptionDataChanged()) this.updateLayout();
+        if (RewardConfigManager.isRewardOptionDataChanged()) this.updateLayout();
 
         // 绘制操作提示
         if (OperationButtonType.valueOf(currOpButton) == null) {
@@ -1849,7 +1868,7 @@ public class RewardOptionScreen extends Screen {
         }
         // 绘制奖励项目
         else {
-            this.renderRewardList(poseStack, mouseX, mouseY);
+            this.renderRewardList(poseStack);
         }
 
         // 绘制左侧边栏列表背景
@@ -1870,13 +1889,13 @@ public class RewardOptionScreen extends Screen {
             // 展开类按钮仅在关闭时绘制
             if (String.valueOf(op).startsWith(String.valueOf(OperationButtonType.OPEN.getCode()))) {
                 if (!SakuraSignIn.isRewardOptionBarOpened()) {
-                    button.render(poseStack, mouseX, mouseY);
+                    button.render(poseStack, keyManager);
                 }
             }
             // 收起类按钮仅在展开时绘制
             else if (String.valueOf(op).startsWith(String.valueOf(OperationButtonType.CLOSE.getCode()))) {
                 if (SakuraSignIn.isRewardOptionBarOpened()) {
-                    button.render(poseStack, mouseX, mouseY);
+                    button.render(poseStack, keyManager);
                 }
             }
             // 绘制其他按钮
@@ -1895,7 +1914,7 @@ public class RewardOptionScreen extends Screen {
                                 0x88FFF13B);
                     }
                 }
-                button.render(poseStack, mouseX, mouseY);
+                button.render(poseStack, keyManager);
             }
         }
         // 渲染操作按钮 提示
@@ -1904,13 +1923,13 @@ public class RewardOptionScreen extends Screen {
             // 展开类按钮仅在关闭时绘制
             if (String.valueOf(op).startsWith(String.valueOf(OperationButtonType.OPEN.getCode()))) {
                 if (!SakuraSignIn.isRewardOptionBarOpened()) {
-                    button.renderPopup(poseStack, mouseX, mouseY, this.keyCode, this.modifiers);
+                    button.renderPopup(poseStack, keyManager);
                 }
             }
             // 收起类按钮仅在展开时绘制
             else if (String.valueOf(op).startsWith(String.valueOf(OperationButtonType.CLOSE.getCode()))) {
                 if (SakuraSignIn.isRewardOptionBarOpened()) {
-                    button.renderPopup(poseStack, mouseX, mouseY, this.keyCode, this.modifiers);
+                    button.renderPopup(poseStack, keyManager);
                 }
             }
             // 绘制其他按钮
@@ -1920,7 +1939,7 @@ public class RewardOptionScreen extends Screen {
                 }
                 // 帮助按钮
                 else if (op == OperationButtonType.HELP.getCode()) {
-                    if ((this.keyCode == GLFW.GLFW_KEY_LEFT_SHIFT || this.keyCode == GLFW.GLFW_KEY_RIGHT_SHIFT) && this.modifiers == GLFW.GLFW_MOD_SHIFT) {
+                    if (keyManager.onlyShiftPressed()) {
                         button.setTooltip(Component.translatableClient(EI18nType.TIPS, "help_button_shift").toString());
                     } else {
                         button.setTooltip(Component.translatableClient(EI18nType.TIPS, "help_button").toString());
@@ -1935,12 +1954,12 @@ public class RewardOptionScreen extends Screen {
                                 .setHoverFgColor(0xAA808080).setTapFgColor(0xAA808080);
                     }
                 }
-                button.renderPopup(poseStack, mouseX, mouseY, this.keyCode, this.modifiers);
+                button.renderPopup(poseStack, keyManager);
             }
         }
 
         // 绘制弹出选项
-        popupOption.render(poseStack, mouseX, mouseY, this.keyCode, this.modifiers);
+        popupOption.render(poseStack, keyManager);
         // 绘制鼠标光标
         cursor.draw(poseStack, mouseX, mouseY);
     }
@@ -1960,10 +1979,9 @@ public class RewardOptionScreen extends Screen {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         cursor.mouseClicked(mouseX, mouseY, button);
+        keyManager.mouseClicked(button, mouseX, mouseY);
         this.yOffsetOld = this.yOffset;
-        this.mouseDownX = mouseX;
-        this.mouseDownY = mouseY;
-        this.handeledRewardButton = false;
+        this.handledRewardButton = false;
         // 清空弹出选项
         if (!popupOption.isHovered()) {
             popupOption.clear();
@@ -1989,9 +2007,10 @@ public class RewardOptionScreen extends Screen {
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         cursor.mouseReleased(mouseX, mouseY, button);
+        keyManager.refresh(mouseX, mouseY);
         AtomicBoolean updateLayout = new AtomicBoolean(false);
         AtomicBoolean flag = new AtomicBoolean(false);
-        if (!isMouseMoved(mouseX, mouseY)) {
+        if (!keyManager.isMouseMoved()) {
             if (popupOption.isHovered()) {
                 this.handlePopupOption(mouseX, mouseY, button, updateLayout, flag);
                 popupOption.clear();
@@ -2029,13 +2048,13 @@ public class RewardOptionScreen extends Screen {
             }
         }
         if (updateLayout.get()) this.updateLayout();
-        this.mouseDownX = -1;
-        this.mouseDownY = -1;
+        keyManager.mouseReleased(button, mouseX, mouseY);
         return flag.get() ? flag.get() : super.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override
     public void mouseMoved(double mouseX, double mouseY) {
+        keyManager.mouseMoved(mouseX, mouseY);
         OP_BUTTONS.forEach((key, value) -> {
             if (SakuraSignIn.isRewardOptionBarOpened()) {
                 // 若为开启状态则隐藏开启按钮及其附属按钮
@@ -2054,8 +2073,8 @@ public class RewardOptionScreen extends Screen {
             }
             // 是否按下并拖动奖励面板
             if (OperationButtonType.REWARD_PANEL.getCode() == key) {
-                if (value.isPressed() && this.mouseDownX != -1 && this.mouseDownY != -1) {
-                    this.setYOffset(this.yOffsetOld + (mouseY - this.mouseDownY));
+                if (value.isPressed() && keyManager.isMouseDragged()) {
+                    this.setYOffset(this.yOffsetOld + (mouseY - keyManager.getMouseDownY()));
                 }
             }
         });
@@ -2066,6 +2085,7 @@ public class RewardOptionScreen extends Screen {
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
         cursor.mouseScrolled(mouseX, mouseY, delta);
+        keyManager.mouseScrolled(delta, mouseX, mouseY);
         if (!popupOption.addScrollOffset(delta)) {
             // y坐标往上(-)不应该超过奖励高度+屏幕高度, 往下(+)不应该超过屏幕高度
             if (OP_BUTTONS.get(OperationButtonType.REWARD_PANEL.getCode()).isHovered()) {
@@ -2086,8 +2106,7 @@ public class RewardOptionScreen extends Screen {
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         // LOGGER.debug("keyPressed: keyCode = {}, scanCode = {}, modifiers = {}", keyCode, scanCode, modifiers);
-        this.keyCode = keyCode;
-        this.modifiers = modifiers;
+        keyManager.keyPressed(keyCode);
         if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
             if (this.previousScreen != null) Minecraft.getInstance().setScreen(this.previousScreen);
             else this.onClose();
@@ -2106,35 +2125,31 @@ public class RewardOptionScreen extends Screen {
         boolean consumed = false;
 
         // Ctrl + C
-        if (keyCode == GLFW.GLFW_KEY_C && modifiers == GLFW.GLFW_MOD_CONTROL) {
+        if (ClientConfig.KEY_REWARD_OPTION_COPY.get().stream().anyMatch(keyManager::isKeyPressed)) {
             consumed = editHandler.handleCopy();
         }
         // Ctrl + V
-        else if (keyCode == GLFW.GLFW_KEY_V && modifiers == GLFW.GLFW_MOD_CONTROL) {
+        else if (ClientConfig.KEY_REWARD_OPTION_PASTE.get().stream().anyMatch(keyManager::isKeyPressed)) {
             consumed = editHandler.handlePaste();
         }
         // Ctrl + X
-        else if (keyCode == GLFW.GLFW_KEY_X && modifiers == GLFW.GLFW_MOD_CONTROL) {
+        else if (ClientConfig.KEY_REWARD_OPTION_CUT.get().stream().anyMatch(keyManager::isKeyPressed)) {
             consumed = editHandler.handleCut();
         }
         // Ctrl + Y / DELETE
-        else if ((keyCode == GLFW.GLFW_KEY_Y && modifiers == GLFW.GLFW_MOD_CONTROL)
-                || (keyCode == GLFW.GLFW_KEY_DELETE && modifiers == 0)) {
+        else if (ClientConfig.KEY_REWARD_OPTION_DELETE.get().stream().anyMatch(keyManager::isKeyPressed)) {
             consumed = editHandler.handleDelete();
         }
-        // Ctrl + Shift + Z
-        else if (keyCode == GLFW.GLFW_KEY_Z
-                && (modifiers & (GLFW.GLFW_MOD_CONTROL | GLFW.GLFW_MOD_SHIFT))
-                == (GLFW.GLFW_MOD_CONTROL | GLFW.GLFW_MOD_SHIFT)) {
-            consumed = editHandler.handleRedo();
-        }
         // Ctrl + Z
-        else if (keyCode == GLFW.GLFW_KEY_Z && modifiers == GLFW.GLFW_MOD_CONTROL) {
+        else if (ClientConfig.KEY_REWARD_OPTION_UNDO.get().stream().anyMatch(keyManager::isKeyPressed)) {
             consumed = editHandler.handleUndo();
         }
+        // Ctrl + Shift + Z
+        else if (ClientConfig.KEY_REWARD_OPTION_REDO.get().stream().anyMatch(keyManager::isKeyPressed)) {
+            consumed = editHandler.handleRedo();
+        }
 
-        this.keyCode = -1;
-        this.modifiers = -1;
+        keyManager.keyReleased(keyCode);
         return consumed || super.keyReleased(keyCode, scanCode, modifiers);
     }
 
