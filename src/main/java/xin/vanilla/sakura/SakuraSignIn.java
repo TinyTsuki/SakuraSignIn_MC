@@ -24,7 +24,7 @@ import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.command.SignInCommand;
 import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.config.KeyValue;
-import xin.vanilla.sakura.config.RewardOptionDataManager;
+import xin.vanilla.sakura.config.RewardConfigManager;
 import xin.vanilla.sakura.config.ServerConfig;
 import xin.vanilla.sakura.event.ClientEventHandler;
 import xin.vanilla.sakura.network.ModNetworkHandler;
@@ -153,7 +153,7 @@ public class SakuraSignIn {
     // 服务器启动时加载数据
     private void onServerStarting(FMLServerStartingEvent event) {
         serverInstance = event.getServer();
-        RewardOptionDataManager.loadRewardOption();
+        RewardConfigManager.loadRewardOption();
         LOGGER.debug("SignIn data loaded.");
         LOGGER.debug("Registering commands");
         SignInCommand.register(event.getServer().getCommands().getDispatcher());

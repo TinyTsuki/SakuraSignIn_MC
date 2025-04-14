@@ -29,6 +29,19 @@ public class OperationButton {
     private Runnable customPopupFunction = null;
 
     /**
+     * 渲染辅助类：用于向自定义渲染函数传递上下文
+     */
+    public static class RenderContext {
+        public final KeyEventManager keyManager;
+        public final OperationButton button;
+
+        public RenderContext(KeyEventManager keyManager, OperationButton button) {
+            this.keyManager = keyManager;
+            this.button = button;
+        }
+    }
+
+    /**
      * 按钮ID
      */
     private String id;
@@ -37,13 +50,6 @@ public class OperationButton {
      * 自定义渲染函数
      */
     private Consumer<RenderContext> customRenderFunction;
-
-    /**
-     * 绘制按钮
-     */
-    public void render(double mouseX, double mouseY) {
-        this.render(mouseX, mouseY, false, -1, -1);
-    }
 
     /**
      * 按钮材质资源
@@ -117,7 +123,7 @@ public class OperationButton {
     /**
      * 提示文字是否仅按下按键时显示
      */
-    private int keyCode = -1, modifiers = -1;
+    private String keyNames;
 
     public OperationButton(int operation, Consumer<RenderContext> customRenderFunction) {
         this.operation = operation;
@@ -382,13 +388,20 @@ public class OperationButton {
 
     /**
      * 绘制按钮
+     */
+    public void render(KeyEventManager keyManager) {
+        this.render(false, keyManager);
+    }
+
+    /**
+     * 绘制按钮
      *
      * @param renderPopup 是否绘制弹出层提示
      */
-    public void render(double mouseX, double mouseY, boolean renderPopup, int keyCode, int modifiers) {
+    public void render(boolean renderPopup, KeyEventManager keyManager) {
         if (customRenderFunction != null) {
             // 使用自定义渲染逻辑
-            customRenderFunction.accept(new RenderContext(mouseX, mouseY, this));
+            customRenderFunction.accept(new RenderContext(keyManager, this));
         } else {
             TextureCoordinate textureCoordinate = new TextureCoordinate().setTotalWidth(this.textureWidth).setTotalHeight(this.textureHeight);
             Coordinate coordinate = new Coordinate().setX(this.x).setY(this.y).setWidth(this.width).setHeight(this.height)
@@ -411,61 +424,32 @@ public class OperationButton {
             }
         }
         if (renderPopup) {
-            this.renderPopup(null, mouseX, mouseY, keyCode, modifiers);
+            this.renderPopup(null, keyManager);
         }
     }
 
     /**
      * 绘制弹出层
      */
-    public void renderPopup(double mouseX, double mouseY) {
-        this.renderPopup(null, mouseX, mouseY, -1, -1);
+    public void renderPopup(KeyEventManager keyManager) {
+        this.renderPopup(null, keyManager);
     }
 
     /**
      * 绘制弹出层
      */
-    public void renderPopup(FontRenderer font, double mouseX, double mouseY) {
-        this.renderPopup(font, mouseX, mouseY, -1, -1);
-    }
-
-    /**
-     * 绘制弹出层
-     */
-    public void renderPopup(double mouseX, double mouseY, int keyCode, int modifiers) {
-        this.renderPopup(null, mouseX, mouseY, keyCode, modifiers);
-    }
-
-    /**
-     * 绘制弹出层
-     */
-    public void renderPopup(FontRenderer font, double mouseX, double mouseY, int keyCode, int modifiers) {
+    public void renderPopup(FontRenderer font, KeyEventManager keyManager) {
         // 绘制提示
-        if (this.keyCode == -1 || (this.keyCode == keyCode && this.modifiers == modifiers)) {
+        if (StringUtils.isNullOrEmptyEx(this.keyNames) || keyManager.isKeyPressed(this.keyNames)) {
             if (this.isHovered()) {
                 if (customPopupFunction != null) {
                     customPopupFunction.run();
                 } else if (tooltip != null && StringUtils.isNotNullOrEmpty(tooltip.getContent()) && Minecraft.getInstance().screen != null) {
                     if (font == null) font = Minecraft.getInstance().font;
-                    AbstractGuiUtils.drawPopupMessage(tooltip.setFont(font), (int) mouseX, (int) mouseY, Minecraft.getInstance().screen.width, Minecraft.getInstance().screen.height);
+                    AbstractGuiUtils.drawPopupMessage(tooltip.setFont(font), (int) keyManager.getMouseX(), (int) keyManager.getMouseY(), Minecraft.getInstance().screen.width, Minecraft.getInstance().screen.height);
                 }
             }
 
-        }
-    }
-
-    /**
-     * 渲染辅助类：用于向自定义渲染函数传递上下文
-     */
-    public static class RenderContext {
-        public final double mouseX;
-        public final double mouseY;
-        public final OperationButton button;
-
-        public RenderContext(double mouseX, double mouseY, OperationButton button) {
-            this.mouseX = mouseX;
-            this.mouseY = mouseY;
-            this.button = button;
         }
     }
 }

@@ -40,6 +40,7 @@ import xin.vanilla.sakura.enums.ERewardType;
 import xin.vanilla.sakura.rewards.Reward;
 import xin.vanilla.sakura.rewards.RewardManager;
 import xin.vanilla.sakura.rewards.impl.ItemRewardParser;
+import xin.vanilla.sakura.screen.component.KeyEventManager;
 import xin.vanilla.sakura.screen.component.OperationButton;
 import xin.vanilla.sakura.screen.component.Text;
 import xin.vanilla.sakura.util.AbstractGuiUtils;
@@ -57,11 +58,14 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static xin.vanilla.sakura.config.RewardOptionDataManager.GSON;
+import static xin.vanilla.sakura.config.RewardConfigManager.GSON;
 
 public class ItemSelectScreen extends Screen {
-    private final static Component TITLE = Component.literal("ItemSelectScreen");
     private static final Logger LOGGER = LogManager.getLogger();
+
+    private final KeyEventManager keyManager = new KeyEventManager();
+
+    private final static Component TITLE = Component.literal("ItemSelectScreen");
 
     private final NonNullList<ItemStack> allItemList = this.getAllItemList();
     private final List<ItemStack> playerItemList = this.getPlayerItemList();
@@ -284,6 +288,7 @@ public class ItemSelectScreen extends Screen {
     @Override
     @ParametersAreNonnullByDefault
     public void render(int mouseX, int mouseY, float delta) {
+        keyManager.refresh(mouseX, mouseY);
         // 绘制背景
         this.renderBackground();
         AbstractGuiUtils.fill((int) (this.bgX - this.margin), (int) (this.bgY - this.margin), (int) (180 + this.margin * 2), (int) (20 + (AbstractGuiUtils.ITEM_ICON_SIZE + 3) * 5 + 20 + margin * 2 + 5), 0xCCC6C6C6, 2);
@@ -292,17 +297,19 @@ public class ItemSelectScreen extends Screen {
         // 保存输入框的文本, 防止窗口重绘时输入框内容丢失
         this.inputFieldText = this.inputField.getValue();
 
-        this.renderButton(mouseX, mouseY);
+        this.renderButton();
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+        keyManager.mouseScrolled(delta, mouseX, mouseY);
         this.setScrollOffset(this.getScrollOffset() - delta);
         return true;
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        keyManager.mouseClicked(button, mouseX, mouseY);
         AtomicBoolean flag = new AtomicBoolean(false);
         if (button == GLFW.GLFW_MOUSE_BUTTON_4) {
             Minecraft.getInstance().setScreen(previousScreen);
@@ -327,6 +334,7 @@ public class ItemSelectScreen extends Screen {
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        keyManager.refresh(mouseX, mouseY);
         AtomicBoolean flag = new AtomicBoolean(false);
         AtomicBoolean updateSearchResults = new AtomicBoolean(false);
         if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT || button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
@@ -350,11 +358,13 @@ public class ItemSelectScreen extends Screen {
                 this.updateSearchResults();
             }
         }
+        keyManager.mouseReleased(button, mouseX, mouseY);
         return flag.get() ? flag.get() : super.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override
     public void mouseMoved(double mouseX, double mouseY) {
+        keyManager.mouseMoved(mouseX, mouseY);
         // 控制按钮
         OP_BUTTONS.forEach((key, value) -> {
             value.setHovered(value.isMouseOverEx(mouseX, mouseY));
@@ -376,6 +386,7 @@ public class ItemSelectScreen extends Screen {
      */
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        keyManager.keyPressed(keyCode);
         if (keyCode == GLFW.GLFW_KEY_ESCAPE || (keyCode == GLFW.GLFW_KEY_BACKSPACE && !this.inputField.isFocused())) {
             Minecraft.getInstance().setScreen(previousScreen);
             return true;
@@ -386,6 +397,12 @@ public class ItemSelectScreen extends Screen {
         } else {
             return super.keyPressed(keyCode, scanCode, modifiers);
         }
+    }
+
+    @Override
+    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+        keyManager.keyReleased(keyCode);
+        return super.keyReleased(keyCode, scanCode, modifiers);
     }
 
     @Override
@@ -562,7 +579,7 @@ public class ItemSelectScreen extends Screen {
 
                             FontRenderer font = itemStack.getItem().getFontRenderer(itemStack);
                             GuiUtils.preItemToolTip(itemStack);
-                            this.renderTooltip(list1, (int) context.mouseX, (int) context.mouseY, (font == null ? this.font : font));
+                            this.renderTooltip(list1, (int) context.keyManager.getMouseX(), (int) context.keyManager.getMouseY(), (font == null ? this.font : font));
                             GuiUtils.postItemToolTip();
                         });
                     } else {
@@ -635,13 +652,13 @@ public class ItemSelectScreen extends Screen {
     /**
      * 绘制按钮
      */
-    private void renderButton(int mouseX, int mouseY) {
-        for (OperationButton button : OP_BUTTONS.values()) button.render(mouseX, mouseY);
-        for (OperationButton button : ITEM_BUTTONS) button.render(mouseX, mouseY);
+    private void renderButton() {
+        for (OperationButton button : OP_BUTTONS.values()) button.render(keyManager);
+        for (OperationButton button : ITEM_BUTTONS) button.render(keyManager);
         for (OperationButton button : OP_BUTTONS.values())
-            button.renderPopup(this.font, mouseX, mouseY);
+            button.renderPopup(this.font, keyManager);
         for (OperationButton button : ITEM_BUTTONS)
-            button.renderPopup(this.font, mouseX, mouseY);
+            button.renderPopup(this.font, keyManager);
     }
 
     private void handleItem(OperationButton bt, int button, AtomicBoolean flag) {

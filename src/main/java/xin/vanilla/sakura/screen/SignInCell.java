@@ -15,6 +15,7 @@ import xin.vanilla.sakura.config.ServerConfig;
 import xin.vanilla.sakura.enums.ESignInStatus;
 import xin.vanilla.sakura.rewards.Reward;
 import xin.vanilla.sakura.rewards.RewardList;
+import xin.vanilla.sakura.screen.component.KeyEventManager;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
 import xin.vanilla.sakura.util.AbstractGuiUtils;
@@ -52,8 +53,8 @@ public class SignInCell {
     private boolean showHover;
 
     // 鼠标之前的位置坐标
-    private int previousMouseX;
-    private int previousMouseY;
+    private double previousMouseX;
+    private double previousMouseY;
 
     public SignInCell(ResourceLocation resourceLocation, TextureCoordinate textureCoordinate, double x, double y, double width, double height, double scale, @NonNull RewardList rewardList, int year, int month, int day, int status) {
         BACKGROUND_TEXTURE = resourceLocation;
@@ -73,13 +74,13 @@ public class SignInCell {
     }
 
     // 判断鼠标是否在当前格子内
-    public boolean isMouseOver(int mouseX, int mouseY) {
-        return mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height;
+    public boolean isMouseOver(KeyEventManager keyManager) {
+        return keyManager.getMouseX() >= x && keyManager.getMouseX() <= x + width && keyManager.getMouseY() >= y && keyManager.getMouseY() <= y + height;
     }
 
     // 渲染格子
-    public void render(FontRenderer font, int mouseX, int mouseY) {
-        boolean isHovered = this.isMouseOver(mouseX, mouseY);
+    public void render(FontRenderer font, KeyEventManager keyManager) {
+        boolean isHovered = this.isMouseOver(keyManager);
         if (showIcon) {
             Minecraft.getInstance().getTextureManager().bind(BACKGROUND_TEXTURE);
             if (status == ESignInStatus.REWARDED.getCode()) {
@@ -99,8 +100,8 @@ public class SignInCell {
                     // 逃离的距离
                     double escapeDistance = width + height;
                     // 计算当前鼠标位置与图标之间的距离
-                    double dx = x1 + width / 2 - mouseX;
-                    double dy = y1 + height / 2 - mouseY;
+                    double dx = x1 + width / 2 - keyManager.getMouseX();
+                    double dy = y1 + height / 2 - keyManager.getMouseY();
                     double distance = Math.sqrt(dx * dx + dy * dy);
                     // 如果图标与鼠标距离小于指定的逃离距离
                     if (distance < escapeDistance) {
@@ -120,8 +121,8 @@ public class SignInCell {
                 } else {
                     AbstractGuiUtils.blit((int) x1, (int) y1, (int) width, (int) height, u0, v0, (int) rewardUV.getUWidth(), (int) rewardUV.getVHeight(), textureCoordinate.getTotalWidth(), textureCoordinate.getTotalHeight());
                 }
-                previousMouseX = mouseX;
-                previousMouseY = mouseY;
+                previousMouseX = keyManager.getMouseX();
+                previousMouseY = keyManager.getMouseY();
             }
         }
 
@@ -154,7 +155,7 @@ public class SignInCell {
     }
 
     // 绘制奖励详情弹出层
-    public void renderTooltip(FontRenderer font, ItemRenderer itemRenderer, int mouseX, int mouseY) {
+    public void renderTooltip(FontRenderer font, ItemRenderer itemRenderer, KeyEventManager keyManager) {
         // 禁用深度测试
         GlStateManager.disableDepthTest();
         GL11.glPushMatrix();
@@ -176,8 +177,8 @@ public class SignInCell {
         GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
         // 在鼠标位置左上角绘制弹出层背景
         Minecraft.getInstance().getTextureManager().bind(BACKGROUND_TEXTURE);
-        double tooltipX0 = (x == x1 ? (mouseX) : x1 + width / 2) - tooltipWidth / 2;
-        double tooltipY0 = (y == y1 ? mouseY : y1 - 2) - tooltipHeight - 1;
+        double tooltipX0 = (x == x1 ? (keyManager.getMouseX()) : x1 + width / 2) - tooltipWidth / 2;
+        double tooltipY0 = (y == y1 ? keyManager.getMouseY() : y1 - 2) - tooltipHeight - 1;
         AbstractGuiUtils.blit((int) tooltipX0, (int) tooltipY0, (int) tooltipWidth, (int) tooltipHeight, (float) tooltipUV.getU0(), (float) tooltipUV.getV0(), (int) tooltipUV.getUWidth(), (int) tooltipUV.getVHeight(), textureCoordinate.getTotalWidth(), textureCoordinate.getTotalHeight());
         // 关闭 OpenGL 的混合模式
         GlStateManager.disableBlend();
