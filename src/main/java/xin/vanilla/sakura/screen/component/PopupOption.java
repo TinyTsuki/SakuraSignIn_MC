@@ -67,7 +67,7 @@ public class PopupOption {
      * 提示文字是否仅按下按键时显示
      */
     @Setter
-    private int tipsKeyCode = -1, tipsModifiers = -1;
+    private String tipsKeyNames;
 
     /**
      * 渲染前回调
@@ -235,6 +235,7 @@ public class PopupOption {
         this.optionList.clear();
         this.renderList.clear();
         this.tipsMap.clear();
+        this.relationMap.clear();
         this.width = -topPadding * 2;
         this.height = -topPadding * 2;
         this.screenWidth = 0;
@@ -248,8 +249,7 @@ public class PopupOption {
         this.selectedIndex = -1;
         this.scrollOffset = 0;
         this.maxLines = 0;
-        this.tipsKeyCode = -1;
-        this.tipsModifiers = -1;
+        this.tipsKeyNames = "";
         this.beforeRender = null;
         this.afterRender = null;
     }
@@ -302,11 +302,7 @@ public class PopupOption {
         return result;
     }
 
-    public void render(GuiGraphics graphics, double mouseX, double mouseY) {
-        this.render(graphics, mouseX, mouseY, -1, -1);
-    }
-
-    public void render(GuiGraphics graphics, double mouseX, double mouseY, int keyCode, int modifiers) {
+    public void render(GuiGraphics graphics, KeyEventManager keyManager) {
         if (this.beforeRender != null) this.beforeRender.accept(this);
         if (CollectionUtils.isNullOrEmpty(optionList)) return;
         if (Minecraft.getInstance().screen == null) return;
@@ -314,8 +310,8 @@ public class PopupOption {
         // 检测鼠标是否在弹出层内
         selectedIndex = -1;
         if (this.adjustedY >= 0 && this.width >= 0) {
-            int relativeY = (int) (mouseY - this.adjustedY - this.topPadding);
-            if (this.adjustedX < mouseX && mouseX < this.adjustedX + this.width - 1) {
+            int relativeY = (int) (keyManager.getMouseY() - this.adjustedY - this.topPadding);
+            if (this.adjustedX < keyManager.getMouseX() && keyManager.getMouseX() < this.adjustedX + this.width - 1) {
                 if (relativeY >= 0 && relativeY <= height) {
                     int lines = 0;
                     int index = -1;
@@ -355,14 +351,14 @@ public class PopupOption {
         }
         AbstractGuiUtils.resetDepth(graphics);
         // 绘制提示
-        if (this.tipsKeyCode == -1 || (this.tipsKeyCode == keyCode && this.tipsModifiers == modifiers)) {
+        if (StringUtils.isNullOrEmptyEx(this.tipsKeyNames) || keyManager.isKeyPressed(this.tipsKeyNames)) {
             if (this.getSelectedIndex() >= 0 && !tipsMap.isEmpty()) {
                 Text text = tipsMap.getOrDefault(this.getSelectedIndex(), Text.literal(""));
                 if (StringUtils.isNullOrEmpty(text.getContent())) {
                     text = tipsMap.getOrDefault(this.getSelectedIndex() - renderList.size(), Text.literal(""));
                 }
                 if (StringUtils.isNotNullOrEmpty(text.getContent())) {
-                    AbstractGuiUtils.drawPopupMessage(text.setGraphics(graphics).setFont(this.font), (int) mouseX, (int) mouseY, this.screenWidth, this.screenHeight);
+                    AbstractGuiUtils.drawPopupMessage(text.setGraphics(graphics).setFont(this.font), (int) keyManager.getMouseX(), (int) keyManager.getMouseY(), this.screenWidth, this.screenHeight);
                 }
             }
         }

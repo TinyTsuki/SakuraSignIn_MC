@@ -497,7 +497,6 @@ public class ServerConfig {
                             , "补签卡领取奖励的指令。")
                     .define("commandCard", "card");
 
-
             // 设置语言
             COMMAND_LANGUAGE = SERVER_BUILDER
                     .comment("This command is used to set the language."
