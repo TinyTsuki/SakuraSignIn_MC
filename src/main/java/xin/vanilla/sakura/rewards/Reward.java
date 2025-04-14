@@ -12,7 +12,7 @@ import xin.vanilla.sakura.util.Component;
 import java.io.Serializable;
 import java.math.BigDecimal;
 
-import static xin.vanilla.sakura.config.RewardOptionDataManager.GSON;
+import static xin.vanilla.sakura.config.RewardConfigManager.GSON;
 
 
 /**

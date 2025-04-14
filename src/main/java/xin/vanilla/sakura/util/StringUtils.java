@@ -641,4 +641,29 @@ public class StringUtils {
         }
         return result;
     }
+
+    /**
+     * 将字符串转换为驼峰命名
+     */
+    public static String toPascalCase(String input) {
+        if (isNullOrEmptyEx(input)) return "";
+
+        StringBuilder result = new StringBuilder();
+        boolean capitalizeNext = true;
+
+        for (char c : input.toCharArray()) {
+            if (Character.isLetterOrDigit(c)) {
+                if (capitalizeNext) {
+                    result.append(Character.toUpperCase(c));
+                    capitalizeNext = false;
+                } else {
+                    result.append(Character.toLowerCase(c));
+                }
+            } else {
+                capitalizeNext = true;
+            }
+        }
+        return result.toString();
+    }
+
 }

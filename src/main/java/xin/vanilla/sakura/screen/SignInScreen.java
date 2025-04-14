@@ -30,10 +30,7 @@ import xin.vanilla.sakura.network.ModNetworkHandler;
 import xin.vanilla.sakura.network.packet.SignInPacket;
 import xin.vanilla.sakura.rewards.RewardList;
 import xin.vanilla.sakura.rewards.RewardManager;
-import xin.vanilla.sakura.screen.component.NotificationManager;
-import xin.vanilla.sakura.screen.component.OperationButton;
-import xin.vanilla.sakura.screen.component.PopupOption;
-import xin.vanilla.sakura.screen.component.Text;
+import xin.vanilla.sakura.screen.component.*;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
 import xin.vanilla.sakura.util.*;
 
@@ -58,18 +55,11 @@ public class SignInScreen extends Screen {
     @Accessors(chain = true)
     private Screen previousScreen;
 
+    private final KeyEventManager keyManager = new KeyEventManager();
+
     private boolean SIGN_IN_SCREEN_TIPS = Boolean.TRUE.equals(ClientConfig.SHOW_SIGN_IN_SCREEN_TIPS.get());
 
     private Text tips;
-
-    /**
-     * 当前按下的按键
-     */
-    private int keyCode = -1;
-    /**
-     * 按键的组合键 Shift 1, Ctrl 2, Alt 4
-     */
-    private int modifiers = -1;
 
     /**
      * 上月最后offset天
@@ -209,16 +199,14 @@ public class SignInScreen extends Screen {
                 .setTextureHeight(textureCoordinate.getTotalHeight())
                 .setFlipHorizontal(true)
                 .setTooltip(Text.translatable(EI18nType.TIPS, "use_s_key", "←"))
-                .setKeyCode(GLFW.GLFW_KEY_LEFT_SHIFT)
-                .setModifiers(GLFW.GLFW_MOD_SHIFT));
+                .setKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFW.GLFW_KEY_LEFT_SHIFT)));
         BUTTONS.put(RIGHT_ARROW.getCode(), new OperationButton(RIGHT_ARROW.getCode(), texture)
                 .setCoordinate(textureCoordinate.getRightArrowCoordinate())
                 .setNormal(textureCoordinate.getArrowUV()).setHover(textureCoordinate.getArrowHoverUV()).setTap(textureCoordinate.getArrowTapUV())
                 .setTextureWidth(textureCoordinate.getTotalWidth())
                 .setTextureHeight(textureCoordinate.getTotalHeight())
                 .setTooltip(Text.translatable(EI18nType.TIPS, "use_s_key", "→"))
-                .setKeyCode(GLFW.GLFW_KEY_LEFT_SHIFT)
-                .setModifiers(GLFW.GLFW_MOD_SHIFT));
+                .setKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFW.GLFW_KEY_LEFT_SHIFT)));
         BUTTONS.put(UP_ARROW.getCode(), new OperationButton(UP_ARROW.getCode(), texture)
                 .setCoordinate(textureCoordinate.getUpArrowCoordinate())
                 .setNormal(textureCoordinate.getArrowUV()).setHover(textureCoordinate.getArrowHoverUV()).setTap(textureCoordinate.getArrowTapUV())
@@ -226,8 +214,7 @@ public class SignInScreen extends Screen {
                 .setTextureHeight(textureCoordinate.getTotalHeight())
                 .setRotatedAngle(270)
                 .setTooltip(Text.translatable(EI18nType.TIPS, "use_s_key", "↑"))
-                .setKeyCode(GLFW.GLFW_KEY_LEFT_SHIFT)
-                .setModifiers(GLFW.GLFW_MOD_SHIFT));
+                .setKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFW.GLFW_KEY_LEFT_SHIFT)));
         BUTTONS.put(DOWN_ARROW.getCode(), new OperationButton(DOWN_ARROW.getCode(), texture)
                 .setCoordinate(textureCoordinate.getDownArrowCoordinate())
                 .setNormal(textureCoordinate.getArrowUV()).setHover(textureCoordinate.getArrowHoverUV()).setTap(textureCoordinate.getArrowTapUV())
@@ -235,8 +222,7 @@ public class SignInScreen extends Screen {
                 .setTextureHeight(textureCoordinate.getTotalHeight())
                 .setRotatedAngle(90).setFlipVertical(true)
                 .setTooltip(Text.translatable(EI18nType.TIPS, "use_s_key", "↓"))
-                .setKeyCode(GLFW.GLFW_KEY_LEFT_SHIFT)
-                .setModifiers(GLFW.GLFW_MOD_SHIFT));
+                .setKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFW.GLFW_KEY_LEFT_SHIFT)));
         BUTTONS.put(INFO.getCode(), new OperationButton(INFO.getCode(), texture)
                 .setCoordinate(textureCoordinate.getSignInInfoCoordinate())
                 .setNormal(textureCoordinate.getSignInInfoUV()).setHover(textureCoordinate.getSignInInfoUV()).setTap(textureCoordinate.getSignInInfoUV())
@@ -420,9 +406,181 @@ public class SignInScreen extends Screen {
         RenderSystem.disableBlend();
     }
 
+    /**
+     * 处理操作按钮事件
+     *
+     * @param value         操作按钮
+     * @param updateLayout  是否更新布局
+     * @param updateTexture 是否更新纹理和坐标
+     * @param flag          是否处理过事件
+     */
+    private void handleOperation(OperationButton value, AtomicBoolean updateLayout, AtomicBoolean updateTexture, AtomicBoolean flag) {
+        if (this.SIGN_IN_SCREEN_TIPS) return;
+        // 上个月
+        if (value.getOperation() == LEFT_ARROW.getCode()) {
+            if (ClientConfig.KEY_SIGN_LAST_MONTH.get().stream().anyMatch(keyManager::isMousePressed)) {
+                SakuraSignIn.setCalendarCurrentDate(DateUtils.addMonth(SakuraSignIn.getCalendarCurrentDate(), -1));
+                updateLayout.set(true);
+                flag.set(true);
+            }
+        }
+        // 下个月
+        else if (value.getOperation() == RIGHT_ARROW.getCode()) {
+            if (ClientConfig.KEY_SIGN_NEXT_MONTH.get().stream().anyMatch(keyManager::isMousePressed)) {
+                SakuraSignIn.setCalendarCurrentDate(DateUtils.addMonth(SakuraSignIn.getCalendarCurrentDate(), 1));
+                updateLayout.set(true);
+                flag.set(true);
+            }
+        }
+        // 上一年
+        else if (value.getOperation() == UP_ARROW.getCode()) {
+            if (ClientConfig.KEY_SIGN_LAST_YEAR.get().stream().anyMatch(keyManager::isMousePressed)) {
+                SakuraSignIn.setCalendarCurrentDate(DateUtils.addYear(SakuraSignIn.getCalendarCurrentDate(), -1));
+                updateLayout.set(true);
+                flag.set(true);
+            }
+        }
+        // 下一年
+        else if (value.getOperation() == DOWN_ARROW.getCode()) {
+            if (ClientConfig.KEY_SIGN_NEXT_YEAR.get().stream().anyMatch(keyManager::isMousePressed)) {
+                SakuraSignIn.setCalendarCurrentDate(DateUtils.addYear(SakuraSignIn.getCalendarCurrentDate(), 1));
+                updateLayout.set(true);
+                flag.set(true);
+            }
+        }
+        // 类原版主题
+        else if (value.getOperation() == THEME_ORIGINAL_BUTTON.getCode()) {
+            SakuraSignIn.setSpecialVersionTheme(keyManager.onlyMouseRightPressed());
+            ClientConfig.THEME.set(THEME_ORIGINAL_BUTTON.getPath());
+            ClientConfig.SPECIAL_THEME.set(SakuraSignIn.isSpecialVersionTheme());
+            updateLayout.set(true);
+            updateTexture.set(true);
+            flag.set(true);
+        }
+        // 樱花粉主题
+        else if (value.getOperation() == THEME_SAKURA_BUTTON.getCode()) {
+            SakuraSignIn.setSpecialVersionTheme(keyManager.onlyMouseRightPressed());
+            ClientConfig.THEME.set(THEME_SAKURA_BUTTON.getPath());
+            ClientConfig.SPECIAL_THEME.set(SakuraSignIn.isSpecialVersionTheme());
+            updateLayout.set(true);
+            updateTexture.set(true);
+            flag.set(true);
+        }
+        // 四叶草主题
+        else if (value.getOperation() == THEME_CLOVER_BUTTON.getCode()) {
+            SakuraSignIn.setSpecialVersionTheme(keyManager.onlyMouseRightPressed());
+            ClientConfig.THEME.set(THEME_CLOVER_BUTTON.getPath());
+            ClientConfig.SPECIAL_THEME.set(SakuraSignIn.isSpecialVersionTheme());
+            updateLayout.set(true);
+            updateTexture.set(true);
+            flag.set(true);
+        }
+        // 枫叶主题
+        else if (value.getOperation() == THEME_MAPLE_BUTTON.getCode()) {
+            SakuraSignIn.setSpecialVersionTheme(keyManager.onlyMouseRightPressed());
+            ClientConfig.THEME.set(THEME_MAPLE_BUTTON.getPath());
+            ClientConfig.SPECIAL_THEME.set(SakuraSignIn.isSpecialVersionTheme());
+            updateLayout.set(true);
+            updateTexture.set(true);
+            flag.set(true);
+        }
+        // 混沌主题
+        else if (value.getOperation() == THEME_CHAOS_BUTTON.getCode()) {
+            if (keyManager.onlyMouseLeftPressed()) {
+                ClientConfig.THEME.set(THEME_CHAOS_BUTTON.getPath());
+                updateLayout.set(true);
+                updateTexture.set(true);
+                flag.set(true);
+            } else if (keyManager.onlyMouseRightPressed()) {
+                // 绘制弹出层选项
+                popupOption.clear();
+                // 若文件夹为空, 绘制提示, 并在点击时打开主题文件夹
+                if (CollectionUtils.isNullOrEmpty(themeFileList)) {
+                    Component component = Component.translatableClient(EI18nType.TITLE, "theme_selector_empty");
+                    popupOption.addOption(StringUtils.replaceLine(component.toString()).split("\n"));
+                } else {
+                    popupOption.addOption(themeFileList.stream().map(file -> {
+                        String name = file.getName();
+                        name = name.endsWith(".png") ? name.substring(0, name.length() - 4) : name;
+                        return name;
+                    }).toArray(String[]::new));
+                }
+                popupOption.setMaxWidth(AbstractGuiUtils.multilineTextWidth(Text.translatable(EI18nType.TITLE, "theme_selector_empty")))
+                        .setMaxLines(5)
+                        .build(super.font, keyManager.getMouseX(), keyManager.getMouseY(), String.format("主题选择按钮:%s", value.getOperation()));
+            }
+        }
+    }
+
+    private void handleSignIn(int button, SignInCell cell, LocalPlayer player) {
+        if (this.SIGN_IN_SCREEN_TIPS) return;
+        Date cellDate = DateUtils.getDate(cell.year, cell.month, cell.day);
+        // 签到
+        if (cell.status == ESignInStatus.NOT_SIGNED_IN.getCode()) {
+            if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+                if (RewardManager.getCompensateDateInt() < DateUtils.toDateInt(RewardManager.getCompensateDate(DateUtils.getClientDate()))) {
+                    Component component = Component.translatableClient(EI18nType.MESSAGE, "next_day_cannot_operate");
+                    NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
+                } else {
+                    cell.status = ClientConfig.AUTO_REWARDED.get() ? ESignInStatus.REWARDED.getCode() : ESignInStatus.SIGNED_IN.getCode();
+                    ModNetworkHandler.INSTANCE.send(new SignInPacket(DateUtils.toDateTimeString(DateUtils.getClientDate()), ClientConfig.AUTO_REWARDED.get(), ESignInType.SIGN_IN), PacketDistributor.SERVER.noArg());
+                }
+            }
+        }
+        // 领取奖励
+        else if (cell.status == ESignInStatus.SIGNED_IN.getCode()) {
+            if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+                Component component = Component.translatableClient(EI18nType.MESSAGE, "already_signed");
+                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
+            } else {
+                if (RewardManager.isRewarded(PlayerSignInDataCapability.getData(player), cellDate, false)) {
+                    Component component = Component.translatableClient(EI18nType.MESSAGE, "already_get_reward");
+                    NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
+                } else {
+                    cell.status = ESignInStatus.REWARDED.getCode();
+                    ModNetworkHandler.INSTANCE.send(new SignInPacket(DateUtils.toDateTimeString(cellDate), ClientConfig.AUTO_REWARDED.get(), ESignInType.REWARD), PacketDistributor.SERVER.noArg());
+                }
+            }
+        }
+        // 补签
+        else if (cell.status == ESignInStatus.CAN_REPAIR.getCode()) {
+            if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
+                if (!ServerConfig.SIGN_IN_CARD.get()) {
+                    Component component = Component.translatableClient(EI18nType.MESSAGE, "server_not_enable_sign_in_card");
+                    NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
+                } else {
+                    if (PlayerSignInDataCapability.getData(player).getSignInCard() <= 0) {
+                        Component component = Component.translatableClient(EI18nType.MESSAGE, "not_enough_sign_in_card");
+                        NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
+                    } else {
+                        cell.status = ClientConfig.AUTO_REWARDED.get() ? ESignInStatus.REWARDED.getCode() : ESignInStatus.SIGNED_IN.getCode();
+                        ModNetworkHandler.INSTANCE.send(new SignInPacket(DateUtils.toDateTimeString(cellDate), ClientConfig.AUTO_REWARDED.get(), ESignInType.RE_SIGN_IN), PacketDistributor.SERVER.noArg());
+                    }
+                }
+            }
+        } else if (cell.status == ESignInStatus.NO_ACTION.getCode()) {
+            if (cellDate.after(RewardManager.getCompensateDate(DateUtils.getClientDate()))) {
+                Component component = Component.translatableClient(EI18nType.MESSAGE, "next_day_cannot_operate");
+                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
+            } else {
+                Component component = Component.translatableClient(EI18nType.MESSAGE, "past_day_cannot_operate");
+                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
+            }
+        } else if (cell.status == ESignInStatus.REWARDED.getCode()) {
+            Component component = Component.translatableClient(EI18nType.MESSAGE, "already_get_reward");
+            NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
+        } else {
+            if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+                Component component = Component.literal(ESignInStatus.valueOf(cell.status).getDescription() + ": " + DateUtils.toString(cellDate));
+                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0x88FF5555));
+            }
+        }
+    }
+
     @Override
     @ParametersAreNonnullByDefault
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+        keyManager.refresh(mouseX, mouseY);
         // 绘制背景
         this.renderBackground(graphics, mouseX, mouseY, partialTicks);
         // 绘制缩放背景纹理
@@ -511,12 +669,12 @@ public class SignInScreen extends Screen {
             button.setBaseX(bgX);
             button.setBaseY(bgY);
             button.setScale(this.scale);
-            button.render(graphics, mouseX, mouseY);
+            button.render(graphics, keyManager);
         }
 
         // 渲染所有格子
         for (SignInCell cell : signInCells) {
-            cell.render(graphics, super.font, mouseX, mouseY);
+            cell.render(graphics, super.font, keyManager);
         }
 
         if (!this.SIGN_IN_SCREEN_TIPS) {
@@ -527,18 +685,18 @@ public class SignInScreen extends Screen {
             if (showRewardDetail) {
                 // 渲染格子弹出层
                 for (SignInCell cell : signInCells) {
-                    if (cell.isShowHover() && cell.isMouseOver(mouseX, mouseY)) {
-                        if ((this.keyCode == GLFW.GLFW_KEY_LEFT_SHIFT || this.keyCode == GLFW.GLFW_KEY_RIGHT_SHIFT) && this.modifiers == GLFW.GLFW_MOD_SHIFT) {
+                    if (cell.isShowHover() && cell.isMouseOver(keyManager)) {
+                        if (keyManager.onlyShiftPressed()) {
                             AbstractGuiUtils.drawPopupMessage(Text.translatable(EI18nType.TIPS, "how_to_sign_in").setGraphics(graphics).setFont(this.font).setAlign(Text.Align.CENTER), mouseX, mouseY, super.width, super.height);
                         } else {
-                            cell.renderTooltip(graphics, super.font, mouseX, mouseY);
+                            cell.renderTooltip(graphics, super.font, keyManager);
                         }
                     }
                 }
             }
 
             // 绘制弹出选项
-            popupOption.render(graphics, mouseX, mouseY);
+            popupOption.render(graphics, keyManager);
 
             // 渲染操作按钮的弹出提示
             for (Integer op : BUTTONS.keySet()) {
@@ -556,7 +714,7 @@ public class SignInScreen extends Screen {
                         );
                     }
                 }
-                button.renderPopup(graphics, mouseX, mouseY, this.keyCode, this.modifiers);
+                button.renderPopup(graphics, keyManager);
             }
         }
         // 显示开屏提示
@@ -591,16 +749,15 @@ public class SignInScreen extends Screen {
      */
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        keyManager.mouseClicked(button, mouseX, mouseY);
         // 清空弹出选项
         if (!popupOption.isHovered()) {
             popupOption.clear();
-            if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT || button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
-                BUTTONS.forEach((key, value) -> {
-                    if (value.isHovered()) {
-                        value.setPressed(true);
-                    }
-                });
-            }
+            BUTTONS.forEach((key, value) -> {
+                if (value.isHovered()) {
+                    value.setPressed(true);
+                }
+            });
         }
         return super.mouseClicked(mouseX, mouseY, button);
     }
@@ -610,6 +767,7 @@ public class SignInScreen extends Screen {
      */
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        keyManager.refresh(mouseX, mouseY);
         AtomicBoolean updateLayout = new AtomicBoolean(false);
         AtomicBoolean updateTextureAndCoordinate = new AtomicBoolean(false);
         AtomicBoolean flag = new AtomicBoolean(false);
@@ -629,21 +787,19 @@ public class SignInScreen extends Screen {
                 SakuraSignIn.openFileInFolder(new File(FMLPaths.CONFIGDIR.get().resolve(SakuraSignIn.MODID).toFile(), "themes").toPath());
             }
             popupOption.clear();
-        }
-        // 左键签到, 右键补签(如果服务器允许且有补签卡), 右键领取奖励(如果是已签到未领取状态)
-        else if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT || button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
+        } else {
             LocalPlayer player = Minecraft.getInstance().player;
             // 控制按钮
             BUTTONS.forEach((key, value) -> {
                 if (value.isHovered() && value.isPressed()) {
-                    this.handleOperation(mouseX, mouseY, button, value, updateLayout, updateTextureAndCoordinate, flag);
+                    this.handleOperation(value, updateLayout, updateTextureAndCoordinate, flag);
                 }
                 value.setPressed(false);
             });
             if (!flag.get()) {
                 // 日历格子
                 for (SignInCell cell : signInCells) {
-                    if (cell.isShowIcon() && cell.isMouseOver((int) mouseX, (int) mouseY)) {
+                    if (cell.isShowIcon() && cell.isMouseOver(keyManager)) {
                         if (player != null) {
                             this.handleSignIn(button, cell, player);
                         }
@@ -655,190 +811,24 @@ public class SignInScreen extends Screen {
         }
         if (updateTextureAndCoordinate.get()) this.updateTextureAndCoordinate();
         if (updateLayout.get()) this.updateLayout();
+        keyManager.mouseReleased(button, mouseX, mouseY);
         return flag.get() ? flag.get() : super.mouseReleased(mouseX, mouseY, button);
-    }
-
-    /**
-     * 处理操作按钮事件
-     *
-     * @param mouseX        鼠标X坐标
-     * @param mouseY        鼠标Y坐标
-     * @param button        鼠标按键
-     * @param value         操作按钮
-     * @param updateLayout  是否更新布局
-     * @param updateTexture 是否更新纹理和坐标
-     * @param flag          是否处理过事件
-     */
-    private void handleOperation(double mouseX, double mouseY, int button, OperationButton value, AtomicBoolean updateLayout, AtomicBoolean updateTexture, AtomicBoolean flag) {
-        if (this.SIGN_IN_SCREEN_TIPS) return;
-        // 上个月
-        if (value.getOperation() == LEFT_ARROW.getCode()) {
-            if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-                SakuraSignIn.setCalendarCurrentDate(DateUtils.addMonth(SakuraSignIn.getCalendarCurrentDate(), -1));
-                updateLayout.set(true);
-                flag.set(true);
-            }
-        }
-        // 下个月
-        else if (value.getOperation() == RIGHT_ARROW.getCode()) {
-            if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-                SakuraSignIn.setCalendarCurrentDate(DateUtils.addMonth(SakuraSignIn.getCalendarCurrentDate(), 1));
-                updateLayout.set(true);
-                flag.set(true);
-            }
-        }
-        // 上一年
-        else if (value.getOperation() == UP_ARROW.getCode()) {
-            if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-                SakuraSignIn.setCalendarCurrentDate(DateUtils.addYear(SakuraSignIn.getCalendarCurrentDate(), -1));
-                updateLayout.set(true);
-                flag.set(true);
-            }
-        }
-        // 下一年
-        else if (value.getOperation() == DOWN_ARROW.getCode()) {
-            if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-                SakuraSignIn.setCalendarCurrentDate(DateUtils.addYear(SakuraSignIn.getCalendarCurrentDate(), 1));
-                updateLayout.set(true);
-                flag.set(true);
-            }
-        }
-        // 类原版主题
-        else if (value.getOperation() == THEME_ORIGINAL_BUTTON.getCode()) {
-            SakuraSignIn.setSpecialVersionTheme(button == GLFW.GLFW_MOUSE_BUTTON_RIGHT);
-            ClientConfig.THEME.set(THEME_ORIGINAL_BUTTON.getPath());
-            ClientConfig.SPECIAL_THEME.set(SakuraSignIn.isSpecialVersionTheme());
-            updateLayout.set(true);
-            updateTexture.set(true);
-            flag.set(true);
-        }
-        // 樱花粉主题
-        else if (value.getOperation() == THEME_SAKURA_BUTTON.getCode()) {
-            SakuraSignIn.setSpecialVersionTheme(button == GLFW.GLFW_MOUSE_BUTTON_RIGHT);
-            ClientConfig.THEME.set(THEME_SAKURA_BUTTON.getPath());
-            ClientConfig.SPECIAL_THEME.set(SakuraSignIn.isSpecialVersionTheme());
-            updateLayout.set(true);
-            updateTexture.set(true);
-            flag.set(true);
-        }
-        // 四叶草主题
-        else if (value.getOperation() == THEME_CLOVER_BUTTON.getCode()) {
-            SakuraSignIn.setSpecialVersionTheme(button == GLFW.GLFW_MOUSE_BUTTON_RIGHT);
-            ClientConfig.THEME.set(THEME_CLOVER_BUTTON.getPath());
-            ClientConfig.SPECIAL_THEME.set(SakuraSignIn.isSpecialVersionTheme());
-            updateLayout.set(true);
-            updateTexture.set(true);
-            flag.set(true);
-        }
-        // 枫叶主题
-        else if (value.getOperation() == THEME_MAPLE_BUTTON.getCode()) {
-            SakuraSignIn.setSpecialVersionTheme(button == GLFW.GLFW_MOUSE_BUTTON_RIGHT);
-            ClientConfig.THEME.set(THEME_MAPLE_BUTTON.getPath());
-            ClientConfig.SPECIAL_THEME.set(SakuraSignIn.isSpecialVersionTheme());
-            updateLayout.set(true);
-            updateTexture.set(true);
-            flag.set(true);
-        }
-        // 混沌主题
-        else if (value.getOperation() == THEME_CHAOS_BUTTON.getCode()) {
-            if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-                ClientConfig.THEME.set(THEME_CHAOS_BUTTON.getPath());
-                updateLayout.set(true);
-                updateTexture.set(true);
-                flag.set(true);
-            } else {
-                // 绘制弹出层选项
-                popupOption.clear();
-                // 若文件夹为空, 绘制提示, 并在点击时打开主题文件夹
-                if (CollectionUtils.isNullOrEmpty(themeFileList)) {
-                    Component component = Component.translatableClient(EI18nType.TITLE, "theme_selector_empty");
-                    popupOption.addOption(StringUtils.replaceLine(component.toString()).split("\n"));
-                } else {
-                    popupOption.addOption(themeFileList.stream().map(file -> {
-                        String name = file.getName();
-                        name = name.endsWith(".png") ? name.substring(0, name.length() - 4) : name;
-                        return name;
-                    }).toArray(String[]::new));
-                }
-                popupOption.setMaxWidth(AbstractGuiUtils.multilineTextWidth(Text.translatable(EI18nType.TITLE, "theme_selector_empty")))
-                        .setMaxLines(5)
-                        .build(super.font, mouseX, mouseY, String.format("主题选择按钮:%s", value.getOperation()));
-            }
-        }
-    }
-
-    private void handleSignIn(int button, SignInCell cell, LocalPlayer player) {
-        if (this.SIGN_IN_SCREEN_TIPS) return;
-        Date cellDate = DateUtils.getDate(cell.year, cell.month, cell.day);
-        if (cell.status == ESignInStatus.NOT_SIGNED_IN.getCode()) {
-            if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-                if (RewardManager.getCompensateDateInt() < DateUtils.toDateInt(RewardManager.getCompensateDate(DateUtils.getClientDate()))) {
-                    Component component = Component.translatableClient(EI18nType.MESSAGE, "next_day_cannot_operate");
-                    NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
-                } else {
-                    cell.status = ClientConfig.AUTO_REWARDED.get() ? ESignInStatus.REWARDED.getCode() : ESignInStatus.SIGNED_IN.getCode();
-                    ModNetworkHandler.INSTANCE.send(new SignInPacket(DateUtils.toDateTimeString(DateUtils.getClientDate()), ClientConfig.AUTO_REWARDED.get(), ESignInType.SIGN_IN), PacketDistributor.SERVER.noArg());
-                }
-            }
-        } else if (cell.status == ESignInStatus.SIGNED_IN.getCode()) {
-            if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-                Component component = Component.translatableClient(EI18nType.MESSAGE, "already_signed");
-                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
-            } else {
-                if (RewardManager.isRewarded(PlayerSignInDataCapability.getData(player), cellDate, false)) {
-                    Component component = Component.translatableClient(EI18nType.MESSAGE, "already_get_reward");
-                    NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
-                } else {
-                    cell.status = ESignInStatus.REWARDED.getCode();
-                    ModNetworkHandler.INSTANCE.send(new SignInPacket(DateUtils.toDateTimeString(cellDate), ClientConfig.AUTO_REWARDED.get(), ESignInType.REWARD), PacketDistributor.SERVER.noArg());
-                }
-            }
-        } else if (cell.status == ESignInStatus.CAN_REPAIR.getCode()) {
-            if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
-                if (!ServerConfig.SIGN_IN_CARD.get()) {
-                    Component component = Component.translatableClient(EI18nType.MESSAGE, "server_not_enable_sign_in_card");
-                    NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
-                } else {
-                    if (PlayerSignInDataCapability.getData(player).getSignInCard() <= 0) {
-                        Component component = Component.translatableClient(EI18nType.MESSAGE, "not_enough_sign_in_card");
-                        NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
-                    } else {
-                        cell.status = ClientConfig.AUTO_REWARDED.get() ? ESignInStatus.REWARDED.getCode() : ESignInStatus.SIGNED_IN.getCode();
-                        ModNetworkHandler.INSTANCE.send(new SignInPacket(DateUtils.toDateTimeString(cellDate), ClientConfig.AUTO_REWARDED.get(), ESignInType.RE_SIGN_IN), PacketDistributor.SERVER.noArg());
-                    }
-                }
-            }
-        } else if (cell.status == ESignInStatus.NO_ACTION.getCode()) {
-            if (cellDate.after(RewardManager.getCompensateDate(DateUtils.getClientDate()))) {
-                Component component = Component.translatableClient(EI18nType.MESSAGE, "next_day_cannot_operate");
-                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
-            } else {
-                Component component = Component.translatableClient(EI18nType.MESSAGE, "past_day_cannot_operate");
-                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
-            }
-        } else if (cell.status == ESignInStatus.REWARDED.getCode()) {
-            Component component = Component.translatableClient(EI18nType.MESSAGE, "already_get_reward");
-            NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
-        } else {
-            if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-                Component component = Component.literal(ESignInStatus.valueOf(cell.status).getDescription() + ": " + DateUtils.toString(cellDate));
-                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0x88FF5555));
-            }
-        }
     }
 
     @Override
     public void mouseMoved(double mouseX, double mouseY) {
+        keyManager.mouseMoved(mouseX, mouseY);
         BUTTONS.forEach((key, value) -> value.setHovered(value.isMouseOverEx(mouseX, mouseY)));
         super.mouseMoved(mouseX, mouseY);
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollH, double scrollV) {
+        keyManager.mouseScrolled(scrollV, mouseX, mouseY);
         if (!popupOption.addScrollOffset(scrollV)) {
             // 奖励悬浮层
             for (SignInCell cell : signInCells) {
-                if (cell.isShowIcon() && cell.isShowHover() && cell.isMouseOver((int) mouseX, (int) mouseY)) {
+                if (cell.isShowIcon() && cell.isShowHover() && cell.isMouseOver(keyManager)) {
                     if (scrollV > 0) {
                         cell.setTooltipScrollOffset(Math.max(cell.getTooltipScrollOffset() - 1, 0));
                     } else if (scrollV < 0) {
@@ -863,46 +853,43 @@ public class SignInScreen extends Screen {
      */
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        this.keyCode = keyCode;
-        this.modifiers = modifiers;
+        keyManager.keyPressed(keyCode);
+        boolean consumed = false;
         // 当按键等于SIGN_IN_SCREEN_KEY键的值或Inventory键时，调用onClose方法，并返回true，表示该按键事件已被消耗
         if (keyCode == GLFW.GLFW_KEY_ESCAPE || keyCode == ClientEventHandler.SIGN_IN_SCREEN_KEY.getKey().getValue() || keyCode == Minecraft.getInstance().options.keyInventory.getKey().getValue()) {
             if (this.SIGN_IN_SCREEN_TIPS) this.SIGN_IN_SCREEN_TIPS = false;
             else if (this.previousScreen != null) Minecraft.getInstance().setScreen(this.previousScreen);
             else this.onClose();
-            return true;
-        } else {
-            // 对于其他按键，交由父类处理，并返回父类的处理结果
-            return super.keyPressed(keyCode, scanCode, modifiers);
+            consumed = true;
         }
+        return consumed || super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override
     public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
-        this.keyCode = -1;
-        this.modifiers = -1;
-        if (keyCode == GLFW.GLFW_KEY_LEFT) {
+        boolean consumed = false;
+        if (ClientConfig.KEY_SIGN_LAST_MONTH.get().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
             SakuraSignIn.setCalendarCurrentDate(DateUtils.addMonth(SakuraSignIn.getCalendarCurrentDate(), -1));
             updateLayout();
-            return true;
-        } else if (keyCode == GLFW.GLFW_KEY_RIGHT) {
+            consumed = true;
+        } else if (ClientConfig.KEY_SIGN_NEXT_MONTH.get().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
             SakuraSignIn.setCalendarCurrentDate(DateUtils.addMonth(SakuraSignIn.getCalendarCurrentDate(), 1));
             updateLayout();
-            return true;
-        } else if (keyCode == GLFW.GLFW_KEY_UP) {
+            consumed = true;
+        } else if (ClientConfig.KEY_SIGN_LAST_YEAR.get().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
             SakuraSignIn.setCalendarCurrentDate(DateUtils.addYear(SakuraSignIn.getCalendarCurrentDate(), -1));
             updateLayout();
-            return true;
-        } else if (keyCode == GLFW.GLFW_KEY_DOWN) {
+            consumed = true;
+        } else if (ClientConfig.KEY_SIGN_NEXT_YEAR.get().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
             SakuraSignIn.setCalendarCurrentDate(DateUtils.addYear(SakuraSignIn.getCalendarCurrentDate(), 1));
             updateLayout();
-            return true;
-        } else {
-            // 对于其他按键，交由父类处理，并返回父类的处理结果
-            return super.keyReleased(keyCode, scanCode, modifiers);
+            consumed = true;
         }
+        keyManager.keyReleased(keyCode);
+        // 对于其他按键，交由父类处理，并返回父类的处理结果
+        return consumed || super.keyReleased(keyCode, scanCode, modifiers);
     }
-    //
+
     // /**
     //  * 窗口缩放时重新计算布局
     //  */
