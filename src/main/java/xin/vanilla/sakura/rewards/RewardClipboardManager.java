@@ -8,7 +8,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import xin.vanilla.sakura.util.CollectionUtils;
 import xin.vanilla.sakura.util.StringUtils;
 
-import static xin.vanilla.sakura.config.RewardOptionDataManager.GSON;
+import static xin.vanilla.sakura.config.RewardConfigManager.GSON;
 
 @OnlyIn(Dist.CLIENT)
 public class RewardClipboardManager {
