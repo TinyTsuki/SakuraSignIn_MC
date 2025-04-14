@@ -1,9 +1,12 @@
 package xin.vanilla.sakura;
 
 import org.junit.Test;
+import org.lwjgl.glfw.GLFW;
+import xin.vanilla.sakura.screen.component.KeyEventManager;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
 import xin.vanilla.sakura.util.DateUtils;
+import xin.vanilla.sakura.util.GLFWKeyHelper;
 import xin.vanilla.sakura.util.PNGUtils;
 import xin.vanilla.sakura.util.StringUtils;
 
@@ -188,5 +191,33 @@ public class MyTest {
         testWriteChunk("clover");
         testWriteChunk("maple");
         testWriteChunk("chaos");
+    }
+
+    @Test
+    public void keyTest() {
+        KeyEventManager manager = new KeyEventManager();
+        manager.keyPressed(GLFW.GLFW_KEY_A);
+        manager.keyPressed(GLFW.GLFW_KEY_LEFT_SHIFT);
+        manager.keyPressed(GLFW.GLFW_KEY_RIGHT_CONTROL);
+        manager.mouseClicked(GLFW.GLFW_MOUSE_BUTTON_LEFT, 0, 0);
+        manager.mouseClicked(GLFW.GLFW_MOUSE_BUTTON_RIGHT, 0, 0);
+        {
+            String join = GLFWKeyHelper.getKeyDisplayString(GLFW.GLFW_KEY_A, GLFW.GLFW_KEY_RIGHT_CONTROL, GLFW.GLFW_KEY_LEFT_SHIFT);
+            boolean keyPressed = manager.isKeyPressed(join);
+            System.out.println(join);
+            System.out.println(keyPressed);
+        }
+        {
+            String join = GLFWKeyHelper.getKeyDisplayString(GLFW.GLFW_KEY_A, GLFW.GLFW_KEY_LEFT_CONTROL, GLFW.GLFW_KEY_LEFT_SHIFT);
+            boolean keyPressed = manager.isKeyPressed(join);
+            System.out.println(join);
+            System.out.println(keyPressed);
+        }
+        {
+            String join = GLFWKeyHelper.getMouseDisplayString(GLFW.GLFW_MOUSE_BUTTON_LEFT, GLFW.GLFW_MOUSE_BUTTON_RIGHT);
+            boolean keyPressed = manager.isMousePressed(join);
+            System.out.println(join);
+            System.out.println(keyPressed);
+        }
     }
 }

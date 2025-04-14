@@ -20,12 +20,13 @@ import xin.vanilla.sakura.util.StringUtils;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Data
-public class RewardOptionData implements Serializable {
+public class RewardConfig implements Serializable {
     public static final String DATE_RANGE_REGEX1 = "(\\d{4})[-/](\\d{1,2})[-/](\\d{1,2})(?:[T ](\\d{1,2}):(\\d{1,2}):(\\d{1,2}))?";
     public static final String DATE_RANGE_REGEX2 = "(\\d{4})(?:~(\\d+))?[-/](\\d{1,2})(?:~(\\d+))?[-/](\\d{1,2})(?:~(\\d+))?";
     public static final String REWARD_RULE_KEY_REGEX = "(?:(?:" + DATE_RANGE_REGEX1 + ")|(?:" + DATE_RANGE_REGEX2 + ")|(?:" + "-?\\d{4}" + "))";
@@ -149,11 +150,11 @@ public class RewardOptionData implements Serializable {
     /**
      * 兑换码奖励<p>
      * 输入正确的兑换码进行兑换，每个兑换码仅可使用一次<p>
-     * key : expiration date : rewards
+     * key : expiration date : rewards : num
      */
-    private List<KeyValue<String, KeyValue<String, RewardList>>> cdkRewards;
+    private List<KeyValue<KeyValue<String, String>, KeyValue<RewardList, AtomicInteger>>> cdkRewards;
 
-    public RewardOptionData() {
+    public RewardConfig() {
         this.baseRewards = new RewardList();
         this.continuousRewards = new LinkedHashMap<>();
         this.continuousRewardsRelation = new LinkedHashMap<>();
@@ -378,7 +379,7 @@ public class RewardOptionData implements Serializable {
     @SuppressWarnings("ConstantConditions")
     public void addDateTimeRewards(@NonNull String key, @NonNull RewardList value) {
         if (this.dateTimeRewards == null) this.dateTimeRewards = new LinkedHashMap<>();
-        if (!RewardOptionData.parseDateRange(key).isEmpty()) {
+        if (!RewardConfig.parseDateRange(key).isEmpty()) {
             if (this.dateTimeRewards.containsKey(key)) {
                 this.dateTimeRewards.get(key).addAll(value);
             } else {
@@ -386,7 +387,7 @@ public class RewardOptionData implements Serializable {
             }
             this.dateTimeRewardsRelation = new LinkedHashMap<>();
             for (String dateTimeKey : this.dateTimeRewards.keySet()) {
-                List<String> parsedDates = RewardOptionData.parseDateRange(dateTimeKey);
+                List<String> parsedDates = RewardConfig.parseDateRange(dateTimeKey);
                 for (String date : parsedDates) {
                     this.dateTimeRewardsRelation.put(date, dateTimeKey);
                 }
@@ -455,10 +456,10 @@ public class RewardOptionData implements Serializable {
     /**
      * 设置兑换码签到奖励
      */
-    public void setCdkRewards(@NonNull List<KeyValue<String, KeyValue<String, RewardList>>> cdkRewards) {
+    public void setCdkRewards(@NonNull List<KeyValue<KeyValue<String, String>, KeyValue<RewardList, AtomicInteger>>> cdkRewards) {
         this.cdkRewards = new ArrayList<>();
         cdkRewards.forEach((keyValue) -> {
-            if (StringUtils.isNotNullOrEmpty(keyValue.getKey())) {
+            if (StringUtils.isNotNullOrEmpty(keyValue.getKey().getKey())) {
                 this.addCdkReward(keyValue);
             }
         });
@@ -468,19 +469,19 @@ public class RewardOptionData implements Serializable {
      * 添加兑换码签到奖励
      */
     @SuppressWarnings("ConstantConditions")
-    public void addCdkReward(@NonNull KeyValue<String, KeyValue<String, RewardList>> keyValue) {
+    public void addCdkReward(@NonNull KeyValue<KeyValue<String, String>, KeyValue<RewardList, AtomicInteger>> keyValue) {
         if (this.cdkRewards == null) this.cdkRewards = new ArrayList<>();
-        if (StringUtils.isNotNullOrEmpty(keyValue.getKey())) {
-            if (StringUtils.isNullOrEmptyEx(keyValue.getValue().getKey())) {
+        if (StringUtils.isNotNullOrEmpty(keyValue.getKey().getKey())) {
+            if (StringUtils.isNullOrEmptyEx(keyValue.getKey().getValue())) {
                 String year = StringUtils.getString("9", String.valueOf(DateUtils.getYearPart(new Date())).length());
-                keyValue.getValue().setKey(year + "-12-31");
+                keyValue.getKey().setValue(year + "-12-31");
             }
             this.cdkRewards.add(keyValue);
         }
     }
 
-    public static RewardOptionData getDefault() {
-        return new RewardOptionData() {{
+    public static RewardConfig getDefault() {
+        return new RewardConfig() {{
             setBaseRewards(new RewardList() {{
                 add(new Reward() {{
                     setContent(new ItemRewardParser().serialize(new ItemStack(Items.APPLE, 1)));
@@ -711,11 +712,12 @@ public class RewardOptionData implements Serializable {
         json.add("randomRewards", randomRewardsJson);
 
         JsonArray cdkRewardsArray = new JsonArray();
-        for (KeyValue<String, KeyValue<String, RewardList>> entry : cdkRewards) {
+        for (KeyValue<KeyValue<String, String>, KeyValue<RewardList, AtomicInteger>> entry : cdkRewards) {
             JsonObject keyValueJson = new JsonObject();
-            keyValueJson.addProperty("key", entry.getKey());
-            keyValueJson.addProperty("date", entry.getValue().getKey());
-            keyValueJson.add("value", entry.getValue().getValue().toJsonArray());
+            keyValueJson.addProperty("key", entry.getKey().getKey());
+            keyValueJson.addProperty("date", entry.getKey().getValue());
+            keyValueJson.addProperty("num", entry.getValue().getValue().get());
+            keyValueJson.add("value", entry.getValue().getKey().toJsonArray());
             cdkRewardsArray.add(keyValueJson);
         }
         json.add("cdkRewards", cdkRewardsArray);

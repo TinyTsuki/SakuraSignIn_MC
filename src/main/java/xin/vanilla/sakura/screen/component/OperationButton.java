@@ -29,14 +29,12 @@ public class OperationButton {
      */
     public static class RenderContext {
         public final MatrixStack matrixStack;
-        public final double mouseX;
-        public final double mouseY;
+        public final KeyEventManager keyManager;
         public final OperationButton button;
 
-        public RenderContext(MatrixStack matrixStack, double mouseX, double mouseY, OperationButton button) {
+        public RenderContext(MatrixStack matrixStack, KeyEventManager keyManager, OperationButton button) {
             this.matrixStack = matrixStack;
-            this.mouseX = mouseX;
-            this.mouseY = mouseY;
+            this.keyManager = keyManager;
             this.button = button;
         }
     }
@@ -123,7 +121,7 @@ public class OperationButton {
     /**
      * 提示文字是否仅按下按键时显示
      */
-    private int keyCode = -1, modifiers = -1;
+    private String keyNames;
 
     public OperationButton(int operation, Consumer<RenderContext> customRenderFunction) {
         this.operation = operation;
@@ -389,8 +387,8 @@ public class OperationButton {
     /**
      * 绘制按钮
      */
-    public void render(MatrixStack matrixStack, double mouseX, double mouseY) {
-        this.render(matrixStack, mouseX, mouseY, false, -1, -1);
+    public void render(MatrixStack matrixStack, KeyEventManager keyManager) {
+        this.render(matrixStack, false, keyManager);
     }
 
     /**
@@ -398,10 +396,10 @@ public class OperationButton {
      *
      * @param renderPopup 是否绘制弹出层提示
      */
-    public void render(MatrixStack matrixStack, double mouseX, double mouseY, boolean renderPopup, int keyCode, int modifiers) {
+    public void render(MatrixStack matrixStack, boolean renderPopup, KeyEventManager keyManager) {
         if (customRenderFunction != null) {
             // 使用自定义渲染逻辑
-            customRenderFunction.accept(new RenderContext(matrixStack, mouseX, mouseY, this));
+            customRenderFunction.accept(new RenderContext(matrixStack, keyManager, this));
         } else {
             TextureCoordinate textureCoordinate = new TextureCoordinate().setTotalWidth(this.textureWidth).setTotalHeight(this.textureHeight);
             Coordinate coordinate = new Coordinate().setX(this.x).setY(this.y).setWidth(this.width).setHeight(this.height)
@@ -424,41 +422,27 @@ public class OperationButton {
             }
         }
         if (renderPopup) {
-            this.renderPopup(matrixStack, null, mouseX, mouseY, keyCode, modifiers);
+            this.renderPopup(matrixStack, null, keyManager);
         }
     }
 
     /**
      * 绘制弹出层
      */
-    public void renderPopup(MatrixStack matrixStack, double mouseX, double mouseY) {
-        this.renderPopup(matrixStack, null, mouseX, mouseY, -1, -1);
+    public void renderPopup(MatrixStack matrixStack, KeyEventManager keyManager) {
+        this.renderPopup(matrixStack, null, keyManager);
     }
 
     /**
      * 绘制弹出层
      */
-    public void renderPopup(MatrixStack matrixStack, FontRenderer font, double mouseX, double mouseY) {
-        this.renderPopup(matrixStack, font, mouseX, mouseY, -1, -1);
-    }
-
-    /**
-     * 绘制弹出层
-     */
-    public void renderPopup(MatrixStack matrixStack, double mouseX, double mouseY, int keyCode, int modifiers) {
-        this.renderPopup(matrixStack, null, mouseX, mouseY, keyCode, modifiers);
-    }
-
-    /**
-     * 绘制弹出层
-     */
-    public void renderPopup(MatrixStack matrixStack, FontRenderer font, double mouseX, double mouseY, int keyCode, int modifiers) {
+    public void renderPopup(MatrixStack matrixStack, FontRenderer font, KeyEventManager keyManager) {
         // 绘制提示
-        if (this.keyCode == -1 || (this.keyCode == keyCode && this.modifiers == modifiers)) {
+        if (StringUtils.isNullOrEmptyEx(this.keyNames) || keyManager.isKeyPressed(this.keyNames)) {
             if (this.isHovered() && tooltip != null && StringUtils.isNotNullOrEmpty(tooltip.getContent())) {
                 if (Minecraft.getInstance().screen != null) {
                     if (font == null) font = Minecraft.getInstance().font;
-                    AbstractGuiUtils.drawPopupMessage(tooltip.setMatrixStack(matrixStack).setFont(font), (int) mouseX, (int) mouseY, Minecraft.getInstance().screen.width, Minecraft.getInstance().screen.height);
+                    AbstractGuiUtils.drawPopupMessage(tooltip.setMatrixStack(matrixStack).setFont(font), (int) keyManager.getMouseX(), (int) keyManager.getMouseY(), Minecraft.getInstance().screen.width, Minecraft.getInstance().screen.height);
                 }
             }
         }

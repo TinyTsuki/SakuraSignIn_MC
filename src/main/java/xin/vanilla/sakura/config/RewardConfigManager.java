@@ -35,11 +35,12 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class RewardOptionDataManager {
+public class RewardConfigManager {
     public static final Gson GSON = new GsonBuilder().enableComplexMapKeySerialization().create();
 
     public static final String FILE_NAME = "reward_option_data.json";
@@ -49,7 +50,7 @@ public class RewardOptionDataManager {
     @Getter
     @Setter
     @NonNull
-    private static RewardOptionData rewardOptionData = new RewardOptionData();
+    private static RewardConfig rewardConfig = new RewardConfig();
     @Getter
     @Setter
     private static boolean rewardOptionDataChanged = true;
@@ -59,7 +60,7 @@ public class RewardOptionDataManager {
      */
     private static void replaceWithSortedMap(LinkedHashMap<String, RewardList> map) {
         LinkedHashMap<String, RewardList> sortedMap = map.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey(RewardOptionDataManager::keyComparator))
+                .sorted(Map.Entry.comparingByKey(RewardConfigManager::keyComparator))
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
                         Map.Entry::getValue,
@@ -103,21 +104,21 @@ public class RewardOptionDataManager {
      */
     public static void loadRewardOption() {
         {
-            File file = new File(RewardOptionDataManager.getConfigDirectory().toFile(), FILE_NAME);
+            File file = new File(RewardConfigManager.getConfigDirectory().toFile(), FILE_NAME);
             if (file.exists()) {
                 try {
-                    rewardOptionData = RewardOptionDataManager.deserializeRewardOption(new String(Files.readAllBytes(Paths.get(file.getPath()))));
+                    rewardConfig = RewardConfigManager.deserializeRewardOption(new String(Files.readAllBytes(Paths.get(file.getPath()))));
                 } catch (IOException e) {
                     LOGGER.error("Error loading sign-in data: ", e);
                 }
             } else {
                 // 如果文件不存在，初始化默认值
-                rewardOptionData = RewardOptionData.getDefault();
-                RewardOptionDataManager.saveRewardOption();
+                rewardConfig = RewardConfig.getDefault();
+                RewardConfigManager.saveRewardOption();
             }
         }
         {
-            File undoHistoryFile = new File(RewardOptionDataManager.getConfigDirectory().toFile(), "history/undo_history.json");
+            File undoHistoryFile = new File(RewardConfigManager.getConfigDirectory().toFile(), "history/undo_history.json");
             if (undoHistoryFile.exists()) {
                 try {
                     deserializeHistoryFile(undoHistoryFile, undoList);
@@ -125,7 +126,7 @@ public class RewardOptionDataManager {
                     LOGGER.error("Error loading undo history: ", e);
                 }
             }
-            File redoHistoryFile = new File(RewardOptionDataManager.getConfigDirectory().toFile(), "history/redo_history.json");
+            File redoHistoryFile = new File(RewardConfigManager.getConfigDirectory().toFile(), "history/redo_history.json");
             if (redoHistoryFile.exists()) {
                 try {
                     deserializeHistoryFile(redoHistoryFile, redoList);
@@ -170,7 +171,7 @@ public class RewardOptionDataManager {
      */
     public static void saveRewardOption() {
         {
-            File dir = RewardOptionDataManager.getConfigDirectory().toFile();
+            File dir = RewardConfigManager.getConfigDirectory().toFile();
             if (!dir.exists()) {
                 dir.mkdirs();
             }
@@ -178,13 +179,13 @@ public class RewardOptionDataManager {
             try (FileWriter writer = new FileWriter(file)) {
                 // 格式化输出
                 Gson gson = new GsonBuilder().setPrettyPrinting().enableComplexMapKeySerialization().create();
-                writer.write(gson.toJson(rewardOptionData.toJsonObject()));
+                writer.write(gson.toJson(rewardConfig.toJsonObject()));
             } catch (IOException e) {
                 LOGGER.error("Error saving sign-in data: ", e);
             }
         }
         {
-            File dir = new File(RewardOptionDataManager.getConfigDirectory().toFile(), "history");
+            File dir = new File(RewardConfigManager.getConfigDirectory().toFile(), "history");
             if (!dir.exists()) {
                 dir.mkdirs();
             }
@@ -219,7 +220,7 @@ public class RewardOptionDataManager {
      * 数据修改前调用
      */
     public static void addUndoRewardOption(ERewardRule rule) {
-        File dir = new File(RewardOptionDataManager.getConfigDirectory().toFile(), "history/undo/" + rule.name().toLowerCase());
+        File dir = new File(RewardConfigManager.getConfigDirectory().toFile(), "history/undo/" + rule.name().toLowerCase());
         if (!dir.exists()) {
             dir.mkdirs();
         }
@@ -241,7 +242,7 @@ public class RewardOptionDataManager {
      * Ctrl Z 时调用
      */
     public static Map<String, RewardList> getUnDoRewardOption(ERewardRule rule) {
-        File dir = new File(RewardOptionDataManager.getConfigDirectory().toFile(), "history/undo/" + rule.name().toLowerCase());
+        File dir = new File(RewardConfigManager.getConfigDirectory().toFile(), "history/undo/" + rule.name().toLowerCase());
         if (!dir.exists()) {
             dir.mkdirs();
         }
@@ -265,7 +266,7 @@ public class RewardOptionDataManager {
      * 撤销时修改数据前调用
      */
     public static void addRedoRewardOption(ERewardRule rule) {
-        File dir = new File(RewardOptionDataManager.getConfigDirectory().toFile(), "history/redo/" + rule.name().toLowerCase());
+        File dir = new File(RewardConfigManager.getConfigDirectory().toFile(), "history/redo/" + rule.name().toLowerCase());
         if (!dir.exists()) {
             dir.mkdirs();
         }
@@ -287,7 +288,7 @@ public class RewardOptionDataManager {
      * Ctrl Shift Z 时调用
      */
     public static Map<String, RewardList> getReDoRewardOption(ERewardRule rule) {
-        File dir = new File(RewardOptionDataManager.getConfigDirectory().toFile(), "history/redo/" + rule.name().toLowerCase());
+        File dir = new File(RewardConfigManager.getConfigDirectory().toFile(), "history/redo/" + rule.name().toLowerCase());
         if (!dir.exists()) {
             dir.mkdirs();
         }
@@ -309,7 +310,7 @@ public class RewardOptionDataManager {
      * 备份 JSON 数据
      */
     public static void backupRewardOption() {
-        RewardOptionDataManager.backupRewardOption(true);
+        RewardConfigManager.backupRewardOption(true);
     }
 
     /**
@@ -319,10 +320,10 @@ public class RewardOptionDataManager {
         // 备份文件
         long dateTimeInt = DateUtils.toDateTimeInt(new Date());
         File sourceFolder = FMLPaths.CONFIGDIR.get().resolve(SakuraSignIn.MODID).toFile();
-        File sourceFile = new File(sourceFolder, RewardOptionDataManager.FILE_NAME);
+        File sourceFile = new File(sourceFolder, RewardConfigManager.FILE_NAME);
         if (sourceFile.exists()) {
             try {
-                File target = new File(new File(sourceFolder, "backups"), String.format("%s_%s.%s", RewardOptionDataManager.FILE_NAME, dateTimeInt, "old"));
+                File target = new File(new File(sourceFolder, "backups"), String.format("%s_%s.%s", RewardConfigManager.FILE_NAME, dateTimeInt, "old"));
                 if (target.getParent() != null && !Files.exists(target.getParentFile().toPath())) {
                     Files.createDirectories(target.getParentFile().toPath());
                 }
@@ -332,9 +333,9 @@ public class RewardOptionDataManager {
             }
             // 备份最新编辑的文件
             if (save) {
-                RewardOptionDataManager.saveRewardOption();
+                RewardConfigManager.saveRewardOption();
                 try {
-                    File target = new File(new File(sourceFolder, "backups"), String.format("%s_%s.%s", RewardOptionDataManager.FILE_NAME, dateTimeInt, "bak"));
+                    File target = new File(new File(sourceFolder, "backups"), String.format("%s_%s.%s", RewardConfigManager.FILE_NAME, dateTimeInt, "bak"));
                     if (target.getParent() != null && !Files.exists(target.getParentFile().toPath())) {
                         Files.createDirectories(target.getParentFile().toPath());
                     }
@@ -350,7 +351,7 @@ public class RewardOptionDataManager {
 
     private static void deleteOldFile(File dir, int num) {
         try (Stream<Path> pathStream = Files.walk(dir.toPath())) {
-            pathStream.filter(path -> Files.isRegularFile(path) && path.getFileName().toString().startsWith(RewardOptionDataManager.FILE_NAME))
+            pathStream.filter(path -> Files.isRegularFile(path) && path.getFileName().toString().startsWith(RewardConfigManager.FILE_NAME))
                     .sorted((path1, path2) -> {
                         try {
                             return Files.readAttributes(path2, BasicFileAttributes.class).creationTime()
@@ -405,7 +406,7 @@ public class RewardOptionDataManager {
             }
             break;
             case DATE_TIME_REWARD:
-                result = !RewardOptionData.parseDateRange(keyName).isEmpty();
+                result = !RewardConfig.parseDateRange(keyName).isEmpty();
                 break;
             case CUMULATIVE_REWARD: {
                 int anInt = StringUtils.toInt(keyName);
@@ -438,42 +439,42 @@ public class RewardOptionDataManager {
         RewardList result;
         switch (rule) {
             case BASE_REWARD:
-                result = rewardOptionData.getBaseRewards();
+                result = rewardConfig.getBaseRewards();
                 break;
             case CONTINUOUS_REWARD:
-                result = rewardOptionData.getContinuousRewards().get(keyName);
+                result = rewardConfig.getContinuousRewards().get(keyName);
                 break;
             case CYCLE_REWARD:
-                result = rewardOptionData.getCycleRewards().get(keyName);
+                result = rewardConfig.getCycleRewards().get(keyName);
                 break;
             case YEAR_REWARD:
-                result = rewardOptionData.getYearRewards().get(keyName);
+                result = rewardConfig.getYearRewards().get(keyName);
                 break;
             case MONTH_REWARD:
-                result = rewardOptionData.getMonthRewards().get(keyName);
+                result = rewardConfig.getMonthRewards().get(keyName);
                 break;
             case WEEK_REWARD:
-                result = rewardOptionData.getWeekRewards().get(keyName);
+                result = rewardConfig.getWeekRewards().get(keyName);
                 break;
             case DATE_TIME_REWARD:
-                result = rewardOptionData.getDateTimeRewards().get(keyName);
+                result = rewardConfig.getDateTimeRewards().get(keyName);
                 break;
             case CUMULATIVE_REWARD:
-                result = rewardOptionData.getCumulativeRewards().get(keyName);
+                result = rewardConfig.getCumulativeRewards().get(keyName);
                 break;
             case RANDOM_REWARD:
-                result = rewardOptionData.getRandomRewards().get(keyName);
+                result = rewardConfig.getRandomRewards().get(keyName);
                 break;
             case CDK_REWARD:
                 String[] split = keyName.replaceAll("\\|", ",").split(",");
-                int key = rewardOptionData.getCdkRewards().size();
-                if (split.length == 3) {
+                int key = rewardConfig.getCdkRewards().size();
+                if (split.length == 3 || split.length == 4) {
                     key = StringUtils.toInt(split[2]);
                 }
-                if (rewardOptionData.getCdkRewards().size() <= key || key < 0) {
+                if (rewardConfig.getCdkRewards().size() <= key || key < 0) {
                     result = null;
                 } else {
-                    result = rewardOptionData.getCdkRewards().get(key).getValue().getValue();
+                    result = rewardConfig.getCdkRewards().get(key).getValue().getKey();
                 }
                 break;
             default:
@@ -492,39 +493,39 @@ public class RewardOptionDataManager {
     public static void addKeyName(@NonNull ERewardRule rule, @NonNull String keyName, @NonNull RewardList rewardList) {
         switch (rule) {
             case BASE_REWARD:
-                rewardOptionData.getBaseRewards().addAll(rewardList);
+                rewardConfig.getBaseRewards().addAll(rewardList);
                 break;
             case CONTINUOUS_REWARD:
-                rewardOptionData.addContinuousRewards(keyName, rewardList);
+                rewardConfig.addContinuousRewards(keyName, rewardList);
                 break;
             case CYCLE_REWARD:
-                rewardOptionData.addCycleRewards(keyName, rewardList);
+                rewardConfig.addCycleRewards(keyName, rewardList);
                 break;
             case YEAR_REWARD:
-                rewardOptionData.addYearRewards(keyName, rewardList);
+                rewardConfig.addYearRewards(keyName, rewardList);
                 break;
             case MONTH_REWARD:
-                rewardOptionData.addMonthRewards(keyName, rewardList);
+                rewardConfig.addMonthRewards(keyName, rewardList);
                 break;
             case WEEK_REWARD:
-                rewardOptionData.addWeekRewards(keyName, rewardList);
+                rewardConfig.addWeekRewards(keyName, rewardList);
                 break;
             case DATE_TIME_REWARD:
-                rewardOptionData.addDateTimeRewards(keyName, rewardList);
+                rewardConfig.addDateTimeRewards(keyName, rewardList);
                 break;
             case CUMULATIVE_REWARD:
-                rewardOptionData.addCumulativeReward(keyName, rewardList);
+                rewardConfig.addCumulativeReward(keyName, rewardList);
                 break;
             case RANDOM_REWARD:
-                rewardOptionData.addRandomReward(keyName, rewardList);
+                rewardConfig.addRandomReward(keyName, rewardList);
                 break;
             case CDK_REWARD:
                 String date = getCdkRewardDate(keyName);
                 int index = getCdkRewardIndex(keyName);
-                if (rewardOptionData.getCdkRewards().size() <= index || index < 0) {
-                    rewardOptionData.addCdkReward(new KeyValue<>(getCdkRewardKey(keyName), new KeyValue<>(date, rewardList)));
+                if (rewardConfig.getCdkRewards().size() <= index || index < 0) {
+                    rewardConfig.addCdkReward(new KeyValue<>(new KeyValue<>(getCdkRewardKey(keyName), date), new KeyValue<>(rewardList, new AtomicInteger(getCdkRewardNum(keyName)))));
                 } else {
-                    rewardOptionData.getCdkRewards().get(index).getValue().getValue().addAll(rewardList);
+                    rewardConfig.getCdkRewards().get(index).getValue().getKey().addAll(rewardList);
                 }
                 break;
             default:
@@ -544,57 +545,58 @@ public class RewardOptionDataManager {
             case BASE_REWARD:
                 throw new IllegalArgumentException("Base reward has no key name");
             case CONTINUOUS_REWARD: {
-                RewardList remove = rewardOptionData.getContinuousRewards().remove(oldKeyName);
-                rewardOptionData.addContinuousRewards(newKeyName, remove);
+                RewardList remove = rewardConfig.getContinuousRewards().remove(oldKeyName);
+                rewardConfig.addContinuousRewards(newKeyName, remove);
             }
             break;
             case CYCLE_REWARD: {
-                RewardList remove = rewardOptionData.getCycleRewards().remove(oldKeyName);
-                rewardOptionData.addCycleRewards(newKeyName, remove);
+                RewardList remove = rewardConfig.getCycleRewards().remove(oldKeyName);
+                rewardConfig.addCycleRewards(newKeyName, remove);
             }
             break;
             case YEAR_REWARD: {
-                RewardList remove = rewardOptionData.getYearRewards().remove(oldKeyName);
-                rewardOptionData.addYearRewards(newKeyName, remove);
+                RewardList remove = rewardConfig.getYearRewards().remove(oldKeyName);
+                rewardConfig.addYearRewards(newKeyName, remove);
             }
             break;
             case MONTH_REWARD: {
-                RewardList remove = rewardOptionData.getMonthRewards().remove(oldKeyName);
-                rewardOptionData.addMonthRewards(newKeyName, remove);
+                RewardList remove = rewardConfig.getMonthRewards().remove(oldKeyName);
+                rewardConfig.addMonthRewards(newKeyName, remove);
             }
             break;
             case WEEK_REWARD: {
-                RewardList remove = rewardOptionData.getWeekRewards().remove(oldKeyName);
-                rewardOptionData.addWeekRewards(newKeyName, remove);
+                RewardList remove = rewardConfig.getWeekRewards().remove(oldKeyName);
+                rewardConfig.addWeekRewards(newKeyName, remove);
             }
             break;
             case DATE_TIME_REWARD: {
-                RewardList remove = rewardOptionData.getDateTimeRewards().remove(oldKeyName);
-                rewardOptionData.addDateTimeRewards(newKeyName, remove);
+                RewardList remove = rewardConfig.getDateTimeRewards().remove(oldKeyName);
+                rewardConfig.addDateTimeRewards(newKeyName, remove);
             }
             break;
             case CUMULATIVE_REWARD: {
-                RewardList remove = rewardOptionData.getCumulativeRewards().remove(oldKeyName);
-                rewardOptionData.addCumulativeReward(newKeyName, remove);
+                RewardList remove = rewardConfig.getCumulativeRewards().remove(oldKeyName);
+                rewardConfig.addCumulativeReward(newKeyName, remove);
             }
             break;
             case RANDOM_REWARD: {
-                RewardList remove = rewardOptionData.getRandomRewards().remove(oldKeyName);
-                rewardOptionData.addRandomReward(newKeyName, remove);
+                RewardList remove = rewardConfig.getRandomRewards().remove(oldKeyName);
+                rewardConfig.addRandomReward(newKeyName, remove);
             }
             break;
             case CDK_REWARD: {
                 String[] oldSplit = oldKeyName.replaceAll("\\|", ",").split(",");
-                int oldIndex = rewardOptionData.getCdkRewards().size();
-                if (oldSplit.length == 3) {
+                int oldIndex = rewardConfig.getCdkRewards().size();
+                if (oldSplit.length == 3 || oldSplit.length == 4) {
                     oldIndex = StringUtils.toInt(oldSplit[2]);
                 }
-                if (rewardOptionData.getCdkRewards().size() > oldIndex) {
+                if (rewardConfig.getCdkRewards().size() > oldIndex) {
                     String[] split = newKeyName.replaceAll("\\|", ",").split(",");
-                    KeyValue<String, KeyValue<String, RewardList>> remove = rewardOptionData.getCdkRewards().remove(oldIndex);
-                    remove.setKey(split[0]);
-                    remove.getValue().setKey(split[1]);
-                    rewardOptionData.addCdkReward(remove);
+                    KeyValue<KeyValue<String, String>, KeyValue<RewardList, AtomicInteger>> remove = rewardConfig.getCdkRewards().remove(oldIndex);
+                    remove.getKey().setKey(split[0]);
+                    remove.getKey().setValue(split[1]);
+                    remove.getValue().getValue().set(StringUtils.toInt(split[3], 1));
+                    rewardConfig.addCdkReward(remove);
                 }
             }
             break;
@@ -612,40 +614,40 @@ public class RewardOptionDataManager {
     public static void clearKey(@NonNull ERewardRule rule, @NonNull String keyName) {
         switch (rule) {
             case BASE_REWARD:
-                rewardOptionData.getBaseRewards().clear();
+                rewardConfig.getBaseRewards().clear();
                 break;
             case CONTINUOUS_REWARD:
-                rewardOptionData.getContinuousRewards().get(keyName).clear();
+                rewardConfig.getContinuousRewards().get(keyName).clear();
                 break;
             case CYCLE_REWARD:
-                rewardOptionData.getCycleRewards().get(keyName).clear();
+                rewardConfig.getCycleRewards().get(keyName).clear();
                 break;
             case YEAR_REWARD:
-                rewardOptionData.getYearRewards().get(keyName).clear();
+                rewardConfig.getYearRewards().get(keyName).clear();
                 break;
             case MONTH_REWARD:
-                rewardOptionData.getMonthRewards().get(keyName).clear();
+                rewardConfig.getMonthRewards().get(keyName).clear();
                 break;
             case WEEK_REWARD:
-                rewardOptionData.getWeekRewards().get(keyName).clear();
+                rewardConfig.getWeekRewards().get(keyName).clear();
                 break;
             case DATE_TIME_REWARD:
-                rewardOptionData.getDateTimeRewards().get(keyName).clear();
+                rewardConfig.getDateTimeRewards().get(keyName).clear();
                 break;
             case CUMULATIVE_REWARD:
-                rewardOptionData.getCumulativeRewards().get(keyName).clear();
+                rewardConfig.getCumulativeRewards().get(keyName).clear();
                 break;
             case RANDOM_REWARD:
-                rewardOptionData.getRandomRewards().get(keyName).clear();
+                rewardConfig.getRandomRewards().get(keyName).clear();
                 break;
             case CDK_REWARD:
                 String[] split = keyName.replaceAll("\\|", ",").split(",");
-                int index = rewardOptionData.getCdkRewards().size();
-                if (split.length == 3) {
+                int index = rewardConfig.getCdkRewards().size();
+                if (split.length == 3 || split.length == 4) {
                     index = StringUtils.toInt(split[2]);
                 }
-                if (rewardOptionData.getCdkRewards().size() > index) {
-                    rewardOptionData.getCdkRewards().get(index).getValue().getValue().clear();
+                if (rewardConfig.getCdkRewards().size() > index) {
+                    rewardConfig.getCdkRewards().get(index).getValue().getKey().clear();
                 }
                 break;
             default:
@@ -664,37 +666,37 @@ public class RewardOptionDataManager {
             case BASE_REWARD:
                 throw new IllegalArgumentException("Base reward has no key name");
             case CONTINUOUS_REWARD:
-                rewardOptionData.getContinuousRewards().remove(keyName);
+                rewardConfig.getContinuousRewards().remove(keyName);
                 break;
             case CYCLE_REWARD:
-                rewardOptionData.getCycleRewards().remove(keyName);
+                rewardConfig.getCycleRewards().remove(keyName);
                 break;
             case YEAR_REWARD:
-                rewardOptionData.getYearRewards().remove(keyName);
+                rewardConfig.getYearRewards().remove(keyName);
                 break;
             case MONTH_REWARD:
-                rewardOptionData.getMonthRewards().remove(keyName);
+                rewardConfig.getMonthRewards().remove(keyName);
                 break;
             case WEEK_REWARD:
-                rewardOptionData.getWeekRewards().remove(keyName);
+                rewardConfig.getWeekRewards().remove(keyName);
                 break;
             case DATE_TIME_REWARD:
-                rewardOptionData.getDateTimeRewards().remove(keyName);
+                rewardConfig.getDateTimeRewards().remove(keyName);
                 break;
             case CUMULATIVE_REWARD:
-                rewardOptionData.getCumulativeRewards().remove(keyName);
+                rewardConfig.getCumulativeRewards().remove(keyName);
                 break;
             case RANDOM_REWARD:
-                rewardOptionData.getRandomRewards().remove(keyName);
+                rewardConfig.getRandomRewards().remove(keyName);
                 break;
             case CDK_REWARD:
                 String[] split = keyName.replaceAll("\\|", ",").split(",");
-                int index = rewardOptionData.getCdkRewards().size();
-                if (split.length == 3) {
+                int index = rewardConfig.getCdkRewards().size();
+                if (split.length == 3 || split.length == 4) {
                     index = StringUtils.toInt(split[2]);
                 }
-                if (rewardOptionData.getCdkRewards().size() > index) {
-                    rewardOptionData.getCdkRewards().remove(index);
+                if (rewardConfig.getCdkRewards().size() > index) {
+                    rewardConfig.getCdkRewards().remove(index);
                 }
                 break;
             default:
@@ -715,42 +717,42 @@ public class RewardOptionDataManager {
         try {
             switch (rule) {
                 case BASE_REWARD:
-                    result = rewardOptionData.getBaseRewards().get(index);
+                    result = rewardConfig.getBaseRewards().get(index);
                     break;
                 case CONTINUOUS_REWARD:
-                    result = rewardOptionData.getContinuousRewards().get(keyName).get(index);
+                    result = rewardConfig.getContinuousRewards().get(keyName).get(index);
                     break;
                 case CYCLE_REWARD:
-                    result = rewardOptionData.getCycleRewards().get(keyName).get(index);
+                    result = rewardConfig.getCycleRewards().get(keyName).get(index);
                     break;
                 case YEAR_REWARD:
-                    result = rewardOptionData.getYearRewards().get(keyName).get(index);
+                    result = rewardConfig.getYearRewards().get(keyName).get(index);
                     break;
                 case MONTH_REWARD:
-                    result = rewardOptionData.getMonthRewards().get(keyName).get(index);
+                    result = rewardConfig.getMonthRewards().get(keyName).get(index);
                     break;
                 case WEEK_REWARD:
-                    result = rewardOptionData.getWeekRewards().get(keyName).get(index);
+                    result = rewardConfig.getWeekRewards().get(keyName).get(index);
                     break;
                 case DATE_TIME_REWARD:
-                    result = rewardOptionData.getDateTimeRewards().get(keyName).get(index);
+                    result = rewardConfig.getDateTimeRewards().get(keyName).get(index);
                     break;
                 case CUMULATIVE_REWARD:
-                    result = rewardOptionData.getCumulativeRewards().get(keyName).get(index);
+                    result = rewardConfig.getCumulativeRewards().get(keyName).get(index);
                     break;
                 case RANDOM_REWARD:
-                    result = rewardOptionData.getRandomRewards().get(keyName).get(index);
+                    result = rewardConfig.getRandomRewards().get(keyName).get(index);
                     break;
                 case CDK_REWARD:
                     String[] split = keyName.replaceAll("\\|", ",").split(",");
-                    int key = rewardOptionData.getCdkRewards().size();
-                    if (split.length == 3) {
+                    int key = rewardConfig.getCdkRewards().size();
+                    if (split.length == 3 || split.length == 4) {
                         key = StringUtils.toInt(split[2]);
                     }
-                    if (rewardOptionData.getCdkRewards().size() <= key || key < 0) {
+                    if (rewardConfig.getCdkRewards().size() <= key || key < 0) {
                         result = null;
                     } else {
-                        result = rewardOptionData.getCdkRewards().get(key).getValue().getValue().get(index);
+                        result = rewardConfig.getCdkRewards().get(key).getValue().getKey().get(index);
                     }
                     break;
                 default:
@@ -773,70 +775,74 @@ public class RewardOptionDataManager {
         if (StringUtils.isNullOrEmpty(keyName)) return;
         switch (rule) {
             case BASE_REWARD:
-                rewardOptionData.getBaseRewards().add(reward);
+                rewardConfig.getBaseRewards().add(reward);
                 break;
             case CONTINUOUS_REWARD:
-                if (!rewardOptionData.getContinuousRewards().containsKey(keyName)) {
-                    rewardOptionData.getContinuousRewards().put(keyName, new RewardList());
+                if (!rewardConfig.getContinuousRewards().containsKey(keyName)) {
+                    rewardConfig.getContinuousRewards().put(keyName, new RewardList());
                 }
-                rewardOptionData.getContinuousRewards().get(keyName).add(reward);
+                rewardConfig.getContinuousRewards().get(keyName).add(reward);
                 break;
             case CYCLE_REWARD:
-                if (!rewardOptionData.getCycleRewards().containsKey(keyName)) {
-                    rewardOptionData.getCycleRewards().put(keyName, new RewardList());
+                if (!rewardConfig.getCycleRewards().containsKey(keyName)) {
+                    rewardConfig.getCycleRewards().put(keyName, new RewardList());
                 }
-                rewardOptionData.getCycleRewards().get(keyName).add(reward);
+                rewardConfig.getCycleRewards().get(keyName).add(reward);
                 break;
             case YEAR_REWARD:
-                if (!rewardOptionData.getYearRewards().containsKey(keyName)) {
-                    rewardOptionData.getYearRewards().put(keyName, new RewardList());
+                if (!rewardConfig.getYearRewards().containsKey(keyName)) {
+                    rewardConfig.getYearRewards().put(keyName, new RewardList());
                 }
-                rewardOptionData.getYearRewards().get(keyName).add(reward);
+                rewardConfig.getYearRewards().get(keyName).add(reward);
                 break;
             case MONTH_REWARD:
-                if (!rewardOptionData.getMonthRewards().containsKey(keyName)) {
-                    rewardOptionData.getMonthRewards().put(keyName, new RewardList());
+                if (!rewardConfig.getMonthRewards().containsKey(keyName)) {
+                    rewardConfig.getMonthRewards().put(keyName, new RewardList());
                 }
-                rewardOptionData.getMonthRewards().get(keyName).add(reward);
+                rewardConfig.getMonthRewards().get(keyName).add(reward);
                 break;
             case WEEK_REWARD:
-                if (!rewardOptionData.getWeekRewards().containsKey(keyName)) {
-                    rewardOptionData.getWeekRewards().put(keyName, new RewardList());
+                if (!rewardConfig.getWeekRewards().containsKey(keyName)) {
+                    rewardConfig.getWeekRewards().put(keyName, new RewardList());
                 }
-                rewardOptionData.getWeekRewards().get(keyName).add(reward);
+                rewardConfig.getWeekRewards().get(keyName).add(reward);
                 break;
             case DATE_TIME_REWARD:
-                if (!rewardOptionData.getDateTimeRewards().containsKey(keyName)) {
-                    rewardOptionData.getDateTimeRewards().put(keyName, new RewardList());
+                if (!rewardConfig.getDateTimeRewards().containsKey(keyName)) {
+                    rewardConfig.getDateTimeRewards().put(keyName, new RewardList());
                 }
-                rewardOptionData.getDateTimeRewards().get(keyName).add(reward);
+                rewardConfig.getDateTimeRewards().get(keyName).add(reward);
                 break;
             case CUMULATIVE_REWARD:
-                if (!rewardOptionData.getCumulativeRewards().containsKey(keyName)) {
-                    rewardOptionData.getCumulativeRewards().put(keyName, new RewardList());
+                if (!rewardConfig.getCumulativeRewards().containsKey(keyName)) {
+                    rewardConfig.getCumulativeRewards().put(keyName, new RewardList());
                 }
-                rewardOptionData.getCumulativeRewards().get(keyName).add(reward);
+                rewardConfig.getCumulativeRewards().get(keyName).add(reward);
                 break;
             case RANDOM_REWARD:
-                if (!rewardOptionData.getRandomRewards().containsKey(keyName)) {
-                    rewardOptionData.getRandomRewards().put(keyName, new RewardList());
+                if (!rewardConfig.getRandomRewards().containsKey(keyName)) {
+                    rewardConfig.getRandomRewards().put(keyName, new RewardList());
                 }
-                rewardOptionData.getRandomRewards().get(keyName).add(reward);
+                rewardConfig.getRandomRewards().get(keyName).add(reward);
                 break;
             case CDK_REWARD:
                 String[] split = keyName.replaceAll("\\|", ",").split(",");
                 String date = "";
-                int key = rewardOptionData.getCdkRewards().size();
-                if (split.length == 3) {
+                int key = rewardConfig.getCdkRewards().size();
+                int num = 1;
+                if (split.length == 3 || split.length == 4) {
                     date = split[1];
                     key = StringUtils.toInt(split[2]);
+                    if (split.length == 4) {
+                        num = StringUtils.toInt(split[3], 1);
+                    }
                 }
-                if (rewardOptionData.getCdkRewards().size() <= key || key < 0) {
-                    rewardOptionData.getCdkRewards().add(new KeyValue<>(split[0], new KeyValue<>(date, new RewardList() {{
+                if (rewardConfig.getCdkRewards().size() <= key || key < 0) {
+                    rewardConfig.getCdkRewards().add(new KeyValue<>(new KeyValue<>(split[0], date), new KeyValue<>(new RewardList() {{
                         add(reward);
-                    }})));
+                    }}, new AtomicInteger(num))));
                 } else {
-                    rewardOptionData.getCdkRewards().get(key).getValue().getValue().add(reward);
+                    rewardConfig.getCdkRewards().get(key).getValue().getKey().add(reward);
                 }
                 break;
             default:
@@ -856,84 +862,88 @@ public class RewardOptionDataManager {
         try {
             switch (rule) {
                 case BASE_REWARD:
-                    rewardOptionData.getBaseRewards().set(index, reward);
+                    rewardConfig.getBaseRewards().set(index, reward);
                     break;
                 case CONTINUOUS_REWARD:
-                    if (!rewardOptionData.getContinuousRewards().containsKey(keyName)) {
-                        rewardOptionData.getContinuousRewards().put(keyName, new RewardList() {{
+                    if (!rewardConfig.getContinuousRewards().containsKey(keyName)) {
+                        rewardConfig.getContinuousRewards().put(keyName, new RewardList() {{
                             add(reward);
                         }});
                     }
-                    rewardOptionData.getContinuousRewards().get(keyName).set(index, reward);
+                    rewardConfig.getContinuousRewards().get(keyName).set(index, reward);
                     break;
                 case CYCLE_REWARD:
-                    if (!rewardOptionData.getCycleRewards().containsKey(keyName)) {
-                        rewardOptionData.getCycleRewards().put(keyName, new RewardList() {{
+                    if (!rewardConfig.getCycleRewards().containsKey(keyName)) {
+                        rewardConfig.getCycleRewards().put(keyName, new RewardList() {{
                             add(reward);
                         }});
                     }
-                    rewardOptionData.getCycleRewards().get(keyName).set(index, reward);
+                    rewardConfig.getCycleRewards().get(keyName).set(index, reward);
                     break;
                 case YEAR_REWARD:
-                    if (!rewardOptionData.getYearRewards().containsKey(keyName)) {
-                        rewardOptionData.getYearRewards().put(keyName, new RewardList() {{
+                    if (!rewardConfig.getYearRewards().containsKey(keyName)) {
+                        rewardConfig.getYearRewards().put(keyName, new RewardList() {{
                             add(reward);
                         }});
                     }
-                    rewardOptionData.getYearRewards().get(keyName).set(index, reward);
+                    rewardConfig.getYearRewards().get(keyName).set(index, reward);
                     break;
                 case MONTH_REWARD:
-                    if (!rewardOptionData.getMonthRewards().containsKey(keyName)) {
-                        rewardOptionData.getMonthRewards().put(keyName, new RewardList() {{
+                    if (!rewardConfig.getMonthRewards().containsKey(keyName)) {
+                        rewardConfig.getMonthRewards().put(keyName, new RewardList() {{
                             add(reward);
                         }});
                     }
-                    rewardOptionData.getMonthRewards().get(keyName).set(index, reward);
+                    rewardConfig.getMonthRewards().get(keyName).set(index, reward);
                     break;
                 case WEEK_REWARD:
-                    if (!rewardOptionData.getWeekRewards().containsKey(keyName)) {
-                        rewardOptionData.getWeekRewards().put(keyName, new RewardList() {{
+                    if (!rewardConfig.getWeekRewards().containsKey(keyName)) {
+                        rewardConfig.getWeekRewards().put(keyName, new RewardList() {{
                             add(reward);
                         }});
                     }
-                    rewardOptionData.getWeekRewards().get(keyName).set(index, reward);
+                    rewardConfig.getWeekRewards().get(keyName).set(index, reward);
                     break;
                 case DATE_TIME_REWARD:
-                    if (!rewardOptionData.getDateTimeRewards().containsKey(keyName)) {
-                        rewardOptionData.getDateTimeRewards().put(keyName, new RewardList() {{
+                    if (!rewardConfig.getDateTimeRewards().containsKey(keyName)) {
+                        rewardConfig.getDateTimeRewards().put(keyName, new RewardList() {{
                             add(reward);
                         }});
                     }
-                    rewardOptionData.getDateTimeRewards().get(keyName).set(index, reward);
+                    rewardConfig.getDateTimeRewards().get(keyName).set(index, reward);
                     break;
                 case CUMULATIVE_REWARD:
-                    if (!rewardOptionData.getCumulativeRewards().containsKey(keyName)) {
-                        rewardOptionData.getCumulativeRewards().put(keyName, new RewardList() {{
+                    if (!rewardConfig.getCumulativeRewards().containsKey(keyName)) {
+                        rewardConfig.getCumulativeRewards().put(keyName, new RewardList() {{
                             add(reward);
                         }});
                     }
-                    rewardOptionData.getCumulativeRewards().get(keyName).set(index, reward);
+                    rewardConfig.getCumulativeRewards().get(keyName).set(index, reward);
                     break;
                 case RANDOM_REWARD:
-                    if (!rewardOptionData.getRandomRewards().containsKey(keyName)) {
-                        rewardOptionData.getRandomRewards().put(keyName, new RewardList() {{
+                    if (!rewardConfig.getRandomRewards().containsKey(keyName)) {
+                        rewardConfig.getRandomRewards().put(keyName, new RewardList() {{
                             add(reward);
                         }});
                     }
-                    rewardOptionData.getRandomRewards().get(keyName).set(index, reward);
+                    rewardConfig.getRandomRewards().get(keyName).set(index, reward);
                     break;
                 case CDK_REWARD:
                     String[] split = keyName.replaceAll("\\|", ",").split(",");
-                    int key = rewardOptionData.getCdkRewards().size();
-                    if (split.length == 3) {
+                    int key = rewardConfig.getCdkRewards().size();
+                    int num = 1;
+                    if (split.length == 3 || split.length == 4) {
                         key = StringUtils.toInt(split[2]);
+                        if (split.length == 4) {
+                            num = StringUtils.toInt(split[3], 1);
+                        }
                     }
-                    if (rewardOptionData.getCdkRewards().size() <= key || key < 0) {
-                        rewardOptionData.getCdkRewards().add(new KeyValue<>(split[0], new KeyValue<>(split[1], new RewardList() {{
+                    if (rewardConfig.getCdkRewards().size() <= key || key < 0) {
+                        rewardConfig.getCdkRewards().add(new KeyValue<>(new KeyValue<>(split[0], split[1]), new KeyValue<>(new RewardList() {{
                             add(reward);
-                        }})));
+                        }}, new AtomicInteger(num))));
                     } else {
-                        rewardOptionData.getCdkRewards().get(key).getValue().getValue().set(index, reward);
+                        rewardConfig.getCdkRewards().get(key).getValue().getKey().set(index, reward);
                     }
                     break;
                 default:
@@ -954,42 +964,42 @@ public class RewardOptionDataManager {
         try {
             switch (rule) {
                 case BASE_REWARD:
-                    rewardOptionData.getBaseRewards().remove(index);
+                    rewardConfig.getBaseRewards().remove(index);
                     break;
                 case CONTINUOUS_REWARD:
-                    rewardOptionData.getContinuousRewards().get(keyName).remove(index);
+                    rewardConfig.getContinuousRewards().get(keyName).remove(index);
                     break;
                 case CYCLE_REWARD:
-                    rewardOptionData.getCycleRewards().get(keyName).remove(index);
+                    rewardConfig.getCycleRewards().get(keyName).remove(index);
                     break;
                 case YEAR_REWARD:
-                    rewardOptionData.getYearRewards().get(keyName).remove(index);
+                    rewardConfig.getYearRewards().get(keyName).remove(index);
                     break;
                 case MONTH_REWARD:
-                    rewardOptionData.getMonthRewards().get(keyName).remove(index);
+                    rewardConfig.getMonthRewards().get(keyName).remove(index);
                     break;
                 case WEEK_REWARD:
-                    rewardOptionData.getWeekRewards().get(keyName).remove(index);
+                    rewardConfig.getWeekRewards().get(keyName).remove(index);
                     break;
                 case DATE_TIME_REWARD:
-                    rewardOptionData.getDateTimeRewards().get(keyName).remove(index);
+                    rewardConfig.getDateTimeRewards().get(keyName).remove(index);
                     break;
                 case CUMULATIVE_REWARD:
-                    rewardOptionData.getCumulativeRewards().get(keyName).remove(index);
+                    rewardConfig.getCumulativeRewards().get(keyName).remove(index);
                     break;
                 case RANDOM_REWARD:
-                    rewardOptionData.getRandomRewards().get(keyName).remove(index);
+                    rewardConfig.getRandomRewards().get(keyName).remove(index);
                     break;
                 case CDK_REWARD:
                     String[] split = keyName.replaceAll("\\|", ",").split(",");
-                    int key = rewardOptionData.getCdkRewards().size();
-                    if (split.length == 3) {
+                    int key = rewardConfig.getCdkRewards().size();
+                    if (split.length == 3 || split.length == 4) {
                         key = StringUtils.toInt(split[2]);
                     }
-                    if (rewardOptionData.getCdkRewards().size() <= key || key < 0) {
-                        rewardOptionData.getCdkRewards().add(new KeyValue<>(split[0], new KeyValue<>(split[1], new RewardList())));
+                    if (rewardConfig.getCdkRewards().size() <= key || key < 0) {
+                        rewardConfig.getCdkRewards().add(new KeyValue<>(new KeyValue<>(split[0], split[1]), new KeyValue<>(new RewardList(), new AtomicInteger(1))));
                     } else {
-                        rewardOptionData.getCdkRewards().get(key).getValue().getValue().remove(index);
+                        rewardConfig.getCdkRewards().get(key).getValue().getKey().remove(index);
                     }
                     break;
                 default:
@@ -1004,7 +1014,7 @@ public class RewardOptionDataManager {
      * 排序奖励配置
      */
     public static void sortRewards() {
-        RewardOptionDataManager.sortRewards(null);
+        RewardConfigManager.sortRewards(null);
     }
 
     /**
@@ -1025,31 +1035,31 @@ public class RewardOptionDataManager {
                     break;
                 case CONTINUOUS_REWARD:
                     // 对键排序并替换原始 Map 的内容
-                    replaceWithSortedMap((LinkedHashMap<String, RewardList>) rewardOptionData.getContinuousRewards());
+                    replaceWithSortedMap((LinkedHashMap<String, RewardList>) rewardConfig.getContinuousRewards());
                     break;
                 case CYCLE_REWARD:
-                    replaceWithSortedMap((LinkedHashMap<String, RewardList>) rewardOptionData.getCycleRewards());
+                    replaceWithSortedMap((LinkedHashMap<String, RewardList>) rewardConfig.getCycleRewards());
                     break;
                 case YEAR_REWARD:
-                    replaceWithSortedMap((LinkedHashMap<String, RewardList>) rewardOptionData.getYearRewards());
+                    replaceWithSortedMap((LinkedHashMap<String, RewardList>) rewardConfig.getYearRewards());
                     break;
                 case MONTH_REWARD:
-                    replaceWithSortedMap((LinkedHashMap<String, RewardList>) rewardOptionData.getMonthRewards());
+                    replaceWithSortedMap((LinkedHashMap<String, RewardList>) rewardConfig.getMonthRewards());
                     break;
                 case WEEK_REWARD:
-                    replaceWithSortedMap((LinkedHashMap<String, RewardList>) rewardOptionData.getWeekRewards());
+                    replaceWithSortedMap((LinkedHashMap<String, RewardList>) rewardConfig.getWeekRewards());
                     break;
                 case DATE_TIME_REWARD:
-                    replaceWithSortedMap((LinkedHashMap<String, RewardList>) rewardOptionData.getDateTimeRewards());
+                    replaceWithSortedMap((LinkedHashMap<String, RewardList>) rewardConfig.getDateTimeRewards());
                     break;
                 case CUMULATIVE_REWARD:
-                    replaceWithSortedMap((LinkedHashMap<String, RewardList>) rewardOptionData.getCumulativeRewards());
+                    replaceWithSortedMap((LinkedHashMap<String, RewardList>) rewardConfig.getCumulativeRewards());
                     break;
                 case RANDOM_REWARD:
-                    replaceWithSortedMap((LinkedHashMap<String, RewardList>) rewardOptionData.getRandomRewards());
+                    replaceWithSortedMap((LinkedHashMap<String, RewardList>) rewardConfig.getRandomRewards());
                     break;
                 case CDK_REWARD:
-                    rewardOptionData.getCdkRewards().sort(Comparator.comparing(KeyValue::getKey));
+                    rewardConfig.getCdkRewards().sort(Comparator.comparing(keyVal -> keyVal.getKey().getKey()));
                     break;
             }
         }
@@ -1058,16 +1068,16 @@ public class RewardOptionDataManager {
     /**
      * 序列化 RewardOption
      */
-    public static String serializeRewardOption(RewardOptionData rewardOptionData) {
-        return GSON.toJson(rewardOptionData.toJsonObject());
+    public static String serializeRewardOption(RewardConfig rewardConfig) {
+        return GSON.toJson(rewardConfig.toJsonObject());
     }
 
     /**
      * 反序列化 RewardOption
      */
     @NonNull
-    public static RewardOptionData deserializeRewardOption(String jsonString) {
-        RewardOptionData result = new RewardOptionData();
+    public static RewardConfig deserializeRewardOption(String jsonString) {
+        RewardConfig result = new RewardConfig();
         if (StringUtils.isNotNullOrEmpty(jsonString)) {
             try {
                 JsonObject jsonObject = GSON.fromJson(jsonString, JsonObject.class);
@@ -1093,9 +1103,14 @@ public class RewardOptionDataManager {
                 for (JsonElement cdkReward : cdkRewards) {
                     String key = ((JsonObject) cdkReward).get("key").getAsString();
                     String date = ((JsonObject) cdkReward).get("date").getAsString();
+                    int num = 1;
+                    try {
+                        num = ((JsonObject) cdkReward).get("num").getAsInt();
+                    } catch (Exception ignored) {
+                    }
                     RewardList rewardList = fromJsonOrDefault(((JsonObject) cdkReward).get("value"), new TypeToken<RewardList>() {
                     }.getType(), new RewardList());
-                    result.addCdkReward(new KeyValue<>(key, new KeyValue<>(date, rewardList)));
+                    result.addCdkReward(new KeyValue<>(new KeyValue<>(key, date), new KeyValue<>(rewardList, new AtomicInteger(num))));
                 }
                 result.refreshContinuousRewardsRelation();
                 result.refreshCycleRewardsRelation();
@@ -1104,8 +1119,8 @@ public class RewardOptionDataManager {
             }
         } else {
             // 如果文件不存在，初始化默认值
-            result = RewardOptionData.getDefault();
-            RewardOptionDataManager.saveRewardOption();
+            result = RewardConfig.getDefault();
+            RewardConfigManager.saveRewardOption();
         }
         return result;
     }
@@ -1140,45 +1155,45 @@ public class RewardOptionDataManager {
         Map<String, RewardList> result = new LinkedHashMap<>();
         switch (rule) {
             case BASE_REWARD:
-                result.put("base", rewardOptionData.getBaseRewards());
+                result.put("base", rewardConfig.getBaseRewards());
                 break;
             case CONTINUOUS_REWARD:
-                result = rewardOptionData.getContinuousRewards();
+                result = rewardConfig.getContinuousRewards();
                 break;
             case CYCLE_REWARD:
-                result = rewardOptionData.getCycleRewards();
+                result = rewardConfig.getCycleRewards();
                 break;
             case YEAR_REWARD:
-                result = rewardOptionData.getYearRewards();
+                result = rewardConfig.getYearRewards();
                 break;
             case MONTH_REWARD:
-                result = rewardOptionData.getMonthRewards();
+                result = rewardConfig.getMonthRewards();
                 break;
             case WEEK_REWARD:
-                result = rewardOptionData.getWeekRewards();
+                result = rewardConfig.getWeekRewards();
                 break;
             case DATE_TIME_REWARD:
-                result = rewardOptionData.getDateTimeRewards();
+                result = rewardConfig.getDateTimeRewards();
                 break;
             case CUMULATIVE_REWARD:
-                result = rewardOptionData.getCumulativeRewards();
+                result = rewardConfig.getCumulativeRewards();
                 break;
             case RANDOM_REWARD:
-                result = rewardOptionData.getRandomRewards();
+                result = rewardConfig.getRandomRewards();
                 break;
             case CDK_REWARD:
                 result = new LinkedHashMap<>();
-                for (int i = 0; i < rewardOptionData.getCdkRewards().size(); i++) {
-                    KeyValue<String, KeyValue<String, RewardList>> keyValue = rewardOptionData.getCdkRewards().get(i);
-                    // key | 过期时间 | 序号
-                    result.put(String.format("%s|%s|%d", keyValue.getKey(), keyValue.getValue().getKey(), i), keyValue.getValue().getValue());
+                for (int i = 0; i < rewardConfig.getCdkRewards().size(); i++) {
+                    KeyValue<KeyValue<String, String>, KeyValue<RewardList, AtomicInteger>> keyValue = rewardConfig.getCdkRewards().get(i);
+                    // key | 过期时间 | 序号 | 数量
+                    result.put(String.format("%s|%s|%d|%d", keyValue.getKey().getKey(), keyValue.getKey().getValue(), i, keyValue.getValue().getValue().get()), keyValue.getValue().getKey());
                 }
                 break;
         }
         return result;
     }
 
-    public static void setRewardMap(RewardOptionData data, ERewardRule rule, Map<String, RewardList> map) {
+    public static void setRewardMap(RewardConfig data, ERewardRule rule, Map<String, RewardList> map) {
         switch (rule) {
             case BASE_REWARD:
                 data.setBaseRewards(map.getOrDefault("base", new RewardList()));
@@ -1208,15 +1223,15 @@ public class RewardOptionDataManager {
                 data.setRandomRewards(map);
                 break;
             case CDK_REWARD:
-                List<KeyValue<String, KeyValue<String, RewardList>>> cdkRewards = new ArrayList<>();
-                // key | 过期时间 | 序号
+                List<KeyValue<KeyValue<String, String>, KeyValue<RewardList, AtomicInteger>>> cdkRewards = new ArrayList<>();
+                // key | 过期时间 | 序号 | 数量
                 map.keySet().stream()
                         .filter(StringUtils::isNotNullOrEmpty)
                         .filter(s -> s.replaceAll("\\|", ",").split(",").length >= 3)
                         .sorted(Comparator.comparingInt(s -> Integer.parseInt(s.replaceAll("\\|", ",").split(",")[2])))
                         .forEach(key -> {
                             String[] split = key.replaceAll("\\|", ",").split(",");
-                            cdkRewards.add(new KeyValue<>(split[0], new KeyValue<>(split[1], map.get(key))));
+                            cdkRewards.add(new KeyValue<>(new KeyValue<>(split[0], split[1]), new KeyValue<>(map.get(key), new AtomicInteger(StringUtils.toInt(split[3], 1)))));
                         });
                 data.setCdkRewards(cdkRewards);
         }
@@ -1234,7 +1249,7 @@ public class RewardOptionDataManager {
             if (!player.hasPermissions(SakuraUtils.getRewardPermissionLevel(rule))) {
                 dataList.add(new RewardOptionSyncData(rule, "", new Reward(0, ERewardType.SIGN_IN_CARD).setDisabled(true)));
             } else {
-                RewardOptionDataManager.getRewardMap(rule).forEach((key, value) -> {
+                RewardConfigManager.getRewardMap(rule).forEach((key, value) -> {
                     List<RewardOptionSyncData> list = value.stream()
                             .map(reward -> new RewardOptionSyncData(rule, key, reward))
                             .collect(Collectors.toList());
@@ -1245,8 +1260,8 @@ public class RewardOptionDataManager {
         return new RewardOptionSyncPacket(dataList);
     }
 
-    public static RewardOptionData fromSyncPacketList(List<RewardOptionSyncPacket> packetList) {
-        RewardOptionData result = new RewardOptionData();
+    public static RewardConfig fromSyncPacketList(List<RewardOptionSyncPacket> packetList) {
+        RewardConfig result = new RewardConfig();
         packetList.stream().flatMap(packet -> packet.getRewardOptionData().stream())
                 .collect(Collectors.groupingBy(RewardOptionSyncData::getRule))
                 .forEach((rule, dataList) -> {
@@ -1262,10 +1277,10 @@ public class RewardOptionDataManager {
                             && rewardMap.get("").size() == 1
                             && rewardMap.get("").get(0).getType() == ERewardType.SIGN_IN_CARD
                             && rewardMap.get("").get(0).isDisabled()) {
-                        rewardMap = RewardOptionDataManager.getRewardMap(rule);
+                        rewardMap = RewardConfigManager.getRewardMap(rule);
                     }
                     rewardMap.keySet().removeIf(StringUtils::isNullOrEmpty);
-                    RewardOptionDataManager.setRewardMap(result, rule, rewardMap);
+                    RewardConfigManager.setRewardMap(result, rule, rewardMap);
                 });
         return result;
     }
@@ -1284,18 +1299,29 @@ public class RewardOptionDataManager {
         String date = "";
         if (StringUtils.isNotNullOrEmpty(key)) {
             String[] split = key.replaceAll("\\|", ",").split(",");
-            if (split.length == 3) {
+            if (split.length == 3 || split.length == 4) {
                 date = split[1];
             }
         }
         return date;
     }
 
+    public static int getCdkRewardNum(String key) {
+        String num = "";
+        if (StringUtils.isNotNullOrEmpty(key)) {
+            String[] split = key.replaceAll("\\|", ",").split(",");
+            if (split.length == 4) {
+                num = split[3];
+            }
+        }
+        return StringUtils.toInt(num, 1);
+    }
+
     public static int getCdkRewardIndex(String key) {
         int index = 0;
         if (StringUtils.isNotNullOrEmpty(key)) {
             String[] split = key.replaceAll("\\|", ",").split(",");
-            index = rewardOptionData.getCdkRewards().size();
+            index = rewardConfig.getCdkRewards().size();
             if (split.length == 3) {
                 index = StringUtils.toInt(split[2]);
             }
