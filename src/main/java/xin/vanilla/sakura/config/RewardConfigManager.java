@@ -108,7 +108,7 @@ public class RewardConfigManager {
             if (file.exists()) {
                 try {
                     rewardConfig = RewardConfigManager.deserializeRewardOption(new String(Files.readAllBytes(Paths.get(file.getPath()))));
-                } catch (IOException e) {
+                } catch (Exception e) {
                     LOGGER.error("Error loading sign-in data: ", e);
                 }
             } else {
@@ -122,7 +122,7 @@ public class RewardConfigManager {
             if (undoHistoryFile.exists()) {
                 try {
                     deserializeHistoryFile(undoHistoryFile, undoList);
-                } catch (IOException e) {
+                } catch (Exception e) {
                     LOGGER.error("Error loading undo history: ", e);
                 }
             }
@@ -130,7 +130,7 @@ public class RewardConfigManager {
             if (redoHistoryFile.exists()) {
                 try {
                     deserializeHistoryFile(redoHistoryFile, redoList);
-                } catch (IOException e) {
+                } catch (Exception e) {
                     LOGGER.error("Error loading redo history: ", e);
                 }
             }
