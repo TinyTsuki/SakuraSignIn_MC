@@ -22,7 +22,6 @@ import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.glfw.GLFW;
 import xin.vanilla.sakura.config.ArraySet;
 import xin.vanilla.sakura.config.StringList;
 import xin.vanilla.sakura.enums.EI18nType;
@@ -33,10 +32,7 @@ import xin.vanilla.sakura.rewards.impl.ItemRewardParser;
 import xin.vanilla.sakura.screen.component.KeyEventManager;
 import xin.vanilla.sakura.screen.component.OperationButton;
 import xin.vanilla.sakura.screen.component.Text;
-import xin.vanilla.sakura.util.AbstractGuiUtils;
-import xin.vanilla.sakura.util.CollectionUtils;
-import xin.vanilla.sakura.util.Component;
-import xin.vanilla.sakura.util.StringUtils;
+import xin.vanilla.sakura.util.*;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.math.BigDecimal;
@@ -301,10 +297,10 @@ public class ItemSelectScreen extends Screen {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         keyManager.mouseClicked(button, mouseX, mouseY);
         AtomicBoolean flag = new AtomicBoolean(false);
-        if (button == GLFW.GLFW_MOUSE_BUTTON_4) {
+        if (button == GLFWKey.GLFW_MOUSE_BUTTON_4) {
             Minecraft.getInstance().setScreen(previousScreen);
             flag.set(true);
-        } else if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT || button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
+        } else if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT || button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
             OP_BUTTONS.forEach((key, value) -> {
                 if (value.isHovered()) {
                     value.setPressed(true);
@@ -327,7 +323,7 @@ public class ItemSelectScreen extends Screen {
         keyManager.refresh(mouseX, mouseY);
         AtomicBoolean flag = new AtomicBoolean(false);
         AtomicBoolean updateSearchResults = new AtomicBoolean(false);
-        if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT || button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
+        if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT || button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
             // 控制按钮
             OP_BUTTONS.forEach((key, value) -> {
                 if (value.isHovered() && value.isPressed()) {
@@ -377,10 +373,10 @@ public class ItemSelectScreen extends Screen {
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         keyManager.keyPressed(keyCode);
-        if (keyCode == GLFW.GLFW_KEY_ESCAPE || (keyCode == GLFW.GLFW_KEY_BACKSPACE && !this.inputField.isFocused())) {
+        if (keyCode == GLFWKey.GLFW_KEY_ESCAPE || (keyCode == GLFWKey.GLFW_KEY_BACKSPACE && !this.inputField.isFocused())) {
             Minecraft.getInstance().setScreen(previousScreen);
             return true;
-        } else if ((keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) && this.inputField.isFocused()) {
+        } else if ((keyCode == GLFWKey.GLFW_KEY_ENTER || keyCode == GLFWKey.GLFW_KEY_KP_ENTER) && this.inputField.isFocused()) {
             this.updateSearchResults();
             // this.updateLayout();
             return true;
@@ -646,7 +642,7 @@ public class ItemSelectScreen extends Screen {
     }
 
     private void handleItem(OperationButton bt, int button, AtomicBoolean flag) {
-        if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+        if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
             this.selectedItemId = bt.getId();
             if (StringUtils.isNotNullOrEmpty(this.selectedItemId)) {
                 ItemStack itemStack = ItemRewardParser.getItemStack(selectedItemId);

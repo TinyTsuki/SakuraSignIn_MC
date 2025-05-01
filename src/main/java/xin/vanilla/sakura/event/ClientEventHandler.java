@@ -15,7 +15,6 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.loading.FMLPaths;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.glfw.GLFW;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.enums.EI18nType;
@@ -44,9 +43,9 @@ public class ClientEventHandler {
 
     // 定义按键绑定
     public static KeyMapping SIGN_IN_SCREEN_KEY = new KeyMapping("key.sakura_sign_in.sign_in",
-            GLFW.GLFW_KEY_H, CATEGORIES);
+            GLFWKey.GLFW_KEY_H, CATEGORIES);
     public static KeyMapping REWARD_OPTION_SCREEN_KEY = new KeyMapping("key.sakura_sign_in.reward_option",
-            GLFW.GLFW_KEY_O, CATEGORIES);
+            GLFWKey.GLFW_KEY_O, CATEGORIES);
 
     /**
      * 注册键绑定
