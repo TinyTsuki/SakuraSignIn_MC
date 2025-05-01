@@ -2,21 +2,24 @@ package xin.vanilla.sakura.screen.component;
 
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.glfw.GLFW;
+import xin.vanilla.sakura.util.GLFWKey;
 import xin.vanilla.sakura.util.GLFWKeyHelper;
 import xin.vanilla.sakura.util.StringUtils;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+@OnlyIn(Dist.CLIENT)
 public class KeyEventManager {
     private static final Logger LOGGER = LogManager.getLogger();
 
     private final Set<Integer> pressedKeys = new LinkedHashSet<>();
     @Deprecated
-    private int modifiers = GLFW.GLFW_KEY_UNKNOWN;
+    private int modifiers = GLFWKey.GLFW_KEY_UNKNOWN;
     private final Set<Integer> pressedMouses = new LinkedHashSet<>();
     @Getter
     private double mousedScroll, mouseDownX, mouseDownY, mouseX, mouseY;
@@ -30,7 +33,7 @@ public class KeyEventManager {
     @Deprecated
     public void keyReleased(int keyCode, int modifiers) {
         this.pressedKeys.remove(keyCode);
-        this.modifiers = GLFW.GLFW_KEY_UNKNOWN;
+        this.modifiers = GLFWKey.GLFW_KEY_UNKNOWN;
     }
 
     public void keyPressed(int keyCode) {
@@ -81,7 +84,7 @@ public class KeyEventManager {
             this.mouseDownX = -1;
             this.mouseDownY = -1;
             this.mousedScroll = 0;
-            this.modifiers = GLFW.GLFW_KEY_UNKNOWN;
+            this.modifiers = GLFWKey.GLFW_KEY_UNKNOWN;
         } else {
             this.active = true;
         }
@@ -92,19 +95,19 @@ public class KeyEventManager {
     }
 
     public boolean isCtrlPressed() {
-        return this.isKeyPressed(GLFW.GLFW_KEY_LEFT_CONTROL) || this.isKeyPressed(GLFW.GLFW_KEY_RIGHT_CONTROL);
+        return this.isKeyPressed(GLFWKey.GLFW_KEY_LEFT_CONTROL) || this.isKeyPressed(GLFWKey.GLFW_KEY_RIGHT_CONTROL);
     }
 
     public boolean isShiftPressed() {
-        return this.isKeyPressed(GLFW.GLFW_KEY_LEFT_SHIFT) || this.isKeyPressed(GLFW.GLFW_KEY_RIGHT_SHIFT);
+        return this.isKeyPressed(GLFWKey.GLFW_KEY_LEFT_SHIFT) || this.isKeyPressed(GLFWKey.GLFW_KEY_RIGHT_SHIFT);
     }
 
     public boolean isAltPressed() {
-        return this.isKeyPressed(GLFW.GLFW_KEY_LEFT_ALT) || this.isKeyPressed(GLFW.GLFW_KEY_RIGHT_ALT);
+        return this.isKeyPressed(GLFWKey.GLFW_KEY_LEFT_ALT) || this.isKeyPressed(GLFWKey.GLFW_KEY_RIGHT_ALT);
     }
 
     public boolean isSuperPressed() {
-        return this.isKeyPressed(GLFW.GLFW_KEY_LEFT_SUPER) || this.isKeyPressed(GLFW.GLFW_KEY_RIGHT_SUPER);
+        return this.isKeyPressed(GLFWKey.GLFW_KEY_LEFT_SUPER) || this.isKeyPressed(GLFWKey.GLFW_KEY_RIGHT_SUPER);
     }
 
     public boolean onlyCtrlPressed() {
@@ -152,19 +155,19 @@ public class KeyEventManager {
     }
 
     public boolean ieEscapePressed() {
-        return this.isKeyPressed(GLFW.GLFW_KEY_ESCAPE);
+        return this.isKeyPressed(GLFWKey.GLFW_KEY_ESCAPE);
     }
 
     public boolean ieEnterPressed() {
-        return this.isKeyPressed(GLFW.GLFW_KEY_ENTER) || this.isKeyPressed(GLFW.GLFW_KEY_KP_ENTER);
+        return this.isKeyPressed(GLFWKey.GLFW_KEY_ENTER) || this.isKeyPressed(GLFWKey.GLFW_KEY_KP_ENTER);
     }
 
     public boolean ieBackspacePressed() {
-        return this.isKeyPressed(GLFW.GLFW_KEY_BACKSPACE);
+        return this.isKeyPressed(GLFWKey.GLFW_KEY_BACKSPACE);
     }
 
     public boolean ieDeletePressed() {
-        return this.isKeyPressed(GLFW.GLFW_KEY_DELETE);
+        return this.isKeyPressed(GLFWKey.GLFW_KEY_DELETE);
     }
 
     public boolean onlyEscapePressed() {
@@ -188,15 +191,15 @@ public class KeyEventManager {
     }
 
     public boolean isMouseLeftPressed() {
-        return this.isMousePressed(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+        return this.isMousePressed(GLFWKey.GLFW_MOUSE_BUTTON_LEFT);
     }
 
     public boolean isMouseRightPressed() {
-        return this.isMousePressed(GLFW.GLFW_MOUSE_BUTTON_RIGHT);
+        return this.isMousePressed(GLFWKey.GLFW_MOUSE_BUTTON_RIGHT);
     }
 
     public boolean isMouseMiddlePressed() {
-        return this.isMousePressed(GLFW.GLFW_MOUSE_BUTTON_MIDDLE);
+        return this.isMousePressed(GLFWKey.GLFW_MOUSE_BUTTON_MIDDLE);
     }
 
     public boolean onlyMouseLeftPressed() {
@@ -216,7 +219,7 @@ public class KeyEventManager {
     }
 
     public boolean isMouseDragged() {
-        return this.mouseDownX != GLFW.GLFW_KEY_UNKNOWN && this.mouseDownY != GLFW.GLFW_KEY_UNKNOWN;
+        return this.mouseDownX != GLFWKey.GLFW_KEY_UNKNOWN && this.mouseDownY != GLFWKey.GLFW_KEY_UNKNOWN;
     }
 
     public boolean isMouseDragged(int mouseButton) {
