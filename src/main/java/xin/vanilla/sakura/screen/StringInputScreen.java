@@ -5,7 +5,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
-import org.lwjgl.glfw.GLFW;
 import xin.vanilla.sakura.config.StringList;
 import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.screen.component.Text;
@@ -268,7 +267,7 @@ public class StringInputScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == GLFW.GLFW_MOUSE_BUTTON_4) {
+        if (button == GLFWKey.GLFW_MOUSE_BUTTON_4) {
             Minecraft.getInstance().setScreen(previousScreen);
             return true;
         } else {
@@ -281,7 +280,7 @@ public class StringInputScreen extends Screen {
      */
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == GLFW.GLFW_KEY_ESCAPE || (keyCode == GLFW.GLFW_KEY_BACKSPACE && this.inputField.stream().noneMatch(EditBox::isFocused))) {
+        if (keyCode == GLFWKey.GLFW_KEY_ESCAPE || (keyCode == GLFWKey.GLFW_KEY_BACKSPACE && this.inputField.stream().noneMatch(EditBox::isFocused))) {
             Minecraft.getInstance().setScreen(previousScreen);
             return true;
         } else {

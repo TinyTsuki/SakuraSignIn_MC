@@ -15,7 +15,6 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.loading.FMLPaths;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.glfw.GLFW;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.config.ServerConfig;
@@ -198,14 +197,14 @@ public class SignInScreen extends Screen {
                 .setTextureHeight(textureCoordinate.getTotalHeight())
                 .setFlipHorizontal(true)
                 .setTooltip(Text.translatable(EI18nType.TIPS, "use_s_key", "←"))
-                .setKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFW.GLFW_KEY_LEFT_SHIFT)));
+                .setKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_SHIFT)));
         BUTTONS.put(RIGHT_ARROW.getCode(), new OperationButton(RIGHT_ARROW.getCode(), texture)
                 .setCoordinate(textureCoordinate.getRightArrowCoordinate())
                 .setNormal(textureCoordinate.getArrowUV()).setHover(textureCoordinate.getArrowHoverUV()).setTap(textureCoordinate.getArrowTapUV())
                 .setTextureWidth(textureCoordinate.getTotalWidth())
                 .setTextureHeight(textureCoordinate.getTotalHeight())
                 .setTooltip(Text.translatable(EI18nType.TIPS, "use_s_key", "→"))
-                .setKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFW.GLFW_KEY_LEFT_SHIFT)));
+                .setKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_SHIFT)));
         BUTTONS.put(UP_ARROW.getCode(), new OperationButton(UP_ARROW.getCode(), texture)
                 .setCoordinate(textureCoordinate.getUpArrowCoordinate())
                 .setNormal(textureCoordinate.getArrowUV()).setHover(textureCoordinate.getArrowHoverUV()).setTap(textureCoordinate.getArrowTapUV())
@@ -213,7 +212,7 @@ public class SignInScreen extends Screen {
                 .setTextureHeight(textureCoordinate.getTotalHeight())
                 .setRotatedAngle(270)
                 .setTooltip(Text.translatable(EI18nType.TIPS, "use_s_key", "↑"))
-                .setKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFW.GLFW_KEY_LEFT_SHIFT)));
+                .setKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_SHIFT)));
         BUTTONS.put(DOWN_ARROW.getCode(), new OperationButton(DOWN_ARROW.getCode(), texture)
                 .setCoordinate(textureCoordinate.getDownArrowCoordinate())
                 .setNormal(textureCoordinate.getArrowUV()).setHover(textureCoordinate.getArrowHoverUV()).setTap(textureCoordinate.getArrowTapUV())
@@ -221,7 +220,7 @@ public class SignInScreen extends Screen {
                 .setTextureHeight(textureCoordinate.getTotalHeight())
                 .setRotatedAngle(90).setFlipVertical(true)
                 .setTooltip(Text.translatable(EI18nType.TIPS, "use_s_key", "↓"))
-                .setKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFW.GLFW_KEY_LEFT_SHIFT)));
+                .setKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_SHIFT)));
         BUTTONS.put(INFO.getCode(), new OperationButton(INFO.getCode(), texture)
                 .setCoordinate(textureCoordinate.getSignInInfoCoordinate())
                 .setNormal(textureCoordinate.getSignInInfoUV()).setHover(textureCoordinate.getSignInInfoUV()).setTap(textureCoordinate.getSignInInfoUV())
@@ -517,7 +516,7 @@ public class SignInScreen extends Screen {
         Date cellDate = DateUtils.getDate(cell.year, cell.month, cell.day);
         // 签到
         if (cell.status == ESignInStatus.NOT_SIGNED_IN.getCode()) {
-            if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+            if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                 if (RewardManager.getCompensateDateInt() < DateUtils.toDateInt(RewardManager.getCompensateDate(DateUtils.getClientDate()))) {
                     Component component = Component.translatableClient(EI18nType.MESSAGE, "next_day_cannot_operate");
                     NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
@@ -529,7 +528,7 @@ public class SignInScreen extends Screen {
         }
         // 领取奖励
         else if (cell.status == ESignInStatus.SIGNED_IN.getCode()) {
-            if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+            if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                 Component component = Component.translatableClient(EI18nType.MESSAGE, "already_signed");
                 NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
             } else {
@@ -544,7 +543,7 @@ public class SignInScreen extends Screen {
         }
         // 补签
         else if (cell.status == ESignInStatus.CAN_REPAIR.getCode()) {
-            if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
+            if (button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
                 if (!ServerConfig.SIGN_IN_CARD.get()) {
                     Component component = Component.translatableClient(EI18nType.MESSAGE, "server_not_enable_sign_in_card");
                     NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
@@ -570,7 +569,7 @@ public class SignInScreen extends Screen {
             Component component = Component.translatableClient(EI18nType.MESSAGE, "already_get_reward");
             NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
         } else {
-            if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+            if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                 Component component = Component.literal(ESignInStatus.valueOf(cell.status).getDescription() + ": " + DateUtils.toString(cellDate));
                 NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0x88FF5555));
             }
@@ -773,7 +772,7 @@ public class SignInScreen extends Screen {
         AtomicBoolean flag = new AtomicBoolean(false);
         if (popupOption.isHovered()) {
             LOGGER.debug("选择了弹出选项:\tIndex: {}\tContent: {}", popupOption.getSelectedIndex(), popupOption.getSelectedString());
-            if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT && CollectionUtils.isNotNullOrEmpty(themeFileList)) {
+            if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT && CollectionUtils.isNotNullOrEmpty(themeFileList)) {
                 LocalPlayer player = Minecraft.getInstance().player;
                 String selectedFile = themeFileList.get(popupOption.getSelectedIndex()).getPath();
                 if (player != null) {
@@ -856,7 +855,7 @@ public class SignInScreen extends Screen {
         keyManager.keyPressed(keyCode);
         boolean consumed = false;
         // 当按键等于SIGN_IN_SCREEN_KEY键的值或Inventory键时，调用onClose方法，并返回true，表示该按键事件已被消耗
-        if (keyCode == GLFW.GLFW_KEY_ESCAPE || keyCode == ClientEventHandler.SIGN_IN_SCREEN_KEY.getKey().getValue() || keyCode == Minecraft.getInstance().options.keyInventory.getKey().getValue()) {
+        if (keyCode == GLFWKey.GLFW_KEY_ESCAPE || keyCode == ClientEventHandler.SIGN_IN_SCREEN_KEY.getKey().getValue() || keyCode == Minecraft.getInstance().options.keyInventory.getKey().getValue()) {
             if (this.SIGN_IN_SCREEN_TIPS) this.SIGN_IN_SCREEN_TIPS = false;
             else if (this.previousScreen != null) Minecraft.getInstance().setScreen(this.previousScreen);
             else this.onClose();

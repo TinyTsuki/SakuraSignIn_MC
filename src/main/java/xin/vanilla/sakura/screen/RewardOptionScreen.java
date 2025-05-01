@@ -21,7 +21,6 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.loading.FMLPaths;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.glfw.GLFW;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.*;
 import xin.vanilla.sakura.enums.EI18nType;
@@ -545,7 +544,7 @@ public class RewardOptionScreen extends Screen {
     private void handleOperation(double mouseX, double mouseY, int button, OperationButton value, AtomicBoolean updateLayout, AtomicBoolean flag) {
         // 展开左侧边栏
         if (value.getOperation() == OperationButtonType.OPEN.getCode()) {
-            if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+            if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                 SakuraSignIn.setRewardOptionBarOpened(true);
                 updateLayout.set(true);
                 flag.set(true);
@@ -553,7 +552,7 @@ public class RewardOptionScreen extends Screen {
         }
         // 关闭左侧边栏
         else if (value.getOperation() == OperationButtonType.CLOSE.getCode()) {
-            if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+            if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                 SakuraSignIn.setRewardOptionBarOpened(false);
                 updateLayout.set(true);
                 flag.set(true);
@@ -561,7 +560,7 @@ public class RewardOptionScreen extends Screen {
         }
         // 左侧边栏奖励规则类型按钮
         else if (value.getOperation() > 200 && value.getOperation() <= 299) {
-            if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+            if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                 this.currOpButton = value.getOperation();
                 updateLayout.set(true);
                 flag.set(true);
@@ -584,7 +583,7 @@ public class RewardOptionScreen extends Screen {
                 this.popupOption.clear();
                 this.popupOption.addOption(Text.translatable(EI18nType.OPTION, "clear").setColor(0xFFFF0000))
                         .addTips(Text.translatable(EI18nType.TIPS, "cancel_or_confirm"))
-                        .setTipsKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFW.GLFW_KEY_LEFT_SHIFT))
+                        .setTipsKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_SHIFT))
                         .build(super.font, mouseX, mouseY, String.format("奖励规则类型按钮:%s", value.getOperation()));
                 flag.set(true);
             }
@@ -599,10 +598,10 @@ public class RewardOptionScreen extends Screen {
         else if (value.getOperation() == OperationButtonType.REWARD_PANEL.getCode()) {
             if (!this.handledRewardButton) {
                 this.handledRewardButton = true;
-                this.currRewardButton = button == GLFW.GLFW_MOUSE_BUTTON_LEFT && "panel".equalsIgnoreCase(this.currRewardButton) ? null : "panel";
+                this.currRewardButton = button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT && "panel".equalsIgnoreCase(this.currRewardButton) ? null : "panel";
             }
 
-            if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
+            if (button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
                 if (this.currOpButton > 200 && this.currOpButton <= 299) {
                     this.popupOption.clear();
                     this.popupOption.addOption(Text.translatable(EI18nType.OPTION, "paste"));
@@ -652,7 +651,7 @@ public class RewardOptionScreen extends Screen {
         }
         // 下载奖励配置
         else if (value.getOperation() == OperationButtonType.DOWNLOAD.getCode()) {
-            if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+            if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                 if (!Minecraft.getInstance().isLocalServer()) {
                     // 备份签到奖励配置
                     RewardConfigManager.backupRewardOption();
@@ -694,10 +693,10 @@ public class RewardOptionScreen extends Screen {
 
         if (!this.handledRewardButton) {
             this.handledRewardButton = true;
-            this.currRewardButton = button == GLFW.GLFW_MOUSE_BUTTON_LEFT && key.equalsIgnoreCase(this.currRewardButton) ? null : key;
+            this.currRewardButton = button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT && key.equalsIgnoreCase(this.currRewardButton) ? null : key;
         }
 
-        if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && !keyManager.isMouseMoved()) {
+        if (button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT && !keyManager.isMouseMoved()) {
             if (key.startsWith("标题")) {
                 this.popupOption.clear();
                 if (!"标题,base".equalsIgnoreCase(key)) {
@@ -717,7 +716,7 @@ public class RewardOptionScreen extends Screen {
                 }
                 this.popupOption.addTips(Text.translatable(EI18nType.TIPS, "cancel_or_confirm"), -1)
                         .addTips(Text.translatable(EI18nType.TIPS, "cancel_or_confirm"), -2)
-                        .setTipsKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFW.GLFW_KEY_LEFT_SHIFT))
+                        .setTipsKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_SHIFT))
                         .build(super.font, mouseX, mouseY, String.format("奖励按钮:%s", key));
             } else {
                 this.popupOption.clear();
@@ -727,7 +726,7 @@ public class RewardOptionScreen extends Screen {
                         .addOption(Text.translatable(EI18nType.OPTION, "paste"))
                         .addOption(Text.translatable(EI18nType.OPTION, "delete").setColor(0xFFFF0000))
                         .addTips(Text.translatable(EI18nType.TIPS, "cancel_or_confirm"), -1)
-                        .setTipsKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFW.GLFW_KEY_LEFT_SHIFT))
+                        .setTipsKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_SHIFT))
                         .build(super.font, mouseX, mouseY, String.format("奖励按钮:%s", key));
             }
             this.popupOption.setBeforeRender(pasteConsumer);
@@ -753,7 +752,7 @@ public class RewardOptionScreen extends Screen {
         if (popupOption.getId().startsWith("奖励规则类型按钮:")) {
             int opCode = StringUtils.toInt(popupOption.getId().replace("奖励规则类型按钮:", ""));
             // 若选择了清空
-            if (popupOption.getSelectedIndex() == 0 && button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
+            if (popupOption.getSelectedIndex() == 0 && button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
                 // 并且按住了Control按钮
                 if (keyManager.onlyCtrlPressed()) {
                     if (opCode > 200 && opCode <= 299) {
@@ -1026,7 +1025,7 @@ public class RewardOptionScreen extends Screen {
             if (id.startsWith("标题")) {
                 String key = id.substring(3);
                 if (Component.translatableClient(EI18nType.OPTION, "edit").toString().equalsIgnoreCase(selectedString)) {
-                    if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+                    if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                         if (rule == ERewardRule.CDK_REWARD) {
                             String[] split = key.split("\\|");
                             if (split.length != 4 && split.length != 3 && split.length != 2)
@@ -1082,19 +1081,19 @@ public class RewardOptionScreen extends Screen {
                         }
                     }
                 } else if (Component.translatableClient(EI18nType.OPTION, "copy").toString().equalsIgnoreCase(selectedString)) {
-                    if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+                    if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                         editHandler.handleCopy();
                     }
                 } else if (Component.translatableClient(EI18nType.OPTION, "cut").toString().equalsIgnoreCase(selectedString)) {
-                    if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+                    if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                         editHandler.handleCut();
                     }
                 } else if (Component.translatableClient(EI18nType.OPTION, "paste").toString().equalsIgnoreCase(selectedString)) {
-                    if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+                    if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                         editHandler.handlePaste();
                     }
                 } else if (Component.translatableClient(EI18nType.OPTION, "clear").toString().equalsIgnoreCase(selectedString)) {
-                    if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
+                    if (button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
                         if (keyManager.onlyCtrlPressed()) {
                             RewardConfigManager.addUndoRewardOption(rule);
                             RewardConfigManager.clearRedoList();
@@ -1262,7 +1261,7 @@ public class RewardOptionScreen extends Screen {
                 String key = split[0];
                 String index = split[1];
                 if (Component.translatableClient(EI18nType.OPTION, "edit").toString().equalsIgnoreCase(selectedString)) {
-                    if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+                    if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                         Reward reward = RewardConfigManager.getReward(rule, key, Integer.parseInt(index)).clone();
                         if (reward.getType() == ERewardType.ITEM) {
                             Minecraft.getInstance().setScreen(new ItemSelectScreen(this, input -> {
@@ -1414,15 +1413,15 @@ public class RewardOptionScreen extends Screen {
                         }
                     }
                 } else if (Component.translatableClient(EI18nType.OPTION, "copy").toString().equalsIgnoreCase(selectedString)) {
-                    if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+                    if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                         editHandler.handleCopy();
                     }
                 } else if (Component.translatableClient(EI18nType.OPTION, "cut").toString().equalsIgnoreCase(selectedString)) {
-                    if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+                    if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                         editHandler.handleCut();
                     }
                 } else if (Component.translatableClient(EI18nType.OPTION, "paste").toString().equalsIgnoreCase(selectedString)) {
-                    if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+                    if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                         editHandler.handlePaste();
                     }
                 } else if (Component.translatableClient(EI18nType.OPTION, "delete").toString().equalsIgnoreCase(selectedString)) {
@@ -1985,7 +1984,7 @@ public class RewardOptionScreen extends Screen {
         // 清空弹出选项
         if (!popupOption.isHovered()) {
             popupOption.clear();
-            if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT || button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
+            if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT || button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
                 OP_BUTTONS.forEach((key, value) -> {
                     if (value.isHovered()) {
                         value.setPressed(true);
@@ -2014,7 +2013,7 @@ public class RewardOptionScreen extends Screen {
             if (popupOption.isHovered()) {
                 this.handlePopupOption(mouseX, mouseY, button, updateLayout, flag);
                 popupOption.clear();
-            } else if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT || button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
+            } else if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT || button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
                 // 控制按钮
                 OP_BUTTONS.forEach((key, value) -> {
                     // 忽略奖励配置列表面板, 后置处理
@@ -2107,7 +2106,7 @@ public class RewardOptionScreen extends Screen {
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         // LOGGER.debug("keyPressed: keyCode = {}, scanCode = {}, modifiers = {}", keyCode, scanCode, modifiers);
         keyManager.keyPressed(keyCode);
-        if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+        if (keyCode == GLFWKey.GLFW_KEY_ESCAPE) {
             if (this.previousScreen != null) Minecraft.getInstance().setScreen(this.previousScreen);
             else this.onClose();
             return true;
