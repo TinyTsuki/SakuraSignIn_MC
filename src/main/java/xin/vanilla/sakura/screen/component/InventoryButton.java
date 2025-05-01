@@ -12,12 +12,12 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.glfw.GLFW;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.util.AbstractGuiUtils;
 import xin.vanilla.sakura.util.Component;
+import xin.vanilla.sakura.util.GLFWKey;
 import xin.vanilla.sakura.util.StringUtils;
 
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -109,7 +109,7 @@ public class InventoryButton extends AbstractWidget {
         AbstractGuiUtils.resetDepth(poseStack);
         if (this.mouseDrag) {
             Text text;
-            if (this.modifiers == GLFW.GLFW_MOD_ALT) {
+            if (this.modifiers == GLFWKey.GLFW_MOD_ALT) {
                 text = Text.literal(String.format("X: %s\nY: %s"
                         , StringUtils.toPercent((this.x - 2.0d) / (screenWidth - this.width - 2.0d * 2))
                         , StringUtils.toPercent((this.y - 2.0d) / (screenHeight - this.height - 2.0d * 2))));
@@ -118,7 +118,7 @@ public class InventoryButton extends AbstractWidget {
             }
             AbstractGuiUtils.drawPopupMessage(text.setPoseStack(poseStack), this.x + (AbstractGuiUtils.multilineTextWidth(text) - this.width) / 2, this.y + this.height / 2, screenWidth, screenHeight);
         } else if (this.isHovered) {
-            if (this.modifiers == GLFW.GLFW_MOD_SHIFT) {
+            if (this.modifiers == GLFWKey.GLFW_MOD_SHIFT) {
                 AbstractGuiUtils.drawPopupMessage(Text.translatable(EI18nType.TIPS, "drag_inventory_button").setPoseStack(poseStack), mouseX, mouseY, screenWidth, screenHeight);
             } else {
                 AbstractGuiUtils.drawPopupMessage(Text.fromTextComponent(this.getMessage().copy()).setPoseStack(poseStack), mouseX, mouseY, screenWidth, screenHeight);
@@ -143,7 +143,7 @@ public class InventoryButton extends AbstractWidget {
         boolean flag = false;
         this.isHovered = this.isMouseOver(mouseX, mouseY);
         if (this.pressed && this.mouseDrag) {
-            if (this.modifiers == GLFW.GLFW_MOD_ALT) {
+            if (this.modifiers == GLFWKey.GLFW_MOD_ALT) {
                 Screen screen = Minecraft.getInstance().screen;
                 if (screen != null) {
                     this.onDragEnd.accept(new Coordinate().setX((this.x - 2.0d) / (screen.width - this.width - 2.0d * 2)).setY((this.y - 2.0d) / (screen.height - this.height - 2.0d * 2)));
@@ -155,7 +155,7 @@ public class InventoryButton extends AbstractWidget {
             }
             this.x_ = this.x;
             this.y_ = this.y;
-        } else if (this.pressed && this.isHovered && button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+        } else if (this.pressed && this.isHovered && button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
             onClick.accept(this);
             flag = true;
         }
@@ -174,9 +174,9 @@ public class InventoryButton extends AbstractWidget {
         this.isHovered = this.isMouseOver(mouseX, mouseY);
         super.setFocused(true);
         if (this.pressed) {
-            if (((this.keyCode == GLFW.GLFW_KEY_LEFT_CONTROL || this.keyCode == GLFW.GLFW_KEY_RIGHT_CONTROL) && this.modifiers == GLFW.GLFW_MOD_CONTROL)
-                    || ((this.keyCode == GLFW.GLFW_KEY_LEFT_ALT || this.keyCode == GLFW.GLFW_KEY_RIGHT_ALT) && this.modifiers == GLFW.GLFW_MOD_ALT)
-                    || this.mouseButton == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
+            if (((this.keyCode == GLFWKey.GLFW_KEY_LEFT_CONTROL || this.keyCode == GLFWKey.GLFW_KEY_RIGHT_CONTROL) && this.modifiers == GLFWKey.GLFW_MOD_CONTROL)
+                    || ((this.keyCode == GLFWKey.GLFW_KEY_LEFT_ALT || this.keyCode == GLFWKey.GLFW_KEY_RIGHT_ALT) && this.modifiers == GLFWKey.GLFW_MOD_ALT)
+                    || this.mouseButton == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
                 this.mouseDrag = true;
                 this.x = (int) getValidX(this.x_ + (mouseX - this.mouseClickX), this.width);
                 this.y = (int) getValidY(this.y_ + (mouseY - this.mouseClickY), this.height);
