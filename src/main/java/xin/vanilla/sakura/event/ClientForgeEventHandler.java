@@ -89,7 +89,7 @@ public class ClientForgeEventHandler {
         if (event.getObject() instanceof Player) {
             // 为玩家实体附加一个名为 "player_sign_in_data" 的能力
             // 这个能力由 PlayerSignInDataProvider 提供，用于管理玩家的签到数据
-            event.addCapability(new ResourceLocation(SakuraSignIn.MODID, "player_sign_in_data"), new PlayerSignInDataProvider());
+            event.addCapability(ResourceLocation.fromNamespaceAndPath(SakuraSignIn.MODID, "player_sign_in_data"), new PlayerSignInDataProvider());
         }
     }
 

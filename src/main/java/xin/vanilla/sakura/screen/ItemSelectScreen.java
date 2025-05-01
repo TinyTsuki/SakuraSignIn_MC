@@ -10,8 +10,10 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.client.multiplayer.SessionSearchTrees;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.searchtree.SearchRegistry;
+import net.minecraft.client.searchtree.SearchTree;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -575,20 +577,27 @@ public class ItemSelectScreen extends Screen {
         this.itemList.clear();
         this.visibleTags.clear();
         if (StringUtils.isNotNullOrEmpty(s)) {
-            // # 物品标签
-            if (s.startsWith("#")) {
-                s = s.substring(1);
-                this.updateVisibleTags(s);
-                this.itemList.addAll(Minecraft.getInstance().getSearchTree(SearchRegistry.CREATIVE_TAGS).search(s.toLowerCase(Locale.ROOT)));
-            }
-            // $ 描述
-            else if (s.startsWith("$")) {
-                s = s.substring(1);
-                this.itemList.addAll(this.searchByDescription(s));
-            } else {
-                // @ modId
-                if (s.startsWith("@")) s = s.replaceAll("^@(\\S+)", "$1:");
-                this.itemList.addAll(Minecraft.getInstance().getSearchTree(SearchRegistry.CREATIVE_NAMES).search(s.toLowerCase(Locale.ROOT)));
+
+            ClientPacketListener clientpacketlistener = Minecraft.getInstance().getConnection();
+            if (clientpacketlistener != null) {
+                SessionSearchTrees sessionsearchtrees = clientpacketlistener.searchTrees();
+                SearchTree<ItemStack> searchtree;
+                // # 物品标签
+                if (s.startsWith("#")) {
+                    s = s.substring(1);
+                    searchtree = sessionsearchtrees.getSearchTree(SessionSearchTrees.CREATIVE_TAGS);
+                    this.updateVisibleTags(s);
+                    this.itemList.addAll(searchtree.search(s.toLowerCase(Locale.ROOT)));
+                }
+                // $ 描述
+                else if (s.startsWith("$")) {
+                    s = s.substring(1);
+                    this.itemList.addAll(this.searchByDescription(s));
+                } else {
+                    // @ modId
+                    searchtree = sessionsearchtrees.getSearchTree(SessionSearchTrees.CREATIVE_NAMES);
+                    this.itemList.addAll(searchtree.search(s.toLowerCase(Locale.ROOT)));
+                }
             }
         } else {
             this.itemList.addAll(new ArrayList<>(this.getItemList()));

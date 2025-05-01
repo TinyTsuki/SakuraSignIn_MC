@@ -5,6 +5,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
+import net.minecraftforge.common.capabilities.AutoRegisterCapability;
 import net.minecraftforge.common.util.INBTSerializable;
 import xin.vanilla.sakura.config.KeyValue;
 
@@ -15,6 +16,7 @@ import java.util.List;
 /**
  * 玩家签到数据
  */
+@AutoRegisterCapability
 public interface IPlayerSignInData extends INBTSerializable<CompoundTag> {
     // TIPS 加完属性记得去 PlayerSignInDataStorage 里注册
 

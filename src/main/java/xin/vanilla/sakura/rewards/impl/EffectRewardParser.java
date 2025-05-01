@@ -27,7 +27,7 @@ public class EffectRewardParser implements RewardParser<MobEffectInstance> {
             int duration = json.get("duration").getAsInt();
             int amplifier = json.get("amplifier").getAsInt();
 
-            Optional<Holder<MobEffect>> effect = ForgeRegistries.MOB_EFFECTS.getHolder(new ResourceLocation(effectId));
+            Optional<Holder<MobEffect>> effect = ForgeRegistries.MOB_EFFECTS.getHolder(ResourceLocation.parse(effectId));
             if (effect.isEmpty()) {
                 throw new JsonParseException("Unknown potion effect ID: " + effectId);
             }
@@ -81,7 +81,7 @@ public class EffectRewardParser implements RewardParser<MobEffectInstance> {
     public static MobEffect getEffect(String id) {
         String resourceId = id;
         if (id.contains(" ") && id.split(" ").length == 3) resourceId = resourceId.substring(0, id.indexOf(" "));
-        return ForgeRegistries.MOB_EFFECTS.getValue(new ResourceLocation(resourceId));
+        return ForgeRegistries.MOB_EFFECTS.getValue(ResourceLocation.parse(resourceId));
     }
 
     public static MobEffectInstance getMobEffectInstance(String id, int duration, int amplifier) {

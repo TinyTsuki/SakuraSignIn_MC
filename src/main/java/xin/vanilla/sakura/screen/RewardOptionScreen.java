@@ -1,10 +1,7 @@
 package xin.vanilla.sakura.screen;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.*;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
@@ -25,7 +22,6 @@ import net.minecraftforge.fml.loading.FMLPaths;
 import net.minecraftforge.network.PacketDistributor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.glfw.GLFW;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.*;
 import xin.vanilla.sakura.enums.EI18nType;
@@ -212,17 +208,16 @@ public class RewardOptionScreen extends Screen {
 
         // 使用Tessellator绘制平铺的纹理片段
         Tesselator tesselator = Tesselator.getInstance();
-        BufferBuilder buffer = tesselator.getBuilder();
 
         // 绘制完整的纹理块
         for (int x = 0; x <= screenWidth - regionWidth; x += (int) regionWidth) {
             for (int y = 0; y <= screenHeight - regionHeight; y += (int) regionHeight) {
-                buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-                buffer.vertex(graphics.pose().last().pose(), x, y + regionHeight, 0).uv(uMin, vMax).endVertex();
-                buffer.vertex(graphics.pose().last().pose(), x + regionWidth, y + regionHeight, 0).uv(uMax, vMax).endVertex();
-                buffer.vertex(graphics.pose().last().pose(), x + regionWidth, y, 0).uv(uMax, vMin).endVertex();
-                buffer.vertex(graphics.pose().last().pose(), x, y, 0).uv(uMin, vMin).endVertex();
-                tesselator.end();
+                BufferBuilder buffer = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+                buffer.addVertex(graphics.pose().last().pose(), x, y + regionHeight, 0).setUv(uMin, vMax);
+                buffer.addVertex(graphics.pose().last().pose(), x + regionWidth, y + regionHeight, 0).setUv(uMax, vMax);
+                buffer.addVertex(graphics.pose().last().pose(), x + regionWidth, y, 0).setUv(uMax, vMin);
+                buffer.addVertex(graphics.pose().last().pose(), x, y, 0).setUv(uMin, vMin);
+                BufferUploader.drawWithShader(buffer.buildOrThrow());
             }
         }
 
@@ -231,12 +226,12 @@ public class RewardOptionScreen extends Screen {
         float u = uMin + (leftoverWidth / regionWidth) * (uMax - uMin);
         if (leftoverWidth > 0) {
             for (int y = 0; y <= screenHeight - regionHeight; y += (int) regionHeight) {
-                buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-                buffer.vertex(graphics.pose().last().pose(), screenWidth - leftoverWidth, y + regionHeight, 0).uv(uMin, vMax).endVertex();
-                buffer.vertex(graphics.pose().last().pose(), screenWidth, y + regionHeight, 0).uv(u, vMax).endVertex();
-                buffer.vertex(graphics.pose().last().pose(), screenWidth, y, 0).uv(u, vMin).endVertex();
-                buffer.vertex(graphics.pose().last().pose(), screenWidth - leftoverWidth, y, 0).uv(uMin, vMin).endVertex();
-                tesselator.end();
+                BufferBuilder buffer = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+                buffer.addVertex(graphics.pose().last().pose(), screenWidth - leftoverWidth, y + regionHeight, 0).setUv(uMin, vMax);
+                buffer.addVertex(graphics.pose().last().pose(), screenWidth, y + regionHeight, 0).setUv(u, vMax);
+                buffer.addVertex(graphics.pose().last().pose(), screenWidth, y, 0).setUv(u, vMin);
+                buffer.addVertex(graphics.pose().last().pose(), screenWidth - leftoverWidth, y, 0).setUv(uMin, vMin);
+                BufferUploader.drawWithShader(buffer.buildOrThrow());
             }
         }
 
@@ -245,23 +240,23 @@ public class RewardOptionScreen extends Screen {
         float v = vMin + (leftoverHeight / regionHeight) * (vMax - vMin);
         if (leftoverHeight > 0) {
             for (int x = 0; x <= screenWidth - regionWidth; x += (int) regionWidth) {
-                buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-                buffer.vertex(graphics.pose().last().pose(), x, screenHeight, 0).uv(uMin, v).endVertex();
-                buffer.vertex(graphics.pose().last().pose(), x + regionWidth, screenHeight, 0).uv(uMax, v).endVertex();
-                buffer.vertex(graphics.pose().last().pose(), x + regionWidth, screenHeight - leftoverHeight, 0).uv(uMax, vMin).endVertex();
-                buffer.vertex(graphics.pose().last().pose(), x, screenHeight - leftoverHeight, 0).uv(uMin, vMin).endVertex();
-                tesselator.end();
+                BufferBuilder buffer = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+                buffer.addVertex(graphics.pose().last().pose(), x, screenHeight, 0).setUv(uMin, v);
+                buffer.addVertex(graphics.pose().last().pose(), x + regionWidth, screenHeight, 0).setUv(uMax, v);
+                buffer.addVertex(graphics.pose().last().pose(), x + regionWidth, screenHeight - leftoverHeight, 0).setUv(uMax, vMin);
+                buffer.addVertex(graphics.pose().last().pose(), x, screenHeight - leftoverHeight, 0).setUv(uMin, vMin);
+                BufferUploader.drawWithShader(buffer.buildOrThrow());
             }
         }
 
         // 绘制右下角的剩余区域
         if (leftoverWidth > 0 && leftoverHeight > 0) {
-            buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-            buffer.vertex(graphics.pose().last().pose(), screenWidth - leftoverWidth, screenHeight, 0).uv(uMin, v).endVertex();
-            buffer.vertex(graphics.pose().last().pose(), screenWidth, screenHeight, 0).uv(u, v).endVertex();
-            buffer.vertex(graphics.pose().last().pose(), screenWidth, screenHeight - leftoverHeight, 0).uv(u, vMin).endVertex();
-            buffer.vertex(graphics.pose().last().pose(), screenWidth - leftoverWidth, screenHeight - leftoverHeight, 0).uv(uMin, vMin).endVertex();
-            tesselator.end();
+            BufferBuilder buffer = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+            buffer.addVertex(graphics.pose().last().pose(), screenWidth - leftoverWidth, screenHeight, 0).setUv(uMin, v);
+            buffer.addVertex(graphics.pose().last().pose(), screenWidth, screenHeight, 0).setUv(u, v);
+            buffer.addVertex(graphics.pose().last().pose(), screenWidth, screenHeight - leftoverHeight, 0).setUv(u, vMin);
+            buffer.addVertex(graphics.pose().last().pose(), screenWidth - leftoverWidth, screenHeight - leftoverHeight, 0).setUv(uMin, vMin);
+            BufferUploader.drawWithShader(buffer.buildOrThrow());
         }
 
         RenderSystem.enableDepthTest();
@@ -958,7 +953,7 @@ public class RewardOptionScreen extends Screen {
                         RewardConfigManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(input, ERewardType.ADVANCEMENT), ERewardType.ADVANCEMENT));
                         RewardConfigManager.saveRewardOption();
                     }
-                }, new Reward(new ResourceLocation(""), ERewardType.ADVANCEMENT), () -> StringUtils.isNullOrEmpty(key[0]));
+                }, new Reward(ResourceLocation.parse(""), ERewardType.ADVANCEMENT), () -> StringUtils.isNullOrEmpty(key[0]));
                 if (rule == ERewardRule.CDK_REWARD) {
                     Minecraft.getInstance().setScreen(this.getCdkRuleKeyInputScreen(callbackScreen, rule, key));
                 } else if (rule != ERewardRule.BASE_REWARD) {
@@ -1213,7 +1208,7 @@ public class RewardOptionScreen extends Screen {
                             RewardConfigManager.addReward(rule, key, input);
                             RewardConfigManager.saveRewardOption();
                         }
-                    }, new Reward(new ResourceLocation(""), ERewardType.ADVANCEMENT)));
+                    }, new Reward(ResourceLocation.parse(""), ERewardType.ADVANCEMENT)));
 
                 }
                 // 消息

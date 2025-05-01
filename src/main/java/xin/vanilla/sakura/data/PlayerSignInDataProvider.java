@@ -1,6 +1,7 @@
 package xin.vanilla.sakura.data;
 
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
@@ -53,8 +54,8 @@ public class PlayerSignInDataProvider implements ICapabilityProvider, INBTSerial
      * 该方法实现了玩家签到数据的序列化，返回的数据可以用于存储或传输
      */
     @Override
-    public CompoundTag serializeNBT() {
-        return this.getOrCreateCapability().serializeNBT();
+    public CompoundTag serializeNBT(HolderLookup.Provider registryAccess) {
+        return this.getOrCreateCapability().serializeNBT(registryAccess);
         // return (CompoundTag) PlayerSignInDataCapability.PLAYER_DATA.getStorage().writeNBT(PlayerSignInDataCapability.PLAYER_DATA, this.getOrCreateCapability(), null);
     }
 
@@ -66,8 +67,8 @@ public class PlayerSignInDataProvider implements ICapabilityProvider, INBTSerial
      *            该方法实现了玩家签到数据的反序列化，从提供的NBT数据中恢复玩家签到信息
      */
     @Override
-    public void deserializeNBT(CompoundTag nbt) {
-        this.getOrCreateCapability().deserializeNBT(nbt);
+    public void deserializeNBT(HolderLookup.Provider registryAccess, CompoundTag nbt) {
+        this.getOrCreateCapability().deserializeNBT(registryAccess, nbt);
         // PlayerSignInDataCapability.PLAYER_DATA.getStorage().readNBT(PlayerSignInDataCapability.PLAYER_DATA, this.getOrCreateCapability(), null, nbt);
     }
 }

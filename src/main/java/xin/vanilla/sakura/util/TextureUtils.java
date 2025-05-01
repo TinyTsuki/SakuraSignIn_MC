@@ -43,7 +43,7 @@ public class TextureUtils {
         TextureManager textureManager = Minecraft.getInstance().getTextureManager();
         textureName = textureName.replaceAll("\\\\", "/");
         textureName = textureName.startsWith("./") ? textureName.substring(2) : textureName;
-        ResourceLocation customTextureLocation = new ResourceLocation(SakuraSignIn.MODID, TextureUtils.getSafeThemePath(textureName));
+        ResourceLocation customTextureLocation = ResourceLocation.fromNamespaceAndPath(SakuraSignIn.MODID, TextureUtils.getSafeThemePath(textureName));
         if (!textureName.startsWith(INTERNAL_THEME_DIR)) {
             File textureFile;
             // 指定外部路径的纹理文件
@@ -55,7 +55,7 @@ public class TextureUtils {
             // 检查文件是否存在
             if (!textureFile.exists()) {
                 LOGGER.warn("Texture file not found: {}", textureFile.getAbsolutePath());
-                customTextureLocation = new ResourceLocation(SakuraSignIn.MODID, INTERNAL_THEME_DIR + DEFAULT_THEME);
+                customTextureLocation = ResourceLocation.fromNamespaceAndPath(SakuraSignIn.MODID, INTERNAL_THEME_DIR + DEFAULT_THEME);
             } else {
                 try (InputStream inputStream = Files.newInputStream(textureFile.toPath())) {
                     // 直接从InputStream创建NativeImage
@@ -66,7 +66,7 @@ public class TextureUtils {
                 } catch (IOException e) {
                     LOGGER.warn("Failed to load texture: {}", textureFile.getAbsolutePath());
                     LOGGER.error(e);
-                    customTextureLocation = new ResourceLocation(SakuraSignIn.MODID, INTERNAL_THEME_DIR + DEFAULT_THEME);
+                    customTextureLocation = ResourceLocation.fromNamespaceAndPath(SakuraSignIn.MODID, INTERNAL_THEME_DIR + DEFAULT_THEME);
                 }
             }
         }
@@ -110,7 +110,7 @@ public class TextureUtils {
         ResourceLocation effectIcon;
         ResourceLocation registryName = ForgeRegistries.MOB_EFFECTS.getKey(mobEffectInstance.getEffect().value());
         if (registryName != null) {
-            effectIcon = new ResourceLocation(registryName.getNamespace(), DEFAULT_EFFECT_DIR + registryName.getPath() + ".png");
+            effectIcon = ResourceLocation.fromNamespaceAndPath(registryName.getNamespace(), DEFAULT_EFFECT_DIR + registryName.getPath() + ".png");
         } else {
             effectIcon = null;
         }

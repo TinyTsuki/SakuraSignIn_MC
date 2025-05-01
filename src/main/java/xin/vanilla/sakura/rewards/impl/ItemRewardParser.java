@@ -14,7 +14,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 import xin.vanilla.sakura.rewards.RewardParser;
 import xin.vanilla.sakura.util.Component;
 
-import static xin.vanilla.sakura.config.RewardOptionDataManager.GSON;
+import static xin.vanilla.sakura.config.RewardConfigManager.GSON;
 
 public class ItemRewardParser implements RewardParser<ItemStack> {
 
@@ -32,7 +32,7 @@ public class ItemRewardParser implements RewardParser<ItemStack> {
                 String itemId = jsonObject.get("id").getAsString();
                 int count = jsonObject.get("count").getAsInt();
                 count = Math.max(count, 1);
-                Item item = ForgeRegistries.ITEMS.getValue(new ResourceLocation(itemId));
+                Item item = ForgeRegistries.ITEMS.getValue(ResourceLocation.parse(itemId));
                 if (item == null) {
                     item = Items.AIR;
                 }
@@ -119,7 +119,7 @@ public class ItemRewardParser implements RewardParser<ItemStack> {
     public static Item getItem(String id) {
         String resourceId = id;
         if (id.contains("{") && id.endsWith("}")) resourceId = resourceId.substring(0, id.indexOf("{"));
-        return ForgeRegistries.ITEMS.getValue(new ResourceLocation(resourceId));
+        return ForgeRegistries.ITEMS.getValue(ResourceLocation.parse(resourceId));
     }
 
     public static ItemStack getItemStack(String id) {

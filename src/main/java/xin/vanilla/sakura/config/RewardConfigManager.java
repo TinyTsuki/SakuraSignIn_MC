@@ -96,7 +96,7 @@ public class RewardConfigManager {
      * 获取服务端配置文件路径
      */
     public static Path getServerConfigDirectory() {
-        return new File(SakuraSignIn.getServerInstance().getServerDirectory(), "serverconfig" + File.separator + SakuraSignIn.MODID).toPath();
+        return new File(SakuraSignIn.getServerInstance().getServerDirectory().toFile(), "serverconfig" + File.separator + SakuraSignIn.MODID).toPath();
     }
 
     /**

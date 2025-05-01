@@ -1,6 +1,7 @@
 package xin.vanilla.sakura.data;
 
 import lombok.NonNull;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.network.FriendlyByteBuf;
@@ -229,7 +230,7 @@ public class PlayerSignInData implements IPlayerSignInData {
     }
 
     @Override
-    public CompoundTag serializeNBT() {
+    public CompoundTag serializeNBT(HolderLookup.Provider registryAccess) {
         // 创建一个CompoundNBT对象，并将玩家的分数和活跃状态写入其中
         CompoundTag tag = new CompoundTag();
         tag.putInt("totalSignInDays", this.getTotalSignInDays());
@@ -260,7 +261,7 @@ public class PlayerSignInData implements IPlayerSignInData {
     }
 
     @Override
-    public void deserializeNBT(CompoundTag nbt) {
+    public void deserializeNBT(HolderLookup.Provider registryAccess, CompoundTag nbt) {
         // 从NBT标签中读取玩家的分数和活跃状态，并更新到实例中
         this.setTotalSignInDays(nbt.getInt("totalSignInDays"));
         this.setContinuousSignInDays(nbt.getInt("continuousSignInDays"));
