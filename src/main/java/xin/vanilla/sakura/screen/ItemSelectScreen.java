@@ -584,6 +584,7 @@ public class ItemSelectScreen extends Screen {
                 SearchTree<ItemStack> searchtree;
                 // # 物品标签
                 if (s.startsWith("#")) {
+                    sessionsearchtrees.updateCreativeTags(List.copyOf(CreativeModeTabs.searchTab().getDisplayItems()));
                     s = s.substring(1);
                     searchtree = sessionsearchtrees.getSearchTree(SessionSearchTrees.CREATIVE_TAGS);
                     this.updateVisibleTags(s);
@@ -595,6 +596,7 @@ public class ItemSelectScreen extends Screen {
                     this.itemList.addAll(this.searchByDescription(s));
                 } else {
                     // @ modId
+                    sessionsearchtrees.updateCreativeTags(List.copyOf(CreativeModeTabs.searchTab().getDisplayItems()));
                     searchtree = sessionsearchtrees.getSearchTree(SessionSearchTrees.CREATIVE_NAMES);
                     this.itemList.addAll(searchtree.search(s.toLowerCase(Locale.ROOT)));
                 }
