@@ -14,7 +14,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 import xin.vanilla.sakura.rewards.RewardParser;
 import xin.vanilla.sakura.util.Component;
 
-import static xin.vanilla.sakura.config.RewardOptionDataManager.GSON;
+import static xin.vanilla.sakura.config.RewardConfigManager.GSON;
 
 public class ItemRewardParser implements RewardParser<ItemStack> {
 
