@@ -1,13 +1,15 @@
 package xin.vanilla.sakura.util;
 
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.glfw.GLFW;
 
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@OnlyIn(Dist.CLIENT)
 public class GLFWKeyHelper {
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -26,7 +28,7 @@ public class GLFWKeyHelper {
     ));
 
     static {
-        Field[] fields = GLFW.class.getDeclaredFields();
+        Field[] fields = GLFWKey.class.getDeclaredFields();
         for (Field field : fields) {
             String fieldName = field.getName();
             try {

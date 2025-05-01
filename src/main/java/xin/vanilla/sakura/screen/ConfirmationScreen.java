@@ -5,11 +5,11 @@ import lombok.NonNull;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
-import org.lwjgl.glfw.GLFW;
 import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.screen.component.Text;
 import xin.vanilla.sakura.util.AbstractGuiUtils;
 import xin.vanilla.sakura.util.Component;
+import xin.vanilla.sakura.util.GLFWKey;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.function.Supplier;
@@ -83,7 +83,7 @@ public class ConfirmationScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == GLFW.GLFW_MOUSE_BUTTON_4) {
+        if (button == GLFWKey.GLFW_MOUSE_BUTTON_4) {
             Minecraft.getInstance().setScreen(previousScreen);
             return true;
         } else {
@@ -96,7 +96,7 @@ public class ConfirmationScreen extends Screen {
      */
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == GLFW.GLFW_KEY_ESCAPE || keyCode == GLFW.GLFW_KEY_BACKSPACE) {
+        if (keyCode == GLFWKey.GLFW_KEY_ESCAPE || keyCode == GLFWKey.GLFW_KEY_BACKSPACE) {
             Minecraft.getInstance().setScreen(previousScreen);
             return true;
         } else {
