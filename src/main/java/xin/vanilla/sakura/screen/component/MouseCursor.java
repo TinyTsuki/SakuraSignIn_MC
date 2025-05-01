@@ -6,6 +6,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import org.lwjgl.glfw.GLFW;
 import xin.vanilla.sakura.util.AbstractGuiUtils;
+import xin.vanilla.sakura.util.GLFWKey;
 
 /**
  * 自定义的鼠标光标
@@ -118,13 +119,13 @@ public class MouseCursor {
     private void updateMouseStatus(int button, boolean pressed) {
         int op = pressed ? 1 : -1;
         switch (button) {
-            case GLFW.GLFW_MOUSE_BUTTON_LEFT:
+            case GLFWKey.GLFW_MOUSE_BUTTON_LEFT:
                 this.status += 1 * op;
                 break;
-            case GLFW.GLFW_MOUSE_BUTTON_RIGHT:
+            case GLFWKey.GLFW_MOUSE_BUTTON_RIGHT:
                 this.status += 2 * op;
                 break;
-            case GLFW.GLFW_MOUSE_BUTTON_MIDDLE:
+            case GLFWKey.GLFW_MOUSE_BUTTON_MIDDLE:
                 this.status += 4 * op;
                 break;
         }
