@@ -18,7 +18,6 @@ import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
@@ -133,7 +132,7 @@ public class SakuraSignIn {
     @Getter
     private static final KeyValue<String, String> clientServerTime = new KeyValue<>(DateUtils.toDateTimeString(new Date(0)), DateUtils.toString(new Date(0)));
 
-    public SakuraSignIn() {
+    public SakuraSignIn(FMLJavaModLoadingContext context) {
 
         // 注册网络通道
         ModNetworkHandler.registerPackets();
@@ -146,11 +145,11 @@ public class SakuraSignIn {
         MinecraftForge.EVENT_BUS.register(this);
 
         // 注册服务器和客户端配置
-        ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, ServerConfig.SERVER_CONFIG);
-        ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, ClientConfig.CLIENT_CONFIG);
+        context.registerConfig(ModConfig.Type.SERVER, ServerConfig.SERVER_CONFIG);
+        context.registerConfig(ModConfig.Type.CLIENT, ClientConfig.CLIENT_CONFIG);
         if (FMLEnvironment.dist == Dist.CLIENT) {
-            FMLJavaModLoadingContext.get().getModEventBus().addListener(ClientEventHandler::registerKeyMappings);
-            FMLJavaModLoadingContext.get().getModEventBus().addListener(this::onClientSetup);
+            context.getModEventBus().addListener(ClientEventHandler::registerKeyMappings);
+            context.getModEventBus().addListener(this::onClientSetup);
         }
 
         // 注册客户端设置事件到MOD事件总线
