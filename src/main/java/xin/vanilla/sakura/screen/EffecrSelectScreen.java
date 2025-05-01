@@ -15,7 +15,6 @@ import net.minecraft.potion.Effects;
 import net.minecraft.util.registry.Registry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.glfw.GLFW;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.StringList;
 import xin.vanilla.sakura.enums.EI18nType;
@@ -26,10 +25,7 @@ import xin.vanilla.sakura.rewards.impl.EffectRewardParser;
 import xin.vanilla.sakura.screen.component.KeyEventManager;
 import xin.vanilla.sakura.screen.component.OperationButton;
 import xin.vanilla.sakura.screen.component.Text;
-import xin.vanilla.sakura.util.AbstractGuiUtils;
-import xin.vanilla.sakura.util.CollectionUtils;
-import xin.vanilla.sakura.util.Component;
-import xin.vanilla.sakura.util.StringUtils;
+import xin.vanilla.sakura.util.*;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.math.BigDecimal;
@@ -278,10 +274,10 @@ public class EffecrSelectScreen extends Screen {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         keyManager.mouseClicked(button, mouseX, mouseY);
         AtomicBoolean flag = new AtomicBoolean(false);
-        if (button == GLFW.GLFW_MOUSE_BUTTON_4) {
+        if (button == GLFWKey.GLFW_MOUSE_BUTTON_4) {
             Minecraft.getInstance().setScreen(previousScreen);
             flag.set(true);
-        } else if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT || button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
+        } else if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT || button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
             OP_BUTTONS.forEach((key, value) -> {
                 if (value.isHovered()) {
                     value.setPressed(true);
@@ -304,7 +300,7 @@ public class EffecrSelectScreen extends Screen {
         keyManager.refresh(mouseX, mouseY);
         AtomicBoolean flag = new AtomicBoolean(false);
         AtomicBoolean updateSearchResults = new AtomicBoolean(false);
-        if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT || button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
+        if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT || button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
             // 控制按钮
             OP_BUTTONS.forEach((key, value) -> {
                 if (value.isHovered() && value.isPressed()) {
@@ -354,10 +350,10 @@ public class EffecrSelectScreen extends Screen {
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         keyManager.keyPressed(keyCode);
-        if (keyCode == GLFW.GLFW_KEY_ESCAPE || (keyCode == GLFW.GLFW_KEY_BACKSPACE && !this.inputField.isFocused())) {
+        if (keyCode == GLFWKey.GLFW_KEY_ESCAPE || (keyCode == GLFWKey.GLFW_KEY_BACKSPACE && !this.inputField.isFocused())) {
             Minecraft.getInstance().setScreen(previousScreen);
             return true;
-        } else if ((keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) && this.inputField.isFocused()) {
+        } else if ((keyCode == GLFWKey.GLFW_KEY_ENTER || keyCode == GLFWKey.GLFW_KEY_KP_ENTER) && this.inputField.isFocused()) {
             this.updateSearchResults();
             return true;
         } else {
@@ -537,7 +533,7 @@ public class EffecrSelectScreen extends Screen {
     }
 
     private void handleEffect(OperationButton bt, int button, AtomicBoolean flag) {
-        if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+        if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
             if (StringUtils.isNotNullOrEmpty(bt.getId())) {
                 EffectInstance effectInstance = RewardManager.deserializeReward(this.currentEffect);
                 this.currentEffect = new Reward(EffectRewardParser.getEffectInstance(bt.getId(), effectInstance.getDuration(), effectInstance.getAmplifier()), ERewardType.EFFECT, this.probability);
