@@ -1,14 +1,10 @@
 package xin.vanilla.sakura;
 
 import org.junit.Test;
-import org.lwjgl.glfw.GLFW;
 import xin.vanilla.sakura.screen.component.KeyEventManager;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
-import xin.vanilla.sakura.util.DateUtils;
-import xin.vanilla.sakura.util.GLFWKeyHelper;
-import xin.vanilla.sakura.util.PNGUtils;
-import xin.vanilla.sakura.util.StringUtils;
+import xin.vanilla.sakura.util.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,7 +16,7 @@ public class MyTest {
 
     @Test
     public void dateTest() {
-        System.out.println(DateUtils.calculateContinuousDays(new ArrayList<Date>() {{
+        System.out.println(DateUtils.calculateContinuousDays(new ArrayList<>() {{
             add(DateUtils.getDate(2024, 10, 31));
             add(DateUtils.getDate(2024, 10, 30));
             add(DateUtils.getDate(2024, 10, 29));
@@ -43,7 +39,7 @@ public class MyTest {
             }
             sourceFile = new File("F:\\Design\\PS\\樱花签\\sign_in_calendar_" + fileName + "_source.png");
             targetFile = new File("src/main/resources/assets/sakura_sign_in/textures/gui/sign_in_calendar_" + fileName + ".png");
-            PNGUtils.writeZTxt(sourceFile, targetFile, new LinkedHashMap<String, String>() {{
+            PNGUtils.writeZTxt(sourceFile, targetFile, new LinkedHashMap<>() {{
                 put("titleStartX", "20");
                 put("titleStartY", "20");
                 put("titleWidth", "50");
@@ -196,25 +192,25 @@ public class MyTest {
     @Test
     public void keyTest() {
         KeyEventManager manager = new KeyEventManager();
-        manager.keyPressed(GLFW.GLFW_KEY_A);
-        manager.keyPressed(GLFW.GLFW_KEY_LEFT_SHIFT);
-        manager.keyPressed(GLFW.GLFW_KEY_RIGHT_CONTROL);
-        manager.mouseClicked(GLFW.GLFW_MOUSE_BUTTON_LEFT, 0, 0);
-        manager.mouseClicked(GLFW.GLFW_MOUSE_BUTTON_RIGHT, 0, 0);
+        manager.keyPressed(GLFWKey.GLFW_KEY_A);
+        manager.keyPressed(GLFWKey.GLFW_KEY_LEFT_SHIFT);
+        manager.keyPressed(GLFWKey.GLFW_KEY_RIGHT_CONTROL);
+        manager.mouseClicked(GLFWKey.GLFW_MOUSE_BUTTON_LEFT, 0, 0);
+        manager.mouseClicked(GLFWKey.GLFW_MOUSE_BUTTON_RIGHT, 0, 0);
         {
-            String join = GLFWKeyHelper.getKeyDisplayString(GLFW.GLFW_KEY_A, GLFW.GLFW_KEY_RIGHT_CONTROL, GLFW.GLFW_KEY_LEFT_SHIFT);
+            String join = GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_A, GLFWKey.GLFW_KEY_RIGHT_CONTROL, GLFWKey.GLFW_KEY_LEFT_SHIFT);
             boolean keyPressed = manager.isKeyPressed(join);
             System.out.println(join);
             System.out.println(keyPressed);
         }
         {
-            String join = GLFWKeyHelper.getKeyDisplayString(GLFW.GLFW_KEY_A, GLFW.GLFW_KEY_LEFT_CONTROL, GLFW.GLFW_KEY_LEFT_SHIFT);
+            String join = GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_A, GLFWKey.GLFW_KEY_LEFT_CONTROL, GLFWKey.GLFW_KEY_LEFT_SHIFT);
             boolean keyPressed = manager.isKeyPressed(join);
             System.out.println(join);
             System.out.println(keyPressed);
         }
         {
-            String join = GLFWKeyHelper.getMouseDisplayString(GLFW.GLFW_MOUSE_BUTTON_LEFT, GLFW.GLFW_MOUSE_BUTTON_RIGHT);
+            String join = GLFWKeyHelper.getMouseDisplayString(GLFWKey.GLFW_MOUSE_BUTTON_LEFT, GLFWKey.GLFW_MOUSE_BUTTON_RIGHT);
             boolean keyPressed = manager.isMousePressed(join);
             System.out.println(join);
             System.out.println(keyPressed);
