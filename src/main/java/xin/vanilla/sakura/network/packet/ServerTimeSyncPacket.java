@@ -16,7 +16,7 @@ import java.util.Date;
 
 @Getter
 public class ServerTimeSyncPacket implements CustomPacketPayload {
-    public final static Type<ServerTimeSyncPacket> TYPE = new Type<>(new ResourceLocation(SakuraSignIn.MODID, "server_time_sync"));
+    public final static Type<ServerTimeSyncPacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(SakuraSignIn.MODID, "server_time_sync"));
     public final static StreamCodec<ByteBuf, ServerTimeSyncPacket> STREAM_CODEC = new StreamCodec<>() {
         public @NotNull ServerTimeSyncPacket decode(@NotNull ByteBuf byteBuf) {
             return new ServerTimeSyncPacket((new FriendlyByteBuf(byteBuf)));

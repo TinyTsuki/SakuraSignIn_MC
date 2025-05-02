@@ -55,7 +55,7 @@ public record AdvancementData(@NonNull ResourceLocation id, @NonNull DisplayInfo
     public static DisplayInfo createDisplayInfo(String title, String description, ItemStack itemStack) {
         return new DisplayInfo(itemStack
                 , Component.literal(title).toTextComponent(), Component.literal(description).toTextComponent()
-                , Optional.of(new ResourceLocation("")), AdvancementType.TASK
+                , Optional.of(ResourceLocation.parse("")), AdvancementType.TASK
                 , false, false, false);
     }
 

@@ -32,7 +32,7 @@ public class ItemRewardParser implements RewardParser<ItemStack> {
                 String itemId = jsonObject.get("id").getAsString();
                 int count = jsonObject.get("count").getAsInt();
                 count = Math.max(count, 1);
-                Item item = BuiltInRegistries.ITEM.get(new ResourceLocation(itemId));
+                Item item = BuiltInRegistries.ITEM.get(ResourceLocation.parse(itemId));
                 if (item == null) {
                     item = Items.AIR;
                 }
@@ -119,7 +119,7 @@ public class ItemRewardParser implements RewardParser<ItemStack> {
     public static Item getItem(String id) {
         String resourceId = id;
         if (id.contains("{") && id.endsWith("}")) resourceId = resourceId.substring(0, id.indexOf("{"));
-        return BuiltInRegistries.ITEM.get(new ResourceLocation(resourceId));
+        return BuiltInRegistries.ITEM.get(ResourceLocation.parse(resourceId));
     }
 
     public static ItemStack getItemStack(String id) {

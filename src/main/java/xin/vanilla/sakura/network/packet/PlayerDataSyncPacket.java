@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 
 @Getter
 public class PlayerDataSyncPacket extends SplitPacket implements CustomPacketPayload {
-    public final static Type<PlayerDataSyncPacket> TYPE = new Type<>(new ResourceLocation(SakuraSignIn.MODID, "player_data_sync"));
+    public final static Type<PlayerDataSyncPacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(SakuraSignIn.MODID, "player_data_sync"));
     public final static StreamCodec<ByteBuf, PlayerDataSyncPacket> STREAM_CODEC = new StreamCodec<>() {
         public @NotNull PlayerDataSyncPacket decode(@NotNull ByteBuf byteBuf) {
             return new PlayerDataSyncPacket((new FriendlyByteBuf(byteBuf)));

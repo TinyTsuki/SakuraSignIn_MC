@@ -14,7 +14,7 @@ import xin.vanilla.sakura.screen.component.NotificationManager;
 import xin.vanilla.sakura.util.Component;
 
 public class RewardOptionDataReceivedNotice implements CustomPacketPayload {
-    public final static Type<RewardOptionDataReceivedNotice> TYPE = new Type<>(new ResourceLocation(SakuraSignIn.MODID, "reward_option_data_received"));
+    public final static Type<RewardOptionDataReceivedNotice> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(SakuraSignIn.MODID, "reward_option_data_received"));
     public final static StreamCodec<ByteBuf, RewardOptionDataReceivedNotice> STREAM_CODEC = new StreamCodec<>() {
         public @NotNull RewardOptionDataReceivedNotice decode(@NotNull ByteBuf byteBuf) {
             return new RewardOptionDataReceivedNotice((new FriendlyByteBuf(byteBuf)));

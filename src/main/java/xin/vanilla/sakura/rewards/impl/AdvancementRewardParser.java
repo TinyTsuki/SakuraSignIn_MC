@@ -23,7 +23,7 @@ public class AdvancementRewardParser implements RewardParser<ResourceLocation> {
             LOGGER.error("Failed to parse advancement reward", e);
             advancementId = SakuraSignIn.MODID + ":unknownAdvancement";
         }
-        return new ResourceLocation(advancementId);
+        return ResourceLocation.parse(advancementId);
     }
 
     @Override
@@ -36,7 +36,7 @@ public class AdvancementRewardParser implements RewardParser<ResourceLocation> {
     public static AdvancementData getAdvancementData(String id) {
         return SakuraSignIn.getAdvancementData().stream()
                 .filter(data -> data.id().toString().equalsIgnoreCase(id))
-                .findFirst().orElse(new AdvancementData(new ResourceLocation(id), null));
+                .findFirst().orElse(new AdvancementData(ResourceLocation.parse(id), null));
     }
 
     public static String getId(AdvancementData advancementData) {

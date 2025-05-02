@@ -18,7 +18,7 @@ import xin.vanilla.sakura.config.RewardConfigManager;
  */
 @Getter
 public class DownloadRewardOptionNotice implements CustomPacketPayload {
-    public final static Type<DownloadRewardOptionNotice> TYPE = new Type<>(new ResourceLocation(SakuraSignIn.MODID, "download_reward_option"));
+    public final static Type<DownloadRewardOptionNotice> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(SakuraSignIn.MODID, "download_reward_option"));
     public final static StreamCodec<ByteBuf, DownloadRewardOptionNotice> STREAM_CODEC = new StreamCodec<>() {
         public @NotNull DownloadRewardOptionNotice decode(@NotNull ByteBuf byteBuf) {
             return new DownloadRewardOptionNotice((new FriendlyByteBuf(byteBuf)));

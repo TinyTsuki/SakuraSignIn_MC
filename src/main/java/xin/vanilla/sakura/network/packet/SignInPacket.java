@@ -16,7 +16,7 @@ import xin.vanilla.sakura.rewards.RewardManager;
 
 @Getter
 public class SignInPacket implements CustomPacketPayload {
-    public final static Type<SignInPacket> TYPE = new Type<>(new ResourceLocation(SakuraSignIn.MODID, "sign_in"));
+    public final static Type<SignInPacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(SakuraSignIn.MODID, "sign_in"));
     public final static StreamCodec<ByteBuf, SignInPacket> STREAM_CODEC = new StreamCodec<>() {
         public @NotNull SignInPacket decode(@NotNull ByteBuf byteBuf) {
             return new SignInPacket((new FriendlyByteBuf(byteBuf)));

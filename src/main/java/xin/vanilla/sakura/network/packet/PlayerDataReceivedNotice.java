@@ -12,7 +12,7 @@ import org.jetbrains.annotations.NotNull;
 import xin.vanilla.sakura.SakuraSignIn;
 
 public class PlayerDataReceivedNotice implements CustomPacketPayload {
-    public final static Type<PlayerDataReceivedNotice> TYPE = new Type<>(new ResourceLocation(SakuraSignIn.MODID, "player_data_received"));
+    public final static Type<PlayerDataReceivedNotice> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(SakuraSignIn.MODID, "player_data_received"));
     public final static StreamCodec<ByteBuf, PlayerDataReceivedNotice> STREAM_CODEC = new StreamCodec<>() {
         public @NotNull PlayerDataReceivedNotice decode(@NotNull ByteBuf byteBuf) {
             return new PlayerDataReceivedNotice((new FriendlyByteBuf(byteBuf)));

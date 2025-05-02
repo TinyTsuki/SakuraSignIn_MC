@@ -26,7 +26,7 @@ import java.io.IOException;
  */
 @Getter
 public class ItemStackPacket implements CustomPacketPayload {
-    public final static Type<ItemStackPacket> TYPE = new Type<>(new ResourceLocation(SakuraSignIn.MODID, "item_stack"));
+    public final static Type<ItemStackPacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(SakuraSignIn.MODID, "item_stack"));
     public final static StreamCodec<ByteBuf, ItemStackPacket> STREAM_CODEC = new StreamCodec<>() {
         public @NotNull ItemStackPacket decode(@NotNull ByteBuf byteBuf) {
             return new ItemStackPacket((new FriendlyByteBuf(byteBuf)));

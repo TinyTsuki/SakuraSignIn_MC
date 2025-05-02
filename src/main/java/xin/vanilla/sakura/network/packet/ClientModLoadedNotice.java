@@ -13,7 +13,7 @@ import xin.vanilla.sakura.config.RewardConfigManager;
 import xin.vanilla.sakura.data.PlayerDataAttachment;
 
 public class ClientModLoadedNotice implements CustomPacketPayload {
-    public final static Type<ClientModLoadedNotice> TYPE = new Type<>(new ResourceLocation(SakuraSignIn.MODID, "client_mod_loaded"));
+    public final static Type<ClientModLoadedNotice> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(SakuraSignIn.MODID, "client_mod_loaded"));
     public final static StreamCodec<ByteBuf, ClientModLoadedNotice> STREAM_CODEC = new StreamCodec<>() {
         public @NotNull ClientModLoadedNotice decode(@NotNull ByteBuf byteBuf) {
             return new ClientModLoadedNotice((new FriendlyByteBuf(byteBuf)));

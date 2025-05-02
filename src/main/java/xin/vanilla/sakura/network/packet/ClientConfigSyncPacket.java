@@ -17,7 +17,7 @@ import xin.vanilla.sakura.data.PlayerSignInData;
 
 @Getter
 public class ClientConfigSyncPacket implements CustomPacketPayload {
-    public final static Type<ClientConfigSyncPacket> TYPE = new Type<>(new ResourceLocation(SakuraSignIn.MODID, "client_config_sync"));
+    public final static Type<ClientConfigSyncPacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(SakuraSignIn.MODID, "client_config_sync"));
     public final static StreamCodec<ByteBuf, ClientConfigSyncPacket> STREAM_CODEC = new StreamCodec<>() {
         public @NotNull ClientConfigSyncPacket decode(@NotNull ByteBuf byteBuf) {
             return new ClientConfigSyncPacket((new FriendlyByteBuf(byteBuf)));

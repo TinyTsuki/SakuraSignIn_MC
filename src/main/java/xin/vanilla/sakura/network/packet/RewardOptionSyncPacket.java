@@ -30,7 +30,7 @@ import static xin.vanilla.sakura.config.RewardConfigManager.GSON;
 
 @Getter
 public class RewardOptionSyncPacket extends SplitPacket implements CustomPacketPayload {
-    public final static Type<RewardOptionSyncPacket> TYPE = new Type<>(new ResourceLocation(SakuraSignIn.MODID, "reward_option_sync"));
+    public final static Type<RewardOptionSyncPacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(SakuraSignIn.MODID, "reward_option_sync"));
     public final static StreamCodec<ByteBuf, RewardOptionSyncPacket> STREAM_CODEC = new StreamCodec<>() {
         public @NotNull RewardOptionSyncPacket decode(@NotNull ByteBuf byteBuf) {
             return new RewardOptionSyncPacket((new FriendlyByteBuf(byteBuf)));

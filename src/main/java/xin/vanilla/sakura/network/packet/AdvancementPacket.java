@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 
 @Getter
 public class AdvancementPacket extends SplitPacket implements CustomPacketPayload {
-    public final static Type<AdvancementPacket> TYPE = new Type<>(new ResourceLocation(SakuraSignIn.MODID, "advancement"));
+    public final static Type<AdvancementPacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(SakuraSignIn.MODID, "advancement"));
     public final static StreamCodec<ByteBuf, AdvancementPacket> STREAM_CODEC = new StreamCodec<>() {
         public @NotNull AdvancementPacket decode(@NotNull ByteBuf byteBuf) {
             return new AdvancementPacket((RegistryFriendlyByteBuf) byteBuf);

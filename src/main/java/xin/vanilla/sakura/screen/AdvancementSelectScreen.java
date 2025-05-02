@@ -97,7 +97,7 @@ public class AdvancementSelectScreen extends Screen {
     /**
      * 当前选择的进度
      */
-    private Reward currentAdvancement = new Reward(new ResourceLocation(""), ERewardType.ADVANCEMENT);
+    private Reward currentAdvancement = new Reward(ResourceLocation.parse(""), ERewardType.ADVANCEMENT);
     /**
      * 奖励概率
      */
@@ -525,7 +525,7 @@ public class AdvancementSelectScreen extends Screen {
     private void handleAdvancement(OperationButton bt, int button, AtomicBoolean flag) {
         if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
             if (StringUtils.isNotNullOrEmpty(bt.getId())) {
-                ResourceLocation resourceLocation = new ResourceLocation(bt.getId());
+                ResourceLocation resourceLocation = ResourceLocation.parse(bt.getId());
                 this.currentAdvancement = new Reward(resourceLocation, ERewardType.ADVANCEMENT, this.probability);
                 LOGGER.debug("Select effect: {}", AdvancementRewardParser.getAdvancementData(resourceLocation).displayInfo().getTitle().getString());
                 flag.set(true);
