@@ -12,6 +12,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class DateUtils {
 
@@ -743,7 +744,7 @@ public class DateUtils {
                 .distinct()
                 .sorted(Comparator.reverseOrder())
                 .map(DateUtils::getDate)
-                .toList();
+                .collect(Collectors.toList());
         if (current == null) current = dateList.get(0);
         int continuousDays = 0;
         for (int i = 0; i < dateList.size(); i++) {

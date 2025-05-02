@@ -11,6 +11,7 @@ import xin.vanilla.sakura.util.CollectionUtils;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 @Getter
@@ -22,7 +23,7 @@ public class AdvancementPacket extends SplitPacket {
         super();
         this.advancements = advancements.stream()
                 .map(AdvancementData::fromAdvancement)
-                .toList();
+                .collect(Collectors.toList());
     }
 
     public AdvancementPacket(FriendlyByteBuf buf) {

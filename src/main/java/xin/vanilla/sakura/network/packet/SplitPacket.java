@@ -5,6 +5,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import xin.vanilla.sakura.SakuraSignIn;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Data
 public abstract class SplitPacket {
@@ -42,7 +43,7 @@ public abstract class SplitPacket {
             // 对列表进行排序
             result = splitPackets.stream()
                     .sorted(Comparator.comparingInt(SplitPacket::getSort))
-                    .toList();
+                    .collect(Collectors.toList());
             // 清理缓存
             packetCache.remove(packet.getId());
             //  清理过时缓存(超过5分钟)

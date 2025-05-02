@@ -40,6 +40,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static xin.vanilla.sakura.config.RewardConfigManager.GSON;
 
@@ -416,7 +417,7 @@ public class ItemSelectScreen extends Screen {
             result.addAll(player.getInventory().items);
             result.addAll(player.getInventory().armor);
             result.addAll(player.getInventory().offhand);
-            result = result.stream().filter(itemStack -> !itemStack.isEmpty() && itemStack.getItem() != Items.AIR).toList();
+            result = result.stream().filter(itemStack -> !itemStack.isEmpty() && itemStack.getItem() != Items.AIR).collect(Collectors.toList());
         }
         return result;
     }
@@ -608,7 +609,7 @@ public class ItemSelectScreen extends Screen {
         return this.getItemList().stream()
                 .filter(item -> item.getTooltipLines(Minecraft.getInstance().player, TooltipFlag.Default.ADVANCED)
                         .stream().anyMatch(component -> component.getString().contains(keyword))
-                ).toList();
+                ).collect(Collectors.toList());
     }
 
     private void setScrollOffset(double offset) {

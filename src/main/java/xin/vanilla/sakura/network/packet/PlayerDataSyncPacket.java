@@ -12,6 +12,7 @@ import xin.vanilla.sakura.util.CollectionUtils;
 import xin.vanilla.sakura.util.DateUtils;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Getter
 public class PlayerDataSyncPacket extends SplitPacket {
@@ -61,7 +62,7 @@ public class PlayerDataSyncPacket extends SplitPacket {
                 .map(PlayerDataSyncPacket::getSignInRecords)
                 .flatMap(Collection::stream)
                 .sorted(Comparator.comparing(SignInRecord::getSignInTime))
-                .toList();
+                .collect(Collectors.toList());
     }
 
     private PlayerDataSyncPacket(UUID playerUUID, int totalSignInDays, int continuousSignInDays, Date lastSignInTime, int signInCard, boolean autoRewarded) {

@@ -265,7 +265,7 @@ public class RewardManager {
                     //     reward.setRewarded(true);
                     //     reward.setDisabled(true);
                     // })
-                    .toList();
+                    .collect(Collectors.toList());
         }
 
         // 若签到记录存在，则添加签到奖励记录并直接返回
@@ -300,7 +300,7 @@ public class RewardManager {
                         .distinct()
                         .map(serverData.getDateTimeRewards()::get)
                         .flatMap(Collection::stream)
-                        .toList();
+                        .collect(Collectors.toList());
                 if (CollectionUtils.isNotNullOrEmpty(dateTimeRewards)) result.addAll(dateTimeRewards);
                 // 累计签到奖励
                 result.addAll(serverData.getCumulativeRewards().getOrDefault(String.valueOf(playerData.getTotalSignInDays() + 1), new RewardList()));
@@ -430,7 +430,7 @@ public class RewardManager {
                         })))
                 .values().stream()
                 .filter(Objects::nonNull)
-                .toList();
+                .collect(Collectors.toList());
         return new RewardList(rewards);
     }
 
@@ -577,7 +577,7 @@ public class RewardManager {
             }
             signInData.setLastSignInTime(serverDate);
             signInData.getSignInRecords().add(signInRecord);
-            signInData.setContinuousSignInDays(DateUtils.calculateContinuousDays(signInData.getSignInRecords().stream().map(SignInRecord::getCompensateTime).toList(), serverCompensateDate));
+            signInData.setContinuousSignInDays(DateUtils.calculateContinuousDays(signInData.getSignInRecords().stream().map(SignInRecord::getCompensateTime).collect(Collectors.toList()), serverCompensateDate));
             signInData.plusTotalSignInDays();
             SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "sign_in_success_s", DateUtils.toString(signInRecord.getCompensateTime()), signInData.calculateContinuousDays(), getTotalSignInDays(signInData)));
         }

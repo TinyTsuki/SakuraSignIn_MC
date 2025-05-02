@@ -17,6 +17,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
  * 玩家签到数据
@@ -292,7 +293,7 @@ public class PlayerSignInData implements IPlayerSignInData {
 
     public int calculateContinuousDays() {
         try {
-            return DateUtils.calculateContinuousDays(this.getSignInRecords().stream().map(SignInRecord::getCompensateTime).toList()
+            return DateUtils.calculateContinuousDays(this.getSignInRecords().stream().map(SignInRecord::getCompensateTime).collect(Collectors.toList())
                     , RewardManager.getCompensateDate(DateUtils.getServerDate()));
         } catch (Exception e) {
             return 0;
