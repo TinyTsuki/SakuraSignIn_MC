@@ -54,7 +54,7 @@ public abstract class SplitPacket {
         return result;
     }
 
-    protected void write(FriendlyByteBuf buf) {
+    protected void toBytes(FriendlyByteBuf buf) {
         buf.writeUtf(id);
         buf.writeInt(total);
         buf.writeInt(sort);

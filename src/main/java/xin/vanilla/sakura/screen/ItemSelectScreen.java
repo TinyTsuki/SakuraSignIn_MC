@@ -8,6 +8,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.searchtree.SearchRegistry;
@@ -273,11 +274,11 @@ public class ItemSelectScreen extends Screen {
     @ParametersAreNonnullByDefault
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
         keyManager.refresh(mouseX, mouseY);
-        // 绘制背景
-        // this.renderBackground(graphics, mouseX, mouseY, partialTicks);
         AbstractGuiUtils.fill(graphics, (int) (this.bgX - this.margin), (int) (this.bgY - this.margin), (int) (180 + this.margin * 2), (int) (20 + (AbstractGuiUtils.ITEM_ICON_SIZE + 3) * 5 + 20 + margin * 2 + 5), 0xCCC6C6C6, 2);
         AbstractGuiUtils.fillOutLine(graphics, (int) (this.itemBgX - this.margin), (int) (this.itemBgY - this.margin), (int) ((AbstractGuiUtils.ITEM_ICON_SIZE + this.margin) * this.itemPerLine + this.margin), (int) ((AbstractGuiUtils.ITEM_ICON_SIZE + this.margin) * this.maxLine + this.margin), 1, 0xFF000000, 1);
-        super.render(graphics, mouseX, mouseY, partialTicks);
+        for (Renderable renderable : this.renderables) {
+            renderable.render(graphics, mouseX, mouseY, partialTicks);
+        }
         // 保存输入框的文本, 防止窗口重绘时输入框内容丢失
         this.inputFieldText = this.inputField.getValue();
 
@@ -535,7 +536,7 @@ public class ItemSelectScreen extends Screen {
                         // 绘制物品详情悬浮窗
                         context.button().setCustomPopupFunction(() -> {
                             if (context.button().isHovered()) {
-                                List<net.minecraft.network.chat.Component> list = itemStack.getTooltipLines(Minecraft.getInstance().player, Minecraft.getInstance().options.advancedItemTooltips ? TooltipFlag.Default.ADVANCED : TooltipFlag.Default.NORMAL);
+                                List<net.minecraft.network.chat.Component> list = itemStack.getTooltipLines(Item.TooltipContext.of(Minecraft.getInstance().level), Minecraft.getInstance().player, Minecraft.getInstance().options.advancedItemTooltips ? TooltipFlag.Default.ADVANCED : TooltipFlag.Default.NORMAL);
                                 List<net.minecraft.network.chat.Component> list1 = Lists.newArrayList(list);
                                 Item item = itemStack.getItem();
                                 this.visibleTags.forEach((itemITag) -> {
@@ -607,7 +608,7 @@ public class ItemSelectScreen extends Screen {
 
     private List<ItemStack> searchByDescription(String keyword) {
         return this.getItemList().stream()
-                .filter(item -> item.getTooltipLines(Minecraft.getInstance().player, TooltipFlag.Default.ADVANCED)
+                .filter(item -> item.getTooltipLines(Item.TooltipContext.of(Minecraft.getInstance().level), Minecraft.getInstance().player, TooltipFlag.Default.ADVANCED)
                         .stream().anyMatch(component -> component.getString().contains(keyword))
                 ).collect(Collectors.toList());
     }
@@ -660,7 +661,7 @@ public class ItemSelectScreen extends Screen {
                 StringList result = new StringList();
                 if (CollectionUtils.isNotNullOrEmpty(input)) {
                     ItemStack itemStack;
-                    String json = input.get(0);
+                    String json = input.getFirst();
                     try {
                         JsonObject jsonObject = GSON.fromJson(json, JsonObject.class);
                         itemStack = RewardManager.deserializeReward(new Reward(jsonObject, ERewardType.ITEM, this.probability));
@@ -688,7 +689,7 @@ public class ItemSelectScreen extends Screen {
                     , input -> {
                 StringList result = new StringList();
                 if (CollectionUtils.isNotNullOrEmpty(input)) {
-                    String num = input.get(0);
+                    String num = input.getFirst();
                     int count = StringUtils.toInt(num);
                     if (count > 0 && count <= 64 * 9 * 5) {
                         ItemStack itemStack = RewardManager.deserializeReward(this.currentItem);
@@ -713,7 +714,7 @@ public class ItemSelectScreen extends Screen {
                 StringList result = new StringList();
                 if (CollectionUtils.isNotNullOrEmpty(input)) {
                     ItemStack itemStack;
-                    String nbt = input.get(0);
+                    String nbt = input.getFirst();
                     try {
                         itemStack = ItemRewardParser.getItemStack(ItemRewardParser.getId(((ItemStack) RewardManager.deserializeReward(this.currentItem)).getItem()) + nbt, true);
                         itemStack.setCount(((ItemStack) RewardManager.deserializeReward(this.currentItem)).getCount());
@@ -721,7 +722,7 @@ public class ItemSelectScreen extends Screen {
                         LOGGER.error("Invalid NBT: {}", nbt);
                         itemStack = null;
                     }
-                    if (itemStack != null && itemStack.hasTag()) {
+                    if (itemStack != null && !itemStack.getComponents().isEmpty()) {
                         this.currentItem = new Reward(itemStack, ERewardType.ITEM, this.probability);
                         this.selectedItemId = ItemRewardParser.getId(itemStack);
                     } else {
@@ -741,11 +742,11 @@ public class ItemSelectScreen extends Screen {
                     , input -> {
                 StringList result = new StringList();
                 if (CollectionUtils.isNotNullOrEmpty(input)) {
-                    BigDecimal p = StringUtils.toBigDecimal(input.get(0));
+                    BigDecimal p = StringUtils.toBigDecimal(input.getFirst());
                     if (p.compareTo(BigDecimal.ZERO) > 0 && p.compareTo(BigDecimal.ONE) <= 0) {
                         this.probability = p;
                     } else {
-                        result.add(Component.translatableClient(EI18nType.TIPS, "reward_probability_s_error", input.get(0)).toString());
+                        result.add(Component.translatableClient(EI18nType.TIPS, "reward_probability_s_error", input.getFirst()).toString());
                     }
                 }
                 return result;

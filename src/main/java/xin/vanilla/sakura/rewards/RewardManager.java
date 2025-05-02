@@ -5,6 +5,7 @@ import com.google.gson.JsonParseException;
 import lombok.NonNull;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.AdvancementProgress;
+import net.minecraft.core.component.TypedDataComponent;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -265,7 +266,7 @@ public class RewardManager {
                     //     reward.setRewarded(true);
                     //     reward.setDisabled(true);
                     // })
-                    .collect(Collectors.toList());
+                    .toList();
         }
 
         // 若签到记录存在，则添加签到奖励记录并直接返回
@@ -300,7 +301,7 @@ public class RewardManager {
                         .distinct()
                         .map(serverData.getDateTimeRewards()::get)
                         .flatMap(Collection::stream)
-                        .collect(Collectors.toList());
+                        .toList();
                 if (CollectionUtils.isNotNullOrEmpty(dateTimeRewards)) result.addAll(dateTimeRewards);
                 // 累计签到奖励
                 result.addAll(serverData.getCumulativeRewards().getOrDefault(String.valueOf(playerData.getTotalSignInDays() + 1), new RewardList()));
@@ -383,13 +384,13 @@ public class RewardManager {
                                 case ITEM:
                                     ItemStack itemStack = RewardManager.deserializeReward(reward);
                                     key = BuiltInRegistries.ITEM.getKey(itemStack.getItem()).toString();
-                                    if (itemStack.hasTag()) {
-                                        key += itemStack.getTag().toString();
+                                    if (!itemStack.getComponents().isEmpty()) {
+                                        key += itemStack.getComponents().stream().map(TypedDataComponent::toString).sorted().collect(Collectors.joining(","));
                                     }
                                     break;
                                 case EFFECT:
                                     MobEffectInstance mobEffectInstance = RewardManager.deserializeReward(reward);
-                                    key = BuiltInRegistries.MOB_EFFECT.getKey(mobEffectInstance.getEffect()).toString() + " " + mobEffectInstance.getAmplifier();
+                                    key = BuiltInRegistries.MOB_EFFECT.getKey(mobEffectInstance.getEffect().value()).toString() + " " + mobEffectInstance.getAmplifier();
                                     break;
                                 case EXP_POINT, SIGN_IN_CARD, EXP_LEVEL:
                                     break;
@@ -411,7 +412,8 @@ public class RewardManager {
                             switch (type) {
                                 case ITEM:
                                     content1 = new ItemStack(((ItemStack) content1).getItem(), ((ItemStack) content1).getCount() + ((ItemStack) content2).getCount());
-                                    ((ItemStack) content1).setTag(((ItemStack) content2).getTag());
+                                    // TODO 设置NBT
+                                    // ((ItemStack) content1).setTag(((ItemStack) content2).getTag());
                                     break;
                                 case EFFECT:
                                     content1 = new MobEffectInstance(((MobEffectInstance) content1).getEffect(), ((MobEffectInstance) content1).getDuration() + ((MobEffectInstance) content2).getDuration(), ((MobEffectInstance) content1).getAmplifier());

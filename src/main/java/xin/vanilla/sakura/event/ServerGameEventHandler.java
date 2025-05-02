@@ -2,15 +2,11 @@ package xin.vanilla.sakura.event;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.LogicalSide;
-import net.neoforged.fml.common.Mod;
-import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
-import net.neoforged.neoforge.event.TickEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
@@ -18,8 +14,6 @@ import xin.vanilla.sakura.config.ServerConfig;
 import xin.vanilla.sakura.data.PlayerDataAttachment;
 import xin.vanilla.sakura.data.PlayerSignInData;
 import xin.vanilla.sakura.enums.ESignInType;
-import xin.vanilla.sakura.network.packet.ClientConfigSyncPacket;
-import xin.vanilla.sakura.network.packet.ClientModLoadedNotice;
 import xin.vanilla.sakura.network.packet.ServerTimeSyncPacket;
 import xin.vanilla.sakura.network.packet.SignInPacket;
 import xin.vanilla.sakura.rewards.RewardManager;
@@ -32,26 +26,16 @@ import java.util.concurrent.TimeUnit;
 /**
  * Forge 事件处理
  */
-@Mod.EventBusSubscriber(modid = SakuraSignIn.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
-public class ForgeEventHandler {
+@EventBusSubscriber(modid = SakuraSignIn.MODID, bus = EventBusSubscriber.Bus.GAME, value = Dist.DEDICATED_SERVER)
+public class ServerGameEventHandler {
     private static final Logger LOGGER = LogManager.getLogger();
-
-    @SubscribeEvent
-    @OnlyIn(Dist.CLIENT)
-    public static void onPlayerLoggedIn(ClientPlayerNetworkEvent.LoggingIn event) {
-        LOGGER.debug("Client: Player logged in.");
-        // 同步客户端配置到服务器
-        PacketDistributor.SERVER.noArg().send(new ClientConfigSyncPacket());
-        PacketDistributor.SERVER.noArg().send(new ClientModLoadedNotice());
-    }
 
     /**
      * 同步客户端服务端数据
      */
     @SubscribeEvent
-    public static void playerTickEvent(TickEvent.PlayerTickEvent event) {
-        if (event.side == LogicalSide.SERVER && event.phase == TickEvent.Phase.END) {
-            ServerPlayer player = (ServerPlayer) event.player;
+    public static void playerTickEvent(PlayerTickEvent.Post event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
             // 不用给未安装mod的玩家发送数据包
             if (SakuraSignIn.getPlayerCapabilityStatus().containsKey(player.getUUID().toString())) {
                 // 同步玩家签到数据到客户端
@@ -135,7 +119,6 @@ public class ForgeEventHandler {
             });
         }
     }
-
 
     /**
      * 玩家登出事件

@@ -641,7 +641,7 @@ public class RewardOptionScreen extends Screen {
                 if (player != null) {
                     if (player.hasPermissions(ServerConfig.PERMISSION_EDIT_REWARD.get())) {
                         for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardConfigManager.toSyncPacket(player).split()) {
-                            PacketDistributor.SERVER.noArg().send(rewardOptionSyncPacket);
+                            PacketDistributor.sendToServer(rewardOptionSyncPacket);
                         }
                         flag.set(true);
                     }
@@ -658,7 +658,7 @@ public class RewardOptionScreen extends Screen {
                     // 备份签到奖励配置
                     RewardConfigManager.backupRewardOption();
                     // 同步签到奖励配置到客户端
-                    PacketDistributor.SERVER.noArg().send(new DownloadRewardOptionNotice());
+                    PacketDistributor.sendToServer(new DownloadRewardOptionNotice());
                     flag.set(true);
                 } else {
                     Component component = Component.translatable(EI18nType.MESSAGE, "local_server_not_support_this_operation");

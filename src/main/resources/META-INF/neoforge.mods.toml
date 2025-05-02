@@ -1,4 +1,4 @@
-# This is an example mods.toml file. It contains the data relating to the loading mods.
+# This is an example neoforge.mods.toml file. It contains the data relating to the loading mods.
 # There are several mandatory fields (#mandatory), and many more that are optional (#optional).
 # The overall format is standard TOML format, v0.5.0.
 # Note that there are a couple of TOML lists in this file.
@@ -25,9 +25,9 @@ logoFile = "logo.png"
     # A URL to query for updates for this mod. See the JSON update specification https://docs.minecraftforge.net/en/latest/misc/updatechecker/
     updateJSONURL = "https://update.mc.vanilla.xin/${mod_id}/neoforge/${minecraft_version}" #optional
     # A URL for the "homepage" for this mod, displayed in the mod UI
-    displayURL = "https://mc.vanilla.xin/narcissus_farewell" #optional
+    displayURL = "https://mc.vanilla.xin/${mod_id}" #optional
     # A file name (in the root of the mod JAR) containing a logo for display
-    #logoFile="narcissus_farewell.png" #optional
+    #logoFile="sakura_sign_in.png" #optional
     # A text field displayed in the mod UI
     #credits="Thanks for this example mod goes to Java" #optional
     # A text field displayed in the mod UI
@@ -35,7 +35,6 @@ logoFile = "logo.png"
     # The description text for the mod (multi line!) (#mandatory)
     description = '''${mod_description}'''
     clientRequired = false
-
 # A dependency - use the . to indicate dependency for a specific modid. Dependencies are optional.
 [[dependencies."${mod_id}"]] #optional
     # the modid of the dependency
@@ -58,15 +57,21 @@ logoFile = "logo.png"
 # Here's another dependency
 [[dependencies."${mod_id}"]]
     modId = "minecraft"
-    mandatory = true
     type = "required"
     # This version range declares a minimum of the current minecraft version up to but not including the next major version
     versionRange = "${minecraft_version_range}"
     ordering = "NONE"
     side = "BOTH"
 
-# Features are specific properties of the game environment, that you may want to declare you require. This example declares
-# that your mod requires GL version 3.2 or higher. Other features will be added. They are side aware so declaring this won't
-# stop your mod loading on the server for example.
-#[features."${mod_id}"]
-#openGLVersion="[3.2,)"
+[[dependencies."${mod_id}"]]
+    modId = "${mod_id}" # 模组ID
+    mandatory = true # 模组必须在服务器上安装
+    versionRange = "[1.0.0,)"
+    ordering = "NONE"
+    side = "SERVER" # 强制模组在服务器端运行
+[[dependencies."${mod_id}"]]
+    modId = "${mod_id}" # 模组ID
+    mandatory = false # 客户端可以不安装
+    versionRange = "[1.0.0,)"
+    ordering = "NONE"
+    side = "CLIENT" # 客户端安装是可选的

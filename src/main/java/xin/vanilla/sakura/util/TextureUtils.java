@@ -108,7 +108,7 @@ public class TextureUtils {
      */
     public static ResourceLocation getEffectTexture(MobEffectInstance mobEffectInstance) {
         ResourceLocation effectIcon;
-        ResourceLocation registryName = BuiltInRegistries.MOB_EFFECT.getKey(mobEffectInstance.getEffect());
+        ResourceLocation registryName = BuiltInRegistries.MOB_EFFECT.getKey(mobEffectInstance.getEffect().value());
         if (registryName != null) {
             effectIcon = new ResourceLocation(registryName.getNamespace(), DEFAULT_EFFECT_DIR + registryName.getPath() + ".png");
         } else {

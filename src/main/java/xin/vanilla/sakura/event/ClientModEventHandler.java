@@ -6,11 +6,11 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.fml.loading.FMLPaths;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
-import net.neoforged.neoforge.event.TickEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
@@ -32,7 +32,7 @@ import static xin.vanilla.sakura.SakuraSignIn.PNG_CHUNK_NAME;
 /**
  * 客户端事件处理器
  */
-@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD, modid = SakuraSignIn.MODID, value = Dist.CLIENT)
+@EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD, modid = SakuraSignIn.MODID, value = Dist.CLIENT)
 public class ClientModEventHandler {
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -104,16 +104,14 @@ public class ClientModEventHandler {
      *
      * @param event 客户端Tick事件
      */
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase == TickEvent.Phase.END) {
-            // 检测并消费点击事件
-            if (SIGN_IN_SCREEN_KEY.consumeClick()) {
-                // 打开签到界面
-                ClientModEventHandler.openSignInScreen(null);
-            } else if (REWARD_OPTION_SCREEN_KEY.consumeClick()) {
-                // 打开奖励配置界面
-                Minecraft.getInstance().setScreen(new RewardOptionScreen());
-            }
+    public static void onClientTick(ClientTickEvent.Post event) {
+        // 检测并消费点击事件
+        if (SIGN_IN_SCREEN_KEY.consumeClick()) {
+            // 打开签到界面
+            ClientModEventHandler.openSignInScreen(null);
+        } else if (REWARD_OPTION_SCREEN_KEY.consumeClick()) {
+            // 打开奖励配置界面
+            Minecraft.getInstance().setScreen(new RewardOptionScreen());
         }
     }
 

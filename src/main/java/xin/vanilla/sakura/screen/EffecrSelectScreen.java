@@ -6,8 +6,10 @@ import lombok.NonNull;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -46,8 +48,8 @@ public class EffecrSelectScreen extends Screen {
 
     private static final Component TITLE = Component.literal("ItemSelectScreen");
 
-    private final List<MobEffect> allMobEffectList = BuiltInRegistries.MOB_EFFECT.stream().toList();
-    private final List<MobEffect> playerMobEffectList = this.getPlayerMobEffectList();
+    private final List<Holder<MobEffect>> allMobEffectList = BuiltInRegistries.MOB_EFFECT.stream().map(Holder::direct).toList();
+    private final List<Holder<MobEffect>> playerMobEffectList = this.getPlayerMobEffectList();
     // 每页显示行数
     private final int maxLine = 5;
 
@@ -78,7 +80,7 @@ public class EffecrSelectScreen extends Screen {
     /**
      * 搜索结果
      */
-    private final List<MobEffect> mobEffectList = new ArrayList<>();
+    private final List<Holder<MobEffect>> mobEffectList = new ArrayList<>();
     /**
      * 操作按钮
      */
@@ -253,11 +255,11 @@ public class EffecrSelectScreen extends Screen {
     @ParametersAreNonnullByDefault
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
         keyManager.refresh(mouseX, mouseY);
-        // 绘制背景
-        // this.renderBackground(graphics, mouseX, mouseY, partialTicks);
         AbstractGuiUtils.fill(graphics, (int) (this.bgX - this.margin), (int) (this.bgY - this.margin), (int) (112 + this.margin * 2), (int) (20 + (AbstractGuiUtils.ITEM_ICON_SIZE + 3) * 5 + 20 + margin * 2 + 5), 0xCCC6C6C6, 2);
         AbstractGuiUtils.fillOutLine(graphics, (int) (this.mobEffectBgX - this.margin), (int) (this.mobEffectBgY - this.margin), 104, (int) ((AbstractGuiUtils.ITEM_ICON_SIZE + this.margin) * this.maxLine + this.margin), 1, 0xFF000000, 1);
-        super.render(graphics, mouseX, mouseY, partialTicks);
+        for (Renderable renderable : this.renderables) {
+            renderable.render(graphics, mouseX, mouseY, partialTicks);
+        }
         // 保存输入框的文本, 防止窗口重绘时输入框内容丢失
         this.inputFieldText = this.inputField.getValue();
 
@@ -378,8 +380,8 @@ public class EffecrSelectScreen extends Screen {
         return false;
     }
 
-    private List<MobEffect> getPlayerMobEffectList() {
-        List<MobEffect> result = new ArrayList<>();
+    private List<Holder<MobEffect>> getPlayerMobEffectList() {
+        List<Holder<MobEffect>> result = new ArrayList<>();
         LocalPlayer player = Minecraft.getInstance().player;
         if (player != null) {
             result.addAll(player.getActiveEffectsMap().keySet());
@@ -410,7 +412,7 @@ public class EffecrSelectScreen extends Screen {
             AbstractGuiUtils.fill(context.graphics(), (int) context.button().getX(), (int) context.button().getY(), (int) context.button().getWidth(), (int) context.button().getHeight(), 0xEE707070, 2);
             AbstractGuiUtils.fillOutLine(context.graphics(), (int) context.button().getX(), (int) context.button().getY(), (int) context.button().getWidth(), (int) context.button().getHeight(), 1, lineColor, 2);
             AbstractGuiUtils.drawEffectIcon(context.graphics(), this.font, RewardManager.deserializeReward(this.currentMobEffect), SakuraSignIn.getThemeTexture(), SakuraSignIn.getThemeTextureCoordinate(), (int) context.button().getX() + 2, (int) context.button().getY() + 2, AbstractGuiUtils.ITEM_ICON_SIZE, AbstractGuiUtils.ITEM_ICON_SIZE, false);
-            context.button().setTooltip(Text.fromTextComponent(((MobEffectInstance) RewardManager.deserializeReward(this.currentMobEffect)).getEffect().getDisplayName().copy()));
+            context.button().setTooltip(Text.fromTextComponent(((MobEffectInstance) RewardManager.deserializeReward(this.currentMobEffect)).getEffect().value().getDisplayName().copy()));
         }).setX(this.bgX - AbstractGuiUtils.ITEM_ICON_SIZE - 2 - margin - 3).setY(this.bgY + margin + AbstractGuiUtils.ITEM_ICON_SIZE + 4 + 1).setWidth(AbstractGuiUtils.ITEM_ICON_SIZE + 4).setHeight(AbstractGuiUtils.ITEM_ICON_SIZE + 4));
         this.OP_BUTTONS.put(OperationButtonType.DURATION.getCode(), new OperationButton(OperationButtonType.DURATION.getCode(), context -> {
             // 绘制背景
@@ -478,23 +480,23 @@ public class EffecrSelectScreen extends Screen {
                 int i1 = context.button().getOperation();
                 int index = (mobEffectList.size() > maxLine ? this.getScrollOffset() : 0) + i1;
                 if (index >= 0 && index < mobEffectList.size()) {
-                    MobEffect mobEffect = mobEffectList.get(index);
+                    Holder<MobEffect> mobEffect = mobEffectList.get(index);
                     // 效果图标在弹出层中的 x 位置
                     double mobEffectX = mobEffectBgX;
                     // 效果图标在弹出层中的 y 位置
                     double mobEffectY = mobEffectBgY + i1 * (AbstractGuiUtils.ITEM_ICON_SIZE + margin);
                     // 绘制背景
                     int bgColor;
-                    if (context.button().isHovered() || mobEffect == ((MobEffectInstance) RewardManager.deserializeReward(this.currentMobEffect)).getEffect()) {
+                    if (context.button().isHovered() || mobEffect.value() == ((MobEffectInstance) RewardManager.deserializeReward(this.currentMobEffect)).getEffect().value()) {
                         bgColor = 0xEE7CAB7C;
                     } else {
                         bgColor = 0xEE707070;
                     }
                     context.button().setX(mobEffectX - 1).setY(mobEffectY - 1).setWidth(100).setHeight(AbstractGuiUtils.ITEM_ICON_SIZE + 2)
-                            .setId(EffectRewardParser.getId(mobEffect));
+                            .setId(EffectRewardParser.getId(mobEffect.value()));
 
                     AbstractGuiUtils.fill(context.graphics(), (int) context.button().getX(), (int) context.button().getY(), (int) context.button().getWidth(), (int) context.button().getHeight(), bgColor);
-                    AbstractGuiUtils.drawLimitedText(Text.literal(EffectRewardParser.getDisplayName(mobEffect)).setGraphics(context.graphics()).setFont(this.font), context.button().getX() + AbstractGuiUtils.ITEM_ICON_SIZE + this.margin * 2, context.button().getY() + (AbstractGuiUtils.ITEM_ICON_SIZE + 4 - this.font.lineHeight) / 2.0, (int) context.button().getWidth() - AbstractGuiUtils.ITEM_ICON_SIZE - 4);
+                    AbstractGuiUtils.drawLimitedText(Text.literal(EffectRewardParser.getDisplayName(mobEffect.value())).setGraphics(context.graphics()).setFont(this.font), context.button().getX() + AbstractGuiUtils.ITEM_ICON_SIZE + this.margin * 2, context.button().getY() + (AbstractGuiUtils.ITEM_ICON_SIZE + 4 - this.font.lineHeight) / 2.0, (int) context.button().getWidth() - AbstractGuiUtils.ITEM_ICON_SIZE - 4);
                     AbstractGuiUtils.drawEffectIcon(context.graphics(), this.font, new MobEffectInstance(mobEffect), SakuraSignIn.getThemeTexture(), SakuraSignIn.getThemeTextureCoordinate(), (int) (context.button().getX() + this.margin), (int) context.button().getY(), AbstractGuiUtils.ITEM_ICON_SIZE, AbstractGuiUtils.ITEM_ICON_SIZE, false);
                 } else {
                     context.button().setX(0).setY(0).setWidth(0).setHeight(0).setId("");
@@ -510,7 +512,7 @@ public class EffecrSelectScreen extends Screen {
         String s = this.inputField == null ? null : this.inputField.getValue();
         this.mobEffectList.clear();
         if (StringUtils.isNotNullOrEmpty(s)) {
-            this.mobEffectList.addAll(this.allMobEffectList.stream().filter(mobEffect -> EffectRewardParser.getDisplayName(mobEffect).contains(s)).collect(Collectors.toList()));
+            this.mobEffectList.addAll(this.allMobEffectList.stream().filter(mobEffect -> EffectRewardParser.getDisplayName(mobEffect.value()).contains(s)).collect(Collectors.toList()));
         } else {
             this.mobEffectList.addAll(new ArrayList<>(this.playerMode ? this.playerMobEffectList : this.allMobEffectList));
         }

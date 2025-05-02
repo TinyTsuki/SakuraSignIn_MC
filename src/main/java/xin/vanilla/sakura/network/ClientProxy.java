@@ -19,7 +19,7 @@ public class ClientProxy {
         if (player != null) {
             try {
                 player.setData(PlayerDataAttachment.PLAYER_DATA, packet.getData());
-                PacketDistributor.SERVER.noArg().send(new PlayerDataReceivedNotice());
+                PacketDistributor.sendToServer(new PlayerDataReceivedNotice());
                 LOGGER.debug("Client: Player data received successfully.");
             } catch (Exception ignored) {
                 LOGGER.debug("Client: Player data received failed.");

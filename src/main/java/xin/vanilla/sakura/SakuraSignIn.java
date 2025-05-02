@@ -14,7 +14,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.ModLoadingContext;
+import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.loading.FMLEnvironment;
@@ -133,7 +133,7 @@ public class SakuraSignIn {
     @Getter
     private static final KeyValue<String, String> clientServerTime = new KeyValue<>(DateUtils.toDateTimeString(new Date(0)), DateUtils.toString(new Date(0)));
 
-    public SakuraSignIn(IEventBus modEventBus) {
+    public SakuraSignIn(IEventBus modEventBus, ModContainer modContainer) {
 
         // 注册网络通道
         modEventBus.addListener(ModNetworkHandler::registerPackets);
@@ -142,8 +142,8 @@ public class SakuraSignIn {
         NeoForge.EVENT_BUS.addListener(this::onServerStopping);
 
         // 注册服务器和客户端配置
-        ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, ServerConfig.SERVER_CONFIG);
-        ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, ClientConfig.CLIENT_CONFIG);
+        modContainer.registerConfig(ModConfig.Type.SERVER, ServerConfig.SERVER_CONFIG);
+        modContainer.registerConfig(ModConfig.Type.CLIENT, ClientConfig.CLIENT_CONFIG);
         // 注册数据附件
         PlayerDataAttachment.ATTACHMENT_TYPES.register(modEventBus);
 
@@ -172,7 +172,8 @@ public class SakuraSignIn {
     }
 
     public static TextureCoordinate getThemeTextureCoordinate(boolean nonNull) {
-        if (nonNull && (themeTextureCoordinate == null || themeTexture == null)) ClientModEventHandler.loadThemeTexture();
+        if (nonNull && (themeTextureCoordinate == null || themeTexture == null))
+            ClientModEventHandler.loadThemeTexture();
         return themeTextureCoordinate;
     }
 

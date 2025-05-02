@@ -1,9 +1,11 @@
 package xin.vanilla.sakura.network.packet;
 
 import com.google.gson.reflect.TypeToken;
+import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -28,7 +30,16 @@ import static xin.vanilla.sakura.config.RewardConfigManager.GSON;
 
 @Getter
 public class RewardOptionSyncPacket extends SplitPacket implements CustomPacketPayload {
-    public final static ResourceLocation ID = new ResourceLocation(SakuraSignIn.MODID, "reward_option_sync");
+    public final static Type<RewardOptionSyncPacket> TYPE = new Type<>(new ResourceLocation(SakuraSignIn.MODID, "reward_option_sync"));
+    public final static StreamCodec<ByteBuf, RewardOptionSyncPacket> STREAM_CODEC = new StreamCodec<>() {
+        public @NotNull RewardOptionSyncPacket decode(@NotNull ByteBuf byteBuf) {
+            return new RewardOptionSyncPacket((new FriendlyByteBuf(byteBuf)));
+        }
+
+        public void encode(@NotNull ByteBuf byteBuf, @NotNull RewardOptionSyncPacket packet) {
+            packet.toBytes(new FriendlyByteBuf(byteBuf));
+        }
+    };
 
     private final List<RewardOptionSyncData> rewardOptionData;
 
@@ -51,8 +62,8 @@ public class RewardOptionSyncPacket extends SplitPacket implements CustomPacketP
         }
     }
 
-    public void write(@NonNull FriendlyByteBuf buf) {
-        super.write(buf);
+    public void toBytes(@NonNull FriendlyByteBuf buf) {
+        super.toBytes(buf);
         buf.writeInt(rewardOptionData.size());
         for (RewardOptionSyncData data : rewardOptionData) {
             buf.writeInt(data.rule().getCode());
@@ -62,12 +73,12 @@ public class RewardOptionSyncPacket extends SplitPacket implements CustomPacketP
     }
 
     @Override
-    public @NotNull ResourceLocation id() {
-        return ID;
+    public @NotNull Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 
     public static void handle(RewardOptionSyncPacket packet, IPayloadContext ctx) {
-        ctx.workHandler().execute(() -> {
+        ctx.enqueueWork(() -> {
             List<RewardOptionSyncPacket> packets = SplitPacket.handle(packet);
             if (CollectionUtils.isNotNullOrEmpty(packets)) {
                 if (ctx.flow().isClientbound()) {
@@ -86,8 +97,7 @@ public class RewardOptionSyncPacket extends SplitPacket implements CustomPacketP
                     Component component = Component.translatable(EI18nType.MESSAGE, "reward_option_download_success");
                     NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component));
                 } else if (ctx.flow().isServerbound()) {
-                    if (ctx.player().isPresent()) {
-                        ServerPlayer sender = (ServerPlayer) ctx.player().get();
+                    if (ctx.player() instanceof ServerPlayer sender) {
                         try {
                             // 判断是否拥有修改权限
                             if (sender.hasPermissions(ServerConfig.PERMISSION_EDIT_REWARD.get())) {

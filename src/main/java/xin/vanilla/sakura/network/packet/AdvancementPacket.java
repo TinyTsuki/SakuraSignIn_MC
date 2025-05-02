@@ -1,8 +1,10 @@
 package xin.vanilla.sakura.network.packet;
 
+import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import net.minecraft.advancements.AdvancementHolder;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
@@ -20,7 +22,16 @@ import java.util.stream.Collectors;
 
 @Getter
 public class AdvancementPacket extends SplitPacket implements CustomPacketPayload {
-    public final static ResourceLocation ID = new ResourceLocation(SakuraSignIn.MODID, "advancement");
+    public final static Type<AdvancementPacket> TYPE = new Type<>(new ResourceLocation(SakuraSignIn.MODID, "advancement"));
+    public final static StreamCodec<ByteBuf, AdvancementPacket> STREAM_CODEC = new StreamCodec<>() {
+        public @NotNull AdvancementPacket decode(@NotNull ByteBuf byteBuf) {
+            return new AdvancementPacket((RegistryFriendlyByteBuf) byteBuf);
+        }
+
+        public void encode(@NotNull ByteBuf byteBuf, @NotNull AdvancementPacket packet) {
+            packet.toBytes((RegistryFriendlyByteBuf) byteBuf);
+        }
+    };
 
     // 存储要传输的AdvancementData对象
     private final List<AdvancementData> advancements;
@@ -32,7 +43,7 @@ public class AdvancementPacket extends SplitPacket implements CustomPacketPayloa
                 .collect(Collectors.toList());
     }
 
-    public AdvancementPacket(FriendlyByteBuf buf) {
+    public AdvancementPacket(RegistryFriendlyByteBuf buf) {
         super(buf);
         int size = buf.readVarInt();
         List<AdvancementData> advancements = new ArrayList<>();
@@ -48,29 +59,29 @@ public class AdvancementPacket extends SplitPacket implements CustomPacketPayloa
         this.advancements.addAll(packets.stream().flatMap(packet -> packet.getAdvancements().stream()).toList());
     }
 
+    public void toBytes(@NotNull RegistryFriendlyByteBuf buf) {
+        super.toBytes(buf);
+        buf.writeVarInt(this.advancements.size());
+        for (AdvancementData data : this.advancements) {
+            data.writeToBuffer(buf);
+        }
+    }
+
     @Override
-    public @NotNull ResourceLocation id() {
-        return ID;
+    public @NotNull Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 
     public static void handle(AdvancementPacket packet, IPayloadContext ctx) {
         if (ctx.flow().isClientbound()) {
             // 获取网络事件上下文并排队执行工作
-            ctx.workHandler().execute(() -> {
+            ctx.enqueueWork(() -> {
                 // 在客户端更新 List<AdvancementData>
                 List<AdvancementPacket> packets = SplitPacket.handle(packet);
                 if (CollectionUtils.isNotNullOrEmpty(packets)) {
                     ClientProxy.handleAdvancement(new AdvancementPacket(packets));
                 }
             });
-        }
-    }
-
-    public void write(@NotNull FriendlyByteBuf buf) {
-        super.write(buf);
-        buf.writeVarInt(this.advancements.size());
-        for (AdvancementData data : this.advancements) {
-            data.writeToBuffer(buf);
         }
     }
 

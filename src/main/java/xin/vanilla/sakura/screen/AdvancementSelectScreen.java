@@ -6,7 +6,9 @@ import lombok.NonNull;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -34,7 +36,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static xin.vanilla.sakura.config.RewardConfigManager.GSON;
 
@@ -46,7 +47,14 @@ public class AdvancementSelectScreen extends Screen {
     private static final Component TITLE = Component.literal("AdvancementSelectScreen");
 
     private final List<AdvancementData> allAdvancementList = SakuraSignIn.getAdvancementData();
-    private final List<AdvancementData> displayableAdvancementList = SakuraSignIn.getAdvancementData().stream().filter(o -> o.displayInfo().getIcon().getItem() != Items.AIR).toList();
+    private final List<AdvancementData> displayableAdvancementList = SakuraSignIn.getAdvancementData().stream()
+            .filter(o -> {
+                ItemStack icon = o.displayInfo().getIcon();
+                return !(icon.getItem() == Items.LIGHT
+                        && icon.get(DataComponents.CUSTOM_NAME) != null
+                        && icon.get(DataComponents.CUSTOM_NAME).getString().equals("empty"));
+            })
+            .toList();
     // 每页显示行数
     private final int maxLine = 5;
 
@@ -250,11 +258,11 @@ public class AdvancementSelectScreen extends Screen {
     @ParametersAreNonnullByDefault
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
         keyManager.refresh(mouseX, mouseY);
-        // 绘制背景
-        // this.renderBackground(graphics, mouseX, mouseY, partialTicks);
         AbstractGuiUtils.fill(graphics, (int) (this.bgX - this.margin), (int) (this.bgY - this.margin), (int) (112 + this.margin * 2), (int) (20 + (AbstractGuiUtils.ITEM_ICON_SIZE + 3) * 5 + 20 + margin * 2 + 5), 0xCCC6C6C6, 2);
         AbstractGuiUtils.fillOutLine(graphics, (int) (this.effectBgX - this.margin), (int) (this.effectBgY - this.margin), 104, (int) ((AbstractGuiUtils.ITEM_ICON_SIZE + this.margin) * this.maxLine + this.margin), 1, 0xFF000000, 1);
-        super.render(graphics, mouseX, mouseY, partialTicks);
+        for (Renderable renderable : this.renderables) {
+            renderable.render(graphics, mouseX, mouseY, partialTicks);
+        }
         // 保存输入框的文本, 防止窗口重绘时输入框内容丢失
         this.inputFieldText = this.inputField.getValue();
 
@@ -397,7 +405,11 @@ public class AdvancementSelectScreen extends Screen {
             int lineColor = context.button().isHovered() ? 0xEEFFFFFF : 0xEE000000;
             AbstractGuiUtils.fill(context.graphics(), (int) context.button().getX(), (int) context.button().getY(), (int) context.button().getWidth(), (int) context.button().getHeight(), 0xEE707070, 2);
             AbstractGuiUtils.fillOutLine(context.graphics(), (int) context.button().getX(), (int) context.button().getY(), (int) context.button().getWidth(), (int) context.button().getHeight(), 1, lineColor, 2);
-            context.graphics().renderItem(AdvancementRewardParser.getAdvancementData((ResourceLocation) RewardManager.deserializeReward(this.currentAdvancement)).displayInfo().getIcon(), (int) context.button().getX() + 2, (int) context.button().getY() + 2);
+            ItemStack icon = AdvancementRewardParser.getAdvancementData((ResourceLocation) RewardManager.deserializeReward(this.currentAdvancement)).displayInfo().getIcon();
+            if (icon.getItem() == Items.LIGHT && icon.get(DataComponents.CUSTOM_NAME) != null && icon.get(DataComponents.CUSTOM_NAME).getString().equals("empty")) {
+                icon = new ItemStack(Items.AIR);
+            }
+            context.graphics().renderItem(icon, (int) context.button().getX() + 2, (int) context.button().getY() + 2);
             context.button().setTooltip(Text.literal(AdvancementRewardParser.getAdvancementData(((ResourceLocation) RewardManager.deserializeReward(this.currentAdvancement))).displayInfo().getTitle().getString()));
         }).setX(this.bgX - AbstractGuiUtils.ITEM_ICON_SIZE - 2 - margin - 3).setY(this.bgY + margin + AbstractGuiUtils.ITEM_ICON_SIZE + 4 + 1).setWidth(AbstractGuiUtils.ITEM_ICON_SIZE + 4).setHeight(AbstractGuiUtils.ITEM_ICON_SIZE + 4));
         this.OP_BUTTONS.put(OperationButtonType.PROBABILITY.getCode(), new OperationButton(OperationButtonType.PROBABILITY.getCode(), context -> {
@@ -453,7 +465,7 @@ public class AdvancementSelectScreen extends Screen {
                     double effectY = effectBgY + i1 * (AbstractGuiUtils.ITEM_ICON_SIZE + margin);
                     // 绘制背景
                     int bgColor;
-                    if (context.button().isHovered() || advancementData.id().toString().equalsIgnoreCase(this.currentAdvancement.toString())) {
+                    if (context.button().isHovered() || advancementData.id().toString().equalsIgnoreCase(RewardManager.deserializeReward(this.currentAdvancement).toString())) {
                         bgColor = 0xEE7CAB7C;
                     } else {
                         bgColor = 0xEE707070;
@@ -463,7 +475,11 @@ public class AdvancementSelectScreen extends Screen {
 
                     AbstractGuiUtils.fill(context.graphics(), (int) context.button().getX(), (int) context.button().getY(), (int) context.button().getWidth(), (int) context.button().getHeight(), bgColor);
                     AbstractGuiUtils.drawLimitedText(Text.literal(AdvancementRewardParser.getDisplayName(advancementData)).setGraphics(context.graphics()).setFont(this.font), context.button().getX() + AbstractGuiUtils.ITEM_ICON_SIZE + this.margin * 2, context.button().getY() + (AbstractGuiUtils.ITEM_ICON_SIZE + 4 - this.font.lineHeight) / 2.0, (int) context.button().getWidth() - AbstractGuiUtils.ITEM_ICON_SIZE - 4);
-                    context.graphics().renderItem(advancementData.displayInfo().getIcon(), (int) (context.button().getX() + this.margin), (int) context.button().getY());
+                    ItemStack icon = advancementData.displayInfo().getIcon();
+                    if (icon.getItem() == Items.LIGHT && icon.get(DataComponents.CUSTOM_NAME) != null && icon.get(DataComponents.CUSTOM_NAME).getString().equals("empty")) {
+                        icon = new ItemStack(Items.AIR);
+                    }
+                    context.graphics().renderItem(icon, (int) (context.button().getX() + this.margin), (int) context.button().getY());
                     context.button().setTooltip(AdvancementRewardParser.getDisplayName(advancementData) + "\n" + AdvancementRewardParser.getDescription(advancementData));
                 } else {
                     context.button().setX(0).setY(0).setWidth(0).setHeight(0).setId("");

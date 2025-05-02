@@ -1,11 +1,13 @@
 package xin.vanilla.sakura.data;
 
 import lombok.NonNull;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.neoforge.common.util.INBTSerializable;
+import org.jetbrains.annotations.NotNull;
 import xin.vanilla.sakura.config.KeyValue;
 import xin.vanilla.sakura.rewards.RewardManager;
 import xin.vanilla.sakura.util.DateUtils;
@@ -205,7 +207,7 @@ public class PlayerSignInData implements INBTSerializable<CompoundTag> {
     }
 
     @Override
-    public CompoundTag serializeNBT() {
+    public CompoundTag serializeNBT(HolderLookup.@NotNull Provider provider) {
         // 创建一个CompoundNBT对象，并将玩家的分数和活跃状态写入其中
         CompoundTag tag = new CompoundTag();
         tag.putInt("totalSignInDays", this.getTotalSignInDays());
@@ -236,7 +238,7 @@ public class PlayerSignInData implements INBTSerializable<CompoundTag> {
     }
 
     @Override
-    public void deserializeNBT(CompoundTag nbt) {
+    public void deserializeNBT(HolderLookup.@NotNull Provider provider, CompoundTag nbt) {
         // 从NBT标签中读取玩家的分数和活跃状态，并更新到实例中
         this.setTotalSignInDays(nbt.getInt("totalSignInDays"));
         this.setContinuousSignInDays(nbt.getInt("continuousSignInDays"));

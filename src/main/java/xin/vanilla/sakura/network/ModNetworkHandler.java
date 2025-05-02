@@ -1,35 +1,35 @@
 package xin.vanilla.sakura.network;
 
-import net.neoforged.neoforge.network.event.RegisterPayloadHandlerEvent;
-import net.neoforged.neoforge.network.registration.IPayloadRegistrar;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.network.packet.*;
 
 public class ModNetworkHandler {
-    public static void registerPackets(final RegisterPayloadHandlerEvent event) {
-        final IPayloadRegistrar registrar = event.registrar(SakuraSignIn.MODID).optional();
+    public static void registerPackets(final RegisterPayloadHandlersEvent event) {
+        final PayloadRegistrar registrar = event.registrar(SakuraSignIn.MODID).optional();
 
-        registrar.play(PlayerDataSyncPacket.ID, PlayerDataSyncPacket::new,
-                handler -> handler.client(PlayerDataSyncPacket::handle));
-        registrar.play(ClientConfigSyncPacket.ID, ClientConfigSyncPacket::new,
-                handler -> handler.server(ClientConfigSyncPacket::handle));
-        registrar.play(RewardOptionSyncPacket.ID, RewardOptionSyncPacket::new,
-                handler -> handler.server(RewardOptionSyncPacket::handle).client(RewardOptionSyncPacket::handle));
-        registrar.play(ItemStackPacket.ID, ItemStackPacket::new,
-                handler -> handler.server(ItemStackPacket::handle));
-        registrar.play(SignInPacket.ID, SignInPacket::new,
-                handler -> handler.server(SignInPacket::handle));
-        registrar.play(AdvancementPacket.ID, AdvancementPacket::new,
-                handler -> handler.client(AdvancementPacket::handle));
-        registrar.play(DownloadRewardOptionNotice.ID, DownloadRewardOptionNotice::new,
-                handler -> handler.server(DownloadRewardOptionNotice::handle));
-        registrar.play(PlayerDataReceivedNotice.ID, PlayerDataReceivedNotice::new,
-                handler -> handler.server(PlayerDataReceivedNotice::handle));
-        registrar.play(ClientModLoadedNotice.ID, ClientModLoadedNotice::new,
-                handler -> handler.server(ClientModLoadedNotice::handle));
-        registrar.play(ServerTimeSyncPacket.ID, ServerTimeSyncPacket::new,
-                handler -> handler.client(ServerTimeSyncPacket::handle));
-        registrar.play(RewardOptionDataReceivedNotice.ID, RewardOptionDataReceivedNotice::new,
-                handler -> handler.client(RewardOptionDataReceivedNotice::handle));
+        registrar.playToClient(PlayerDataSyncPacket.TYPE, PlayerDataSyncPacket.STREAM_CODEC,
+                PlayerDataSyncPacket::handle);
+        registrar.playToServer(ClientConfigSyncPacket.TYPE, ClientConfigSyncPacket.STREAM_CODEC,
+                ClientConfigSyncPacket::handle);
+        registrar.playBidirectional(RewardOptionSyncPacket.TYPE, RewardOptionSyncPacket.STREAM_CODEC,
+                RewardOptionSyncPacket::handle);
+        registrar.playToServer(ItemStackPacket.TYPE, ItemStackPacket.STREAM_CODEC,
+                ItemStackPacket::handle);
+        registrar.playToServer(SignInPacket.TYPE, SignInPacket.STREAM_CODEC,
+                SignInPacket::handle);
+        registrar.playToClient(AdvancementPacket.TYPE, AdvancementPacket.STREAM_CODEC,
+                AdvancementPacket::handle);
+        registrar.playToServer(DownloadRewardOptionNotice.TYPE, DownloadRewardOptionNotice.STREAM_CODEC,
+                DownloadRewardOptionNotice::handle);
+        registrar.playToServer(PlayerDataReceivedNotice.TYPE, PlayerDataReceivedNotice.STREAM_CODEC,
+                PlayerDataReceivedNotice::handle);
+        registrar.playToServer(ClientModLoadedNotice.TYPE, ClientModLoadedNotice.STREAM_CODEC,
+                ClientModLoadedNotice::handle);
+        registrar.playToClient(ServerTimeSyncPacket.TYPE, ServerTimeSyncPacket.STREAM_CODEC,
+                ServerTimeSyncPacket::handle);
+        registrar.playToClient(RewardOptionDataReceivedNotice.TYPE, RewardOptionDataReceivedNotice.STREAM_CODEC,
+                RewardOptionDataReceivedNotice::handle);
     }
 }

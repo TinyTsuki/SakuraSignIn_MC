@@ -2,29 +2,154 @@ package xin.vanilla.sakura.event;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.EffectRenderingInventoryScreen;
+import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
 import net.neoforged.neoforge.client.event.ScreenEvent;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.ClientConfig;
+import xin.vanilla.sakura.config.ServerConfig;
+import xin.vanilla.sakura.data.PlayerDataAttachment;
+import xin.vanilla.sakura.data.PlayerSignInData;
 import xin.vanilla.sakura.enums.EI18nType;
+import xin.vanilla.sakura.enums.ESignInType;
+import xin.vanilla.sakura.network.packet.ClientConfigSyncPacket;
+import xin.vanilla.sakura.network.packet.ClientModLoadedNotice;
+import xin.vanilla.sakura.network.packet.ServerTimeSyncPacket;
+import xin.vanilla.sakura.network.packet.SignInPacket;
+import xin.vanilla.sakura.rewards.RewardManager;
 import xin.vanilla.sakura.screen.RewardOptionScreen;
 import xin.vanilla.sakura.screen.component.InventoryButton;
 import xin.vanilla.sakura.screen.component.NotificationManager;
-import xin.vanilla.sakura.util.AbstractGuiUtils;
-import xin.vanilla.sakura.util.I18nUtils;
-import xin.vanilla.sakura.util.StringUtils;
+import xin.vanilla.sakura.util.*;
+
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 客户端事件处理器
  */
-@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.FORGE, modid = SakuraSignIn.MODID, value = Dist.CLIENT)
+@EventBusSubscriber(bus = EventBusSubscriber.Bus.GAME, modid = SakuraSignIn.MODID, value = Dist.CLIENT)
 public class ClientGameEventHandler {
     private static final Logger LOGGER = LogManager.getLogger();
+
+    @SubscribeEvent
+    public static void onPlayerLoggedIn(ClientPlayerNetworkEvent.LoggingIn event) {
+        LOGGER.debug("Client: Player logged in.");
+        // 同步客户端配置到服务器
+        PacketDistributor.sendToServer(new ClientConfigSyncPacket());
+        PacketDistributor.sendToServer(new ClientModLoadedNotice());
+    }
+
+    /**
+     * 同步客户端服务端数据
+     */
+    @SubscribeEvent
+    public static void playerTickEvent(PlayerTickEvent.Post event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            // 不用给未安装mod的玩家发送数据包
+            if (SakuraSignIn.getPlayerCapabilityStatus().containsKey(player.getUUID().toString())) {
+                // 同步玩家签到数据到客户端
+                if (!SakuraSignIn.getPlayerCapabilityStatus().getOrDefault(player.getUUID().toString(), true)) {
+                    // 如果玩家还活着则同步玩家传送数据到客户端
+                    if (player.isAlive()) {
+                        try {
+                            PlayerDataAttachment.syncPlayerData(player);
+                        } catch (Exception e) {
+                            LOGGER.error("Failed to sync player data: ", e);
+                        }
+                    }
+                }
+                // 同步服务器时间到客户端
+                player.connection.send(new ServerTimeSyncPacket());
+            }
+        }
+    }
+
+    /**
+     * 玩家死亡后重生或者从末地回主世界
+     */
+    @SubscribeEvent
+    public static void onPlayerCloned(PlayerEvent.Clone event) {
+        ServerPlayer original = (ServerPlayer) event.getOriginal();
+        ServerPlayer newPlayer = (ServerPlayer) event.getEntity();
+        original.revive();
+
+        SakuraUtils.cloneServerPlayerLanguage(original, newPlayer);
+        PlayerSignInData oldDataCap = PlayerDataAttachment.getData(original);
+        PlayerSignInData newDataCap = PlayerDataAttachment.getData(newPlayer);
+        newDataCap.copyFrom(oldDataCap);
+        if (SakuraSignIn.getPlayerCapabilityStatus().containsKey(newPlayer.getUUID().toString())) {
+            SakuraSignIn.getPlayerCapabilityStatus().put(newPlayer.getUUID().toString(), false);
+        }
+    }
+
+    /**
+     * 玩家进入维度
+     */
+    @SubscribeEvent
+    public static void onEntityJoinWorld(EntityJoinLevelEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            if (SakuraSignIn.getPlayerCapabilityStatus().containsKey(player.getUUID().toString())) {
+                SakuraSignIn.getPlayerCapabilityStatus().put(player.getUUID().toString(), false);
+            }
+            SakuraSignIn.EXECUTOR_SERVICE.submit(() -> {
+                // IDEA 又开始了
+                for (int i = 0; i < 120 && player.getChatVisibility() == null; i++) {
+                    try {
+                        TimeUnit.MILLISECONDS.sleep(500);
+                    } catch (InterruptedException e) {
+                        // 恢复中断状态
+                        Thread.currentThread().interrupt();
+                        LOGGER.warn("Thread interrupted while waiting for player client settings.", e);
+                        return;
+                    }
+                    LOGGER.debug("Waiting for player client setting: {}, {}.", SakuraUtils.getPlayerLanguage(player), i);
+                }
+
+                try {
+                    TimeUnit.MILLISECONDS.sleep(500);
+                } catch (InterruptedException e) {
+                    // 恢复中断状态
+                    Thread.currentThread().interrupt();
+                    LOGGER.warn("Thread interrupted before processing sign in.", e);
+                    return;
+                }
+
+                Objects.requireNonNull(player.getServer()).execute(() -> {
+                    LOGGER.debug("Player language: {}.", SakuraUtils.getPlayerLanguage(player));
+                    PlayerSignInData data = PlayerDataAttachment.getData(player);
+                    if (ServerConfig.AUTO_SIGN_IN.get() && !RewardManager.isSignedIn(data, DateUtils.getServerDate(), true)) {
+                        RewardManager.signIn(player, new SignInPacket(
+                                DateUtils.toDateTimeString(DateUtils.getServerDate()),
+                                data.isAutoRewarded(),
+                                ESignInType.SIGN_IN
+                        ));
+                    }
+                });
+            });
+        }
+    }
+
+    /**
+     * 玩家登出事件
+     */
+    @SubscribeEvent
+    public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        // 玩家退出服务器时移除键(移除mod安装状态)
+        if (event.getEntity() instanceof ServerPlayer) {
+            SakuraSignIn.getPlayerCapabilityStatus().remove(event.getEntity().getStringUUID());
+        }
+    }
 
     @SubscribeEvent
     public static void onRenderScreen(ScreenEvent.Init.Post event) {

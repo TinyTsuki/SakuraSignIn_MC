@@ -5,7 +5,9 @@ import lombok.experimental.Accessors;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.AdvancementType;
 import net.minecraft.advancements.DisplayInfo;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -31,7 +33,7 @@ public record AdvancementData(@NonNull ResourceLocation id, @NonNull DisplayInfo
 
     public static AdvancementData readFromBuffer(FriendlyByteBuf buffer) {
         ResourceLocation id = buffer.readResourceLocation();
-        return new AdvancementData(id, DisplayInfo.fromNetwork(buffer));
+        return new AdvancementData(id, DisplayInfo.STREAM_CODEC.decode((RegistryFriendlyByteBuf) buffer));
     }
 
     public static DisplayInfo emptyDisplayInfo() {
@@ -39,11 +41,15 @@ public record AdvancementData(@NonNull ResourceLocation id, @NonNull DisplayInfo
     }
 
     public static DisplayInfo createDisplayInfo(String title) {
-        return createDisplayInfo(title, "", new ItemStack(Items.AIR));
+        ItemStack itemStack = new ItemStack(Items.LIGHT);
+        itemStack.set(DataComponents.CUSTOM_NAME, Component.literal("empty").toTextComponent());
+        return createDisplayInfo(title, "", itemStack);
     }
 
     public static DisplayInfo createDisplayInfo(String title, String description) {
-        return createDisplayInfo(title, description, new ItemStack(Items.AIR));
+        ItemStack itemStack = new ItemStack(Items.LIGHT);
+        itemStack.set(DataComponents.CUSTOM_NAME, Component.literal("empty").toTextComponent());
+        return createDisplayInfo(title, description, itemStack);
     }
 
     public static DisplayInfo createDisplayInfo(String title, String description, ItemStack itemStack) {
@@ -53,8 +59,8 @@ public record AdvancementData(@NonNull ResourceLocation id, @NonNull DisplayInfo
                 , false, false, false);
     }
 
-    public void writeToBuffer(FriendlyByteBuf buffer) {
+    public void writeToBuffer(RegistryFriendlyByteBuf buffer) {
         buffer.writeResourceLocation(id);
-        displayInfo.serializeToNetwork(buffer);
+        DisplayInfo.STREAM_CODEC.encode(buffer, displayInfo);
     }
 }
