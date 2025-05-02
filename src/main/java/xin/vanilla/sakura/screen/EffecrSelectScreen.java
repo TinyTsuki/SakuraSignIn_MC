@@ -489,7 +489,7 @@ public class EffecrSelectScreen extends Screen {
                     double mobEffectY = mobEffectBgY + i1 * (AbstractGuiUtils.ITEM_ICON_SIZE + margin);
                     // 绘制背景
                     int bgColor;
-                    if (context.button().isHovered() || mobEffect == ((MobEffectInstance) RewardManager.deserializeReward(this.currentMobEffect)).getEffect()) {
+                    if (context.button().isHovered() || mobEffect.value() == ((MobEffectInstance) RewardManager.deserializeReward(this.currentMobEffect)).getEffect().value()) {
                         bgColor = 0xEE7CAB7C;
                     } else {
                         bgColor = 0xEE707070;
