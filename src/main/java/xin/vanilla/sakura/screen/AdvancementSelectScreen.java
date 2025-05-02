@@ -34,7 +34,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static xin.vanilla.sakura.config.RewardConfigManager.GSON;
 
@@ -453,7 +452,7 @@ public class AdvancementSelectScreen extends Screen {
                     double effectY = effectBgY + i1 * (AbstractGuiUtils.ITEM_ICON_SIZE + margin);
                     // 绘制背景
                     int bgColor;
-                    if (context.button().isHovered() || advancementData.id().toString().equalsIgnoreCase(this.currentAdvancement.toString())) {
+                    if (context.button().isHovered() || advancementData.id().toString().equalsIgnoreCase(RewardManager.deserializeReward(this.currentAdvancement).toString())) {
                         bgColor = 0xEE7CAB7C;
                     } else {
                         bgColor = 0xEE707070;
