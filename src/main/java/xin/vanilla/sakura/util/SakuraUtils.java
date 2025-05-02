@@ -17,7 +17,7 @@ import net.neoforged.neoforgespi.language.IModInfo;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.ServerConfig;
-import xin.vanilla.sakura.data.PlayerSignInDataCapability;
+import xin.vanilla.sakura.data.PlayerDataAttachment;
 import xin.vanilla.sakura.enums.ERewardRule;
 
 import javax.annotation.Nullable;
@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class SakuraUtils {
 
@@ -95,7 +96,7 @@ public class SakuraUtils {
             copy.setCount(stack.getCount());
 
             // 如果插槽中的物品是目标物品
-            if (stack.equals(copy, false)) {
+            if (ItemStack.isSameItem(stack, copy)) {
                 // 获取当前物品堆叠的数量
                 int stackSize = stack.getCount();
 
@@ -138,7 +139,7 @@ public class SakuraUtils {
             result.addAll(player.getInventory().items);
             result.addAll(player.getInventory().armor);
             result.addAll(player.getInventory().offhand);
-            result = result.stream().filter(itemStack -> !itemStack.isEmpty() && itemStack.getItem() != Items.AIR).toList();
+            result = result.stream().filter(itemStack -> !itemStack.isEmpty() && itemStack.getItem() != Items.AIR).collect(Collectors.toList());
         }
         return result;
     }
@@ -232,7 +233,7 @@ public class SakuraUtils {
     // region 杂项
 
     public static String getPlayerLanguage(ServerPlayer player) {
-        return PlayerSignInDataCapability.getData(player).getValidLanguage(player);
+        return PlayerDataAttachment.getData(player).getValidLanguage(player);
     }
 
     public static String getValidLanguage(@Nullable Player player, @Nullable String language) {

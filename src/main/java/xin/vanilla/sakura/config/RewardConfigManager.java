@@ -1252,7 +1252,7 @@ public class RewardConfigManager {
                 RewardConfigManager.getRewardMap(rule).forEach((key, value) -> {
                     List<RewardOptionSyncData> list = value.stream()
                             .map(reward -> new RewardOptionSyncData(rule, key, reward))
-                            .toList();
+                            .collect(Collectors.toList());
                     dataList.addAll(list);
                 });
             }

@@ -12,12 +12,11 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModLoadingContext;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
-import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
-import net.neoforged.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
@@ -31,7 +30,8 @@ import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.config.KeyValue;
 import xin.vanilla.sakura.config.RewardConfigManager;
 import xin.vanilla.sakura.config.ServerConfig;
-import xin.vanilla.sakura.event.ClientEventHandler;
+import xin.vanilla.sakura.data.PlayerDataAttachment;
+import xin.vanilla.sakura.event.ClientModEventHandler;
 import xin.vanilla.sakura.network.ModNetworkHandler;
 import xin.vanilla.sakura.network.data.AdvancementData;
 import xin.vanilla.sakura.network.packet.SplitPacket;
@@ -133,28 +133,26 @@ public class SakuraSignIn {
     @Getter
     private static final KeyValue<String, String> clientServerTime = new KeyValue<>(DateUtils.toDateTimeString(new Date(0)), DateUtils.toString(new Date(0)));
 
-    public SakuraSignIn() {
+    public SakuraSignIn(IEventBus modEventBus) {
 
         // 注册网络通道
-        ModNetworkHandler.registerPackets();
-
+        modEventBus.addListener(ModNetworkHandler::registerPackets);
         // 注册服务器启动和关闭事件
         NeoForge.EVENT_BUS.addListener(this::onServerStarting);
         NeoForge.EVENT_BUS.addListener(this::onServerStopping);
 
-        // 注册当前实例到MinecraftForge的事件总线，以便监听和处理游戏内的各种事件
-        NeoForge.EVENT_BUS.register(this);
-
         // 注册服务器和客户端配置
         ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, ServerConfig.SERVER_CONFIG);
         ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, ClientConfig.CLIENT_CONFIG);
+        // 注册数据附件
+        PlayerDataAttachment.ATTACHMENT_TYPES.register(modEventBus);
+
         if (FMLEnvironment.dist == Dist.CLIENT) {
-            FMLJavaModLoadingContext.get().getModEventBus().addListener(ClientEventHandler::registerKeyMappings);
-            FMLJavaModLoadingContext.get().getModEventBus().addListener(this::onClientSetup);
+            NeoForge.EVENT_BUS.addListener(ClientModEventHandler::onClientTick);
         }
 
-        // 注册客户端设置事件到MOD事件总线
-        // FMLJavaModLoadingContext.get().getModEventBus().addListener(this::onClientSetup);
+        // 注册当前实例到MinecraftForge的事件总线，以便监听和处理游戏内的各种事件
+        NeoForge.EVENT_BUS.register(this);
     }
 
     @SubscribeEvent
@@ -174,23 +172,13 @@ public class SakuraSignIn {
     }
 
     public static TextureCoordinate getThemeTextureCoordinate(boolean nonNull) {
-        if (nonNull && (themeTextureCoordinate == null || themeTexture == null)) ClientEventHandler.loadThemeTexture();
+        if (nonNull && (themeTextureCoordinate == null || themeTexture == null)) ClientModEventHandler.loadThemeTexture();
         return themeTextureCoordinate;
     }
 
     @NonNull
     public static TextureCoordinate getThemeTextureCoordinate() {
         return getThemeTextureCoordinate(true);
-    }
-
-    /**
-     * 在客户端设置阶段触发的事件处理方法
-     * 此方法主要用于接收 FML 客户端设置事件，并执行相应的初始化操作
-     */
-    @SubscribeEvent
-    public void onClientSetup(final FMLClientSetupEvent event) {
-        // 创建配置文件目录
-        ClientEventHandler.createConfigPath();
     }
 
     private static CommandDispatcher<CommandSourceStack> commandDispatcher;

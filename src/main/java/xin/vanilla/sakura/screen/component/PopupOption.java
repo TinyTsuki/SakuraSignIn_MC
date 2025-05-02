@@ -15,6 +15,7 @@ import xin.vanilla.sakura.util.StringUtils;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * 弹出层选项框

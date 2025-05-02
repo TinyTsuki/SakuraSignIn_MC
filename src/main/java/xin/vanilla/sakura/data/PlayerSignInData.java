@@ -4,8 +4,8 @@ import lombok.NonNull;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
+import net.neoforged.neoforge.common.util.INBTSerializable;
 import xin.vanilla.sakura.config.KeyValue;
 import xin.vanilla.sakura.rewards.RewardManager;
 import xin.vanilla.sakura.util.DateUtils;
@@ -17,11 +17,12 @@ import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
  * 玩家签到数据
  */
-public class PlayerSignInData implements IPlayerSignInData {
+public class PlayerSignInData implements INBTSerializable<CompoundTag> {
     private final AtomicInteger totalSignInDays = new AtomicInteger();
     private final AtomicInteger continuousSignInDays = new AtomicInteger();
     private Date lastSignInTime;
@@ -32,93 +33,75 @@ public class PlayerSignInData implements IPlayerSignInData {
     private List<KeyValue<String, KeyValue<Date, Boolean>>> cdkRecords;
     private String language = "client";
 
-    @Override
     public int getTotalSignInDays() {
         return this.totalSignInDays.get();
     }
 
-    @Override
     public void setTotalSignInDays(int days) {
         this.totalSignInDays.set(days);
     }
 
-    @Override
     public int plusTotalSignInDays() {
         return this.totalSignInDays.incrementAndGet();
     }
 
-    @Override
     public int getContinuousSignInDays() {
         return this.continuousSignInDays.get();
     }
 
-    @Override
     public void setContinuousSignInDays(int days) {
         this.continuousSignInDays.set(days);
     }
 
-    @Override
     public int plusContinuousSignInDays() {
         return this.continuousSignInDays.incrementAndGet();
     }
 
-    @Override
     public void resetContinuousSignInDays() {
         this.continuousSignInDays.set(1);
     }
 
-    @Override
     public @NonNull Date getLastSignInTime() {
         return this.lastSignInTime = this.lastSignInTime == null ? DateUtils.getDate(0, 1, 1) : this.lastSignInTime;
     }
 
-    @Override
     public void setLastSignInTime(Date time) {
         this.lastSignInTime = time;
     }
 
-    @Override
     public int getSignInCard() {
         return this.signInCard.get();
     }
 
-    @Override
     public int plusSignInCard() {
         return this.signInCard.incrementAndGet();
     }
 
 
-    @Override
     public int plusSignInCard(int num) {
         return this.signInCard.addAndGet(num);
     }
 
-    @Override
     public int subSignInCard() {
         return this.signInCard.decrementAndGet();
     }
 
-    @Override
     public int subSignInCard(int num) {
         return this.signInCard.addAndGet(-num);
     }
 
-    @Override
     public void setSignInCard(int num) {
         this.signInCard.set(num);
     }
 
-    @Override
     public boolean isAutoRewarded() {
         return this.autoRewarded;
     }
 
-    @Override
     public void setAutoRewarded(boolean autoRewarded) {
         this.autoRewarded = autoRewarded;
     }
 
-    @Override
     public @NonNull List<SignInRecord> getSignInRecords() {
         if (this.signInRecords == null) {
             this.signInRecords = new ArrayList<>();
@@ -128,7 +111,6 @@ public class PlayerSignInData implements IPlayerSignInData {
         return this.signInRecords;
     }
 
-    @Override
     public void setSignInRecords(List<SignInRecord> records) {
         if (records == null) {
             records = new ArrayList<>();
@@ -139,7 +121,6 @@ public class PlayerSignInData implements IPlayerSignInData {
         this.signInRecords = records;
     }
 
-    @Override
     public @NonNull List<KeyValue<String, KeyValue<Date, Boolean>>> getCdkRecords() {
         if (this.cdkRecords == null) {
             this.cdkRecords = new ArrayList<>();
@@ -149,7 +130,6 @@ public class PlayerSignInData implements IPlayerSignInData {
         return this.cdkRecords;
     }
 
-    @Override
     public void setCdkRecords(List<KeyValue<String, KeyValue<Date, Boolean>>> cdkRecords) {
         if (cdkRecords == null) {
             cdkRecords = new ArrayList<>();
@@ -160,18 +140,15 @@ public class PlayerSignInData implements IPlayerSignInData {
         this.cdkRecords = cdkRecords;
     }
 
-    @Override
     public String getLanguage() {
         return this.language;
     }
 
-    @Override
     public void setLanguage(String language) {
         this.language = language;
     }
 
     @NonNull
-    @Override
     public String getValidLanguage(@Nullable Player player) {
         return SakuraUtils.getValidLanguage(player, this.getLanguage());
     }
@@ -216,7 +193,7 @@ public class PlayerSignInData implements IPlayerSignInData {
         }
     }
 
-    public void copyFrom(IPlayerSignInData capability) {
+    public void copyFrom(PlayerSignInData capability) {
         this.totalSignInDays.set(capability.getTotalSignInDays());
         this.continuousSignInDays.set(capability.calculateContinuousDays());
         this.lastSignInTime = capability.getLastSignInTime();
@@ -285,14 +262,9 @@ public class PlayerSignInData implements IPlayerSignInData {
         this.setCdkRecords(cdkRecords);
     }
 
-    @Override
-    public void save(ServerPlayer player) {
-        player.getCapability(PlayerSignInDataCapability.PLAYER_DATA).ifPresent(this::copyFrom);
-    }
-
     public int calculateContinuousDays() {
         try {
-            return DateUtils.calculateContinuousDays(this.getSignInRecords().stream().map(SignInRecord::getCompensateTime).toList()
+            return DateUtils.calculateContinuousDays(this.getSignInRecords().stream().map(SignInRecord::getCompensateTime).collect(Collectors.toList())
                     , RewardManager.getCompensateDate(DateUtils.getServerDate()));
         } catch (Exception e) {
             return 0;

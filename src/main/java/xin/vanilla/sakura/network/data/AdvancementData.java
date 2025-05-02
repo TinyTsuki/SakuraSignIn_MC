@@ -3,8 +3,8 @@ package xin.vanilla.sakura.network.data;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.advancements.AdvancementType;
 import net.minecraft.advancements.DisplayInfo;
-import net.minecraft.advancements.FrameType;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
@@ -12,6 +12,7 @@ import net.minecraft.world.item.Items;
 import xin.vanilla.sakura.util.Component;
 
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * 进度信息
@@ -48,7 +49,7 @@ public record AdvancementData(@NonNull ResourceLocation id, @NonNull DisplayInfo
     public static DisplayInfo createDisplayInfo(String title, String description, ItemStack itemStack) {
         return new DisplayInfo(itemStack
                 , Component.literal(title).toTextComponent(), Component.literal(description).toTextComponent()
-                , new ResourceLocation(""), FrameType.TASK
+                , Optional.of(new ResourceLocation("")), AdvancementType.TASK
                 , false, false, false);
     }
 

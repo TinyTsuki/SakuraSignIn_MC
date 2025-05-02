@@ -87,12 +87,6 @@ public class InventoryButton extends AbstractWidget {
         return this;
     }
 
-    @Override
-    @ParametersAreNonnullByDefault
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        // 重写并且啥也不干
-    }
-
     public void render_(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
         // 无法直接监听鼠标移动事件, 直接在绘制时调用
         this.mouseMoved(mouseX, mouseY);

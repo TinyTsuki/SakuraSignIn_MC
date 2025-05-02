@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static xin.vanilla.sakura.config.RewardConfigManager.GSON;
 
@@ -509,7 +510,7 @@ public class EffecrSelectScreen extends Screen {
         String s = this.inputField == null ? null : this.inputField.getValue();
         this.mobEffectList.clear();
         if (StringUtils.isNotNullOrEmpty(s)) {
-            this.mobEffectList.addAll(this.allMobEffectList.stream().filter(mobEffect -> EffectRewardParser.getDisplayName(mobEffect).contains(s)).toList());
+            this.mobEffectList.addAll(this.allMobEffectList.stream().filter(mobEffect -> EffectRewardParser.getDisplayName(mobEffect).contains(s)).collect(Collectors.toList()));
         } else {
             this.mobEffectList.addAll(new ArrayList<>(this.playerMode ? this.playerMobEffectList : this.allMobEffectList));
         }

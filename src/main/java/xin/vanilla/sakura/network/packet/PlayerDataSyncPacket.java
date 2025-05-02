@@ -1,10 +1,14 @@
 package xin.vanilla.sakura.network.packet;
 
 import lombok.Getter;
+import lombok.NonNull;
 import net.minecraft.network.FriendlyByteBuf;
-import net.neoforged.neoforge.network.NetworkEvent;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+import org.jetbrains.annotations.NotNull;
+import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.ServerConfig;
-import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.data.PlayerSignInData;
 import xin.vanilla.sakura.data.SignInRecord;
 import xin.vanilla.sakura.network.ClientProxy;
@@ -12,9 +16,12 @@ import xin.vanilla.sakura.util.CollectionUtils;
 import xin.vanilla.sakura.util.DateUtils;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Getter
-public class PlayerDataSyncPacket extends SplitPacket {
+public class PlayerDataSyncPacket extends SplitPacket implements CustomPacketPayload {
+    public final static ResourceLocation ID = new ResourceLocation(SakuraSignIn.MODID, "player_data_sync");
+
     private final UUID playerUUID;
     private final int totalSignInDays;
     private final int continuousSignInDays;
@@ -23,7 +30,7 @@ public class PlayerDataSyncPacket extends SplitPacket {
     private final boolean autoRewarded;
     private final List<SignInRecord> signInRecords;
 
-    public PlayerDataSyncPacket(UUID playerUUID, IPlayerSignInData data) {
+    public PlayerDataSyncPacket(UUID playerUUID, PlayerSignInData data) {
         super();
         this.playerUUID = playerUUID;
         this.totalSignInDays = data.getTotalSignInDays();
@@ -61,7 +68,7 @@ public class PlayerDataSyncPacket extends SplitPacket {
                 .map(PlayerDataSyncPacket::getSignInRecords)
                 .flatMap(Collection::stream)
                 .sorted(Comparator.comparing(SignInRecord::getSignInTime))
-                .toList();
+                .collect(Collectors.toList());
     }
 
     private PlayerDataSyncPacket(UUID playerUUID, int totalSignInDays, int continuousSignInDays, Date lastSignInTime, int signInCard, boolean autoRewarded) {
@@ -75,8 +82,13 @@ public class PlayerDataSyncPacket extends SplitPacket {
         this.signInRecords = new ArrayList<>();
     }
 
-    public void toBytes(FriendlyByteBuf buffer) {
-        super.toBytes(buffer);
+    @Override
+    public @NotNull ResourceLocation id() {
+        return ID;
+    }
+
+    public void write(@NonNull FriendlyByteBuf buffer) {
+        super.write(buffer);
         buffer.writeUUID(playerUUID);
         buffer.writeInt(this.totalSignInDays);
         buffer.writeInt(this.continuousSignInDays);
@@ -89,18 +101,17 @@ public class PlayerDataSyncPacket extends SplitPacket {
         }
     }
 
-    public static void handle(PlayerDataSyncPacket packet, NetworkEvent.ClientCustomPayloadEvent.Context ctx) {
-        ctx.enqueueWork(() -> {
-            if (ctx.getDirection().getReceptionSide().isClient()) {
+    public static void handle(PlayerDataSyncPacket packet, IPayloadContext ctx) {
+        if (ctx.flow().isClientbound()) {
+            ctx.workHandler().execute(() -> {
                 // 在客户端更新 PlayerSignInDataCapability
                 // 获取玩家并更新 Capability 数据
                 List<PlayerDataSyncPacket> packets = SplitPacket.handle(packet);
                 if (CollectionUtils.isNotNullOrEmpty(packets)) {
                     ClientProxy.handleSynPlayerData(new PlayerDataSyncPacket(packets));
                 }
-            }
-        });
-        ctx.setPacketHandled(true);
+            });
+        }
     }
 
     @Override
@@ -135,8 +146,8 @@ public class PlayerDataSyncPacket extends SplitPacket {
         return result;
     }
 
-    public IPlayerSignInData getData() {
-        IPlayerSignInData data = new PlayerSignInData();
+    public PlayerSignInData getData() {
+        PlayerSignInData data = new PlayerSignInData();
         data.setTotalSignInDays(this.totalSignInDays);
         data.setContinuousSignInDays(this.continuousSignInDays);
         data.setLastSignInTime(this.lastSignInTime);

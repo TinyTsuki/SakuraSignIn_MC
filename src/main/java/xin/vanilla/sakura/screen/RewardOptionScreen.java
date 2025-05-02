@@ -30,8 +30,7 @@ import xin.vanilla.sakura.config.*;
 import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ERewardRule;
 import xin.vanilla.sakura.enums.ERewardType;
-import xin.vanilla.sakura.event.ClientEventHandler;
-import xin.vanilla.sakura.network.ModNetworkHandler;
+import xin.vanilla.sakura.event.ClientModEventHandler;
 import xin.vanilla.sakura.network.packet.DownloadRewardOptionNotice;
 import xin.vanilla.sakura.network.packet.RewardOptionSyncPacket;
 import xin.vanilla.sakura.rewards.Reward;
@@ -642,7 +641,7 @@ public class RewardOptionScreen extends Screen {
                 if (player != null) {
                     if (player.hasPermissions(ServerConfig.PERMISSION_EDIT_REWARD.get())) {
                         for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardConfigManager.toSyncPacket(player).split()) {
-                            ModNetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(), rewardOptionSyncPacket);
+                            PacketDistributor.SERVER.noArg().send(rewardOptionSyncPacket);
                         }
                         flag.set(true);
                     }
@@ -659,7 +658,7 @@ public class RewardOptionScreen extends Screen {
                     // 备份签到奖励配置
                     RewardConfigManager.backupRewardOption();
                     // 同步签到奖励配置到客户端
-                    ModNetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(), new DownloadRewardOptionNotice());
+                    PacketDistributor.SERVER.noArg().send(new DownloadRewardOptionNotice());
                     flag.set(true);
                 } else {
                     Component component = Component.translatable(EI18nType.MESSAGE, "local_server_not_support_this_operation");
@@ -1729,7 +1728,7 @@ public class RewardOptionScreen extends Screen {
         super.init();
         this.leftBarTitleHeight = 5 * 2 + super.font.lineHeight;
         // 初始化材质及材质坐标信息
-        ClientEventHandler.loadThemeTexture();
+        ClientModEventHandler.loadThemeTexture();
         OP_BUTTONS.put(OperationButtonType.REWARD_PANEL.getCode(), new OperationButton(OperationButtonType.REWARD_PANEL.getCode(), context -> {
         })
                 .setTransparentCheck(false));

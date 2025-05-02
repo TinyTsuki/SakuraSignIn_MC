@@ -1,17 +1,12 @@
 package xin.vanilla.sakura.event;
 
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.player.Player;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.LogicalSide;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
-import net.neoforged.neoforge.common.util.LazyOptional;
-import net.neoforged.neoforge.event.AttachCapabilitiesEvent;
 import net.neoforged.neoforge.event.TickEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -20,11 +15,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.ServerConfig;
-import xin.vanilla.sakura.data.IPlayerSignInData;
-import xin.vanilla.sakura.data.PlayerSignInDataCapability;
-import xin.vanilla.sakura.data.PlayerSignInDataProvider;
+import xin.vanilla.sakura.data.PlayerDataAttachment;
+import xin.vanilla.sakura.data.PlayerSignInData;
 import xin.vanilla.sakura.enums.ESignInType;
-import xin.vanilla.sakura.network.ModNetworkHandler;
 import xin.vanilla.sakura.network.packet.ClientConfigSyncPacket;
 import xin.vanilla.sakura.network.packet.ClientModLoadedNotice;
 import xin.vanilla.sakura.network.packet.ServerTimeSyncPacket;
@@ -48,8 +41,8 @@ public class ForgeEventHandler {
     public static void onPlayerLoggedIn(ClientPlayerNetworkEvent.LoggingIn event) {
         LOGGER.debug("Client: Player logged in.");
         // 同步客户端配置到服务器
-        ModNetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(), new ClientConfigSyncPacket());
-        ModNetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(), new ClientModLoadedNotice());
+        PacketDistributor.SERVER.noArg().send(new ClientConfigSyncPacket());
+        PacketDistributor.SERVER.noArg().send(new ClientModLoadedNotice());
     }
 
     /**
@@ -66,32 +59,15 @@ public class ForgeEventHandler {
                     // 如果玩家还活着则同步玩家传送数据到客户端
                     if (player.isAlive()) {
                         try {
-                            PlayerSignInDataCapability.syncPlayerData(player);
+                            PlayerDataAttachment.syncPlayerData(player);
                         } catch (Exception e) {
                             LOGGER.error("Failed to sync player data: ", e);
                         }
                     }
                 }
                 // 同步服务器时间到客户端
-                ModNetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), new ServerTimeSyncPacket());
+                player.connection.send(new ServerTimeSyncPacket());
             }
-        }
-    }
-
-    /**
-     * 当 AttachCapabilitiesEvent 事件发生时，此方法会为玩家实体附加自定义的能力
-     * 在 Minecraft 中，实体可以拥有多种能力，这是一种扩展游戏行为的强大机制
-     * 此处我们利用这个机制，为玩家实体附加一个用于签到的数据管理能力
-     *
-     * @param event 事件对象，包含正在附加能力的实体信息
-     */
-    @SubscribeEvent
-    public static void onAttachCapabilityEvent(AttachCapabilitiesEvent<Entity> event) {
-        // 检查事件对象是否为玩家实体，因为我们的目标是为玩家附加能力
-        if (event.getObject() instanceof Player) {
-            // 为玩家实体附加一个名为 "player_sign_in_data" 的能力
-            // 这个能力由 PlayerSignInDataProvider 提供，用于管理玩家的签到数据
-            event.addCapability(new ResourceLocation(SakuraSignIn.MODID, "player_sign_in_data"), new PlayerSignInDataProvider());
         }
     }
 
@@ -105,9 +81,9 @@ public class ForgeEventHandler {
         original.revive();
 
         SakuraUtils.cloneServerPlayerLanguage(original, newPlayer);
-        LazyOptional<IPlayerSignInData> oldDataCap = original.getCapability(PlayerSignInDataCapability.PLAYER_DATA);
-        LazyOptional<IPlayerSignInData> newDataCap = newPlayer.getCapability(PlayerSignInDataCapability.PLAYER_DATA);
-        oldDataCap.ifPresent(oldData -> newDataCap.ifPresent(newData -> newData.copyFrom(oldData)));
+        PlayerSignInData oldDataCap = PlayerDataAttachment.getData(original);
+        PlayerSignInData newDataCap = PlayerDataAttachment.getData(newPlayer);
+        newDataCap.copyFrom(oldDataCap);
         if (SakuraSignIn.getPlayerCapabilityStatus().containsKey(newPlayer.getUUID().toString())) {
             SakuraSignIn.getPlayerCapabilityStatus().put(newPlayer.getUUID().toString(), false);
         }
@@ -147,7 +123,7 @@ public class ForgeEventHandler {
 
                 Objects.requireNonNull(player.getServer()).execute(() -> {
                     LOGGER.debug("Player language: {}.", SakuraUtils.getPlayerLanguage(player));
-                    IPlayerSignInData data = PlayerSignInDataCapability.getData(player);
+                    PlayerSignInData data = PlayerDataAttachment.getData(player);
                     if (ServerConfig.AUTO_SIGN_IN.get() && !RewardManager.isSignedIn(data, DateUtils.getServerDate(), true)) {
                         RewardManager.signIn(player, new SignInPacket(
                                 DateUtils.toDateTimeString(DateUtils.getServerDate()),

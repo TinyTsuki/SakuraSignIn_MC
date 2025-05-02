@@ -7,6 +7,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @OnlyIn(Dist.CLIENT)
 public class GLFWKeyHelper {

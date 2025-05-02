@@ -6,7 +6,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
-import xin.vanilla.sakura.data.PlayerSignInDataCapability;
+import xin.vanilla.sakura.data.PlayerDataAttachment;
 import xin.vanilla.sakura.network.packet.AdvancementPacket;
 import xin.vanilla.sakura.network.packet.PlayerDataReceivedNotice;
 import xin.vanilla.sakura.network.packet.PlayerDataSyncPacket;
@@ -18,8 +18,8 @@ public class ClientProxy {
         LocalPlayer player = Minecraft.getInstance().player;
         if (player != null) {
             try {
-                PlayerSignInDataCapability.setData(player, packet.getData());
-                ModNetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(), new PlayerDataReceivedNotice());
+                player.setData(PlayerDataAttachment.PLAYER_DATA, packet.getData());
+                PacketDistributor.SERVER.noArg().send(new PlayerDataReceivedNotice());
                 LOGGER.debug("Client: Player data received successfully.");
             } catch (Exception ignored) {
                 LOGGER.debug("Client: Player data received failed.");

@@ -18,8 +18,8 @@ import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.config.RewardConfig;
 import xin.vanilla.sakura.config.RewardConfigManager;
 import xin.vanilla.sakura.config.ServerConfig;
-import xin.vanilla.sakura.data.IPlayerSignInData;
-import xin.vanilla.sakura.data.PlayerSignInDataCapability;
+import xin.vanilla.sakura.data.PlayerDataAttachment;
+import xin.vanilla.sakura.data.PlayerSignInData;
 import xin.vanilla.sakura.data.SignInRecord;
 import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ERewardType;
@@ -99,7 +99,7 @@ public class RewardManager {
      * @param date       日期
      * @param compensate 是否校准date
      */
-    public static boolean isSignedIn(IPlayerSignInData signInData, Date date, boolean compensate) {
+    public static boolean isSignedIn(PlayerSignInData signInData, Date date, boolean compensate) {
         int dateInt = compensate ? DateUtils.toDateInt(getCompensateDate(date)) : DateUtils.toDateInt(date);
         return signInData.getSignInRecords().stream().anyMatch(record -> DateUtils.toDateInt(record.getCompensateTime()) == dateInt);
     }
@@ -111,7 +111,7 @@ public class RewardManager {
      * @param date       日期
      * @param compensate 是否校准date
      */
-    public static boolean isRewarded(IPlayerSignInData signInData, Date date, boolean compensate) {
+    public static boolean isRewarded(PlayerSignInData signInData, Date date, boolean compensate) {
         int dateInt = compensate ? DateUtils.toDateInt(getCompensateDate(date)) : DateUtils.toDateInt(date);
         return signInData.getSignInRecords().stream().anyMatch(record ->
                 DateUtils.toDateInt(record.getCompensateTime()) == dateInt && record.isRewarded()
@@ -123,7 +123,7 @@ public class RewardManager {
      *
      * @param signInData 玩家签到数据
      */
-    public static int getTotalSignInDays(IPlayerSignInData signInData) {
+    public static int getTotalSignInDays(PlayerSignInData signInData) {
         return (int) signInData.getSignInRecords().stream().map(SignInRecord::getCompensateTime).map(DateUtils::toDateInt).distinct().count();
     }
 
@@ -184,7 +184,7 @@ public class RewardManager {
      * @param lastOffset   上月最后offset天
      * @param nextOffset   下月开始offset天
      */
-    public static Map<Integer, RewardList> getMonthRewardList(Date currentMonth, IPlayerSignInData playerData, int lastOffset, int nextOffset) {
+    public static Map<Integer, RewardList> getMonthRewardList(Date currentMonth, PlayerSignInData playerData, int lastOffset, int nextOffset) {
         Map<Integer, RewardList> result = new LinkedHashMap<>();
         // 选中月份的上一个月
         Date lastMonth = DateUtils.addMonth(currentMonth, -1);
@@ -230,7 +230,7 @@ public class RewardManager {
      * @param onlyHistory 是否仅获取玩家签到记录中的奖励
      */
     @NonNull
-    public static RewardList getRewardListByDate(Date currentDay, IPlayerSignInData playerData, boolean onlyHistory, boolean withRandom) {
+    public static RewardList getRewardListByDate(Date currentDay, PlayerSignInData playerData, boolean onlyHistory, boolean withRandom) {
         RewardList result = new RewardList();
         RewardConfig serverData = RewardConfigManager.getRewardConfig();
         int nowCompensate8 = RewardManager.getCompensateDateInt();
@@ -265,7 +265,7 @@ public class RewardManager {
                     //     reward.setRewarded(true);
                     //     reward.setDisabled(true);
                     // })
-                    .toList();
+                    .collect(Collectors.toList());
         }
 
         // 若签到记录存在，则添加签到奖励记录并直接返回
@@ -300,7 +300,7 @@ public class RewardManager {
                         .distinct()
                         .map(serverData.getDateTimeRewards()::get)
                         .flatMap(Collection::stream)
-                        .toList();
+                        .collect(Collectors.toList());
                 if (CollectionUtils.isNotNullOrEmpty(dateTimeRewards)) result.addAll(dateTimeRewards);
                 // 累计签到奖励
                 result.addAll(serverData.getCumulativeRewards().getOrDefault(String.valueOf(playerData.getTotalSignInDays() + 1), new RewardList()));
@@ -430,7 +430,7 @@ public class RewardManager {
                         })))
                 .values().stream()
                 .filter(Objects::nonNull)
-                .toList();
+                .collect(Collectors.toList());
         return new RewardList(rewards);
     }
 
@@ -457,7 +457,7 @@ public class RewardManager {
      * 签到or补签
      */
     public static void signIn(ServerPlayer player, SignInPacket packet) {
-        IPlayerSignInData signInData = PlayerSignInDataCapability.getData(player);
+        PlayerSignInData signInData = PlayerDataAttachment.getData(player);
         Date serverDate = DateUtils.getServerDate();
         Date serverCompensateDate = getCompensateDate(serverDate);
         Date signCompensateDate = packet.getSignInType() == ESignInType.SIGN_IN ? serverCompensateDate : DateUtils.format(packet.getSignInTime());
@@ -468,19 +468,19 @@ public class RewardManager {
         // 判断签到/补签时间合法性
         if (ESignInType.SIGN_IN.equals(packet.getSignInType()) && serverCompensateDateInt < signCompensateDateInt) {
             SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "sign_in_date_late_server_current_date_fail"));
-            PlayerSignInDataCapability.syncPlayerData(player);
+            PlayerDataAttachment.syncPlayerData(player);
             return;
         } else if (ESignInType.SIGN_IN.equals(packet.getSignInType()) && serverCompensateDateInt > signCompensateDateInt) {
             SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "sign_in_date_early_server_current_date_fail"));
-            PlayerSignInDataCapability.syncPlayerData(player);
+            PlayerDataAttachment.syncPlayerData(player);
             return;
         } else if (ESignInType.SIGN_IN.equals(packet.getSignInType()) && signInData.getSignInRecords().stream().anyMatch(record -> DateUtils.toDateInt(record.getCompensateTime()) == signCompensateDateInt)) {
             SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "already_signed"));
-            PlayerSignInDataCapability.syncPlayerData(player);
+            PlayerDataAttachment.syncPlayerData(player);
             return;
         } else if (ESignInType.RE_SIGN_IN.equals(packet.getSignInType()) && serverCompensateDateInt <= signCompensateDateInt) {
             SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "compensate_date_not_early_server_current_date_fail"));
-            PlayerSignInDataCapability.syncPlayerData(player);
+            PlayerDataAttachment.syncPlayerData(player);
             return;
         }
         // 判断签到CD
@@ -488,33 +488,33 @@ public class RewardManager {
             Date lastSignInTime = DateUtils.addDate(signInData.getLastSignInTime(), ServerConfig.TIME_COOLING_INTERVAL.get());
             if (serverDate.before(lastSignInTime)) {
                 SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "sign_in_cool_down_fail"));
-                PlayerSignInDataCapability.syncPlayerData(player);
+                PlayerDataAttachment.syncPlayerData(player);
                 return;
             }
         }
         // 判断补签
         if (ESignInType.RE_SIGN_IN.equals(packet.getSignInType()) && !ServerConfig.SIGN_IN_CARD.get()) {
             SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "server_not_enable_sign_in_card_fail"));
-            PlayerSignInDataCapability.syncPlayerData(player);
+            PlayerDataAttachment.syncPlayerData(player);
             return;
         } else if (ESignInType.RE_SIGN_IN.equals(packet.getSignInType()) && signInData.getSignInCard() <= 0) {
             SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "not_enough_sign_in_card_fail"));
-            PlayerSignInDataCapability.syncPlayerData(player);
+            PlayerDataAttachment.syncPlayerData(player);
             return;
         } else if (ESignInType.RE_SIGN_IN.equals(packet.getSignInType()) && isSignedIn(signInData, signCompensateDate, false)) {
             SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "already_signed"));
-            PlayerSignInDataCapability.syncPlayerData(player);
+            PlayerDataAttachment.syncPlayerData(player);
             return;
         }
         // 判断领取奖励
         if (ESignInType.REWARD.equals(packet.getSignInType())) {
             if (isRewarded(signInData, signCompensateDate, false)) {
                 SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "already_receive_reward_s", DateUtils.toString(signCompensateDate)));
-                PlayerSignInDataCapability.syncPlayerData(player);
+                PlayerDataAttachment.syncPlayerData(player);
                 return;
             } else if (!isSignedIn(signInData, signCompensateDate, false)) {
                 SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "not_sign_in", DateUtils.toString(signCompensateDate)));
-                PlayerSignInDataCapability.syncPlayerData(player);
+                PlayerDataAttachment.syncPlayerData(player);
                 return;
             } else {
                 boolean showFailed = player.hasPermissions(ServerConfig.PERMISSION_REWARD_FAILED_TIPS.get());
@@ -577,16 +577,15 @@ public class RewardManager {
             }
             signInData.setLastSignInTime(serverDate);
             signInData.getSignInRecords().add(signInRecord);
-            signInData.setContinuousSignInDays(DateUtils.calculateContinuousDays(signInData.getSignInRecords().stream().map(SignInRecord::getCompensateTime).toList(), serverCompensateDate));
+            signInData.setContinuousSignInDays(DateUtils.calculateContinuousDays(signInData.getSignInRecords().stream().map(SignInRecord::getCompensateTime).collect(Collectors.toList()), serverCompensateDate));
             signInData.plusTotalSignInDays();
             SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "sign_in_success_s", DateUtils.toString(signInRecord.getCompensateTime()), signInData.calculateContinuousDays(), getTotalSignInDays(signInData)));
         }
-        signInData.save(player);
         // 同步数据至客户端
-        PlayerSignInDataCapability.syncPlayerData(player);
+        PlayerDataAttachment.syncPlayerData(player);
     }
 
-    public static boolean giveRewardToPlayer(ServerPlayer player, IPlayerSignInData signInData, Reward reward) {
+    public static boolean giveRewardToPlayer(ServerPlayer player, PlayerSignInData signInData, Reward reward) {
         reward.setRewarded(true);
         Object object = RewardManager.deserializeReward(reward);
         // 判断是否启用

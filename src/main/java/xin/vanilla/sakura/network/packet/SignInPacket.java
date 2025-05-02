@@ -1,14 +1,21 @@
 package xin.vanilla.sakura.network.packet;
 
 import lombok.Getter;
+import lombok.NonNull;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.NetworkEvent;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+import org.jetbrains.annotations.NotNull;
+import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.enums.ESignInType;
 import xin.vanilla.sakura.rewards.RewardManager;
 
 @Getter
-public class SignInPacket {
+public class SignInPacket implements CustomPacketPayload {
+    public final static ResourceLocation ID = new ResourceLocation(SakuraSignIn.MODID, "sign_in");
+
     private final String signInTime;
     private final boolean autoRewarded;
     private final ESignInType signInType;
@@ -25,19 +32,25 @@ public class SignInPacket {
         this.signInType = ESignInType.valueOf(buf.readInt());
     }
 
-    public void toBytes(FriendlyByteBuf buf) {
+    public void write(@NonNull FriendlyByteBuf buf) {
         buf.writeUtf(signInTime);
         buf.writeBoolean(autoRewarded);
         buf.writeInt(signInType.getCode());
     }
 
-    public static void handle(SignInPacket packet, NetworkEvent.ServerCustomPayloadEvent.Context ctx) {
-        ctx.enqueueWork(() -> {
-            ServerPlayer player = ctx.getSender();
-            if (player != null) {
-                RewardManager.signIn(player, packet);
-            }
-        });
-        ctx.setPacketHandled(true);
+    @Override
+    public @NotNull ResourceLocation id() {
+        return ID;
+    }
+
+    public static void handle(SignInPacket packet, IPayloadContext ctx) {
+        if (ctx.flow().isServerbound()) {
+            ctx.workHandler().execute(() -> {
+                if (ctx.player().isPresent()) {
+                    ServerPlayer player = (ServerPlayer) ctx.player().get();
+                    RewardManager.signIn(player, packet);
+                }
+            });
+        }
     }
 }

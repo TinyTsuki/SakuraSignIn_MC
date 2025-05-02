@@ -1,117 +1,35 @@
 package xin.vanilla.sakura.event;
 
-import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.EffectRenderingInventoryScreen;
-import net.minecraft.client.player.LocalPlayer;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.loading.FMLPaths;
-import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
 import net.neoforged.neoforge.client.event.ScreenEvent;
-import net.neoforged.neoforge.event.TickEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.enums.EI18nType;
-import xin.vanilla.sakura.rewards.RewardManager;
 import xin.vanilla.sakura.screen.RewardOptionScreen;
-import xin.vanilla.sakura.screen.SignInScreen;
 import xin.vanilla.sakura.screen.component.InventoryButton;
 import xin.vanilla.sakura.screen.component.NotificationManager;
-import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
-import xin.vanilla.sakura.util.*;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-
-import static xin.vanilla.sakura.SakuraSignIn.PNG_CHUNK_NAME;
+import xin.vanilla.sakura.util.AbstractGuiUtils;
+import xin.vanilla.sakura.util.I18nUtils;
+import xin.vanilla.sakura.util.StringUtils;
 
 /**
  * 客户端事件处理器
  */
-@Mod.EventBusSubscriber(modid = SakuraSignIn.MODID, value = Dist.CLIENT)
-public class ClientEventHandler {
+@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.FORGE, modid = SakuraSignIn.MODID, value = Dist.CLIENT)
+public class ClientGameEventHandler {
     private static final Logger LOGGER = LogManager.getLogger();
-
-    private static final String CATEGORIES = "key.sakura_sign_in.categories";
-
-    // 定义按键绑定
-    public static final KeyMapping SIGN_IN_SCREEN_KEY = new KeyMapping("key.sakura_sign_in.sign_in",
-            GLFWKey.GLFW_KEY_H, CATEGORIES);
-    public static final KeyMapping REWARD_OPTION_SCREEN_KEY = new KeyMapping("key.sakura_sign_in.reward_option",
-            GLFWKey.GLFW_KEY_O, CATEGORIES);
-
-    /**
-     * 注册键绑定
-     */
-    public static void registerKeyMappings(RegisterKeyMappingsEvent event) {
-        LOGGER.debug("Registering key bindings");
-        event.register(SIGN_IN_SCREEN_KEY);
-        event.register(REWARD_OPTION_SCREEN_KEY);
-    }
-
-    /**
-     * 创建配置文件目录
-     */
-    public static void createConfigPath() {
-        File themesPath = new File(FMLPaths.CONFIGDIR.get().resolve(SakuraSignIn.MODID).toFile(), "themes");
-        if (!themesPath.exists()) {
-            themesPath.mkdirs();
-        }
-    }
-
-    /**
-     * 加载主题纹理
-     */
-    public static void loadThemeTexture() {
-        try {
-            SakuraSignIn.setThemeTexture(TextureUtils.loadCustomTexture(ClientConfig.THEME.get()));
-            SakuraSignIn.setSpecialVersionTheme(Boolean.TRUE.equals(ClientConfig.SPECIAL_THEME.get()));
-            InputStream inputStream = Minecraft.getInstance().getResourceManager().getResourceOrThrow(SakuraSignIn.getThemeTexture()).open();
-            SakuraSignIn.setThemeTextureCoordinate(PNGUtils.readLastPrivateChunk(inputStream, PNG_CHUNK_NAME));
-        } catch (IOException | ClassNotFoundException ignored) {
-        }
-        if (SakuraSignIn.getThemeTextureCoordinate(false) == null) {
-            // 使用默认配置
-            SakuraSignIn.setThemeTextureCoordinate(TextureCoordinate.getDefault());
-        }
-        // 设置内置主题特殊图标UV的偏移量
-        if (SakuraSignIn.isSpecialVersionTheme() && SakuraSignIn.getThemeTextureCoordinate().isSpecial()) {
-            SakuraSignIn.getThemeTextureCoordinate().getNotSignedInUV().setX(320);
-            SakuraSignIn.getThemeTextureCoordinate().getSignedInUV().setX(320);
-        } else {
-            SakuraSignIn.getThemeTextureCoordinate().getNotSignedInUV().setX(0);
-            SakuraSignIn.getThemeTextureCoordinate().getSignedInUV().setX(0);
-        }
-    }
-
-    /**
-     * 在客户端Tick事件触发时执行
-     *
-     * @param event 客户端Tick事件
-     */
-    @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        // 检测并消费点击事件
-        if (SIGN_IN_SCREEN_KEY.consumeClick()) {
-            // 打开签到界面
-            ClientEventHandler.openSignInScreen(null);
-        } else if (REWARD_OPTION_SCREEN_KEY.consumeClick()) {
-            // 打开奖励配置界面
-            Minecraft.getInstance().setScreen(new RewardOptionScreen());
-        }
-    }
 
     @SubscribeEvent
     public static void onRenderScreen(ScreenEvent.Init.Post event) {
         if (event.getScreen() instanceof EffectRenderingInventoryScreen) {
-            if (SakuraSignIn.getThemeTexture() == null) ClientEventHandler.loadThemeTexture();
+            if (SakuraSignIn.getThemeTexture() == null) ClientModEventHandler.loadThemeTexture();
             // 创建按钮并添加到界面
             String[] signInCoordinate = ClientConfig.INVENTORY_SIGN_IN_BUTTON_COORDINATE.get().split(",");
             String[] rewardOptionCoordinate = ClientConfig.INVENTORY_REWARD_OPTION_BUTTON_COORDINATE.get().split(",");
@@ -156,7 +74,7 @@ public class ClientEventHandler {
                     AbstractGuiUtils.ITEM_ICON_SIZE,
                     I18nUtils.getTranslationClient(EI18nType.KEY, "sign_in"))
                     .setUV(SakuraSignIn.getThemeTextureCoordinate().getSignInBtnUV(), SakuraSignIn.getThemeTextureCoordinate().getTotalWidth(), SakuraSignIn.getThemeTextureCoordinate().getTotalHeight())
-                    .setOnClick((button) -> ClientEventHandler.openSignInScreen(event.getScreen()))
+                    .setOnClick((button) -> ClientModEventHandler.openSignInScreen(event.getScreen()))
                     .setOnDragEnd((coordinate) -> ClientConfig.INVENTORY_SIGN_IN_BUTTON_COORDINATE.set(String.format("%.6f,%.6f", coordinate.getX(), coordinate.getY())));
             InventoryButton rewardOptionButton = new InventoryButton((int) rewardOptionX, (int) rewardOptionY,
                     AbstractGuiUtils.ITEM_ICON_SIZE,
@@ -255,18 +173,5 @@ public class ClientEventHandler {
     public static void onRenderOverlay(RenderGuiEvent.Post event) {
         if (Minecraft.getInstance().screen != null) return;
         NotificationManager.get().render(event.getGuiGraphics());
-    }
-
-    public static void openSignInScreen(Screen previousScreen) {
-        if (SakuraSignIn.isEnabled()) {
-            SakuraSignIn.setCalendarCurrentDate(RewardManager.getCompensateDate(DateUtils.getClientDate()));
-            Minecraft.getInstance().setScreen(new SignInScreen().setPreviousScreen(previousScreen));
-        } else {
-            LocalPlayer player = Minecraft.getInstance().player;
-            if (player != null) {
-                Component component = Component.translatableClient(EI18nType.MESSAGE, "sakura_is_offline");
-                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0x88FF5555));
-            }
-        }
     }
 }
