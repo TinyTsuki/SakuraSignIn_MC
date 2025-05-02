@@ -4,6 +4,7 @@ import lombok.NonNull;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.screen.component.Text;
@@ -74,9 +75,11 @@ public class ConfirmationScreen extends Screen {
     @Override
     @ParametersAreNonnullByDefault
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        // this.renderBackground(graphics, mouseX, mouseY, partialTicks);
         // 绘制背景
-        super.render(graphics, mouseX, mouseY, partialTicks);
+        this.renderBackground(graphics, mouseX, mouseY, partialTicks);
+        for (Renderable renderable : this.renderables) {
+            renderable.render(graphics, mouseX, mouseY, partialTicks);
+        }
         // 绘制标题
         AbstractGuiUtils.drawString(titleText.setGraphics(graphics), this.width / 2.0f - 100, this.height / 2.0f - 33);
     }
