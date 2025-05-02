@@ -4,8 +4,8 @@ import com.google.gson.reflect.TypeToken;
 import lombok.Getter;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.event.network.CustomPayloadEvent;
-import net.minecraftforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.NetworkEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.RewardConfigManager;
 import xin.vanilla.sakura.config.ServerConfig;
@@ -47,7 +47,7 @@ public class RewardOptionSyncPacket extends SplitPacket {
         }
     }
 
-    public static void handle(RewardOptionSyncPacket packet, CustomPayloadEvent.Context ctx) {
+    public static void handle(RewardOptionSyncPacket packet, NetworkEvent.Context ctx) {
         ctx.enqueueWork(() -> {
             List<RewardOptionSyncPacket> packets = SplitPacket.handle(packet);
             if (CollectionUtils.isNotNullOrEmpty(packets)) {
@@ -86,15 +86,15 @@ public class RewardOptionSyncPacket extends SplitPacket {
                                     if (!SakuraSignIn.getPlayerCapabilityStatus().containsKey(player.getUUID().toString()))
                                         continue;
                                     for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardConfigManager.toSyncPacket(player).split()) {
-                                        ModNetworkHandler.INSTANCE.send(rewardOptionSyncPacket, PacketDistributor.PLAYER.with(player));
+                                        ModNetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), rewardOptionSyncPacket);
                                     }
                                 }
                             }
                         } catch (Exception e) {
-                            ModNetworkHandler.INSTANCE.send(new RewardOptionDataReceivedNotice(false), PacketDistributor.PLAYER.with(sender));
+                            ModNetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> sender), new RewardOptionDataReceivedNotice(false));
                             throw e;
                         }
-                        ModNetworkHandler.INSTANCE.send(new RewardOptionDataReceivedNotice(true), PacketDistributor.PLAYER.with(sender));
+                        ModNetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> sender), new RewardOptionDataReceivedNotice(true));
                     }
 
                 }

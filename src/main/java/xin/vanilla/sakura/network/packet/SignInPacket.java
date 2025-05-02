@@ -3,7 +3,7 @@ package xin.vanilla.sakura.network.packet;
 import lombok.Getter;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.event.network.CustomPayloadEvent;
+import net.neoforged.neoforge.network.NetworkEvent;
 import xin.vanilla.sakura.enums.ESignInType;
 import xin.vanilla.sakura.rewards.RewardManager;
 
@@ -31,7 +31,7 @@ public class SignInPacket {
         buf.writeInt(signInType.getCode());
     }
 
-    public static void handle(SignInPacket packet, CustomPayloadEvent.Context ctx) {
+    public static void handle(SignInPacket packet, NetworkEvent.ServerCustomPayloadEvent.Context ctx) {
         ctx.enqueueWork(() -> {
             ServerPlayer player = ctx.getSender();
             if (player != null) {

@@ -2,7 +2,7 @@ package xin.vanilla.sakura.network.packet;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.event.network.CustomPayloadEvent;
+import net.neoforged.neoforge.network.NetworkEvent;
 import xin.vanilla.sakura.SakuraSignIn;
 
 public class PlayerDataReceivedNotice {
@@ -16,7 +16,7 @@ public class PlayerDataReceivedNotice {
     public void toBytes(FriendlyByteBuf buf) {
     }
 
-    public static void handle(PlayerDataReceivedNotice packet, CustomPayloadEvent.Context ctx) {
+    public static void handle(PlayerDataReceivedNotice packet, NetworkEvent.ServerCustomPayloadEvent.Context ctx) {
         // 获取网络事件上下文并排队执行工作
         ctx.enqueueWork(() -> {
             // 获取发送数据包的玩家实体

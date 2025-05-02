@@ -1,6 +1,6 @@
 package xin.vanilla.sakura.config;
 
-import net.minecraftforge.common.ForgeConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec;
 import xin.vanilla.sakura.enums.ETimeCoolingMethod;
 import xin.vanilla.sakura.util.DateUtils;
 
@@ -11,139 +11,139 @@ import java.util.Date;
  */
 public class ServerConfig {
 
-    public static final ForgeConfigSpec SERVER_CONFIG;
+    public static final ModConfigSpec SERVER_CONFIG;
 
     /**
      * 是否启用补签卡
      */
-    public static final ForgeConfigSpec.BooleanValue SIGN_IN_CARD;
+    public static final ModConfigSpec.BooleanValue SIGN_IN_CARD;
     /**
      * 最大补签天数
      */
-    public static final ForgeConfigSpec.IntValue RE_SIGN_IN_DAYS;
+    public static final ModConfigSpec.IntValue RE_SIGN_IN_DAYS;
     /**
      * 补签仅基础奖励
      */
-    public static final ForgeConfigSpec.BooleanValue SIGN_IN_CARD_ONLY_BASE_REWARD;
+    public static final ModConfigSpec.BooleanValue SIGN_IN_CARD_ONLY_BASE_REWARD;
 
     /**
      * 签到时间冷却方式
      */
-    public static final ForgeConfigSpec.EnumValue<ETimeCoolingMethod> TIME_COOLING_METHOD;
+    public static final ModConfigSpec.EnumValue<ETimeCoolingMethod> TIME_COOLING_METHOD;
     /**
      * 签到冷却刷新时间
      */
-    public static final ForgeConfigSpec.DoubleValue TIME_COOLING_TIME;
+    public static final ModConfigSpec.DoubleValue TIME_COOLING_TIME;
     /**
      * 签到冷却刷新间隔
      */
-    public static final ForgeConfigSpec.DoubleValue TIME_COOLING_INTERVAL;
+    public static final ModConfigSpec.DoubleValue TIME_COOLING_INTERVAL;
 
     /**
      * 服务器时间
      */
-    public static final ForgeConfigSpec.ConfigValue<String> SERVER_TIME;
+    public static final ModConfigSpec.ConfigValue<String> SERVER_TIME;
     /**
      * 实际时间
      */
-    public static final ForgeConfigSpec.ConfigValue<String> ACTUAL_TIME;
+    public static final ModConfigSpec.ConfigValue<String> ACTUAL_TIME;
 
     /**
      * 奖励领取是否受玩家幸运/霉运影响
      */
-    public static final ForgeConfigSpec.BooleanValue REWARD_AFFECTED_BY_LUCK;
+    public static final ModConfigSpec.BooleanValue REWARD_AFFECTED_BY_LUCK;
     /**
      * 连续签到奖励 天数达标后是否允许一直领取该标准奖励
      */
-    public static final ForgeConfigSpec.BooleanValue CONTINUOUS_REWARDS_REPEATABLE;
+    public static final ModConfigSpec.BooleanValue CONTINUOUS_REWARDS_REPEATABLE;
     /**
      * 签到周期奖励 天数达标后是否允许一直领取该标准奖励
      */
-    public static final ForgeConfigSpec.BooleanValue CYCLE_REWARDS_REPEATABLE;
+    public static final ModConfigSpec.BooleanValue CYCLE_REWARDS_REPEATABLE;
 
     /**
      * 自动签到
      */
-    public static final ForgeConfigSpec.BooleanValue AUTO_SIGN_IN;
+    public static final ModConfigSpec.BooleanValue AUTO_SIGN_IN;
     /**
      * 玩家签到数据同步网络包大小
      */
-    public static final ForgeConfigSpec.IntValue PLAYER_DATA_SYNC_PACKET_SIZE;
+    public static final ModConfigSpec.IntValue PLAYER_DATA_SYNC_PACKET_SIZE;
     /**
      * 服务器默认语言
      */
-    public static final ForgeConfigSpec.ConfigValue<String> DEFAULT_LANGUAGE;
+    public static final ModConfigSpec.ConfigValue<String> DEFAULT_LANGUAGE;
 
     // region 权限
 
     /**
      * 编辑奖励配置所需的权限
      */
-    public static final ForgeConfigSpec.IntValue PERMISSION_EDIT_REWARD;
+    public static final ModConfigSpec.IntValue PERMISSION_EDIT_REWARD;
     /**
      * 查看基础奖励配置所需的权限
      */
-    public static final ForgeConfigSpec.IntValue PERMISSION_BASE_REWARD;
+    public static final ModConfigSpec.IntValue PERMISSION_BASE_REWARD;
     /**
      * 查看连续奖励配置所需的权限
      */
-    public static final ForgeConfigSpec.IntValue PERMISSION_CONTINUOUS_REWARD;
+    public static final ModConfigSpec.IntValue PERMISSION_CONTINUOUS_REWARD;
     /**
      * 查看循环奖励配置所需的权限
      */
-    public static final ForgeConfigSpec.IntValue PERMISSION_CYCLE_REWARD;
+    public static final ModConfigSpec.IntValue PERMISSION_CYCLE_REWARD;
     /**
      * 查看年度奖励配置所需的权限
      */
-    public static final ForgeConfigSpec.IntValue PERMISSION_YEAR_REWARD;
+    public static final ModConfigSpec.IntValue PERMISSION_YEAR_REWARD;
     /**
      * 查看阅读奖励配置所需的权限
      */
-    public static final ForgeConfigSpec.IntValue PERMISSION_MONTH_REWARD;
+    public static final ModConfigSpec.IntValue PERMISSION_MONTH_REWARD;
     /**
      * 查看周度奖励配置所需的权限
      */
-    public static final ForgeConfigSpec.IntValue PERMISSION_WEEK_REWARD;
+    public static final ModConfigSpec.IntValue PERMISSION_WEEK_REWARD;
     /**
      * 查看具体时间奖励配置所需的权限
      */
-    public static final ForgeConfigSpec.IntValue PERMISSION_DATE_TIME_REWARD;
+    public static final ModConfigSpec.IntValue PERMISSION_DATE_TIME_REWARD;
     /**
      * 查看累计奖励配置所需的权限
      */
-    public static final ForgeConfigSpec.IntValue PERMISSION_CUMULATIVE_REWARD;
+    public static final ModConfigSpec.IntValue PERMISSION_CUMULATIVE_REWARD;
     /**
      * 查看随机奖励池配置所需的权限
      */
-    public static final ForgeConfigSpec.IntValue PERMISSION_RANDOM_REWARD;
+    public static final ModConfigSpec.IntValue PERMISSION_RANDOM_REWARD;
     /**
      * 查看兑换码奖励池配置所需的权限
      */
-    public static final ForgeConfigSpec.IntValue PERMISSION_CDK_REWARD;
+    public static final ModConfigSpec.IntValue PERMISSION_CDK_REWARD;
     /**
      * 客户端显示奖励概率所需的权限
      */
-    public static final ForgeConfigSpec.IntValue PERMISSION_REWARD_PROBABILITY;
+    public static final ModConfigSpec.IntValue PERMISSION_REWARD_PROBABILITY;
     /**
      * 客户端显示奖励详情所需的权限
      */
-    public static final ForgeConfigSpec.IntValue PERMISSION_REWARD_DETAIL;
+    public static final ModConfigSpec.IntValue PERMISSION_REWARD_DETAIL;
     /**
      * 显示领取失败的奖励提示所需的权限
      */
-    public static final ForgeConfigSpec.IntValue PERMISSION_REWARD_FAILED_TIPS;
+    public static final ModConfigSpec.IntValue PERMISSION_REWARD_FAILED_TIPS;
     /**
      * 指令奖励执行的权限
      */
-    public static final ForgeConfigSpec.IntValue PERMISSION_COMMAND_REWARD;
+    public static final ModConfigSpec.IntValue PERMISSION_COMMAND_REWARD;
     /**
      * 查看服务器配置所需的权限
      */
-    public static final ForgeConfigSpec.IntValue PERMISSION_SERVER_CONFIG_GET;
+    public static final ModConfigSpec.IntValue PERMISSION_SERVER_CONFIG_GET;
     /**
      * 设置服务器配置所需的权限
      */
-    public static final ForgeConfigSpec.IntValue PERMISSION_SERVER_CONFIG_SET;
+    public static final ModConfigSpec.IntValue PERMISSION_SERVER_CONFIG_SET;
 
     // endregion 权限
 
@@ -152,37 +152,37 @@ public class ServerConfig {
     /**
      * 命令前缀
      */
-    public static final ForgeConfigSpec.ConfigValue<String> COMMAND_PREFIX;
+    public static final ModConfigSpec.ConfigValue<String> COMMAND_PREFIX;
 
     /**
      * 签到
      */
-    public static final ForgeConfigSpec.ConfigValue<String> COMMAND_SIGN_IN;
+    public static final ModConfigSpec.ConfigValue<String> COMMAND_SIGN_IN;
 
     /**
      * 签到并领取奖励
      */
-    public static final ForgeConfigSpec.ConfigValue<String> COMMAND_SIGN_IN_EX;
+    public static final ModConfigSpec.ConfigValue<String> COMMAND_SIGN_IN_EX;
 
     /**
      * 领取奖励
      */
-    public static final ForgeConfigSpec.ConfigValue<String> COMMAND_REWARD;
+    public static final ModConfigSpec.ConfigValue<String> COMMAND_REWARD;
 
     /**
      * CDK
      */
-    public static final ForgeConfigSpec.ConfigValue<String> COMMAND_CDK;
+    public static final ModConfigSpec.ConfigValue<String> COMMAND_CDK;
 
     /**
      * 补签卡
      */
-    public static final ForgeConfigSpec.ConfigValue<String> COMMAND_CARD;
+    public static final ModConfigSpec.ConfigValue<String> COMMAND_CARD;
 
     /**
      * 设置语言
      */
-    public static final ForgeConfigSpec.ConfigValue<String> COMMAND_LANGUAGE;
+    public static final ModConfigSpec.ConfigValue<String> COMMAND_LANGUAGE;
 
     // endregion 自定义指令
 
@@ -191,38 +191,38 @@ public class ServerConfig {
     /**
      * 签到
      */
-    public static final ForgeConfigSpec.BooleanValue CONCISE_SIGN_IN;
+    public static final ModConfigSpec.BooleanValue CONCISE_SIGN_IN;
 
     /**
      * 签到并领取奖励
      */
-    public static final ForgeConfigSpec.BooleanValue CONCISE_SIGN_IN_EX;
+    public static final ModConfigSpec.BooleanValue CONCISE_SIGN_IN_EX;
 
     /**
      * 领取奖励
      */
-    public static final ForgeConfigSpec.BooleanValue CONCISE_REWARD;
+    public static final ModConfigSpec.BooleanValue CONCISE_REWARD;
 
     /**
      * CDK
      */
-    public static final ForgeConfigSpec.BooleanValue CONCISE_CDK;
+    public static final ModConfigSpec.BooleanValue CONCISE_CDK;
 
     /**
      * 补签卡
      */
-    public static final ForgeConfigSpec.BooleanValue CONCISE_CARD;
+    public static final ModConfigSpec.BooleanValue CONCISE_CARD;
 
     /**
      * 设置语言
      */
-    public static final ForgeConfigSpec.BooleanValue CONCISE_LANGUAGE;
+    public static final ModConfigSpec.BooleanValue CONCISE_LANGUAGE;
 
     // endregion 简化指令
 
 
     static {
-        ForgeConfigSpec.Builder SERVER_BUILDER = new ForgeConfigSpec.Builder();
+        ModConfigSpec.Builder SERVER_BUILDER = new ModConfigSpec.Builder();
 
         // 定义服务器配置项
         SERVER_BUILDER.comment("Server Settings", "服务器设置").push("server");

@@ -5,10 +5,10 @@ import lombok.NonNull;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.renderer.texture.TextureManager;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
@@ -108,7 +108,7 @@ public class TextureUtils {
      */
     public static ResourceLocation getEffectTexture(MobEffectInstance mobEffectInstance) {
         ResourceLocation effectIcon;
-        ResourceLocation registryName = ForgeRegistries.MOB_EFFECTS.getKey(mobEffectInstance.getEffect());
+        ResourceLocation registryName = BuiltInRegistries.MOB_EFFECT.getKey(mobEffectInstance.getEffect());
         if (registryName != null) {
             effectIcon = new ResourceLocation(registryName.getNamespace(), DEFAULT_EFFECT_DIR + registryName.getPath() + ".png");
         } else {

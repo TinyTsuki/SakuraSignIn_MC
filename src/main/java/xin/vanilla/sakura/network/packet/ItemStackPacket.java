@@ -6,7 +6,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.event.network.CustomPayloadEvent;
+import net.neoforged.neoforge.network.NetworkEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -57,7 +57,7 @@ public class ItemStackPacket {
      * @param packet 包含物品堆信息的数据包
      * @param ctx    用于访问网络事件上下文的供应商函数，包括访问玩家信息和设置数据包处理状态
      */
-    public static void handle(ItemStackPacket packet, CustomPayloadEvent.Context ctx) {
+    public static void handle(ItemStackPacket packet, NetworkEvent.ServerCustomPayloadEvent.Context ctx) {
         // 获取网络事件上下文并排队执行工作
         ctx.enqueueWork(() -> {
             // 获取发送数据包的玩家实体

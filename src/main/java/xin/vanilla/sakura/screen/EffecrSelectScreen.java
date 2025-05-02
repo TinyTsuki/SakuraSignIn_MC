@@ -8,12 +8,12 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
@@ -45,7 +45,7 @@ public class EffecrSelectScreen extends Screen {
 
     private static final Component TITLE = Component.literal("ItemSelectScreen");
 
-    private final List<MobEffect> allMobEffectList = ForgeRegistries.MOB_EFFECTS.getValues().stream().toList();
+    private final List<MobEffect> allMobEffectList = BuiltInRegistries.MOB_EFFECT.stream().toList();
     private final List<MobEffect> playerMobEffectList = this.getPlayerMobEffectList();
     // 每页显示行数
     private final int maxLine = 5;

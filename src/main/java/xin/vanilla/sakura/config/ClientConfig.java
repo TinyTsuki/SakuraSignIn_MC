@@ -1,6 +1,6 @@
 package xin.vanilla.sakura.config;
 
-import net.minecraftforge.common.ForgeConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec;
 import xin.vanilla.sakura.util.GLFWKey;
 import xin.vanilla.sakura.util.GLFWKeyHelper;
 
@@ -11,104 +11,104 @@ import java.util.List;
  * 客户端配置
  */
 public class ClientConfig {
-    public static final ForgeConfigSpec CLIENT_CONFIG;
+    public static final ModConfigSpec CLIENT_CONFIG;
     /**
      * 主题设置
      */
-    public static final ForgeConfigSpec.ConfigValue<String> THEME;
+    public static final ModConfigSpec.ConfigValue<String> THEME;
     /**
      * 是否使用内置主题特殊图标
      */
-    public static final ForgeConfigSpec.BooleanValue SPECIAL_THEME;
+    public static final ModConfigSpec.BooleanValue SPECIAL_THEME;
     /**
      * 签到页面显示上月奖励
      */
-    public static final ForgeConfigSpec.BooleanValue SHOW_LAST_REWARD;
+    public static final ModConfigSpec.BooleanValue SHOW_LAST_REWARD;
     /**
      * 签到页面显示下月奖励
      */
-    public static final ForgeConfigSpec.BooleanValue SHOW_NEXT_REWARD;
+    public static final ModConfigSpec.BooleanValue SHOW_NEXT_REWARD;
     /**
      * 自动领取
      */
-    public static final ForgeConfigSpec.BooleanValue AUTO_REWARDED;
+    public static final ModConfigSpec.BooleanValue AUTO_REWARDED;
 
     /**
      * 背包界面签到按钮坐标
      */
-    public static final ForgeConfigSpec.ConfigValue<String> INVENTORY_SIGN_IN_BUTTON_COORDINATE;
+    public static final ModConfigSpec.ConfigValue<String> INVENTORY_SIGN_IN_BUTTON_COORDINATE;
 
     /**
      * 背包界面奖励配置按钮坐标
      */
-    public static final ForgeConfigSpec.ConfigValue<String> INVENTORY_REWARD_OPTION_BUTTON_COORDINATE;
+    public static final ModConfigSpec.ConfigValue<String> INVENTORY_REWARD_OPTION_BUTTON_COORDINATE;
 
     /**
      * 显示签到界面提示
      */
-    public static final ForgeConfigSpec.BooleanValue SHOW_SIGN_IN_SCREEN_TIPS;
+    public static final ModConfigSpec.BooleanValue SHOW_SIGN_IN_SCREEN_TIPS;
 
     // region 按键设置
 
     /**
      * 配置界面 - 复制
      */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_REWARD_OPTION_COPY;
+    public static final ModConfigSpec.ConfigValue<List<String>> KEY_REWARD_OPTION_COPY;
     /**
      * 配置界面 - 粘贴
      */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_REWARD_OPTION_PASTE;
+    public static final ModConfigSpec.ConfigValue<List<String>> KEY_REWARD_OPTION_PASTE;
     /**
      * 配置界面 - 裁剪
      */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_REWARD_OPTION_CUT;
+    public static final ModConfigSpec.ConfigValue<List<String>> KEY_REWARD_OPTION_CUT;
     /**
      * 配置界面 - 删除
      */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_REWARD_OPTION_DELETE;
+    public static final ModConfigSpec.ConfigValue<List<String>> KEY_REWARD_OPTION_DELETE;
     /**
      * 配置界面 - 撤销
      */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_REWARD_OPTION_UNDO;
+    public static final ModConfigSpec.ConfigValue<List<String>> KEY_REWARD_OPTION_UNDO;
     /**
      * 配置界面 - 重做
      */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_REWARD_OPTION_REDO;
+    public static final ModConfigSpec.ConfigValue<List<String>> KEY_REWARD_OPTION_REDO;
 
     /**
      * 签到界面 - 签到
      */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_SIGN_SIGN_IN;
+    public static final ModConfigSpec.ConfigValue<List<String>> KEY_SIGN_SIGN_IN;
     /**
      * 签到界面 - 补签
      */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_SIGN_RE_SIGN_IN;
+    public static final ModConfigSpec.ConfigValue<List<String>> KEY_SIGN_RE_SIGN_IN;
     /**
      * 签到界面 - 领取奖励
      */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_SIGN_REWARD;
+    public static final ModConfigSpec.ConfigValue<List<String>> KEY_SIGN_REWARD;
     /**
      * 签到界面 - 上月
      */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_SIGN_LAST_MONTH;
+    public static final ModConfigSpec.ConfigValue<List<String>> KEY_SIGN_LAST_MONTH;
     /**
      * 签到界面 - 下月
      */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_SIGN_NEXT_MONTH;
+    public static final ModConfigSpec.ConfigValue<List<String>> KEY_SIGN_NEXT_MONTH;
 
     /**
      * 签到界面 - 去年
      */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_SIGN_LAST_YEAR;
+    public static final ModConfigSpec.ConfigValue<List<String>> KEY_SIGN_LAST_YEAR;
     /**
      * 签到界面 - 明年
      */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_SIGN_NEXT_YEAR;
+    public static final ModConfigSpec.ConfigValue<List<String>> KEY_SIGN_NEXT_YEAR;
 
     // endregion 按键设置
 
     static {
-        ForgeConfigSpec.Builder CLIENT_BUILDER = new ForgeConfigSpec.Builder();
+        ModConfigSpec.Builder CLIENT_BUILDER = new ModConfigSpec.Builder();
 
         // 定义客户端配置项
         CLIENT_BUILDER.comment("Client Settings").push("client");

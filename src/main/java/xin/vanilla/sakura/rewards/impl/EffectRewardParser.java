@@ -4,11 +4,11 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import lombok.NonNull;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
-import net.minecraftforge.registries.ForgeRegistries;
 import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ERewardType;
 import xin.vanilla.sakura.rewards.RewardParser;
@@ -24,7 +24,7 @@ public class EffectRewardParser implements RewardParser<MobEffectInstance> {
             int duration = json.get("duration").getAsInt();
             int amplifier = json.get("amplifier").getAsInt();
 
-            MobEffect effect = ForgeRegistries.MOB_EFFECTS.getValue(new ResourceLocation(effectId));
+            MobEffect effect = BuiltInRegistries.MOB_EFFECT.get(new ResourceLocation(effectId));
             if (effect == null) {
                 throw new JsonParseException("Unknown potion effect ID: " + effectId);
             }
@@ -39,7 +39,7 @@ public class EffectRewardParser implements RewardParser<MobEffectInstance> {
     @Override
     public JsonObject serialize(MobEffectInstance reward) {
         JsonObject json = new JsonObject();
-        json.addProperty("effect", ForgeRegistries.MOB_EFFECTS.getKey(reward.getEffect()).toString());
+        json.addProperty("effect", BuiltInRegistries.MOB_EFFECT.getKey(reward.getEffect()).toString());
         json.addProperty("duration", reward.getDuration());
         json.addProperty("amplifier", reward.getAmplifier());
         return json;
@@ -70,7 +70,7 @@ public class EffectRewardParser implements RewardParser<MobEffectInstance> {
     }
 
     public static String getId(MobEffect effect) {
-        ResourceLocation resource = ForgeRegistries.MOB_EFFECTS.getKey(effect);
+        ResourceLocation resource = BuiltInRegistries.MOB_EFFECT.getKey(effect);
         if (resource == null) return "minecraft:luck";
         else return resource.toString();
     }
@@ -78,7 +78,7 @@ public class EffectRewardParser implements RewardParser<MobEffectInstance> {
     public static MobEffect getEffect(String id) {
         String resourceId = id;
         if (id.contains(" ") && id.split(" ").length == 3) resourceId = resourceId.substring(0, id.indexOf(" "));
-        return ForgeRegistries.MOB_EFFECTS.getValue(new ResourceLocation(resourceId));
+        return BuiltInRegistries.MOB_EFFECT.get(new ResourceLocation(resourceId));
     }
 
     public static MobEffectInstance getMobEffectInstance(String id, int duration, int amplifier) {

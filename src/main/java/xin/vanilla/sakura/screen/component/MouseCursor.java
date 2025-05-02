@@ -2,8 +2,8 @@ package xin.vanilla.sakura.screen.component;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import org.lwjgl.glfw.GLFW;
 import xin.vanilla.sakura.util.AbstractGuiUtils;
 import xin.vanilla.sakura.util.GLFWKey;

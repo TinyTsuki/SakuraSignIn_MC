@@ -2,7 +2,7 @@ package xin.vanilla.sakura.network;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraftforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
@@ -19,7 +19,7 @@ public class ClientProxy {
         if (player != null) {
             try {
                 PlayerSignInDataCapability.setData(player, packet.getData());
-                ModNetworkHandler.INSTANCE.send(new PlayerDataReceivedNotice(), PacketDistributor.SERVER.noArg());
+                ModNetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(), new PlayerDataReceivedNotice());
                 LOGGER.debug("Client: Player data received successfully.");
             } catch (Exception ignored) {
                 LOGGER.debug("Client: Player data received failed.");

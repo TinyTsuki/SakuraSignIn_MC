@@ -2,11 +2,11 @@ package xin.vanilla.sakura.data;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.CapabilityManager;
-import net.minecraftforge.common.capabilities.CapabilityToken;
-import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.network.PacketDistributor;
+import net.neoforged.neoforge.common.capabilities.Capability;
+import net.neoforged.neoforge.common.capabilities.CapabilityManager;
+import net.neoforged.neoforge.common.capabilities.CapabilityToken;
+import net.neoforged.neoforge.common.util.LazyOptional;
+import net.neoforged.neoforge.network.PacketDistributor;
 import xin.vanilla.sakura.network.ModNetworkHandler;
 import xin.vanilla.sakura.network.packet.PlayerDataSyncPacket;
 
@@ -54,7 +54,7 @@ public class PlayerSignInDataCapability {
         // 创建自定义包并发送到客户端
         PlayerDataSyncPacket packet = new PlayerDataSyncPacket(player.getUUID(), PlayerSignInDataCapability.getData(player));
         for (PlayerDataSyncPacket syncPacket : packet.split()) {
-            ModNetworkHandler.INSTANCE.send(syncPacket, PacketDistributor.PLAYER.with(player));
+            ModNetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), syncPacket);
         }
     }
 }

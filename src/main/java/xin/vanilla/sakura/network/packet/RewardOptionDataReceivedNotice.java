@@ -1,7 +1,7 @@
 package xin.vanilla.sakura.network.packet;
 
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.event.network.CustomPayloadEvent;
+import net.neoforged.neoforge.network.NetworkEvent;
 import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.screen.component.NotificationManager;
 import xin.vanilla.sakura.util.Component;
@@ -21,7 +21,7 @@ public class RewardOptionDataReceivedNotice {
         buf.writeBoolean(this.success);
     }
 
-    public static void handle(RewardOptionDataReceivedNotice packet, CustomPayloadEvent.Context ctx) {
+    public static void handle(RewardOptionDataReceivedNotice packet, NetworkEvent.Context ctx) {
         // 获取网络事件上下文并排队执行工作
         ctx.enqueueWork(() -> {
             NotificationManager.Notification notification;

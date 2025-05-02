@@ -16,56 +16,57 @@ logoFile = "logo.png"
 #issueTrackerURL="https://change.me.to.your.issue.tracker.example.invalid/" #optional
 # A list of mods - how many allowed here is determined by the individual mod loader
 [[mods]] #mandatory
-# The modid of the mod
-modId = "${mod_id}" #mandatory
-# The version number of the mod
-version = "${mod_version}" #mandatory
-# A display name for the mod
-displayName = "${mod_name}" #mandatory
-# A URL to query for updates for this mod. See the JSON update specification https://docs.minecraftforge.net/en/latest/misc/updatechecker/
-updateJSONURL = "https://update.mc.vanilla.xin/${mod_id}/forge/${minecraft_version}" #optional
-# A URL for the "homepage" for this mod, displayed in the mod UI
-displayURL = "https://mc.vanilla.xin/${mod_id}" #optional
-# A file name (in the root of the mod JAR) containing a logo for display
-#logoFile="sakura_sign_in.png" #optional
-# A text field displayed in the mod UI
-#credits="Thanks for this example mod goes to Java" #optional
-# A text field displayed in the mod UI
-authors = "${mod_authors}" #optional
-# The description text for the mod (multi line!) (#mandatory)
-description = '''${mod_description}'''
-clientRequired = false
-# 依赖项 - 使用 .来指示特定 modid 的依赖关系。依赖项是可选的。
+    # The modid of the mod
+    modId = "${mod_id}" #mandatory
+    # The version number of the mod
+    version = "${mod_version}" #mandatory
+    # A display name for the mod
+    displayName = "${mod_name}" #mandatory
+    # A URL to query for updates for this mod. See the JSON update specification https://docs.minecraftforge.net/en/latest/misc/updatechecker/
+    updateJSONURL = "https://update.mc.vanilla.xin/${mod_id}/neoforge/${minecraft_version}" #optional
+    # A URL for the "homepage" for this mod, displayed in the mod UI
+    displayURL = "https://mc.vanilla.xin/narcissus_farewell" #optional
+    # A file name (in the root of the mod JAR) containing a logo for display
+    #logoFile="narcissus_farewell.png" #optional
+    # A text field displayed in the mod UI
+    #credits="Thanks for this example mod goes to Java" #optional
+    # A text field displayed in the mod UI
+    authors = "${mod_authors}" #optional
+    # The description text for the mod (multi line!) (#mandatory)
+    description = '''${mod_description}'''
+    clientRequired = false
+
+# A dependency - use the . to indicate dependency for a specific modid. Dependencies are optional.
 [[dependencies."${mod_id}"]] #optional
-# 依赖的 Modid
-modId = "forge" #mandatory
-# 此依赖项是否必须存在 - 如果不存在，则必须指定以下顺序
-mandatory = true # 强制的
-# 依赖项的版本范围
-versionRange = "${forge_version_range}" #mandatory
-# 依赖项的排序关系 - 如果依赖项不是必需的，则需要 BEFORE 或 AFTER
-# BEFORE - 此 mod 在依赖项之前加载
-# AFTER - 此 mod 在依赖项之后加载
-ordering = "NONE"
-# 此依赖项应用于 BOTH、CLIENT 或 SERVER 的一侧
-side = "BOTH"# 这是另一个依赖项
-# 依赖配置部分
+    # the modid of the dependency
+    modId = "neoforge" #mandatory
+    mandatory = true
+    # The type of the dependency. Can be one of "required", "optional", "incompatible" or "discouraged" (case insensitive).
+    # 'required' requires the mod to exist, 'optional' does not
+    # 'incompatible' will prevent the game from loading when the mod exists, and 'discouraged' will show a warning
+    type = "required" #mandatory
+    # Optional field describing why the dependency is required or why it is incompatible
+    # reason="..."
+    # The version range of the dependency
+    versionRange = "${neo_version_range}" #mandatory
+    # An ordering relationship for the dependency.
+    # BEFORE - This mod is loaded BEFORE the dependency
+    # AFTER - This mod is loaded AFTER the dependency
+    ordering = "NONE"
+    # Side this dependency is applied on - BOTH, CLIENT, or SERVER
+    side = "BOTH"
+# Here's another dependency
 [[dependencies."${mod_id}"]]
-modId = "minecraft"
-mandatory = true
-# 此版本范围声明了当前 minecraft 版本的最低版本，但不包括下一个主要版本
-versionRange = "${minecraft_version_range}"
-ordering = "NONE"
-side = "BOTH"
-[[dependencies."${mod_id}"]]
-modId = "${mod_id}" # 模组ID
-mandatory = true # 模组必须在服务器上安装
-versionRange = "[1.0.0,)"
-ordering = "NONE"
-side = "SERVER" # 强制模组在服务器端运行
-[[dependencies."${mod_id}"]]
-modId = "${mod_id}" # 模组ID
-mandatory = false # 客户端可以不安装
-versionRange = "[1.0.0,)"
-ordering = "NONE"
-side = "CLIENT" # 客户端安装是可选的
+    modId = "minecraft"
+    mandatory = true
+    type = "required"
+    # This version range declares a minimum of the current minecraft version up to but not including the next major version
+    versionRange = "${minecraft_version_range}"
+    ordering = "NONE"
+    side = "BOTH"
+
+# Features are specific properties of the game environment, that you may want to declare you require. This example declares
+# that your mod requires GL version 3.2 or higher. Other features will be added. They are side aware so declaring this won't
+# stop your mod loading on the server for example.
+#[features."${mod_id}"]
+#openGLVersion="[3.2,)"

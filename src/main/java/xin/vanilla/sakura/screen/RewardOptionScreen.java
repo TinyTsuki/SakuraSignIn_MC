@@ -19,13 +19,12 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.fml.loading.FMLPaths;
-import net.minecraftforge.network.PacketDistributor;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.fml.loading.FMLPaths;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.glfw.GLFW;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.*;
 import xin.vanilla.sakura.enums.EI18nType;
@@ -643,7 +642,7 @@ public class RewardOptionScreen extends Screen {
                 if (player != null) {
                     if (player.hasPermissions(ServerConfig.PERMISSION_EDIT_REWARD.get())) {
                         for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardConfigManager.toSyncPacket(player).split()) {
-                            ModNetworkHandler.INSTANCE.send(rewardOptionSyncPacket, PacketDistributor.SERVER.noArg());
+                            ModNetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(), rewardOptionSyncPacket);
                         }
                         flag.set(true);
                     }
@@ -660,7 +659,7 @@ public class RewardOptionScreen extends Screen {
                     // 备份签到奖励配置
                     RewardConfigManager.backupRewardOption();
                     // 同步签到奖励配置到客户端
-                    ModNetworkHandler.INSTANCE.send(new DownloadRewardOptionNotice(), PacketDistributor.SERVER.noArg());
+                    ModNetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(), new DownloadRewardOptionNotice());
                     flag.set(true);
                 } else {
                     Component component = Component.translatable(EI18nType.MESSAGE, "local_server_not_support_this_operation");

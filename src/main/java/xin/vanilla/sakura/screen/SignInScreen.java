@@ -10,10 +10,10 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.fml.loading.FMLPaths;
-import net.minecraftforge.network.PacketDistributor;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.fml.loading.FMLPaths;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
@@ -522,7 +522,7 @@ public class SignInScreen extends Screen {
                     NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
                 } else {
                     cell.status = ClientConfig.AUTO_REWARDED.get() ? ESignInStatus.REWARDED.getCode() : ESignInStatus.SIGNED_IN.getCode();
-                    ModNetworkHandler.INSTANCE.send(new SignInPacket(DateUtils.toDateTimeString(DateUtils.getClientDate()), ClientConfig.AUTO_REWARDED.get(), ESignInType.SIGN_IN), PacketDistributor.SERVER.noArg());
+                    ModNetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(), new SignInPacket(DateUtils.toDateTimeString(DateUtils.getClientDate()), ClientConfig.AUTO_REWARDED.get(), ESignInType.SIGN_IN));
                 }
             }
         }
@@ -537,7 +537,7 @@ public class SignInScreen extends Screen {
                     NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
                 } else {
                     cell.status = ESignInStatus.REWARDED.getCode();
-                    ModNetworkHandler.INSTANCE.send(new SignInPacket(DateUtils.toDateTimeString(cellDate), ClientConfig.AUTO_REWARDED.get(), ESignInType.REWARD), PacketDistributor.SERVER.noArg());
+                    ModNetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(), new SignInPacket(DateUtils.toDateTimeString(cellDate), ClientConfig.AUTO_REWARDED.get(), ESignInType.REWARD));
                 }
             }
         }
@@ -553,7 +553,7 @@ public class SignInScreen extends Screen {
                         NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
                     } else {
                         cell.status = ClientConfig.AUTO_REWARDED.get() ? ESignInStatus.REWARDED.getCode() : ESignInStatus.SIGNED_IN.getCode();
-                        ModNetworkHandler.INSTANCE.send(new SignInPacket(DateUtils.toDateTimeString(cellDate), ClientConfig.AUTO_REWARDED.get(), ESignInType.RE_SIGN_IN), PacketDistributor.SERVER.noArg());
+                        ModNetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(), new SignInPacket(DateUtils.toDateTimeString(cellDate), ClientConfig.AUTO_REWARDED.get(), ESignInType.RE_SIGN_IN));
                     }
                 }
             }

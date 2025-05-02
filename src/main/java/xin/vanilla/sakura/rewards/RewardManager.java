@@ -5,6 +5,7 @@ import com.google.gson.JsonParseException;
 import lombok.NonNull;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.AdvancementProgress;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -12,7 +13,6 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.config.RewardConfig;
@@ -382,14 +382,14 @@ public class RewardManager {
                             switch (type) {
                                 case ITEM:
                                     ItemStack itemStack = RewardManager.deserializeReward(reward);
-                                    key = ForgeRegistries.ITEMS.getKey(itemStack.getItem()).toString();
+                                    key = BuiltInRegistries.ITEM.getKey(itemStack.getItem()).toString();
                                     if (itemStack.hasTag()) {
                                         key += itemStack.getTag().toString();
                                     }
                                     break;
                                 case EFFECT:
                                     MobEffectInstance mobEffectInstance = RewardManager.deserializeReward(reward);
-                                    key = ForgeRegistries.MOB_EFFECTS.getKey(mobEffectInstance.getEffect()).toString() + " " + mobEffectInstance.getAmplifier();
+                                    key = BuiltInRegistries.MOB_EFFECT.getKey(mobEffectInstance.getEffect()).toString() + " " + mobEffectInstance.getAmplifier();
                                     break;
                                 case EXP_POINT, SIGN_IN_CARD, EXP_LEVEL:
                                     break;
@@ -430,7 +430,7 @@ public class RewardManager {
                         })))
                 .values().stream()
                 .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                .toList();
         return new RewardList(rewards);
     }
 
@@ -577,7 +577,7 @@ public class RewardManager {
             }
             signInData.setLastSignInTime(serverDate);
             signInData.getSignInRecords().add(signInRecord);
-            signInData.setContinuousSignInDays(DateUtils.calculateContinuousDays(signInData.getSignInRecords().stream().map(SignInRecord::getCompensateTime).collect(Collectors.toList()), serverCompensateDate));
+            signInData.setContinuousSignInDays(DateUtils.calculateContinuousDays(signInData.getSignInRecords().stream().map(SignInRecord::getCompensateTime).toList(), serverCompensateDate));
             signInData.plusTotalSignInDays();
             SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "sign_in_success_s", DateUtils.toString(signInRecord.getCompensateTime()), signInData.calculateContinuousDays(), getTotalSignInDays(signInData)));
         }

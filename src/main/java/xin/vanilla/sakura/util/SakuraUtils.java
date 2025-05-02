@@ -11,9 +11,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
-import net.minecraftforge.fml.ModContainer;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.forgespi.language.IModInfo;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.ModList;
+import net.neoforged.neoforgespi.language.IModInfo;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.ServerConfig;
@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 public class SakuraUtils {
 
@@ -139,7 +138,7 @@ public class SakuraUtils {
             result.addAll(player.getInventory().items);
             result.addAll(player.getInventory().armor);
             result.addAll(player.getInventory().offhand);
-            result = result.stream().filter(itemStack -> !itemStack.isEmpty() && itemStack.getItem() != Items.AIR).collect(Collectors.toList());
+            result = result.stream().filter(itemStack -> !itemStack.isEmpty() && itemStack.getItem() != Items.AIR).toList();
         }
         return result;
     }

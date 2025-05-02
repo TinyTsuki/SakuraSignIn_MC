@@ -1,18 +1,18 @@
 package xin.vanilla.sakura.network;
 
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.network.ChannelBuilder;
-import net.minecraftforge.network.SimpleChannel;
+import net.neoforged.neoforge.network.NetworkRegistry;
+import net.neoforged.neoforge.network.simple.SimpleChannel;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.network.packet.*;
 
 public class ModNetworkHandler {
-    private static final int PROTOCOL_VERSION = 1;
+    private static final String PROTOCOL_VERSION = "1";
     private static int ID = 0;
-    public static final SimpleChannel INSTANCE = ChannelBuilder.named(new ResourceLocation(SakuraSignIn.MODID, "main_network"))
-            .networkProtocolVersion(PROTOCOL_VERSION)
-            .clientAcceptedVersions((status, version) -> true)    // 客户端版本始终有效
-            .serverAcceptedVersions((status, version) -> true)    // 服务端版本始终有效
+    public static final SimpleChannel INSTANCE = NetworkRegistry.ChannelBuilder.named(new ResourceLocation(SakuraSignIn.MODID, "main_network"))
+            .networkProtocolVersion(() -> PROTOCOL_VERSION)
+            .clientAcceptedVersions((version) -> true)    // 客户端版本始终有效
+            .serverAcceptedVersions((version) -> true)    // 服务端版本始终有效
             .simpleChannel();
 
     public static int nextID() {

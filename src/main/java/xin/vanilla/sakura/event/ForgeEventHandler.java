@@ -4,18 +4,18 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
-import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.event.AttachCapabilitiesEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.LogicalSide;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.network.PacketDistributor;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.LogicalSide;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
+import net.neoforged.neoforge.common.util.LazyOptional;
+import net.neoforged.neoforge.event.AttachCapabilitiesEvent;
+import net.neoforged.neoforge.event.TickEvent;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
@@ -48,8 +48,8 @@ public class ForgeEventHandler {
     public static void onPlayerLoggedIn(ClientPlayerNetworkEvent.LoggingIn event) {
         LOGGER.debug("Client: Player logged in.");
         // 同步客户端配置到服务器
-        ModNetworkHandler.INSTANCE.send(new ClientConfigSyncPacket(), PacketDistributor.SERVER.noArg());
-        ModNetworkHandler.INSTANCE.send(new ClientModLoadedNotice(), PacketDistributor.SERVER.noArg());
+        ModNetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(), new ClientConfigSyncPacket());
+        ModNetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(), new ClientModLoadedNotice());
     }
 
     /**
@@ -73,7 +73,7 @@ public class ForgeEventHandler {
                     }
                 }
                 // 同步服务器时间到客户端
-                ModNetworkHandler.INSTANCE.send(new ServerTimeSyncPacket(), PacketDistributor.PLAYER.with(player));
+                ModNetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), new ServerTimeSyncPacket());
             }
         }
     }

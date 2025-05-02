@@ -2,7 +2,7 @@ package xin.vanilla.sakura.network.packet;
 
 import lombok.Getter;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.event.network.CustomPayloadEvent;
+import net.neoforged.neoforge.network.NetworkEvent;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.util.DateUtils;
 
@@ -27,7 +27,7 @@ public class ServerTimeSyncPacket {
         buf.writeUtf(this.serverTime);
     }
 
-    public static void handle(ServerTimeSyncPacket packet, CustomPayloadEvent.Context ctx) {
+    public static void handle(ServerTimeSyncPacket packet, NetworkEvent.ClientCustomPayloadEvent.Context ctx) {
         ctx.enqueueWork(() -> SakuraSignIn.getClientServerTime().setKey(DateUtils.toDateTimeString(new Date())).setValue(packet.serverTime));
         ctx.setPacketHandled(true);
     }

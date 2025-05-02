@@ -3,8 +3,8 @@ package xin.vanilla.sakura.rewards;
 import com.google.gson.reflect.TypeToken;
 import lombok.NonNull;
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import xin.vanilla.sakura.util.CollectionUtils;
 import xin.vanilla.sakura.util.StringUtils;
 

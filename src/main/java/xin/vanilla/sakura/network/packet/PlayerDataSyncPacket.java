@@ -2,9 +2,7 @@ package xin.vanilla.sakura.network.packet;
 
 import lombok.Getter;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.event.network.CustomPayloadEvent;
-import net.minecraftforge.fml.DistExecutor;
+import net.neoforged.neoforge.network.NetworkEvent;
 import xin.vanilla.sakura.config.ServerConfig;
 import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.data.PlayerSignInData;
@@ -91,14 +89,14 @@ public class PlayerDataSyncPacket extends SplitPacket {
         }
     }
 
-    public static void handle(PlayerDataSyncPacket packet, CustomPayloadEvent.Context ctx) {
+    public static void handle(PlayerDataSyncPacket packet, NetworkEvent.ClientCustomPayloadEvent.Context ctx) {
         ctx.enqueueWork(() -> {
             if (ctx.getDirection().getReceptionSide().isClient()) {
                 // 在客户端更新 PlayerSignInDataCapability
                 // 获取玩家并更新 Capability 数据
                 List<PlayerDataSyncPacket> packets = SplitPacket.handle(packet);
                 if (CollectionUtils.isNotNullOrEmpty(packets)) {
-                    DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientProxy.handleSynPlayerData(new PlayerDataSyncPacket(packets)));
+                    ClientProxy.handleSynPlayerData(new PlayerDataSyncPacket(packets));
                 }
             }
         });

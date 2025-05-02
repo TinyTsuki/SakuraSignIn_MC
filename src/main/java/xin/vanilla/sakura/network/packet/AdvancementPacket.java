@@ -3,9 +3,7 @@ package xin.vanilla.sakura.network.packet;
 import lombok.Getter;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.event.network.CustomPayloadEvent;
-import net.minecraftforge.fml.DistExecutor;
+import net.neoforged.neoforge.network.NetworkEvent;
 import xin.vanilla.sakura.network.ClientProxy;
 import xin.vanilla.sakura.network.data.AdvancementData;
 import xin.vanilla.sakura.util.CollectionUtils;
@@ -13,7 +11,6 @@ import xin.vanilla.sakura.util.CollectionUtils;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
 
 @Getter
@@ -25,7 +22,7 @@ public class AdvancementPacket extends SplitPacket {
         super();
         this.advancements = advancements.stream()
                 .map(AdvancementData::fromAdvancement)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public AdvancementPacket(FriendlyByteBuf buf) {
@@ -44,14 +41,14 @@ public class AdvancementPacket extends SplitPacket {
         this.advancements.addAll(packets.stream().flatMap(packet -> packet.getAdvancements().stream()).toList());
     }
 
-    public static void handle(AdvancementPacket packet, CustomPayloadEvent.Context ctx) {
+    public static void handle(AdvancementPacket packet, NetworkEvent.ClientCustomPayloadEvent.Context ctx) {
         // 获取网络事件上下文并排队执行工作
         ctx.enqueueWork(() -> {
             if (ctx.getDirection().getReceptionSide().isClient()) {
                 // 在客户端更新 List<AdvancementData>
                 List<AdvancementPacket> packets = SplitPacket.handle(packet);
                 if (CollectionUtils.isNotNullOrEmpty(packets)) {
-                    DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientProxy.handleAdvancement(new AdvancementPacket(packets)));
+                    ClientProxy.handleAdvancement(new AdvancementPacket(packets));
                 }
             }
         });

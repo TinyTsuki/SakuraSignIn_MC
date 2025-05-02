@@ -2,8 +2,8 @@ package xin.vanilla.sakura.network.packet;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.event.network.CustomPayloadEvent;
-import net.minecraftforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.NetworkEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.RewardConfigManager;
 import xin.vanilla.sakura.data.PlayerSignInDataCapability;
@@ -20,7 +20,7 @@ public class ClientModLoadedNotice {
     public void toBytes(FriendlyByteBuf buf) {
     }
 
-    public static void handle(ClientModLoadedNotice packet, CustomPayloadEvent.Context ctx) {
+    public static void handle(ClientModLoadedNotice packet, NetworkEvent.ServerCustomPayloadEvent.Context ctx) {
         // 获取网络事件上下文并排队执行工作
         ctx.enqueueWork(() -> {
             // 获取发送数据包的玩家实体
@@ -31,11 +31,11 @@ public class ClientModLoadedNotice {
                 PlayerSignInDataCapability.syncPlayerData(player);
                 // 同步签到奖励配置到客户端
                 for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardConfigManager.toSyncPacket(player).split()) {
-                    ModNetworkHandler.INSTANCE.send(rewardOptionSyncPacket, PacketDistributor.PLAYER.with(player));
+                    ModNetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), rewardOptionSyncPacket);
                 }
                 // 同步进度列表到客户端
                 for (AdvancementPacket advancementPacket : new AdvancementPacket((player).server.getAdvancements().getAllAdvancements()).split()) {
-                    ModNetworkHandler.INSTANCE.send(advancementPacket, PacketDistributor.PLAYER.with(player));
+                    ModNetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), advancementPacket);
                 }
             }
         });

@@ -4,13 +4,13 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import lombok.NonNull;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.TagParser;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraftforge.registries.ForgeRegistries;
 import xin.vanilla.sakura.rewards.RewardParser;
 import xin.vanilla.sakura.util.Component;
 
@@ -28,7 +28,7 @@ public class ItemRewardParser implements RewardParser<ItemStack> {
             }
             int count = json.get("count").getAsInt();
             count = Math.max(count, 1);
-            Item item = ForgeRegistries.ITEMS.getValue(new ResourceLocation(itemId));
+            Item item = BuiltInRegistries.ITEM.get(new ResourceLocation(itemId));
             if (item == null) {
                 throw new JsonParseException("Unknown item ID: " + itemId);
             }
@@ -102,7 +102,7 @@ public class ItemRewardParser implements RewardParser<ItemStack> {
     }
 
     public static String getId(Item item) {
-        ResourceLocation resource = ForgeRegistries.ITEMS.getKey(item);
+        ResourceLocation resource = BuiltInRegistries.ITEM.getKey(item);
         if (resource == null) return "minecraft:air";
         else return resource.toString();
     }
@@ -114,7 +114,7 @@ public class ItemRewardParser implements RewardParser<ItemStack> {
     public static Item getItem(String id) {
         String resourceId = id;
         if (id.contains("{") && id.endsWith("}")) resourceId = resourceId.substring(0, id.indexOf("{"));
-        return ForgeRegistries.ITEMS.getValue(new ResourceLocation(resourceId));
+        return BuiltInRegistries.ITEM.get(new ResourceLocation(resourceId));
     }
 
     public static ItemStack getItemStack(String id) {
