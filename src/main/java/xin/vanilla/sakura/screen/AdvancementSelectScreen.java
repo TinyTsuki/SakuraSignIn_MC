@@ -452,7 +452,7 @@ public class AdvancementSelectScreen extends Screen {
                     double effectY = effectBgY + i1 * (AbstractGuiUtils.ITEM_ICON_SIZE + margin);
                     // 绘制背景
                     int bgColor;
-                    if (context.button.isHovered() || advancementData.getId().toString().equalsIgnoreCase(this.currentAdvancement.toString())) {
+                    if (context.button.isHovered() || advancementData.getId().toString().equalsIgnoreCase(RewardManager.deserializeReward(this.currentAdvancement).toString())) {
                         bgColor = 0xEE7CAB7C;
                     } else {
                         bgColor = 0xEE707070;
