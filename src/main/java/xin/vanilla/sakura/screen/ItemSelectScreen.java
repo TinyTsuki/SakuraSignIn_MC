@@ -596,7 +596,7 @@ public class ItemSelectScreen extends Screen {
                     this.itemList.addAll(this.searchByDescription(s));
                 } else {
                     // @ modId
-                    sessionsearchtrees.updateCreativeTags(List.copyOf(CreativeModeTabs.searchTab().getDisplayItems()));
+                    sessionsearchtrees.updateCreativeTooltips(Minecraft.getInstance().player.level().registryAccess(), List.copyOf(CreativeModeTabs.searchTab().getDisplayItems()));
                     searchtree = sessionsearchtrees.getSearchTree(SessionSearchTrees.CREATIVE_NAMES);
                     this.itemList.addAll(searchtree.search(s.toLowerCase(Locale.ROOT)));
                 }
