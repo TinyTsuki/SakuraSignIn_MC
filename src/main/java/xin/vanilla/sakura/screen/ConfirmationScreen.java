@@ -75,6 +75,8 @@ public class ConfirmationScreen extends Screen {
     @Override
     @ParametersAreNonnullByDefault
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+        // 绘制背景
+        this.renderBackground(graphics, mouseX, mouseY, partialTicks);
         for (Renderable renderable : this.renderables) {
             renderable.render(graphics, mouseX, mouseY, partialTicks);
         }

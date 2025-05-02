@@ -276,6 +276,8 @@ public class ItemSelectScreen extends Screen {
     @ParametersAreNonnullByDefault
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
         keyManager.refresh(mouseX, mouseY);
+        // 绘制背景
+        this.renderBackground(graphics, mouseX, mouseY, partialTicks);
         AbstractGuiUtils.fill(graphics, (int) (this.bgX - this.margin), (int) (this.bgY - this.margin), (int) (180 + this.margin * 2), (int) (20 + (AbstractGuiUtils.ITEM_ICON_SIZE + 3) * 5 + 20 + margin * 2 + 5), 0xCCC6C6C6, 2);
         AbstractGuiUtils.fillOutLine(graphics, (int) (this.itemBgX - this.margin), (int) (this.itemBgY - this.margin), (int) ((AbstractGuiUtils.ITEM_ICON_SIZE + this.margin) * this.itemPerLine + this.margin), (int) ((AbstractGuiUtils.ITEM_ICON_SIZE + this.margin) * this.maxLine + this.margin), 1, 0xFF000000, 1);
         for (Renderable renderable : this.renderables) {
@@ -583,7 +585,7 @@ public class ItemSelectScreen extends Screen {
                 if (s.startsWith("#")) {
                     sessionsearchtrees.updateCreativeTags(List.copyOf(CreativeModeTabs.searchTab().getDisplayItems()));
                     s = s.substring(1);
-                    searchtree = sessionsearchtrees.creativeTagSearch(SessionSearchTrees.CREATIVE_TAGS);
+                    searchtree = sessionsearchtrees.creativeTagSearch();
                     this.updateVisibleTags(s);
                     this.itemList.addAll(searchtree.search(s.toLowerCase(Locale.ROOT)));
                 }
@@ -593,8 +595,8 @@ public class ItemSelectScreen extends Screen {
                     this.itemList.addAll(this.searchByDescription(s));
                 } else {
                     // @ modId
-                    sessionsearchtrees.updateCreativeTags(List.copyOf(CreativeModeTabs.searchTab().getDisplayItems()));
-                    searchtree = sessionsearchtrees.creativeTagSearch(SessionSearchTrees.CREATIVE_NAMES);
+                    sessionsearchtrees.updateCreativeTooltips(Minecraft.getInstance().player.level().registryAccess(), List.copyOf(CreativeModeTabs.searchTab().getDisplayItems()));
+                    searchtree = sessionsearchtrees.creativeNameSearch();
                     this.itemList.addAll(searchtree.search(s.toLowerCase(Locale.ROOT)));
                 }
             }
