@@ -105,8 +105,8 @@ public class EffectRewardParser implements RewardParser<EffectInstance> {
         if (id.contains(" ") && id.split(" ").length == 3) {
             try {
                 String[] split = id.split(" ");
-                amplifier = Integer.parseInt(split[1]);
-                duration = Integer.parseInt(split[2]);
+                duration = Integer.parseInt(split[1]);
+                amplifier = Integer.parseInt(split[2]);
             } catch (Exception e) {
                 if (throwException) throw e;
                 LOGGER.error("Failed to parse Effect data", e);
