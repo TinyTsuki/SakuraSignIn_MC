@@ -81,8 +81,10 @@ public class FieldUtils {
                 }
             }
         } catch (Exception e) {
-            LANGUAGE_FIELD_NAME = "language";
             LOGGER.error("Failed to get player language field name", e);
+        }
+        if (StringUtils.isNullOrEmptyEx(LANGUAGE_FIELD_NAME)) {
+            LANGUAGE_FIELD_NAME = "language";
         }
         return LANGUAGE_FIELD_NAME;
     }
