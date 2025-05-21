@@ -1,14 +1,12 @@
 package xin.vanilla.sakura.util;
 
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.lang.reflect.Field;
 import java.util.*;
 
-@OnlyIn(Dist.CLIENT)
+
 public class GLFWKeyHelper {
     private static final Logger LOGGER = LogManager.getLogger();
 
