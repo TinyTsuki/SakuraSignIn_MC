@@ -16,6 +16,7 @@ import net.neoforged.fml.ModList;
 import net.neoforged.neoforgespi.language.IModInfo;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import xin.vanilla.sakura.SakuraSignIn;
+import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.config.ServerConfig;
 import xin.vanilla.sakura.data.PlayerSignInDataCapability;
 import xin.vanilla.sakura.enums.ERewardRule;
@@ -31,11 +32,11 @@ public class SakuraUtils {
 
 
     public static String getCommandPrefix() {
-        String commandPrefix = ServerConfig.COMMAND_PREFIX.get();
+        String commandPrefix = CommonConfig.COMMAND_PREFIX.get();
         if (StringUtils.isNullOrEmptyEx(commandPrefix) || !commandPrefix.matches("^(\\w ?)+$")) {
-            ServerConfig.COMMAND_PREFIX.set(SakuraSignIn.DEFAULT_COMMAND_PREFIX);
+            CommonConfig.COMMAND_PREFIX.set(SakuraSignIn.DEFAULT_COMMAND_PREFIX);
         }
-        return ServerConfig.COMMAND_PREFIX.get().trim();
+        return CommonConfig.COMMAND_PREFIX.get().trim();
     }
 
     // region 玩家与玩家背包
