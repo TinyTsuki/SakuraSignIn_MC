@@ -22,10 +22,7 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.command.SignInCommand;
-import xin.vanilla.sakura.config.ClientConfig;
-import xin.vanilla.sakura.config.KeyValue;
-import xin.vanilla.sakura.config.RewardConfigManager;
-import xin.vanilla.sakura.config.ServerConfig;
+import xin.vanilla.sakura.config.*;
 import xin.vanilla.sakura.event.ClientEventHandler;
 import xin.vanilla.sakura.network.ModNetworkHandler;
 import xin.vanilla.sakura.network.data.AdvancementData;
@@ -143,6 +140,7 @@ public class SakuraSignIn {
 
         // 注册服务器和客户端配置
         // MinecraftForge.EVENT_BUS.addListener(this::onLoadConfig);
+        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, CommonConfig.COMMON_CONFIG);
         ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, ServerConfig.SERVER_CONFIG);
         ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, ClientConfig.CLIENT_CONFIG);
 

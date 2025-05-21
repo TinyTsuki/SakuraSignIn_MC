@@ -14,6 +14,7 @@ import net.minecraft.command.CommandSource;
 import net.minecraft.command.Commands;
 import net.minecraft.command.arguments.EntityArgument;
 import net.minecraft.entity.player.ServerPlayerEntity;
+import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.config.KeyValue;
 import xin.vanilla.sakura.config.RewardConfigManager;
 import xin.vanilla.sakura.config.ServerConfig;
@@ -283,30 +284,30 @@ public class SignInCommand {
             return 1;
         };
 
-        LiteralArgumentBuilder<CommandSource> sign = Commands.literal(ServerConfig.COMMAND_SIGN_IN.get()).executes(signInCommand)
+        LiteralArgumentBuilder<CommandSource> sign = Commands.literal(CommonConfig.COMMAND_SIGN_IN.get()).executes(signInCommand)
                 // 带有日期参数 -> 补签
                 .then(Commands.argument("date", StringArgumentType.greedyString())
                         .suggests(dateSuggestions)
                         .executes(signInCommand)
                 );
-        LiteralArgumentBuilder<CommandSource> reward = Commands.literal(ServerConfig.COMMAND_REWARD.get()).executes(rewardCommand)
+        LiteralArgumentBuilder<CommandSource> reward = Commands.literal(CommonConfig.COMMAND_REWARD.get()).executes(rewardCommand)
                 // 带有日期参数 -> 补签
                 .then(Commands.argument("date", StringArgumentType.greedyString())
                         .suggests(dateSuggestions)
                         .executes(rewardCommand)
                 );
-        LiteralArgumentBuilder<CommandSource> signex = Commands.literal(ServerConfig.COMMAND_SIGN_IN_EX.get()).executes(signAndRewardCommand)
+        LiteralArgumentBuilder<CommandSource> signex = Commands.literal(CommonConfig.COMMAND_SIGN_IN_EX.get()).executes(signAndRewardCommand)
                 // 带有日期参数 -> 补签
                 .then(Commands.argument("date", StringArgumentType.greedyString())
                         .suggests(dateSuggestions)
                         .executes(signAndRewardCommand)
                 );
-        LiteralArgumentBuilder<CommandSource> cdk = Commands.literal(ServerConfig.COMMAND_CDK.get())
+        LiteralArgumentBuilder<CommandSource> cdk = Commands.literal(CommonConfig.COMMAND_CDK.get())
                 // 补签 /sakura signex <year> <month> <day>
                 .then(Commands.argument("key", StringArgumentType.greedyString())
                         .executes(cdkCommand)
                 );
-        LiteralArgumentBuilder<CommandSource> language = Commands.literal(ServerConfig.COMMAND_LANGUAGE.get())
+        LiteralArgumentBuilder<CommandSource> language = Commands.literal(CommonConfig.COMMAND_LANGUAGE.get())
                 // 设置语言 /sakura language <code>
                 .then(Commands.argument("language", StringArgumentType.word())
                         .suggests((context, builder) -> {
@@ -317,7 +318,7 @@ public class SignInCommand {
                         })
                         .executes(languageCommand)
                 );
-        LiteralArgumentBuilder<CommandSource> card = Commands.literal(ServerConfig.COMMAND_CARD.get())
+        LiteralArgumentBuilder<CommandSource> card = Commands.literal(CommonConfig.COMMAND_CARD.get())
                 .executes(context -> {
                     ServerPlayerEntity player = context.getSource().getPlayerOrException();
                     if (!ServerConfig.SIGN_IN_CARD.get()) {
@@ -731,32 +732,32 @@ public class SignInCommand {
         // 注册简短的指令
         {
             // 签到 /sign
-            if (ServerConfig.CONCISE_SIGN_IN.get()) {
+            if (CommonConfig.CONCISE_SIGN_IN.get()) {
                 dispatcher.register(sign);
             }
 
             // 领取奖励 /reward
-            if (ServerConfig.CONCISE_REWARD.get()) {
+            if (CommonConfig.CONCISE_REWARD.get()) {
                 dispatcher.register(reward);
             }
 
             // 签到并领取奖励 /signex
-            if (ServerConfig.CONCISE_SIGN_IN_EX.get()) {
+            if (CommonConfig.CONCISE_SIGN_IN_EX.get()) {
                 dispatcher.register(signex);
             }
 
             // 領取CDK奖励 /cdk
-            if (ServerConfig.CONCISE_CDK.get()) {
+            if (CommonConfig.CONCISE_CDK.get()) {
                 dispatcher.register(cdk);
             }
 
             // 获取补签卡数量 /card
-            if (ServerConfig.CONCISE_CARD.get()) {
+            if (CommonConfig.CONCISE_CARD.get()) {
                 dispatcher.register(card);
             }
 
             // 设置语言 /language
-            if (ServerConfig.CONCISE_LANGUAGE.get()) {
+            if (CommonConfig.CONCISE_LANGUAGE.get()) {
                 dispatcher.register(language);
             }
         }
@@ -789,7 +790,7 @@ public class SignInCommand {
                 .then(card)
                 // 设置语言 /sakura language
                 .then(language)
-                // region 获取服务器配置 /sakura config get
+                // 获取服务器配置 /sakura config get
                 .then(config)
         );
     }
