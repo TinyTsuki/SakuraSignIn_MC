@@ -1,12 +1,10 @@
 package xin.vanilla.sakura;
 
-import com.mojang.brigadier.CommandDispatcher;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.player.Player;
@@ -26,10 +24,7 @@ import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.command.SignInCommand;
-import xin.vanilla.sakura.config.ClientConfig;
-import xin.vanilla.sakura.config.KeyValue;
-import xin.vanilla.sakura.config.RewardConfigManager;
-import xin.vanilla.sakura.config.ServerConfig;
+import xin.vanilla.sakura.config.*;
 import xin.vanilla.sakura.data.PlayerDataAttachment;
 import xin.vanilla.sakura.event.ClientModEventHandler;
 import xin.vanilla.sakura.network.ModNetworkHandler;
@@ -142,6 +137,7 @@ public class SakuraSignIn {
         NeoForge.EVENT_BUS.addListener(this::onServerStopping);
 
         // 注册服务器和客户端配置
+        modContainer.registerConfig(ModConfig.Type.COMMON, CommonConfig.COMMON_CONFIG);
         modContainer.registerConfig(ModConfig.Type.SERVER, ServerConfig.SERVER_CONFIG);
         modContainer.registerConfig(ModConfig.Type.CLIENT, ClientConfig.CLIENT_CONFIG);
         // 注册数据附件
@@ -160,9 +156,6 @@ public class SakuraSignIn {
         serverInstance = event.getServer();
         RewardConfigManager.loadRewardOption();
         LOGGER.debug("SignIn data loaded.");
-        // 注册传送命令到事件调度器
-        LOGGER.debug("Registering commands");
-        SignInCommand.register(commandDispatcher);
     }
 
     @SubscribeEvent
@@ -182,8 +175,6 @@ public class SakuraSignIn {
         return getThemeTextureCoordinate(true);
     }
 
-    private static CommandDispatcher<CommandSourceStack> commandDispatcher;
-
     /**
      * 注册命令事件的处理方法
      * 当注册命令事件被触发时，此方法将被调用
@@ -193,7 +184,9 @@ public class SakuraSignIn {
      */
     @SubscribeEvent
     public void onRegisterCommands(RegisterCommandsEvent event) {
-        commandDispatcher = event.getDispatcher();
+        LOGGER.debug("Registering commands");
+        // 注册传送命令到事件调度器
+        SignInCommand.register(event.getDispatcher());
     }
 
     /**
