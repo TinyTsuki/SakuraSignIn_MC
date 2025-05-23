@@ -16,7 +16,7 @@ public class PlayerDataAttachment {
             DeferredRegister.create(NeoForgeRegistries.ATTACHMENT_TYPES, SakuraSignIn.MODID);
 
     public static final Supplier<AttachmentType<PlayerSignInData>> PLAYER_DATA = ATTACHMENT_TYPES.register(
-            "player_teleport_data", () -> AttachmentType.serializable(PlayerSignInData::new).build()
+            "player_sign_in_data", () -> AttachmentType.serializable(PlayerSignInData::new).build()
     );
 
 
