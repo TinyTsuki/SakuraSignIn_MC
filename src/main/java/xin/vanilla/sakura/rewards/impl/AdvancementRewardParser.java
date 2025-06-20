@@ -6,8 +6,8 @@ import net.minecraft.advancements.Advancement;
 import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.util.ResourceLocation;
 import xin.vanilla.sakura.SakuraSignIn;
-import xin.vanilla.sakura.enums.EI18nType;
-import xin.vanilla.sakura.enums.ERewardType;
+import xin.vanilla.sakura.enums.EnumI18nType;
+import xin.vanilla.sakura.enums.EnumRewardType;
 import xin.vanilla.sakura.network.data.AdvancementData;
 import xin.vanilla.sakura.rewards.RewardParser;
 import xin.vanilla.sakura.util.Component;
@@ -23,7 +23,7 @@ public class AdvancementRewardParser implements RewardParser<ResourceLocation> {
             LOGGER.error("Failed to parse advancement reward", e);
             advancementId = SakuraSignIn.MODID + ":unknownAdvancement";
         }
-        return new ResourceLocation(advancementId);
+        return SakuraSignIn.parseResource(advancementId);
     }
 
     @Override
@@ -36,7 +36,7 @@ public class AdvancementRewardParser implements RewardParser<ResourceLocation> {
     public static AdvancementData getAdvancementData(String id) {
         return SakuraSignIn.getAdvancementData().stream()
                 .filter(data -> data.getId().toString().equalsIgnoreCase(id))
-                .findFirst().orElse(new AdvancementData(new ResourceLocation(id), null));
+                .findFirst().orElse(new AdvancementData(SakuraSignIn.parseResource(id), null));
     }
 
     public static String getId(AdvancementData advancementData) {
@@ -79,7 +79,7 @@ public class AdvancementRewardParser implements RewardParser<ResourceLocation> {
     @Override
     public @NonNull Component getDisplayName(String languageCode, JsonObject json, boolean withNum) {
         ResourceLocation deserialize = deserialize(json);
-        return Component.translatable(languageCode, EI18nType.WORD, "reward_type_" + ERewardType.ADVANCEMENT.getCode())
+        return Component.translatable(languageCode, EnumI18nType.WORD, "reward_type_" + EnumRewardType.ADVANCEMENT.getCode())
                 .append(": ")
                 .append(Component.original(SakuraSignIn.getAdvancementData().stream()
                         .filter(data -> data.getId().equals(deserialize))

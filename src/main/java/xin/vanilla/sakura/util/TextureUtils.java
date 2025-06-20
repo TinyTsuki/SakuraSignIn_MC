@@ -43,9 +43,10 @@ public class TextureUtils {
         TextureManager textureManager = Minecraft.getInstance().getTextureManager();
         textureName = textureName.replaceAll("\\\\", "/");
         textureName = textureName.startsWith("./") ? textureName.substring(2) : textureName;
-        ResourceLocation customTextureLocation = new ResourceLocation(SakuraSignIn.MODID, TextureUtils.getSafeThemePath(textureName));
+        ResourceLocation customTextureLocation = SakuraSignIn.createResource(TextureUtils.getSafeThemePath(textureName));
         if (!TextureUtils.isTextureAvailable(customTextureLocation)) {
             if (!textureName.startsWith(INTERNAL_THEME_DIR)) {
+                customTextureLocation = SakuraSignIn.createResource(TextureUtils.getSafeThemePath(textureName + System.currentTimeMillis()));
                 File textureFile;
                 // 指定外部路径的纹理文件
                 if (textureName.startsWith(CUSTOM_THEME_DIR)) {
@@ -56,7 +57,7 @@ public class TextureUtils {
                 // 检查文件是否存在
                 if (!textureFile.exists()) {
                     LOGGER.warn("Texture file not found: {}", textureFile.getAbsolutePath());
-                    customTextureLocation = new ResourceLocation(SakuraSignIn.MODID, INTERNAL_THEME_DIR + DEFAULT_THEME);
+                    customTextureLocation = SakuraSignIn.createResource(INTERNAL_THEME_DIR + DEFAULT_THEME);
                 } else {
                     try (InputStream inputStream = Files.newInputStream(textureFile.toPath())) {
                         // 直接从InputStream创建NativeImage
@@ -67,7 +68,7 @@ public class TextureUtils {
                     } catch (IOException e) {
                         LOGGER.warn("Failed to load texture: {}", textureFile.getAbsolutePath());
                         LOGGER.error(e);
-                        customTextureLocation = new ResourceLocation(SakuraSignIn.MODID, INTERNAL_THEME_DIR + DEFAULT_THEME);
+                        customTextureLocation = SakuraSignIn.createResource(INTERNAL_THEME_DIR + DEFAULT_THEME);
                     }
                 }
             }
@@ -90,7 +91,7 @@ public class TextureUtils {
     }
 
     @NonNull
-    public static List<File> getPngFilesInDirectory(String directoryPath) {
+    public static List<File> getThemeFilesInDirectory(String directoryPath) {
         List<File> pngFiles = new ArrayList<>();
         // 获取 .minecraft 文件夹的根目录
         File configDir = new File(Minecraft.getInstance().gameDirectory, directoryPath);
@@ -98,8 +99,8 @@ public class TextureUtils {
         if (!configDir.exists() || !configDir.isDirectory()) {
             LOGGER.error("The directory does not exist: {}", configDir.getAbsolutePath());
         } else {
-            // 使用文件过滤器仅获取 .png 文件
-            File[] files = configDir.listFiles((dir, name) -> name.toLowerCase().endsWith(".png"));
+            // 使用文件过滤器仅获取 .sakura.png 文件
+            File[] files = configDir.listFiles((dir, name) -> name.toLowerCase().endsWith(SakuraSignIn.THEME_FILE_SUFFIX));
             if (files != null) {
                 Collections.addAll(pngFiles, files);
             }
@@ -114,7 +115,7 @@ public class TextureUtils {
         ResourceLocation effectIcon;
         ResourceLocation registryName = effectInstance.getEffect().getRegistryName();
         if (registryName != null) {
-            effectIcon = new ResourceLocation(registryName.getNamespace(), DEFAULT_EFFECT_DIR + registryName.getPath() + ".png");
+            effectIcon = SakuraSignIn.createResource(registryName.getNamespace(), DEFAULT_EFFECT_DIR + registryName.getPath() + ".png");
         } else {
             effectIcon = null;
         }
@@ -127,7 +128,6 @@ public class TextureUtils {
      * 从资源中加载纹理并转换为 NativeImage。
      *
      * @param texture 纹理的 ResourceLocation
-     * @return 纹理对应的 NativeImage 或 null
      */
     public static NativeImage getTextureImage(ResourceLocation texture) {
         // 优先从缓存中获取
@@ -144,7 +144,7 @@ public class TextureUtils {
                 return nativeImage;
             }
         } catch (Exception e) {
-            LOGGER.error("Failed to load texture: {}", texture);
+            LOGGER.debug("Failed to load texture: {}", texture);
             return null;
         }
     }

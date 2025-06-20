@@ -11,6 +11,7 @@ import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.JsonToNBT;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.registries.ForgeRegistries;
+import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.rewards.RewardParser;
 import xin.vanilla.sakura.util.Component;
 
@@ -28,7 +29,7 @@ public class ItemRewardParser implements RewardParser<ItemStack> {
             }
             int count = json.get("count").getAsInt();
             count = Math.max(count, 1);
-            Item item = ForgeRegistries.ITEMS.getValue(new ResourceLocation(itemId));
+            Item item = ForgeRegistries.ITEMS.getValue(SakuraSignIn.parseResource(itemId));
             if (item == null) {
                 throw new JsonParseException("Unknown item ID: " + itemId);
             }
@@ -114,7 +115,7 @@ public class ItemRewardParser implements RewardParser<ItemStack> {
     public static Item getItem(String id) {
         String resourceId = id;
         if (id.contains("{") && id.endsWith("}")) resourceId = resourceId.substring(0, id.indexOf("{"));
-        return ForgeRegistries.ITEMS.getValue(new ResourceLocation(resourceId));
+        return ForgeRegistries.ITEMS.getValue(SakuraSignIn.parseResource(resourceId));
     }
 
     public static ItemStack getItemStack(String id) {

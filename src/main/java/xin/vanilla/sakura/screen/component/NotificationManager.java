@@ -8,6 +8,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.sakura.enums.EnumEllipsisPosition;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.util.AbstractGuiUtils;
 import xin.vanilla.sakura.util.Component;
@@ -51,11 +52,11 @@ public class NotificationManager {
         /**
          * 背景颜色
          */
-        private int bgColor = 0xAADCDCDC;
+        private int bgArgb = 0xAADCDCDC;
         /**
          * 边框颜色
          */
-        private int borderColor = 0x88000000;
+        private int borderArgb = 0x88000000;
         /**
          * 边框大小
          */
@@ -127,7 +128,7 @@ public class NotificationManager {
         }
 
         public static Notification ofComponentWithBlack(Component component) {
-            return new Notification(component.setColor(0xFF000000));
+            return new Notification(component.setColorArgb(0xFF000000));
         }
 
         public static Notification ofComponent(Component component) {
@@ -214,36 +215,36 @@ public class NotificationManager {
             Coordinate info = new Coordinate();
             switch (this.getPosition()) {
                 case TOP_LEFT:
-                    info.x = this.getMargin();
-                    info.y = this.getMargin() + preInfo.getY() + preInfo.getHeight();
+                    info.setX(this.getMargin());
+                    info.setY(this.getMargin() + preInfo.getY() + preInfo.getHeight());
                     break;
                 case TOP_CENTER:
-                    info.x = (screenInfo.getWidth() - this.getCachedWidth()) / 2;
-                    info.y = this.getMargin() + preInfo.getY() + preInfo.getHeight();
+                    info.setX((screenInfo.getWidth() - this.getCachedWidth()) / 2);
+                    info.setY(this.getMargin() + preInfo.getY() + preInfo.getHeight());
                     break;
                 case TOP_RIGHT:
-                    info.x = screenInfo.getWidth() - this.getCachedWidth() - this.getMargin();
-                    info.y = this.getMargin() + preInfo.getY() + preInfo.getHeight();
+                    info.setX(screenInfo.getWidth() - this.getCachedWidth() - this.getMargin());
+                    info.setY(this.getMargin() + preInfo.getY() + preInfo.getHeight());
                     break;
                 case BOTTOM_LEFT:
-                    info.x = this.getMargin();
-                    info.y = (preInfo.getY() == 0 ? screenInfo.getHeight() : preInfo.getY()) - this.getMargin() - this.getCachedHeight();
+                    info.setX(this.getMargin());
+                    info.setY((preInfo.getY() == 0 ? screenInfo.getHeight() : preInfo.getY()) - this.getMargin() - this.getCachedHeight());
                     break;
                 case BOTTOM_CENTER:
-                    info.x = (screenInfo.getWidth() - this.getCachedWidth()) / 2;
-                    info.y = (preInfo.getY() == 0 ? screenInfo.getHeight() : preInfo.getY()) - this.getMargin() - this.getCachedHeight();
+                    info.setX((screenInfo.getWidth() - this.getCachedWidth()) / 2);
+                    info.setY((preInfo.getY() == 0 ? screenInfo.getHeight() : preInfo.getY()) - this.getMargin() - this.getCachedHeight());
                     break;
                 case BOTTOM_RIGHT:
-                    info.x = screenInfo.getWidth() - this.getCachedWidth() - this.getMargin();
-                    info.y = (preInfo.getY() == 0 ? screenInfo.getHeight() : preInfo.getY()) - this.getMargin() - this.getCachedHeight();
+                    info.setX(screenInfo.getWidth() - this.getCachedWidth() - this.getMargin());
+                    info.setY((preInfo.getY() == 0 ? screenInfo.getHeight() : preInfo.getY()) - this.getMargin() - this.getCachedHeight());
                     break;
                 case CENTER:
-                    info.x = (screenInfo.getWidth() - this.getCachedWidth()) / 2;
-                    info.y = (screenInfo.getHeight() - this.getCachedHeight()) / 2;
+                    info.setX((screenInfo.getWidth() - this.getCachedWidth()) / 2);
+                    info.setY((screenInfo.getHeight() - this.getCachedHeight()) / 2);
                     break;
                 default:
-                    info.x = this.getMargin();
-                    info.y = this.getMargin();
+                    info.setX(this.getMargin());
+                    info.setY(this.getMargin());
             }
             return info;
         }
@@ -257,22 +258,22 @@ public class NotificationManager {
         private void applyAnimationEffect(Coordinate coordinate, double progress) {
             switch (this.getAnimation()) {
                 case RIGHT_TO_LEFT:
-                    coordinate.x += this.getCachedWidth() * (1 - progress);
+                    coordinate.setX(coordinate.getX() + this.getCachedWidth() * (1 - progress));
                     break;
                 case LEFT_TO_RIGHT:
-                    coordinate.x -= this.getCachedWidth() * (1 - progress);
+                    coordinate.setX(coordinate.getX() - this.getCachedWidth() * (1 - progress));
                     break;
                 case TOP_TO_BOTTOM:
-                    coordinate.y -= this.getCachedHeight() * (1 - progress);
+                    coordinate.setY(coordinate.getY() - this.getCachedHeight() * (1 - progress));
                     break;
                 case BOTTOM_TO_TOP:
-                    coordinate.y += this.getCachedHeight() * (1 - progress);
+                    coordinate.setY(coordinate.getY() + this.getCachedHeight() * (1 - progress));
                     break;
                 case FADE_IN:
                     // 取得背景颜色的alpha通道
-                    int a = this.getBgColor() >>> 24;
+                    int a = this.getBgArgb() >>> 24;
                     int alpha = (int) ((a == 0 ? 0xFF : a) * progress);
-                    this.setBgColor((this.getBgColor() & 0x00FFFFFF) | (alpha << 24));
+                    this.setBgArgb((this.getBgArgb() & 0x00FFFFFF) | (alpha << 24));
                     break;
             }
         }
@@ -319,20 +320,20 @@ public class NotificationManager {
                     case TOP_LEFT:
                     case TOP_CENTER:
                     case TOP_RIGHT:
-                        coordinate.y = Math.max(targetY, newY);
+                        coordinate.setY(Math.max(targetY, newY));
                         this.setIndex(1);
                         break;
                     case BOTTOM_LEFT:
                     case BOTTOM_CENTER:
                     case BOTTOM_RIGHT:
-                        coordinate.y = Math.min(targetY, newY);
+                        coordinate.setY(Math.min(targetY, newY));
                         this.setIndex(1);
                         break;
                 }
 
                 // 到达目标后更新状态
                 if (Math.abs(coordinate.getY() - targetY) < 0.1) {
-                    coordinate.y = targetY;
+                    coordinate.setY(targetY);
                 }
             }
         }
@@ -367,25 +368,25 @@ public class NotificationManager {
          * @param coordinate 当前通知的布局信息
          */
         private void doRender(MatrixStack matrixStack, Coordinate coordinate) {
-            AbstractGuiUtils.setDepth(matrixStack, AbstractGuiUtils.EDepth.POPUP_TIPS);
-            AbstractGuiUtils.fill(matrixStack,
-                    (int) coordinate.getX(), (int) coordinate.getY(),
-                    (int) this.getCachedWidth(), (int) this.getCachedHeight(),
-                    this.getBgColor(), this.getRadius()
-            );
-            AbstractGuiUtils.fillOutLine(matrixStack,
-                    (int) coordinate.getX(), (int) coordinate.getY(),
-                    (int) this.getCachedWidth(), (int) this.getCachedHeight(),
-                    this.getBorderSize(), this.getBorderColor(), this.getRadius()
-            );
-            AbstractGuiUtils.drawLimitedText(
-                    cachedText.setMatrixStack(matrixStack),
-                    coordinate.getX() + this.getPadding(),
-                    coordinate.getY() + this.getPadding(),
-                    0, 0,
-                    AbstractGuiUtils.EllipsisPosition.MIDDLE
-            );
-            AbstractGuiUtils.resetDepth(matrixStack);
+            AbstractGuiUtils.renderByDepth(matrixStack, AbstractGuiUtils.EDepth.POPUP_TIPS, (stack) -> {
+                AbstractGuiUtils.fill(stack,
+                        (int) coordinate.getX(), (int) coordinate.getY(),
+                        (int) this.getCachedWidth(), (int) this.getCachedHeight(),
+                        this.getBgArgb(), this.getRadius()
+                );
+                AbstractGuiUtils.fillOutLine(stack,
+                        (int) coordinate.getX(), (int) coordinate.getY(),
+                        (int) this.getCachedWidth(), (int) this.getCachedHeight(),
+                        this.getBorderSize(), this.getBorderArgb(), this.getRadius()
+                );
+                AbstractGuiUtils.drawLimitedText(
+                        cachedText.setMatrixStack(stack),
+                        coordinate.getX() + this.getPadding(),
+                        coordinate.getY() + this.getPadding(),
+                        0, 0,
+                        EnumEllipsisPosition.MIDDLE
+                );
+            });
         }
 
         /**

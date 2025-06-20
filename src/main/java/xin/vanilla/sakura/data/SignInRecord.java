@@ -3,14 +3,13 @@ package xin.vanilla.sakura.data;
 import lombok.Data;
 import lombok.NonNull;
 import net.minecraft.nbt.CompoundNBT;
-import xin.vanilla.sakura.rewards.RewardList;
 import xin.vanilla.sakura.util.CollectionUtils;
 import xin.vanilla.sakura.util.DateUtils;
 
 import java.io.Serializable;
 import java.util.Date;
 
-import static xin.vanilla.sakura.config.RewardConfigManager.GSON;
+import static xin.vanilla.sakura.rewards.RewardConfigManager.GSON;
 
 /**
  * 签到记录

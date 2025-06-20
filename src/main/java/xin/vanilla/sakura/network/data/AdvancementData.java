@@ -10,6 +10,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.ResourceLocation;
+import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.util.Component;
 
 /**
@@ -60,7 +61,7 @@ public class AdvancementData {
     public static DisplayInfo createDisplayInfo(String title, String description, ItemStack itemStack) {
         return new DisplayInfo(itemStack
                 , Component.literal(title).toTextComponent(), Component.literal(description).toTextComponent()
-                , new ResourceLocation(""), FrameType.TASK
+                , SakuraSignIn.emptyResource(), FrameType.TASK
                 , false, false, false);
     }
 

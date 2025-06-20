@@ -2,62 +2,81 @@ package xin.vanilla.sakura;
 
 import lombok.Getter;
 import lombok.Setter;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.entity.player.ClientPlayerEntity;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.event.server.FMLServerStartingEvent;
-import net.minecraftforge.fml.event.server.FMLServerStoppingEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.command.SignInCommand;
-import xin.vanilla.sakura.config.*;
-import xin.vanilla.sakura.event.ClientEventHandler;
+import xin.vanilla.sakura.config.ClientConfig;
+import xin.vanilla.sakura.config.CommonConfig;
+import xin.vanilla.sakura.config.CustomConfig;
+import xin.vanilla.sakura.config.ServerConfig;
+import xin.vanilla.sakura.data.KeyValue;
+import xin.vanilla.sakura.data.RewardCell;
+import xin.vanilla.sakura.event.ClientModEventHandler;
 import xin.vanilla.sakura.network.ModNetworkHandler;
 import xin.vanilla.sakura.network.data.AdvancementData;
 import xin.vanilla.sakura.network.packet.SplitPacket;
+import xin.vanilla.sakura.rewards.RewardConfigManager;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
 import xin.vanilla.sakura.util.DateUtils;
+import xin.vanilla.sakura.util.SakuraUtils;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 @Mod(SakuraSignIn.MODID)
 public class SakuraSignIn {
+    public static final Logger LOGGER = LogManager.getLogger();
 
     public final static String DEFAULT_COMMAND_PREFIX = "sakura";
 
     public static final String MODID = "sakura_sign_in";
+    public static final String ARTIFACT_ID = "xin.vanilla";
     public static final String PNG_CHUNK_NAME = "vacb";
+    public static final String THEME_FILE_SUFFIX = ".sakura.png";
 
-    public static final ExecutorService EXECUTOR_SERVICE = Executors.newCachedThreadPool();
 
-    private static final Logger LOGGER = LogManager.getLogger();
+    // region 服务端全局变量
 
     /**
      * 服务端实例
      */
     @Getter
     private static MinecraftServer serverInstance;
+
+    /**
+     * 已安装mod的玩家列表</br>
+     * 玩家UUID:是否已同步数据</br>
+     * 在该map的玩家都为已安装mod</br>
+     * 布尔值为false时为未同步数据，将会在玩家tick事件中检测并同步数据
+     */
+    @Getter
+    private static final Map<String, Boolean> playerDataStatus = new ConcurrentHashMap<>();
+
+    /**
+     * 玩家语言缓存</br>
+     * 玩家UUID -> 语言
+     */
+    @Getter
+    private static final Map<String, String> playerLanguageCache = new ConcurrentHashMap<>();
+
+    // endregion 服务端全局变量
+
+
+    // region 客户端全局变量
 
     /**
      * 是否有对应的服务端
@@ -102,12 +121,6 @@ public class SakuraSignIn {
     @Getter
     @Setter
     private static List<AdvancementData> advancementData;
-    /**
-     * 玩家权限等级
-     */
-    @Getter
-    @Setter
-    private static int permissionLevel;
 
     /**
      * 分片网络包缓存
@@ -116,154 +129,106 @@ public class SakuraSignIn {
     private static final Map<String, List<? extends SplitPacket>> packetCache = new ConcurrentHashMap<>();
 
     /**
-     * 玩家能力同步状态
-     */
-    @Getter
-    private static final Map<String, Boolean> playerCapabilityStatus = new ConcurrentHashMap<>();
-
-    /**
      * 客户端-服务器时间
      */
     @Getter
-    private static final KeyValue<String, String> clientServerTime = new KeyValue<>(DateUtils.toDateTimeString(new Date(0)), DateUtils.toString(new Date(0)));
+    private static final KeyValue<String, String> clientServerTime = new KeyValue<String, String>()
+            .setKey(DateUtils.toDateTimeString(new Date(0)))
+            .setValue(DateUtils.toString(new Date(0)));
+
+    /**
+     * 签到页面数据
+     */
+    @Getter
+    private static final Map<String, RewardCell> rewardCellMap = new ConcurrentHashMap<>();
+
+    // endregion 客户端全局变量
 
     public SakuraSignIn() {
 
         // 注册网络通道
         ModNetworkHandler.registerPackets();
 
-        // 注册服务器启动和关闭事件
+        // 注册服务器启动关闭事件
         MinecraftForge.EVENT_BUS.addListener(this::onServerStarting);
-        MinecraftForge.EVENT_BUS.addListener(this::onServerStopping);
 
-        // 注册当前实例到MinecraftForge的事件总线，以便监听和处理游戏内的各种事件
+        // 注册当前实例到事件总线
         MinecraftForge.EVENT_BUS.register(this);
 
-        // 注册服务器和客户端配置
-        // MinecraftForge.EVENT_BUS.addListener(this::onLoadConfig);
+        // 注册配置
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, CommonConfig.COMMON_CONFIG);
         ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, ServerConfig.SERVER_CONFIG);
         ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, ClientConfig.CLIENT_CONFIG);
 
-        // 注册客户端设置事件到MOD事件总线
+        // 注册客户端设置事件
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::onClientSetup);
-    }
-
-    // 服务器启动时加载数据
-    private void onServerStarting(FMLServerStartingEvent event) {
-        serverInstance = event.getServer();
-        RewardConfigManager.loadRewardOption();
-        LOGGER.debug("SignIn data loaded.");
-    }
-
-    // 服务器关闭时保存数据
-    private void onServerStopping(FMLServerStoppingEvent event) {
-        // RewardOptionDataManager.saveRewardOption();
+        // 注册公共设置事件
+        FMLJavaModLoadingContext.get().getModEventBus().addListener(this::onCommonSetup);
     }
 
     /**
-     * 在客户端设置阶段触发的事件处理方法
-     * 此方法主要用于接收 FML 客户端设置事件，并执行相应的初始化操作
+     * 客户端设置阶段事件
      */
     @SubscribeEvent
     public void onClientSetup(final FMLClientSetupEvent event) {
         // 注册键绑定
-        LOGGER.debug("Registering key bindings");
-        ClientEventHandler.registerKeyBindings();
-        // 创建配置文件目录
-        ClientEventHandler.createConfigPath();
+        ClientModEventHandler.registerKeyBindings();
+        // 创建主题文件目录
+        SakuraUtils.createThemePath();
         // 加载主题纹理
-        ClientEventHandler.loadThemeTexture();
+        SakuraUtils.loadThemeTexture();
     }
 
     /**
-     * 注册命令事件的处理方法
-     * 当注册命令事件被触发时，此方法将被调用
-     * 该方法主要用于注册签到命令到事件调度器
-     *
-     * @param event 注册命令事件对象，通过该对象可以获取到事件调度器
+     * 公共设置阶段事件
+     */
+    @SubscribeEvent
+    public void onCommonSetup(FMLCommonSetupEvent event) {
+        CustomConfig.loadCustomConfig(false);
+    }
+
+    private void onServerStarting(FMLServerStartingEvent event) {
+        serverInstance = event.getServer();
+        RewardConfigManager.loadRewardOption(true);
+        LOGGER.debug("SignIn data loaded.");
+    }
+
+    /**
+     * 命令注册事件
      */
     @SubscribeEvent
     public void onRegisterCommands(RegisterCommandsEvent event) {
         LOGGER.debug("Registering commands");
-        // 注册签到命令到事件调度器
         SignInCommand.register(event.getDispatcher());
     }
 
-    /**
-     * 玩家注销事件
-     *
-     * @param event 玩家注销事件对象，通过该对象可以获取到注销的玩家对象
-     */
-    @SubscribeEvent
-    public void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
-        LOGGER.debug("Player has logged out.");
-        // 获取退出的玩家对象
-        PlayerEntity player = event.getPlayer();
-        // 判断是否在客户端并且退出的玩家是客户端的当前玩家
-        if (player.getCommandSenderWorld().isClientSide) {
-            ClientPlayerEntity clientPlayer = Minecraft.getInstance().player;
-            if (clientPlayer != null && clientPlayer.getUUID().equals(player.getUUID())) {
-                LOGGER.debug("Current player has logged out.");
-                // 当前客户端玩家与退出的玩家相同
-                enabled = false;
-            }
-        }
+
+    // region 资源ID
+
+    public static ResourceLocation emptyResource() {
+        return createResource("", "");
     }
 
-    /**
-     * 打开指定路径的文件夹
-     */
-    @OnlyIn(Dist.CLIENT)
-    public static void openFileInFolder(Path path) {
-        try {
-            if (Files.isDirectory(path)) {
-                // 如果是文件夹，直接打开文件夹
-                openFolder(path);
-            } else if (Files.isRegularFile(path)) {
-                // 如果是文件，打开文件所在的文件夹，并选中文件
-                openFolderAndSelectFile(path);
-            }
-        } catch (Exception e) {
-            LOGGER.error("Failed to open file/folder: ", e);
-        }
+    public static ResourceLocation createResource(String path) {
+        return createResource(SakuraSignIn.MODID, path);
     }
 
-    private static void openFolder(Path path) {
-        try {
-            // Windows
-            if (System.getProperty("os.name").toLowerCase().contains("win")) {
-                new ProcessBuilder("explorer.exe", path.toString()).start();
-            }
-            // macOS
-            else if (System.getProperty("os.name").toLowerCase().contains("mac")) {
-                new ProcessBuilder("open", path.toString()).start();
-            }
-            // Linux
-            else {
-                new ProcessBuilder("xdg-open", path.toString()).start();
-            }
-        } catch (IOException e) {
-            LOGGER.error("Failed to open folder: ", e);
-        }
+    public static ResourceLocation createResource(String namespace, String path) {
+        return new ResourceLocation(namespace, path);
     }
 
-    private static void openFolderAndSelectFile(Path file) {
-        try {
-            // Windows
-            if (System.getProperty("os.name").toLowerCase().contains("win")) {
-                new ProcessBuilder("explorer.exe", "/select,", file.toString()).start();
-            }
-            // macOS
-            else if (System.getProperty("os.name").toLowerCase().contains("mac")) {
-                new ProcessBuilder("open", "-R", file.toString()).start();
-            }
-            // Linux
-            else {
-                new ProcessBuilder("xdg-open", "--select", file.toString()).start();
-            }
-        } catch (IOException e) {
-            LOGGER.error("Failed to open folder and select file: ", e);
-        }
+    public static ResourceLocation parseResource(String location) {
+        return ResourceLocation.tryParse(location);
     }
+
+    // endregion 资源ID
+
+
+    // region 外部方法
+    @SuppressWarnings("unused")
+    public void reloadCustomConfig() {
+        CustomConfig.loadCustomConfig(false);
+    }
+    // endregion 外部方法
+
 }

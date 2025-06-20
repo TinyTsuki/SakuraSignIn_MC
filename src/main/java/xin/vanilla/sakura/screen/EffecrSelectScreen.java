@@ -2,8 +2,9 @@ package xin.vanilla.sakura.screen;
 
 import com.google.gson.JsonObject;
 import com.mojang.blaze3d.matrix.MatrixStack;
+import lombok.Data;
 import lombok.Getter;
-import lombok.NonNull;
+import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.gui.screen.Screen;
@@ -17,10 +18,10 @@ import net.minecraft.util.registry.Registry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
-import xin.vanilla.sakura.config.StringList;
-import xin.vanilla.sakura.enums.EI18nType;
-import xin.vanilla.sakura.enums.ERewardType;
-import xin.vanilla.sakura.rewards.Reward;
+import xin.vanilla.sakura.data.Reward;
+import xin.vanilla.sakura.data.StringList;
+import xin.vanilla.sakura.enums.EnumI18nType;
+import xin.vanilla.sakura.enums.EnumRewardType;
 import xin.vanilla.sakura.rewards.RewardManager;
 import xin.vanilla.sakura.rewards.impl.EffectRewardParser;
 import xin.vanilla.sakura.screen.component.KeyEventManager;
@@ -37,12 +38,14 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static xin.vanilla.sakura.config.RewardConfigManager.GSON;
+import static xin.vanilla.sakura.rewards.RewardConfigManager.GSON;
 
 public class EffecrSelectScreen extends Screen {
     private static final Logger LOGGER = LogManager.getLogger();
 
     private final KeyEventManager keyManager = new KeyEventManager();
+
+    private final Args args;
 
     private static final Component TITLE = Component.literal("ItemSelectScreen");
 
@@ -51,22 +54,6 @@ public class EffecrSelectScreen extends Screen {
     // 每页显示行数
     private final int maxLine = 5;
 
-    /**
-     * 父级 Screen
-     */
-    private final Screen previousScreen;
-    /**
-     * 输入数据回调1
-     */
-    private final Consumer<Reward> onDataReceived1;
-    /**
-     * 输入数据回调2
-     */
-    private final Function<Reward, String> onDataReceived2;
-    /**
-     * 是否要显示该界面, 若为false则直接关闭当前界面并返回到调用者的 Screen
-     */
-    private final Supplier<Boolean> shouldClose;
     /**
      * 输入框
      */
@@ -90,11 +77,11 @@ public class EffecrSelectScreen extends Screen {
     /**
      * 当前选择的药水效果
      */
-    private Reward currentEffect = new Reward(new EffectInstance(Effects.LUCK), ERewardType.EFFECT);
+    private Reward currentEffect;
     /**
      * 奖励概率
      */
-    private BigDecimal probability = BigDecimal.ONE;
+    private BigDecimal probability;
     /**
      * 背包模式
      */
@@ -153,66 +140,63 @@ public class EffecrSelectScreen extends Screen {
         }
     }
 
-    public EffecrSelectScreen(@NonNull Screen callbackScreen, @NonNull Consumer<Reward> onDataReceived, @NonNull Reward defaultEffect, Supplier<Boolean> shouldClose) {
+    public EffecrSelectScreen(Args args) {
         super(TITLE.toTextComponent());
-        this.previousScreen = callbackScreen;
-        this.onDataReceived1 = onDataReceived;
-        this.onDataReceived2 = null;
-        this.currentEffect = defaultEffect;
-        this.probability = defaultEffect.getProbability();
-        this.shouldClose = shouldClose;
+        assert args != null;
+        args.validate();
+        this.args = args;
+        this.currentEffect = args.getDefaultEffect();
+        this.probability = args.getDefaultEffect().getProbability();
     }
 
-    public EffecrSelectScreen(@NonNull Screen callbackScreen, @NonNull Function<Reward, String> onDataReceived, @NonNull Reward defaultEffect, Supplier<Boolean> shouldClose) {
-        super(TITLE.toTextComponent());
-        this.previousScreen = callbackScreen;
-        this.onDataReceived1 = null;
-        this.onDataReceived2 = onDataReceived;
-        this.currentEffect = defaultEffect;
-        this.probability = defaultEffect.getProbability();
-        this.shouldClose = shouldClose;
-    }
+    @Data
+    @Accessors(chain = true)
+    public static final class Args {
+        /**
+         * 父级 Screen
+         */
+        private Screen parentScreen;
+        /**
+         * 默认值
+         */
+        private Reward defaultEffect = new Reward(new EffectInstance(Effects.LUCK), EnumRewardType.EFFECT);
+        /**
+         * 输入数据回调
+         */
+        private Consumer<Reward> onDataReceived1;
+        /**
+         * 输入数据回调
+         */
+        private Function<Reward, String> onDataReceived2;
+        /**
+         * 是否要显示该界面, 若为false则直接关闭当前界面并返回到调用者的 Screen
+         */
+        private Supplier<Boolean> shouldClose;
 
-    public EffecrSelectScreen(@NonNull Screen callbackScreen, @NonNull Consumer<Reward> onDataReceived, @NonNull Reward defaultEffect) {
-        super(TITLE.toTextComponent());
-        this.previousScreen = callbackScreen;
-        this.onDataReceived1 = onDataReceived;
-        this.onDataReceived2 = null;
-        this.currentEffect = defaultEffect;
-        this.probability = defaultEffect.getProbability();
-        this.shouldClose = null;
-    }
+        public Args setOnDataReceived(Consumer<Reward> onDataReceived) {
+            this.onDataReceived1 = onDataReceived;
+            return this;
+        }
 
-    public EffecrSelectScreen(@NonNull Screen callbackScreen, @NonNull Function<Reward, String> onDataReceived, @NonNull Reward defaultEffect) {
-        super(TITLE.toTextComponent());
-        this.previousScreen = callbackScreen;
-        this.onDataReceived1 = null;
-        this.onDataReceived2 = onDataReceived;
-        this.currentEffect = defaultEffect;
-        this.probability = defaultEffect.getProbability();
-        this.shouldClose = null;
-    }
+        public Args setOnDataReceived(Function<Reward, String> onDataReceived) {
+            this.onDataReceived2 = onDataReceived;
+            return this;
+        }
 
-    public EffecrSelectScreen(@NonNull Screen callbackScreen, @NonNull Consumer<Reward> onDataReceived) {
-        super(TITLE.toTextComponent());
-        this.previousScreen = callbackScreen;
-        this.onDataReceived1 = onDataReceived;
-        this.onDataReceived2 = null;
-        this.shouldClose = null;
-    }
+        public void validate() {
+            Objects.requireNonNull(this.getParentScreen());
+            if (this.getOnDataReceived1() == null)
+                Objects.requireNonNull(this.getOnDataReceived2());
+            if (this.getOnDataReceived2() == null)
+                Objects.requireNonNull(this.getOnDataReceived1());
+        }
 
-    public EffecrSelectScreen(@NonNull Screen callbackScreen, @NonNull Function<Reward, String> onDataReceived) {
-        super(TITLE.toTextComponent());
-        this.previousScreen = callbackScreen;
-        this.onDataReceived1 = null;
-        this.onDataReceived2 = onDataReceived;
-        this.shouldClose = null;
     }
 
     @Override
     protected void init() {
-        if (this.shouldClose != null && Boolean.TRUE.equals(this.shouldClose.get()))
-            Minecraft.getInstance().setScreen(previousScreen);
+        if (args.getShouldClose() != null && Boolean.TRUE.equals(args.getShouldClose().get()))
+            Minecraft.getInstance().setScreen(args.getParentScreen());
         this.updateSearchResults();
         this.updateLayout();
         // 创建文本输入框
@@ -222,22 +206,22 @@ public class EffecrSelectScreen extends Screen {
         // 创建提交按钮
         this.addButton(AbstractGuiUtils.newButton((int) (this.bgX + 56 + this.margin), (int) (this.bgY + (20 + (AbstractGuiUtils.ITEM_ICON_SIZE + 3) * 5 + margin))
                 , (int) (56 - this.margin * 2), 20
-                , Component.translatableClient(EI18nType.OPTION, "submit"), button -> {
+                , Component.translatableClient(EnumI18nType.OPTION, "submit"), button -> {
                     if (this.currentEffect == null) {
                         // 关闭当前屏幕并返回到调用者的 Screen
-                        Minecraft.getInstance().setScreen(previousScreen);
+                        Minecraft.getInstance().setScreen(args.getParentScreen());
                     } else {
                         // 获取选择的数据，并执行回调
                         EffectInstance effectInstance = RewardManager.deserializeReward(this.currentEffect);
-                        if (onDataReceived1 != null) {
-                            onDataReceived1.accept(new Reward(effectInstance, ERewardType.EFFECT, this.probability));
-                            Minecraft.getInstance().setScreen(previousScreen);
-                        } else if (onDataReceived2 != null) {
-                            String result = onDataReceived2.apply(new Reward(effectInstance, ERewardType.EFFECT, this.probability));
+                        if (args.getOnDataReceived1() != null) {
+                            args.getOnDataReceived1().accept(new Reward(effectInstance, EnumRewardType.EFFECT, this.probability));
+                            Minecraft.getInstance().setScreen(args.getParentScreen());
+                        } else if (args.getOnDataReceived2() != null) {
+                            String result = args.getOnDataReceived2().apply(new Reward(effectInstance, EnumRewardType.EFFECT, this.probability));
                             if (StringUtils.isNotNullOrEmpty(result)) {
-                                // this.errorText = Text.literal(result).setColor(0xFFFF0000);
+                                // this.errorText = Text.literal(result).setColorArgb(0xFFFF0000);
                             } else {
-                                Minecraft.getInstance().setScreen(previousScreen);
+                                Minecraft.getInstance().setScreen(args.getParentScreen());
                             }
                         }
                     }
@@ -245,8 +229,8 @@ public class EffecrSelectScreen extends Screen {
         // 创建取消按钮
         this.addButton(AbstractGuiUtils.newButton((int) (this.bgX + this.margin), (int) (this.bgY + (20 + (AbstractGuiUtils.ITEM_ICON_SIZE + 3) * 5 + margin))
                 , (int) (56 - this.margin * 2), 20
-                , Component.translatableClient(EI18nType.OPTION, "cancel")
-                , button -> Minecraft.getInstance().setScreen(previousScreen)));
+                , Component.translatableClient(EnumI18nType.OPTION, "cancel")
+                , button -> Minecraft.getInstance().setScreen(args.getParentScreen())));
     }
 
     @Override
@@ -276,7 +260,7 @@ public class EffecrSelectScreen extends Screen {
         keyManager.mouseClicked(button, mouseX, mouseY);
         AtomicBoolean flag = new AtomicBoolean(false);
         if (button == GLFWKey.GLFW_MOUSE_BUTTON_4) {
-            Minecraft.getInstance().setScreen(previousScreen);
+            Minecraft.getInstance().setScreen(args.getParentScreen());
             flag.set(true);
         } else if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT || button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
             OP_BUTTONS.forEach((key, value) -> {
@@ -345,14 +329,11 @@ public class EffecrSelectScreen extends Screen {
         super.mouseMoved(mouseX, mouseY);
     }
 
-    /**
-     * 重写键盘事件
-     */
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         keyManager.keyPressed(keyCode);
         if (keyCode == GLFWKey.GLFW_KEY_ESCAPE || (keyCode == GLFWKey.GLFW_KEY_BACKSPACE && !this.inputField.isFocused())) {
-            Minecraft.getInstance().setScreen(previousScreen);
+            Minecraft.getInstance().setScreen(args.getParentScreen());
             return true;
         } else if ((keyCode == GLFWKey.GLFW_KEY_ENTER || keyCode == GLFWKey.GLFW_KEY_KP_ENTER) && this.inputField.isFocused()) {
             this.updateSearchResults();
@@ -401,7 +382,7 @@ public class EffecrSelectScreen extends Screen {
             AbstractGuiUtils.fillOutLine(context.matrixStack, (int) context.button.getX(), (int) context.button.getY(), (int) context.button.getWidth(), (int) context.button.getHeight(), 1, lineColor, 2);
             ItemStack itemStack = new ItemStack(this.playerMode ? Items.CHEST : Items.COMPASS);
             this.itemRenderer.renderGuiItem(itemStack, (int) context.button.getX() + 2, (int) context.button.getY() + 2);
-            Text text = Text.translatable(EI18nType.TIPS, (this.playerMode ? "effect_select_list_player_mode" : "effect_select_list_all_mode"), (this.playerMode ? playerEffectList.size() : allEffectList.size()));
+            Text text = Text.translatable(EnumI18nType.TIPS, (this.playerMode ? "effect_select_list_player_mode" : "effect_select_list_all_mode"), (this.playerMode ? playerEffectList.size() : allEffectList.size()));
             context.button.setTooltip(text);
         }).setX(this.bgX - AbstractGuiUtils.ITEM_ICON_SIZE - 2 - margin - 3).setY(this.bgY + margin).setWidth(AbstractGuiUtils.ITEM_ICON_SIZE + 4).setHeight(AbstractGuiUtils.ITEM_ICON_SIZE + 4));
         this.OP_BUTTONS.put(OperationButtonType.EFFECT.getCode(), new OperationButton(OperationButtonType.EFFECT.getCode(), context -> {
@@ -419,7 +400,7 @@ public class EffecrSelectScreen extends Screen {
             AbstractGuiUtils.fillOutLine(context.matrixStack, (int) context.button.getX(), (int) context.button.getY(), (int) context.button.getWidth(), (int) context.button.getHeight(), 1, lineColor, 2);
             ItemStack itemStack = new ItemStack(Items.CLOCK);
             this.itemRenderer.renderGuiItem(itemStack, (int) context.button.getX() + 2, (int) context.button.getY() + 2);
-            Text text = Text.translatable(EI18nType.TIPS, "set_duration_s", ((EffectInstance) RewardManager.deserializeReward(this.currentEffect)).getDuration());
+            Text text = Text.translatable(EnumI18nType.TIPS, "set_duration_s", ((EffectInstance) RewardManager.deserializeReward(this.currentEffect)).getDuration());
             context.button.setTooltip(text);
         }).setX(this.bgX - AbstractGuiUtils.ITEM_ICON_SIZE - 2 - margin - 3).setY(this.bgY + margin + (AbstractGuiUtils.ITEM_ICON_SIZE + 4 + 1) * 2).setWidth(AbstractGuiUtils.ITEM_ICON_SIZE + 4).setHeight(AbstractGuiUtils.ITEM_ICON_SIZE + 4));
         this.OP_BUTTONS.put(OperationButtonType.AMPLIFIER.getCode(), new OperationButton(OperationButtonType.AMPLIFIER.getCode(), context -> {
@@ -429,7 +410,7 @@ public class EffecrSelectScreen extends Screen {
             AbstractGuiUtils.fillOutLine(context.matrixStack, (int) context.button.getX(), (int) context.button.getY(), (int) context.button.getWidth(), (int) context.button.getHeight(), 1, lineColor, 2);
             ItemStack itemStack = new ItemStack(Items.ANVIL);
             this.itemRenderer.renderGuiItem(itemStack, (int) context.button.getX() + 2, (int) context.button.getY() + 2);
-            Text text = Text.translatable(EI18nType.TIPS, "set_amplifier_s", StringUtils.intToRoman(((EffectInstance) RewardManager.deserializeReward(this.currentEffect)).getAmplifier() + 1));
+            Text text = Text.translatable(EnumI18nType.TIPS, "set_amplifier_s", StringUtils.intToRoman(((EffectInstance) RewardManager.deserializeReward(this.currentEffect)).getAmplifier() + 1));
             context.button.setTooltip(text);
         }).setX(this.bgX - AbstractGuiUtils.ITEM_ICON_SIZE - 2 - margin - 3).setY(this.bgY + margin + (AbstractGuiUtils.ITEM_ICON_SIZE + 4 + 1) * 3).setWidth(AbstractGuiUtils.ITEM_ICON_SIZE + 4).setHeight(AbstractGuiUtils.ITEM_ICON_SIZE + 4));
         this.OP_BUTTONS.put(OperationButtonType.PROBABILITY.getCode(), new OperationButton(OperationButtonType.PROBABILITY.getCode(), context -> {
@@ -438,7 +419,7 @@ public class EffecrSelectScreen extends Screen {
             AbstractGuiUtils.fill(context.matrixStack, (int) context.button.getX(), (int) context.button.getY(), (int) context.button.getWidth(), (int) context.button.getHeight(), 0xEE707070, 2);
             AbstractGuiUtils.fillOutLine(context.matrixStack, (int) context.button.getX(), (int) context.button.getY(), (int) context.button.getWidth(), (int) context.button.getHeight(), 1, lineColor, 2);
             AbstractGuiUtils.drawEffectIcon(context.matrixStack, super.font, new EffectInstance(Effects.LUCK), (int) context.button.getX() + 2, (int) context.button.getY() + 2, false);
-            Text text = Text.translatable(EI18nType.TIPS, "set_probability_f", this.probability.multiply(new BigDecimal(100)).floatValue());
+            Text text = Text.translatable(EnumI18nType.TIPS, "set_probability_f", this.probability.multiply(new BigDecimal(100)).floatValue());
             context.button.setTooltip(text);
         }).setX(this.bgX - AbstractGuiUtils.ITEM_ICON_SIZE - 2 - margin - 3).setY(this.bgY + margin + (AbstractGuiUtils.ITEM_ICON_SIZE + 4 + 1) * 4).setWidth(AbstractGuiUtils.ITEM_ICON_SIZE + 4).setHeight(AbstractGuiUtils.ITEM_ICON_SIZE + 4));
 
@@ -537,7 +518,7 @@ public class EffecrSelectScreen extends Screen {
         if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
             if (StringUtils.isNotNullOrEmpty(bt.getId())) {
                 EffectInstance effectInstance = RewardManager.deserializeReward(this.currentEffect);
-                this.currentEffect = new Reward(EffectRewardParser.getEffectInstance(bt.getId(), effectInstance.getDuration(), effectInstance.getAmplifier()), ERewardType.EFFECT, this.probability);
+                this.currentEffect = new Reward(EffectRewardParser.getEffectInstance(bt.getId(), effectInstance.getDuration(), effectInstance.getAmplifier()), EnumRewardType.EFFECT, this.probability);
                 LOGGER.debug("Select effect: {}", EffectRewardParser.getDisplayName(effectInstance));
                 flag.set(true);
             }
@@ -553,93 +534,106 @@ public class EffecrSelectScreen extends Screen {
         // 编辑效果Json
         else if (bt.getOperation() == OperationButtonType.EFFECT.getCode()) {
             String effectRewardJsonString = GSON.toJson(this.currentEffect.getContent());
-            Minecraft.getInstance().setScreen(new StringInputScreen(this
-                    , Text.translatable(EI18nType.TIPS, "enter_effect_json").setShadow(true)
-                    , Text.translatable(EI18nType.TIPS, "enter_something")
-                    , ""
-                    , effectRewardJsonString
-                    , input -> {
-                StringList result = new StringList();
-                if (CollectionUtils.isNotNullOrEmpty(input)) {
-                    EffectInstance instance;
-                    String json = input.get(0);
-                    try {
-                        JsonObject jsonObject = GSON.fromJson(json, JsonObject.class);
-                        instance = RewardManager.deserializeReward(new Reward(jsonObject, ERewardType.EFFECT, this.probability));
-                    } catch (Exception e) {
-                        LOGGER.error("Invalid Json: {}", json);
-                        instance = null;
-                    }
-                    if (instance != null) {
-                        this.currentEffect = new Reward(instance, ERewardType.EFFECT, this.probability);
-                    } else {
-                        result.add(Component.translatableClient(EI18nType.TIPS, "effect_json_s_error", json).toString());
-                    }
-                }
-                return result;
-            }));
+            StringInputScreen.Args args = new StringInputScreen.Args()
+                    .setParentScreen(this)
+                    .addWidget(new StringInputScreen.InputWidget()
+                            .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_effect_json").setShadow(true))
+                            .setMessage(Text.translatable(EnumI18nType.TIPS, "enter_something"))
+                            .setDefaultValue(effectRewardJsonString)
+                    )
+                    .setOnDataReceived(input -> {
+                                StringList result = new StringList();
+                                if (CollectionUtils.isNotNullOrEmpty(input)) {
+                                    EffectInstance instance;
+                                    String json = input.get(0);
+                                    try {
+                                        JsonObject jsonObject = GSON.fromJson(json, JsonObject.class);
+                                        instance = RewardManager.deserializeReward(new Reward(jsonObject, EnumRewardType.EFFECT, this.probability));
+                                    } catch (Exception e) {
+                                        LOGGER.error("Invalid Json: {}", json);
+                                        instance = null;
+                                    }
+                                    if (instance != null) {
+                                        this.currentEffect = new Reward(instance, EnumRewardType.EFFECT, this.probability);
+                                    } else {
+                                        result.add(Component.translatableClient(EnumI18nType.TIPS, "effect_json_s_error", json).toString());
+                                    }
+                                }
+                                return result;
+                            }
+                    );
+            Minecraft.getInstance().setScreen(new StringInputScreen(args));
         }
         // 编辑持续时间
         else if (bt.getOperation() == OperationButtonType.DURATION.getCode()) {
-            Minecraft.getInstance().setScreen(new StringInputScreen(this
-                    , Text.translatable(EI18nType.TIPS, "enter_effect_duration").setShadow(true)
-                    , Text.translatable(EI18nType.TIPS, "enter_something")
-                    , "\\d{0,4}"
-                    , String.valueOf(((EffectInstance) RewardManager.deserializeReward(this.currentEffect)).getDuration())
-                    , input -> {
-                StringList result = new StringList();
-                if (CollectionUtils.isNotNullOrEmpty(input)) {
-                    int duration = StringUtils.toInt(input.get(0));
-                    if (duration > 0 && duration <= 60 * 60 * 24 * 30) {
-                        EffectInstance effectInstance = RewardManager.deserializeReward(this.currentEffect);
-                        this.currentEffect = new Reward(new EffectInstance(effectInstance.getEffect(), duration, effectInstance.getAmplifier()), ERewardType.EFFECT, this.probability);
-                    } else {
-                        result.add(Component.translatableClient(EI18nType.TIPS, "effect_duration_s_error", input.get(0)).toString());
-                    }
-                }
-                return result;
-            }));
+            StringInputScreen.Args args = new StringInputScreen.Args()
+                    .setParentScreen(this)
+                    .addWidget(new StringInputScreen.InputWidget()
+                            .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_effect_duration").setShadow(true))
+                            .setMessage(Text.translatable(EnumI18nType.TIPS, "enter_something"))
+                            .setValidator("\\d{0,4}")
+                            .setDefaultValue(String.valueOf(((EffectInstance) RewardManager.deserializeReward(this.currentEffect)).getDuration()))
+                    )
+                    .setOnDataReceived(input -> {
+                        StringList result = new StringList();
+                        if (CollectionUtils.isNotNullOrEmpty(input)) {
+                            int duration = StringUtils.toInt(input.get(0));
+                            if (duration > 0 && duration <= 60 * 60 * 24 * 30) {
+                                EffectInstance effectInstance = RewardManager.deserializeReward(this.currentEffect);
+                                this.currentEffect = new Reward(new EffectInstance(effectInstance.getEffect(), duration, effectInstance.getAmplifier()), EnumRewardType.EFFECT, this.probability);
+                            } else {
+                                result.add(Component.translatableClient(EnumI18nType.TIPS, "effect_duration_s_error", input.get(0)).toString());
+                            }
+                        }
+                        return result;
+                    });
+            Minecraft.getInstance().setScreen(new StringInputScreen(args));
         }
         // 编辑效果等级
         else if (bt.getOperation() == OperationButtonType.AMPLIFIER.getCode()) {
-            Minecraft.getInstance().setScreen(new StringInputScreen(this
-                    , Text.translatable(EI18nType.TIPS, "enter_effect_amplifier").setShadow(true)
-                    , Text.translatable(EI18nType.TIPS, "enter_something")
-                    , ""
-                    , String.valueOf(((EffectInstance) RewardManager.deserializeReward(this.currentEffect)).getAmplifier() + 1)
-                    , input -> {
-                StringList result = new StringList();
-                if (CollectionUtils.isNotNullOrEmpty(input)) {
-                    int amplifier = StringUtils.toInt(input.get(0));
-                    if (amplifier > 0 && amplifier <= 100) {
-                        EffectInstance effectInstance = RewardManager.deserializeReward(this.currentEffect);
-                        this.currentEffect = new Reward(new EffectInstance(effectInstance.getEffect(), effectInstance.getDuration(), amplifier - 1), ERewardType.EFFECT, this.probability);
-                    } else {
-                        result.add(Component.translatableClient(EI18nType.TIPS, "effect_amplifier_s_error", input.get(0)).toString());
-                    }
-                }
-                return result;
-            }));
+            StringInputScreen.Args args = new StringInputScreen.Args()
+                    .setParentScreen(this)
+                    .addWidget(new StringInputScreen.InputWidget()
+                            .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_effect_amplifier").setShadow(true))
+                            .setDefaultValue(String.valueOf(((EffectInstance) RewardManager.deserializeReward(this.currentEffect)).getAmplifier() + 1))
+                    )
+                    .setOnDataReceived(input -> {
+                        StringList result = new StringList();
+                        if (CollectionUtils.isNotNullOrEmpty(input)) {
+                            int amplifier = StringUtils.toInt(input.get(0));
+                            if (amplifier > 0 && amplifier <= 100) {
+                                EffectInstance effectInstance = RewardManager.deserializeReward(this.currentEffect);
+                                this.currentEffect = new Reward(new EffectInstance(effectInstance.getEffect(), effectInstance.getDuration(), amplifier - 1), EnumRewardType.EFFECT, this.probability);
+                            } else {
+                                result.add(Component.translatableClient(EnumI18nType.TIPS, "effect_amplifier_s_error", input.get(0)).toString());
+                            }
+                        }
+                        return result;
+                    });
+            Minecraft.getInstance().setScreen(new StringInputScreen(args));
         }
         // 编辑概率
         else if (bt.getOperation() == OperationButtonType.PROBABILITY.getCode()) {
-            Minecraft.getInstance().setScreen(new StringInputScreen(this
-                    , Text.translatable(EI18nType.TIPS, "enter_reward_probability").setShadow(true)
-                    , Text.translatable(EI18nType.TIPS, "enter_something")
-                    , "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?"
-                    , StringUtils.toFixedEx(this.probability, 5)
-                    , input -> {
-                StringList result = new StringList();
-                if (CollectionUtils.isNotNullOrEmpty(input)) {
-                    BigDecimal p = StringUtils.toBigDecimal(input.get(0));
-                    if (p.compareTo(BigDecimal.ZERO) > 0 && p.compareTo(BigDecimal.ONE) <= 0) {
-                        this.probability = p;
-                    } else {
-                        result.add(Component.translatableClient(EI18nType.TIPS, "reward_probability_s_error", input.get(0)).toString());
-                    }
-                }
-                return result;
-            }));
+            StringInputScreen.Args args = new StringInputScreen.Args()
+                    .setParentScreen(this)
+                    .addWidget(new StringInputScreen.InputWidget()
+                            .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
+                            .setValidator("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                            .setDefaultValue(StringUtils.toFixedEx(this.probability, 5))
+                    )
+                    .setOnDataReceived(input -> {
+                        StringList result = new StringList();
+                        if (CollectionUtils.isNotNullOrEmpty(input)) {
+                            BigDecimal p = StringUtils.toBigDecimal(input.get(0));
+                            if (p.compareTo(BigDecimal.ZERO) > 0 && p.compareTo(BigDecimal.ONE) <= 0) {
+                                this.probability = p;
+                            } else {
+                                result.add(Component.translatableClient(EnumI18nType.TIPS, "reward_probability_s_error", input.get(0)).toString());
+                            }
+                        }
+                        return result;
+                    });
+            Minecraft.getInstance().setScreen(new StringInputScreen(args));
         }
     }
 }

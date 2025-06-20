@@ -5,10 +5,14 @@ import lombok.NonNull;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import xin.vanilla.sakura.data.Reward;
+import xin.vanilla.sakura.data.RewardClipboard;
+import xin.vanilla.sakura.data.RewardClipboardList;
+import xin.vanilla.sakura.data.RewardList;
 import xin.vanilla.sakura.util.CollectionUtils;
 import xin.vanilla.sakura.util.StringUtils;
 
-import static xin.vanilla.sakura.config.RewardConfigManager.GSON;
+import static xin.vanilla.sakura.rewards.RewardConfigManager.GSON;
 
 @OnlyIn(Dist.CLIENT)
 public class RewardClipboardManager {

@@ -8,7 +8,7 @@ import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.util.text.IFormattableTextComponent;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import xin.vanilla.sakura.enums.EI18nType;
+import xin.vanilla.sakura.enums.EnumI18nType;
 import xin.vanilla.sakura.util.Component;
 import xin.vanilla.sakura.util.SakuraUtils;
 
@@ -69,7 +69,7 @@ public class Text {
         return new Text(text);
     }
 
-    public static Text translatable(EI18nType type, String key, Object... args) {
+    public static Text translatable(EnumI18nType type, String key, Object... args) {
         return new Text(Component.translatableClient(type, key, args));
     }
 
@@ -100,15 +100,39 @@ public class Text {
     }
 
     public FontRenderer getFont() {
-        return font == null ? Minecraft.getInstance().getSelf().font : this.font;
+        return font == null ? Minecraft.getInstance().font : this.font;
+    }
+
+    public boolean isColorEmpty() {
+        return this.hovered ? this.hoverText.isColorEmpty() : this.text.isColorEmpty();
     }
 
     public int getColor() {
         return this.hovered ? this.hoverText.getColor() : this.text.getColor();
     }
 
+    public int getColorArgb() {
+        return this.hovered ? this.hoverText.getColorArgb() : this.text.getColorArgb();
+    }
+
+    public int getColorRgba() {
+        return this.hovered ? this.hoverText.getColorRgba() : this.text.getColorRgba();
+    }
+
+    public boolean isBgColorEmpty() {
+        return this.hovered ? this.hoverText.isBgColorEmpty() : this.text.isBgColorEmpty();
+    }
+
     public int getBgColor() {
         return this.hovered ? this.hoverText.getBgColor() : this.text.getBgColor();
+    }
+
+    public int getBgColorArgb() {
+        return this.hovered ? this.hoverText.getBgColorArgb() : this.text.getBgColorArgb();
+    }
+
+    public int getBgColorRgba() {
+        return this.hovered ? this.hoverText.getBgColorRgba() : this.text.getBgColorRgba();
     }
 
     public String getContent() {
@@ -158,15 +182,39 @@ public class Text {
         return this;
     }
 
+    public Text setColorArgb(int argb) {
+        this.text.setColorArgb(argb);
+        this.hoverText.setColorArgb(argb);
+        return this;
+    }
+
+    public Text setColorRgba(int rgba) {
+        this.text.setColorRgba(rgba);
+        this.hoverText.setColorRgba(rgba);
+        return this;
+    }
+
     public Text setBgColor(int bgColor) {
         this.text.setBgColor(bgColor);
         this.hoverText.setBgColor(bgColor);
         return this;
     }
 
+    public Text setBgColorArgb(int argb) {
+        this.text.setBgColorArgb(argb);
+        this.hoverText.setBgColorArgb(argb);
+        return this;
+    }
+
+    public Text setBgColorRgba(int rgba) {
+        this.text.setBgColorRgba(rgba);
+        this.hoverText.setBgColorRgba(rgba);
+        return this;
+    }
+
     public Text setText(String text) {
-        this.text.setI18nType(EI18nType.PLAIN).setText(text);
-        this.hoverText.setI18nType(EI18nType.PLAIN).setText(text);
+        this.text.setI18nType(EnumI18nType.PLAIN).setText(text);
+        this.hoverText.setI18nType(EnumI18nType.PLAIN).setText(text);
         return this;
     }
 
@@ -177,7 +225,7 @@ public class Text {
     }
 
     public Text setHoverText(String text) {
-        this.hoverText.setI18nType(EI18nType.PLAIN).setText(text);
+        this.hoverText.setI18nType(EnumI18nType.PLAIN).setText(text);
         return this;
     }
 
@@ -239,7 +287,7 @@ public class Text {
     }
 
     public static int getTextComponentColor(IFormattableTextComponent textComponent) {
-        return getTextComponentColor(textComponent, 0xFFFFFFFF);
+        return getTextComponentColor(textComponent, 0xFFFFFF);
     }
 
     public static int getTextComponentColor(IFormattableTextComponent textComponent, int defaultColor) {

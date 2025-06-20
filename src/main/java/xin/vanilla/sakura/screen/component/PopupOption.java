@@ -9,6 +9,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import xin.vanilla.sakura.enums.EnumEllipsisPosition;
 import xin.vanilla.sakura.util.AbstractGuiUtils;
 import xin.vanilla.sakura.util.CollectionUtils;
 import xin.vanilla.sakura.util.StringUtils;
@@ -39,6 +40,7 @@ public class PopupOption {
      */
     @Getter
     private String id;
+    @Setter
     private FontRenderer font;
     private int width = -leftPadding - rightPadding;
     private int height = -topPadding - bottomPadding;
@@ -198,7 +200,7 @@ public class PopupOption {
     public PopupOption setMaxWidth(int maxWidth) {
         if (this.x >= 0 || this.y >= 0)
             throw new RuntimeException("The setMaxWidth method must be called before the resize method.");
-        this.maxWidth = maxWidth;
+        this.maxWidth = maxWidth + this.leftPadding + this.rightPadding;
         return this;
     }
 
@@ -332,26 +334,26 @@ public class PopupOption {
             }
         }
 
-        AbstractGuiUtils.setDepth(matrixStack, AbstractGuiUtils.EDepth.TOOLTIP);
-        AbstractGuiUtils.fill(matrixStack, adjustedX, adjustedY, width, height, 0x88000000, radius);
-        AbstractGuiUtils.fillOutLine(matrixStack, adjustedX, adjustedY, width, height, 1, 0xFF000000, radius);
-        int lineOffset = 0;
-        for (int i = 0; i < this.maxLines; i++) {
-            int index = i + scrollOffset;
-            if (index >= 0 && index < renderList.size()) {
-                Text text = renderList.get(index);
-                if (selectedIndex == index) {
-                    AbstractGuiUtils.fill(matrixStack, adjustedX + 1, adjustedY + topPadding + (lineOffset * (this.font.lineHeight + 1)), width - 2, this.font.lineHeight * StringUtils.getLineCount(text.getContent()), 0x88ACACAC);
+        AbstractGuiUtils.renderByDepth(matrixStack, AbstractGuiUtils.EDepth.TOOLTIP, (stack) -> {
+            AbstractGuiUtils.fill(stack, adjustedX, adjustedY, width, height, 0x88000000, radius);
+            AbstractGuiUtils.fillOutLine(stack, adjustedX, adjustedY, width, height, 1, 0xFF000000, radius);
+            int lineOffset = 0;
+            for (int i = 0; i < this.maxLines; i++) {
+                int index = i + scrollOffset;
+                if (index >= 0 && index < renderList.size()) {
+                    Text text = renderList.get(index);
+                    if (selectedIndex == index) {
+                        AbstractGuiUtils.fill(stack, adjustedX + 1, adjustedY + topPadding + (lineOffset * (this.font.lineHeight + 1)), width - 2, this.font.lineHeight * StringUtils.getLineCount(text.getContent()), 0x88ACACAC);
+                    }
+                    if (maxWidth > 0) {
+                        AbstractGuiUtils.drawLimitedText(text.setMatrixStack(stack).setFont(this.font), adjustedX + leftPadding, adjustedY + topPadding + (i * (this.font.lineHeight + 1)), maxWidth, EnumEllipsisPosition.MIDDLE);
+                    } else {
+                        AbstractGuiUtils.drawString(text.setMatrixStack(stack).setFont(this.font), adjustedX + leftPadding, adjustedY + topPadding + (i * (this.font.lineHeight + 1)));
+                    }
+                    lineOffset += StringUtils.getLineCount(text.getContent());
                 }
-                if (maxWidth > 0) {
-                    AbstractGuiUtils.drawLimitedText(text.setMatrixStack(matrixStack).setFont(this.font), adjustedX + leftPadding, adjustedY + topPadding + (i * (this.font.lineHeight + 1)), maxWidth, AbstractGuiUtils.EllipsisPosition.MIDDLE);
-                } else {
-                    AbstractGuiUtils.drawString(text.setMatrixStack(matrixStack).setFont(this.font), adjustedX + leftPadding, adjustedY + topPadding + (i * (this.font.lineHeight + 1)));
-                }
-                lineOffset += StringUtils.getLineCount(text.getContent());
             }
-        }
-        AbstractGuiUtils.resetDepth(matrixStack);
+        });
         // 绘制提示
         if (StringUtils.isNullOrEmptyEx(this.tipsKeyNames) || keyManager.isKeyPressed(this.tipsKeyNames)) {
             if (this.getSelectedIndex() >= 0 && !tipsMap.isEmpty()) {

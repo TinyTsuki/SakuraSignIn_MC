@@ -9,9 +9,10 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.potion.Effects;
-import xin.vanilla.sakura.enums.ERewardType;
-import xin.vanilla.sakura.rewards.Reward;
-import xin.vanilla.sakura.rewards.RewardList;
+import xin.vanilla.sakura.data.KeyValue;
+import xin.vanilla.sakura.data.Reward;
+import xin.vanilla.sakura.data.RewardList;
+import xin.vanilla.sakura.enums.EnumRewardType;
 import xin.vanilla.sakura.rewards.impl.*;
 import xin.vanilla.sakura.util.CollectionUtils;
 import xin.vanilla.sakura.util.DateUtils;
@@ -359,9 +360,6 @@ public class RewardConfig implements Serializable {
 
     /**
      * 设置日期时间奖励映射
-     * <p>
-     * 本方法用于接收一个日期时间与奖励列表的映射，并根据日期范围解析生成一个更详细的日期与奖励关系映射
-     * 这有助于在给定特定日期时，能够快速确定该日期所属的日期范围及其对应的奖励
      */
     public void setDateTimeRewards(@NonNull Map<String, RewardList> dateTimeRewards) {
         this.dateTimeRewards = new LinkedHashMap<>();
@@ -485,26 +483,26 @@ public class RewardConfig implements Serializable {
             setBaseRewards(new RewardList() {{
                 add(new Reward() {{
                     setContent(new ItemRewardParser().serialize(new ItemStack(Items.APPLE, 1)));
-                    setType(ERewardType.ITEM);
+                    setType(EnumRewardType.ITEM);
                 }});
             }});
             setContinuousRewards(new LinkedHashMap<String, RewardList>() {{
                 put("1", new RewardList() {{
                     add(new Reward() {{
                         setContent(new ExpPointRewardParser().serialize(5));
-                        setType(ERewardType.EXP_POINT);
+                        setType(EnumRewardType.EXP_POINT);
                     }});
                 }});
                 put("4", new RewardList() {{
                     add(new Reward() {{
                         setContent(new ItemRewardParser().serialize(new ItemStack(Items.CAKE, 1)));
-                        setType(ERewardType.ITEM);
+                        setType(EnumRewardType.ITEM);
                     }});
                 }});
                 put("8", new RewardList() {{
                     add(new Reward() {{
                         setContent(new SignInCardRewardParser().serialize(1));
-                        setType(ERewardType.SIGN_IN_CARD);
+                        setType(EnumRewardType.SIGN_IN_CARD);
                     }});
                 }});
             }});
@@ -512,13 +510,13 @@ public class RewardConfig implements Serializable {
                 put("2", new RewardList() {{
                     add(new Reward() {{
                         setContent(new ExpPointRewardParser().serialize(3));
-                        setType(ERewardType.EXP_POINT);
+                        setType(EnumRewardType.EXP_POINT);
                     }});
                 }});
                 put("5", new RewardList() {{
                     add(new Reward() {{
                         setContent(new ExpLevelRewardParser().serialize(1));
-                        setType(ERewardType.EXP_LEVEL);
+                        setType(EnumRewardType.EXP_LEVEL);
                     }});
                 }});
             }});
@@ -528,22 +526,22 @@ public class RewardConfig implements Serializable {
                 put("6", new RewardList() {{
                     add(new Reward() {{
                         setContent(new EffectRewardParser().serialize(new EffectInstance(Effects.LUCK, 6000, 1)));
-                        setType(ERewardType.EFFECT);
+                        setType(EnumRewardType.EFFECT);
                     }});
                 }});
                 put("7", new RewardList() {{
                     add(new Reward() {{
                         // 急促
                         setContent(new EffectRewardParser().serialize(new EffectInstance(Effects.HEAL, 6000, 0)));
-                        setType(ERewardType.EFFECT);
+                        setType(EnumRewardType.EFFECT);
                     }});
                     add(new Reward() {{
                         setContent(new EffectRewardParser().serialize(new EffectInstance(Effects.JUMP, 6000, 0)));
-                        setType(ERewardType.EFFECT);
+                        setType(EnumRewardType.EFFECT);
                     }});
                     add(new Reward() {{
                         setContent(new ItemRewardParser().serialize(new ItemStack(Items.ENCHANTED_GOLDEN_APPLE, 1)));
-                        setType(ERewardType.ITEM);
+                        setType(EnumRewardType.ITEM);
                     }});
                 }});
             }});
@@ -551,11 +549,11 @@ public class RewardConfig implements Serializable {
                 put("0000-10-06~1", new RewardList() {{
                     add(new Reward() {{
                         setContent(new ItemRewardParser().serialize(new ItemStack(Items.EXPERIENCE_BOTTLE, 1)));
-                        setType(ERewardType.ITEM);
+                        setType(EnumRewardType.ITEM);
                     }});
                     add(new Reward() {{
                         setContent(new EffectRewardParser().serialize(new EffectInstance(Effects.DAMAGE_RESISTANCE, 300, 1)));
-                        setType(ERewardType.EFFECT);
+                        setType(EnumRewardType.EFFECT);
                     }});
                 }});
             }});
@@ -563,7 +561,7 @@ public class RewardConfig implements Serializable {
                 put("100", new RewardList() {{
                     add(new Reward() {{
                         setContent(new EffectRewardParser().serialize(new EffectInstance(Effects.LUCK, 99999, 2)));
-                        setType(ERewardType.EFFECT);
+                        setType(EnumRewardType.EFFECT);
                     }});
                 }});
             }});

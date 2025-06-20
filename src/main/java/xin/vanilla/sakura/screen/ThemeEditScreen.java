@@ -1,0 +1,545 @@
+package xin.vanilla.sakura.screen;
+
+import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import xin.vanilla.sakura.SakuraSignIn;
+import xin.vanilla.sakura.data.StringList;
+import xin.vanilla.sakura.enums.EnumI18nType;
+import xin.vanilla.sakura.enums.EnumMCColor;
+import xin.vanilla.sakura.enums.EnumSizeType;
+import xin.vanilla.sakura.enums.EnumThemeComponentType;
+import xin.vanilla.sakura.screen.component.OperationButton;
+import xin.vanilla.sakura.screen.component.Text;
+import xin.vanilla.sakura.screen.coordinate.Coordinate;
+import xin.vanilla.sakura.screen.theme.*;
+import xin.vanilla.sakura.util.*;
+
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.util.function.Function;
+
+@OnlyIn(Dist.CLIENT)
+public class ThemeEditScreen extends SakuraScreen {
+
+    private static final Logger LOGGER = LogManager.getLogger();
+
+    public ThemeEditScreen(Theme theme) {
+        super(Component.translatable(EnumI18nType.TITLE, "theme_edit_title"));
+        this.theme = theme;
+    }
+
+    // region 变量定义
+
+    /**
+     * 主题实例
+     */
+    private final Theme theme;
+
+    /**
+     * 菜单按钮
+     */
+    private final OperationButton menuButton = new OperationButton(0, context -> {
+        AbstractGuiUtils.fill(context.matrixStack
+                , (int) context.button.getRealX()
+                , (int) context.button.getRealY()
+                , (int) context.button.getRealWidth()
+                , (int) context.button.getRealHeight()
+                , 0xFFFFFFFF, 3
+        );
+
+        int x1 = (int) context.button.getRealX(), y1 = (int) context.button.getRealY();
+        int[] dxTable = {0, 1, 2, 3, 4, 3, 2, 1};
+        int[] dyTable = {2, 1, 0, 1, 2, 3, 4, 3};
+        int sector;
+        if (context.button.isMouseOver(context.keyManager.getMouseX(), context.keyManager.getMouseY())) {
+            sector = (int) ((super.getRenderCount() / 20) % 8);
+        } else {
+            double angle = Math.atan2(y1 - context.keyManager.getMouseY(), x1 - context.keyManager.getMouseX());
+            if (angle < 0) angle += 2 * Math.PI;
+            sector = (int) ((angle / (2 * Math.PI)) * 8 + 0.5) % 8;
+        }
+        int drawX = x1 + dxTable[sector];
+        int drawY = y1 + dyTable[sector];
+        AbstractGuiUtils.fill(context.matrixStack, drawX, drawY, 5, 5, 0xFF000000, 3);
+    }).setX(-99).setY(-99).setWidth(9).setHeight(9);
+
+    /**
+     * 当前渲染帧
+     */
+    private int renderIndex = 0;
+    /**
+     * 当前组件ID
+     */
+    private long currentComponentId = 0;
+
+    // endregion 变量定义
+
+
+    // region 对象定义
+
+
+    // endregion 对象定义
+
+
+    // region 私有方法
+
+    private void handleMenuClick(MouseReleasedHandleArgs args) {
+        if (menuButton.isPressed()) {
+            if (keyManager.isMouseRightPressed()) {
+                this.popupOption.clear();
+                popupOption.addOption(Text.translatable(EnumI18nType.OPTION, "select_theme_bg_file"));
+                popupOption.build(super.font, args.getMouseX(), args.getMouseY(), "menu");
+
+            }
+            args.setConsumed(true);
+        }
+    }
+
+    @Override
+    public void handlePopupOption(MouseReleasedHandleArgs args) {
+        LOGGER.debug("选择了弹出选项:\tButton: {}\tId: {}\tIndex: {}\tContent: {}", args.getButton(), popupOption.getId(), popupOption.getSelectedIndex(), popupOption.getSelectedString());
+        String selectedString = popupOption.getSelectedString();
+        // 选择背景文件
+        if (I18nUtils.getTranslationClient(EnumI18nType.OPTION, "select_theme_bg_file").equals(popupOption.getSelectedString())) {
+            Screen screen = this;
+            Minecraft.getInstance().execute(() -> {
+                try {
+                    File png = SakuraUtils.chooseFile(selectedString, "*.png");
+                    if (png != null) {
+                        Function<StringList, StringList> onDataReceived = input -> {
+                            StringList result = new StringList();
+                            if (CollectionUtils.isNotNullOrEmpty(input) && StringUtils.isNotNullOrEmptyEx(input.getFirst())) {
+                                String textureId = input.getFirst();
+                                if (theme.getTexureMap().containsKey(textureId)) {
+                                    result.add(Component.translatableClient(EnumI18nType.TIPS, "theme_texture_id_exists", textureId).toString());
+                                } else {
+                                    try {
+                                        // TODO 临时删除，方便测试
+                                        theme.getComponents().clear();
+
+                                        // TODO 拼接文件，原绘制
+                                        BufferedImage bufferedImage = PNGUtils.readImage(png);
+                                        PNGUtils.writeImage(bufferedImage, theme.getFile());
+                                        theme.setTotalWidth(bufferedImage.getWidth());
+                                        theme.setTotalHeight(bufferedImage.getHeight());
+                                        theme.setResourceLocation(TextureUtils.loadCustomTexture(theme.getFile().getAbsolutePath()));
+                                        theme.getTexureMap().put(textureId, new Coordinate()
+                                                .setU0(0)
+                                                .setV0(0)
+                                                .setUWidth(bufferedImage.getWidth())
+                                                .setVHeight(bufferedImage.getHeight())
+                                        );
+                                        theme.getComponents()
+                                                .put(new ThemeComponent()
+                                                        .setType(EnumThemeComponentType.BACKGROUND)
+                                                        .setRenderList(new RenderInfoList(new RenderInfo()
+                                                                .setCoordinate(new Coordinate()
+                                                                        .setX(0)
+                                                                        .setY(0)
+                                                                        .setWType(EnumSizeType.RELATIVE_PERCENT)
+                                                                        .setWidth(1.0)
+                                                                        .setHType(EnumSizeType.RELATIVE_PERCENT)
+                                                                        .setHeight(1.0)
+                                                                        .setTextureId(textureId)
+                                                                )
+                                                        ))
+                                                )
+                                                .put(new ThemeComponent()
+                                                        .setType(EnumThemeComponentType.CUSTOM)
+                                                        .setRenderList(new RenderInfoList(new RenderInfo()
+                                                                .setCoordinate(new Coordinate().setX(60).setY(60))
+                                                                .setAngle(45)
+                                                                .setScale(0.75)
+                                                                .setText(Component.translatable(EnumI18nType.MESSAGE, "cdk_expired").setColor(EnumMCColor.BLACK.getColor()).setBgColor(EnumMCColor.WHITE.getColor()))
+                                                        ))
+                                                )
+                                                .put(new ThemeComponent()
+                                                        .setType(EnumThemeComponentType.CUSTOM)
+                                                        .setRenderList(new RenderInfoList(new RenderInfo()
+                                                                .setCoordinate(new Coordinate().setX(110).setY(60))
+                                                                .setAngle(145)
+                                                                .setScale(1.75)
+                                                                .setText(Component.literal("测试旋转145度").setColorArgb(0xAAAA0ABC))
+                                                        ))
+                                                )
+                                                .put(new ThemeComponent()
+                                                        .setType(EnumThemeComponentType.CUSTOM)
+                                                        .setRenderList(new RenderInfoList(new RenderInfo()
+                                                                .setCoordinate(new Coordinate().setX(250).setY(100))
+                                                                .setFlipHorizontal(true)
+                                                                .setScale(3)
+                                                                .setText(Component.literal("测试翻转").setColorArgb(0x9999AA00))
+                                                        ))
+                                                );
+                                    } catch (IOException ignored) {
+                                        LOGGER.error("Failed to load image");
+                                    }
+                                }
+                            } else {
+                                result.add(Component.translatableClient(EnumI18nType.TIPS, "theme_texture_id_empty", input.getFirst()).toString());
+                            }
+                            return result;
+                        };
+                        StringInputScreen.Args screenArgs = new StringInputScreen.Args()
+                                .setParentScreen(this)
+                                .addWidget(new StringInputScreen.InputWidget()
+                                        .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_theme_texture_id").setShadow(true))
+                                        .setDefaultValue(png.getName().replace(".png", "_" + System.currentTimeMillis()))
+                                )
+                                .setOnDataReceived(onDataReceived);
+                        Minecraft.getInstance().setScreen(new StringInputScreen(screenArgs));
+                    }
+                } catch (Exception ignored) {
+                    LOGGER.error("Failed to choose image");
+                }
+            });
+        }
+        menuButton.setPressed(false);
+    }
+
+    private void renderThemeComponent(MatrixStack matrixStack, float partialTicks) {
+        for (ThemeComponent component : theme.getComponents()) {
+            RenderInfo renderInfo = component.getRenderList(ThemeComponent.RenderType.NORMAL).get(renderIndex);
+            Coordinate coordinateThree = ThemeUtils.buildCoordinateTree(theme.getComponents(), component.getId(), ThemeComponent.RenderType.NORMAL, renderIndex);
+            if (coordinateThree == null) continue;
+            Coordinate coordinate = ThemeUtils.getRealCoordinate(coordinateThree, this, keyManager);
+            Coordinate clone = coordinate.clone().readUV(theme);
+            boolean isBg = component.getType() == EnumThemeComponentType.BACKGROUND;
+            switch (renderInfo.getFillType()) {
+                case FILL: {
+                    double parentW = clone.getWidth();
+                    double parentH = clone.getHeight();
+                    double w = clone.getUWidth();
+                    double h = clone.getVHeight();
+
+                    double scale = Math.max(parentW / w, parentH / h);
+
+                    clone.setWidth(w * scale);
+                    clone.setHeight(h * scale);
+                    if (isBg) {
+                        renderBackgroundComponent(matrixStack, clone);
+                    } else {
+                        renderForegroundComponent(matrixStack, clone, renderInfo);
+                    }
+                }
+                break;
+                case FIT: {
+                    double parentW = clone.getWidth();
+                    double parentH = clone.getHeight();
+                    double w = clone.getUWidth();
+                    double h = clone.getVHeight();
+
+                    double scale = Math.min(parentW / w, parentH / h);
+
+                    clone.setWidth(w * scale);
+                    clone.setHeight(h * scale);
+                    if (isBg) {
+                        renderBackgroundComponent(matrixStack, clone);
+                    } else {
+                        renderForegroundComponent(matrixStack, clone, renderInfo);
+                    }
+                }
+                break;
+                case STRETCH: {
+                    if (isBg) {
+                        renderBackgroundComponent(matrixStack, clone);
+                    } else {
+                        renderForegroundComponent(matrixStack, clone, renderInfo);
+                    }
+                }
+                break;
+                case TILE: {
+                    double parentW = clone.getWidth();
+                    double parentH = clone.getHeight();
+                    int w = (int) Math.max(3, (clone.getUWidth() * renderInfo.getScale()));
+                    int h = (int) Math.max(3, (clone.getVHeight() * renderInfo.getScale()));
+
+                    if (w < parentW || h < parentH) {
+                        int xCount = (int) Math.ceil(parentW / w);
+                        int yCount = (int) Math.ceil(parentH / h);
+                        Coordinate clone1 = clone.clone();
+                        for (int i = 0; i < xCount; i++) {
+                            for (int j = 0; j < yCount; j++) {
+                                clone1.setWidth(w);
+                                clone1.setHeight(h);
+                                clone1.setX(clone.getX() + i * w);
+                                clone1.setY(clone.getY() + j * h);
+                                if (isBg) {
+                                    renderBackgroundComponent(matrixStack, clone1);
+                                } else {
+                                    renderForegroundComponent(matrixStack, clone1, renderInfo);
+                                }
+                            }
+                        }
+                    } else {
+                        if (isBg) {
+                            renderBackgroundComponent(matrixStack, clone);
+                        } else {
+                            renderForegroundComponent(matrixStack, clone, renderInfo);
+                        }
+                    }
+                }
+                break;
+                case CENTER: {
+                    double parentW = clone.getWidth();
+                    double parentH = clone.getHeight();
+                    double w = clone.getUWidth() * renderInfo.getScale();
+                    double h = clone.getVHeight() * renderInfo.getScale();
+
+                    clone.setWidth(w);
+                    clone.setHeight(h);
+                    clone.setX(clone.getX() + (parentW - w) / 2);
+                    clone.setY(clone.getY() + (parentH - h) / 2);
+                    if (isBg) {
+                        renderBackgroundComponent(matrixStack, clone);
+                    } else {
+                        renderForegroundComponent(matrixStack, clone, renderInfo);
+                    }
+                }
+                break;
+            }
+        }
+    }
+
+    private void renderBackgroundComponent(MatrixStack matrixStack, Coordinate coordinate) {
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        AbstractGuiUtils.bindTexture(theme.getResourceLocation());
+        AbstractGuiUtils.blit(matrixStack
+                , (int) coordinate.getX()
+                , (int) coordinate.getY()
+                , (int) coordinate.getWidth()
+                , (int) coordinate.getHeight()
+                , coordinate.getU0()
+                , coordinate.getV0()
+                , coordinate.getUWidth()
+                , coordinate.getVHeight()
+                , theme.getTotalWidth()
+                , theme.getTotalHeight()
+        );
+        RenderSystem.disableBlend();
+    }
+
+    private void renderForegroundComponent(MatrixStack matrixStack, Coordinate coordinate, RenderInfo renderInfo) {
+        AbstractGuiUtils.TransformArgs args = new AbstractGuiUtils.TransformArgs(matrixStack)
+                .setCoordinate(coordinate)
+                .setScale(renderInfo.getScale())
+                .setAngle(renderInfo.getAngle())
+                .setFlipHorizontal(renderInfo.isFlipHorizontal())
+                .setFlipVertical(renderInfo.isFlipVertical());
+        // 绘制背景颜色
+        if (renderInfo.getBgColor() != 0) {
+            AbstractGuiUtils.renderByTransform(args
+                    , (drawArgs) -> AbstractGuiUtils.fill(drawArgs.getStack()
+                            , (int) drawArgs.getX()
+                            , (int) drawArgs.getY()
+                            , (int) drawArgs.getWidth()
+                            , (int) drawArgs.getHeight()
+                            , renderInfo.getBgColor()
+                    )
+            );
+        }
+        // 绘制纹理
+        if (renderInfo.hasUVInfo()) {
+            AbstractGuiUtils.renderByTransform(args
+                    , drawArgs -> {
+                        AbstractGuiUtils.bindTexture(theme.getResourceLocation());
+                        AbstractGuiUtils.blitBlend(drawArgs.getStack()
+                                , (int) drawArgs.getX()
+                                , (int) drawArgs.getY()
+                                , (int) drawArgs.getWidth()
+                                , (int) drawArgs.getHeight()
+                                , coordinate.getU0()
+                                , coordinate.getV0()
+                                , coordinate.getUWidth()
+                                , coordinate.getVHeight()
+                                , theme.getTotalWidth()
+                                , theme.getTotalHeight()
+                        );
+                    }
+            );
+        }
+        // 绘制文本
+        if (renderInfo.hasTextInfo()) {
+            Text text = new Text(renderInfo.getText())
+                    .setMatrixStack(matrixStack)
+                    .setFont(this.font);
+            AbstractGuiUtils.renderByTransform(args
+                            .setWidth(AbstractGuiUtils.multilineTextWidth(text))
+                            .setHeight(AbstractGuiUtils.multilineTextHeight(text))
+                    , (drawArgs) -> AbstractGuiUtils.drawMultilineText(
+                            text.setMatrixStack(drawArgs.getStack())
+                            , drawArgs.getX()
+                            , drawArgs.getY()
+                    )
+            );
+        }
+        // 绘制前景颜色
+        if (renderInfo.getFgColor() != 0) {
+            AbstractGuiUtils.renderByTransform(args
+                    , (drawArgs) -> AbstractGuiUtils.fill(drawArgs.getStack()
+                            , (int) drawArgs.getX()
+                            , (int) drawArgs.getY()
+                            , (int) drawArgs.getWidth()
+                            , (int) drawArgs.getHeight()
+                            , renderInfo.getFgColor()
+                    )
+            );
+        }
+        // 绘制悬浮文本
+        if (renderInfo.hasTooltipInfo()) {
+            // TODO 判断是否被悬浮
+            AbstractGuiUtils.drawPopupMessage(
+                    new Text(renderInfo.getTooltip())
+                            .setMatrixStack(matrixStack)
+                            .setFont(this.font)
+                    , coordinate.getX()
+                    , coordinate.getY()
+                    , super.width
+                    , super.height
+            );
+        }
+    }
+
+    // endregion 私有方法
+
+
+    @Override
+    protected void init_() {
+        if (this.menuButton.getX() == -99 && this.menuButton.getY() == -99) {
+            this.menuButton.setX(5).setY((super.height - 9) / 2.0);
+        } else {
+            menuButton.setX(Math.min(super.width - menuButton.getRealWidth() / 2, Math.max(-menuButton.getRealWidth() / 2, menuButton.getRealX())))
+                    .setY(Math.min(super.height - menuButton.getRealHeight() / 2, Math.max(-menuButton.getRealHeight() / 2, menuButton.getRealY())));
+        }
+        theme.getComponents().sorted();
+        theme.getDarkComponents().sorted();
+        if (theme.getFile() == null) {
+            theme.setFile(SakuraUtils.getThemePath().resolve(StringUtils.replacePathChar(theme.getName()) + SakuraSignIn.THEME_FILE_SUFFIX).toFile());
+            theme.getFile().mkdirs();
+            try {
+                PNGUtils.writeImage(new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB), theme.getFile());
+                theme.setTotalWidth(1);
+                theme.setTotalHeight(1);
+            } catch (IOException ignored) {
+            }
+        }
+        theme.setResourceLocation(TextureUtils.loadCustomTexture(theme.getFile().getAbsolutePath()));
+    }
+
+    @Override
+    void updateLayout() {
+    }
+
+    @Override
+    public void render_(MatrixStack matrixStack, float partialTicks) {
+        // 绘制背景
+        if (theme.isMinecraftBackground()) this.renderBackground(matrixStack);
+
+        // 绘制主题组件
+        this.renderThemeComponent(matrixStack, partialTicks);
+
+        menuButton.render(matrixStack, keyManager);
+    }
+
+
+    // region 事件处理
+
+    /**
+     * 窗口关闭时
+     */
+    @Override
+    public void removed_() {
+    }
+
+    /**
+     * 检测鼠标点击事件
+     */
+    @Override
+    public void mouseClicked_(MouseClickedHandleArgs args) {
+
+        menuButton.setPressed(menuButton.isMouseOver(args.getMouseX(), args.getMouseY())
+                && (keyManager.isMouseLeftPressed() || keyManager.isMouseRightPressed())
+        );
+
+    }
+
+    /**
+     * 检测鼠标松开事件
+     */
+    @Override
+    public void mouseReleased_(MouseReleasedHandleArgs args) {
+
+        if (!this.keyManager.isMouseMoved()) {
+            this.handleMenuClick(args);
+        }
+
+        menuButton.setPressed(false);
+
+    }
+
+    /**
+     * 鼠标移动事件
+     */
+    @Override
+    public void mouseMoved_() {
+        if (menuButton.isPressed()) {
+            double realWidth = menuButton.getRealWidth();
+            double realHeight = menuButton.getRealHeight();
+            double x = keyManager.getMouseX() - realWidth / 2;
+            double y = keyManager.getMouseY() - realHeight / 2;
+            menuButton.setX(Math.min(super.width - realWidth / 2, Math.max(-realWidth / 2, x)))
+                    .setY(Math.min(super.height - realHeight / 2, Math.max(-realHeight / 2, y)));
+        }
+    }
+
+    /**
+     * 鼠标滚动事件
+     */
+    @Override
+    public void mouseScrolled_(MouseScoredHandleArgs args) {
+
+    }
+
+    /**
+     * 键盘按下事件
+     */
+    @Override
+    public void keyPressed_(KeyPressedHandleArgs args) {
+
+    }
+
+    /**
+     * 键盘松开事件
+     */
+    @Override
+    public void keyReleased_(KeyReleasedHandleArgs args) {
+
+        if (keyManager.isKeyPressed(GLFWKey.GLFW_KEY_MENU)) {
+            // TODO 和点击菜单按钮一样的效果
+        }
+
+    }
+
+    @Override
+    void onClose_() {
+    }
+
+    /**
+     * 窗口打开时是否暂停游戏
+     */
+    @Override
+    public boolean isPauseScreen() {
+        return false;
+    }
+
+    // endregion 事件处理
+
+}

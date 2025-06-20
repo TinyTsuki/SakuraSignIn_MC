@@ -15,6 +15,7 @@ import xin.vanilla.sakura.util.GLFWKey;
 @OnlyIn(Dist.CLIENT)
 public class MouseCursor {
 
+    private long drawCount = 0;
     /**
      * 鼠标状态 1 鼠标左键按下 2 鼠标右键按下 4 鼠标中键按下
      */
@@ -24,6 +25,14 @@ public class MouseCursor {
      */
     private int scroll = 0;
 
+    private int lightColorMain;
+    private int lightColorSub;
+    private int darkColorMain;
+    private int darkColorSub;
+
+    private int curColorMain;
+    private int curColorSub;
+
     private MouseCursor() {
     }
 
@@ -31,10 +40,31 @@ public class MouseCursor {
      * 初始化鼠标光标
      */
     public static MouseCursor init() {
+        return init(0xFF000000, 0xFF777777, 0xFFFFFFFF, 0xFF777777);
+    }
+
+    /**
+     * 初始化鼠标光标
+     */
+    public static MouseCursor init(int color1, int color2) {
+        return init(color1, color2, color1, color2);
+    }
+
+    /**
+     * 初始化鼠标光标
+     */
+    public static MouseCursor init(int lightColorMain, int lightColorSub, int darkColorMain, int darkColorSub) {
         // 隐藏鼠标指针
         long windowHandle = Minecraft.getInstance().getWindow().getWindow();
         GLFW.glfwSetInputMode(windowHandle, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_HIDDEN);
-        return new MouseCursor();
+        MouseCursor cursor = new MouseCursor();
+        cursor.lightColorMain = lightColorMain;
+        cursor.lightColorSub = lightColorSub;
+        cursor.darkColorMain = darkColorMain;
+        cursor.darkColorSub = darkColorSub;
+        cursor.curColorMain = lightColorMain;
+        cursor.curColorSub = lightColorSub;
+        return cursor;
     }
 
     public void removed() {
@@ -47,33 +77,52 @@ public class MouseCursor {
      * 绘制鼠标光标
      */
     public void draw(MatrixStack matrixStack, int mouseX, int mouseY) {
-        int color1 = 0xFF000000;
-        int color2 = 0xFF000000;
-        int color3 = 0xFF000000;
+        if (this.drawCount % 10 == 0) {
+            int pixelColor = AbstractGuiUtils.getPixelArgb(mouseX, mouseY);
+            float brightness = AbstractGuiUtils.getBrightness(pixelColor);
+            if (brightness < 0.5f) {
+                this.curColorMain = this.darkColorMain;
+                this.curColorSub = this.darkColorSub;
+            } else {
+                this.curColorMain = this.lightColorMain;
+                this.curColorSub = this.lightColorSub;
+            }
+        }
+        this.drawCount++;
+
+        int color1;
+        int color2;
+        int color3;
 
         if (status == 1 || status == 3 || status == 5 || status == 7) {
-            color1 = 0xFF777777;
+            color1 = curColorSub;
+        } else {
+            color1 = curColorMain;
         }
         if (status == 2 || status == 3 || status == 6 || status == 7) {
-            color2 = 0xFF777777;
+            color2 = curColorSub;
+        } else {
+            color2 = curColorMain;
         }
         if (status == 4 || status == 5 || status == 6 || status == 7) {
-            color3 = 0xFF777777;
+            color3 = curColorSub;
+        } else {
+            color3 = curColorMain;
         }
 
-        AbstractGuiUtils.setDepth(matrixStack, AbstractGuiUtils.EDepth.MOUSE);
-        AbstractGui.fill(matrixStack, mouseX, mouseY + this.scroll, mouseX + 1, mouseY + this.scroll + 1, color3);
+        AbstractGuiUtils.renderByDepth(matrixStack, AbstractGuiUtils.EDepth.MOUSE, (stack) -> {
+            AbstractGui.fill(stack, mouseX, mouseY + this.scroll, mouseX + 1, mouseY + this.scroll + 1, color3);
 
-        AbstractGui.fill(matrixStack, mouseX - 1, mouseY + 2, mouseX - 1 - 3, mouseY + 2 + 1, color1);
-        AbstractGui.fill(matrixStack, mouseX - 1, mouseY + 2, mouseX - 1 - 1, mouseY + 2 + 3, color1);
-        AbstractGui.fill(matrixStack, mouseX - 1, mouseY - 1, mouseX - 1 - 3, mouseY - 1 - 1, color1);
-        AbstractGui.fill(matrixStack, mouseX - 1, mouseY - 1, mouseX - 1 - 1, mouseY - 1 - 3, color1);
+            AbstractGui.fill(stack, mouseX - 1, mouseY + 2, mouseX - 1 - 3, mouseY + 2 + 1, color1);
+            AbstractGui.fill(stack, mouseX - 1, mouseY + 2, mouseX - 1 - 1, mouseY + 2 + 3, color1);
+            AbstractGui.fill(stack, mouseX - 1, mouseY - 1, mouseX - 1 - 3, mouseY - 1 - 1, color1);
+            AbstractGui.fill(stack, mouseX - 1, mouseY - 1, mouseX - 1 - 1, mouseY - 1 - 3, color1);
 
-        AbstractGui.fill(matrixStack, mouseX + 2, mouseY + 2, mouseX + 2 + 3, mouseY + 2 + 1, color2);
-        AbstractGui.fill(matrixStack, mouseX + 2, mouseY + 2, mouseX + 2 + 1, mouseY + 2 + 3, color2);
-        AbstractGui.fill(matrixStack, mouseX + 2, mouseY - 1, mouseX + 2 + 3, mouseY - 1 - 1, color2);
-        AbstractGui.fill(matrixStack, mouseX + 2, mouseY - 1, mouseX + 2 + 1, mouseY - 1 - 3, color2);
-        AbstractGuiUtils.resetDepth(matrixStack);
+            AbstractGui.fill(stack, mouseX + 2, mouseY + 2, mouseX + 2 + 3, mouseY + 2 + 1, color2);
+            AbstractGui.fill(stack, mouseX + 2, mouseY + 2, mouseX + 2 + 1, mouseY + 2 + 3, color2);
+            AbstractGui.fill(stack, mouseX + 2, mouseY - 1, mouseX + 2 + 3, mouseY - 1 - 1, color2);
+            AbstractGui.fill(stack, mouseX + 2, mouseY - 1, mouseX + 2 + 1, mouseY - 1 - 3, color2);
+        });
         // 恢复鼠标滚动偏移
         this.scroll = 0;
     }

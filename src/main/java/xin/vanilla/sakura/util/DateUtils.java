@@ -639,8 +639,10 @@ public class DateUtils {
         return date;
     }
 
+    /**
+     * 获取客户端校准时间(服务端时间)
+     */
     public static Date getClientDate() {
-        // 校准客户端时间
         return getClientValidDate(new Date());
     }
 

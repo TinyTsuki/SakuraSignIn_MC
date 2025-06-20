@@ -10,11 +10,12 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
-import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
 import xin.vanilla.sakura.util.AbstractGuiUtils;
+import xin.vanilla.sakura.util.SakuraUtils;
 import xin.vanilla.sakura.util.StringUtils;
 import xin.vanilla.sakura.util.TextureUtils;
 
+import java.util.Random;
 import java.util.function.Consumer;
 
 /**
@@ -38,6 +39,8 @@ public class OperationButton {
             this.button = button;
         }
     }
+
+    private static final Random random = new Random();
 
     /**
      * 按钮ID
@@ -401,20 +404,48 @@ public class OperationButton {
             // 使用自定义渲染逻辑
             customRenderFunction.accept(new RenderContext(matrixStack, keyManager, this));
         } else {
-            TextureCoordinate textureCoordinate = new TextureCoordinate().setTotalWidth(this.textureWidth).setTotalHeight(this.textureHeight);
             Coordinate coordinate = new Coordinate().setX(this.x).setY(this.y).setWidth(this.width).setHeight(this.height)
-                    .setU0(getU()).setV0(getV()).setUWidth(getUWidth()).setVHeight(getVHeight());
+                    .setU0(getU()).setV0(getV()).setUWidth((int) getUWidth()).setVHeight((int) getVHeight())
+                    .setUvWidth(this.textureWidth)
+                    .setUvHeight(this.textureHeight);
             // 绘制背景颜色
             int bgColor = this.getBackgroundColor();
             if (bgColor != 0) {
                 AbstractGuiUtils.fill(matrixStack, (int) (baseX + coordinate.getX() * scale), (int) (baseY + coordinate.getY() * scale), (int) (coordinate.getWidth() * scale), (int) (coordinate.getHeight() * scale), bgColor);
             }
             // 绘制纹理
-            if (this.isHovered() && this.getTremblingAmplitude() > 0) {
-                AbstractGuiUtils.renderTremblingTexture(matrixStack, this.texture, textureCoordinate, coordinate, this.baseX, this.baseY, this.scale, true, this.getTremblingAmplitude());
-            } else {
-                AbstractGuiUtils.renderRotatedTexture(matrixStack, this.texture, textureCoordinate, coordinate, this.baseX, this.baseY, this.scale, this.rotatedAngle, this.flipHorizontal, this.flipVertical);
+            AbstractGuiUtils.TransformArgs args = new AbstractGuiUtils.TransformArgs(matrixStack)
+                    .setX(this.baseX + coordinate.getX() * scale)
+                    .setY(this.baseY + coordinate.getY() * scale)
+                    .setWidth(coordinate.getWidth() * scale)
+                    .setHeight(coordinate.getHeight() * scale)
+                    .setAngle(this.rotatedAngle)
+                    .setFlipHorizontal(this.flipHorizontal)
+                    .setFlipVertical(this.flipVertical);
+            // 抖动
+            if (this.isHovered() && this.getTremblingAmplitude() > 0 && SakuraUtils.getEnvironmentBrightness(Minecraft.getInstance().player) > 4) {
+                double xOffset = (random.nextFloat() - 0.5) * this.getTremblingAmplitude();
+                double yOffset = (random.nextFloat() - 0.5) * this.getTremblingAmplitude();
+                args.setX(args.getX() + xOffset);
+                args.setY(args.getY() + yOffset);
             }
+            AbstractGuiUtils.renderByTransform(args
+                    , drawArgs -> {
+                        AbstractGuiUtils.bindTexture(texture);
+                        AbstractGuiUtils.blitBlend(drawArgs.getStack()
+                                , (int) drawArgs.getX()
+                                , (int) drawArgs.getY()
+                                , (int) drawArgs.getWidth()
+                                , (int) drawArgs.getHeight()
+                                , coordinate.getU0()
+                                , coordinate.getV0()
+                                , coordinate.getUWidth()
+                                , coordinate.getVHeight()
+                                , coordinate.getUvWidth()
+                                , coordinate.getUvHeight()
+                        );
+                    }
+            );
             // 绘制前景颜色
             int fgColor = this.getForegroundColor();
             if (fgColor != 0) {

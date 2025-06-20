@@ -2,12 +2,11 @@ package xin.vanilla.sakura.util;
 
 
 import lombok.NonNull;
-import xin.vanilla.sakura.enums.EMCColor;
+import xin.vanilla.sakura.enums.EnumMCColor;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.security.SecureRandom;
-import java.util.Collection;
+import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -17,20 +16,6 @@ public class StringUtils {
     public static final String METHOD_SET_PREFIX = "set";
     public static final String METHOD_GET_PREFIX = "get";
     public static final String COMMON_MARK = ",<.>/?;:'\"[{]}\\|`~!@#$%^&*()-_=+，《。》、？；：‘“【】·~！￥…（）—";
-    /**
-     * NanoId默认随机字符串生成器
-     */
-    public static final SecureRandom DEFAULT_NUMBER_GENERATOR = new SecureRandom();
-
-    /**
-     * NanoId默认随机字符串序列
-     */
-    public static final char[] DEFAULT_ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
-
-    /**
-     * NanoId默认随机字符串序列
-     */
-    public static final char[] NUMBER_ALPHABET = "0123456789".toCharArray();
 
     /**
      * NanoId默认随机字符串长度
@@ -43,136 +28,6 @@ public class StringUtils {
     public static boolean isCommonMark(String s) {
         if (s.length() != 1) return false;
         return COMMON_MARK.contains(s);
-    }
-
-    /**
-     * 根据行号截取字符串
-     * <p>(开始堆粪</p>
-     *
-     * @param suffix 如果结尾还有内容, 是否需要添加的后缀, 例: "后面还有[num]行"
-     */
-    public static String getByLine(String s, int start, int end, String suffix) {
-        if (start > end) return s;
-        String code;
-        if (s.contains("\r\n")) code = "\r\n";
-        else if (s.contains("\r")) code = "\r";
-        else if (s.contains("\n")) code = "\n";
-        else return s;
-
-        String[] split = s.split(code);
-        if (start > split.length) return s;
-        if (end >= split.length) {
-            StringBuilder back = new StringBuilder();
-            for (int i = start - 1; i < split.length; i++) {
-                if (i != start - 1) back.append(code);
-                back.append(split[i]);
-            }
-            return back.toString();
-        }
-
-        StringBuilder back = new StringBuilder();
-        for (int i = start - 1; i < end; i++) {
-            if (i != start - 1) back.append(code);
-            back.append(split[i]);
-        }
-        if (!"".equals(suffix))
-            back.append(code).append(suffix.replace("[num]", split.length - end + ""));
-        return back.toString();
-    }
-
-    /**
-     * 将数值数组 <code>[123456789, 234567890]</code>
-     * <p>转换为形如 <code>123456789,234567890</code> 的字符串</p>
-     */
-    public static String toString(int[] a) {
-        return toString(a, ',');
-    }
-
-    /**
-     * 将数值数组 <code>[123456789, 234567890]</code>
-     * <p>转换为形如 <code>123456789,234567890</code> 的字符串</p>
-     *
-     * @param separator 分隔符
-     */
-    public static String toString(int[] a, char separator) {
-        if (a == null)
-            return "null";
-        // a = Arrays.stream(a).sorted().toArray();
-        int iMax = a.length - 1;
-        if (iMax == -1)
-            return "";
-
-        StringBuilder b = new StringBuilder();
-        for (int i = 0; ; i++) {
-            b.append(a[i]);
-            if (i == iMax)
-                return b.toString();
-            b.append(separator);
-        }
-    }
-
-    /**
-     * 将数值数组 <code>[123456789, 234567890]</code>
-     * <p>转换为形如 <code>123456789,234567890</code> 的字符串</p>
-     */
-    public static String toString(long[] a) {
-        return toString(a, ',');
-    }
-
-    /**
-     * 将数值数组 <code>[123456789, 234567890]</code>
-     * <p>转换为形如 <code>123456789,234567890</code> 的字符串</p>
-     *
-     * @param separator 分隔符
-     */
-    public static String toString(long[] a, char separator) {
-        if (a == null)
-            return "null";
-        // a = Arrays.stream(a).sorted().toArray();
-        int iMax = a.length - 1;
-        if (iMax == -1)
-            return "";
-
-        StringBuilder b = new StringBuilder();
-        for (int i = 0; ; i++) {
-            b.append(a[i]);
-            if (i == iMax)
-                return b.toString();
-            b.append(separator);
-        }
-    }
-
-    /**
-     * 将数值集合 <code>[123456789, 234567890]</code>
-     * <p>转换为形如 <code>123456789,234567890</code> 的字符串</p>
-     */
-    public static String toString(Collection<?> a) {
-        return toString(a, ',');
-    }
-
-    /**
-     * 将数值集合 <code>[123456789, 234567890]</code>
-     * <p>转换为形如 <code>123456789,234567890</code> 的字符串</p>
-     *
-     * @param separator 分隔符
-     */
-    public static String toString(Collection<?> a, char separator) {
-        if (a == null)
-            return "null";
-        // a = Arrays.stream(a).sorted().toArray();
-        int iMax = a.size() - 1;
-        if (iMax == -1)
-            return "";
-
-        StringBuilder b = new StringBuilder();
-        int i = 0;
-        for (Object o : a) {
-            b.append(o);
-            i++;
-            if (i <= iMax)
-                b.append(separator);
-        }
-        return b.toString();
     }
 
     /**
@@ -244,7 +99,11 @@ public class StringUtils {
     }
 
     public static boolean isNotNullOrEmpty(String s) {
-        return s != null && !s.isEmpty();
+        return !isNullOrEmpty(s);
+    }
+
+    public static boolean isNotNullOrEmptyEx(String s) {
+        return !isNullOrEmptyEx(s);
     }
 
     public static boolean isNotNull(Object s) {
@@ -318,85 +177,28 @@ public class StringUtils {
         return StringUtils.replaceLine(s).split("\n").length;
     }
 
-    public static String getAvatarUrl(long qq, int size) {
-        return "http://q.qlogo.cn/g?b=qq&nk=" + qq + "&s=" + size;
-    }
-
-    private static final String[] NUM = {"零", "壹", "贰", "叁", "肆", "伍", "陆", "柒", "捌", "玖"};
-    private static final String[] UNIT = {"", "拾", "佰", "仟"
-            , "万", "拾万", "佰万", "仟万"
-            , "亿", "拾亿", "佰亿", "仟亿"
-            , "兆", "拾兆", "佰兆", "仟兆"
-            , "京", "拾京", "佰京", "仟京"
-            , "垓", "拾垓", "佰垓", "仟垓"
-            , "秭", "拾秭", "佰秭", "仟秭"
-            , "穰", "拾穰", "佰穰", "仟穰"
-            , "沟", "拾沟", "佰沟", "仟沟"
-            , "涧", "拾涧", "佰涧", "仟涧"
-            , "正", "拾正", "佰正", "仟正"
-            , "载", "拾载", "佰载", "仟载"};
-    private static final String[] DECIMAL = {"角", "分"};
-
     /**
-     * 将金额转换为大写
+     * 替换路径保留符
      */
-    public static String toChineseCapitalized(BigDecimal amount) {
-        StringBuilder sb = new StringBuilder();
-        int scale = amount.scale();
-        if (scale > 2) {
-            amount = amount.setScale(2, RoundingMode.HALF_UP);
-        }
-        String str = amount.toString();
-        String[] parts = str.split("\\.");
-        String integerPart = parts[0];
-        String decimalPart = "00";
-        if (parts.length > 1) {
-            decimalPart = parts[1];
-        }
-        int integerLen = integerPart.length();
-        int decimalLen = decimalPart.length();
-        if (integerLen == 1 && integerPart.charAt(0) == '0') {
-            sb.append(NUM[0]);
-        } else {
-            for (int i = 0; i < integerLen; i++) {
-                int digit = integerPart.charAt(i) - '0';
-                int unitIndex = integerLen - i - 1;
-                int unit = unitIndex % 4;
-                if (digit == 0) {
-                    if (unit != 0 && sb.length() > 0 && sb.charAt(sb.length() - 1) != '零') {
-                        sb.append(NUM[0]);
-                    }
-                } else {
-                    sb.append(NUM[digit]);
-                    sb.append(UNIT[unit]);
-                }
-                if (unit == 0 && unitIndex > 0 && sb.charAt(sb.length() - 1) != '亿') {
-                    sb.append(UNIT[unitIndex]);
-                }
-            }
+    public static String replacePathChar(String name) {
+        if (StringUtils.isNullOrEmptyEx(name)) return "_";
+
+        // 替换非法字符为 _
+        String sanitized = name.replaceAll("[\\\\/:*?\"<>|]", "_");
+
+        // 删除控制字符（ASCII < 32）
+        sanitized = sanitized.replaceAll("\\p{Cntrl}", "_");
+
+        if (sanitized.equals(".") || sanitized.equals("..")) {
+            sanitized = "_";
         }
 
-        sb.append("元");
-        if (decimalLen == 1) {
-            decimalPart += "0";
+        // 避免空文件名
+        if (sanitized.isEmpty()) {
+            sanitized = "_";
         }
 
-        // 若小数部分不为0
-        if (!decimalPart.equals("00")) {
-            for (int i = 0; i < decimalLen; i++) {
-                int digit = decimalPart.charAt(i) - '0';
-                // 若小数位不为0
-                if (digit != 0) {
-                    sb.append(NUM[digit]);
-                    sb.append(DECIMAL[i]);
-                }
-            }
-        }
-
-        if (decimalPart.equals("00")) {
-            sb.append("整");
-        }
-        return sb.toString();
+        return sanitized;
     }
 
     public static int toInt(String s) {
@@ -548,7 +350,6 @@ public class StringUtils {
      *
      * @param string 格式化字符串
      * @param args   参数
-     * @return 格式化后的字符串
      */
     public static String format(String string, Object... args) {
         StringBuilder result = new StringBuilder();
@@ -585,11 +386,10 @@ public class StringUtils {
      * @param arg         参数
      */
     private static String formatArgument(String placeholder, Object arg) {
-        if (arg == null) return "null";  // 如果参数是 null，直接返回 null
+        if (arg == null) return "null";
         try {
-            return String.format(placeholder.replaceAll("^%\\d+\\$", "%"), arg);  // 默认处理
+            return String.format(placeholder.replaceAll("^%\\d+\\$", "%"), arg);
         } catch (Exception e) {
-            // 如果出现异常，直接转换为字符串
             return arg.toString();
         }
     }
@@ -612,13 +412,12 @@ public class StringUtils {
      * RGB颜色转换为Minecraft颜色代码
      *
      * @param color 颜色值 (ARGB: 0xAARRGGBB 或 RGB: 0xRRGGBB)
-     * @return 颜色代码
      */
     public static String argbToMinecraftColorString(int color) {
         return "§" + argbToMinecraftColor(color).getCode();
     }
 
-    public static EMCColor argbToMinecraftColor(int color) {
+    public static EnumMCColor argbToMinecraftColor(int color) {
         // 获取 RGB 分量
         int red = (color >> 16) & 0xFF;
         int green = (color >> 8) & 0xFF;
@@ -626,8 +425,8 @@ public class StringUtils {
         // 颜色匹配
         double closestDistance = Double.MAX_VALUE;
         // 默认为白色
-        EMCColor result = EMCColor.WHITE;
-        for (EMCColor mcColor : EMCColor.values()) {
+        EnumMCColor result = EnumMCColor.WHITE;
+        for (EnumMCColor mcColor : EnumMCColor.values()) {
             int colorRGB = mcColor.getColor();
             int r = (colorRGB >> 16) & 0xFF;
             int g = (colorRGB >> 8) & 0xFF;
@@ -664,6 +463,30 @@ public class StringUtils {
             }
         }
         return result.toString();
+    }
+
+    public static String padOptimizedLeft(Object value, int length, String padChar) {
+        return padOptimized(value, length, padChar, true);
+    }
+
+    public static String padOptimizedRight(Object value, int length, String padChar) {
+        return padOptimized(value, length, padChar, false);
+    }
+
+    /**
+     * 在字符串前或后补全字符
+     */
+    public static String padOptimized(Object value, int length, String padChar, boolean left) {
+        String str = String.valueOf(value);
+        int currentLength = str.length();
+
+        if (length <= currentLength) return str;
+
+        char paddingChar = padChar != null && !padChar.isEmpty() ? padChar.charAt(0) : ' ';
+        char[] chars = new char[length - currentLength];
+        Arrays.fill(chars, paddingChar);
+
+        return left ? new String(chars) + str : str + new String(chars);
     }
 
 }

@@ -1,6 +1,5 @@
 package xin.vanilla.sakura.network;
 
-import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.network.NetworkRegistry;
 import net.minecraftforge.fml.network.simple.SimpleChannel;
 import xin.vanilla.sakura.SakuraSignIn;
@@ -10,7 +9,7 @@ public class ModNetworkHandler {
     private static final String PROTOCOL_VERSION = "1";
     private static int ID = 0;
     public static final SimpleChannel INSTANCE = NetworkRegistry.newSimpleChannel(
-            new ResourceLocation(SakuraSignIn.MODID, "main_network"),
+            SakuraSignIn.createResource("main_network"),
             () -> PROTOCOL_VERSION,
             clientVersion -> true,      // 客户端版本始终有效
             serverVersion -> true       // 服务端版本始终有效
@@ -21,16 +20,20 @@ public class ModNetworkHandler {
     }
 
     public static void registerPackets() {
-        INSTANCE.registerMessage(nextID(), PlayerDataSyncPacket.class, PlayerDataSyncPacket::toBytes, PlayerDataSyncPacket::new, PlayerDataSyncPacket::handle);
-        INSTANCE.registerMessage(nextID(), ClientConfigSyncPacket.class, ClientConfigSyncPacket::toBytes, ClientConfigSyncPacket::new, ClientConfigSyncPacket::handle);
-        INSTANCE.registerMessage(nextID(), RewardOptionSyncPacket.class, RewardOptionSyncPacket::toBytes, RewardOptionSyncPacket::new, RewardOptionSyncPacket::handle);
-        INSTANCE.registerMessage(nextID(), ItemStackPacket.class, ItemStackPacket::toBytes, ItemStackPacket::new, ItemStackPacket::handle);
-        INSTANCE.registerMessage(nextID(), SignInPacket.class, SignInPacket::toBytes, SignInPacket::new, SignInPacket::handle);
-        INSTANCE.registerMessage(nextID(), AdvancementPacket.class, AdvancementPacket::toBytes, AdvancementPacket::new, AdvancementPacket::handle);
-        INSTANCE.registerMessage(nextID(), DownloadRewardOptionNotice.class, DownloadRewardOptionNotice::toBytes, DownloadRewardOptionNotice::new, DownloadRewardOptionNotice::handle);
-        INSTANCE.registerMessage(nextID(), PlayerDataReceivedNotice.class, PlayerDataReceivedNotice::toBytes, PlayerDataReceivedNotice::new, PlayerDataReceivedNotice::handle);
-        INSTANCE.registerMessage(nextID(), ClientModLoadedNotice.class, ClientModLoadedNotice::toBytes, ClientModLoadedNotice::new, ClientModLoadedNotice::handle);
-        INSTANCE.registerMessage(nextID(), ServerTimeSyncPacket.class, ServerTimeSyncPacket::toBytes, ServerTimeSyncPacket::new, ServerTimeSyncPacket::handle);
-        INSTANCE.registerMessage(nextID(), RewardOptionDataReceivedNotice.class, RewardOptionDataReceivedNotice::toBytes, RewardOptionDataReceivedNotice::new, RewardOptionDataReceivedNotice::handle);
+        INSTANCE.registerMessage(nextID(), PlayerDataSyncToBoth.class, PlayerDataSyncToBoth::toBytes, PlayerDataSyncToBoth::new, PlayerDataSyncToBoth::handle);
+        INSTANCE.registerMessage(nextID(), RewardOptionSyncToBoth.class, RewardOptionSyncToBoth::toBytes, RewardOptionSyncToBoth::new, RewardOptionSyncToBoth::handle);
+
+        INSTANCE.registerMessage(nextID(), ClientConfigToServer.class, ClientConfigToServer::toBytes, ClientConfigToServer::new, ClientConfigToServer::handle);
+        INSTANCE.registerMessage(nextID(), SignInToServer.class, SignInToServer::toBytes, SignInToServer::new, SignInToServer::handle);
+        INSTANCE.registerMessage(nextID(), RewardOptionRequestToServer.class, RewardOptionRequestToServer::toBytes, RewardOptionRequestToServer::new, RewardOptionRequestToServer::handle);
+        INSTANCE.registerMessage(nextID(), PlayerDataReceivedToServer.class, PlayerDataReceivedToServer::toBytes, PlayerDataReceivedToServer::new, PlayerDataReceivedToServer::handle);
+        INSTANCE.registerMessage(nextID(), ClientLoadedToServer.class, ClientLoadedToServer::toBytes, ClientLoadedToServer::new, ClientLoadedToServer::handle);
+        INSTANCE.registerMessage(nextID(), RewardCellRequestToServer.class, RewardCellRequestToServer::toBytes, RewardCellRequestToServer::new, RewardCellRequestToServer::handle);
+
+        INSTANCE.registerMessage(nextID(), AdvancementToClient.class, AdvancementToClient::toBytes, AdvancementToClient::new, AdvancementToClient::handle);
+        INSTANCE.registerMessage(nextID(), ServerTimeSyncToClient.class, ServerTimeSyncToClient::toBytes, ServerTimeSyncToClient::new, ServerTimeSyncToClient::handle);
+        INSTANCE.registerMessage(nextID(), RewardOptionReceivedToClient.class, RewardOptionReceivedToClient::toBytes, RewardOptionReceivedToClient::new, RewardOptionReceivedToClient::handle);
+        INSTANCE.registerMessage(nextID(), RewardCellSyncToClient.class, RewardCellSyncToClient::toBytes, RewardCellSyncToClient::new, RewardCellSyncToClient::handle);
+        INSTANCE.registerMessage(nextID(), RewardCellDirtiedToClient.class, RewardCellDirtiedToClient::toBytes, RewardCellDirtiedToClient::new, RewardCellDirtiedToClient::handle);
     }
 }

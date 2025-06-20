@@ -12,7 +12,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
-import xin.vanilla.sakura.enums.EI18nType;
+import xin.vanilla.sakura.enums.EnumI18nType;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.util.AbstractGuiUtils;
 import xin.vanilla.sakura.util.Component;
@@ -89,7 +89,6 @@ public class InventoryButton extends Widget {
     @Override
     @ParametersAreNonnullByDefault
     public void render(MatrixStack matrixStack, int mouseX, int mouseY, float partialTicks) {
-        // 重写并且啥也不干
     }
 
     public void render_(MatrixStack matrixStack, int mouseX, int mouseY, float partialTicks) {
@@ -101,11 +100,11 @@ public class InventoryButton extends Widget {
             this.screenHeight = screen.height;
         }
         // 绘制自定义纹理
-        Minecraft.getInstance().getTextureManager().bind(SakuraSignIn.getThemeTexture());
+        AbstractGuiUtils.bindTexture(SakuraSignIn.getThemeTexture());
         int offset = this.isHovered && !this.mouseDrag ? 1 : 0;
-        AbstractGuiUtils.setDepth(matrixStack, AbstractGuiUtils.EDepth.TOOLTIP);
-        AbstractGuiUtils.blit(matrixStack, this.x - offset, this.y - offset, this.width + offset * 2, this.height + offset * 2, (int) this.u0, (int) this.v0, (int) this.uWidth, (int) this.vHeight, (int) totalWidth, (int) totalHeight);
-        AbstractGuiUtils.resetDepth(matrixStack);
+        AbstractGuiUtils.renderByDepth(matrixStack, AbstractGuiUtils.EDepth.TOOLTIP, (stack) ->
+                AbstractGuiUtils.blit(stack, this.x - offset, this.y - offset, this.width + offset * 2, this.height + offset * 2, (int) this.u0, (int) this.v0, (int) this.uWidth, (int) this.vHeight, (int) totalWidth, (int) totalHeight)
+        );
         if (this.mouseDrag) {
             Text text;
             if (this.modifiers == GLFWKey.GLFW_MOD_ALT) {
@@ -118,7 +117,7 @@ public class InventoryButton extends Widget {
             AbstractGuiUtils.drawPopupMessage(text.setMatrixStack(matrixStack), this.x + (AbstractGuiUtils.multilineTextWidth(text) - this.width) / 2, this.y + this.height / 2, screenWidth, screenHeight);
         } else if (this.isHovered) {
             if (this.modifiers == GLFWKey.GLFW_MOD_SHIFT) {
-                AbstractGuiUtils.drawPopupMessage(Text.translatable(EI18nType.TIPS, "drag_inventory_button").setMatrixStack(matrixStack), mouseX, mouseY, screenWidth, screenHeight);
+                AbstractGuiUtils.drawPopupMessage(Text.translatable(EnumI18nType.TIPS, "drag_inventory_button").setMatrixStack(matrixStack), mouseX, mouseY, screenWidth, screenHeight);
             } else {
                 AbstractGuiUtils.drawPopupMessage(Text.fromTextComponent(this.getMessage().copy()).setMatrixStack(matrixStack), mouseX, mouseY, screenWidth, screenHeight);
             }

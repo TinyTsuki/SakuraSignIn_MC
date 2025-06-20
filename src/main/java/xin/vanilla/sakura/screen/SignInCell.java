@@ -3,18 +3,19 @@ package xin.vanilla.sakura.screen;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.Data;
-import lombok.NonNull;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.AbstractGui;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.ItemRenderer;
 import net.minecraft.util.ResourceLocation;
+import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.config.ServerConfig;
-import xin.vanilla.sakura.enums.ESignInStatus;
-import xin.vanilla.sakura.rewards.Reward;
-import xin.vanilla.sakura.rewards.RewardList;
+import xin.vanilla.sakura.data.Reward;
+import xin.vanilla.sakura.data.RewardCell;
+import xin.vanilla.sakura.data.RewardList;
+import xin.vanilla.sakura.enums.EnumSignInStatus;
 import xin.vanilla.sakura.screen.component.KeyEventManager;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
@@ -42,12 +43,7 @@ public class SignInCell {
     // 物品图标的大小
     private final int itemIconSize = 16;
     public double x, y, x1, y1, width, height, scale;
-    public RewardList rewardList;
     public int year, month, day;
-    /**
-     * @see xin.vanilla.sakura.enums.ESignInStatus
-     */
-    public int status;
     private boolean showIcon;
     private boolean showText;
     private boolean showHover;
@@ -56,7 +52,7 @@ public class SignInCell {
     private double previousMouseX;
     private double previousMouseY;
 
-    public SignInCell(ResourceLocation resourceLocation, TextureCoordinate textureCoordinate, double x, double y, double width, double height, double scale, @NonNull RewardList rewardList, int year, int month, int day, int status) {
+    public SignInCell(ResourceLocation resourceLocation, TextureCoordinate textureCoordinate, double x, double y, double width, double height, double scale, int year, int month, int day) {
         BACKGROUND_TEXTURE = resourceLocation;
         this.textureCoordinate = textureCoordinate;
         this.x = x;
@@ -65,12 +61,10 @@ public class SignInCell {
         this.y1 = y;
         this.width = width;
         this.height = height;
-        this.rewardList = rewardList;
         this.year = year;
         this.month = month;
         this.day = day;
         this.scale = scale;
-        this.status = status;
     }
 
     // 判断鼠标是否在当前格子内
@@ -78,19 +72,34 @@ public class SignInCell {
         return keyManager.getMouseX() >= x && keyManager.getMouseX() <= x + width && keyManager.getMouseY() >= y && keyManager.getMouseY() <= y + height;
     }
 
+    public RewardCell getRewardCell() {
+        Date cellDate = DateUtils.getDate(this.year, this.month, this.day);
+        String cellDateString = DateUtils.toString(cellDate);
+        return SakuraSignIn.getRewardCellMap().getOrDefault(cellDateString, new RewardCell(EnumSignInStatus.NO_ACTION, cellDateString, new RewardList()));
+    }
+
+    public int getRewardCellStatus() {
+        return getRewardCell().getStatus().getCode();
+    }
+
+    public int getRewardCount() {
+        return getRewardCell().getRewards().size();
+    }
+
     // 渲染格子
     public void render(MatrixStack matrixStack, FontRenderer font, KeyEventManager keyManager) {
         boolean isHovered = this.isMouseOver(keyManager);
+        int status = this.getRewardCellStatus();
         if (showIcon) {
-            Minecraft.getInstance().getTextureManager().bind(BACKGROUND_TEXTURE);
-            if (status == ESignInStatus.REWARDED.getCode()) {
+            AbstractGuiUtils.bindTexture(BACKGROUND_TEXTURE);
+            if (status == EnumSignInStatus.REWARDED.getCode()) {
                 // 绘制已领取图标
                 Coordinate signedInUV = textureCoordinate.getRewardedUV();
                 AbstractGuiUtils.blit(matrixStack, (int) x, (int) y, (int) width, (int) height, (float) signedInUV.getU0(), (float) signedInUV.getV0(), (int) signedInUV.getUWidth(), (int) signedInUV.getVHeight(), textureCoordinate.getTotalWidth(), textureCoordinate.getTotalHeight());
             } else {
                 Coordinate rewardUV;
                 // 绘制奖励图标
-                if (status == ESignInStatus.SIGNED_IN.getCode() || ClientConfig.AUTO_REWARDED.get()) {
+                if (status == EnumSignInStatus.SIGNED_IN.getCode() || ClientConfig.AUTO_REWARDED.get()) {
                     rewardUV = textureCoordinate.getSignedInUV();
                 } else {
                     rewardUV = textureCoordinate.getNotSignedInUV();
@@ -138,16 +147,19 @@ public class SignInCell {
                 } else {
                     color = textureCoordinate.getTextColorCurrent();
                 }
-            } else if (status == ESignInStatus.CAN_REPAIR.getCode()) {
+            } else if (status == EnumSignInStatus.CAN_REPAIR.getCode()) {
                 color = textureCoordinate.getTextColorCanRepair();
             }
             float dayWidth = font.width(dayComponent.toString());
-            font.draw(matrixStack, dayComponent.setColor(color).toTextComponent(), (float) (x + (width - dayWidth) / 2), (float) (y + textureCoordinate.getDateOffset() * this.scale + 0.1f), color);
+            font.draw(matrixStack, dayComponent.setColorArgb(color).toTextComponent(), (float) (x + (width - dayWidth) / 2), (float) (y + textureCoordinate.getDateOffset() * this.scale + 0.1f), color);
         }
     }
 
     // 绘制奖励详情弹出层
     public void renderTooltip(MatrixStack matrixStack, FontRenderer font, ItemRenderer itemRenderer, KeyEventManager keyManager) {
+        RewardCell rewardCell = this.getRewardCell();
+        int rewardCount = rewardCell.getRewards().size();
+
         // 禁用深度测试
         RenderSystem.disableDepthTest();
         matrixStack.pushPose();
@@ -168,7 +180,7 @@ public class SignInCell {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         // 在鼠标位置左上角绘制弹出层背景
-        Minecraft.getInstance().getTextureManager().bind(BACKGROUND_TEXTURE);
+        AbstractGuiUtils.bindTexture(BACKGROUND_TEXTURE);
         double tooltipX0 = (x == x1 ? (keyManager.getMouseX()) : x1 + width / 2) - tooltipWidth / 2;
         double tooltipY0 = (y == y1 ? keyManager.getMouseY() : y1 - 2) - tooltipHeight - 1;
         AbstractGuiUtils.blit(matrixStack, (int) tooltipX0, (int) tooltipY0, (int) tooltipWidth, (int) tooltipHeight, (float) tooltipUV.getU0(), (float) tooltipUV.getV0(), (int) tooltipUV.getUWidth(), (int) tooltipUV.getVHeight(), textureCoordinate.getTotalWidth(), textureCoordinate.getTotalHeight());
@@ -183,9 +195,9 @@ public class SignInCell {
         double outScrollY1 = outScrollY0 + scrollCoordinate.getHeight() * tooltipScale;
         AbstractGui.fill(matrixStack, (int) outScrollX0, (int) outScrollY0, (int) outScrollX1, (int) outScrollY1, 0xCC232323);
         // 滚动条百分比
-        double inScrollWidthScale = rewardList.size() > TOOLTIP_MAX_VISIBLE_ITEMS ? (double) TOOLTIP_MAX_VISIBLE_ITEMS / rewardList.size() : 1;
+        double inScrollWidthScale = rewardCount > TOOLTIP_MAX_VISIBLE_ITEMS ? (double) TOOLTIP_MAX_VISIBLE_ITEMS / rewardCount : 1;
         // 多出来的格子数量
-        int outCell = Math.max(rewardList.size() - TOOLTIP_MAX_VISIBLE_ITEMS, 0);
+        int outCell = Math.max(rewardCount - TOOLTIP_MAX_VISIBLE_ITEMS, 0);
         // 多出来的每个格子所占的空余条长度
         double outCellWidth = outCell == 0 ? 0 : (1 - inScrollWidthScale) * scrollCoordinate.getWidth() * tooltipScale / outCell;
         // 滚动条左边距长度
@@ -204,9 +216,9 @@ public class SignInCell {
             showQuality = Minecraft.getInstance().player.hasPermissions(ServerConfig.PERMISSION_REWARD_PROBABILITY.get());
         }
         for (int i = 0; i < TOOLTIP_MAX_VISIBLE_ITEMS; i++) {
-            int index = i + (rewardList.size() > TOOLTIP_MAX_VISIBLE_ITEMS ? tooltipScrollOffset : 0);
-            if (index >= 0 && index < rewardList.size()) {
-                Reward reward = rewardList.get(index);
+            int index = i + (rewardCount > TOOLTIP_MAX_VISIBLE_ITEMS ? tooltipScrollOffset : 0);
+            if (index >= 0 && index < rewardCount) {
+                Reward reward = rewardCell.getRewards().get(index);
                 // 物品图标在弹出层中的 x 位置
                 double itemX = (tooltipX0 + cellCoordinate.getX() * tooltipScale) + i * (itemIconSize + margin);
                 // 物品图标在弹出层中的 y 位置
@@ -224,7 +236,7 @@ public class SignInCell {
         double tooltipDateX = tooltipX0 + (tooltipWidth - fontWidth) / 2;
         double tooltipDateY = tooltipY0 + (dateCoordinate.getY() * tooltipScale);
         int color = 0xFFFFFFFF;
-        font.draw(matrixStack, title.setColor(color).toTextComponent(), (int) tooltipDateX, (int) tooltipDateY, color);
+        font.draw(matrixStack, title.setColorArgb(color).toTextComponent(), (int) tooltipDateX, (int) tooltipDateY, color);
 
         // 恢复原来的矩阵状态
         matrixStack.popPose();

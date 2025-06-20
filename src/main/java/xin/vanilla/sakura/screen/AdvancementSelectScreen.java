@@ -2,8 +2,9 @@ package xin.vanilla.sakura.screen;
 
 import com.google.gson.JsonObject;
 import com.mojang.blaze3d.matrix.MatrixStack;
+import lombok.Data;
 import lombok.Getter;
-import lombok.NonNull;
+import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
@@ -15,11 +16,11 @@ import net.minecraft.util.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
-import xin.vanilla.sakura.config.StringList;
-import xin.vanilla.sakura.enums.EI18nType;
-import xin.vanilla.sakura.enums.ERewardType;
+import xin.vanilla.sakura.data.Reward;
+import xin.vanilla.sakura.data.StringList;
+import xin.vanilla.sakura.enums.EnumI18nType;
+import xin.vanilla.sakura.enums.EnumRewardType;
 import xin.vanilla.sakura.network.data.AdvancementData;
-import xin.vanilla.sakura.rewards.Reward;
 import xin.vanilla.sakura.rewards.RewardManager;
 import xin.vanilla.sakura.rewards.impl.AdvancementRewardParser;
 import xin.vanilla.sakura.screen.component.KeyEventManager;
@@ -36,36 +37,24 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static xin.vanilla.sakura.config.RewardConfigManager.GSON;
+import static xin.vanilla.sakura.rewards.RewardConfigManager.GSON;
 
 public class AdvancementSelectScreen extends Screen {
     private static final Logger LOGGER = LogManager.getLogger();
 
     private final KeyEventManager keyManager = new KeyEventManager();
 
+    private final Args args;
+
     private static final Component TITLE = Component.literal("AdvancementSelectScreen");
 
     private final List<AdvancementData> allAdvancementList = SakuraSignIn.getAdvancementData();
-    private final List<AdvancementData> displayableAdvancementList = SakuraSignIn.getAdvancementData().stream().filter(o -> o.getDisplayInfo().getIcon().getItem() != Items.AIR).collect(Collectors.toList());
+    private final List<AdvancementData> displayableAdvancementList = SakuraSignIn.getAdvancementData().stream()
+            .filter(o -> o.getDisplayInfo().getIcon().getItem() != Items.AIR)
+            .collect(Collectors.toList());
     // 每页显示行数
     private final int maxLine = 5;
 
-    /**
-     * 父级 Screen
-     */
-    private final Screen previousScreen;
-    /**
-     * 输入数据回调1
-     */
-    private final Consumer<Reward> onDataReceived1;
-    /**
-     * 输入数据回调2
-     */
-    private final Function<Reward, String> onDataReceived2;
-    /**
-     * 是否要显示该界面, 若为false则直接关闭当前界面并返回到调用者的 Screen
-     */
-    private final Supplier<Boolean> shouldClose;
     /**
      * 输入框
      */
@@ -89,11 +78,11 @@ public class AdvancementSelectScreen extends Screen {
     /**
      * 当前选择的进度
      */
-    private Reward currentAdvancement = new Reward(new ResourceLocation(""), ERewardType.ADVANCEMENT);
+    private Reward currentAdvancement;
     /**
      * 奖励概率
      */
-    private BigDecimal probability = BigDecimal.ONE;
+    private BigDecimal probability;
     /**
      * 显示模式
      */
@@ -150,66 +139,63 @@ public class AdvancementSelectScreen extends Screen {
         }
     }
 
-    public AdvancementSelectScreen(@NonNull Screen callbackScreen, @NonNull Consumer<Reward> onDataReceived, @NonNull Reward defaultAdvancement, Supplier<Boolean> shouldClose) {
+    public AdvancementSelectScreen(Args args) {
         super(TITLE.toTextComponent());
-        this.previousScreen = callbackScreen;
-        this.onDataReceived1 = onDataReceived;
-        this.onDataReceived2 = null;
-        this.currentAdvancement = defaultAdvancement;
-        this.probability = defaultAdvancement.getProbability();
-        this.shouldClose = shouldClose;
+        assert args != null;
+        args.validate();
+        this.args = args;
+        this.currentAdvancement = args.getDefaultAdvancement();
+        this.probability = args.getDefaultAdvancement().getProbability();
     }
 
-    public AdvancementSelectScreen(@NonNull Screen callbackScreen, @NonNull Function<Reward, String> onDataReceived, @NonNull Reward defaultAdvancement, Supplier<Boolean> shouldClose) {
-        super(TITLE.toTextComponent());
-        this.previousScreen = callbackScreen;
-        this.onDataReceived1 = null;
-        this.onDataReceived2 = onDataReceived;
-        this.currentAdvancement = defaultAdvancement;
-        this.probability = defaultAdvancement.getProbability();
-        this.shouldClose = shouldClose;
-    }
+    @Data
+    @Accessors(chain = true)
+    public static final class Args {
+        /**
+         * 父级 Screen
+         */
+        private Screen parentScreen;
+        /**
+         * 默认值
+         */
+        private Reward defaultAdvancement = new Reward(SakuraSignIn.emptyResource(), EnumRewardType.ADVANCEMENT);
+        /**
+         * 输入数据回调
+         */
+        private Consumer<Reward> onDataReceived1;
+        /**
+         * 输入数据回调
+         */
+        private Function<Reward, String> onDataReceived2;
+        /**
+         * 是否要显示该界面, 若为false则直接关闭当前界面并返回到调用者的 Screen
+         */
+        private Supplier<Boolean> shouldClose;
 
-    public AdvancementSelectScreen(@NonNull Screen callbackScreen, @NonNull Consumer<Reward> onDataReceived, @NonNull Reward defaultAdvancement) {
-        super(TITLE.toTextComponent());
-        this.previousScreen = callbackScreen;
-        this.onDataReceived1 = onDataReceived;
-        this.onDataReceived2 = null;
-        this.currentAdvancement = defaultAdvancement;
-        this.probability = defaultAdvancement.getProbability();
-        this.shouldClose = null;
-    }
+        public Args setOnDataReceived(Consumer<Reward> onDataReceived) {
+            this.onDataReceived1 = onDataReceived;
+            return this;
+        }
 
-    public AdvancementSelectScreen(@NonNull Screen callbackScreen, @NonNull Function<Reward, String> onDataReceived, @NonNull Reward defaultAdvancement) {
-        super(TITLE.toTextComponent());
-        this.previousScreen = callbackScreen;
-        this.onDataReceived1 = null;
-        this.onDataReceived2 = onDataReceived;
-        this.currentAdvancement = defaultAdvancement;
-        this.probability = defaultAdvancement.getProbability();
-        this.shouldClose = null;
-    }
+        public Args setOnDataReceived(Function<Reward, String> onDataReceived) {
+            this.onDataReceived2 = onDataReceived;
+            return this;
+        }
 
-    public AdvancementSelectScreen(@NonNull Screen callbackScreen, @NonNull Consumer<Reward> onDataReceived) {
-        super(TITLE.toTextComponent());
-        this.previousScreen = callbackScreen;
-        this.onDataReceived1 = onDataReceived;
-        this.onDataReceived2 = null;
-        this.shouldClose = null;
-    }
+        public void validate() {
+            Objects.requireNonNull(this.getParentScreen());
+            if (this.getOnDataReceived1() == null)
+                Objects.requireNonNull(this.getOnDataReceived2());
+            if (this.getOnDataReceived2() == null)
+                Objects.requireNonNull(this.getOnDataReceived1());
+        }
 
-    public AdvancementSelectScreen(@NonNull Screen callbackScreen, @NonNull Function<Reward, String> onDataReceived) {
-        super(TITLE.toTextComponent());
-        this.previousScreen = callbackScreen;
-        this.onDataReceived1 = null;
-        this.onDataReceived2 = onDataReceived;
-        this.shouldClose = null;
     }
 
     @Override
     protected void init() {
-        if (this.shouldClose != null && Boolean.TRUE.equals(this.shouldClose.get()))
-            Minecraft.getInstance().setScreen(previousScreen);
+        if (args.getShouldClose() != null && Boolean.TRUE.equals(args.getShouldClose().get()))
+            Minecraft.getInstance().setScreen(args.getParentScreen());
         this.updateSearchResults();
         this.updateLayout();
         // 创建文本输入框
@@ -219,22 +205,21 @@ public class AdvancementSelectScreen extends Screen {
         // 创建提交按钮
         this.addButton(AbstractGuiUtils.newButton((int) (this.bgX + 56 + this.margin), (int) (this.bgY + (20 + (AbstractGuiUtils.ITEM_ICON_SIZE + 3) * 5 + margin))
                 , (int) (56 - this.margin * 2), 20
-                , Component.translatableClient(EI18nType.OPTION, "submit"), button -> {
+                , Component.translatableClient(EnumI18nType.OPTION, "submit"), button -> {
                     if (this.currentAdvancement == null) {
-                        // 关闭当前屏幕并返回到调用者的 Screen
-                        Minecraft.getInstance().setScreen(previousScreen);
+                        Minecraft.getInstance().setScreen(args.getParentScreen());
                     } else {
                         // 获取选择的数据，并执行回调
                         ResourceLocation resourceLocation = RewardManager.deserializeReward(this.currentAdvancement);
-                        if (onDataReceived1 != null) {
-                            onDataReceived1.accept(new Reward(resourceLocation, ERewardType.ADVANCEMENT, this.probability));
-                            Minecraft.getInstance().setScreen(previousScreen);
-                        } else if (onDataReceived2 != null) {
-                            String result = onDataReceived2.apply(new Reward(resourceLocation, ERewardType.ADVANCEMENT, this.probability));
+                        if (args.getOnDataReceived1() != null) {
+                            args.getOnDataReceived1().accept(new Reward(resourceLocation, EnumRewardType.ADVANCEMENT, this.probability));
+                            Minecraft.getInstance().setScreen(args.getParentScreen());
+                        } else if (args.getOnDataReceived2() != null) {
+                            String result = args.getOnDataReceived2().apply(new Reward(resourceLocation, EnumRewardType.ADVANCEMENT, this.probability));
                             if (StringUtils.isNotNullOrEmpty(result)) {
-                                // this.errorText = Text.literal(result).setColor(0xFFFF0000);
+                                // this.errorText = Text.literal(result).setColorArgb(0xFFFF0000);
                             } else {
-                                Minecraft.getInstance().setScreen(previousScreen);
+                                Minecraft.getInstance().setScreen(args.getParentScreen());
                             }
                         }
                     }
@@ -242,8 +227,8 @@ public class AdvancementSelectScreen extends Screen {
         // 创建取消按钮
         this.addButton(AbstractGuiUtils.newButton((int) (this.bgX + this.margin), (int) (this.bgY + (20 + (AbstractGuiUtils.ITEM_ICON_SIZE + 3) * 5 + margin))
                 , (int) (56 - this.margin * 2), 20
-                , Component.translatableClient(EI18nType.OPTION, "cancel")
-                , button -> Minecraft.getInstance().setScreen(previousScreen)));
+                , Component.translatableClient(EnumI18nType.OPTION, "cancel")
+                , button -> Minecraft.getInstance().setScreen(args.getParentScreen())));
     }
 
     @Override
@@ -273,7 +258,7 @@ public class AdvancementSelectScreen extends Screen {
         keyManager.mouseClicked(button, mouseX, mouseY);
         AtomicBoolean flag = new AtomicBoolean(false);
         if (button == GLFWKey.GLFW_MOUSE_BUTTON_4) {
-            Minecraft.getInstance().setScreen(previousScreen);
+            Minecraft.getInstance().setScreen(args.getParentScreen());
             flag.set(true);
         } else if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT || button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
             OP_BUTTONS.forEach((key, value) -> {
@@ -342,14 +327,11 @@ public class AdvancementSelectScreen extends Screen {
         super.mouseMoved(mouseX, mouseY);
     }
 
-    /**
-     * 重写键盘事件
-     */
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         keyManager.keyPressed(keyCode);
         if (keyManager.onlyEscapePressed() || (keyManager.onlyBackspacePressed() && !this.inputField.isFocused())) {
-            Minecraft.getInstance().setScreen(previousScreen);
+            Minecraft.getInstance().setScreen(args.getParentScreen());
             return true;
         } else if (keyManager.onlyEnterPressed() && this.inputField.isFocused()) {
             this.updateSearchResults();
@@ -389,7 +371,7 @@ public class AdvancementSelectScreen extends Screen {
             AbstractGuiUtils.fillOutLine(context.matrixStack, (int) context.button.getX(), (int) context.button.getY(), (int) context.button.getWidth(), (int) context.button.getHeight(), 1, lineColor, 2);
             ItemStack itemStack = new ItemStack(this.displayMode ? Items.CHEST : Items.COMPASS);
             this.itemRenderer.renderGuiItem(itemStack, (int) context.button.getX() + 2, (int) context.button.getY() + 2);
-            Text text = Text.translatable(EI18nType.TIPS, (this.displayMode ? "advancement_select_list_icon_mode" : "advancement_select_list_all_mode"), (this.displayMode ? displayableAdvancementList.size() : allAdvancementList.size()));
+            Text text = Text.translatable(EnumI18nType.TIPS, (this.displayMode ? "advancement_select_list_icon_mode" : "advancement_select_list_all_mode"), (this.displayMode ? displayableAdvancementList.size() : allAdvancementList.size()));
             context.button.setTooltip(text);
         }).setX(this.bgX - AbstractGuiUtils.ITEM_ICON_SIZE - 2 - margin - 3).setY(this.bgY + margin).setWidth(AbstractGuiUtils.ITEM_ICON_SIZE + 4).setHeight(AbstractGuiUtils.ITEM_ICON_SIZE + 4));
         this.OP_BUTTONS.put(OperationButtonType.ADVANCEMENT.getCode(), new OperationButton(OperationButtonType.ADVANCEMENT.getCode(), context -> {
@@ -406,7 +388,7 @@ public class AdvancementSelectScreen extends Screen {
             AbstractGuiUtils.fill(context.matrixStack, (int) context.button.getX(), (int) context.button.getY(), (int) context.button.getWidth(), (int) context.button.getHeight(), 0xEE707070, 2);
             AbstractGuiUtils.fillOutLine(context.matrixStack, (int) context.button.getX(), (int) context.button.getY(), (int) context.button.getWidth(), (int) context.button.getHeight(), 1, lineColor, 2);
             AbstractGuiUtils.drawEffectIcon(context.matrixStack, super.font, new EffectInstance(Effects.LUCK), (int) context.button.getX() + 2, (int) context.button.getY() + 2, false);
-            Text text = Text.translatable(EI18nType.TIPS, "set_probability_f", this.probability.multiply(new BigDecimal(100)).floatValue());
+            Text text = Text.translatable(EnumI18nType.TIPS, "set_probability_f", this.probability.multiply(new BigDecimal(100)).floatValue());
             context.button.setTooltip(text);
         }).setX(this.bgX - AbstractGuiUtils.ITEM_ICON_SIZE - 2 - margin - 3).setY(this.bgY + margin + (AbstractGuiUtils.ITEM_ICON_SIZE + 4 + 1) * 2).setWidth(AbstractGuiUtils.ITEM_ICON_SIZE + 4).setHeight(AbstractGuiUtils.ITEM_ICON_SIZE + 4));
 
@@ -509,8 +491,8 @@ public class AdvancementSelectScreen extends Screen {
     private void handleAdvancement(OperationButton bt, int button, AtomicBoolean flag) {
         if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
             if (StringUtils.isNotNullOrEmpty(bt.getId())) {
-                ResourceLocation resourceLocation = new ResourceLocation(bt.getId());
-                this.currentAdvancement = new Reward(resourceLocation, ERewardType.ADVANCEMENT, this.probability);
+                ResourceLocation resourceLocation = SakuraSignIn.parseResource(bt.getId());
+                this.currentAdvancement = new Reward(resourceLocation, EnumRewardType.ADVANCEMENT, this.probability);
                 LOGGER.debug("Select effect: {}", AdvancementRewardParser.getAdvancementData(resourceLocation).getDisplayInfo().getTitle().getString());
                 flag.set(true);
             }
@@ -526,51 +508,58 @@ public class AdvancementSelectScreen extends Screen {
         // 编辑进度Json
         else if (bt.getOperation() == OperationButtonType.ADVANCEMENT.getCode()) {
             String effectRewardJsonString = GSON.toJson(this.currentAdvancement.getContent());
-            Minecraft.getInstance().setScreen(new StringInputScreen(this
-                    , Text.translatable(EI18nType.TIPS, "enter_advancement_json").setShadow(true)
-                    , Text.translatable(EI18nType.TIPS, "enter_something")
-                    , ""
-                    , effectRewardJsonString
-                    , input -> {
-                StringList result = new StringList();
-                if (CollectionUtils.isNotNullOrEmpty(input)) {
-                    ResourceLocation instance;
-                    String json = input.get(0);
-                    try {
-                        JsonObject jsonObject = GSON.fromJson(json, JsonObject.class);
-                        instance = RewardManager.deserializeReward(new Reward(jsonObject, ERewardType.ADVANCEMENT, this.probability));
-                    } catch (Exception e) {
-                        LOGGER.error("Invalid Json: {}", json);
-                        instance = null;
-                    }
-                    if (instance != null) {
-                        this.currentAdvancement = new Reward(instance, ERewardType.ADVANCEMENT, this.probability);
-                    } else {
-                        result.add(Component.translatableClient(EI18nType.TIPS, "advancement_json_s_error", json).toString());
-                    }
-                }
-                return result;
-            }));
+            StringInputScreen.Args args = new StringInputScreen.Args()
+                    .setParentScreen(this)
+                    .addWidget(new StringInputScreen.InputWidget()
+                            .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_advancement_json").setShadow(true))
+                            .setMessage(Text.translatable(EnumI18nType.TIPS, "enter_something"))
+                            .setDefaultValue(effectRewardJsonString)
+                    )
+                    .setOnDataReceived(input -> {
+                        StringList result = new StringList();
+                        if (CollectionUtils.isNotNullOrEmpty(input)) {
+                            ResourceLocation instance;
+                            String json = input.get(0);
+                            try {
+                                JsonObject jsonObject = GSON.fromJson(json, JsonObject.class);
+                                instance = RewardManager.deserializeReward(new Reward(jsonObject, EnumRewardType.ADVANCEMENT, this.probability));
+                            } catch (Exception e) {
+                                LOGGER.error("Invalid Json: {}", json);
+                                instance = null;
+                            }
+                            if (instance != null) {
+                                this.currentAdvancement = new Reward(instance, EnumRewardType.ADVANCEMENT, this.probability);
+                            } else {
+                                result.add(Component.translatableClient(EnumI18nType.TIPS, "advancement_json_s_error", json).toString());
+                            }
+                        }
+                        return result;
+                    });
+            Minecraft.getInstance().setScreen(new StringInputScreen(args));
         }
         // 编辑概率
         else if (bt.getOperation() == OperationButtonType.PROBABILITY.getCode()) {
-            Minecraft.getInstance().setScreen(new StringInputScreen(this
-                    , Text.translatable(EI18nType.TIPS, "enter_reward_probability").setShadow(true)
-                    , Text.translatable(EI18nType.TIPS, "enter_something")
-                    , "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?"
-                    , StringUtils.toFixedEx(this.probability, 5)
-                    , input -> {
-                StringList result = new StringList();
-                if (CollectionUtils.isNotNullOrEmpty(input)) {
-                    BigDecimal p = StringUtils.toBigDecimal(input.get(0));
-                    if (p.compareTo(BigDecimal.ZERO) > 0 && p.compareTo(BigDecimal.ONE) <= 0) {
-                        this.probability = p;
-                    } else {
-                        result.add(Component.translatableClient(EI18nType.TIPS, "reward_probability_s_error", input.get(0)).toString());
-                    }
-                }
-                return result;
-            }));
+            StringInputScreen.Args args = new StringInputScreen.Args()
+                    .setParentScreen(this)
+                    .addWidget(new StringInputScreen.InputWidget()
+                            .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
+                            .setMessage(Text.translatable(EnumI18nType.TIPS, "enter_something"))
+                            .setValidator("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                            .setDefaultValue(StringUtils.toFixedEx(this.probability, 5))
+                    )
+                    .setOnDataReceived(input -> {
+                        StringList result = new StringList();
+                        if (CollectionUtils.isNotNullOrEmpty(input)) {
+                            BigDecimal p = StringUtils.toBigDecimal(input.get(0));
+                            if (p.compareTo(BigDecimal.ZERO) > 0 && p.compareTo(BigDecimal.ONE) <= 0) {
+                                this.probability = p;
+                            } else {
+                                result.add(Component.translatableClient(EnumI18nType.TIPS, "reward_probability_s_error", input.get(0)).toString());
+                            }
+                        }
+                        return result;
+                    });
+            Minecraft.getInstance().setScreen(new StringInputScreen(args));
         }
     }
 }

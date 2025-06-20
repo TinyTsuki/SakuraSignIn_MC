@@ -53,57 +53,57 @@ public class ClientConfig {
     /**
      * 配置界面 - 复制
      */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_REWARD_OPTION_COPY;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> KEY_REWARD_OPTION_COPY;
     /**
      * 配置界面 - 粘贴
      */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_REWARD_OPTION_PASTE;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> KEY_REWARD_OPTION_PASTE;
     /**
      * 配置界面 - 裁剪
      */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_REWARD_OPTION_CUT;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> KEY_REWARD_OPTION_CUT;
     /**
      * 配置界面 - 删除
      */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_REWARD_OPTION_DELETE;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> KEY_REWARD_OPTION_DELETE;
     /**
      * 配置界面 - 撤销
      */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_REWARD_OPTION_UNDO;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> KEY_REWARD_OPTION_UNDO;
     /**
      * 配置界面 - 重做
      */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_REWARD_OPTION_REDO;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> KEY_REWARD_OPTION_REDO;
 
     /**
      * 签到界面 - 签到
      */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_SIGN_SIGN_IN;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> KEY_SIGN_SIGN_IN;
     /**
      * 签到界面 - 补签
      */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_SIGN_RE_SIGN_IN;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> KEY_SIGN_RE_SIGN_IN;
     /**
      * 签到界面 - 领取奖励
      */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_SIGN_REWARD;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> KEY_SIGN_REWARD;
     /**
      * 签到界面 - 上月
      */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_SIGN_LAST_MONTH;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> KEY_SIGN_LAST_MONTH;
     /**
      * 签到界面 - 下月
      */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_SIGN_NEXT_MONTH;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> KEY_SIGN_NEXT_MONTH;
 
     /**
      * 签到界面 - 去年
      */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_SIGN_LAST_YEAR;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> KEY_SIGN_LAST_YEAR;
     /**
      * 签到界面 - 明年
      */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_SIGN_NEXT_YEAR;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> KEY_SIGN_NEXT_YEAR;
 
     // endregion 按键设置
 
@@ -170,51 +170,51 @@ public class ClientConfig {
                 KEY_REWARD_OPTION_COPY = CLIENT_BUILDER
                         .comment("Keys used to copy on the reward option screen",
                                 "奖励配置页面进行 复制操作 时所使用的按键")
-                        .define("copy", new ArrayList<String>() {{
+                        .defineList("copy", new ArrayList<String>() {{
                             add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_CONTROL, GLFWKey.GLFW_KEY_C));
                             add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_RIGHT_CONTROL, GLFWKey.GLFW_KEY_C));
-                        }});
+                        }}, s -> s instanceof String);
 
                 KEY_REWARD_OPTION_PASTE = CLIENT_BUILDER
                         .comment("Keys used to paste on the reward option screen",
                                 "奖励配置页面进行 粘贴操作 时所使用的按键")
-                        .define("paste", new ArrayList<String>() {{
+                        .defineList("paste", new ArrayList<String>() {{
                             add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_CONTROL, GLFWKey.GLFW_KEY_V));
                             add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_RIGHT_CONTROL, GLFWKey.GLFW_KEY_V));
-                        }});
+                        }}, s -> s instanceof String);
 
                 KEY_REWARD_OPTION_CUT = CLIENT_BUILDER
                         .comment("Keys used to cut on the reward option screen",
                                 "奖励配置页面进行 裁剪操作 时所使用的按键")
-                        .define("cut", new ArrayList<String>() {{
+                        .defineList("cut", new ArrayList<String>() {{
                             add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_CONTROL, GLFWKey.GLFW_KEY_X));
                             add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_RIGHT_CONTROL, GLFWKey.GLFW_KEY_X));
-                        }});
+                        }}, s -> s instanceof String);
 
                 KEY_REWARD_OPTION_DELETE = CLIENT_BUILDER
                         .comment("Keys used to delete on the reward option screen",
                                 "奖励配置页面进行 删除操作 时所使用的按键")
-                        .define("delete", new ArrayList<String>() {{
+                        .defineList("delete", new ArrayList<String>() {{
                             add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_DELETE));
                             add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_CONTROL, GLFWKey.GLFW_KEY_Y));
                             add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_CONTROL) + "+" + GLFWKeyHelper.getMouseDisplayString(GLFWKey.GLFW_MOUSE_BUTTON_RIGHT));
-                        }});
+                        }}, s -> s instanceof String);
 
                 KEY_REWARD_OPTION_UNDO = CLIENT_BUILDER
                         .comment("Keys used to undo on the reward option screen",
                                 "奖励配置页面进行 撤销操作 时所使用的按键")
-                        .define("undo", new ArrayList<String>() {{
+                        .defineList("undo", new ArrayList<String>() {{
                             add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_CONTROL, GLFWKey.GLFW_KEY_Z));
                             add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_RIGHT_CONTROL, GLFWKey.GLFW_KEY_Z));
-                        }});
+                        }}, s -> s instanceof String);
 
                 KEY_REWARD_OPTION_REDO = CLIENT_BUILDER
                         .comment("Keys used to redo on the reward option screen",
                                 "奖励配置页面进行 重做操作 时所使用的按键")
-                        .define("redo", new ArrayList<String>() {{
+                        .defineList("redo", new ArrayList<String>() {{
                             add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_CONTROL, GLFWKey.GLFW_KEY_LEFT_SHIFT, GLFWKey.GLFW_KEY_Z));
                             add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_RIGHT_CONTROL, GLFWKey.GLFW_KEY_RIGHT_SHIFT, GLFWKey.GLFW_KEY_Z));
-                        }});
+                        }}, s -> s instanceof String);
 
                 CLIENT_BUILDER.pop();
             }
@@ -225,58 +225,58 @@ public class ClientConfig {
                 KEY_SIGN_SIGN_IN = CLIENT_BUILDER
                         .comment("Keys used to sign in on the sign-in screen",
                                 "签到页面进行 签到操作 时所使用的按键")
-                        .define("signIn", new ArrayList<String>() {{
+                        .defineList("signIn", new ArrayList<String>() {{
                             add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_ENTER));
                             add(GLFWKeyHelper.getMouseDisplayString(GLFWKey.GLFW_MOUSE_BUTTON_LEFT));
-                        }});
+                        }}, s -> s instanceof String);
 
                 KEY_SIGN_RE_SIGN_IN = CLIENT_BUILDER
                         .comment("Keys used to re-sign in on the sign-in screen",
                                 "签到页面进行 补签操作 时所使用的按键")
-                        .define("reSignIn", new ArrayList<String>() {{
+                        .defineList("reSignIn", new ArrayList<String>() {{
                             add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_SHIFT, GLFWKey.GLFW_KEY_ENTER));
                             add(GLFWKeyHelper.getMouseDisplayString(GLFWKey.GLFW_MOUSE_BUTTON_RIGHT));
-                        }});
+                        }}, s -> s instanceof String);
 
                 KEY_SIGN_REWARD = CLIENT_BUILDER
                         .comment("Keys used to claim rewards on the sign-in screen",
                                 "签到页面进行 领取奖励操作 时所使用的按键")
-                        .define("reward", new ArrayList<String>() {{
+                        .defineList("reward", new ArrayList<String>() {{
                             add("LeftShift+Enter");
                             add("MouseRight");
-                        }});
+                        }}, s -> s instanceof String);
 
                 KEY_SIGN_LAST_MONTH = CLIENT_BUILDER
                         .comment("Keys used to switch to the last month on the sign-in screen",
                                 "签到页面进行 切换到上个月 时所使用的按键")
-                        .define("lastMonth", new ArrayList<String>() {{
+                        .defineList("lastMonth", new ArrayList<String>() {{
                             add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT));
                             add(GLFWKeyHelper.getMouseDisplayString(GLFWKey.GLFW_MOUSE_BUTTON_LEFT));
-                        }});
+                        }}, s -> s instanceof String);
 
                 KEY_SIGN_NEXT_MONTH = CLIENT_BUILDER
                         .comment("Keys used to switch to the next month on the sign-in screen",
                                 "签到页面进行 切换到下个月 时所使用的按键")
-                        .define("nextMonth", new ArrayList<String>() {{
+                        .defineList("nextMonth", new ArrayList<String>() {{
                             add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_RIGHT));
                             add(GLFWKeyHelper.getMouseDisplayString(GLFWKey.GLFW_MOUSE_BUTTON_LEFT));
-                        }});
+                        }}, s -> s instanceof String);
 
                 KEY_SIGN_LAST_YEAR = CLIENT_BUILDER
                         .comment("Keys used to switch to the last year on the sign-in screen",
                                 "签到页面进行 切换到上一年 时所使用的按键")
-                        .define("lastYear", new ArrayList<String>() {{
+                        .defineList("lastYear", new ArrayList<String>() {{
                             add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_UP));
                             add(GLFWKeyHelper.getMouseDisplayString(GLFWKey.GLFW_MOUSE_BUTTON_LEFT));
-                        }});
+                        }}, s -> s instanceof String);
 
                 KEY_SIGN_NEXT_YEAR = CLIENT_BUILDER
                         .comment("Keys used to switch to the next year on the sign-in screen",
                                 "签到页面进行 切换到下一年 时所使用的按键")
-                        .define("nextYear", new ArrayList<String>() {{
+                        .defineList("nextYear", new ArrayList<String>() {{
                             add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_DOWN));
                             add(GLFWKeyHelper.getMouseDisplayString(GLFWKey.GLFW_MOUSE_BUTTON_LEFT));
-                        }});
+                        }}, s -> s instanceof String);
 
                 CLIENT_BUILDER.pop();
             }

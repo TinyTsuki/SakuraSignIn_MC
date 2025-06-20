@@ -1,12 +1,18 @@
 package xin.vanilla.sakura.util;
 
+import lombok.NonNull;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.command.CommandSource;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.network.IPacket;
+import net.minecraft.network.play.server.SChatPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
@@ -14,25 +20,46 @@ import net.minecraft.util.text.ChatType;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.LightType;
 import net.minecraft.world.World;
-import net.minecraftforge.fml.ModContainer;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.forgespi.language.IModInfo;
-import org.apache.maven.artifact.versioning.ArtifactVersion;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.fml.loading.FMLPaths;
+import net.minecraftforge.fml.network.PacketDistributor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.lwjgl.PointerBuffer;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.util.tinyfd.TinyFileDialogs;
 import xin.vanilla.sakura.SakuraSignIn;
+import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.config.CommonConfig;
+import xin.vanilla.sakura.config.CustomConfig;
 import xin.vanilla.sakura.config.ServerConfig;
-import xin.vanilla.sakura.data.PlayerSignInDataCapability;
-import xin.vanilla.sakura.enums.ERewardRule;
+import xin.vanilla.sakura.enums.EnumCommandType;
+import xin.vanilla.sakura.enums.EnumI18nType;
+import xin.vanilla.sakura.enums.EnumRewardRule;
+import xin.vanilla.sakura.network.ModNetworkHandler;
+import xin.vanilla.sakura.screen.SignInScreen;
+import xin.vanilla.sakura.screen.component.NotificationManager;
+import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.UUID;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-public class SakuraUtils {
+import static xin.vanilla.sakura.SakuraSignIn.PNG_CHUNK_NAME;
 
+public class SakuraUtils {
+    private static final Logger LOGGER = LogManager.getLogger();
+
+    private static final Random random = new Random();
+
+    // region 指令相关
 
     public static String getCommandPrefix() {
         String commandPrefix = CommonConfig.COMMAND_PREFIX.get();
@@ -42,6 +69,159 @@ public class SakuraUtils {
         return CommonConfig.COMMAND_PREFIX.get().trim();
     }
 
+    /**
+     * 获取完整的指令
+     */
+    public static String getCommand(EnumCommandType type) {
+        String prefix = SakuraUtils.getCommandPrefix();
+        switch (type) {
+            case HELP:
+                return prefix + " help";
+            case LANGUAGE:
+                return prefix + " " + CommonConfig.COMMAND_LANGUAGE.get();
+            case LANGUAGE_CONCISE:
+                return isConciseEnabled(type) ? CommonConfig.COMMAND_LANGUAGE.get() : "";
+            case VIRTUAL_OP:
+                return prefix + " " + CommonConfig.COMMAND_VIRTUAL_OP.get();
+            case VIRTUAL_OP_CONCISE:
+                return isConciseEnabled(type) ? CommonConfig.COMMAND_VIRTUAL_OP.get() : "";
+            case SIGN:
+                return prefix + " " + CommonConfig.COMMAND_SIGN.get();
+            case SIGN_CONCISE:
+                return isConciseEnabled(type) ? CommonConfig.COMMAND_SIGN.get() : "";
+            case SIGNEX:
+                return prefix + " " + CommonConfig.COMMAND_SIGNEX.get();
+            case SIGNEX_CONCISE:
+                return isConciseEnabled(type) ? CommonConfig.COMMAND_SIGNEX.get() : "";
+            case REWARD:
+                return prefix + " " + CommonConfig.COMMAND_REWARD.get();
+            case REWARD_CONCISE:
+                return isConciseEnabled(type) ? CommonConfig.COMMAND_REWARD.get() : "";
+            case CDK:
+                return prefix + " " + CommonConfig.COMMAND_CDK.get();
+            case CDK_CONCISE:
+                return isConciseEnabled(type) ? CommonConfig.COMMAND_CDK.get() : "";
+            case CARD:
+            case CARD_GET:
+            case CARD_SET:
+                return prefix + " " + CommonConfig.COMMAND_CARD.get();
+            case CARD_CONCISE:
+            case CARD_GET_CONCISE:
+            case CARD_SET_CONCISE:
+                return isConciseEnabled(type) ? CommonConfig.COMMAND_CARD.get() : "";
+            default:
+                return "";
+        }
+    }
+
+    /**
+     * 获取指令权限等级
+     */
+    public static int getCommandPermissionLevel(EnumCommandType type) {
+        switch (type) {
+            case VIRTUAL_OP:
+            case VIRTUAL_OP_CONCISE:
+                return ServerConfig.PERMISSION_VIRTUAL_OP.get();
+            case SIGN:
+            case SIGN_CONCISE:
+                return ServerConfig.PERMISSION_SIGN.get();
+            case SIGNEX:
+            case SIGNEX_CONCISE:
+                return ServerConfig.PERMISSION_SIGNEX.get();
+            case REWARD:
+            case REWARD_CONCISE:
+                return ServerConfig.PERMISSION_REWARD.get();
+            case CDK:
+            case CDK_CONCISE:
+                return ServerConfig.PERMISSION_CDK.get();
+            case CARD:
+            case CARD_CONCISE:
+                return ServerConfig.PERMISSION_CARD.get();
+            case CARD_GET:
+            case CARD_GET_CONCISE:
+                return ServerConfig.PERMISSION_CARD_GET.get();
+            case CARD_SET:
+            case CARD_SET_CONCISE:
+                return ServerConfig.PERMISSION_CARD_SET.get();
+            default:
+                return 0;
+        }
+    }
+
+    /**
+     * 判断指令是否启用简短模式
+     */
+    public static boolean isConciseEnabled(EnumCommandType type) {
+        switch (type) {
+            case LANGUAGE:
+            case LANGUAGE_CONCISE:
+                return CommonConfig.CONCISE_LANGUAGE.get();
+            case VIRTUAL_OP:
+            case VIRTUAL_OP_CONCISE:
+                return CommonConfig.CONCISE_VIRTUAL_OP.get();
+            case SIGN:
+            case SIGN_CONCISE:
+                return CommonConfig.CONCISE_SIGN.get();
+            case SIGNEX:
+            case SIGNEX_CONCISE:
+                return CommonConfig.CONCISE_SIGNEX.get();
+            case REWARD:
+            case REWARD_CONCISE:
+                return CommonConfig.CONCISE_REWARD.get();
+            case CDK:
+            case CDK_CONCISE:
+                return CommonConfig.CONCISE_CDK.get();
+            case CARD:
+            case CARD_CONCISE:
+            case CARD_GET:
+            case CARD_GET_CONCISE:
+            case CARD_SET:
+            case CARD_SET_CONCISE:
+                return CommonConfig.CONCISE_CARD.get();
+            default:
+                return false;
+        }
+    }
+
+    /**
+     * 判断是否拥有指令权限
+     */
+    public static boolean hasCommandPermission(CommandSource source, EnumCommandType type) {
+        return source.hasPermission(getCommandPermissionLevel(type)) || hasVirtualPermission(source.getEntity(), type);
+    }
+
+    /**
+     * 判断是否拥有指令权限
+     */
+    public static boolean hasVirtualPermission(Entity source, EnumCommandType type) {
+        // 若为玩家
+        if (source instanceof PlayerEntity) {
+            return VirtualPermissionManager.getVirtualPermission((PlayerEntity) source).stream()
+                    .filter(Objects::nonNull)
+                    .anyMatch(s -> s.replaceConcise() == type.replaceConcise());
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * 执行指令
+     */
+    public static boolean executeCommand(@NonNull ServerPlayerEntity player, @NonNull String command) {
+        AtomicBoolean result = new AtomicBoolean(false);
+        try {
+            player.getServer().getCommands().performCommand(player.createCommandSourceStack()
+                            .withCallback((source, success, r) -> result.set(success && r > 0))
+                    , command
+            );
+        } catch (Exception e) {
+            LOGGER.error("Failed to execute command: {}", command, e);
+        }
+        return result.get();
+    }
+
+    // endregion 指令相关
+
     // region 玩家与玩家背包
 
     /**
@@ -50,7 +230,7 @@ public class SakuraUtils {
     public static ServerPlayerEntity getRandomPlayer() {
         try {
             List<ServerPlayerEntity> players = SakuraSignIn.getServerInstance().getPlayerList().getPlayers();
-            return players.get(new Random().nextInt(players.size()));
+            return players.get(random.nextInt(players.size()));
         } catch (Exception ignored) {
             return null;
         }
@@ -213,11 +393,50 @@ public class SakuraUtils {
         player.sendMessage(Component.translatable(key, args).setLanguageCode(SakuraUtils.getPlayerLanguage(player)).toChatComponent(), player.getUUID());
     }
 
+    /**
+     * 发送操作栏消息至所有玩家
+     */
+    public static void sendActionBarMessageToAll(Component message) {
+        for (ServerPlayerEntity player : SakuraSignIn.getServerInstance().getPlayerList().getPlayers()) {
+            sendActionBarMessage(player, message);
+        }
+    }
+
+    /**
+     * 发送操作栏消息
+     */
+    public static void sendActionBarMessage(ServerPlayerEntity player, Component message) {
+        player.connection.send(new SChatPacket(message.toChatComponent(SakuraUtils.getPlayerLanguage(player)), ChatType.GAME_INFO, player.getUUID()));
+    }
+
+    /**
+     * 广播数据包至所有玩家
+     *
+     * @param packet 数据包
+     */
+    public static void broadcastPacket(IPacket<?> packet) {
+        SakuraSignIn.getServerInstance().getPlayerList().getPlayers().forEach(player -> player.connection.send(packet));
+    }
+
+    /**
+     * 发送数据包至服务器
+     */
+    public static <MSG> void sendPacketToServer(MSG msg) {
+        ModNetworkHandler.INSTANCE.sendToServer(msg);
+    }
+
+    /**
+     * 发送数据包至玩家
+     */
+    public static <MSG> void sendPacketToPlayer(MSG msg, ServerPlayerEntity player) {
+        ModNetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), msg);
+    }
+
     // endregion 消息相关
 
     // region 权限相关
 
-    public static int getRewardPermissionLevel(ERewardRule rule) {
+    public static int getRewardPermissionLevel(EnumRewardRule rule) {
         int result = 0;
         switch (rule) {
             case BASE_REWARD:
@@ -258,8 +477,12 @@ public class SakuraUtils {
 
     // region 杂项
 
-    public static String getPlayerLanguage(ServerPlayerEntity player) {
-        return PlayerSignInDataCapability.getData(player).getValidLanguage(player);
+    public static String getPlayerLanguage(PlayerEntity player) {
+        try {
+            return SakuraUtils.getValidLanguage(player, CustomConfig.getPlayerLanguage(getPlayerUUIDString(player)));
+        } catch (IllegalArgumentException i) {
+            return ServerConfig.DEFAULT_LANGUAGE.get();
+        }
     }
 
     public static String getValidLanguage(@Nullable PlayerEntity player, @Nullable String language) {
@@ -296,28 +519,8 @@ public class SakuraUtils {
         return Minecraft.getInstance().getLanguageManager().getSelected().getCode();
     }
 
-    /**
-     * 获取当前mod支持的mc版本
-     *
-     * @return 主版本*1000000+次版本*1000+修订版本， 如 1.16.5 -> 1 * 1000000 + 16 * 1000 + 5 = 10016005
-     */
-    public static int getMcVersion() {
-        int version = 0;
-        ModContainer container = ModList.get().getModContainerById(SakuraSignIn.MODID).orElse(null);
-        if (container != null) {
-            IModInfo.ModVersion minecraftVersion = container.getModInfo().getDependencies().stream()
-                    .filter(dependency -> dependency.getModId().equalsIgnoreCase("minecraft"))
-                    .findFirst()
-                    .orElse(null);
-            if (minecraftVersion != null) {
-                ArtifactVersion lowerBound = minecraftVersion.getVersionRange().getRestrictions().get(0).getLowerBound();
-                int majorVersion = lowerBound.getMajorVersion();
-                int minorVersion = lowerBound.getMinorVersion();
-                int incrementalVersion = lowerBound.getIncrementalVersion();
-                version = majorVersion * 1000000 + minorVersion * 1000 + incrementalVersion;
-            }
-        }
-        return version;
+    public static String getPlayerUUIDString(@NonNull PlayerEntity player) {
+        return player.getUUID().toString();
     }
 
     /**
@@ -395,7 +598,7 @@ public class SakuraUtils {
         }
     }
 
-    public static String getRewardRuleI18nKeyName(ERewardRule rule) {
+    public static String getRewardRuleI18nKeyName(EnumRewardRule rule) {
         String result = "";
         switch (rule) {
             case BASE_REWARD:
@@ -430,6 +633,152 @@ public class SakuraUtils {
                 break;
         }
         return result;
+    }
+
+    /**
+     * 获取配置文件目录
+     */
+    public static Path getConfigPath() {
+        return FMLPaths.CONFIGDIR.get().resolve(SakuraSignIn.MODID);
+    }
+
+    /**
+     * 获取主题路径
+     */
+    public static Path getThemePath() {
+        return getConfigPath().resolve("themes");
+    }
+
+    /**
+     * 创建主题文件目录
+     */
+    public static void createThemePath() {
+        File file = SakuraUtils.getThemePath().toFile();
+        if (!file.exists()) {
+            file.mkdirs();
+        }
+    }
+
+    /**
+     * 加载主题纹理
+     */
+    @OnlyIn(Dist.CLIENT)
+    public static void loadThemeTexture() {
+        try {
+            SakuraSignIn.setThemeTexture(TextureUtils.loadCustomTexture(ClientConfig.THEME.get()));
+            SakuraSignIn.setSpecialVersionTheme(Boolean.TRUE.equals(ClientConfig.SPECIAL_THEME.get()));
+            InputStream inputStream = Minecraft.getInstance().getResourceManager().getResource(SakuraSignIn.getThemeTexture()).getInputStream();
+            SakuraSignIn.setThemeTextureCoordinate(PNGUtils.readLastPrivateChunk(inputStream, PNG_CHUNK_NAME));
+        } catch (IOException | ClassNotFoundException ignored) {
+        }
+        if (SakuraSignIn.getThemeTexture() == null || SakuraSignIn.getThemeTextureCoordinate() == null) {
+            // 使用默认配置
+            SakuraSignIn.setThemeTextureCoordinate(TextureCoordinate.getDefault());
+        }
+        // 设置内置主题特殊图标UV的偏移量
+        if (SakuraSignIn.isSpecialVersionTheme() && SakuraSignIn.getThemeTextureCoordinate().isSpecial()) {
+            SakuraSignIn.getThemeTextureCoordinate().getNotSignedInUV().setX(320);
+            SakuraSignIn.getThemeTextureCoordinate().getSignedInUV().setX(320);
+        } else {
+            SakuraSignIn.getThemeTextureCoordinate().getNotSignedInUV().setX(0);
+            SakuraSignIn.getThemeTextureCoordinate().getSignedInUV().setX(0);
+        }
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public static void openSignInScreen(Screen previousScreen) {
+        if (SakuraSignIn.isEnabled()) {
+            SakuraSignIn.setCalendarCurrentDate(DateUtils.getClientDate());
+            Minecraft.getInstance().setScreen(new SignInScreen().setPreviousScreen(previousScreen));
+        } else {
+            ClientPlayerEntity player = Minecraft.getInstance().player;
+            if (player != null) {
+                Component component = Component.translatableClient(EnumI18nType.MESSAGE, "sakura_is_offline");
+                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgArgb(0x88FF5555));
+            }
+        }
+    }
+
+    /**
+     * 打开指定路径的文件夹
+     */
+    @OnlyIn(Dist.CLIENT)
+    public static void openFileInFolder(Path path) {
+        try {
+            if (Files.isDirectory(path)) {
+                // 如果是文件夹，直接打开文件夹
+                openFolder(path);
+            } else if (Files.isRegularFile(path)) {
+                // 如果是文件，打开文件所在的文件夹，并选中文件
+                openFolderAndSelectFile(path);
+            }
+        } catch (Exception e) {
+            LOGGER.error("Failed to open file/folder: ", e);
+        }
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    private static void openFolder(Path path) {
+        try {
+            // Windows
+            if (System.getProperty("os.name").toLowerCase().contains("win")) {
+                new ProcessBuilder("explorer.exe", path.toString()).start();
+            }
+            // macOS
+            else if (System.getProperty("os.name").toLowerCase().contains("mac")) {
+                new ProcessBuilder("open", path.toString()).start();
+            }
+            // Linux
+            else {
+                new ProcessBuilder("xdg-open", path.toString()).start();
+            }
+        } catch (IOException e) {
+            LOGGER.error("Failed to open folder: ", e);
+        }
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    private static void openFolderAndSelectFile(Path file) {
+        try {
+            // Windows
+            if (System.getProperty("os.name").toLowerCase().contains("win")) {
+                new ProcessBuilder("explorer.exe", "/select,", file.toString()).start();
+            }
+            // macOS
+            else if (System.getProperty("os.name").toLowerCase().contains("mac")) {
+                new ProcessBuilder("open", "-R", file.toString()).start();
+            }
+            // Linux
+            else {
+                new ProcessBuilder("xdg-open", "--select", file.toString()).start();
+            }
+        } catch (IOException e) {
+            LOGGER.error("Failed to open folder and select file: ", e);
+        }
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public static File chooseFile(String desc, String... extensions) {
+        if (StringUtils.isNullOrEmptyEx(desc)) desc = "Choose a file";
+
+        String result;
+        if (extensions.length > 0) {
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                PointerBuffer filter = stack.mallocPointer(extensions.length);
+                Arrays.stream(extensions).forEach(s -> filter.put(stack.UTF8(s)));
+                filter.flip();
+                result = TinyFileDialogs.tinyfd_openFileDialog(desc, SakuraUtils.getThemePath().toAbsolutePath().toString(), filter, desc, false);
+            }
+        } else {
+            result = TinyFileDialogs.tinyfd_openFileDialog(desc, SakuraUtils.getThemePath().toAbsolutePath().toString(), null, desc, false);
+        }
+        return result == null ? null : new File(result);
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public static String getServerIP() {
+        Minecraft minecraft = Minecraft.getInstance();
+        return minecraft.getCurrentServer() != null ? minecraft.getCurrentServer().ip : "";
     }
 
     // endregion 杂项

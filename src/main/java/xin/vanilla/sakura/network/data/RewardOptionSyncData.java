@@ -1,15 +1,15 @@
 package xin.vanilla.sakura.network.data;
 
 import lombok.Data;
-import xin.vanilla.sakura.enums.ERewardRule;
-import xin.vanilla.sakura.rewards.Reward;
+import xin.vanilla.sakura.data.Reward;
+import xin.vanilla.sakura.enums.EnumRewardRule;
 
 @Data
 public class RewardOptionSyncData {
     /**
      * 签到奖励规则
      */
-    private final ERewardRule rule;
+    private final EnumRewardRule rule;
     /**
      * 签到奖励规则参数
      */

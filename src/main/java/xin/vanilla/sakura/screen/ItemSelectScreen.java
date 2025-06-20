@@ -4,8 +4,9 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.gson.JsonObject;
 import com.mojang.blaze3d.matrix.MatrixStack;
+import lombok.Data;
 import lombok.Getter;
-import lombok.NonNull;
+import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.gui.FontRenderer;
@@ -32,11 +33,11 @@ import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.fml.client.gui.GuiUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.sakura.config.ArraySet;
-import xin.vanilla.sakura.config.StringList;
-import xin.vanilla.sakura.enums.EI18nType;
-import xin.vanilla.sakura.enums.ERewardType;
-import xin.vanilla.sakura.rewards.Reward;
+import xin.vanilla.sakura.data.ArraySet;
+import xin.vanilla.sakura.data.Reward;
+import xin.vanilla.sakura.data.StringList;
+import xin.vanilla.sakura.enums.EnumI18nType;
+import xin.vanilla.sakura.enums.EnumRewardType;
 import xin.vanilla.sakura.rewards.RewardManager;
 import xin.vanilla.sakura.rewards.impl.ItemRewardParser;
 import xin.vanilla.sakura.screen.component.KeyEventManager;
@@ -54,12 +55,14 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static xin.vanilla.sakura.config.RewardConfigManager.GSON;
+import static xin.vanilla.sakura.rewards.RewardConfigManager.GSON;
 
 public class ItemSelectScreen extends Screen {
     private static final Logger LOGGER = LogManager.getLogger();
 
     private final KeyEventManager keyManager = new KeyEventManager();
+
+    private final Args args;
 
     private final static Component TITLE = Component.literal("ItemSelectScreen");
 
@@ -70,22 +73,6 @@ public class ItemSelectScreen extends Screen {
     // 每页显示行数
     private final int maxLine = 5;
 
-    /**
-     * 父级 Screen
-     */
-    private final Screen previousScreen;
-    /**
-     * 输入数据回调1
-     */
-    private final Consumer<Reward> onDataReceived1;
-    /**
-     * 输入数据回调2
-     */
-    private final Function<Reward, String> onDataReceived2;
-    /**
-     * 是否要显示该界面, 若为false则直接关闭当前界面并返回到调用者的 Screen
-     */
-    private final Supplier<Boolean> shouldClose;
     /**
      * 输入框
      */
@@ -118,7 +105,7 @@ public class ItemSelectScreen extends Screen {
     /**
      * 当前选择的物品
      */
-    private Reward currentItem = new Reward(new ItemStack(Items.AIR), ERewardType.ITEM);
+    private Reward currentItem = new Reward(new ItemStack(Items.AIR), EnumRewardType.ITEM);
     /**
      * 奖励概率
      */
@@ -181,70 +168,64 @@ public class ItemSelectScreen extends Screen {
         }
     }
 
-    public ItemSelectScreen(@NonNull Screen callbackScreen, @NonNull Consumer<Reward> onDataReceived, @NonNull Reward defaultItem, Supplier<Boolean> shouldClose) {
+    public ItemSelectScreen(Args args) {
         super(TITLE.toTextComponent());
-        this.previousScreen = callbackScreen;
-        this.onDataReceived1 = onDataReceived;
-        this.onDataReceived2 = null;
-        this.currentItem = defaultItem;
-        this.probability = defaultItem.getProbability();
-        this.selectedItemId = ItemRewardParser.getId((ItemStack) RewardManager.deserializeReward(defaultItem));
-        this.shouldClose = shouldClose;
+        assert args != null;
+        args.validate();
+        this.args = args;
+        this.currentItem = args.getDefaultItem();
+        this.probability = args.getDefaultItem().getProbability();
+        this.selectedItemId = ItemRewardParser.getId((ItemStack) RewardManager.deserializeReward(args.getDefaultItem()));
     }
 
-    public ItemSelectScreen(@NonNull Screen callbackScreen, @NonNull Function<Reward, String> onDataReceived, @NonNull Reward defaultItem, Supplier<Boolean> shouldClose) {
-        super(TITLE.toTextComponent());
-        this.previousScreen = callbackScreen;
-        this.onDataReceived1 = null;
-        this.onDataReceived2 = onDataReceived;
-        this.currentItem = defaultItem;
-        this.probability = defaultItem.getProbability();
-        this.selectedItemId = ItemRewardParser.getId((ItemStack) RewardManager.deserializeReward(defaultItem));
-        this.shouldClose = shouldClose;
-    }
+    @Data
+    @Accessors(chain = true)
+    public static final class Args {
+        /**
+         * 父级 Screen
+         */
+        private Screen parentScreen;
+        /**
+         * 默认值
+         */
+        private Reward defaultItem = new Reward(new ItemStack(Items.AIR), EnumRewardType.ITEM);
+        /**
+         * 输入数据回调
+         */
+        private Consumer<Reward> onDataReceived1;
+        /**
+         * 输入数据回调
+         */
+        private Function<Reward, String> onDataReceived2;
+        /**
+         * 是否要显示该界面, 若为false则直接关闭当前界面并返回到调用者的 Screen
+         */
+        private Supplier<Boolean> shouldClose;
 
-    public ItemSelectScreen(@NonNull Screen callbackScreen, @NonNull Consumer<Reward> onDataReceived, @NonNull Reward defaultItem) {
-        super(TITLE.toTextComponent());
-        this.previousScreen = callbackScreen;
-        this.onDataReceived1 = onDataReceived;
-        this.onDataReceived2 = null;
-        this.currentItem = defaultItem;
-        this.probability = defaultItem.getProbability();
-        this.selectedItemId = ItemRewardParser.getId((ItemStack) RewardManager.deserializeReward(defaultItem));
-        this.shouldClose = null;
-    }
+        public Args setOnDataReceived(Consumer<Reward> onDataReceived) {
+            this.onDataReceived1 = onDataReceived;
+            return this;
+        }
 
-    public ItemSelectScreen(@NonNull Screen callbackScreen, @NonNull Function<Reward, String> onDataReceived, @NonNull Reward defaultItem) {
-        super(TITLE.toTextComponent());
-        this.previousScreen = callbackScreen;
-        this.onDataReceived1 = null;
-        this.onDataReceived2 = onDataReceived;
-        this.currentItem = defaultItem;
-        this.probability = defaultItem.getProbability();
-        this.selectedItemId = ItemRewardParser.getId((ItemStack) RewardManager.deserializeReward(defaultItem));
-        this.shouldClose = null;
-    }
+        public Args setOnDataReceived(Function<Reward, String> onDataReceived) {
+            this.onDataReceived2 = onDataReceived;
+            return this;
+        }
 
-    public ItemSelectScreen(@NonNull Screen callbackScreen, @NonNull Consumer<Reward> onDataReceived) {
-        super(TITLE.toTextComponent());
-        this.previousScreen = callbackScreen;
-        this.onDataReceived1 = onDataReceived;
-        this.onDataReceived2 = null;
-        this.shouldClose = null;
-    }
+        public void validate() {
+            Objects.requireNonNull(this.getParentScreen());
+            if (this.getOnDataReceived1() == null)
+                Objects.requireNonNull(this.getOnDataReceived2());
+            if (this.getOnDataReceived2() == null)
+                Objects.requireNonNull(this.getOnDataReceived1());
+        }
 
-    public ItemSelectScreen(@NonNull Screen callbackScreen, @NonNull Function<Reward, String> onDataReceived) {
-        super(TITLE.toTextComponent());
-        this.previousScreen = callbackScreen;
-        this.onDataReceived1 = null;
-        this.onDataReceived2 = onDataReceived;
-        this.shouldClose = null;
     }
 
     @Override
     protected void init() {
-        if (this.shouldClose != null && Boolean.TRUE.equals(this.shouldClose.get()))
-            Minecraft.getInstance().setScreen(previousScreen);
+        if (args.getShouldClose() != null && Boolean.TRUE.equals(args.getShouldClose().get()))
+            Minecraft.getInstance().setScreen(args.getParentScreen());
         this.updateSearchResults();
         this.updateLayout();
         // 创建文本输入框
@@ -254,22 +235,21 @@ public class ItemSelectScreen extends Screen {
         // 创建提交按钮
         this.addButton(AbstractGuiUtils.newButton((int) (this.bgX + 90 + this.margin), (int) (this.bgY + (20 + (AbstractGuiUtils.ITEM_ICON_SIZE + 3) * 5 + margin))
                 , (int) (90 - this.margin * 2), 20
-                , Component.translatableClient(EI18nType.OPTION, "submit"), button -> {
+                , Component.translatableClient(EnumI18nType.OPTION, "submit"), button -> {
                     if (this.currentItem == null) {
-                        // 关闭当前屏幕并返回到调用者的 Screen
-                        Minecraft.getInstance().setScreen(previousScreen);
+                        Minecraft.getInstance().setScreen(args.getParentScreen());
                     } else {
                         // 获取选择的数据，并执行回调
-                        Reward reward = new Reward((ItemStack) RewardManager.deserializeReward(this.currentItem), ERewardType.ITEM, this.probability);
-                        if (onDataReceived1 != null) {
-                            onDataReceived1.accept(reward);
-                            Minecraft.getInstance().setScreen(previousScreen);
-                        } else if (onDataReceived2 != null) {
-                            String result = onDataReceived2.apply(reward);
+                        Reward reward = new Reward((ItemStack) RewardManager.deserializeReward(this.currentItem), EnumRewardType.ITEM, this.probability);
+                        if (args.getOnDataReceived1() != null) {
+                            args.getOnDataReceived1().accept(reward);
+                            Minecraft.getInstance().setScreen(args.getParentScreen());
+                        } else if (args.getOnDataReceived2() != null) {
+                            String result = args.getOnDataReceived2().apply(reward);
                             if (StringUtils.isNotNullOrEmpty(result)) {
-                                // this.errorText = Text.literal(result).setColor(0xFFFF0000);
+                                // this.errorText = Text.literal(result).setColorArgb(0xFFFF0000);
                             } else {
-                                Minecraft.getInstance().setScreen(previousScreen);
+                                Minecraft.getInstance().setScreen(args.getParentScreen());
                             }
                         }
                     }
@@ -277,8 +257,8 @@ public class ItemSelectScreen extends Screen {
         // 创建取消按钮
         this.addButton(AbstractGuiUtils.newButton((int) (this.bgX + this.margin), (int) (this.bgY + (20 + (AbstractGuiUtils.ITEM_ICON_SIZE + 3) * 5 + margin))
                 , (int) (90 - this.margin * 2), 20
-                , Component.translatableClient(EI18nType.OPTION, "cancel")
-                , button -> Minecraft.getInstance().setScreen(previousScreen)));
+                , Component.translatableClient(EnumI18nType.OPTION, "cancel")
+                , button -> Minecraft.getInstance().setScreen(args.getParentScreen())));
     }
 
     @Override
@@ -308,7 +288,7 @@ public class ItemSelectScreen extends Screen {
         keyManager.mouseClicked(button, mouseX, mouseY);
         AtomicBoolean flag = new AtomicBoolean(false);
         if (button == GLFWKey.GLFW_MOUSE_BUTTON_4) {
-            Minecraft.getInstance().setScreen(previousScreen);
+            Minecraft.getInstance().setScreen(args.getParentScreen());
             flag.set(true);
         } else if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT || button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
             OP_BUTTONS.forEach((key, value) -> {
@@ -377,14 +357,11 @@ public class ItemSelectScreen extends Screen {
         super.mouseMoved(mouseX, mouseY);
     }
 
-    /**
-     * 重写键盘事件
-     */
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         keyManager.keyPressed(keyCode);
         if (keyCode == GLFWKey.GLFW_KEY_ESCAPE || (keyCode == GLFWKey.GLFW_KEY_BACKSPACE && !this.inputField.isFocused())) {
-            Minecraft.getInstance().setScreen(previousScreen);
+            Minecraft.getInstance().setScreen(args.getParentScreen());
             return true;
         } else if ((keyCode == GLFWKey.GLFW_KEY_ENTER || keyCode == GLFWKey.GLFW_KEY_KP_ENTER) && this.inputField.isFocused()) {
             this.updateSearchResults();
@@ -446,7 +423,7 @@ public class ItemSelectScreen extends Screen {
             AbstractGuiUtils.fillOutLine(context.matrixStack, (int) context.button.getX(), (int) context.button.getY(), (int) context.button.getWidth(), (int) context.button.getHeight(), 1, lineColor, 2);
             ItemStack itemStack = new ItemStack(this.inventoryMode ? Items.CHEST : Items.COMPASS);
             this.itemRenderer.renderGuiItem(itemStack, (int) context.button.getX() + 2, (int) context.button.getY() + 2);
-            Text text = Text.translatable(EI18nType.TIPS, (this.inventoryMode ? "item_select_list_inventory_mode" : "item_select_list_all_mode"), (this.inventoryMode ? playerItemList.size() : allItemList.size()));
+            Text text = Text.translatable(EnumI18nType.TIPS, (this.inventoryMode ? "item_select_list_inventory_mode" : "item_select_list_all_mode"), (this.inventoryMode ? playerItemList.size() : allItemList.size()));
             context.button.setTooltip(text);
         }).setX(this.bgX - AbstractGuiUtils.ITEM_ICON_SIZE - 2 - margin - 3).setY(this.bgY + margin).setWidth(AbstractGuiUtils.ITEM_ICON_SIZE + 4).setHeight(AbstractGuiUtils.ITEM_ICON_SIZE + 4));
         this.OP_BUTTONS.put(OperationButtonType.ITEM.getCode(), new OperationButton(OperationButtonType.ITEM.getCode(), context -> {
@@ -464,7 +441,7 @@ public class ItemSelectScreen extends Screen {
             AbstractGuiUtils.fillOutLine(context.matrixStack, (int) context.button.getX(), (int) context.button.getY(), (int) context.button.getWidth(), (int) context.button.getHeight(), 1, lineColor, 2);
             ItemStack itemStack = new ItemStack(Items.WRITABLE_BOOK);
             this.itemRenderer.renderGuiItem(itemStack, (int) context.button.getX() + 2, (int) context.button.getY() + 2);
-            Text text = Text.translatable(EI18nType.TIPS, "set_count_s", ((ItemStack) RewardManager.deserializeReward(this.currentItem)).getCount());
+            Text text = Text.translatable(EnumI18nType.TIPS, "set_count_s", ((ItemStack) RewardManager.deserializeReward(this.currentItem)).getCount());
             context.button.setTooltip(text);
         }).setX(this.bgX - AbstractGuiUtils.ITEM_ICON_SIZE - 2 - margin - 3).setY(this.bgY + margin + (AbstractGuiUtils.ITEM_ICON_SIZE + 4 + 1) * 2).setWidth(AbstractGuiUtils.ITEM_ICON_SIZE + 4).setHeight(AbstractGuiUtils.ITEM_ICON_SIZE + 4));
         this.OP_BUTTONS.put(OperationButtonType.NBT.getCode(), new OperationButton(OperationButtonType.NBT.getCode(), context -> {
@@ -474,7 +451,7 @@ public class ItemSelectScreen extends Screen {
             AbstractGuiUtils.fillOutLine(context.matrixStack, (int) context.button.getX(), (int) context.button.getY(), (int) context.button.getWidth(), (int) context.button.getHeight(), 1, lineColor, 2);
             ItemStack itemStack = new ItemStack(Items.NAME_TAG);
             this.itemRenderer.renderGuiItem(itemStack, (int) context.button.getX() + 2, (int) context.button.getY() + 2);
-            Text text = Text.translatable(EI18nType.TIPS, "edit_nbt");
+            Text text = Text.translatable(EnumI18nType.TIPS, "edit_nbt");
             context.button.setTooltip(text);
         }).setX(this.bgX - AbstractGuiUtils.ITEM_ICON_SIZE - 2 - margin - 3).setY(this.bgY + margin + (AbstractGuiUtils.ITEM_ICON_SIZE + 4 + 1) * 3).setWidth(AbstractGuiUtils.ITEM_ICON_SIZE + 4).setHeight(AbstractGuiUtils.ITEM_ICON_SIZE + 4));
         this.OP_BUTTONS.put(OperationButtonType.PROBABILITY.getCode(), new OperationButton(OperationButtonType.PROBABILITY.getCode(), context -> {
@@ -483,7 +460,7 @@ public class ItemSelectScreen extends Screen {
             AbstractGuiUtils.fill(context.matrixStack, (int) context.button.getX(), (int) context.button.getY(), (int) context.button.getWidth(), (int) context.button.getHeight(), 0xEE707070, 2);
             AbstractGuiUtils.fillOutLine(context.matrixStack, (int) context.button.getX(), (int) context.button.getY(), (int) context.button.getWidth(), (int) context.button.getHeight(), 1, lineColor, 2);
             AbstractGuiUtils.drawEffectIcon(context.matrixStack, super.font, new EffectInstance(Effects.LUCK), (int) context.button.getX() + 2, (int) context.button.getY() + 2, false);
-            Text text = Text.translatable(EI18nType.TIPS, "set_probability_f", this.probability.multiply(new BigDecimal(100)).floatValue());
+            Text text = Text.translatable(EnumI18nType.TIPS, "set_probability_f", this.probability.multiply(new BigDecimal(100)).floatValue());
             context.button.setTooltip(text);
         }).setX(this.bgX - AbstractGuiUtils.ITEM_ICON_SIZE - 2 - margin - 3).setY(this.bgY + margin + (AbstractGuiUtils.ITEM_ICON_SIZE + 4 + 1) * 4).setWidth(AbstractGuiUtils.ITEM_ICON_SIZE + 4).setHeight(AbstractGuiUtils.ITEM_ICON_SIZE + 4));
 
@@ -562,7 +539,7 @@ public class ItemSelectScreen extends Screen {
                             }
                             this.visibleTags.forEach((resourceLocation, itemITag) -> {
                                 if (itemITag.contains(item)) {
-                                    list1.add(1, (Component.literal("#" + resourceLocation).setColor(0xFF8A2BE2).toTextComponent()));
+                                    list1.add(1, (Component.literal("#" + resourceLocation).setColorArgb(0xFF8A2BE2).toTextComponent()));
                                 }
 
                             });
@@ -660,7 +637,7 @@ public class ItemSelectScreen extends Screen {
             if (StringUtils.isNotNullOrEmpty(this.selectedItemId)) {
                 ItemStack itemStack = ItemRewardParser.getItemStack(selectedItemId);
                 itemStack.setCount(1);
-                this.currentItem = new Reward(itemStack, ERewardType.ITEM, this.probability);
+                this.currentItem = new Reward(itemStack, EnumRewardType.ITEM, this.probability);
                 LOGGER.debug("Select item: {}", ItemRewardParser.getDisplayName(itemStack));
                 flag.set(true);
 
@@ -677,105 +654,115 @@ public class ItemSelectScreen extends Screen {
         // 编辑奖励Json
         else if (bt.getOperation() == OperationButtonType.ITEM.getCode()) {
             String itemRewardJsonString = GSON.toJson(this.currentItem.getContent());
-            Minecraft.getInstance().setScreen(new StringInputScreen(this
-                    , Text.translatable(EI18nType.TIPS, "enter_item_json").setShadow(true)
-                    , Text.translatable(EI18nType.TIPS, "enter_something")
-                    , ""
-                    , itemRewardJsonString
-                    , input -> {
-                StringList result = new StringList();
-                if (CollectionUtils.isNotNullOrEmpty(input)) {
-                    ItemStack itemStack;
-                    String json = input.get(0);
-                    try {
-                        JsonObject jsonObject = GSON.fromJson(json, JsonObject.class);
-                        itemStack = RewardManager.deserializeReward(new Reward(jsonObject, ERewardType.ITEM, this.probability));
-                    } catch (Exception e) {
-                        LOGGER.error("Invalid Json: {}", json);
-                        itemStack = null;
-                    }
-                    if (itemStack != null && itemStack.getItem() != Items.AIR) {
-                        this.currentItem = new Reward(itemStack, ERewardType.ITEM, this.probability);
-                        this.selectedItemId = ItemRewardParser.getId(itemStack);
-                    } else {
-                        result.add(Component.translatableClient(EI18nType.TIPS, "item_json_s_error", json).toString());
-                    }
-                }
-                return result;
-            }));
+            StringInputScreen.Args args = new StringInputScreen.Args()
+                    .setParentScreen(this)
+                    .addWidget(new StringInputScreen.InputWidget()
+                            .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_item_json").setShadow(true))
+                            .setDefaultValue(itemRewardJsonString)
+                    )
+                    .setOnDataReceived(input -> {
+                        StringList result = new StringList();
+                        if (CollectionUtils.isNotNullOrEmpty(input)) {
+                            ItemStack itemStack;
+                            String json = input.get(0);
+                            try {
+                                JsonObject jsonObject = GSON.fromJson(json, JsonObject.class);
+                                itemStack = RewardManager.deserializeReward(new Reward(jsonObject, EnumRewardType.ITEM, this.probability));
+                            } catch (Exception e) {
+                                LOGGER.error("Invalid Json: {}", json);
+                                itemStack = null;
+                            }
+                            if (itemStack != null && itemStack.getItem() != Items.AIR) {
+                                this.currentItem = new Reward(itemStack, EnumRewardType.ITEM, this.probability);
+                                this.selectedItemId = ItemRewardParser.getId(itemStack);
+                            } else {
+                                result.add(Component.translatableClient(EnumI18nType.TIPS, "item_json_s_error", json).toString());
+                            }
+                        }
+                        return result;
+                    });
+            Minecraft.getInstance().setScreen(new StringInputScreen(args));
         }
         // 编辑数量
         else if (bt.getOperation() == OperationButtonType.COUNT.getCode()) {
-            Minecraft.getInstance().setScreen(new StringInputScreen(this
-                    , Text.translatable(EI18nType.TIPS, "enter_item_count").setShadow(true)
-                    , Text.translatable(EI18nType.TIPS, "enter_something")
-                    , "\\d{0,4}"
-                    , String.valueOf(((ItemStack) RewardManager.deserializeReward(this.currentItem)).getCount())
-                    , input -> {
-                StringList result = new StringList();
-                if (CollectionUtils.isNotNullOrEmpty(input)) {
-                    String num = input.get(0);
-                    int count = StringUtils.toInt(num);
-                    if (count > 0 && count <= 64 * 9 * 5) {
-                        ItemStack itemStack = RewardManager.deserializeReward(this.currentItem);
-                        itemStack.setCount(count);
-                        this.currentItem = new Reward(itemStack, ERewardType.ITEM, this.probability);
-                    } else {
-                        result.add(Component.translatableClient(EI18nType.TIPS, "item_count_s_error", num).toString());
-                    }
-                }
-                return result;
-            }));
+            StringInputScreen.Args args = new StringInputScreen.Args()
+                    .setParentScreen(this)
+                    .addWidget(new StringInputScreen.InputWidget()
+                            .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_item_count").setShadow(true))
+                            .setValidator("\\d{0,4}")
+                            .setDefaultValue(String.valueOf(((ItemStack) RewardManager.deserializeReward(this.currentItem)).getCount()))
+                    )
+                    .setOnDataReceived(input -> {
+                        StringList result = new StringList();
+                        if (CollectionUtils.isNotNullOrEmpty(input)) {
+                            String num = input.get(0);
+                            int count = StringUtils.toInt(num);
+                            if (count > 0 && count <= 64 * 9 * 5) {
+                                ItemStack itemStack = RewardManager.deserializeReward(this.currentItem);
+                                itemStack.setCount(count);
+                                this.currentItem = new Reward(itemStack, EnumRewardType.ITEM, this.probability);
+                            } else {
+                                result.add(Component.translatableClient(EnumI18nType.TIPS, "item_count_s_error", num).toString());
+                            }
+                        }
+                        return result;
+                    });
+            Minecraft.getInstance().setScreen(new StringInputScreen(args));
         }
         // 编辑NBT
         else if (bt.getOperation() == OperationButtonType.NBT.getCode()) {
             String itemNbtJsonString = ItemRewardParser.getNbtString(RewardManager.deserializeReward(this.currentItem));
-            Minecraft.getInstance().setScreen(new StringInputScreen(this
-                    , Text.translatable(EI18nType.TIPS, "enter_item_nbt").setShadow(true)
-                    , Text.translatable(EI18nType.TIPS, "enter_something")
-                    , ""
-                    , itemNbtJsonString
-                    , input -> {
-                StringList result = new StringList();
-                if (CollectionUtils.isNotNullOrEmpty(input)) {
-                    ItemStack itemStack;
-                    String nbt = input.get(0);
-                    try {
-                        itemStack = ItemRewardParser.getItemStack(ItemRewardParser.getId(((ItemStack) RewardManager.deserializeReward(this.currentItem)).getItem()) + nbt, true);
-                        itemStack.setCount(((ItemStack) RewardManager.deserializeReward(this.currentItem)).getCount());
-                    } catch (Exception e) {
-                        LOGGER.error("Invalid NBT: {}", nbt);
-                        itemStack = null;
-                    }
-                    if (itemStack != null && itemStack.hasTag()) {
-                        this.currentItem = new Reward(itemStack, ERewardType.ITEM, this.probability);
-                        this.selectedItemId = ItemRewardParser.getId(itemStack);
-                    } else {
-                        result.add(Component.translatableClient(EI18nType.TIPS, "item_nbt_s_error", nbt).toString());
-                    }
-                }
-                return result;
-            }));
+            StringInputScreen.Args args = new StringInputScreen.Args()
+                    .setParentScreen(this)
+                    .addWidget(new StringInputScreen.InputWidget()
+                            .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_item_nbt").setShadow(true))
+                            .setDefaultValue(itemNbtJsonString)
+                    )
+                    .setOnDataReceived(input -> {
+                        StringList result = new StringList();
+                        if (CollectionUtils.isNotNullOrEmpty(input)) {
+                            ItemStack itemStack;
+                            String nbt = input.get(0);
+                            try {
+                                itemStack = ItemRewardParser.getItemStack(ItemRewardParser.getId(((ItemStack) RewardManager.deserializeReward(this.currentItem)).getItem()) + nbt, true);
+                                itemStack.setCount(((ItemStack) RewardManager.deserializeReward(this.currentItem)).getCount());
+                            } catch (Exception e) {
+                                LOGGER.error("Invalid NBT: {}", nbt);
+                                itemStack = null;
+                            }
+                            if (itemStack != null && itemStack.hasTag()) {
+                                this.currentItem = new Reward(itemStack, EnumRewardType.ITEM, this.probability);
+                                this.selectedItemId = ItemRewardParser.getId(itemStack);
+                            } else {
+                                result.add(Component.translatableClient(EnumI18nType.TIPS, "item_nbt_s_error", nbt).toString());
+                            }
+                        }
+                        return result;
+                    });
+            Minecraft.getInstance().setScreen(new StringInputScreen(args));
         }
         // 编辑概率
         else if (bt.getOperation() == OperationButtonType.PROBABILITY.getCode()) {
-            Minecraft.getInstance().setScreen(new StringInputScreen(this
-                    , Text.translatable(EI18nType.TIPS, "enter_reward_probability").setShadow(true)
-                    , Text.translatable(EI18nType.TIPS, "enter_something")
-                    , "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?"
-                    , StringUtils.toFixedEx(this.probability, 5)
-                    , input -> {
-                StringList result = new StringList();
-                if (CollectionUtils.isNotNullOrEmpty(input)) {
-                    BigDecimal p = StringUtils.toBigDecimal(input.get(0));
-                    if (p.compareTo(BigDecimal.ZERO) > 0 && p.compareTo(BigDecimal.ONE) <= 0) {
-                        this.probability = p;
-                    } else {
-                        result.add(Component.translatableClient(EI18nType.TIPS, "reward_probability_s_error", input.get(0)).toString());
-                    }
-                }
-                return result;
-            }));
+            StringInputScreen.Args args = new StringInputScreen.Args()
+                    .setParentScreen(this)
+                    .addWidget(new StringInputScreen.InputWidget()
+                            .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
+                            .setValidator("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                            .setDefaultValue(StringUtils.toFixedEx(this.probability, 5))
+                    )
+                    .setOnDataReceived(input -> {
+                        StringList result = new StringList();
+                        if (CollectionUtils.isNotNullOrEmpty(input)) {
+                            BigDecimal p = StringUtils.toBigDecimal(input.get(0));
+                            if (p.compareTo(BigDecimal.ZERO) > 0 && p.compareTo(BigDecimal.ONE) <= 0) {
+                                this.probability = p;
+                            } else {
+                                result.add(Component.translatableClient(EnumI18nType.TIPS, "reward_probability_s_error", input.get(0)).toString());
+                            }
+                        }
+                        return result;
+                    });
+            Minecraft.getInstance().setScreen(new StringInputScreen(args));
         }
     }
 }

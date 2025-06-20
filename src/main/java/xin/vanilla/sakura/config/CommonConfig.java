@@ -5,6 +5,7 @@ import net.minecraftforge.common.ForgeConfigSpec;
 
 public class CommonConfig {
     public static final ForgeConfigSpec COMMON_CONFIG;
+
     // region 自定义指令
 
     /**
@@ -13,14 +14,24 @@ public class CommonConfig {
     public static final ForgeConfigSpec.ConfigValue<String> COMMAND_PREFIX;
 
     /**
+     * 设置语言
+     */
+    public static final ForgeConfigSpec.ConfigValue<String> COMMAND_LANGUAGE;
+
+    /**
+     * 设置虚拟权限
+     */
+    public static final ForgeConfigSpec.ConfigValue<String> COMMAND_VIRTUAL_OP;
+
+    /**
      * 签到
      */
-    public static final ForgeConfigSpec.ConfigValue<String> COMMAND_SIGN_IN;
+    public static final ForgeConfigSpec.ConfigValue<String> COMMAND_SIGN;
 
     /**
      * 签到并领取奖励
      */
-    public static final ForgeConfigSpec.ConfigValue<String> COMMAND_SIGN_IN_EX;
+    public static final ForgeConfigSpec.ConfigValue<String> COMMAND_SIGNEX;
 
     /**
      * 领取奖励
@@ -37,24 +48,30 @@ public class CommonConfig {
      */
     public static final ForgeConfigSpec.ConfigValue<String> COMMAND_CARD;
 
-    /**
-     * 设置语言
-     */
-    public static final ForgeConfigSpec.ConfigValue<String> COMMAND_LANGUAGE;
-
     // endregion 自定义指令
+
 
     // region 简化指令
 
     /**
+     * 设置语言
+     */
+    public static final ForgeConfigSpec.BooleanValue CONCISE_LANGUAGE;
+
+    /**
+     * 设置虚拟权限
+     */
+    public static final ForgeConfigSpec.BooleanValue CONCISE_VIRTUAL_OP;
+
+    /**
      * 签到
      */
-    public static final ForgeConfigSpec.BooleanValue CONCISE_SIGN_IN;
+    public static final ForgeConfigSpec.BooleanValue CONCISE_SIGN;
 
     /**
      * 签到并领取奖励
      */
-    public static final ForgeConfigSpec.BooleanValue CONCISE_SIGN_IN_EX;
+    public static final ForgeConfigSpec.BooleanValue CONCISE_SIGNEX;
 
     /**
      * 领取奖励
@@ -71,12 +88,8 @@ public class CommonConfig {
      */
     public static final ForgeConfigSpec.BooleanValue CONCISE_CARD;
 
-    /**
-     * 设置语言
-     */
-    public static final ForgeConfigSpec.BooleanValue CONCISE_LANGUAGE;
-
     // endregion 简化指令
+
 
     static {
         ForgeConfigSpec.Builder COMMON_BUILDER = new ForgeConfigSpec.Builder();
@@ -90,17 +103,29 @@ public class CommonConfig {
                             "指令前缀，请仅使用英文字母及下划线，否则可能会出现问题。")
                     .define("commandPrefix", "sakura");
 
+            // 设置语言
+            COMMAND_LANGUAGE = COMMON_BUILDER
+                    .comment("This command is used to set the language."
+                            , "设置语言的指令。")
+                    .define("commandLanguage", "language");
+
+            // 设置虚拟权限
+            COMMAND_VIRTUAL_OP = COMMON_BUILDER
+                    .comment("The command to set virtual permission."
+                            , "设置虚拟权限的指令。")
+                    .define("commandVirtualOp", "opv");
+
             // 签到
-            COMMAND_SIGN_IN = COMMON_BUILDER
+            COMMAND_SIGN = COMMON_BUILDER
                     .comment("This command is used to sign In or make up for a specific date."
                             , "签到或补签的指令。")
-                    .define("commandSignIn", "sign");
+                    .define("commandSign", "sign");
 
             // 签到并领取奖励
-            COMMAND_SIGN_IN_EX = COMMON_BUILDER
+            COMMAND_SIGNEX = COMMON_BUILDER
                     .comment("This command is used to sign In or make up for a specific date and claim the rewards."
                             , "签到并领取奖励的指令。")
-                    .define("commandSignInEx", "signex");
+                    .define("commandSignEx", "signex");
 
             // 领取奖励
             COMMAND_REWARD = COMMON_BUILDER
@@ -120,12 +145,6 @@ public class CommonConfig {
                             , "补签卡领取奖励的指令。")
                     .define("commandCard", "card");
 
-            // 设置语言
-            COMMAND_LANGUAGE = COMMON_BUILDER
-                    .comment("This command is used to set the language."
-                            , "设置语言的指令。")
-                    .define("commandLanguage", "language");
-
             COMMON_BUILDER.pop();
         }
 
@@ -133,15 +152,25 @@ public class CommonConfig {
         {
             COMMON_BUILDER.comment("Concise Command Settings", "简化指令").push("concise");
 
-            CONCISE_SIGN_IN = COMMON_BUILDER
+            CONCISE_LANGUAGE = COMMON_BUILDER
+                    .comment("Enable or disable the concise version of the 'Set the language' command.",
+                            "是否启用无前缀版本的 '设置语言' 指令。")
+                    .define("conciseLanguage", false);
+
+            CONCISE_VIRTUAL_OP = COMMON_BUILDER
+                    .comment("Enable or disable the concise version of the 'Set virtual permission' command.",
+                            "是否启用无前缀版本的 '设置虚拟权限' 指令。")
+                    .define("conciseVirtualOp", false);
+
+            CONCISE_SIGN = COMMON_BUILDER
                     .comment("Enable or disable the concise version of the 'Sign In or make up for a specific date' command.",
                             "是否启用无前缀版本的 '签到' 指令。")
-                    .define("conciseSignIn", true);
+                    .define("conciseSign", true);
 
-            CONCISE_SIGN_IN_EX = COMMON_BUILDER
+            CONCISE_SIGNEX = COMMON_BUILDER
                     .comment("Enable or disable the concise version of the 'Sign In or make up for a specific date and claim the rewards' command.",
                             "是否启用无前缀版本的 '签到并领取奖励' 指令。")
-                    .define("conciseSignInEx", true);
+                    .define("conciseSignEx", true);
 
             CONCISE_REWARD = COMMON_BUILDER
                     .comment("Enable or disable the concise version of the 'Claim the rewards' command.",
@@ -157,11 +186,6 @@ public class CommonConfig {
                     .comment("Enable or disable the concise version of the 'Get or set the Sign-in Card' command.",
                             "是否启用无前缀版本的 '补签卡领取奖励' 指令。")
                     .define("conciseCard", false);
-
-            CONCISE_LANGUAGE = COMMON_BUILDER
-                    .comment("Enable or disable the concise version of the 'Set the language' command.",
-                            "是否启用无前缀版本的 '设置语言' 指令。")
-                    .define("conciseLanguage", false);
 
             COMMON_BUILDER.pop();
         }

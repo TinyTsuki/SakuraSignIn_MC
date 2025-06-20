@@ -5,7 +5,7 @@ import lombok.NonNull;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.button.Button;
-import xin.vanilla.sakura.enums.EI18nType;
+import xin.vanilla.sakura.enums.EnumI18nType;
 import xin.vanilla.sakura.screen.component.Text;
 import xin.vanilla.sakura.util.AbstractGuiUtils;
 import xin.vanilla.sakura.util.Component;
@@ -59,13 +59,13 @@ public class ConfirmationScreen extends Screen {
         if (this.shouldClose != null && Boolean.TRUE.equals(this.shouldClose.get()))
             Minecraft.getInstance().setScreen(previousScreen);
         // 创建提交按钮
-        Button submitButton = AbstractGuiUtils.newButton(this.width / 2 + 5, this.height / 2 + 10, 95, 20, Component.translatableClient(EI18nType.OPTION, "confirm"), button -> {
+        Button submitButton = AbstractGuiUtils.newButton(this.width / 2 + 5, this.height / 2 + 10, 95, 20, Component.translatableClient(EnumI18nType.OPTION, "confirm"), button -> {
             onConfirm.run();
             Minecraft.getInstance().setScreen(previousScreen);
         });
         this.addButton(submitButton);
         // 创建取消按钮
-        this.addButton(AbstractGuiUtils.newButton(this.width / 2 - 100, this.height / 2 + 10, 95, 20, Component.translatableClient(EI18nType.OPTION, "cancel"), button -> {
+        this.addButton(AbstractGuiUtils.newButton(this.width / 2 - 100, this.height / 2 + 10, 95, 20, Component.translatableClient(EnumI18nType.OPTION, "cancel"), button -> {
             // 关闭当前屏幕并返回到调用者的 Screen
             Minecraft.getInstance().setScreen(previousScreen);
         }));
@@ -91,9 +91,6 @@ public class ConfirmationScreen extends Screen {
         }
     }
 
-    /**
-     * 重写键盘事件
-     */
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (keyCode == GLFWKey.GLFW_KEY_ESCAPE || keyCode == GLFWKey.GLFW_KEY_BACKSPACE) {

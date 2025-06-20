@@ -14,24 +14,21 @@ import net.minecraft.util.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.config.RewardConfig;
-import xin.vanilla.sakura.config.RewardConfigManager;
 import xin.vanilla.sakura.config.ServerConfig;
-import xin.vanilla.sakura.data.IPlayerSignInData;
-import xin.vanilla.sakura.data.PlayerSignInDataCapability;
+import xin.vanilla.sakura.data.KeyValue;
+import xin.vanilla.sakura.data.Reward;
+import xin.vanilla.sakura.data.RewardList;
 import xin.vanilla.sakura.data.SignInRecord;
-import xin.vanilla.sakura.enums.EI18nType;
-import xin.vanilla.sakura.enums.ERewardType;
-import xin.vanilla.sakura.enums.ESignInType;
-import xin.vanilla.sakura.enums.ETimeCoolingMethod;
-import xin.vanilla.sakura.network.packet.SignInPacket;
+import xin.vanilla.sakura.data.player.IPlayerSignInData;
+import xin.vanilla.sakura.data.player.PlayerSignInDataCapability;
+import xin.vanilla.sakura.enums.*;
+import xin.vanilla.sakura.network.packet.RewardCellDirtiedToClient;
+import xin.vanilla.sakura.network.packet.SignInToServer;
 import xin.vanilla.sakura.rewards.impl.*;
-import xin.vanilla.sakura.util.Component;
 import xin.vanilla.sakura.util.*;
 
-import java.awt.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.List;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
@@ -41,18 +38,21 @@ import java.util.stream.Collectors;
  */
 public class RewardManager {
     private static final Logger LOGGER = LogManager.getLogger();
-    private static final Map<ERewardType, RewardParser<?>> rewardParsers = new HashMap<>();
+
+    private static final Map<EnumRewardType, RewardParser<?>> rewardParsers = new HashMap<>();
+
+    private static final Random random = new Random();
 
     // 注册不同类型的奖励解析器
     static {
-        rewardParsers.put(ERewardType.ITEM, new ItemRewardParser());
-        rewardParsers.put(ERewardType.EFFECT, new EffectRewardParser());
-        rewardParsers.put(ERewardType.EXP_POINT, new ExpPointRewardParser());
-        rewardParsers.put(ERewardType.EXP_LEVEL, new ExpLevelRewardParser());
-        rewardParsers.put(ERewardType.SIGN_IN_CARD, new SignInCardRewardParser());
-        rewardParsers.put(ERewardType.ADVANCEMENT, new AdvancementRewardParser());
-        rewardParsers.put(ERewardType.MESSAGE, new MessageRewardParser());
-        rewardParsers.put(ERewardType.COMMAND, new CommandRewardParser());
+        rewardParsers.put(EnumRewardType.ITEM, new ItemRewardParser());
+        rewardParsers.put(EnumRewardType.EFFECT, new EffectRewardParser());
+        rewardParsers.put(EnumRewardType.EXP_POINT, new ExpPointRewardParser());
+        rewardParsers.put(EnumRewardType.EXP_LEVEL, new ExpLevelRewardParser());
+        rewardParsers.put(EnumRewardType.SIGN_IN_CARD, new SignInCardRewardParser());
+        rewardParsers.put(EnumRewardType.ADVANCEMENT, new AdvancementRewardParser());
+        rewardParsers.put(EnumRewardType.MESSAGE, new MessageRewardParser());
+        rewardParsers.put(EnumRewardType.COMMAND, new CommandRewardParser());
         // MORE ...
     }
 
@@ -72,7 +72,7 @@ public class RewardManager {
      * 序列化奖励
      */
     @SuppressWarnings("unchecked")
-    public static <T> JsonObject serializeReward(T reward, ERewardType type) {
+    public static <T> JsonObject serializeReward(T reward, EnumRewardType type) {
         RewardParser<T> parser = (RewardParser<T>) rewardParsers.get(type);
         if (parser == null) {
             throw new JsonParseException("Unknown reward type: " + type);
@@ -146,7 +146,7 @@ public class RewardManager {
         }
         // 签到冷却刷新时间, 固定间隔不需要校准时间
         double cooling;
-        switch (ServerConfig.TIME_COOLING_METHOD.get()) {
+        switch (EnumTimeCoolingMethod.valueOf(ServerConfig.TIME_COOLING_METHOD.get())) {
             case MIXED:
             case FIXED_TIME:
                 cooling = ServerConfig.TIME_COOLING_TIME.get();
@@ -172,7 +172,7 @@ public class RewardManager {
         }
         // 签到冷却刷新时间, 固定间隔不需要校准时间
         double cooling;
-        switch (ServerConfig.TIME_COOLING_METHOD.get()) {
+        switch (EnumTimeCoolingMethod.valueOf(ServerConfig.TIME_COOLING_METHOD.get())) {
             case MIXED:
             case FIXED_TIME:
                 cooling = ServerConfig.TIME_COOLING_TIME.get();
@@ -193,12 +193,14 @@ public class RewardManager {
      * @param lastOffset   上月最后offset天
      * @param nextOffset   下月开始offset天
      */
-    public static Map<Integer, RewardList> getMonthRewardList(Date currentMonth, IPlayerSignInData playerData, int lastOffset, int nextOffset) {
-        Map<Integer, RewardList> result = new LinkedHashMap<>();
+    public static Map<KeyValue<String, EnumSignInStatus>, RewardList> getMonthRewardList(Date currentMonth, IPlayerSignInData playerData, int lastOffset, int nextOffset) {
+        Map<KeyValue<String, EnumSignInStatus>, RewardList> result = new LinkedHashMap<>();
         // 选中月份的上一个月
         Date lastMonth = DateUtils.addMonth(currentMonth, -1);
         // 选中月份的下一个月
         Date nextMonth = DateUtils.addMonth(currentMonth, 1);
+        // 当前日期
+        Date curDate = DateUtils.getServerDate();
         // 上月的总天数
         int daysOfLastMonth = DateUtils.getDaysOfMonth(lastMonth);
         // 本月总天数
@@ -206,27 +208,54 @@ public class RewardManager {
 
         // 计算本月+上月最后offset天+下月开始offset的奖励
         for (int i = 1; i <= daysOfCurrentMonth + lastOffset + nextOffset; i++) {
-            int month, day, year;
+            int cellMonth, cellDay, cellYear;
             if (i <= lastOffset) {
                 // 属于上月的日期
-                year = DateUtils.getYearPart(lastMonth);
-                month = DateUtils.getMonthOfDate(lastMonth);
-                day = daysOfLastMonth - (lastOffset - i);
+                cellYear = DateUtils.getYearPart(lastMonth);
+                cellMonth = DateUtils.getMonthOfDate(lastMonth);
+                cellDay = daysOfLastMonth - (lastOffset - i);
             } else if (i <= lastOffset + daysOfCurrentMonth) {
                 // 属于当前月的日期
-                year = DateUtils.getYearPart(currentMonth);
-                month = DateUtils.getMonthOfDate(currentMonth);
-                day = i - lastOffset;
+                cellYear = DateUtils.getYearPart(currentMonth);
+                cellMonth = DateUtils.getMonthOfDate(currentMonth);
+                cellDay = i - lastOffset;
             } else {
                 // 属于下月的日期
-                year = DateUtils.getYearPart(nextMonth);
-                month = DateUtils.getMonthOfDate(nextMonth);
-                day = i - daysOfCurrentMonth - nextOffset;
+                cellYear = DateUtils.getYearPart(nextMonth);
+                cellMonth = DateUtils.getMonthOfDate(nextMonth);
+                cellDay = i - daysOfCurrentMonth - nextOffset;
             }
-            int key = year * 10000 + month * 100 + day;
-            Date currentDay = DateUtils.getDate(year, month, day, DateUtils.getHourOfDay(currentMonth), DateUtils.getMinuteOfHour(currentMonth), DateUtils.getSecondOfMinute(currentMonth));
-            RewardList rewardList = RewardManager.getRewardListByDate(currentDay, playerData, false, false).clone();
-            result.put(key, rewardList);
+            int cellDateInt = cellYear * 10000 + cellMonth * 100 + cellDay;
+            Date cellDate = DateUtils.getDate(cellYear, cellMonth, cellDay
+                    , DateUtils.getHourOfDay(currentMonth)
+                    , DateUtils.getMinuteOfHour(currentMonth)
+                    , DateUtils.getSecondOfMinute(currentMonth)
+            );
+            RewardList rewardList = RewardManager.getRewardListByDate(cellDate, playerData, false, false).clone();
+            EnumSignInStatus status = EnumSignInStatus.NO_ACTION;
+            // 判断是否已领奖
+            if (RewardManager.isRewarded(playerData, cellDate, false)) {
+                status = EnumSignInStatus.REWARDED;
+            }
+            // 判断是否已签到
+            else if (RewardManager.isSignedIn(playerData, cellDate, false)) {
+                status = EnumSignInStatus.SIGNED_IN;
+            }
+            // 判断是否当前日期
+            else if (cellYear == DateUtils.getYearPart(curDate)
+                    && cellMonth == DateUtils.getMonthOfDate(curDate)
+                    && cellDay == DateUtils.getDayOfMonth(curDate)
+            ) {
+                status = EnumSignInStatus.NOT_SIGNED_IN;
+            }
+            // 是否能补签
+            else if (ServerConfig.SIGN_IN_CARD.get()
+                    && cellDateInt <= DateUtils.toDateInt(cellDate)
+                    && DateUtils.toDateInt(DateUtils.addDay(cellDate, -ServerConfig.RE_SIGN_IN_DAYS.get())) <= cellDateInt
+            ) {
+                status = EnumSignInStatus.CAN_REPAIR;
+            }
+            result.put(new KeyValue<>(DateUtils.toString(cellDate), status), rewardList);
         }
         return result;
     }
@@ -270,10 +299,6 @@ public class RewardManager {
                     // 若签到日期等于当前日期
                     .filter(record -> DateUtils.toDateInt(record.getCompensateTime()) == key)
                     .flatMap(record -> record.getRewardList().stream())
-                    // .peek(reward -> {
-                    //     reward.setRewarded(true);
-                    //     reward.setDisabled(true);
-                    // })
                     .collect(Collectors.toList());
         }
 
@@ -318,9 +343,6 @@ public class RewardManager {
                 if (key >= nowCompensate8) {
                     // 连续签到天数
                     int continuousSignInDays = playerData.calculateContinuousDays();
-                    // if (DateUtils.toDateInt(playerData.getLastSignInTime()) < nowCompensate8) {
-                    //     continuousSignInDays++;
-                    // }
                     continuousSignInDays += (int) DateUtils.daysOfTwo(DateUtils.toTheDayStart(getCompensateDate(DateUtils.getServerDate())), DateUtils.toTheDayStart(currentDay));
                     // 连续签到奖励
                     int continuousMax = serverData.getContinuousRewardsRelation().keySet().stream().map(Integer::parseInt).max(Comparator.naturalOrder()).orElse(0);
@@ -385,7 +407,7 @@ public class RewardManager {
         // return rewardList;
         List<Reward> rewards = rewardList.stream()
                 .collect(Collectors.groupingBy(reward -> {
-                            ERewardType type = reward.getType();
+                            EnumRewardType type = reward.getType();
                             String key = type.name();
                             // 分组时基于type和内容字段进行分组键
                             switch (type) {
@@ -418,7 +440,7 @@ public class RewardManager {
                             if (reward1 == null) return reward2;
                             if (reward2 == null) return reward1;
 
-                            ERewardType type = reward1.getType();
+                            EnumRewardType type = reward1.getType();
                             Object content1 = RewardManager.deserializeReward(reward1);
                             Object content2 = RewardManager.deserializeReward(reward2);
                             switch (type) {
@@ -469,69 +491,69 @@ public class RewardManager {
     /**
      * 签到or补签
      */
-    public static void signIn(ServerPlayerEntity player, SignInPacket packet) {
+    public static void signIn(ServerPlayerEntity player, SignInToServer packet) {
         IPlayerSignInData signInData = PlayerSignInDataCapability.getData(player);
         Date serverDate = DateUtils.getServerDate();
         Date serverCompensateDate = getCompensateDate(serverDate);
-        Date signCompensateDate = packet.getSignInType() == ESignInType.SIGN_IN ? serverCompensateDate : DateUtils.format(packet.getSignInTime());
+        Date signCompensateDate = packet.getSignInType() == EnumSignInType.SIGN_IN ? serverCompensateDate : DateUtils.format(packet.getSignInTime());
         int serverCompensateDateInt = DateUtils.toDateInt(serverCompensateDate);
         int signCompensateDateInt = DateUtils.toDateInt(signCompensateDate);
 
-        ETimeCoolingMethod coolingMethod = ServerConfig.TIME_COOLING_METHOD.get();
+        EnumTimeCoolingMethod coolingMethod = EnumTimeCoolingMethod.valueOf(ServerConfig.TIME_COOLING_METHOD.get());
         // 判断签到/补签时间合法性
-        if (ESignInType.SIGN_IN.equals(packet.getSignInType()) && serverCompensateDateInt < signCompensateDateInt) {
-            SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "sign_in_date_late_server_current_date_fail"));
+        if (EnumSignInType.SIGN_IN.equals(packet.getSignInType()) && serverCompensateDateInt < signCompensateDateInt) {
+            SakuraUtils.sendMessage(player, Component.translatable(player, EnumI18nType.MESSAGE, "sign_in_date_late_server_current_date_fail"));
             PlayerSignInDataCapability.syncPlayerData(player);
             return;
-        } else if (ESignInType.SIGN_IN.equals(packet.getSignInType()) && serverCompensateDateInt > signCompensateDateInt) {
-            SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "sign_in_date_early_server_current_date_fail"));
+        } else if (EnumSignInType.SIGN_IN.equals(packet.getSignInType()) && serverCompensateDateInt > signCompensateDateInt) {
+            SakuraUtils.sendMessage(player, Component.translatable(player, EnumI18nType.MESSAGE, "sign_in_date_early_server_current_date_fail"));
             PlayerSignInDataCapability.syncPlayerData(player);
             return;
-        } else if (ESignInType.SIGN_IN.equals(packet.getSignInType()) && signInData.getSignInRecords().stream().anyMatch(record -> DateUtils.toDateInt(record.getCompensateTime()) == signCompensateDateInt)) {
-            SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "already_signed"));
+        } else if (EnumSignInType.SIGN_IN.equals(packet.getSignInType()) && signInData.getSignInRecords().stream().anyMatch(record -> DateUtils.toDateInt(record.getCompensateTime()) == signCompensateDateInt)) {
+            SakuraUtils.sendMessage(player, Component.translatable(player, EnumI18nType.MESSAGE, "already_signed"));
             PlayerSignInDataCapability.syncPlayerData(player);
             return;
-        } else if (ESignInType.RE_SIGN_IN.equals(packet.getSignInType()) && serverCompensateDateInt <= signCompensateDateInt) {
-            SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "compensate_date_not_early_server_current_date_fail"));
+        } else if (EnumSignInType.RE_SIGN_IN.equals(packet.getSignInType()) && serverCompensateDateInt <= signCompensateDateInt) {
+            SakuraUtils.sendMessage(player, Component.translatable(player, EnumI18nType.MESSAGE, "compensate_date_not_early_server_current_date_fail"));
             PlayerSignInDataCapability.syncPlayerData(player);
             return;
         }
         // 判断签到CD
-        if (ESignInType.SIGN_IN.equals(packet.getSignInType()) && coolingMethod.getCode() >= ETimeCoolingMethod.FIXED_INTERVAL.getCode()) {
+        if (EnumSignInType.SIGN_IN.equals(packet.getSignInType()) && coolingMethod.getCode() >= EnumTimeCoolingMethod.FIXED_INTERVAL.getCode()) {
             Date lastSignInTime = DateUtils.addDate(signInData.getLastSignInTime(), ServerConfig.TIME_COOLING_INTERVAL.get());
             if (serverDate.before(lastSignInTime)) {
-                SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "sign_in_cool_down_fail"));
+                SakuraUtils.sendMessage(player, Component.translatable(player, EnumI18nType.MESSAGE, "sign_in_cool_down_fail"));
                 PlayerSignInDataCapability.syncPlayerData(player);
                 return;
             }
         }
         // 判断补签
-        if (ESignInType.RE_SIGN_IN.equals(packet.getSignInType()) && !ServerConfig.SIGN_IN_CARD.get()) {
-            SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "server_not_enable_sign_in_card_fail"));
+        if (EnumSignInType.RE_SIGN_IN.equals(packet.getSignInType()) && !ServerConfig.SIGN_IN_CARD.get()) {
+            SakuraUtils.sendMessage(player, Component.translatable(player, EnumI18nType.MESSAGE, "server_not_enable_sign_in_card_fail"));
             PlayerSignInDataCapability.syncPlayerData(player);
             return;
-        } else if (ESignInType.RE_SIGN_IN.equals(packet.getSignInType()) && signInData.getSignInCard() <= 0) {
-            SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "not_enough_sign_in_card_fail"));
+        } else if (EnumSignInType.RE_SIGN_IN.equals(packet.getSignInType()) && signInData.getSignInCard() <= 0) {
+            SakuraUtils.sendMessage(player, Component.translatable(player, EnumI18nType.MESSAGE, "not_enough_sign_in_card_fail"));
             PlayerSignInDataCapability.syncPlayerData(player);
             return;
-        } else if (ESignInType.RE_SIGN_IN.equals(packet.getSignInType()) && isSignedIn(signInData, signCompensateDate, false)) {
-            SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "already_signed"));
+        } else if (EnumSignInType.RE_SIGN_IN.equals(packet.getSignInType()) && isSignedIn(signInData, signCompensateDate, false)) {
+            SakuraUtils.sendMessage(player, Component.translatable(player, EnumI18nType.MESSAGE, "already_signed"));
             PlayerSignInDataCapability.syncPlayerData(player);
             return;
         }
         // 判断领取奖励
-        if (ESignInType.REWARD.equals(packet.getSignInType())) {
+        if (EnumSignInType.REWARD.equals(packet.getSignInType())) {
             if (isRewarded(signInData, signCompensateDate, false)) {
-                SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "already_receive_reward_s", DateUtils.toString(signCompensateDate)));
+                SakuraUtils.sendMessage(player, Component.translatable(player, EnumI18nType.MESSAGE, "already_receive_reward_s", DateUtils.toString(signCompensateDate)));
                 PlayerSignInDataCapability.syncPlayerData(player);
                 return;
             } else if (!isSignedIn(signInData, signCompensateDate, false)) {
-                SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "not_sign_in", DateUtils.toString(signCompensateDate)));
+                SakuraUtils.sendMessage(player, Component.translatable(player, EnumI18nType.MESSAGE, "not_sign_in", DateUtils.toString(signCompensateDate)));
                 PlayerSignInDataCapability.syncPlayerData(player);
                 return;
             } else {
                 boolean showFailed = player.hasPermissions(ServerConfig.PERMISSION_REWARD_FAILED_TIPS.get());
-                Component msg = Component.translatable(player, EI18nType.MESSAGE, "receive_reward_success");
+                Component msg = Component.translatable(player, EnumI18nType.MESSAGE, "receive_reward_success");
                 signInData.getSignInRecords().stream()
                         // 若签到日期等于当前日期
                         .filter(record -> DateUtils.toDateInt(record.getCompensateTime()) == DateUtils.toDateInt(signCompensateDate))
@@ -548,39 +570,40 @@ public class RewardManager {
                                         reward.setRewarded(true);
                                         Component detail = reward.getName(SakuraUtils.getPlayerLanguage(player), true);
                                         if (giveRewardToPlayer(player, signInData, reward)) {
-                                            detail.setColor(Color.GREEN.getRGB());
+                                            detail.setColor(EnumMCColor.GREEN.getColor());
                                             msg.append(", ").append(detail);
                                         } else if (showFailed) {
-                                            detail.setColor(Color.RED.getRGB());
+                                            detail.setColor(EnumMCColor.RED.getColor());
                                             msg.append(", ").append(detail);
                                         }
                                     });
                         });
                 SakuraUtils.sendMessage(player, msg);
+                SakuraUtils.sendPacketToPlayer(new RewardCellDirtiedToClient(), player);
             }
         }
         // 签到/补签
         else {
             RewardList rewardList = RewardManager.getRewardListByDate(signCompensateDate, signInData, false, true).clone();
-            if (ESignInType.RE_SIGN_IN.equals(packet.getSignInType())) signInData.subSignInCard();
+            if (EnumSignInType.RE_SIGN_IN.equals(packet.getSignInType())) signInData.subSignInCard();
             SignInRecord signInRecord = new SignInRecord();
             signInRecord.setRewarded(packet.isAutoRewarded());
             signInRecord.setRewardList(new RewardList());
             signInRecord.setSignInTime(serverDate);
             signInRecord.setCompensateTime(signCompensateDate);
-            signInRecord.setSignInUUID(player.getUUID().toString());
+            signInRecord.setSignInUUID(SakuraUtils.getPlayerUUIDString(player));
             // 是否自动领取
             if (packet.isAutoRewarded()) {
                 boolean showFailed = player.hasPermissions(ServerConfig.PERMISSION_REWARD_FAILED_TIPS.get());
-                Component msg = Component.translatable(player, EI18nType.MESSAGE, "receive_reward_success");
+                Component msg = Component.translatable(player, EnumI18nType.MESSAGE, "receive_reward_success");
                 rewardList.forEach(reward -> {
                     Component detail = reward.getName(SakuraUtils.getPlayerLanguage(player), true);
                     if (giveRewardToPlayer(player, signInData, reward)) {
-                        detail.setColor(Color.GREEN.getRGB());
+                        detail.setColor(EnumMCColor.GREEN.getColor());
                         signInRecord.getRewardList().add(reward);
                         msg.append(", ").append(detail);
                     } else if (showFailed) {
-                        detail.setColor(Color.RED.getRGB());
+                        detail.setColor(EnumMCColor.RED.getColor());
                         msg.append(", ").append(detail);
                     }
                 });
@@ -590,9 +613,20 @@ public class RewardManager {
             }
             signInData.setLastSignInTime(serverDate);
             signInData.getSignInRecords().add(signInRecord);
-            signInData.setContinuousSignInDays(DateUtils.calculateContinuousDays(signInData.getSignInRecords().stream().map(SignInRecord::getCompensateTime).collect(Collectors.toList()), serverCompensateDate));
+            signInData.setContinuousSignInDays(DateUtils.calculateContinuousDays(signInData.getSignInRecords().stream()
+                            .map(SignInRecord::getCompensateTime)
+                            .collect(Collectors.toList())
+                    , serverCompensateDate)
+            );
             signInData.plusTotalSignInDays();
-            SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "sign_in_success_s", DateUtils.toString(signInRecord.getCompensateTime()), signInData.calculateContinuousDays(), getTotalSignInDays(signInData)));
+            SakuraUtils.sendMessage(player, Component.translatable(player
+                    , EnumI18nType.MESSAGE
+                    , "sign_in_success_s"
+                    , DateUtils.toString(signInRecord.getCompensateTime())
+                    , signInData.calculateContinuousDays()
+                    , getTotalSignInDays(signInData)
+            ));
+            SakuraUtils.sendPacketToPlayer(new RewardCellDirtiedToClient(), player);
         }
         signInData.save(player);
         // 同步数据至客户端
@@ -600,11 +634,11 @@ public class RewardManager {
     }
 
     public static boolean giveRewardToPlayer(ServerPlayerEntity player, IPlayerSignInData signInData, Reward reward) {
-        reward.setRewarded(true);
         Object object = RewardManager.deserializeReward(reward);
-        // 判断是否启用
+        // 计算幸运、霉运加成
+        int offset = 0;
         if (ServerConfig.REWARD_AFFECTED_BY_LUCK.get()) {
-            int offset = player.getActiveEffects().stream()
+            offset = player.getActiveEffects().stream()
                     .filter(instance -> instance.getEffect() == Effects.LUCK || instance.getEffect() == Effects.UNLUCK)
                     .map(instance -> {
                         if (instance.getEffect() == Effects.LUCK) {
@@ -613,45 +647,55 @@ public class RewardManager {
                             return -instance.getAmplifier();
                         }
                     }).reduce(0, Integer::sum);
-            if (new Random().nextDouble() > reward.getProbability().add(BigDecimal.valueOf(offset * 0.075)).doubleValue())
-                return false;
         }
+        if (random.nextDouble() > reward.getProbability().add(BigDecimal.valueOf(offset * 0.075)).doubleValue()) {
+            reward.setDisabled(true);
+            reward.setRewarded(true);
+            return false;
+        }
+        boolean result = false;
         switch (reward.getType()) {
             case ITEM:
-                RewardManager.giveItemStack(player, (ItemStack) object, true);
+                result = RewardManager.giveItemStack(player, (ItemStack) object, true);
                 break;
             case SIGN_IN_CARD:
-                signInData.plusSignInCard((Integer) object);
+                result = signInData.getSignInCard() != signInData.plusSignInCard((Integer) object);
                 break;
             case EFFECT:
-                player.addEffect((EffectInstance) object);
+                result = player.addEffect((EffectInstance) object);
                 break;
             case EXP_LEVEL:
                 player.giveExperienceLevels((Integer) object);
+                result = true;
                 break;
             case EXP_POINT:
                 player.giveExperiencePoints((Integer) object);
+                result = true;
                 break;
             case ADVANCEMENT:
                 Advancement advancement = player.server.getAdvancements().getAdvancement((ResourceLocation) object);
                 if (advancement != null) {
                     AdvancementProgress progress = player.getAdvancements().getOrStartProgress(advancement);
-                    progress.getRemainingCriteria().forEach(criterion -> player.getAdvancements().award(advancement, criterion));
+                    for (String criterion : progress.getRemainingCriteria()) {
+                        result = result || player.getAdvancements().award(advancement, criterion);
+                    }
                 }
                 break;
             case MESSAGE:
                 SakuraUtils.sendMessage(player, (Component) object);
+                result = true;
                 break;
             case COMMAND:
                 String command = (String) object;
                 command = command.replaceAll("@s", player.getName().getString());
                 if (StringUtils.isNotNullOrEmpty(command)) {
-                    player.server.getCommands().performCommand(player.createCommandSourceStack().withSuppressedOutput().withPermission(ServerConfig.PERMISSION_COMMAND_REWARD.get()), command);
+                    result = SakuraUtils.executeCommand(player, command);
                 }
                 break;
             default:
         }
-        return true;
+        reward.setRewarded(result);
+        return result;
     }
 
     /**
