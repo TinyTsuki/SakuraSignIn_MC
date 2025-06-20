@@ -250,6 +250,16 @@ public class Component implements Cloneable, Serializable {
     // region NonNull Getter
 
     /**
+     * 内容是否为空
+     */
+    public boolean isEmpty() {
+        return StringUtils.isNullOrEmptyEx(this.getText())
+                && this.getOriginal() == null
+                && this.getChildren().isEmpty()
+                && this.getArgs().isEmpty();
+    }
+
+    /**
      * 获取语言代码
      */
     public @NonNull String getLanguageCode() {

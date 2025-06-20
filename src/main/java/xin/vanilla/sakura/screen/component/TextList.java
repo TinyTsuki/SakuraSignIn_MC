@@ -24,4 +24,8 @@ public class TextList extends ArrayList<Text> {
             return super.get(index);
         }
     }
+
+    public boolean isEmptyEx() {
+        return this.size() == 0 || this.stream().allMatch(Text::isEmpty);
+    }
 }

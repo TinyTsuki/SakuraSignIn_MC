@@ -26,6 +26,7 @@ import net.minecraftforge.fml.loading.FMLPaths;
 import net.minecraftforge.fml.network.PacketDistributor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.lwjgl.BufferUtils;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
@@ -694,7 +695,7 @@ public class SakuraUtils {
             ClientPlayerEntity player = Minecraft.getInstance().player;
             if (player != null) {
                 Component component = Component.translatableClient(EnumI18nType.MESSAGE, "sakura_is_offline");
-                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgArgb(0x88FF5555));
+                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgArgb(0x99FFFF55));
             }
         }
     }
@@ -758,7 +759,7 @@ public class SakuraUtils {
     }
 
     @OnlyIn(Dist.CLIENT)
-    public static File chooseFile(String desc, String... extensions) {
+    public static String chooseFileString(String desc, String... extensions) {
         if (StringUtils.isNullOrEmptyEx(desc)) desc = "Choose a file";
 
         String result;
@@ -772,7 +773,30 @@ public class SakuraUtils {
         } else {
             result = TinyFileDialogs.tinyfd_openFileDialog(desc, SakuraUtils.getThemePath().toAbsolutePath().toString(), null, desc, false);
         }
+        return result;
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public static File chooseFile(String desc, String... extensions) {
+        String result = chooseFileString(desc, extensions);
         return result == null ? null : new File(result);
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public static String chooseRgbHex(String title) {
+        if (StringUtils.isNullOrEmptyEx(title)) title = "Choose a color";
+        return TinyFileDialogs.tinyfd_colorChooser(title, "#FFFFFF", null, BufferUtils.createByteBuffer(3));
+    }
+
+    public enum NotifyPopupIconType {
+        info,
+        warning,
+        error,
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public static int popupNotify(String title, String msg, NotifyPopupIconType iconType) {
+        return TinyFileDialogs.tinyfd_notifyPopup(title, msg, iconType.name());
     }
 
     @OnlyIn(Dist.CLIENT)

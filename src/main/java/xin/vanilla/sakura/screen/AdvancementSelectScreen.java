@@ -17,7 +17,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.data.Reward;
-import xin.vanilla.sakura.data.StringList;
 import xin.vanilla.sakura.enums.EnumI18nType;
 import xin.vanilla.sakura.enums.EnumRewardType;
 import xin.vanilla.sakura.network.data.AdvancementData;
@@ -26,7 +25,10 @@ import xin.vanilla.sakura.rewards.impl.AdvancementRewardParser;
 import xin.vanilla.sakura.screen.component.KeyEventManager;
 import xin.vanilla.sakura.screen.component.OperationButton;
 import xin.vanilla.sakura.screen.component.Text;
-import xin.vanilla.sakura.util.*;
+import xin.vanilla.sakura.util.AbstractGuiUtils;
+import xin.vanilla.sakura.util.Component;
+import xin.vanilla.sakura.util.GLFWKey;
+import xin.vanilla.sakura.util.StringUtils;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.math.BigDecimal;
@@ -141,7 +143,7 @@ public class AdvancementSelectScreen extends Screen {
 
     public AdvancementSelectScreen(Args args) {
         super(TITLE.toTextComponent());
-        assert args != null;
+        Objects.requireNonNull(args);
         args.validate();
         this.args = args;
         this.currentAdvancement = args.getDefaultAdvancement();
@@ -514,26 +516,21 @@ public class AdvancementSelectScreen extends Screen {
                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_advancement_json").setShadow(true))
                             .setMessage(Text.translatable(EnumI18nType.TIPS, "enter_something"))
                             .setDefaultValue(effectRewardJsonString)
+                            .setValidator((input) -> {
+                                try {
+                                    JsonObject jsonObject = GSON.fromJson(input.getValue(), JsonObject.class);
+                                    RewardManager.deserializeReward(new Reward(jsonObject, EnumRewardType.ADVANCEMENT, this.probability));
+                                } catch (Exception e) {
+                                    return Component.translatableClient(EnumI18nType.TIPS, "advancement_json_s_error", input.getValue()).toString();
+                                }
+                                return null;
+                            })
                     )
-                    .setOnDataReceived(input -> {
-                        StringList result = new StringList();
-                        if (CollectionUtils.isNotNullOrEmpty(input)) {
-                            ResourceLocation instance;
-                            String json = input.get(0);
-                            try {
-                                JsonObject jsonObject = GSON.fromJson(json, JsonObject.class);
-                                instance = RewardManager.deserializeReward(new Reward(jsonObject, EnumRewardType.ADVANCEMENT, this.probability));
-                            } catch (Exception e) {
-                                LOGGER.error("Invalid Json: {}", json);
-                                instance = null;
-                            }
-                            if (instance != null) {
-                                this.currentAdvancement = new Reward(instance, EnumRewardType.ADVANCEMENT, this.probability);
-                            } else {
-                                result.add(Component.translatableClient(EnumI18nType.TIPS, "advancement_json_s_error", json).toString());
-                            }
-                        }
-                        return result;
+                    .setCallback(input -> {
+                        String json = input.getFirstValue();
+                        JsonObject jsonObject = GSON.fromJson(json, JsonObject.class);
+                        ResourceLocation instance = RewardManager.deserializeReward(new Reward(jsonObject, EnumRewardType.ADVANCEMENT, this.probability));
+                        this.currentAdvancement = new Reward(instance, EnumRewardType.ADVANCEMENT, this.probability);
                     });
             Minecraft.getInstance().setScreen(new StringInputScreen(args));
         }
@@ -544,21 +541,17 @@ public class AdvancementSelectScreen extends Screen {
                     .addWidget(new StringInputScreen.InputWidget()
                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
                             .setMessage(Text.translatable(EnumI18nType.TIPS, "enter_something"))
-                            .setValidator("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                            .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                             .setDefaultValue(StringUtils.toFixedEx(this.probability, 5))
+                            .setValidator((input) -> {
+                                BigDecimal p = StringUtils.toBigDecimal(input.getValue());
+                                if (p.compareTo(BigDecimal.ZERO) <= 0 || p.compareTo(BigDecimal.ONE) > 0) {
+                                    return Component.translatableClient(EnumI18nType.TIPS, "reward_probability_s_error", input.getValue()).toString();
+                                }
+                                return null;
+                            })
                     )
-                    .setOnDataReceived(input -> {
-                        StringList result = new StringList();
-                        if (CollectionUtils.isNotNullOrEmpty(input)) {
-                            BigDecimal p = StringUtils.toBigDecimal(input.get(0));
-                            if (p.compareTo(BigDecimal.ZERO) > 0 && p.compareTo(BigDecimal.ONE) <= 0) {
-                                this.probability = p;
-                            } else {
-                                result.add(Component.translatableClient(EnumI18nType.TIPS, "reward_probability_s_error", input.get(0)).toString());
-                            }
-                        }
-                        return result;
-                    });
+                    .setCallback(input -> this.probability = StringUtils.toBigDecimal(input.getFirstValue()));
             Minecraft.getInstance().setScreen(new StringInputScreen(args));
         }
     }

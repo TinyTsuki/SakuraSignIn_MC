@@ -29,7 +29,7 @@ public class RewardOptionReceivedToClient {
             if (packet.success) {
                 notification = NotificationManager.Notification.ofComponentWithBlack(Component.translatable(EnumI18nType.MESSAGE, "reward_option_upload_success"));
             } else {
-                notification = NotificationManager.Notification.ofComponentWithBlack(Component.translatable(EnumI18nType.MESSAGE, "reward_option_upload_failed")).setBgArgb(0x88FF5555);
+                notification = NotificationManager.Notification.ofComponentWithBlack(Component.translatable(EnumI18nType.MESSAGE, "reward_option_upload_failed")).setBgArgb(0x99FFFF55);
             }
             NotificationManager.get().addNotification(notification);
         });

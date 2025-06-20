@@ -61,7 +61,7 @@ public class RewardOptionSyncToBoth extends SplitPacket {
                         RewardConfigManager.saveRewardOption();
                     } catch (Exception e) {
                         Component component = Component.translatable(EnumI18nType.MESSAGE, "reward_option_download_failed");
-                        NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgArgb(0x88FF5555));
+                        NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgArgb(0x99FFFF55));
                         throw e;
                     }
                     Component component = Component.translatable(EnumI18nType.MESSAGE, "reward_option_download_success");

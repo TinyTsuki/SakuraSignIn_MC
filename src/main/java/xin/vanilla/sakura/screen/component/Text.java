@@ -69,6 +69,10 @@ public class Text {
         return new Text(text);
     }
 
+    public static Text empty() {
+        return new Text().setText(Component.empty()).setHoverText(Component.empty());
+    }
+
     public static Text translatable(EnumI18nType type, String key, Object... args) {
         return new Text(Component.translatableClient(type, key, args));
     }
@@ -101,6 +105,10 @@ public class Text {
 
     public FontRenderer getFont() {
         return font == null ? Minecraft.getInstance().font : this.font;
+    }
+
+    public boolean isEmpty() {
+        return (this.text == null || this.text.isEmpty()) && (this.hoverText == null || this.hoverText.isEmpty());
     }
 
     public boolean isColorEmpty() {

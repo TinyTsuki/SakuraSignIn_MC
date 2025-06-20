@@ -14,6 +14,7 @@ import xin.vanilla.sakura.util.AbstractGuiUtils;
 import xin.vanilla.sakura.util.Component;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class NotificationManager {
     private static final Logger LOGGER = LogManager.getLogger();
@@ -406,7 +407,7 @@ public class NotificationManager {
         }
     }
 
-    private final EnumMap<EPosition, Deque<Notification>> notifications = new EnumMap<>(EPosition.class);
+    private final EnumMap<EPosition, List<Notification>> notifications = new EnumMap<>(EPosition.class);
     private static final NotificationManager instance = new NotificationManager();
 
     /**
@@ -420,7 +421,7 @@ public class NotificationManager {
      * 添加通知
      */
     public void addNotification(Notification notification) {
-        this.notifications.computeIfAbsent(notification.getPosition(), k -> new ArrayDeque<>()).add(notification);
+        this.notifications.computeIfAbsent(notification.getPosition(), k -> new ArrayList<>()).add(notification);
     }
 
     @OnlyIn(Dist.CLIENT)
@@ -431,20 +432,22 @@ public class NotificationManager {
                 .setHeight(mc.getWindow().getGuiScaledHeight());
         long currentTime = System.currentTimeMillis();
 
-        for (Map.Entry<EPosition, Deque<Notification>> entry : notifications.entrySet()) {
+        for (Map.Entry<EPosition, List<Notification>> entry : notifications.entrySet()) {
+            entry.getValue().removeIf(Notification::isFinished);
+
             EPosition pos = entry.getKey();
-            Deque<Notification> queue = entry.getValue();
+            List<Notification> list = entry.getValue().stream().filter(n -> n.getScheduledTime() <= currentTime).collect(Collectors.toList());
 
             // 初始化布局上下文
             Coordinate preInfo = new Coordinate().setY(pos.name().startsWith("TOP") ? 0 : screenInfo.getHeight()).setHeight(0);
 
             int i = 0;
-            Iterator<Notification> iter = queue.iterator();
+            Iterator<Notification> iter = list.iterator();
             while (iter.hasNext()) {
                 Notification n = iter.next();
 
                 // 状态过滤
-                if (n.isFinished() || n.getScheduledTime() > currentTime) {
+                if (n.isFinished()) {
                     iter.remove();
                     continue;
                 }

@@ -141,6 +141,7 @@ public abstract class SakuraScreen extends Screen {
     public static class MouseReleasedHandleArgs {
         private boolean consumed = false;
         private boolean layout = false;
+        private boolean clearPopup = true;
         double mouseX;
         double mouseY;
         private int button;
@@ -162,7 +163,7 @@ public abstract class SakuraScreen extends Screen {
         if (!this.keyManager.isMouseMoved()) {
             if (this.popupOption.isHovered()) {
                 this.handlePopupOption(args);
-                this.popupOption.clear();
+                if (args.isClearPopup()) this.popupOption.clear();
             } else {
                 this.mouseReleased_(args);
             }

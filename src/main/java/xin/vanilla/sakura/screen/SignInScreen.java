@@ -17,7 +17,6 @@ import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.config.ServerConfig;
-import xin.vanilla.sakura.data.StringList;
 import xin.vanilla.sakura.data.player.IPlayerSignInData;
 import xin.vanilla.sakura.data.player.PlayerSignInDataCapability;
 import xin.vanilla.sakura.enums.EnumI18nType;
@@ -490,7 +489,7 @@ public class SignInScreen extends Screen {
             if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                 if (RewardManager.getCompensateDateInt() < DateUtils.toDateInt(RewardManager.getCompensateDate(DateUtils.getClientDate()))) {
                     Component component = Component.translatableClient(EnumI18nType.MESSAGE, "next_day_cannot_operate");
-                    NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgArgb(0xAAFCFCB9));
+                    NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgArgb(0x99FF5555));
                 } else {
                     SakuraUtils.sendPacketToServer(new SignInToServer(DateUtils.toDateTimeString(DateUtils.getClientDate()), ClientConfig.AUTO_REWARDED.get(), EnumSignInType.SIGN_IN));
                 }
@@ -500,11 +499,11 @@ public class SignInScreen extends Screen {
         else if (signStatusCode == EnumSignInStatus.SIGNED_IN.getCode()) {
             if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                 Component component = Component.translatableClient(EnumI18nType.MESSAGE, "already_signed");
-                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgArgb(0xAAFCFCB9));
+                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgArgb(0x99FF5555));
             } else {
                 if (RewardManager.isRewarded(PlayerSignInDataCapability.getData(player), cellDate, false)) {
                     Component component = Component.translatableClient(EnumI18nType.MESSAGE, "already_get_reward");
-                    NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgArgb(0xAAFCFCB9));
+                    NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgArgb(0x99FF5555));
                 } else {
                     SakuraUtils.sendPacketToServer(new SignInToServer(DateUtils.toDateTimeString(cellDate), ClientConfig.AUTO_REWARDED.get(), EnumSignInType.REWARD));
                 }
@@ -515,11 +514,11 @@ public class SignInScreen extends Screen {
             if (button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
                 if (!ServerConfig.SIGN_IN_CARD.get()) {
                     Component component = Component.translatableClient(EnumI18nType.MESSAGE, "server_not_enable_sign_in_card");
-                    NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgArgb(0xAAFCFCB9));
+                    NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgArgb(0x99FF5555));
                 } else {
                     if (PlayerSignInDataCapability.getData(player).getSignInCard() <= 0) {
                         Component component = Component.translatableClient(EnumI18nType.MESSAGE, "not_enough_sign_in_card");
-                        NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgArgb(0xAAFCFCB9));
+                        NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgArgb(0x99FF5555));
                     } else {
                         SakuraUtils.sendPacketToServer(new SignInToServer(DateUtils.toDateTimeString(cellDate), ClientConfig.AUTO_REWARDED.get(), EnumSignInType.RE_SIGN_IN));
                     }
@@ -528,18 +527,18 @@ public class SignInScreen extends Screen {
         } else if (signStatusCode == EnumSignInStatus.NO_ACTION.getCode()) {
             if (cellDate.after(RewardManager.getCompensateDate(DateUtils.getClientDate()))) {
                 Component component = Component.translatableClient(EnumI18nType.MESSAGE, "next_day_cannot_operate");
-                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgArgb(0xAAFCFCB9));
+                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgArgb(0x99FF5555));
             } else {
                 Component component = Component.translatableClient(EnumI18nType.MESSAGE, "past_day_cannot_operate");
-                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgArgb(0xAAFCFCB9));
+                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgArgb(0x99FF5555));
             }
         } else if (signStatusCode == EnumSignInStatus.REWARDED.getCode()) {
             Component component = Component.translatableClient(EnumI18nType.MESSAGE, "already_get_reward");
-            NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgArgb(0xAAFCFCB9));
+            NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgArgb(0x99FF5555));
         } else {
             if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                 Component component = Component.literal(EnumSignInStatus.valueOf(signStatusCode).getDescription() + ": " + DateUtils.toString(cellDate));
-                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgArgb(0x88FF5555));
+                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgArgb(0x99FFFF55));
             }
         }
     }
@@ -755,32 +754,34 @@ public class SignInScreen extends Screen {
                 StringInputScreen.Args args = new StringInputScreen.Args()
                         .setParentScreen(themeScreen)
                         .addWidget(new StringInputScreen.InputWidget()
+                                .setName("name")
                                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_theme_name").setShadow(true))
+                                .setValidator((input) -> {
+                                    if (StringUtils.isNullOrEmptyEx(input.getValue())) {
+                                        return Component.translatableClient(EnumI18nType.TIPS, "enter_value_s_error", input.getValue()).toString();
+                                    }
+                                    return null;
+                                })
                         )
                         .addWidget(new StringInputScreen.InputWidget()
+                                .setName("author")
                                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_author_name").setShadow(true))
                         )
                         .addWidget(new StringInputScreen.InputWidget()
+                                .setName("version")
                                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_theme_version").setShadow(true))
                                 .setDefaultValue("1.0")
                         )
                         .addWidget(new StringInputScreen.InputWidget()
+                                .setName("description")
                                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_theme_description").setShadow(true))
                                 .setAllowEmpty(true)
                         )
-                        .setOnDataReceived(input -> {
-                            StringList result = new StringList();
-                            if (CollectionUtils.isNotNullOrEmpty(input) && StringUtils.isNotNullOrEmpty(input.get(0))) {
-                                Iterator<String> iterator = input.iterator();
-                                theme.setName(iterator.next());
-                                theme.setAuthor(iterator.next());
-                                theme.setVersion(iterator.next());
-                                theme.setDescription(iterator.next());
-                            } else {
-                                result.add(Component.translatableClient(EnumI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
-                            }
-                            return result;
-                        });
+                        .setCallback(input -> theme.setName(input.getValue("name"))
+                                .setAuthor(input.getValue("author"))
+                                .setVersion(input.getValue("version"))
+                                .setDescription(input.getValue("description"))
+                        );
                 StringInputScreen inputScreen = new StringInputScreen(args);
                 Minecraft.getInstance().setScreen(inputScreen);
             } else if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT && CollectionUtils.isNotNullOrEmpty(themeFileList)) {

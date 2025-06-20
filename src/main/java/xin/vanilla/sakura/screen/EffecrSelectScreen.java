@@ -19,7 +19,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.data.Reward;
-import xin.vanilla.sakura.data.StringList;
 import xin.vanilla.sakura.enums.EnumI18nType;
 import xin.vanilla.sakura.enums.EnumRewardType;
 import xin.vanilla.sakura.rewards.RewardManager;
@@ -27,7 +26,10 @@ import xin.vanilla.sakura.rewards.impl.EffectRewardParser;
 import xin.vanilla.sakura.screen.component.KeyEventManager;
 import xin.vanilla.sakura.screen.component.OperationButton;
 import xin.vanilla.sakura.screen.component.Text;
-import xin.vanilla.sakura.util.*;
+import xin.vanilla.sakura.util.AbstractGuiUtils;
+import xin.vanilla.sakura.util.Component;
+import xin.vanilla.sakura.util.GLFWKey;
+import xin.vanilla.sakura.util.StringUtils;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.math.BigDecimal;
@@ -142,7 +144,7 @@ public class EffecrSelectScreen extends Screen {
 
     public EffecrSelectScreen(Args args) {
         super(TITLE.toTextComponent());
-        assert args != null;
+        Objects.requireNonNull(args);
         args.validate();
         this.args = args;
         this.currentEffect = args.getDefaultEffect();
@@ -540,28 +542,21 @@ public class EffecrSelectScreen extends Screen {
                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_effect_json").setShadow(true))
                             .setMessage(Text.translatable(EnumI18nType.TIPS, "enter_something"))
                             .setDefaultValue(effectRewardJsonString)
-                    )
-                    .setOnDataReceived(input -> {
-                                StringList result = new StringList();
-                                if (CollectionUtils.isNotNullOrEmpty(input)) {
-                                    EffectInstance instance;
-                                    String json = input.get(0);
-                                    try {
-                                        JsonObject jsonObject = GSON.fromJson(json, JsonObject.class);
-                                        instance = RewardManager.deserializeReward(new Reward(jsonObject, EnumRewardType.EFFECT, this.probability));
-                                    } catch (Exception e) {
-                                        LOGGER.error("Invalid Json: {}", json);
-                                        instance = null;
-                                    }
-                                    if (instance != null) {
-                                        this.currentEffect = new Reward(instance, EnumRewardType.EFFECT, this.probability);
-                                    } else {
-                                        result.add(Component.translatableClient(EnumI18nType.TIPS, "effect_json_s_error", json).toString());
-                                    }
+                            .setValidator((input) -> {
+                                try {
+                                    JsonObject jsonObject = GSON.fromJson(input.getValue(), JsonObject.class);
+                                    RewardManager.deserializeReward(new Reward(jsonObject, EnumRewardType.EFFECT, this.probability));
+                                } catch (Exception e) {
+                                    return Component.translatableClient(EnumI18nType.TIPS, "effect_json_s_error", input.getValue()).toString();
                                 }
-                                return result;
-                            }
-                    );
+                                return null;
+                            })
+                    )
+                    .setCallback(input -> {
+                        JsonObject jsonObject = GSON.fromJson(input.getFirstValue(), JsonObject.class);
+                        EffectInstance instance = RewardManager.deserializeReward(new Reward(jsonObject, EnumRewardType.EFFECT, this.probability));
+                        this.currentEffect = new Reward(instance, EnumRewardType.EFFECT, this.probability);
+                    });
             Minecraft.getInstance().setScreen(new StringInputScreen(args));
         }
         // 编辑持续时间
@@ -571,21 +566,20 @@ public class EffecrSelectScreen extends Screen {
                     .addWidget(new StringInputScreen.InputWidget()
                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_effect_duration").setShadow(true))
                             .setMessage(Text.translatable(EnumI18nType.TIPS, "enter_something"))
-                            .setValidator("\\d{0,4}")
+                            .setRegex("\\d{0,4}")
                             .setDefaultValue(String.valueOf(((EffectInstance) RewardManager.deserializeReward(this.currentEffect)).getDuration()))
+                            .setValidator((input) -> {
+                                int duration = StringUtils.toInt(input.getValue());
+                                if (duration <= 0 || duration > 60 * 60 * 24 * 30) {
+                                    return Component.translatableClient(EnumI18nType.TIPS, "effect_duration_s_error", input.getValue()).toString();
+                                }
+                                return null;
+                            })
                     )
-                    .setOnDataReceived(input -> {
-                        StringList result = new StringList();
-                        if (CollectionUtils.isNotNullOrEmpty(input)) {
-                            int duration = StringUtils.toInt(input.get(0));
-                            if (duration > 0 && duration <= 60 * 60 * 24 * 30) {
-                                EffectInstance effectInstance = RewardManager.deserializeReward(this.currentEffect);
-                                this.currentEffect = new Reward(new EffectInstance(effectInstance.getEffect(), duration, effectInstance.getAmplifier()), EnumRewardType.EFFECT, this.probability);
-                            } else {
-                                result.add(Component.translatableClient(EnumI18nType.TIPS, "effect_duration_s_error", input.get(0)).toString());
-                            }
-                        }
-                        return result;
+                    .setCallback(input -> {
+                        int duration = StringUtils.toInt(input.getFirstValue());
+                        EffectInstance effectInstance = RewardManager.deserializeReward(this.currentEffect);
+                        this.currentEffect = new Reward(new EffectInstance(effectInstance.getEffect(), duration, effectInstance.getAmplifier()), EnumRewardType.EFFECT, this.probability);
                     });
             Minecraft.getInstance().setScreen(new StringInputScreen(args));
         }
@@ -596,19 +590,18 @@ public class EffecrSelectScreen extends Screen {
                     .addWidget(new StringInputScreen.InputWidget()
                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_effect_amplifier").setShadow(true))
                             .setDefaultValue(String.valueOf(((EffectInstance) RewardManager.deserializeReward(this.currentEffect)).getAmplifier() + 1))
+                            .setValidator((input) -> {
+                                int amplifier = StringUtils.toInt(input.getValue());
+                                if (amplifier <= 0 || amplifier > 100) {
+                                    return Component.translatableClient(EnumI18nType.TIPS, "effect_amplifier_s_error", input.getValue()).toString();
+                                }
+                                return null;
+                            })
                     )
-                    .setOnDataReceived(input -> {
-                        StringList result = new StringList();
-                        if (CollectionUtils.isNotNullOrEmpty(input)) {
-                            int amplifier = StringUtils.toInt(input.get(0));
-                            if (amplifier > 0 && amplifier <= 100) {
-                                EffectInstance effectInstance = RewardManager.deserializeReward(this.currentEffect);
-                                this.currentEffect = new Reward(new EffectInstance(effectInstance.getEffect(), effectInstance.getDuration(), amplifier - 1), EnumRewardType.EFFECT, this.probability);
-                            } else {
-                                result.add(Component.translatableClient(EnumI18nType.TIPS, "effect_amplifier_s_error", input.get(0)).toString());
-                            }
-                        }
-                        return result;
+                    .setCallback(input -> {
+                        int amplifier = StringUtils.toInt(input.getFirstValue());
+                        EffectInstance effectInstance = RewardManager.deserializeReward(this.currentEffect);
+                        this.currentEffect = new Reward(new EffectInstance(effectInstance.getEffect(), effectInstance.getDuration(), amplifier - 1), EnumRewardType.EFFECT, this.probability);
                     });
             Minecraft.getInstance().setScreen(new StringInputScreen(args));
         }
@@ -618,21 +611,18 @@ public class EffecrSelectScreen extends Screen {
                     .setParentScreen(this)
                     .addWidget(new StringInputScreen.InputWidget()
                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                            .setValidator("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                            .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                             .setDefaultValue(StringUtils.toFixedEx(this.probability, 5))
+                            .setValidator((input) -> {
+                                BigDecimal p = StringUtils.toBigDecimal(input.getValue());
+                                if (p.compareTo(BigDecimal.ZERO) <= 0 && p.compareTo(BigDecimal.ONE) > 0) {
+                                    this.probability = p;
+                                    return Component.translatableClient(EnumI18nType.TIPS, "reward_probability_s_error", input.getValue()).toString();
+                                }
+                                return null;
+                            })
                     )
-                    .setOnDataReceived(input -> {
-                        StringList result = new StringList();
-                        if (CollectionUtils.isNotNullOrEmpty(input)) {
-                            BigDecimal p = StringUtils.toBigDecimal(input.get(0));
-                            if (p.compareTo(BigDecimal.ZERO) > 0 && p.compareTo(BigDecimal.ONE) <= 0) {
-                                this.probability = p;
-                            } else {
-                                result.add(Component.translatableClient(EnumI18nType.TIPS, "reward_probability_s_error", input.get(0)).toString());
-                            }
-                        }
-                        return result;
-                    });
+                    .setCallback(input -> this.probability = StringUtils.toBigDecimal(input.getFirstValue()));
             Minecraft.getInstance().setScreen(new StringInputScreen(args));
         }
     }

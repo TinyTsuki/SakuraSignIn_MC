@@ -27,7 +27,6 @@ import xin.vanilla.sakura.config.ServerConfig;
 import xin.vanilla.sakura.data.KeyValue;
 import xin.vanilla.sakura.data.Reward;
 import xin.vanilla.sakura.data.RewardList;
-import xin.vanilla.sakura.data.StringList;
 import xin.vanilla.sakura.enums.EnumI18nType;
 import xin.vanilla.sakura.enums.EnumRewardRule;
 import xin.vanilla.sakura.enums.EnumRewardType;
@@ -48,6 +47,7 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -122,6 +122,11 @@ public class RewardOptionScreen extends SakuraScreen {
      * 奖励列表按钮集合
      */
     private final Map<String, OperationButton> REWARD_BUTTONS = new HashMap<>();
+
+    /**
+     * 尝试删除基础奖励标题次数
+     */
+    private int deleteBaseCount = 0;
 
     /**
      * 操作按钮类型
@@ -296,24 +301,20 @@ public class RewardOptionScreen extends SakuraScreen {
     }
 
     private StringInputScreen getRuleKeyInputScreen(Screen callbackScreen, EnumRewardRule rule, String[] key) {
-        String validator = rule == EnumRewardRule.RANDOM_REWARD ? "(0?1(\\.0{0,10})?|0(\\.\\d{0,10})?)?" : "[\\d +~/:.T-]*";
+        String regex = rule == EnumRewardRule.RANDOM_REWARD ? "(0?1(\\.0{0,10})?|0(\\.\\d{0,10})?)?" : "[\\d +~/:.T-]*";
         StringInputScreen.Args args = new StringInputScreen.Args()
                 .setParentScreen(callbackScreen)
                 .addWidget(new StringInputScreen.InputWidget()
                         .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_rule_key_" + rule.getCode()).setShadow(true))
-                        .setValidator(validator)
+                        .setRegex(regex)
+                        .setValidator((input) -> {
+                            if (!RewardConfigManager.validateKeyName(rule, input.getValue())) {
+                                return Component.translatableClient(EnumI18nType.TIPS, "reward_rule_s_error", input.getValue()).toString();
+                            }
+                            return null;
+                        })
                 )
-                .setOnDataReceived(input -> {
-                    StringList result = new StringList();
-                    if (CollectionUtils.isNotNullOrEmpty(input)) {
-                        if (RewardConfigManager.validateKeyName(rule, input.get(0))) {
-                            key[0] = input.get(0);
-                        } else {
-                            result.add(Component.translatableClient(EnumI18nType.TIPS, "reward_rule_s_error", input.get(0)).toString());
-                        }
-                    }
-                    return result;
-                });
+                .setCallback(input -> key[0] = input.getFirstValue());
         return new StringInputScreen(args);
     }
 
@@ -321,40 +322,44 @@ public class RewardOptionScreen extends SakuraScreen {
         StringInputScreen.Args args = new StringInputScreen.Args()
                 .setParentScreen(callbackScreen)
                 .addWidget(new StringInputScreen.InputWidget()
+                        .setName("key")
                         .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_rule_key_" + rule.getCode()).setShadow(true))
-                        .setValidator("\\w*")
+                        .setRegex("\\w*")
+                        .setValidator((input) -> {
+                            if (!RewardConfigManager.validateKeyName(rule, input.getValue())) {
+                                return Component.translatableClient(EnumI18nType.TIPS, "reward_rule_s_error", input.getValue()).toString();
+                            }
+                            return null;
+                        })
                 )
                 .addWidget(new StringInputScreen.InputWidget()
+                        .setName("valid")
                         .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_valid_until").setShadow(true))
                         .setDefaultValue(DateUtils.toString(DateUtils.addMonth(DateUtils.getClientDate(), 1)))
+                        .setValidator((input) -> {
+                            if (DateUtils.format(input.getValue()) == null) {
+                                return Component.translatableClient(EnumI18nType.TIPS, "valid_until_s_error", input.getValue()).toString();
+                            }
+                            return null;
+                        })
                 )
                 .addWidget(new StringInputScreen.InputWidget()
+                        .setName("num")
                         .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_num").setShadow(true))
-                        .setValidator("\\d*")
+                        .setRegex("\\d*")
                         .setDefaultValue("1")
+                        .setValidator((input) -> {
+                            if (StringUtils.toInt(input.getValue()) <= 0) {
+                                return Component.translatableClient(EnumI18nType.TIPS, "num_s_error", input.getValue()).toString();
+                            }
+                            return null;
+                        })
                 )
-                .setOnDataReceived(input -> {
-                    StringList result = new StringList("", "", "");
-                    if (CollectionUtils.isNotNullOrEmpty(input)) {
-                        if (!RewardConfigManager.validateKeyName(rule, input.get(0))) {
-                            result.set(0, Component.translatableClient(EnumI18nType.TIPS, "reward_rule_s_error", input.get(0)).toString());
-                        }
-                        if (StringUtils.isNotNullOrEmpty(input.get(1))) {
-                            if (DateUtils.format(input.get(1)) == null) {
-                                result.set(1, Component.translatableClient(EnumI18nType.TIPS, "valid_until_s_error", input.get(1)).toString());
-                            }
-                        }
-                        if (StringUtils.isNotNullOrEmpty(input.get(2))) {
-                            if (StringUtils.toInt(input.get(2)) == 0) {
-                                result.set(2, Component.translatableClient(EnumI18nType.TIPS, "num_s_error", input.get(2)).toString());
-                            }
-                        }
-                        if (result.stream().allMatch(StringUtils::isNullOrEmptyEx)) {
-                            key[0] = String.format("%s|%s|-1|%d", input.get(0), input.get(1), StringUtils.toInt(input.get(2), 1));
-                        }
-                    }
-                    return result;
-                });
+                .setCallback(input -> key[0] = String.format("%s|%s|-1|%d"
+                        , input.getValue("key")
+                        , input.getValue("valid")
+                        , StringUtils.toInt(input.getValue("num"), 1)
+                ));
         return new StringInputScreen(args);
     }
 
@@ -560,15 +565,15 @@ public class RewardOptionScreen extends SakuraScreen {
                 args.setConsumed(true);
                 try {
                     ClientPlayerEntity player = Minecraft.getInstance().player;
-                    assert player != null;
+                    Objects.requireNonNull(player);
                     EnumRewardRule rewardRule = EnumRewardRule.valueOf(OperationButtonType.valueOf(value.getOperation()).name());
                     if (!player.hasPermissions(SakuraUtils.getRewardPermissionLevel(rewardRule))) {
                         Component component = Component.translatableClient(EnumI18nType.MESSAGE, "no_permission_to_view_reward", Component.translatableClient(EnumI18nType.WORD, SakuraUtils.getRewardRuleI18nKeyName(rewardRule)));
-                        NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgArgb(0x88FF5555));
+                        NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgArgb(0x99FFFF55));
                     }
                     if (!player.hasPermissions(ServerConfig.PERMISSION_EDIT_REWARD.get())) {
                         Component component = Component.translatableClient(EnumI18nType.MESSAGE, "no_permission_to_edit_reward");
-                        NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgArgb(0xAAFCFCB9));
+                        NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgArgb(0x99FF5555));
                     }
                 } catch (Exception ignored) {
                 }
@@ -600,6 +605,7 @@ public class RewardOptionScreen extends SakuraScreen {
                     this.popupOption.clear();
                     this.popupOption.addOption(Text.translatable(EnumI18nType.OPTION, "paste"));
                     for (EnumRewardType rewardType : EnumRewardType.values()) {
+                        if (EnumRewardType.NONE.equals(rewardType)) continue;
                         this.popupOption.addOption(Text.translatable(EnumI18nType.WORD, "reward_type_" + rewardType.getCode()));
                     }
                     this.popupOption.build(super.font, args.getMouseX(), args.getMouseY(), String.format("奖励面板按钮:%s", this.currOpButton));
@@ -640,7 +646,7 @@ public class RewardOptionScreen extends SakuraScreen {
                 }
             } else {
                 Component component = Component.translatable(EnumI18nType.MESSAGE, "local_server_not_support_this_operation");
-                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgArgb(0xAAFCFCB9));
+                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgArgb(0x99FF5555));
             }
         }
         // 下载奖励配置
@@ -654,7 +660,7 @@ public class RewardOptionScreen extends SakuraScreen {
                     args.setConsumed(true);
                 } else {
                     Component component = Component.translatable(EnumI18nType.MESSAGE, "local_server_not_support_this_operation");
-                    NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgArgb(0xAAFCFCB9));
+                    NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgArgb(0x99FF5555));
                 }
             }
         }
@@ -697,6 +703,7 @@ public class RewardOptionScreen extends SakuraScreen {
                 }
                 this.popupOption.addOption(Text.translatable(EnumI18nType.OPTION, "paste"));
                 for (EnumRewardType rewardType : EnumRewardType.values()) {
+                    if (EnumRewardType.NONE.equals(rewardType)) continue;
                     this.popupOption.addOption(Text.translatable(EnumI18nType.WORD, "reward_type_" + rewardType.getCode()));
                 }
                 this.popupOption.addOption(Text.translatable(EnumI18nType.OPTION, "clear").setColorArgb(0xFFFF0000));
@@ -733,6 +740,7 @@ public class RewardOptionScreen extends SakuraScreen {
         OperationButtonType buttonType = OperationButtonType.valueOf(currOpButton);
         if (buttonType == null) return;
         EnumRewardRule rule = EnumRewardRule.valueOf(buttonType.toString());
+        // 奖励规则类型按钮
         if (popupOption.getId().startsWith("奖励规则类型按钮:")) {
             int opCode = StringUtils.toInt(popupOption.getId().replace("奖励规则类型按钮:", ""));
             // 若选择了清空
@@ -790,8 +798,11 @@ public class RewardOptionScreen extends SakuraScreen {
                     }
                 }
             }
-        } else if (popupOption.getId().startsWith("奖励面板按钮:")) {
+        }
+        // 奖励面板按钮
+        else if (popupOption.getId().startsWith("奖励面板按钮:")) {
             String[] key = new String[]{""};
+            // 粘贴
             if (I18nUtils.getTranslationClient(EnumI18nType.OPTION, "paste").equalsIgnoreCase(selectedString)) {
                 editHandler.handlePaste();
             }
@@ -846,31 +857,32 @@ public class RewardOptionScreen extends SakuraScreen {
                 StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                         .setParentScreen(this)
                         .addWidget(new StringInputScreen.InputWidget()
+                                .setName("count")
                                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_exp_point").setShadow(true))
-                                .setValidator("-?\\d*")
+                                .setRegex("-?\\d*")
                                 .setDefaultValue("1")
+                                .setValidator((input) -> {
+                                    if (StringUtils.toInt(input.getValue()) <= 0) {
+                                        return Component.translatableClient(EnumI18nType.TIPS, "enter_value_s_error", input.getValue()).toString();
+                                    }
+                                    return null;
+                                })
                         )
                         .addWidget(new StringInputScreen.InputWidget()
+                                .setName("probability")
                                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                                .setValidator("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                                 .setDefaultValue("1")
                         )
-                        .setShouldClose(() -> StringUtils.isNullOrEmpty(key[0]))
-                        .setOnDataReceived(input -> {
-                            StringList result = new StringList();
-                            if (CollectionUtils.isNotNullOrEmpty(input) && StringUtils.isNotNullOrEmpty(key[0])) {
-                                int count = StringUtils.toInt(input.get(0));
-                                BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
-                                if (count != 0) {
-                                    RewardConfigManager.addUndoRewardOption(rule);
-                                    RewardConfigManager.clearRedoList();
-                                    RewardConfigManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(count, EnumRewardType.EXP_POINT), EnumRewardType.EXP_POINT, p));
-                                    RewardConfigManager.saveRewardOption();
-                                } else {
-                                    result.add(Component.translatableClient(EnumI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
-                                }
-                            }
-                            return result;
+                        .setInvisible(() -> StringUtils.isNullOrEmpty(key[0]))
+                        .setCallback(input -> {
+                            int count = StringUtils.toInt(input.getValue("count"));
+                            BigDecimal p = StringUtils.toBigDecimal(input.getValue("probability"), BigDecimal.ONE);
+                            RewardConfigManager.addUndoRewardOption(rule);
+                            RewardConfigManager.clearRedoList();
+                            RewardConfigManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(count, EnumRewardType.EXP_POINT), EnumRewardType.EXP_POINT, p));
+                            RewardConfigManager.saveRewardOption();
+
                         });
                 StringInputScreen callbackScreen = new StringInputScreen(screenArgs);
                 if (rule == EnumRewardRule.CDK_REWARD) {
@@ -887,31 +899,31 @@ public class RewardOptionScreen extends SakuraScreen {
                 StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                         .setParentScreen(this)
                         .addWidget(new StringInputScreen.InputWidget()
+                                .setName("level")
                                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_exp_level").setShadow(true))
-                                .setValidator("-?\\d*")
+                                .setRegex("-?\\d*")
                                 .setDefaultValue("1")
+                                .setValidator((input) -> {
+                                    if (StringUtils.toInt(input.getValue()) <= 0) {
+                                        return Component.translatableClient(EnumI18nType.TIPS, "enter_value_s_error", input.getValue()).toString();
+                                    }
+                                    return null;
+                                })
                         )
                         .addWidget(new StringInputScreen.InputWidget()
+                                .setName("probability")
                                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                                .setValidator("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                                 .setDefaultValue("1")
                         )
-                        .setShouldClose(() -> StringUtils.isNullOrEmpty(key[0]))
-                        .setOnDataReceived(input -> {
-                            StringList result = new StringList();
-                            if (CollectionUtils.isNotNullOrEmpty(input) && StringUtils.isNotNullOrEmpty(key[0])) {
-                                int count = StringUtils.toInt(input.get(0));
-                                BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
-                                if (count != 0) {
-                                    RewardConfigManager.addUndoRewardOption(rule);
-                                    RewardConfigManager.clearRedoList();
-                                    RewardConfigManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(count, EnumRewardType.EXP_LEVEL), EnumRewardType.EXP_LEVEL, p));
-                                    RewardConfigManager.saveRewardOption();
-                                } else {
-                                    result.add(Component.translatableClient(EnumI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
-                                }
-                            }
-                            return result;
+                        .setInvisible(() -> StringUtils.isNullOrEmpty(key[0]))
+                        .setCallback(input -> {
+                            int count = StringUtils.toInt(input.getValue("level"));
+                            BigDecimal p = StringUtils.toBigDecimal(input.getValue("probability"), BigDecimal.ONE);
+                            RewardConfigManager.addUndoRewardOption(rule);
+                            RewardConfigManager.clearRedoList();
+                            RewardConfigManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(count, EnumRewardType.EXP_LEVEL), EnumRewardType.EXP_LEVEL, p));
+                            RewardConfigManager.saveRewardOption();
                         });
                 StringInputScreen callbackScreen = new StringInputScreen(screenArgs);
                 if (rule == EnumRewardRule.CDK_REWARD) {
@@ -928,31 +940,31 @@ public class RewardOptionScreen extends SakuraScreen {
                 StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                         .setParentScreen(this)
                         .addWidget(new StringInputScreen.InputWidget()
+                                .setName("card")
                                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_sign_in_card").setShadow(true))
-                                .setValidator("-?\\d*")
+                                .setRegex("-?\\d*")
                                 .setDefaultValue("1")
+                                .setValidator((input) -> {
+                                    if (StringUtils.toInt(input.getValue()) <= 0) {
+                                        return Component.translatableClient(EnumI18nType.TIPS, "enter_value_s_error", input.getValue()).toString();
+                                    }
+                                    return null;
+                                })
                         )
                         .addWidget(new StringInputScreen.InputWidget()
+                                .setName("probability")
                                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                                .setValidator("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                                 .setDefaultValue("1")
                         )
-                        .setShouldClose(() -> StringUtils.isNullOrEmpty(key[0]))
-                        .setOnDataReceived(input -> {
-                            StringList result = new StringList();
-                            if (CollectionUtils.isNotNullOrEmpty(input) && StringUtils.isNotNullOrEmpty(key[0])) {
-                                int count = StringUtils.toInt(input.get(0));
-                                BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
-                                if (count != 0) {
-                                    RewardConfigManager.addUndoRewardOption(rule);
-                                    RewardConfigManager.clearRedoList();
-                                    RewardConfigManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(count, EnumRewardType.SIGN_IN_CARD), EnumRewardType.SIGN_IN_CARD, p));
-                                    RewardConfigManager.saveRewardOption();
-                                } else {
-                                    result.add(Component.translatableClient(EnumI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
-                                }
-                            }
-                            return result;
+                        .setInvisible(() -> StringUtils.isNullOrEmpty(key[0]))
+                        .setCallback(input -> {
+                            int count = StringUtils.toInt(input.getValue("card"));
+                            BigDecimal p = StringUtils.toBigDecimal(input.getValue("probability"), BigDecimal.ONE);
+                            RewardConfigManager.addUndoRewardOption(rule);
+                            RewardConfigManager.clearRedoList();
+                            RewardConfigManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(count, EnumRewardType.SIGN_IN_CARD), EnumRewardType.SIGN_IN_CARD, p));
+                            RewardConfigManager.saveRewardOption();
                         });
                 StringInputScreen callbackScreen = new StringInputScreen(screenArgs);
                 if (rule == EnumRewardRule.CDK_REWARD) {
@@ -992,23 +1004,23 @@ public class RewardOptionScreen extends SakuraScreen {
                 StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                         .setParentScreen(this)
                         .addWidget(new StringInputScreen.InputWidget()
+                                .setName("message")
                                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_message").setShadow(true))
                         )
                         .addWidget(new StringInputScreen.InputWidget()
+                                .setName("probability")
                                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                                .setValidator("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                                 .setDefaultValue("1")
                         )
-                        .setShouldClose(() -> StringUtils.isNullOrEmpty(key[0]))
-                        .setOnDataReceived(input -> {
-                            if (CollectionUtils.isNotNullOrEmpty(input) && StringUtils.isNotNullOrEmpty(key[0])) {
-                                RewardConfigManager.addUndoRewardOption(rule);
-                                RewardConfigManager.clearRedoList();
-                                Component component = Component.literal(input.get(0));
-                                BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
-                                RewardConfigManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(component, EnumRewardType.MESSAGE), EnumRewardType.MESSAGE, p));
-                                RewardConfigManager.saveRewardOption();
-                            }
+                        .setInvisible(() -> StringUtils.isNullOrEmptyEx(key[0]))
+                        .setCallback(input -> {
+                            RewardConfigManager.addUndoRewardOption(rule);
+                            RewardConfigManager.clearRedoList();
+                            Component component = Component.literal(input.getValue("message"));
+                            BigDecimal p = StringUtils.toBigDecimal(input.getValue("probability"), BigDecimal.ONE);
+                            RewardConfigManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(component, EnumRewardType.MESSAGE), EnumRewardType.MESSAGE, p));
+                            RewardConfigManager.saveRewardOption();
                         });
                 StringInputScreen callbackScreen = new StringInputScreen(screenArgs);
                 if (rule == EnumRewardRule.CDK_REWARD) {
@@ -1025,26 +1037,28 @@ public class RewardOptionScreen extends SakuraScreen {
                 StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                         .setParentScreen(this)
                         .addWidget(new StringInputScreen.InputWidget()
+                                .setName("command")
                                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_command").setShadow(true))
+                                .setValidator((input) -> {
+                                    if (!input.getValue().startsWith("/")) {
+                                        return Component.translatableClient(EnumI18nType.TIPS, "enter_value_s_error", input.getValue()).toString();
+                                    }
+                                    return null;
+                                })
                         )
                         .addWidget(new StringInputScreen.InputWidget()
+                                .setName("probability")
                                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                                .setValidator("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                                 .setDefaultValue("1")
                         )
-                        .setShouldClose(() -> StringUtils.isNullOrEmpty(key[0]))
-                        .setOnDataReceived(input -> {
-                            StringList result = new StringList();
-                            if (CollectionUtils.isNotNullOrEmpty(input) && input.get(0).startsWith("/") && StringUtils.isNotNullOrEmpty(key[0])) {
-                                RewardConfigManager.addUndoRewardOption(rule);
-                                RewardConfigManager.clearRedoList();
-                                BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
-                                RewardConfigManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(input.get(0), EnumRewardType.COMMAND), EnumRewardType.COMMAND, p));
-                                RewardConfigManager.saveRewardOption();
-                            } else {
-                                result.add(Component.translatableClient(EnumI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
-                            }
-                            return result;
+                        .setInvisible(() -> StringUtils.isNullOrEmpty(key[0]))
+                        .setCallback(input -> {
+                            RewardConfigManager.addUndoRewardOption(rule);
+                            RewardConfigManager.clearRedoList();
+                            BigDecimal p = StringUtils.toBigDecimal(input.getValue("probability"), BigDecimal.ONE);
+                            RewardConfigManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(input.getValue("command"), EnumRewardType.COMMAND), EnumRewardType.COMMAND, p));
+                            RewardConfigManager.saveRewardOption();
                         });
                 StringInputScreen callbackScreen = new StringInputScreen(screenArgs);
                 if (rule == EnumRewardRule.CDK_REWARD) {
@@ -1057,10 +1071,13 @@ public class RewardOptionScreen extends SakuraScreen {
                 }
             }
             // 实现其他奖励类型
-        } else if (popupOption.getId().startsWith("奖励按钮:")) {
+        }
+        // 奖励按钮
+        else if (popupOption.getId().startsWith("奖励按钮:")) {
             String id = popupOption.getId().replace("奖励按钮:", "");
             if (id.startsWith("标题")) {
                 String key = id.substring(3);
+                // 编辑
                 if (Component.translatableClient(EnumI18nType.OPTION, "edit").toString().equalsIgnoreCase(selectedString)) {
                     if (args.getButton() == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                         if (rule == EnumRewardRule.CDK_REWARD) {
@@ -1071,43 +1088,49 @@ public class RewardOptionScreen extends SakuraScreen {
                             StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                                     .setParentScreen(this)
                                     .addWidget(new StringInputScreen.InputWidget()
+                                            .setName("key")
                                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_rule_key_" + rule.getCode()).setShadow(true))
-                                            .setValidator("\\w*")
+                                            .setRegex("\\w*")
                                             .setDefaultValue(split[0])
+                                            .setValidator((input) -> {
+                                                if (!RewardConfigManager.validateKeyName(rule, input.getValue())) {
+                                                    return Component.translatableClient(EnumI18nType.TIPS, "reward_rule_s_error", input.getValue()).toString();
+                                                }
+                                                return null;
+                                            })
                                     )
                                     .addWidget(new StringInputScreen.InputWidget()
+                                            .setName("valid")
                                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_valid_until").setShadow(true))
                                             .setDefaultValue(split[1])
+                                            .setValidator((input) -> {
+                                                if (DateUtils.format(input.getValue()) == null) {
+                                                    return Component.translatableClient(EnumI18nType.TIPS, "valid_until_s_error", input.getValue()).toString();
+                                                }
+                                                return null;
+                                            })
                                     )
                                     .addWidget(new StringInputScreen.InputWidget()
+                                            .setName("num")
                                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_num").setShadow(true))
-                                            .setValidator("\\d*")
+                                            .setRegex("\\d*")
                                             .setDefaultValue(split[3])
+                                            .setValidator((input) -> {
+                                                if (StringUtils.toInt(input.getValue()) <= 0) {
+                                                    return Component.translatableClient(EnumI18nType.TIPS, "num_s_error", input.getValue()).toString();
+                                                }
+                                                return null;
+                                            })
                                     )
-                                    .setOnDataReceived(input -> {
-                                        StringList result = new StringList("", "", "");
-                                        if (CollectionUtils.isNotNullOrEmpty(input)) {
-                                            if (!RewardConfigManager.validateKeyName(rule, input.get(0))) {
-                                                result.set(0, Component.translatableClient(EnumI18nType.TIPS, "reward_rule_s_error", input.get(0)).toString());
-                                            }
-                                            if (StringUtils.isNotNullOrEmpty(input.get(1))) {
-                                                if (DateUtils.format(input.get(1)) == null) {
-                                                    result.set(1, Component.translatableClient(EnumI18nType.TIPS, "valid_until_s_error", input.get(1)).toString());
-                                                }
-                                            }
-                                            if (StringUtils.isNotNullOrEmpty(input.get(2))) {
-                                                if (StringUtils.toInt(input.get(2)) == 0) {
-                                                    result.set(2, Component.translatableClient(EnumI18nType.TIPS, "num_s_error", input.get(2)).toString());
-                                                }
-                                            }
-                                            if (result.stream().allMatch(StringUtils::isNullOrEmptyEx)) {
-                                                RewardConfigManager.addUndoRewardOption(rule);
-                                                RewardConfigManager.clearRedoList();
-                                                RewardConfigManager.updateKeyName(rule, key, String.format("%s|%s|-1|%d", input.get(0), input.get(1), StringUtils.toInt(input.get(2), 1)));
-                                                RewardConfigManager.saveRewardOption();
-                                            }
-                                        }
-                                        return result;
+                                    .setCallback(input -> {
+                                        RewardConfigManager.addUndoRewardOption(rule);
+                                        RewardConfigManager.clearRedoList();
+                                        RewardConfigManager.updateKeyName(rule, key, String.format("%s|%s|-1|%d"
+                                                , input.getValue("key")
+                                                , input.getValue("valid")
+                                                , StringUtils.toInt(input.getValue("num"), 1))
+                                        );
+                                        RewardConfigManager.saveRewardOption();
                                     });
                             Minecraft.getInstance().setScreen(new StringInputScreen(screenArgs));
                         } else {
@@ -1116,22 +1139,20 @@ public class RewardOptionScreen extends SakuraScreen {
                                     .setParentScreen(this)
                                     .addWidget(new StringInputScreen.InputWidget()
                                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_rule_key_" + rule.getCode()).setShadow(true))
-                                            .setValidator(validator)
+                                            .setRegex(validator)
                                             .setDefaultValue(key)
+                                            .setValidator((input) -> {
+                                                if (!RewardConfigManager.validateKeyName(rule, input.getValue())) {
+                                                    return Component.translatableClient(EnumI18nType.TIPS, "reward_rule_s_error", input.getValue()).toString();
+                                                }
+                                                return null;
+                                            })
                                     )
-                                    .setOnDataReceived(input -> {
-                                        StringList result = new StringList();
-                                        if (CollectionUtils.isNotNullOrEmpty(input)) {
-                                            if (RewardConfigManager.validateKeyName(rule, input.get(0))) {
-                                                RewardConfigManager.addUndoRewardOption(rule);
-                                                RewardConfigManager.clearRedoList();
-                                                RewardConfigManager.updateKeyName(rule, key, input.get(0));
-                                                RewardConfigManager.saveRewardOption();
-                                            } else {
-                                                result.add(Component.translatableClient(EnumI18nType.TIPS, "reward_rule_s_error", input.get(0)).toString());
-                                            }
-                                        }
-                                        return result;
+                                    .setCallback(input -> {
+                                        RewardConfigManager.addUndoRewardOption(rule);
+                                        RewardConfigManager.clearRedoList();
+                                        RewardConfigManager.updateKeyName(rule, key, input.getFirstValue());
+                                        RewardConfigManager.saveRewardOption();
                                     });
                             Minecraft.getInstance().setScreen(new StringInputScreen(screenArgs));
                         }
@@ -1205,30 +1226,30 @@ public class RewardOptionScreen extends SakuraScreen {
                     StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                             .setParentScreen(this)
                             .addWidget(new StringInputScreen.InputWidget()
+                                    .setName("point")
                                     .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_exp_point").setShadow(true))
-                                    .setValidator("-?\\d*")
+                                    .setRegex("-?\\d*")
                                     .setDefaultValue("1")
+                                    .setValidator((input) -> {
+                                        if (StringUtils.toInt(input.getValue()) <= 0) {
+                                            return Component.translatableClient(EnumI18nType.TIPS, "enter_value_s_error", input.getValue()).toString();
+                                        }
+                                        return null;
+                                    })
                             )
                             .addWidget(new StringInputScreen.InputWidget()
+                                    .setName("probability")
                                     .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                                    .setValidator("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                    .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                                     .setDefaultValue("1")
                             )
-                            .setOnDataReceived(input -> {
-                                StringList result = new StringList();
-                                if (CollectionUtils.isNotNullOrEmpty(input)) {
-                                    int count = StringUtils.toInt(input.get(0));
-                                    BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
-                                    if (count != 0) {
-                                        RewardConfigManager.addUndoRewardOption(rule);
-                                        RewardConfigManager.clearRedoList();
-                                        RewardConfigManager.addReward(rule, key, new Reward(RewardManager.serializeReward(count, EnumRewardType.EXP_POINT), EnumRewardType.EXP_POINT, p));
-                                        RewardConfigManager.saveRewardOption();
-                                    } else {
-                                        result.add(Component.translatableClient(EnumI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
-                                    }
-                                }
-                                return result;
+                            .setCallback(input -> {
+                                int count = StringUtils.toInt(input.getValue("point"));
+                                BigDecimal p = StringUtils.toBigDecimal(input.getValue("probability"), BigDecimal.ONE);
+                                RewardConfigManager.addUndoRewardOption(rule);
+                                RewardConfigManager.clearRedoList();
+                                RewardConfigManager.addReward(rule, key, new Reward(RewardManager.serializeReward(count, EnumRewardType.EXP_POINT), EnumRewardType.EXP_POINT, p));
+                                RewardConfigManager.saveRewardOption();
                             });
                     Minecraft.getInstance().setScreen(new StringInputScreen(screenArgs));
                 }
@@ -1237,30 +1258,30 @@ public class RewardOptionScreen extends SakuraScreen {
                     StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                             .setParentScreen(this)
                             .addWidget(new StringInputScreen.InputWidget()
+                                    .setName("level")
                                     .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_exp_level").setShadow(true))
-                                    .setValidator("-?\\d*")
+                                    .setRegex("-?\\d*")
                                     .setDefaultValue("1")
+                                    .setValidator((input) -> {
+                                        if (StringUtils.toInt(input.getValue()) <= 0) {
+                                            return Component.translatableClient(EnumI18nType.TIPS, "enter_value_s_error", input.getValue()).toString();
+                                        }
+                                        return null;
+                                    })
                             )
                             .addWidget(new StringInputScreen.InputWidget()
+                                    .setName("probability")
                                     .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                                    .setValidator("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                    .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                                     .setDefaultValue("1")
                             )
-                            .setOnDataReceived(input -> {
-                                StringList result = new StringList();
-                                if (CollectionUtils.isNotNullOrEmpty(input)) {
-                                    int count = StringUtils.toInt(input.get(0));
-                                    BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
-                                    if (count != 0) {
-                                        RewardConfigManager.addUndoRewardOption(rule);
-                                        RewardConfigManager.clearRedoList();
-                                        RewardConfigManager.addReward(rule, key, new Reward(RewardManager.serializeReward(count, EnumRewardType.EXP_LEVEL), EnumRewardType.EXP_LEVEL, p));
-                                        RewardConfigManager.saveRewardOption();
-                                    } else {
-                                        result.add(Component.translatableClient(EnumI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
-                                    }
-                                }
-                                return result;
+                            .setCallback(input -> {
+                                int count = StringUtils.toInt(input.getValue("level"));
+                                BigDecimal p = StringUtils.toBigDecimal(input.getValue("probability"), BigDecimal.ONE);
+                                RewardConfigManager.addUndoRewardOption(rule);
+                                RewardConfigManager.clearRedoList();
+                                RewardConfigManager.addReward(rule, key, new Reward(RewardManager.serializeReward(count, EnumRewardType.EXP_LEVEL), EnumRewardType.EXP_LEVEL, p));
+                                RewardConfigManager.saveRewardOption();
                             });
                     Minecraft.getInstance().setScreen(new StringInputScreen(screenArgs));
                 }
@@ -1269,30 +1290,30 @@ public class RewardOptionScreen extends SakuraScreen {
                     StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                             .setParentScreen(this)
                             .addWidget(new StringInputScreen.InputWidget()
+                                    .setName("card")
                                     .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_sign_in_card").setShadow(true))
-                                    .setValidator("-?\\d*")
+                                    .setRegex("-?\\d*")
                                     .setDefaultValue("1")
+                                    .setValidator((input) -> {
+                                        if (StringUtils.toInt(input.getValue()) <= 0) {
+                                            return Component.translatableClient(EnumI18nType.TIPS, "enter_value_s_error", input.getValue()).toString();
+                                        }
+                                        return null;
+                                    })
                             )
                             .addWidget(new StringInputScreen.InputWidget()
+                                    .setName("probability")
                                     .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                                    .setValidator("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                    .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                                     .setDefaultValue("1")
                             )
-                            .setOnDataReceived(input -> {
-                                StringList result = new StringList();
-                                if (CollectionUtils.isNotNullOrEmpty(input)) {
-                                    int count = StringUtils.toInt(input.get(0));
-                                    BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
-                                    if (count != 0) {
-                                        RewardConfigManager.addUndoRewardOption(rule);
-                                        RewardConfigManager.clearRedoList();
-                                        RewardConfigManager.addReward(rule, key, new Reward(RewardManager.serializeReward(count, EnumRewardType.SIGN_IN_CARD), EnumRewardType.SIGN_IN_CARD, p));
-                                        RewardConfigManager.saveRewardOption();
-                                    } else {
-                                        result.add(Component.translatableClient(EnumI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
-                                    }
-                                }
-                                return result;
+                            .setCallback(input -> {
+                                int count = StringUtils.toInt(input.getValue("card"));
+                                BigDecimal p = StringUtils.toBigDecimal(input.getValue("probability"), BigDecimal.ONE);
+                                RewardConfigManager.addUndoRewardOption(rule);
+                                RewardConfigManager.clearRedoList();
+                                RewardConfigManager.addReward(rule, key, new Reward(RewardManager.serializeReward(count, EnumRewardType.SIGN_IN_CARD), EnumRewardType.SIGN_IN_CARD, p));
+                                RewardConfigManager.saveRewardOption();
                             });
                     Minecraft.getInstance().setScreen(new StringInputScreen(screenArgs));
                 }
@@ -1316,22 +1337,22 @@ public class RewardOptionScreen extends SakuraScreen {
                     StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                             .setParentScreen(this)
                             .addWidget(new StringInputScreen.InputWidget()
+                                    .setName("message")
                                     .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_message").setShadow(true))
                             )
                             .addWidget(new StringInputScreen.InputWidget()
+                                    .setName("probability")
                                     .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                                    .setValidator("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                    .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                                     .setDefaultValue("1")
                             )
-                            .setOnDataReceived(input -> {
-                                if (CollectionUtils.isNotNullOrEmpty(input)) {
-                                    RewardConfigManager.addUndoRewardOption(rule);
-                                    RewardConfigManager.clearRedoList();
-                                    Component component = Component.literal(input.get(0));
-                                    BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
-                                    RewardConfigManager.addReward(rule, key, new Reward(RewardManager.serializeReward(component, EnumRewardType.MESSAGE), EnumRewardType.MESSAGE, p));
-                                    RewardConfigManager.saveRewardOption();
-                                }
+                            .setCallback(input -> {
+                                RewardConfigManager.addUndoRewardOption(rule);
+                                RewardConfigManager.clearRedoList();
+                                Component component = Component.literal(input.getValue("message"));
+                                BigDecimal p = StringUtils.toBigDecimal(input.getValue("probability"), BigDecimal.ONE);
+                                RewardConfigManager.addReward(rule, key, new Reward(RewardManager.serializeReward(component, EnumRewardType.MESSAGE), EnumRewardType.MESSAGE, p));
+                                RewardConfigManager.saveRewardOption();
                             });
                     Minecraft.getInstance().setScreen(new StringInputScreen(screenArgs));
                 }
@@ -1340,25 +1361,27 @@ public class RewardOptionScreen extends SakuraScreen {
                     StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                             .setParentScreen(this)
                             .addWidget(new StringInputScreen.InputWidget()
+                                    .setName("command")
                                     .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_command").setShadow(true))
+                                    .setValidator((input) -> {
+                                        if (!input.getValue().startsWith("/")) {
+                                            return Component.translatableClient(EnumI18nType.TIPS, "enter_value_s_error", input.getValue()).toString();
+                                        }
+                                        return null;
+                                    })
                             )
                             .addWidget(new StringInputScreen.InputWidget()
+                                    .setName("probability")
                                     .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                                    .setValidator("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                    .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                                     .setDefaultValue("1")
                             )
-                            .setOnDataReceived(input -> {
-                                StringList result = new StringList();
-                                if (CollectionUtils.isNotNullOrEmpty(input) && input.get(0).startsWith("/")) {
-                                    RewardConfigManager.addUndoRewardOption(rule);
-                                    RewardConfigManager.clearRedoList();
-                                    BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
-                                    RewardConfigManager.addReward(rule, key, new Reward(RewardManager.serializeReward(input.get(0), EnumRewardType.COMMAND), EnumRewardType.COMMAND, p));
-                                    RewardConfigManager.saveRewardOption();
-                                } else {
-                                    result.add(Component.translatableClient(EnumI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
-                                }
-                                return result;
+                            .setCallback(input -> {
+                                RewardConfigManager.addUndoRewardOption(rule);
+                                RewardConfigManager.clearRedoList();
+                                BigDecimal p = StringUtils.toBigDecimal(input.getValue("probability"), BigDecimal.ONE);
+                                RewardConfigManager.addReward(rule, key, new Reward(RewardManager.serializeReward(input.getValue("command"), EnumRewardType.COMMAND), EnumRewardType.COMMAND, p));
+                                RewardConfigManager.saveRewardOption();
                             });
                     Minecraft.getInstance().setScreen(new StringInputScreen(screenArgs));
                 }
@@ -1408,30 +1431,30 @@ public class RewardOptionScreen extends SakuraScreen {
                             StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                                     .setParentScreen(this)
                                     .addWidget(new StringInputScreen.InputWidget()
+                                            .setName("point")
                                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_exp_point").setShadow(true))
-                                            .setValidator("-?\\d*")
+                                            .setRegex("-?\\d*")
                                             .setDefaultValue(String.valueOf((Integer) RewardManager.deserializeReward(reward)))
+                                            .setValidator((input) -> {
+                                                if (StringUtils.toInt(input.getValue()) <= 0) {
+                                                    return Component.translatableClient(EnumI18nType.TIPS, "enter_value_s_error", input.getValue()).toString();
+                                                }
+                                                return null;
+                                            })
                                     )
                                     .addWidget(new StringInputScreen.InputWidget()
+                                            .setName("probability")
                                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                                            .setValidator("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                            .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                                             .setDefaultValue(StringUtils.toFixedEx(reward.getProbability(), 5))
                                     )
-                                    .setOnDataReceived(input -> {
-                                        StringList result = new StringList();
-                                        if (CollectionUtils.isNotNullOrEmpty(input)) {
-                                            int count = StringUtils.toInt(input.get(0));
-                                            BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
-                                            if (count != 0) {
-                                                RewardConfigManager.addUndoRewardOption(rule);
-                                                RewardConfigManager.clearRedoList();
-                                                RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(count, EnumRewardType.EXP_POINT), EnumRewardType.EXP_POINT, p));
-                                                RewardConfigManager.saveRewardOption();
-                                            } else {
-                                                result.add(Component.translatableClient(EnumI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
-                                            }
-                                        }
-                                        return result;
+                                    .setCallback(input -> {
+                                        int count = StringUtils.toInt(input.getValue("point"));
+                                        BigDecimal p = StringUtils.toBigDecimal(input.getValue("probability"), BigDecimal.ONE);
+                                        RewardConfigManager.addUndoRewardOption(rule);
+                                        RewardConfigManager.clearRedoList();
+                                        RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(count, EnumRewardType.EXP_POINT), EnumRewardType.EXP_POINT, p));
+                                        RewardConfigManager.saveRewardOption();
                                     });
                             Minecraft.getInstance().setScreen(new StringInputScreen(screenArgs));
                         }
@@ -1440,30 +1463,30 @@ public class RewardOptionScreen extends SakuraScreen {
                             StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                                     .setParentScreen(this)
                                     .addWidget(new StringInputScreen.InputWidget()
+                                            .setName("level")
                                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_exp_level").setShadow(true))
-                                            .setValidator("-?\\d*")
+                                            .setRegex("-?\\d*")
                                             .setDefaultValue(String.valueOf((Integer) RewardManager.deserializeReward(reward)))
+                                            .setValidator((input) -> {
+                                                if (StringUtils.toInt(input.getValue()) <= 0) {
+                                                    return Component.translatableClient(EnumI18nType.TIPS, "enter_value_s_error", input.getValue()).toString();
+                                                }
+                                                return null;
+                                            })
                                     )
                                     .addWidget(new StringInputScreen.InputWidget()
+                                            .setName("probability")
                                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                                            .setValidator("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                            .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                                             .setDefaultValue(StringUtils.toFixedEx(reward.getProbability(), 5))
                                     )
-                                    .setOnDataReceived(input -> {
-                                        StringList result = new StringList();
-                                        if (CollectionUtils.isNotNullOrEmpty(input)) {
-                                            int count = StringUtils.toInt(input.get(0));
-                                            BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
-                                            if (count != 0) {
-                                                RewardConfigManager.addUndoRewardOption(rule);
-                                                RewardConfigManager.clearRedoList();
-                                                RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(count, EnumRewardType.EXP_LEVEL), EnumRewardType.EXP_LEVEL, p));
-                                                RewardConfigManager.saveRewardOption();
-                                            } else {
-                                                result.add(Component.translatableClient(EnumI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
-                                            }
-                                        }
-                                        return result;
+                                    .setCallback(input -> {
+                                        int count = StringUtils.toInt(input.getValue("level"));
+                                        BigDecimal p = StringUtils.toBigDecimal(input.getValue("probability"), BigDecimal.ONE);
+                                        RewardConfigManager.addUndoRewardOption(rule);
+                                        RewardConfigManager.clearRedoList();
+                                        RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(count, EnumRewardType.EXP_LEVEL), EnumRewardType.EXP_LEVEL, p));
+                                        RewardConfigManager.saveRewardOption();
                                     });
                             Minecraft.getInstance().setScreen(new StringInputScreen(screenArgs));
                         }
@@ -1472,30 +1495,30 @@ public class RewardOptionScreen extends SakuraScreen {
                             StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                                     .setParentScreen(this)
                                     .addWidget(new StringInputScreen.InputWidget()
+                                            .setName("card")
                                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_sign_in_card").setShadow(true))
-                                            .setValidator("-?\\d*")
+                                            .setRegex("-?\\d*")
                                             .setDefaultValue(String.valueOf((Integer) RewardManager.deserializeReward(reward)))
+                                            .setValidator((input) -> {
+                                                if (StringUtils.toInt(input.getValue()) <= 0) {
+                                                    return Component.translatableClient(EnumI18nType.TIPS, "enter_value_s_error", input.getValue()).toString();
+                                                }
+                                                return null;
+                                            })
                                     )
                                     .addWidget(new StringInputScreen.InputWidget()
+                                            .setName("probability")
                                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                                            .setValidator("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                            .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                                             .setDefaultValue(StringUtils.toFixedEx(reward.getProbability(), 5))
                                     )
-                                    .setOnDataReceived(input -> {
-                                        StringList result = new StringList();
-                                        if (CollectionUtils.isNotNullOrEmpty(input)) {
-                                            int count = StringUtils.toInt(input.get(0));
-                                            BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
-                                            if (count != 0) {
-                                                RewardConfigManager.addUndoRewardOption(rule);
-                                                RewardConfigManager.clearRedoList();
-                                                RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(count, EnumRewardType.SIGN_IN_CARD), EnumRewardType.SIGN_IN_CARD, p));
-                                                RewardConfigManager.saveRewardOption();
-                                            } else {
-                                                result.add(Component.translatableClient(EnumI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
-                                            }
-                                        }
-                                        return result;
+                                    .setCallback(input -> {
+                                        int count = StringUtils.toInt(input.getValue("card"));
+                                        BigDecimal p = StringUtils.toBigDecimal(input.getValue("probability"), BigDecimal.ONE);
+                                        RewardConfigManager.addUndoRewardOption(rule);
+                                        RewardConfigManager.clearRedoList();
+                                        RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(count, EnumRewardType.SIGN_IN_CARD), EnumRewardType.SIGN_IN_CARD, p));
+                                        RewardConfigManager.saveRewardOption();
                                     });
                             Minecraft.getInstance().setScreen(new StringInputScreen(screenArgs));
                         }
@@ -1519,23 +1542,23 @@ public class RewardOptionScreen extends SakuraScreen {
                             StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                                     .setParentScreen(this)
                                     .addWidget(new StringInputScreen.InputWidget()
+                                            .setName("message")
                                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_message").setShadow(true))
                                             .setDefaultValue(RewardManager.deserializeReward(reward).toString())
                                     )
                                     .addWidget(new StringInputScreen.InputWidget()
+                                            .setName("probability")
                                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                                            .setValidator("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                            .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                                             .setDefaultValue(StringUtils.toFixedEx(reward.getProbability(), 5))
                                     )
-                                    .setOnDataReceived(input -> {
-                                        if (CollectionUtils.isNotNullOrEmpty(input)) {
-                                            RewardConfigManager.addUndoRewardOption(rule);
-                                            RewardConfigManager.clearRedoList();
-                                            Component textToComponent = Component.literal(input.get(0));
-                                            BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
-                                            RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(textToComponent, EnumRewardType.MESSAGE), EnumRewardType.MESSAGE, p));
-                                            RewardConfigManager.saveRewardOption();
-                                        }
+                                    .setCallback(input -> {
+                                        RewardConfigManager.addUndoRewardOption(rule);
+                                        RewardConfigManager.clearRedoList();
+                                        Component textToComponent = Component.literal(input.getValue("message"));
+                                        BigDecimal p = StringUtils.toBigDecimal(input.getValue("probability"), BigDecimal.ONE);
+                                        RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(textToComponent, EnumRewardType.MESSAGE), EnumRewardType.MESSAGE, p));
+                                        RewardConfigManager.saveRewardOption();
                                     });
                             Minecraft.getInstance().setScreen(new StringInputScreen(screenArgs));
                         }
@@ -1544,26 +1567,27 @@ public class RewardOptionScreen extends SakuraScreen {
                             StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                                     .setParentScreen(this)
                                     .addWidget(new StringInputScreen.InputWidget()
+                                            .setName("command")
                                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_command").setShadow(true))
                                             .setDefaultValue(RewardManager.deserializeReward(reward))
+                                            .setValidator((input) -> {
+                                                if (!input.getValue().startsWith("/")) {
+                                                    return Component.translatableClient(EnumI18nType.TIPS, "enter_value_s_error", input.getValue()).toString();
+                                                }
+                                                return null;
+                                            })
                                     )
                                     .addWidget(new StringInputScreen.InputWidget()
                                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                                            .setValidator("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                            .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                                             .setDefaultValue(StringUtils.toFixedEx(reward.getProbability(), 5))
                                     )
-                                    .setOnDataReceived(input -> {
-                                        StringList result = new StringList();
-                                        if (CollectionUtils.isNotNullOrEmpty(input) && input.get(0).startsWith("/")) {
-                                            RewardConfigManager.addUndoRewardOption(rule);
-                                            RewardConfigManager.clearRedoList();
-                                            BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
-                                            RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(input.get(0), EnumRewardType.COMMAND), EnumRewardType.COMMAND, p));
-                                            RewardConfigManager.saveRewardOption();
-                                        } else {
-                                            result.add(Component.translatableClient(EnumI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
-                                        }
-                                        return result;
+                                    .setCallback(input -> {
+                                        RewardConfigManager.addUndoRewardOption(rule);
+                                        RewardConfigManager.clearRedoList();
+                                        BigDecimal p = StringUtils.toBigDecimal(input.getValue("probability"), BigDecimal.ONE);
+                                        RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(input.getValue("command"), EnumRewardType.COMMAND), EnumRewardType.COMMAND, p));
+                                        RewardConfigManager.saveRewardOption();
                                     });
                             Minecraft.getInstance().setScreen(new StringInputScreen(screenArgs));
                         }
@@ -1633,7 +1657,7 @@ public class RewardOptionScreen extends SakuraScreen {
 
     @Data
     class EditCommandHandler {
-        private final Screen screen;
+        private final RewardOptionScreen screen;
 
         private EnumRewardRule rule;
         private String key;
@@ -1720,76 +1744,85 @@ public class RewardOptionScreen extends SakuraScreen {
             if (RewardClipboardManager.isClipboardValid()) {
                 // 面板
                 if (currRewardButton.equalsIgnoreCase("panel")) {
+                    // 兑换码
                     if (rule == EnumRewardRule.CDK_REWARD) {
                         StringInputScreen.Args args = new StringInputScreen.Args()
                                 .setParentScreen(screen)
                                 .addWidget(new StringInputScreen.InputWidget()
+                                        .setName("key")
                                         .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_rule_key_" + rule.getCode()).setShadow(true))
-                                        .setValidator("\\w*")
+                                        .setRegex("\\w*")
                                         .setDefaultValue(RewardConfigManager.getCdkRewardKey(RewardClipboardManager.deSerializeRewardList().getKey()))
+                                        .setValidator((input) -> {
+                                            if (!RewardConfigManager.validateKeyName(rule, input.getValue())) {
+                                                return Component.translatableClient(EnumI18nType.TIPS, "reward_rule_s_error", input.getValue()).toString();
+                                            }
+                                            return null;
+                                        })
                                 )
                                 .addWidget(new StringInputScreen.InputWidget()
+                                        .setName("valid")
                                         .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_valid_until").setShadow(true))
                                         .setDefaultValue(DateUtils.toString(DateUtils.addMonth(DateUtils.getClientDate(), 1)))
+                                        .setValidator((input) -> {
+                                            if (DateUtils.format(input.getValue()) == null) {
+                                                return Component.translatableClient(EnumI18nType.TIPS, "valid_until_s_error", input.getValue()).toString();
+                                            }
+                                            return null;
+                                        })
                                 )
                                 .addWidget(new StringInputScreen.InputWidget()
+                                        .setName("num")
                                         .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_num").setShadow(true))
-                                        .setValidator("\\d*")
+                                        .setRegex("\\d*")
                                         .setDefaultValue(RewardConfigManager.getCdkRewardNum(RewardClipboardManager.deSerializeRewardList().getKey()) + "")
+                                        .setValidator((input) -> {
+                                            if (StringUtils.toInt(input.getValue()) <= 0) {
+                                                return Component.translatableClient(EnumI18nType.TIPS, "num_s_error", input.getValue()).toString();
+                                            }
+                                            return null;
+                                        })
                                 )
-                                .setOnDataReceived(input -> {
-                                    StringList result = new StringList("", "", "");
-                                    if (CollectionUtils.isNotNullOrEmpty(input)) {
-                                        if (!RewardConfigManager.validateKeyName(rule, input.get(0))) {
-                                            result.set(0, Component.translatableClient(EnumI18nType.TIPS, "reward_rule_s_error", input.get(0)).toString());
-                                        }
-                                        if (StringUtils.isNotNullOrEmpty(input.get(1))) {
-                                            if (DateUtils.format(input.get(1)) == null) {
-                                                result.set(1, Component.translatableClient(EnumI18nType.TIPS, "valid_until_s_error", input.get(1)).toString());
-                                            }
-                                        }
-                                        if (StringUtils.isNotNullOrEmpty(input.get(2))) {
-                                            if (StringUtils.toInt(input.get(2)) == 0) {
-                                                result.set(2, Component.translatableClient(EnumI18nType.TIPS, "num_s_error", input.get(2)).toString());
-                                            }
-                                        }
-                                        if (result.stream().allMatch(StringUtils::isNullOrEmptyEx)) {
-                                            RewardConfigManager.addUndoRewardOption(rule);
-                                            RewardConfigManager.clearRedoList();
-                                            RewardList rewardList = RewardClipboardManager.deSerializeRewardList().toRewardList();
-                                            RewardConfigManager.addKeyName(rule, String.format("%s|%s|-1|%d", input.get(0), input.get(1), StringUtils.toInt(input.get(2), 1)), rewardList);
-                                            RewardConfigManager.saveRewardOption();
-                                        }
-                                    }
-                                    return result;
+                                .setCallback(input -> {
+                                    RewardConfigManager.addUndoRewardOption(rule);
+                                    RewardConfigManager.clearRedoList();
+                                    RewardList rewardList = RewardClipboardManager.deSerializeRewardList().toRewardList();
+                                    RewardConfigManager.addKeyName(rule, String.format("%s|%s|-1|%d"
+                                            , input.getValue("key")
+                                            , input.getValue("valid")
+                                            , StringUtils.toInt(input.getValue("num"), 1)), rewardList
+                                    );
+                                    RewardConfigManager.saveRewardOption();
                                 });
                         Minecraft.getInstance().setScreen(new StringInputScreen(args));
-                    } else if (rule != EnumRewardRule.BASE_REWARD) {
+                    }
+                    // 其他
+                    else if (rule != EnumRewardRule.BASE_REWARD) {
                         String validator = rule == EnumRewardRule.RANDOM_REWARD ? "(0?1(\\.0{0,10})?|0(\\.\\d{0,10})?)?" : "[\\d +~/:.T-]*";
                         StringInputScreen.Args args = new StringInputScreen.Args()
                                 .setParentScreen(screen)
                                 .addWidget(new StringInputScreen.InputWidget()
                                         .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_rule_key_" + rule.getCode()).setShadow(true))
-                                        .setValidator(validator)
+                                        .setRegex(validator)
                                         .setDefaultValue(RewardClipboardManager.deSerializeRewardList().getKey())
+                                        .setValidator((input) -> {
+                                            if (!RewardConfigManager.validateKeyName(rule, input.getValue())) {
+                                                return Component.translatableClient(EnumI18nType.TIPS, "reward_rule_s_error", input.getValue()).toString();
+                                            }
+                                            return null;
+                                        })
                                 )
-                                .setOnDataReceived(input -> {
-                                    StringList result = new StringList();
-                                    if (CollectionUtils.isNotNullOrEmpty(input)) {
-                                        if (RewardConfigManager.validateKeyName(rule, input.get(0))) {
-                                            RewardConfigManager.addUndoRewardOption(rule);
-                                            RewardConfigManager.clearRedoList();
-                                            RewardList rewardList = RewardClipboardManager.deSerializeRewardList().toRewardList();
-                                            RewardConfigManager.addKeyName(rule, input.get(0), rewardList);
-                                            RewardConfigManager.saveRewardOption();
-                                        } else {
-                                            result.add(Component.translatableClient(EnumI18nType.TIPS, "reward_rule_s_error", input.get(0)).toString());
-                                        }
-                                    }
-                                    return result;
+                                .setCallback(input -> {
+                                    RewardConfigManager.addUndoRewardOption(rule);
+                                    RewardConfigManager.clearRedoList();
+                                    RewardList rewardList = RewardClipboardManager.deSerializeRewardList().toRewardList();
+                                    RewardConfigManager.addKeyName(rule, input.getValue(0), rewardList);
+                                    RewardConfigManager.saveRewardOption();
                                 });
                         Minecraft.getInstance().setScreen(new StringInputScreen(args));
-                    } else {
+                    }
+                    // 基础奖励
+                    else {
                         RewardConfigManager.addUndoRewardOption(rule);
                         RewardConfigManager.clearRedoList();
                         RewardList rewardList = RewardClipboardManager.deSerializeRewardList().toRewardList();
@@ -1826,6 +1859,48 @@ public class RewardOptionScreen extends SakuraScreen {
 
             // 面板
             if (currRewardButton.equalsIgnoreCase("panel")) {
+                return false;
+            }
+            // 基础奖励标题
+            else if (currRewardButton.startsWith("标题") && EnumRewardRule.BASE_REWARD.equals(rule)) {
+                // region 整点没用的
+                screen.deleteBaseCount++;
+                if (screen.deleteBaseCount < 5) {
+                    NotificationManager.get().addNotification(NotificationManager.Notification
+                            .ofComponentWithBlack(Component.translatableClient(EnumI18nType.MESSAGE, "delete_base_title_" + screen.deleteBaseCount))
+                            .setBgArgb(0x99FFFF55));
+                } else if (screen.deleteBaseCount < 8) {
+                    NotificationManager.get().addNotification(NotificationManager.Notification
+                            .ofComponentWithBlack(Component.translatableClient(EnumI18nType.MESSAGE, "delete_base_title_" + screen.deleteBaseCount))
+                            .setBgArgb(0x99FF5555));
+                } else if (screen.deleteBaseCount == 8) {
+                    long currentTimeMillis = System.currentTimeMillis();
+                    for (int i = 12; i > 0; i--) {
+                        int a = (255 - i * 8) & 0xFF;
+                        int r = (0xFF5555 >> 16) & 0xFF;
+                        int g = (0xFF5555 >> 8) & 0xFF;
+                        int b = 0xFF5555 & 0xFF;
+                        NotificationManager.get().addNotification(NotificationManager.Notification
+                                .ofComponentWithBlack(Component.translatableClient(EnumI18nType.MESSAGE, "delete_base_title_8", i * 5))
+                                .setScheduledTime(currentTimeMillis + (12 - i) * 5 * 1000L)
+                                .setBgArgb((a << 24) | (r << 16) | (g << 8) | b)
+                        );
+                        if (i == 1) {
+                            for (int j = 4; j > 0; j--) {
+                                NotificationManager.get().addNotification(NotificationManager.Notification
+                                        .ofComponentWithBlack(Component.translatableClient(EnumI18nType.MESSAGE, "delete_base_title_8", j))
+                                        .setScheduledTime(currentTimeMillis + (60 - j) * 1000L)
+                                        .setBgArgb(((255 - j) << 24) | (r << 16) | (g << 8) | b)
+                                );
+                            }
+                        }
+                    }
+                    NotificationManager.get().addNotification(NotificationManager.Notification
+                            .ofComponentWithBlack(Component.translatableClient(EnumI18nType.MESSAGE, "delete_base_title_9"))
+                            .setScheduledTime(currentTimeMillis + 63 * 1000L)
+                    );
+                }
+                // endregion 整点没用的
                 return false;
             }
             // 标题

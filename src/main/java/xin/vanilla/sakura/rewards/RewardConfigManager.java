@@ -1332,7 +1332,7 @@ public class RewardConfigManager {
         if (StringUtils.isNotNullOrEmpty(key)) {
             String[] split = key.replaceAll("\\|", ",").split(",");
             index = rewardConfig.getCdkRewards().size();
-            if (split.length == 3) {
+            if (split.length == 3 || split.length == 4) {
                 index = StringUtils.toInt(split[2]);
             }
         }

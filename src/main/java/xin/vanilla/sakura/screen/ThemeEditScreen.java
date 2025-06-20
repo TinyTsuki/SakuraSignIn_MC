@@ -3,13 +3,11 @@ package xin.vanilla.sakura.screen;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screen.Screen;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
-import xin.vanilla.sakura.data.StringList;
 import xin.vanilla.sakura.enums.EnumI18nType;
 import xin.vanilla.sakura.enums.EnumMCColor;
 import xin.vanilla.sakura.enums.EnumSizeType;
@@ -23,7 +21,7 @@ import xin.vanilla.sakura.util.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.function.Function;
+import java.util.function.Consumer;
 
 @OnlyIn(Dist.CLIENT)
 public class ThemeEditScreen extends SakuraScreen {
@@ -93,8 +91,14 @@ public class ThemeEditScreen extends SakuraScreen {
     private void handleMenuClick(MouseReleasedHandleArgs args) {
         if (menuButton.isPressed()) {
             if (keyManager.isMouseRightPressed()) {
-                this.popupOption.clear();
-                popupOption.addOption(Text.translatable(EnumI18nType.OPTION, "select_theme_bg_file"));
+                popupOption.clear();
+                popupOption.addOption(Text.translatable(EnumI18nType.OPTION, "add_theme_component"));
+                popupOption.addOption(Text.translatable(EnumI18nType.OPTION, "edit_theme_info"));
+                if (theme.isMinecraftBackground()) {
+                    popupOption.addOption(Text.translatable(EnumI18nType.OPTION, "disable_mc_bg"));
+                } else {
+                    popupOption.addOption(Text.translatable(EnumI18nType.OPTION, "enable_mc_bg"));
+                }
                 popupOption.build(super.font, args.getMouseX(), args.getMouseY(), "menu");
 
             }
@@ -106,100 +110,168 @@ public class ThemeEditScreen extends SakuraScreen {
     public void handlePopupOption(MouseReleasedHandleArgs args) {
         LOGGER.debug("选择了弹出选项:\tButton: {}\tId: {}\tIndex: {}\tContent: {}", args.getButton(), popupOption.getId(), popupOption.getSelectedIndex(), popupOption.getSelectedString());
         String selectedString = popupOption.getSelectedString();
-        // 选择背景文件
-        if (I18nUtils.getTranslationClient(EnumI18nType.OPTION, "select_theme_bg_file").equals(popupOption.getSelectedString())) {
-            Screen screen = this;
-            Minecraft.getInstance().execute(() -> {
-                try {
-                    File png = SakuraUtils.chooseFile(selectedString, "*.png");
-                    if (png != null) {
-                        Function<StringList, StringList> onDataReceived = input -> {
-                            StringList result = new StringList();
-                            if (CollectionUtils.isNotNullOrEmpty(input) && StringUtils.isNotNullOrEmptyEx(input.getFirst())) {
-                                String textureId = input.getFirst();
-                                if (theme.getTexureMap().containsKey(textureId)) {
-                                    result.add(Component.translatableClient(EnumI18nType.TIPS, "theme_texture_id_exists", textureId).toString());
-                                } else {
-                                    try {
-                                        // TODO 临时删除，方便测试
-                                        theme.getComponents().clear();
-
-                                        // TODO 拼接文件，原绘制
-                                        BufferedImage bufferedImage = PNGUtils.readImage(png);
-                                        PNGUtils.writeImage(bufferedImage, theme.getFile());
-                                        theme.setTotalWidth(bufferedImage.getWidth());
-                                        theme.setTotalHeight(bufferedImage.getHeight());
-                                        theme.setResourceLocation(TextureUtils.loadCustomTexture(theme.getFile().getAbsolutePath()));
-                                        theme.getTexureMap().put(textureId, new Coordinate()
-                                                .setU0(0)
-                                                .setV0(0)
-                                                .setUWidth(bufferedImage.getWidth())
-                                                .setVHeight(bufferedImage.getHeight())
-                                        );
-                                        theme.getComponents()
-                                                .put(new ThemeComponent()
-                                                        .setType(EnumThemeComponentType.BACKGROUND)
-                                                        .setRenderList(new RenderInfoList(new RenderInfo()
-                                                                .setCoordinate(new Coordinate()
-                                                                        .setX(0)
-                                                                        .setY(0)
-                                                                        .setWType(EnumSizeType.RELATIVE_PERCENT)
-                                                                        .setWidth(1.0)
-                                                                        .setHType(EnumSizeType.RELATIVE_PERCENT)
-                                                                        .setHeight(1.0)
-                                                                        .setTextureId(textureId)
-                                                                )
-                                                        ))
-                                                )
-                                                .put(new ThemeComponent()
-                                                        .setType(EnumThemeComponentType.CUSTOM)
-                                                        .setRenderList(new RenderInfoList(new RenderInfo()
-                                                                .setCoordinate(new Coordinate().setX(60).setY(60))
-                                                                .setAngle(45)
-                                                                .setScale(0.75)
-                                                                .setText(Component.translatable(EnumI18nType.MESSAGE, "cdk_expired").setColor(EnumMCColor.BLACK.getColor()).setBgColor(EnumMCColor.WHITE.getColor()))
-                                                        ))
-                                                )
-                                                .put(new ThemeComponent()
-                                                        .setType(EnumThemeComponentType.CUSTOM)
-                                                        .setRenderList(new RenderInfoList(new RenderInfo()
-                                                                .setCoordinate(new Coordinate().setX(110).setY(60))
-                                                                .setAngle(145)
-                                                                .setScale(1.75)
-                                                                .setText(Component.literal("测试旋转145度").setColorArgb(0xAAAA0ABC))
-                                                        ))
-                                                )
-                                                .put(new ThemeComponent()
-                                                        .setType(EnumThemeComponentType.CUSTOM)
-                                                        .setRenderList(new RenderInfoList(new RenderInfo()
-                                                                .setCoordinate(new Coordinate().setX(250).setY(100))
-                                                                .setFlipHorizontal(true)
-                                                                .setScale(3)
-                                                                .setText(Component.literal("测试翻转").setColorArgb(0x9999AA00))
-                                                        ))
-                                                );
-                                    } catch (IOException ignored) {
-                                        LOGGER.error("Failed to load image");
-                                    }
+        // 启用原版背景渲染
+        if (I18nUtils.getTranslationClient(EnumI18nType.OPTION, "enable_mc_bg").equals(selectedString)) {
+            theme.setMinecraftBackground(true);
+        }
+        // 禁用原版背景渲染
+        else if (I18nUtils.getTranslationClient(EnumI18nType.OPTION, "disable_mc_bg").equals(selectedString)) {
+            theme.setMinecraftBackground(false);
+        }
+        // 编辑主题信息
+        else if (I18nUtils.getTranslationClient(EnumI18nType.OPTION, "edit_theme_info").equals(selectedString)) {
+            StringInputScreen.Args screenArgs = new StringInputScreen.Args()
+                    .setParentScreen(this)
+                    .addWidget(new StringInputScreen.InputWidget()
+                            .setName("name")
+                            .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_theme_name").setShadow(true))
+                            .setDefaultValue(theme.getName())
+                            .setValidator((input) -> {
+                                if (StringUtils.isNullOrEmptyEx(input.getValue())) {
+                                    return Component.translatableClient(EnumI18nType.TIPS, "enter_value_s_error", input.getValue()).toString();
                                 }
-                            } else {
-                                result.add(Component.translatableClient(EnumI18nType.TIPS, "theme_texture_id_empty", input.getFirst()).toString());
-                            }
-                            return result;
-                        };
-                        StringInputScreen.Args screenArgs = new StringInputScreen.Args()
-                                .setParentScreen(this)
-                                .addWidget(new StringInputScreen.InputWidget()
-                                        .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_theme_texture_id").setShadow(true))
-                                        .setDefaultValue(png.getName().replace(".png", "_" + System.currentTimeMillis()))
-                                )
-                                .setOnDataReceived(onDataReceived);
-                        Minecraft.getInstance().setScreen(new StringInputScreen(screenArgs));
-                    }
-                } catch (Exception ignored) {
-                    LOGGER.error("Failed to choose image");
+                                return null;
+                            })
+                    )
+                    .addWidget(new StringInputScreen.InputWidget()
+                            .setName("author")
+                            .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_author_name").setShadow(true))
+                            .setDefaultValue(theme.getAuthor())
+                    )
+                    .addWidget(new StringInputScreen.InputWidget()
+                            .setName("version")
+                            .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_theme_version").setShadow(true))
+                            .setDefaultValue(theme.getVersion())
+                    )
+                    .addWidget(new StringInputScreen.InputWidget()
+                            .setName("description")
+                            .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_theme_description").setShadow(true))
+                            .setDefaultValue(theme.getDescription())
+                            .setAllowEmpty(true)
+                    )
+                    .setCallback(input -> theme.setName(input.getValue("name"))
+                            .setAuthor(input.getValue("author"))
+                            .setVersion(input.getValue("version"))
+                            .setDescription(input.getValue("description"))
+                    );
+            Minecraft.getInstance().setScreen(new StringInputScreen(screenArgs));
+        }
+        // 添加组件
+        else if (I18nUtils.getTranslationClient(EnumI18nType.OPTION, "add_theme_component").equals(selectedString)) {
+            popupOption.clear();
+            for (EnumThemeComponentType type : EnumThemeComponentType.getWithType(0, 1)) {
+                popupOption.addOption(Text.translatable(EnumI18nType.OPTION, "theme_component_" + type.name().toLowerCase()));
+            }
+            popupOption.build(super.font, args.getMouseX(), args.getMouseY(), "add_theme_component");
+            args.setClearPopup(false);
+        }
+        // 选择背景文件
+        else if (I18nUtils.getTranslationClient(EnumI18nType.OPTION, "theme_component_background").equals(selectedString)) {
+            Consumer<StringInputScreen.Results> callback = input -> Minecraft.getInstance().execute(() -> {
+                // TODO 临时删除，方便测试
+                theme.getComponents().clear();
+                String textureId = input.getValue("textureId");
+                String filePath = input.getValue("file");
+                try {
+                    // TODO 拼接文件，原绘制
+                    BufferedImage bufferedImage = PNGUtils.readImage(new File(filePath));
+                    PNGUtils.writeImage(bufferedImage, theme.getFile());
+                    theme.setTotalWidth(bufferedImage.getWidth());
+                    theme.setTotalHeight(bufferedImage.getHeight());
+                    theme.setResourceLocation(TextureUtils.loadCustomTexture(theme.getFile().getAbsolutePath()));
+                    theme.getTexureMap().put(textureId, new Coordinate()
+                            .setU0(0)
+                            .setV0(0)
+                            .setUWidth(bufferedImage.getWidth())
+                            .setVHeight(bufferedImage.getHeight())
+                    );
+                    theme.getComponents()
+                            .put(new ThemeComponent()
+                                    .setType(EnumThemeComponentType.BACKGROUND)
+                                    .setRenderList(new RenderInfoList(new RenderInfo()
+                                            .setCoordinate(new Coordinate()
+                                                    .setX(0)
+                                                    .setY(0)
+                                                    .setWType(EnumSizeType.RELATIVE_PERCENT)
+                                                    .setWidth(1.0)
+                                                    .setHType(EnumSizeType.RELATIVE_PERCENT)
+                                                    .setHeight(1.0)
+                                                    .setTextureId(textureId)
+                                            )
+                                    ))
+                            )
+                            .put(new ThemeComponent()
+                                    .setType(EnumThemeComponentType.CUSTOM)
+                                    .setRenderList(new RenderInfoList(new RenderInfo()
+                                            .setCoordinate(new Coordinate().setX(60).setY(60))
+                                            .setAngle(45)
+                                            .setScale(0.75)
+                                            .setText(Component.translatable(EnumI18nType.MESSAGE, "cdk_expired").setColor(EnumMCColor.BLACK.getColor()).setBgColor(EnumMCColor.WHITE.getColor()))
+                                    ))
+                            )
+                            .put(new ThemeComponent()
+                                    .setType(EnumThemeComponentType.CUSTOM)
+                                    .setRenderList(new RenderInfoList(new RenderInfo()
+                                            .setCoordinate(new Coordinate().setX(110).setY(60))
+                                            .setAngle(145)
+                                            .setScale(1.75)
+                                            .setText(Component.literal("测试旋转145度").setColorArgb(0xAAAA0ABC))
+                                    ))
+                            )
+                            .put(new ThemeComponent()
+                                    .setType(EnumThemeComponentType.CUSTOM)
+                                    .setRenderList(new RenderInfoList(new RenderInfo()
+                                            .setCoordinate(new Coordinate().setX(250).setY(100))
+                                            .setFlipHorizontal(true)
+                                            .setScale(3)
+                                            .setText(Component.literal("测试翻转").setColorArgb(0x9999AA00))
+                                    ))
+                            );
+                    throw new RuntimeException("test 2333");
+                } catch (Exception e) {
+                    input.setRunningResult(Component.translatableClient(EnumI18nType.TIPS, "select_file_error", filePath)
+                            .append("\n")
+                            .append(e.toString())
+                            .toString()
+                    );
                 }
             });
+            StringInputScreen.Args screenArgs = new StringInputScreen.Args()
+                    .setParentScreen(this)
+                    .addWidget(new StringInputScreen.InputWidget()
+                            .setName("textureId")
+                            .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_theme_texture_id").setShadow(true))
+                            .setDefaultValue("background_" + System.currentTimeMillis())
+                            .setValidator((input) -> {
+                                if (StringUtils.isNullOrEmptyEx(input.getValue())) {
+                                    return Component.translatableClient(EnumI18nType.TIPS, "theme_texture_id_empty").toString();
+                                } else if (theme.getTexureMap().containsKey(input.getValue())) {
+                                    return Component.translatableClient(EnumI18nType.TIPS, "theme_texture_id_exists", input.getValue()).toString();
+                                }
+                                return null;
+                            })
+                    )
+                    .addWidget(new StringInputScreen.InputWidget()
+                            .setName("file")
+                            .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_or_select_file").setShadow(true))
+                            .setType(StringInputScreen.WidgetType.FILE)
+                            .setFileFilter("*.png")
+                            .setValidator((input) -> {
+                                if (StringUtils.isNullOrEmptyEx(input.getValue())) {
+                                    return Component.translatableClient(EnumI18nType.TIPS, "select_file_empty", input.getValue()).toString();
+                                } else if (!input.getValue().endsWith(".png")) {
+                                    return Component.translatableClient(EnumI18nType.TIPS, "select_file_error", input.getValue()).toString();
+                                } else {
+                                    File png = new File(input.getValue());
+                                    if (!png.isFile() || !png.exists()) {
+                                        return Component.translatableClient(EnumI18nType.TIPS, "select_file_notfound", input.getValue()).toString();
+                                    }
+                                }
+                                return null;
+                            })
+                    )
+                    .setCallback(callback);
+            Minecraft.getInstance().setScreen(new StringInputScreen(screenArgs));
         }
         menuButton.setPressed(false);
     }

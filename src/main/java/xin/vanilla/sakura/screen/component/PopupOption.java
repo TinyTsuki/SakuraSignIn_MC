@@ -94,7 +94,7 @@ public class PopupOption {
     }
 
     private PopupOption calculateSize() {
-        assert Minecraft.getInstance().screen != null;
+        Objects.requireNonNull(Minecraft.getInstance().screen);
         this.screenWidth = Minecraft.getInstance().screen.width;
         this.screenHeight = Minecraft.getInstance().screen.height;
         // 计算弹出层的宽度和高度

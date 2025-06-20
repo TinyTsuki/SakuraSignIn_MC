@@ -35,7 +35,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.data.ArraySet;
 import xin.vanilla.sakura.data.Reward;
-import xin.vanilla.sakura.data.StringList;
 import xin.vanilla.sakura.enums.EnumI18nType;
 import xin.vanilla.sakura.enums.EnumRewardType;
 import xin.vanilla.sakura.rewards.RewardManager;
@@ -43,7 +42,10 @@ import xin.vanilla.sakura.rewards.impl.ItemRewardParser;
 import xin.vanilla.sakura.screen.component.KeyEventManager;
 import xin.vanilla.sakura.screen.component.OperationButton;
 import xin.vanilla.sakura.screen.component.Text;
-import xin.vanilla.sakura.util.*;
+import xin.vanilla.sakura.util.AbstractGuiUtils;
+import xin.vanilla.sakura.util.Component;
+import xin.vanilla.sakura.util.GLFWKey;
+import xin.vanilla.sakura.util.StringUtils;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.math.BigDecimal;
@@ -170,7 +172,7 @@ public class ItemSelectScreen extends Screen {
 
     public ItemSelectScreen(Args args) {
         super(TITLE.toTextComponent());
-        assert args != null;
+        Objects.requireNonNull(args);
         args.validate();
         this.args = args;
         this.currentItem = args.getDefaultItem();
@@ -659,27 +661,23 @@ public class ItemSelectScreen extends Screen {
                     .addWidget(new StringInputScreen.InputWidget()
                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_item_json").setShadow(true))
                             .setDefaultValue(itemRewardJsonString)
+                            .setValidator((input) -> {
+                                try {
+                                    JsonObject jsonObject = GSON.fromJson(input.getValue(), JsonObject.class);
+                                    if (((ItemStack) RewardManager.deserializeReward(new Reward(jsonObject, EnumRewardType.ITEM, this.probability))).getItem() == Items.AIR) {
+                                        throw new RuntimeException();
+                                    }
+                                } catch (Exception e) {
+                                    return Component.translatableClient(EnumI18nType.TIPS, "item_json_s_error", input.getValue()).toString();
+                                }
+                                return null;
+                            })
                     )
-                    .setOnDataReceived(input -> {
-                        StringList result = new StringList();
-                        if (CollectionUtils.isNotNullOrEmpty(input)) {
-                            ItemStack itemStack;
-                            String json = input.get(0);
-                            try {
-                                JsonObject jsonObject = GSON.fromJson(json, JsonObject.class);
-                                itemStack = RewardManager.deserializeReward(new Reward(jsonObject, EnumRewardType.ITEM, this.probability));
-                            } catch (Exception e) {
-                                LOGGER.error("Invalid Json: {}", json);
-                                itemStack = null;
-                            }
-                            if (itemStack != null && itemStack.getItem() != Items.AIR) {
-                                this.currentItem = new Reward(itemStack, EnumRewardType.ITEM, this.probability);
-                                this.selectedItemId = ItemRewardParser.getId(itemStack);
-                            } else {
-                                result.add(Component.translatableClient(EnumI18nType.TIPS, "item_json_s_error", json).toString());
-                            }
-                        }
-                        return result;
+                    .setCallback(input -> {
+                        JsonObject jsonObject = GSON.fromJson(input.getFirstValue(), JsonObject.class);
+                        ItemStack itemStack = RewardManager.deserializeReward(new Reward(jsonObject, EnumRewardType.ITEM, this.probability));
+                        this.currentItem = new Reward(itemStack, EnumRewardType.ITEM, this.probability);
+                        this.selectedItemId = ItemRewardParser.getId(itemStack);
                     });
             Minecraft.getInstance().setScreen(new StringInputScreen(args));
         }
@@ -689,23 +687,21 @@ public class ItemSelectScreen extends Screen {
                     .setParentScreen(this)
                     .addWidget(new StringInputScreen.InputWidget()
                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_item_count").setShadow(true))
-                            .setValidator("\\d{0,4}")
+                            .setRegex("\\d{0,4}")
                             .setDefaultValue(String.valueOf(((ItemStack) RewardManager.deserializeReward(this.currentItem)).getCount()))
+                            .setValidator((input) -> {
+                                int count = StringUtils.toInt(input.getValue());
+                                if (count <= 0 || count > 64 * 9 * 5) {
+                                    return Component.translatableClient(EnumI18nType.TIPS, "item_count_s_error", input.getValue()).toString();
+                                }
+                                return null;
+                            })
                     )
-                    .setOnDataReceived(input -> {
-                        StringList result = new StringList();
-                        if (CollectionUtils.isNotNullOrEmpty(input)) {
-                            String num = input.get(0);
-                            int count = StringUtils.toInt(num);
-                            if (count > 0 && count <= 64 * 9 * 5) {
-                                ItemStack itemStack = RewardManager.deserializeReward(this.currentItem);
-                                itemStack.setCount(count);
-                                this.currentItem = new Reward(itemStack, EnumRewardType.ITEM, this.probability);
-                            } else {
-                                result.add(Component.translatableClient(EnumI18nType.TIPS, "item_count_s_error", num).toString());
-                            }
-                        }
-                        return result;
+                    .setCallback(input -> {
+                        int count = StringUtils.toInt(input.getFirstValue());
+                        ItemStack itemStack = RewardManager.deserializeReward(this.currentItem);
+                        itemStack.setCount(count);
+                        this.currentItem = new Reward(itemStack, EnumRewardType.ITEM, this.probability);
                     });
             Minecraft.getInstance().setScreen(new StringInputScreen(args));
         }
@@ -717,27 +713,26 @@ public class ItemSelectScreen extends Screen {
                     .addWidget(new StringInputScreen.InputWidget()
                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_item_nbt").setShadow(true))
                             .setDefaultValue(itemNbtJsonString)
+                            .setValidator((input) -> {
+                                try {
+                                    if (!ItemRewardParser.getItemStack(ItemRewardParser.getId(((ItemStack) RewardManager.deserializeReward(this.currentItem)).getItem()) + input.getValue(), true).hasTag()) {
+                                        throw new RuntimeException();
+                                    }
+                                } catch (Exception e) {
+                                    return Component.translatableClient(EnumI18nType.TIPS, "item_nbt_s_error", input.getValue()).toString();
+                                }
+                                return null;
+                            })
                     )
-                    .setOnDataReceived(input -> {
-                        StringList result = new StringList();
-                        if (CollectionUtils.isNotNullOrEmpty(input)) {
-                            ItemStack itemStack;
-                            String nbt = input.get(0);
-                            try {
-                                itemStack = ItemRewardParser.getItemStack(ItemRewardParser.getId(((ItemStack) RewardManager.deserializeReward(this.currentItem)).getItem()) + nbt, true);
-                                itemStack.setCount(((ItemStack) RewardManager.deserializeReward(this.currentItem)).getCount());
-                            } catch (Exception e) {
-                                LOGGER.error("Invalid NBT: {}", nbt);
-                                itemStack = null;
-                            }
-                            if (itemStack != null && itemStack.hasTag()) {
-                                this.currentItem = new Reward(itemStack, EnumRewardType.ITEM, this.probability);
-                                this.selectedItemId = ItemRewardParser.getId(itemStack);
-                            } else {
-                                result.add(Component.translatableClient(EnumI18nType.TIPS, "item_nbt_s_error", nbt).toString());
-                            }
+                    .setCallback(input -> {
+                        try {
+                            ItemStack itemStack = ItemRewardParser.getItemStack(ItemRewardParser.getId(((ItemStack) RewardManager.deserializeReward(this.currentItem)).getItem()) + input.getFirstValue(), true);
+                            itemStack.setCount(((ItemStack) RewardManager.deserializeReward(this.currentItem)).getCount());
+                            this.currentItem = new Reward(itemStack, EnumRewardType.ITEM, this.probability);
+                            this.selectedItemId = ItemRewardParser.getId(itemStack);
+                        } catch (Exception e) {
+                            input.setRunningResult(e);
                         }
-                        return result;
                     });
             Minecraft.getInstance().setScreen(new StringInputScreen(args));
         }
@@ -747,21 +742,17 @@ public class ItemSelectScreen extends Screen {
                     .setParentScreen(this)
                     .addWidget(new StringInputScreen.InputWidget()
                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                            .setValidator("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                            .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                             .setDefaultValue(StringUtils.toFixedEx(this.probability, 5))
+                            .setValidator((input) -> {
+                                BigDecimal p = StringUtils.toBigDecimal(input.getValue());
+                                if (p.compareTo(BigDecimal.ZERO) <= 0 || p.compareTo(BigDecimal.ONE) > 0) {
+                                    return Component.translatableClient(EnumI18nType.TIPS, "reward_probability_s_error", input.getValue()).toString();
+                                }
+                                return null;
+                            })
                     )
-                    .setOnDataReceived(input -> {
-                        StringList result = new StringList();
-                        if (CollectionUtils.isNotNullOrEmpty(input)) {
-                            BigDecimal p = StringUtils.toBigDecimal(input.get(0));
-                            if (p.compareTo(BigDecimal.ZERO) > 0 && p.compareTo(BigDecimal.ONE) <= 0) {
-                                this.probability = p;
-                            } else {
-                                result.add(Component.translatableClient(EnumI18nType.TIPS, "reward_probability_s_error", input.get(0)).toString());
-                            }
-                        }
-                        return result;
-                    });
+                    .setCallback(input -> this.probability = StringUtils.toBigDecimal(input.getFirstValue()));
             Minecraft.getInstance().setScreen(new StringInputScreen(args));
         }
     }
