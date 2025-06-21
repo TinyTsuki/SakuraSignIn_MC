@@ -235,6 +235,7 @@
   "message.sakura_sign_in.reward_option_upload_failed": "奖励配置上传失败。",
   "message.sakura_sign_in.reward_option_upload_success": "奖励配置上传成功。",
   "message.sakura_sign_in.local_server_not_support_this_operation": "本地集成服务器无需进行此操作。",
+  "message.sakura_sign_in.no_permission_to_open_reward": "权限不足，无法打开奖励编辑页面。",
   "message.sakura_sign_in.no_permission_to_edit_reward": "权限不足，无法修改服务端奖励配置，修改后仅客户端生效。",
   "message.sakura_sign_in.no_permission_to_view_reward": "权限不足，无法查看奖励配置：%s。",
   "message.sakura_sign_in.server_default_language": "服务器默认语言被设置为：%s。",

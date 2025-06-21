@@ -373,7 +373,7 @@ public class StringUtils {
                 formattedArg = formatArgument(placeholder, args[index]);
             }
             // 替换占位符为对应的参数
-            string = string.replaceFirst(Pattern.quote(placeholder), formattedArg.replaceAll("\\$", "\\\\\\$"));
+            string = string.replaceFirst(Pattern.quote(placeholder), Matcher.quoteReplacement(formattedArg));
             i++;
         }
         return string;

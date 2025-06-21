@@ -344,9 +344,14 @@ public class StringInputScreen extends Screen {
         });
         this.addButton(this.submitButton);
         // 创建取消按钮
-        this.addButton(AbstractGuiUtils.newButton(this.width / 2 - 100, this.yStart + this.layoutHeight - 28, 95, 20, Component.translatableClient(EnumI18nType.OPTION, "cancel"), button -> {
-            Minecraft.getInstance().setScreen(args.getParentScreen());
-        }));
+        this.addButton(AbstractGuiUtils.newButton(
+                this.width / 2 - 100
+                , this.yStart + this.layoutHeight - 28
+                , 95
+                , 20
+                , Component.translatableClient(EnumI18nType.OPTION, "cancel")
+                , button -> Minecraft.getInstance().setScreen(args.getParentScreen())
+        ));
     }
 
     @Override
@@ -374,10 +379,10 @@ public class StringInputScreen extends Screen {
             }
         }
         // 绘制执行错误提示
+        String runningErrorTextContent = this.runningErrorText.getContent();
         if (this.runningErrorText != null && !this.runningErrorText.isEmpty()) {
             this.runningErrorText = Text.empty();
-            String content = this.runningErrorText.getContent();
-            SakuraUtils.popupNotify("Something Error!", content, SakuraUtils.NotifyPopupIconType.error);
+            SakuraUtils.openMessageBox("Something Error!", runningErrorTextContent, SakuraUtils.DialogIconType.error, SakuraUtils.DialogButtonType.ok);
         }
         if (this.inputField.stream().allMatch(in -> args.getWidgets().get(this.inputField.indexOf(in)).isAllowEmpty() || StringUtils.isNotNullOrEmpty(in.getValue()))) {
             this.submitButton.setMessage(Component.translatableClient(EnumI18nType.OPTION, "submit").toTextComponent());

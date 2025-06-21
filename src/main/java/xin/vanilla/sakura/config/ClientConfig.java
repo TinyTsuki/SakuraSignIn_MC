@@ -48,6 +48,11 @@ public class ClientConfig {
      */
     public static final ForgeConfigSpec.BooleanValue SHOW_SIGN_IN_SCREEN_TIPS;
 
+    /**
+     * 主题参数
+     */
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> THEME_ARGS;
+
     // region 按键设置
 
     /**
@@ -159,6 +164,11 @@ public class ClientConfig {
                 .comment("Whether or not to display a prompt for action when you open the sign-in screen."
                         , "打开签到页面时是否显示操作提示。")
                 .define("showSignInScreenTips", true);
+
+        THEME_ARGS = CLIENT_BUILDER
+                .comment("Parameter list reserved for theme configuration; usually does not need to be modified.",
+                        "这是留给主题写入使用的参数列表，一般情况下无需修改。")
+                .defineList("themeArgs", new ArrayList<>(), s -> s instanceof String);
 
         // 按键设置
         {

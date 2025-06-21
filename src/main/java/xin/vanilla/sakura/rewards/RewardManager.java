@@ -228,8 +228,8 @@ public class RewardManager {
             int cellDateInt = cellYear * 10000 + cellMonth * 100 + cellDay;
             Date cellDate = DateUtils.getDate(cellYear, cellMonth, cellDay
                     , DateUtils.getHourOfDay(currentMonth)
-                    , DateUtils.getMinuteOfHour(currentMonth)
-                    , DateUtils.getSecondOfMinute(currentMonth)
+                    , DateUtils.getMinute(currentMonth)
+                    , DateUtils.getSecond(currentMonth)
             );
             RewardList rewardList = RewardManager.getRewardListByDate(cellDate, playerData, false, false).clone();
             EnumSignInStatus status = EnumSignInStatus.NO_ACTION;

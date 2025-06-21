@@ -421,7 +421,8 @@ public class OperationButton {
                     .setHeight(coordinate.getHeight() * scale)
                     .setAngle(this.rotatedAngle)
                     .setFlipHorizontal(this.flipHorizontal)
-                    .setFlipVertical(this.flipVertical);
+                    .setFlipVertical(this.flipVertical)
+                    .setBlend(true);
             // 抖动
             if (this.isHovered() && this.getTremblingAmplitude() > 0 && SakuraUtils.getEnvironmentBrightness(Minecraft.getInstance().player) > 4) {
                 double xOffset = (random.nextFloat() - 0.5) * this.getTremblingAmplitude();
@@ -432,7 +433,7 @@ public class OperationButton {
             AbstractGuiUtils.renderByTransform(args
                     , drawArgs -> {
                         AbstractGuiUtils.bindTexture(texture);
-                        AbstractGuiUtils.blitBlend(drawArgs.getStack()
+                        AbstractGuiUtils.blit(drawArgs.getStack()
                                 , (int) drawArgs.getX()
                                 , (int) drawArgs.getY()
                                 , (int) drawArgs.getWidth()

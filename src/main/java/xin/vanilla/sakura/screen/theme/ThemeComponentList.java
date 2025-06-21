@@ -1,6 +1,7 @@
 package xin.vanilla.sakura.screen.theme;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 
@@ -12,6 +13,10 @@ public class ThemeComponentList extends ArrayList<ThemeComponent> {
     public ThemeComponentList(ThemeComponent... elements) {
         super(elements.length);
         Collections.addAll(this, elements);
+    }
+
+    public ThemeComponentList(Collection<ThemeComponent> collection) {
+        super(collection);
     }
 
     public ThemeComponentList put(ThemeComponent... elements) {

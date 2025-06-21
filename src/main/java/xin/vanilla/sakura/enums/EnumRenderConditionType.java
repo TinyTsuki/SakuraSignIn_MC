@@ -5,45 +5,49 @@ package xin.vanilla.sakura.enums;
  */
 public enum EnumRenderConditionType {
     /**
+     * 日期
+     */
+    DATE,
+    /**
      * 时间
      */
     TIME,
     /**
-     * 时间范围
+     * 年
      */
-    TIME_RANGE,
+    YEAR,
     /**
-     * 日期时间
+     * 月
      */
-    DATETIME,
+    MONTH,
     /**
-     * 日期时间范围
+     * 日
      */
-    DATETIME_RANGE,
+    DAY,
+    /**
+     * 时
+     */
+    HOUR,
+    /**
+     * 分
+     */
+    MINUTE,
+    /**
+     * 秒
+     */
+    SECOND,
     /**
      * 连续签到天数
      */
     CONTINUOUS_SIGN_IN_DAYS,
     /**
-     * 连续签到天数范围
-     */
-    CONTINUOUS_SIGN_IN_DAYS_RANGE,
-    /**
      * 累计签到天数
      */
     TOTAL_SIGN_IN_DAYS,
     /**
-     * 累计签到天数范围
-     */
-    TOTAL_SIGN_IN_DAYS_RANGE,
-    /**
      * 界面打开时长
      */
     SCREEN_OPENING_DURATION,
-    /**
-     * 界面打开时长范围
-     */
-    SCREEN_OPENING_DURATION_RANGE,
     /**
      * 存在自定义参数值
      */

@@ -27,13 +27,9 @@ public class DateUtils {
     public static final String POINT_DATE_FORMAT = "yyyy.MM.dd";
     public static final String CHINESE_DATE_FORMAT = "yyyy年MM月dd日";
 
-    private static final String[] WEEK_NAMES = new String[]{"星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"};
+    private static final int[] WEEKS = new int[]{1, 2, 3, 4, 5, 6, 7};
 
     public DateUtils() {
-    }
-
-    public static String getWeekName(int week) {
-        return WEEK_NAMES[week - 1];
     }
 
     private static Locale getLocalFromLanguageTag(String languageTag) {
@@ -207,27 +203,13 @@ public class DateUtils {
     }
 
     /**
-     * 获取给定日期的月份
-     */
-    public static int getMonthOfDate(Date date) {
-        if (date == null) {
-            date = new Date();
-        }
-
-        LocalDate localDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-        return localDate.getMonthValue();
-    }
-
-    /**
      * 获取月初的星期
      */
     public static int getDayOfWeekOfMonthStart(Date date) {
-        if (date == null) {
-            date = new Date();
-        }
-
-        LocalDate localDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate().withDayOfMonth(1);
-        return localDate.getDayOfWeek().getValue();
+        Calendar ca = Calendar.getInstance();
+        ca.setTime(date);
+        ca.set(Calendar.DAY_OF_MONTH, 1);
+        return WEEKS[ca.get(Calendar.DAY_OF_WEEK) - 1];
     }
 
     /**
@@ -240,45 +222,75 @@ public class DateUtils {
     }
 
     /**
+     * 获取给定日期的月份
+     */
+    public static int getMonthOfDate(Date date) {
+        Calendar ca = Calendar.getInstance();
+        ca.setTime(date);
+        return ca.get(Calendar.MONTH) + 1;
+    }
+
+    /**
      * 获取给定日期是当年的第几天
      */
     public static int getDayOfYear(Date date) {
-        return getLocalDateTime(date).getDayOfYear();
+        Calendar ca = Calendar.getInstance();
+        ca.setTime(date);
+        return ca.get(Calendar.DAY_OF_YEAR);
     }
 
     /**
      * 获取给定日期是当月的第几天
      */
     public static int getDayOfMonth(Date date) {
-        return getLocalDateTime(date).getDayOfMonth();
+        Calendar ca = Calendar.getInstance();
+        ca.setTime(date);
+        return ca.get(Calendar.DAY_OF_MONTH);
     }
 
     /**
      * 获取给定日期是星期几
      */
     public static int getDayOfWeek(Date date) {
-        return getLocalDateTime(date).getDayOfWeek().getValue();
+        Calendar ca = Calendar.getInstance();
+        ca.setTime(date);
+        return WEEKS[ca.get(Calendar.DAY_OF_WEEK) - 1];
     }
 
     /**
      * 获取给定日期的小时
      */
     public static int getHourOfDay(Date date) {
-        return getLocalDateTime(date).getHour();
+        Calendar ca = Calendar.getInstance();
+        ca.setTime(date);
+        return ca.get(Calendar.HOUR_OF_DAY);
     }
 
     /**
      * 获取给定日期的分钟
      */
-    public static int getMinuteOfHour(Date date) {
-        return getLocalDateTime(date).getMinute();
+    public static int getMinute(Date date) {
+        Calendar ca = Calendar.getInstance();
+        ca.setTime(date);
+        return ca.get(Calendar.MINUTE);
     }
 
     /**
      * 获取给定日期的秒
      */
-    public static int getSecondOfMinute(Date date) {
-        return getLocalDateTime(date).getSecond();
+    public static int getSecond(Date date) {
+        Calendar ca = Calendar.getInstance();
+        ca.setTime(date);
+        return ca.get(Calendar.SECOND);
+    }
+
+    /**
+     * 获取给定日期的毫秒
+     */
+    public static int getMillisecond(Date date) {
+        Calendar ca = Calendar.getInstance();
+        ca.setTime(date);
+        return ca.get(Calendar.MILLISECOND);
     }
 
     /**

@@ -1,17 +1,13 @@
 package xin.vanilla.sakura.screen;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
-import xin.vanilla.sakura.enums.EnumI18nType;
-import xin.vanilla.sakura.enums.EnumMCColor;
-import xin.vanilla.sakura.enums.EnumSizeType;
-import xin.vanilla.sakura.enums.EnumThemeComponentType;
+import xin.vanilla.sakura.enums.*;
 import xin.vanilla.sakura.screen.component.OperationButton;
 import xin.vanilla.sakura.screen.component.Text;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
@@ -190,21 +186,24 @@ public class ThemeEditScreen extends SakuraScreen {
                                     .setType(EnumThemeComponentType.BACKGROUND)
                                     .setRenderList(new RenderInfoList(new RenderInfo()
                                             .setCoordinate(new Coordinate()
+                                                    .setTextureId(textureId)
                                                     .setX(0)
                                                     .setY(0)
                                                     .setWType(EnumSizeType.RELATIVE_PERCENT)
                                                     .setWidth(1.0)
                                                     .setHType(EnumSizeType.RELATIVE_PERCENT)
                                                     .setHeight(1.0)
-                                                    .setTextureId(textureId)
                                             )
+                                            .setFillType(EnumThemeTextureFillType.TILE)
+                                            .setScale(0.05)
+                                            .setAlpha(0xAA)
                                     ))
                             )
                             .put(new ThemeComponent()
                                     .setType(EnumThemeComponentType.CUSTOM)
                                     .setRenderList(new RenderInfoList(new RenderInfo()
                                             .setCoordinate(new Coordinate().setX(60).setY(60))
-                                            .setAngle(45)
+                                            .setRotationAngle(45)
                                             .setScale(0.75)
                                             .setText(Component.translatable(EnumI18nType.MESSAGE, "cdk_expired").setColor(EnumMCColor.BLACK.getColor()).setBgColor(EnumMCColor.WHITE.getColor()))
                                     ))
@@ -213,7 +212,7 @@ public class ThemeEditScreen extends SakuraScreen {
                                     .setType(EnumThemeComponentType.CUSTOM)
                                     .setRenderList(new RenderInfoList(new RenderInfo()
                                             .setCoordinate(new Coordinate().setX(110).setY(60))
-                                            .setAngle(145)
+                                            .setRotationAngle(145)
                                             .setScale(1.75)
                                             .setText(Component.literal("测试旋转145度").setColorArgb(0xAAAA0ABC))
                                     ))
@@ -227,7 +226,6 @@ public class ThemeEditScreen extends SakuraScreen {
                                             .setText(Component.literal("测试翻转").setColorArgb(0x9999AA00))
                                     ))
                             );
-                    throw new RuntimeException("test 2333");
                 } catch (Exception e) {
                     input.setRunningResult(Component.translatableClient(EnumI18nType.TIPS, "select_file_error", filePath)
                             .append("\n")
@@ -277,13 +275,13 @@ public class ThemeEditScreen extends SakuraScreen {
     }
 
     private void renderThemeComponent(MatrixStack matrixStack, float partialTicks) {
-        for (ThemeComponent component : theme.getComponents()) {
+        for (ThemeComponent component : theme.getVisible()) {
             RenderInfo renderInfo = component.getRenderList(ThemeComponent.RenderType.NORMAL).get(renderIndex);
-            Coordinate coordinateThree = ThemeUtils.buildCoordinateTree(theme.getComponents(), component.getId(), ThemeComponent.RenderType.NORMAL, renderIndex);
+            Coordinate coordinateThree = ThemeUtils.buildCoordinateTree(theme.getVisible(), component.getId(), ThemeComponent.RenderType.NORMAL, renderIndex);
             if (coordinateThree == null) continue;
             Coordinate coordinate = ThemeUtils.getRealCoordinate(coordinateThree, this, keyManager);
             Coordinate clone = coordinate.clone().readUV(theme);
-            boolean isBg = component.getType() == EnumThemeComponentType.BACKGROUND;
+            // 计算渲染坐标
             switch (renderInfo.getFillType()) {
                 case FILL: {
                     double parentW = clone.getWidth();
@@ -295,11 +293,7 @@ public class ThemeEditScreen extends SakuraScreen {
 
                     clone.setWidth(w * scale);
                     clone.setHeight(h * scale);
-                    if (isBg) {
-                        renderBackgroundComponent(matrixStack, clone);
-                    } else {
-                        renderForegroundComponent(matrixStack, clone, renderInfo);
-                    }
+                    renderComponent(matrixStack, renderInfo.clone().setCoordinate(clone), component.isSelected());
                 }
                 break;
                 case FIT: {
@@ -312,50 +306,33 @@ public class ThemeEditScreen extends SakuraScreen {
 
                     clone.setWidth(w * scale);
                     clone.setHeight(h * scale);
-                    if (isBg) {
-                        renderBackgroundComponent(matrixStack, clone);
-                    } else {
-                        renderForegroundComponent(matrixStack, clone, renderInfo);
-                    }
+                    renderComponent(matrixStack, renderInfo.clone().setCoordinate(clone), component.isSelected());
                 }
                 break;
                 case STRETCH: {
-                    if (isBg) {
-                        renderBackgroundComponent(matrixStack, clone);
-                    } else {
-                        renderForegroundComponent(matrixStack, clone, renderInfo);
-                    }
+                    renderComponent(matrixStack, renderInfo.clone().setCoordinate(clone), component.isSelected());
                 }
                 break;
                 case TILE: {
-                    double parentW = clone.getWidth();
-                    double parentH = clone.getHeight();
-                    int w = (int) Math.max(3, (clone.getUWidth() * renderInfo.getScale()));
-                    int h = (int) Math.max(3, (clone.getVHeight() * renderInfo.getScale()));
-
-                    if (w < parentW || h < parentH) {
+                    if (renderInfo.getScale() < 1.0) {
+                        double parentW = clone.getWidth();
+                        double parentH = clone.getHeight();
+                        double w = Math.max(3, (clone.getWidth() * renderInfo.getScale()));
+                        double h = Math.max(3, clone.getVHeight() * (w / clone.getUWidth()));
                         int xCount = (int) Math.ceil(parentW / w);
                         int yCount = (int) Math.ceil(parentH / h);
-                        Coordinate clone1 = clone.clone();
                         for (int i = 0; i < xCount; i++) {
                             for (int j = 0; j < yCount; j++) {
-                                clone1.setWidth(w);
-                                clone1.setHeight(h);
-                                clone1.setX(clone.getX() + i * w);
-                                clone1.setY(clone.getY() + j * h);
-                                if (isBg) {
-                                    renderBackgroundComponent(matrixStack, clone1);
-                                } else {
-                                    renderForegroundComponent(matrixStack, clone1, renderInfo);
-                                }
+                                Coordinate clone1 = clone.clone();
+                                clone1.setWidth(w / renderInfo.getScale());
+                                clone1.setHeight(h / renderInfo.getScale());
+                                clone1.setX(clone1.getX() + i * w);
+                                clone1.setY(clone1.getY() + j * h);
+                                renderComponent(matrixStack, renderInfo.clone().setCoordinate(clone1), component.isSelected());
                             }
                         }
                     } else {
-                        if (isBg) {
-                            renderBackgroundComponent(matrixStack, clone);
-                        } else {
-                            renderForegroundComponent(matrixStack, clone, renderInfo);
-                        }
+                        renderComponent(matrixStack, renderInfo.clone().setCoordinate(clone), component.isSelected());
                     }
                 }
                 break;
@@ -369,43 +346,23 @@ public class ThemeEditScreen extends SakuraScreen {
                     clone.setHeight(h);
                     clone.setX(clone.getX() + (parentW - w) / 2);
                     clone.setY(clone.getY() + (parentH - h) / 2);
-                    if (isBg) {
-                        renderBackgroundComponent(matrixStack, clone);
-                    } else {
-                        renderForegroundComponent(matrixStack, clone, renderInfo);
-                    }
+                    renderComponent(matrixStack, renderInfo.clone().setCoordinate(clone), component.isSelected());
                 }
                 break;
             }
         }
     }
 
-    private void renderBackgroundComponent(MatrixStack matrixStack, Coordinate coordinate) {
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        AbstractGuiUtils.bindTexture(theme.getResourceLocation());
-        AbstractGuiUtils.blit(matrixStack
-                , (int) coordinate.getX()
-                , (int) coordinate.getY()
-                , (int) coordinate.getWidth()
-                , (int) coordinate.getHeight()
-                , coordinate.getU0()
-                , coordinate.getV0()
-                , coordinate.getUWidth()
-                , coordinate.getVHeight()
-                , theme.getTotalWidth()
-                , theme.getTotalHeight()
-        );
-        RenderSystem.disableBlend();
-    }
-
-    private void renderForegroundComponent(MatrixStack matrixStack, Coordinate coordinate, RenderInfo renderInfo) {
+    private void renderComponent(MatrixStack matrixStack, RenderInfo renderInfo, boolean selected) {
         AbstractGuiUtils.TransformArgs args = new AbstractGuiUtils.TransformArgs(matrixStack)
-                .setCoordinate(coordinate)
+                .setCoordinate(renderInfo.getCoordinate())
                 .setScale(renderInfo.getScale())
-                .setAngle(renderInfo.getAngle())
+                .setAngle(renderInfo.getRotationAngle())
+                .setCenter(renderInfo.getRotationCenter())
                 .setFlipHorizontal(renderInfo.isFlipHorizontal())
-                .setFlipVertical(renderInfo.isFlipVertical());
+                .setFlipVertical(renderInfo.isFlipVertical())
+                .setAlpha(renderInfo.getAlpha())
+                .setBlend(true);
         // 绘制背景颜色
         if (renderInfo.getBgColor() != 0) {
             AbstractGuiUtils.renderByTransform(args
@@ -423,15 +380,15 @@ public class ThemeEditScreen extends SakuraScreen {
             AbstractGuiUtils.renderByTransform(args
                     , drawArgs -> {
                         AbstractGuiUtils.bindTexture(theme.getResourceLocation());
-                        AbstractGuiUtils.blitBlend(drawArgs.getStack()
+                        AbstractGuiUtils.blit(drawArgs.getStack()
                                 , (int) drawArgs.getX()
                                 , (int) drawArgs.getY()
                                 , (int) drawArgs.getWidth()
                                 , (int) drawArgs.getHeight()
-                                , coordinate.getU0()
-                                , coordinate.getV0()
-                                , coordinate.getUWidth()
-                                , coordinate.getVHeight()
+                                , renderInfo.getCoordinate().getU0()
+                                , renderInfo.getCoordinate().getV0()
+                                , renderInfo.getCoordinate().getUWidth()
+                                , renderInfo.getCoordinate().getVHeight()
                                 , theme.getTotalWidth()
                                 , theme.getTotalHeight()
                         );
@@ -441,7 +398,6 @@ public class ThemeEditScreen extends SakuraScreen {
         // 绘制文本
         if (renderInfo.hasTextInfo()) {
             Text text = new Text(renderInfo.getText())
-                    .setMatrixStack(matrixStack)
                     .setFont(this.font);
             AbstractGuiUtils.renderByTransform(args
                             .setWidth(AbstractGuiUtils.multilineTextWidth(text))
@@ -465,6 +421,16 @@ public class ThemeEditScreen extends SakuraScreen {
                     )
             );
         }
+        if (selected)
+            AbstractGuiUtils.renderByTransform(args
+                    , (drawArgs) -> AbstractGuiUtils.fillOutLine(drawArgs.getStack()
+                            , (int) drawArgs.getX() - 1
+                            , (int) drawArgs.getY() - 1
+                            , (int) drawArgs.getWidth() + 2
+                            , (int) drawArgs.getHeight() + 2
+                            , 1
+                            , 0x88FFF13B)
+            );
         // 绘制悬浮文本
         if (renderInfo.hasTooltipInfo()) {
             // TODO 判断是否被悬浮
@@ -472,8 +438,8 @@ public class ThemeEditScreen extends SakuraScreen {
                     new Text(renderInfo.getTooltip())
                             .setMatrixStack(matrixStack)
                             .setFont(this.font)
-                    , coordinate.getX()
-                    , coordinate.getY()
+                    , renderInfo.getCoordinate().getX()
+                    , renderInfo.getCoordinate().getY()
                     , super.width
                     , super.height
             );

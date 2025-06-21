@@ -584,7 +584,7 @@ public class Component implements Cloneable, Serializable {
         StringBuilder result = new StringBuilder();
         String colorStr = isColorEmpty() ? "§f" : StringUtils.argbToMinecraftColorString(getColor());
         igColor = igColor && colorStr.equalsIgnoreCase("§f");
-        // 如果颜色值为null则说明为透明，则不显示内容，所以返回空文本
+        // 如果颜色值为透明，则不显示内容，所以返回空文本
         if (!this.isColorEmpty()) {
             if (!igStyle) {
                 if (!igColor) {

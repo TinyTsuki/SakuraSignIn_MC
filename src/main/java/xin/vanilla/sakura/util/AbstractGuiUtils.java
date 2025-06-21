@@ -27,6 +27,7 @@ import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.data.Reward;
 import xin.vanilla.sakura.enums.EnumEllipsisPosition;
 import xin.vanilla.sakura.enums.EnumRewardType;
+import xin.vanilla.sakura.enums.EnumRotationCenter;
 import xin.vanilla.sakura.network.data.AdvancementData;
 import xin.vanilla.sakura.rewards.RewardManager;
 import xin.vanilla.sakura.screen.component.Text;
@@ -176,6 +177,10 @@ public class AbstractGuiUtils {
         private double width;
         private double height;
         /**
+         * 透明度
+         */
+        private double alpha = 0xFF;
+        /**
          * 缩放比例
          */
         private double scale = 1.0;
@@ -190,11 +195,15 @@ public class AbstractGuiUtils {
         /**
          * 旋转角度
          */
-        private double angle = 1.0;
+        private double angle = 0;
         /**
          * 旋转中心
          */
-        private RotationCenter center = RotationCenter.CENTER;
+        private EnumRotationCenter center = EnumRotationCenter.CENTER;
+        /**
+         * 混合模式
+         */
+        private boolean blend = false;
 
         public TransformArgs(MatrixStack stack) {
             this.stack = stack;
@@ -208,6 +217,14 @@ public class AbstractGuiUtils {
             return this;
         }
 
+        public double getWidthScaled() {
+            return this.width * this.scale;
+        }
+
+        public double getHeightScaled() {
+            return this.height * this.scale;
+        }
+
     }
 
     @Data
@@ -218,17 +235,6 @@ public class AbstractGuiUtils {
         private double y;
         private double width;
         private double height;
-    }
-
-
-    public enum RotationCenter {
-        TOP_LEFT,
-        TOP_RIGHT,
-        TOP_CENTER,
-        BOTTOM_LEFT,
-        BOTTOM_RIGHT,
-        BOTTOM_CENTER,
-        CENTER,
     }
 
     /**
@@ -244,10 +250,12 @@ public class AbstractGuiUtils {
         // 计算目标点
         double tranX = 0, tranY = 0;
         double tranW = 0, tranH = 0;
+        // 旋转角度为0不需要进行变换
+        if (args.getAngle() % 360 == 0) args.setCenter(EnumRotationCenter.TOP_LEFT);
         switch (args.getCenter()) {
             case CENTER:
-                tranW = args.getWidth() / 2.0;
-                tranH = args.getHeight() / 2.0;
+                tranW = args.getWidthScaled() / 2.0;
+                tranH = args.getHeightScaled() / 2.0;
                 tranX = args.getX() + tranW;
                 tranY = args.getY() + tranH;
                 break;
@@ -256,29 +264,29 @@ public class AbstractGuiUtils {
                 tranY = args.getY();
                 break;
             case TOP_RIGHT:
-                tranW = args.getWidth();
+                tranW = args.getWidthScaled();
                 tranX = args.getX() + tranW;
                 tranY = args.getY();
                 break;
             case TOP_CENTER:
-                tranW = args.getWidth() / 2.0;
+                tranW = args.getWidthScaled() / 2.0;
                 tranX = args.getX() + tranW;
                 tranY = args.getY();
                 break;
             case BOTTOM_LEFT:
-                tranH = args.getHeight();
+                tranH = args.getHeightScaled();
                 tranX = args.getX();
                 tranY = args.getY() + tranH;
                 break;
             case BOTTOM_RIGHT:
-                tranW = args.getWidth();
-                tranH = args.getHeight();
+                tranW = args.getWidthScaled();
+                tranH = args.getHeightScaled();
                 tranX = args.getX() + tranW;
                 tranY = args.getY() + tranH;
                 break;
             case BOTTOM_CENTER:
-                tranW = args.getWidth() / 2.0;
-                tranH = args.getHeight();
+                tranW = args.getWidthScaled() / 2.0;
+                tranH = args.getHeightScaled();
                 tranX = args.getX() + tranW;
                 tranY = args.getY() + tranH;
                 break;
@@ -286,11 +294,13 @@ public class AbstractGuiUtils {
         // 移至目标点
         args.getStack().translate(tranX, tranY, 0);
 
-        // 翻缩放
+        // 缩放
         args.getStack().scale((float) args.getScale(), (float) args.getScale(), 1);
 
         // 旋转
-        args.getStack().mulPose(Vector3f.ZP.rotationDegrees((float) args.getAngle()));
+        if (args.getAngle() % 360 != 0) {
+            args.getStack().mulPose(Vector3f.ZP.rotationDegrees((float) args.getAngle()));
+        }
 
         // 翻转
         if (args.isFlipHorizontal()) {
@@ -308,7 +318,26 @@ public class AbstractGuiUtils {
         // 绘制方法
         TransformDrawArgs drawArgs = new TransformDrawArgs(args.getStack());
         drawArgs.setX(0).setY(0).setWidth(args.getWidth()).setHeight(args.getHeight());
+
+        // 启用混合模式
+        if (args.isBlend() || args.getAlpha() < 0xFF) {
+            RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
+            // 设置透明度
+            if (args.getAlpha() < 0xFF)
+                RenderSystem.color4f(1, 1, 1, (float) args.getAlpha() / 0xFF);
+        }
+
         drawFunc.accept(drawArgs);
+
+        // 关闭混合模式
+        if (args.isBlend() || args.getAlpha() < 0xFF) {
+            // 还原透明度
+            if (args.getAlpha() < 0xFF)
+                RenderSystem.color4f(1, 1, 1, 1);
+            RenderSystem.disableBlend();
+        }
+
         // 恢复背面剔除
         RenderSystem.enableCull();
 

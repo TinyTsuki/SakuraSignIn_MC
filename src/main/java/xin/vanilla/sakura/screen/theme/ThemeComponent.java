@@ -26,6 +26,10 @@ public class ThemeComponent implements Serializable {
      * 组件参数，仅EnumThemeComponentType为SWITCH时有用
      */
     private String param;
+    /**
+     * 组件渲染条件
+     */
+    private RenderCondition condition;
 
     /**
      * 正常渲染队列
@@ -39,6 +43,9 @@ public class ThemeComponent implements Serializable {
      * 鼠标或键盘按下时渲染队列
      */
     private RenderInfoList tapRenderList = new RenderInfoList(RenderType.TAP);
+
+
+    private transient boolean selected;
 
     public ThemeComponent() {
         this(0);
@@ -65,6 +72,10 @@ public class ThemeComponent implements Serializable {
             default:
                 return this.renderList;
         }
+    }
+
+    public boolean isVisible(RenderCondition.Args args) {
+        return this.condition == null || condition.isValid(args);
     }
 
 }

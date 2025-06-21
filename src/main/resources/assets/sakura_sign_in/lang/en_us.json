@@ -235,6 +235,7 @@
   "message.sakura_sign_in.reward_option_upload_failed": "Reward option upload failed.",
   "message.sakura_sign_in.reward_option_upload_success": "Reward option upload successful.",
   "message.sakura_sign_in.local_server_not_support_this_operation": "The local server does not support this operation.",
+  "message.sakura_sign_in.no_permission_to_open_reward": "Insufficient permissions to open the reward config screen.",
   "message.sakura_sign_in.no_permission_to_edit_reward": "Insufficient permissions to modify the server-side reward config.\nChanges will only apply to the client.",
   "message.sakura_sign_in.no_permission_to_view_reward": "Insufficient permissions to view the reward config: %s.",
   "message.sakura_sign_in.server_default_language": "The default language of the server is set to %s.",

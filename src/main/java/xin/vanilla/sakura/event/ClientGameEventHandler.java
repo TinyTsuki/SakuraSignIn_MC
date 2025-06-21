@@ -27,10 +27,7 @@ import xin.vanilla.sakura.rewards.RewardConfigManager;
 import xin.vanilla.sakura.screen.RewardOptionScreen;
 import xin.vanilla.sakura.screen.component.InventoryButton;
 import xin.vanilla.sakura.screen.component.NotificationManager;
-import xin.vanilla.sakura.util.AbstractGuiUtils;
-import xin.vanilla.sakura.util.I18nUtils;
-import xin.vanilla.sakura.util.SakuraUtils;
-import xin.vanilla.sakura.util.StringUtils;
+import xin.vanilla.sakura.util.*;
 
 @Mod.EventBusSubscriber(modid = SakuraSignIn.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class ClientGameEventHandler {
@@ -47,7 +44,15 @@ public class ClientGameEventHandler {
         }
         // 打开奖励配置界面
         else if (ClientModEventHandler.REWARD_OPTION_SCREEN_KEY.consumeClick()) {
-            Minecraft.getInstance().setScreen(new RewardOptionScreen());
+            if (!SakuraSignIn.isEnabled() || Minecraft.getInstance().player == null
+                    || Minecraft.getInstance().player.hasPermissions(ServerConfig.PERMISSION_EDIT_REWARD.get())
+            ) {
+                Minecraft.getInstance().setScreen(new RewardOptionScreen());
+            } else {
+                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponent(
+                        Component.translatableClient(EnumI18nType.MESSAGE, "no_permission_to_open_reward")
+                ));
+            }
         }
     }
 
@@ -58,7 +63,6 @@ public class ClientGameEventHandler {
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         EventHandlerProxy.onServerTick(event);
     }
-
 
     /**
      * 玩家Tick事件
@@ -168,7 +172,9 @@ public class ClientGameEventHandler {
                         .setOnClick((button) -> Minecraft.getInstance().setScreen(new RewardOptionScreen().setPreviousScreen(event.getGui())))
                         .setOnDragEnd((coordinate) -> ClientConfig.INVENTORY_REWARD_OPTION_BUTTON_COORDINATE.set(String.format("%.6f,%.6f", coordinate.getX(), coordinate.getY())));
                 ((GuiScreenEvent.InitGuiEvent.Post) event).addWidget(signInButton);
-                if (!SakuraSignIn.isEnabled() || Minecraft.getInstance().player == null || Minecraft.getInstance().player.hasPermissions(ServerConfig.PERMISSION_EDIT_REWARD.get())) {
+                if (!SakuraSignIn.isEnabled() || Minecraft.getInstance().player == null
+                        || Minecraft.getInstance().player.hasPermissions(ServerConfig.PERMISSION_EDIT_REWARD.get())
+                ) {
                     ((GuiScreenEvent.InitGuiEvent.Post) event).addWidget(rewardOptionButton);
                 }
             }

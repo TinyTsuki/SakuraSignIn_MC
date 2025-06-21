@@ -788,15 +788,34 @@ public class SakuraUtils {
         return TinyFileDialogs.tinyfd_colorChooser(title, "#FFFFFF", null, BufferUtils.createByteBuffer(3));
     }
 
-    public enum NotifyPopupIconType {
+    public enum DialogIconType {
         info,
         warning,
         error,
+        question,
     }
 
+    public enum DialogButtonType {
+        ok,
+        okcancel,
+        yesno,
+        yesnocancel,
+    }
+
+    /**
+     * 弹出通知
+     */
     @OnlyIn(Dist.CLIENT)
-    public static int popupNotify(String title, String msg, NotifyPopupIconType iconType) {
+    public static int popupNotify(String title, String msg, DialogIconType iconType) {
         return TinyFileDialogs.tinyfd_notifyPopup(title, msg, iconType.name());
+    }
+
+    /**
+     * 弹出消息框
+     */
+    @OnlyIn(Dist.CLIENT)
+    public static boolean openMessageBox(String title, String msg, DialogIconType iconType, DialogButtonType buttonType) {
+        return TinyFileDialogs.tinyfd_messageBox(title, msg, buttonType.name(), iconType.name(), false);
     }
 
     @OnlyIn(Dist.CLIENT)

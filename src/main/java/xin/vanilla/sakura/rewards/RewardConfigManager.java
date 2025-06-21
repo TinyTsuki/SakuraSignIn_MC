@@ -235,7 +235,7 @@ public class RewardConfigManager {
         if (!dir.exists()) {
             dir.mkdirs();
         }
-        String historyId = System.currentTimeMillis() + "." + random.nextInt(1000000);
+        String historyId = System.currentTimeMillis() + "." + random.nextInt(100_0000);
         File dataFile = new File(dir, historyId + "." + FILE_NAME);
         try (FileWriter writer = new FileWriter(dataFile)) {
             Gson gson = new GsonBuilder().enableComplexMapKeySerialization().create();
@@ -281,7 +281,7 @@ public class RewardConfigManager {
         if (!dir.exists()) {
             dir.mkdirs();
         }
-        String historyId = System.currentTimeMillis() + "." + random.nextInt(1000000);
+        String historyId = System.currentTimeMillis() + "." + random.nextInt(100_0000);
         File dataFile = new File(dir, historyId + "." + FILE_NAME);
         try (FileWriter writer = new FileWriter(dataFile)) {
             Gson gson = new GsonBuilder().enableComplexMapKeySerialization().create();

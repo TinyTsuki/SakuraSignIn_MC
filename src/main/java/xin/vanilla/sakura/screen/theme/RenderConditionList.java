@@ -3,6 +3,7 @@ package xin.vanilla.sakura.screen.theme;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import xin.vanilla.sakura.enums.EnumLogicalOperator;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -14,9 +15,9 @@ import java.util.Collection;
 public class RenderConditionList extends ArrayList<RenderCondition> implements Serializable, Cloneable {
 
     /**
-     * 逻辑类型： true->and，false->or
+     * 逻辑类型
      */
-    private boolean logicType;
+    private EnumLogicalOperator logicType = EnumLogicalOperator.AND;
 
     public RenderConditionList() {
     }
