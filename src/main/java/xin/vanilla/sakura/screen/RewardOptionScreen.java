@@ -894,6 +894,46 @@ public class RewardOptionScreen extends SakuraScreen {
                     Minecraft.getInstance().setScreen(callbackScreen);
                 }
             }
+            else if (I18nUtils.getTranslationClient(EnumI18nType.WORD, "reward_type_" + EnumRewardType.ECONOMY.getCode()).equalsIgnoreCase(selectedString)) {
+                StringInputScreen.Args screenArgs = new StringInputScreen.Args()
+                        .setParentScreen(this)
+                        .addWidget(new StringInputScreen.InputWidget()
+                                .setName("amount")
+                                .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_economy_point").setShadow(true))
+                                .setRegex("-?(?:\\d+\\.\\d+|\\d+|\\.\\d+)")
+                                .setDefaultValue("1")
+                                .setValidator((input) -> {
+                                    if (StringUtils.toInt(input.getValue()) <= 0) {
+                                        return Component.translatableClient(EnumI18nType.TIPS, "enter_value_s_error", input.getValue()).toString();
+                                    }
+                                    return null;
+                                })
+                        )
+                        .addWidget(new StringInputScreen.InputWidget()
+                                .setName("probability")
+                                .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
+                                .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                .setDefaultValue("1")
+                        )
+                        .setInvisible(() -> StringUtils.isNullOrEmpty(key[0]))
+                        .setCallback(input -> {
+                            double amount = StringUtils.toDouble(input.getValue("amount"));
+                            BigDecimal p = StringUtils.toBigDecimal(input.getValue("probability"), BigDecimal.ONE);
+                            RewardConfigManager.addUndoRewardOption(rule);
+                            RewardConfigManager.clearRedoList();
+                            RewardConfigManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(amount, EnumRewardType.ECONOMY), EnumRewardType.ECONOMY, p));
+                            RewardConfigManager.saveRewardOption();
+                        });
+                StringInputScreen callbackScreen = new StringInputScreen(screenArgs);
+                if (rule == EnumRewardRule.CDK_REWARD) {
+                    Minecraft.getInstance().setScreen(this.getCdkRuleKeyInputScreen(callbackScreen, rule, key));
+                } else if (rule != EnumRewardRule.BASE_REWARD) {
+                    Minecraft.getInstance().setScreen(this.getRuleKeyInputScreen(callbackScreen, rule, key));
+                } else {
+                    key[0] = "base";
+                    Minecraft.getInstance().setScreen(callbackScreen);
+                }
+            }
             // 经验等级
             else if (I18nUtils.getTranslationClient(EnumI18nType.WORD, "reward_type_" + EnumRewardType.EXP_LEVEL.getCode()).equalsIgnoreCase(selectedString)) {
                 StringInputScreen.Args screenArgs = new StringInputScreen.Args()

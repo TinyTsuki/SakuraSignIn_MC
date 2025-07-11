@@ -17,7 +17,8 @@ public enum EnumRewardType implements Serializable {
     SIGN_IN_CARD(5),
     ADVANCEMENT(6),
     MESSAGE(7),
-    COMMAND(8);
+    COMMAND(8),
+    ECONOMY(9);
 
     private final int code;
 
