@@ -902,12 +902,8 @@ public class RewardOptionScreen extends SakuraScreen {
                                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_economy_point").setShadow(true))
                                 .setRegex("-?(?:\\d+\\.\\d+|\\d+|\\.\\d+)")
                                 .setDefaultValue("1")
-                                .setValidator((input) -> {
-                                    if (StringUtils.toInt(input.getValue()) <= 0) {
-                                        return Component.translatableClient(EnumI18nType.TIPS, "enter_value_s_error", input.getValue()).toString();
-                                    }
-                                    return null;
-                                })
+                                // due to regex can only input +- double number, no need to validate it
+                                .setValidator((input) -> null)
                         )
                         .addWidget(new StringInputScreen.InputWidget()
                                 .setName("probability")
