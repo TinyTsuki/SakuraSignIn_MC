@@ -859,6 +859,14 @@ public class AbstractGuiUtils {
         else if (reward.getType().equals(EnumRewardType.COMMAND)) {
             renderItem(itemRenderer, font, new ItemStack(Items.REPEATING_COMMAND_BLOCK), x, y, false);
         }
+        // economy
+        else if (reward.getType().equals(EnumRewardType.ECONOMY)) {
+            renderItem(itemRenderer, font, new ItemStack(Items.GOLD_INGOT), x, y, false);
+        }
+        // fallback to barrier
+        else {
+            renderItem(itemRenderer, font, new ItemStack(Items.BARRIER), x, y, false);
+        }
         if (showText && showQuality && reward.getProbability().compareTo(BigDecimal.ONE) != 0) {
             AbstractGuiUtils.renderByDepth(matrixStack, (stack) ->
                     AbstractGuiUtils.drawString(stack, font, "?", x - 1, y - 1, AbstractGuiUtils.getProbabilityArgb(reward.getProbability().doubleValue()))
