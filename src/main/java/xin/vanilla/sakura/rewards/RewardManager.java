@@ -26,6 +26,7 @@ import xin.vanilla.sakura.network.packet.RewardCellDirtiedToClient;
 import xin.vanilla.sakura.network.packet.SignInToServer;
 import xin.vanilla.sakura.rewards.impl.*;
 import xin.vanilla.sakura.util.*;
+import xin.vanilla.sakura.util.plugin.PluginUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -53,6 +54,7 @@ public class RewardManager {
         rewardParsers.put(EnumRewardType.ADVANCEMENT, new AdvancementRewardParser());
         rewardParsers.put(EnumRewardType.MESSAGE, new MessageRewardParser());
         rewardParsers.put(EnumRewardType.COMMAND, new CommandRewardParser());
+        rewardParsers.put(EnumRewardType.ECONOMY, new EconomyParser());
         // MORE ...
     }
 
@@ -692,6 +694,13 @@ public class RewardManager {
                     result = SakuraUtils.executeCommand(player, command);
                 }
                 break;
+            case ECONOMY:
+                if (PluginUtils.checkBukkitInstalled()){
+                    LOGGER.debug("Player Pre economy was {}", PluginUtils.getBalance(player));
+                    PluginUtils.depositPlayer(player.getUUID(),(Double) object);
+                    LOGGER.debug("Player After reword economy is {}", PluginUtils.getBalance(player));
+                    result = true;
+                }
             default:
         }
         reward.setRewarded(result);
