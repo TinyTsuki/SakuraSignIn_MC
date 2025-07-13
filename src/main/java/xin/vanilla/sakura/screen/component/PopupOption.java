@@ -257,6 +257,10 @@ public class PopupOption {
         this.afterRender = null;
     }
 
+    public boolean isEmpty() {
+        return CollectionUtils.isNullOrEmpty(this.optionList);
+    }
+
     public boolean isHovered() {
         return CollectionUtils.isNotNullOrEmpty(optionList) && this.relationMap.getOrDefault(selectedIndex, -1) >= 0;
     }

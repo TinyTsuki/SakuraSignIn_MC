@@ -36,6 +36,7 @@ import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.data.ArraySet;
 import xin.vanilla.sakura.data.Reward;
 import xin.vanilla.sakura.enums.EnumI18nType;
+import xin.vanilla.sakura.enums.EnumRegex;
 import xin.vanilla.sakura.enums.EnumRewardType;
 import xin.vanilla.sakura.rewards.RewardManager;
 import xin.vanilla.sakura.rewards.impl.ItemRewardParser;
@@ -658,7 +659,7 @@ public class ItemSelectScreen extends Screen {
             String itemRewardJsonString = GSON.toJson(this.currentItem.getContent());
             StringInputScreen.Args args = new StringInputScreen.Args()
                     .setParentScreen(this)
-                    .addWidget(new StringInputScreen.InputWidget()
+                    .addWidget(new StringInputScreen.Widget()
                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_item_json").setShadow(true))
                             .setDefaultValue(itemRewardJsonString)
                             .setValidator((input) -> {
@@ -685,7 +686,7 @@ public class ItemSelectScreen extends Screen {
         else if (bt.getOperation() == OperationButtonType.COUNT.getCode()) {
             StringInputScreen.Args args = new StringInputScreen.Args()
                     .setParentScreen(this)
-                    .addWidget(new StringInputScreen.InputWidget()
+                    .addWidget(new StringInputScreen.Widget()
                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_item_count").setShadow(true))
                             .setRegex("\\d{0,4}")
                             .setDefaultValue(String.valueOf(((ItemStack) RewardManager.deserializeReward(this.currentItem)).getCount()))
@@ -710,7 +711,7 @@ public class ItemSelectScreen extends Screen {
             String itemNbtJsonString = ItemRewardParser.getNbtString(RewardManager.deserializeReward(this.currentItem));
             StringInputScreen.Args args = new StringInputScreen.Args()
                     .setParentScreen(this)
-                    .addWidget(new StringInputScreen.InputWidget()
+                    .addWidget(new StringInputScreen.Widget()
                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_item_nbt").setShadow(true))
                             .setDefaultValue(itemNbtJsonString)
                             .setValidator((input) -> {
@@ -740,9 +741,9 @@ public class ItemSelectScreen extends Screen {
         else if (bt.getOperation() == OperationButtonType.PROBABILITY.getCode()) {
             StringInputScreen.Args args = new StringInputScreen.Args()
                     .setParentScreen(this)
-                    .addWidget(new StringInputScreen.InputWidget()
+                    .addWidget(new StringInputScreen.Widget()
                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                            .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                            .setRegex(EnumRegex.PERCENTAGE_5.getRegex())
                             .setDefaultValue(StringUtils.toFixedEx(this.probability, 5))
                             .setValidator((input) -> {
                                 BigDecimal p = StringUtils.toBigDecimal(input.getValue());

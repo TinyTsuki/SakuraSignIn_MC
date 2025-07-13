@@ -293,6 +293,11 @@ public abstract class SakuraScreen extends Screen {
     abstract void keyReleased_(KeyReleasedHandleArgs args);
 
     @Override
+    public boolean shouldCloseOnEsc() {
+        return false;
+    }
+
+    @Override
     public void onClose() {
         super.onClose();
 

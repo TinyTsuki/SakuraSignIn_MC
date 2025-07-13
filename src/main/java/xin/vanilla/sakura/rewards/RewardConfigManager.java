@@ -831,7 +831,7 @@ public class RewardConfigManager {
                 rewardConfig.getCumulativeRewards().get(keyName).add(reward);
                 break;
             case RANDOM_REWARD:
-                if (!rewardConfig.getRandomRewards().containsKey(keyName)) {
+                if (!rewardConfig.getRandomRewards().containsKey(new BigDecimal(keyName).toPlainString())) {
                     rewardConfig.getRandomRewards().put(keyName, new RewardList());
                 }
                 rewardConfig.getRandomRewards().get(keyName).add(reward);

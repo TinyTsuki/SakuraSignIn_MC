@@ -7,7 +7,9 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
+import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.enums.*;
+import xin.vanilla.sakura.screen.component.NotificationManager;
 import xin.vanilla.sakura.screen.component.OperationButton;
 import xin.vanilla.sakura.screen.component.Text;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
@@ -17,6 +19,10 @@ import xin.vanilla.sakura.util.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.function.Consumer;
 
 @OnlyIn(Dist.CLIENT)
@@ -85,8 +91,8 @@ public class ThemeEditScreen extends SakuraScreen {
     // region 私有方法
 
     private void handleMenuClick(MouseReleasedHandleArgs args) {
-        if (menuButton.isPressed()) {
-            if (keyManager.isMouseRightPressed()) {
+        if (menuButton.isPressed() || keyManager.isKeyPressed(GLFWKey.GLFW_KEY_MENU)) {
+            if (keyManager.isMouseRightPressed() || keyManager.isKeyPressed(GLFWKey.GLFW_KEY_MENU)) {
                 popupOption.clear();
                 popupOption.addOption(Text.translatable(EnumI18nType.OPTION, "add_theme_component"));
                 popupOption.addOption(Text.translatable(EnumI18nType.OPTION, "edit_theme_info"));
@@ -118,7 +124,7 @@ public class ThemeEditScreen extends SakuraScreen {
         else if (I18nUtils.getTranslationClient(EnumI18nType.OPTION, "edit_theme_info").equals(selectedString)) {
             StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                     .setParentScreen(this)
-                    .addWidget(new StringInputScreen.InputWidget()
+                    .addWidget(new StringInputScreen.Widget()
                             .setName("name")
                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_theme_name").setShadow(true))
                             .setDefaultValue(theme.getName())
@@ -129,17 +135,17 @@ public class ThemeEditScreen extends SakuraScreen {
                                 return null;
                             })
                     )
-                    .addWidget(new StringInputScreen.InputWidget()
+                    .addWidget(new StringInputScreen.Widget()
                             .setName("author")
                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_author_name").setShadow(true))
                             .setDefaultValue(theme.getAuthor())
                     )
-                    .addWidget(new StringInputScreen.InputWidget()
+                    .addWidget(new StringInputScreen.Widget()
                             .setName("version")
                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_theme_version").setShadow(true))
                             .setDefaultValue(theme.getVersion())
                     )
-                    .addWidget(new StringInputScreen.InputWidget()
+                    .addWidget(new StringInputScreen.Widget()
                             .setName("description")
                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_theme_description").setShadow(true))
                             .setDefaultValue(theme.getDescription())
@@ -161,25 +167,68 @@ public class ThemeEditScreen extends SakuraScreen {
             popupOption.build(super.font, args.getMouseX(), args.getMouseY(), "add_theme_component");
             args.setClearPopup(false);
         }
+        // 选择
+        else if (I18nUtils.getTranslationClient(EnumI18nType.OPTION, "theme_component_custom").equals(selectedString)) {
+            // super.clearInput()
+            //         .addWidget(new Widget()
+            //                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_theme_name").setShadow(true))
+            //         )
+            //         .addWidget(new Widget()
+            //                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_author_name").setShadow(true))
+            //         )
+            //         .addWidget(new Widget()
+            //                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_author_name").setShadow(true))
+            //         )
+            //         .addWidget(new Widget()
+            //                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_theme_version").setShadow(true))
+            //         )
+            //         .addWidget(new Widget()
+            //                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_theme_version").setShadow(true))
+            //         )
+            //         .addWidget(new Widget()
+            //                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_author_name").setShadow(true))
+            //         )
+            //         .addWidget(new Widget()
+            //                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_author_name").setShadow(true))
+            //         )
+            //         .addWidget(new Widget()
+            //                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_theme_version").setShadow(true))
+            //         )
+            //         .addWidget(new Widget()
+            //                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_theme_version").setShadow(true))
+            //         )
+            //         .addWidget(new Widget()
+            //                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_theme_description").setShadow(true))
+            //         )
+            //         .setCallback(input -> {
+            //             LOGGER.debug(input.getFirstValue());
+            //             LOGGER.debug(input.getLastValue());
+            //         });
+            // super.initInput();
+        }
         // 选择背景文件
         else if (I18nUtils.getTranslationClient(EnumI18nType.OPTION, "theme_component_background").equals(selectedString)) {
             Consumer<StringInputScreen.Results> callback = input -> Minecraft.getInstance().execute(() -> {
                 // TODO 临时删除，方便测试
                 theme.getComponents().clear();
+
                 String textureId = input.getValue("textureId");
                 String filePath = input.getValue("file");
                 try {
-                    // TODO 拼接文件，原绘制
-                    BufferedImage bufferedImage = PNGUtils.readImage(new File(filePath));
-                    PNGUtils.writeImage(bufferedImage, theme.getFile());
-                    theme.setTotalWidth(bufferedImage.getWidth());
-                    theme.setTotalHeight(bufferedImage.getHeight());
-                    theme.setResourceLocation(TextureUtils.loadCustomTexture(theme.getFile().getAbsolutePath()));
-                    theme.getTexureMap().put(textureId, new Coordinate()
-                            .setU0(0)
-                            .setV0(0)
+                    File selectedFile = new File(filePath);
+                    File imgFile = new File(SakuraUtils.getThemePath("edit", FileUtils.replacePathChar(theme.getName())).toFile(), textureId + SakuraSignIn.THEME_EDITING_SUFFIX);
+
+                    if (!imgFile.exists()) Files.copy(selectedFile.toPath(), imgFile.toPath());
+                    if (!theme.getTextureCache().containsKey(textureId)) {
+                        theme.getTextureCache().put(textureId, TextureUtils.loadCustomTexture(imgFile.getAbsolutePath()));
+                    }
+
+                    BufferedImage bufferedImage = PNGUtils.readImage(imgFile);
+                    theme.getTextureMap().put(textureId, new Coordinate()
                             .setUWidth(bufferedImage.getWidth())
                             .setVHeight(bufferedImage.getHeight())
+                            .setUvWidth(bufferedImage.getWidth())
+                            .setUvHeight(bufferedImage.getHeight())
                     );
                     theme.getComponents()
                             .put(new ThemeComponent()
@@ -187,8 +236,6 @@ public class ThemeEditScreen extends SakuraScreen {
                                     .setRenderList(new RenderInfoList(new RenderInfo()
                                             .setCoordinate(new Coordinate()
                                                     .setTextureId(textureId)
-                                                    .setX(0)
-                                                    .setY(0)
                                                     .setWType(EnumSizeType.RELATIVE_PERCENT)
                                                     .setWidth(1.0)
                                                     .setHType(EnumSizeType.RELATIVE_PERCENT)
@@ -236,20 +283,18 @@ public class ThemeEditScreen extends SakuraScreen {
             });
             StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                     .setParentScreen(this)
-                    .addWidget(new StringInputScreen.InputWidget()
+                    .addWidget(new StringInputScreen.Widget()
                             .setName("textureId")
                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_theme_texture_id").setShadow(true))
-                            .setDefaultValue("background_" + System.currentTimeMillis())
+                            .setDisabled(true)
                             .setValidator((input) -> {
                                 if (StringUtils.isNullOrEmptyEx(input.getValue())) {
-                                    return Component.translatableClient(EnumI18nType.TIPS, "theme_texture_id_empty").toString();
-                                } else if (theme.getTexureMap().containsKey(input.getValue())) {
-                                    return Component.translatableClient(EnumI18nType.TIPS, "theme_texture_id_exists", input.getValue()).toString();
+                                    return Component.translatableClient(EnumI18nType.TIPS, "theme_texture_id_error").toString();
                                 }
                                 return null;
                             })
                     )
-                    .addWidget(new StringInputScreen.InputWidget()
+                    .addWidget(new StringInputScreen.Widget()
                             .setName("file")
                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_or_select_file").setShadow(true))
                             .setType(StringInputScreen.WidgetType.FILE)
@@ -266,6 +311,11 @@ public class ThemeEditScreen extends SakuraScreen {
                                     }
                                 }
                                 return null;
+                            })
+                            .setChanged((inputs) -> {
+                                File file = new File(inputs.getValue().getValue());
+                                String sha = FileUtils.computeFileHashOrElse(file, StringUtils.md5(file.getName()));
+                                inputs.getValue("textureId").setValue(sha);
                             })
                     )
                     .setCallback(callback);
@@ -379,7 +429,16 @@ public class ThemeEditScreen extends SakuraScreen {
         if (renderInfo.hasUVInfo()) {
             AbstractGuiUtils.renderByTransform(args
                     , drawArgs -> {
-                        AbstractGuiUtils.bindTexture(theme.getResourceLocation());
+                        int uvWidth, uvHeight;
+                        if (theme.isEditing()) {
+                            AbstractGuiUtils.bindTexture(theme.getTextureCache().get(renderInfo.getCoordinate().getTextureId()));
+                            uvWidth = theme.getTextureMap().get(renderInfo.getCoordinate().getTextureId()).getUvWidth();
+                            uvHeight = theme.getTextureMap().get(renderInfo.getCoordinate().getTextureId()).getUvHeight();
+                        } else {
+                            AbstractGuiUtils.bindTexture(theme.getResourceLocation());
+                            uvWidth = theme.getTotalWidth();
+                            uvHeight = theme.getTotalHeight();
+                        }
                         AbstractGuiUtils.blit(drawArgs.getStack()
                                 , (int) drawArgs.getX()
                                 , (int) drawArgs.getY()
@@ -389,8 +448,8 @@ public class ThemeEditScreen extends SakuraScreen {
                                 , renderInfo.getCoordinate().getV0()
                                 , renderInfo.getCoordinate().getUWidth()
                                 , renderInfo.getCoordinate().getVHeight()
-                                , theme.getTotalWidth()
-                                , theme.getTotalHeight()
+                                , uvWidth
+                                , uvHeight
                         );
                     }
             );
@@ -460,7 +519,7 @@ public class ThemeEditScreen extends SakuraScreen {
         theme.getComponents().sorted();
         theme.getDarkComponents().sorted();
         if (theme.getFile() == null) {
-            theme.setFile(SakuraUtils.getThemePath().resolve(StringUtils.replacePathChar(theme.getName()) + SakuraSignIn.THEME_FILE_SUFFIX).toFile());
+            theme.setFile(SakuraUtils.getThemePath().resolve(FileUtils.replacePathChar(theme.getName()) + SakuraSignIn.THEME_FILE_SUFFIX).toFile());
             theme.getFile().mkdirs();
             try {
                 PNGUtils.writeImage(new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB), theme.getFile());
@@ -552,6 +611,14 @@ public class ThemeEditScreen extends SakuraScreen {
     @Override
     public void keyPressed_(KeyPressedHandleArgs args) {
 
+        // 关闭弹出层选项
+        if (keyManager.isKeyPressed(GLFWKey.GLFW_KEY_ESCAPE)) {
+            if (!popupOption.isEmpty()) {
+                popupOption.clear();
+                args.setConsumed(true);
+            }
+        }
+
     }
 
     /**
@@ -560,8 +627,49 @@ public class ThemeEditScreen extends SakuraScreen {
     @Override
     public void keyReleased_(KeyReleasedHandleArgs args) {
 
+        // 打开模拟点击菜单按钮
         if (keyManager.isKeyPressed(GLFWKey.GLFW_KEY_MENU)) {
-            // TODO 和点击菜单按钮一样的效果
+            if (!popupOption.isEmpty()) {
+                popupOption.clear();
+                args.setConsumed(true);
+            } else {
+                MouseReleasedHandleArgs mouseArgs = new MouseReleasedHandleArgs()
+                        .setMouseX(menuButton.getRealX() + menuButton.getRealWidth() / 2)
+                        .setMouseY(menuButton.getRealY() + menuButton.getRealHeight() / 2);
+                handleMenuClick(mouseArgs);
+                args.setConsumed(mouseArgs.isConsumed());
+            }
+        }
+        // 保存主题配置信息
+        else if (ClientConfig.KEY_OPTION_SAVE.get().stream().anyMatch(keyManager::isKeyPressed)) {
+            if (theme.getConfigFile() == null) {
+                File configFile = SakuraUtils.getThemePath()
+                        .resolve("edit")
+                        .resolve(FileUtils.replacePathChar(theme.getName()))
+                        .resolve("config" + SakuraSignIn.THEME_JSON_SUFFIX)
+                        .toFile();
+                configFile.getParentFile().mkdirs();
+                theme.setConfigFile(configFile);
+            }
+
+            File configFile = theme.getConfigFile();
+            if (!configFile.getParentFile().exists()) {
+                configFile.getParentFile().mkdirs();
+            }
+
+            try (Writer writer = new OutputStreamWriter(Files.newOutputStream(configFile.toPath()), StandardCharsets.UTF_8)) {
+                writer.write(JsonUtils.PRETTY_GSON.toJson(theme.toJson()));
+                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(
+                        Component.translatableClient(EnumI18nType.MESSAGE, "save_success")
+                ));
+            } catch (IOException e) {
+                LOGGER.error("Error saving theme config to file {}:", configFile, e);
+                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(
+                        Component.translatableClient(EnumI18nType.MESSAGE, "save_failed")
+                ).setBgArgb(0x99FF5555));
+            }
+
+            args.setConsumed(true);
         }
 
     }

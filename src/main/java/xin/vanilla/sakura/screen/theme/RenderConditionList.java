@@ -1,5 +1,6 @@
 package xin.vanilla.sakura.screen.theme;
 
+import com.google.gson.JsonArray;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -39,5 +40,11 @@ public class RenderConditionList extends ArrayList<RenderCondition> implements S
         } catch (Exception e) {
             return new RenderConditionList();
         }
+    }
+
+    public JsonArray toJson() {
+        JsonArray jsonArray = new JsonArray();
+        this.forEach(condition -> jsonArray.add(condition.toJson()));
+        return jsonArray;
     }
 }

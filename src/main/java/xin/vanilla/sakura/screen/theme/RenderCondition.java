@@ -1,5 +1,6 @@
 package xin.vanilla.sakura.screen.theme;
 
+import com.google.gson.JsonObject;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import xin.vanilla.sakura.enums.EnumRelationalOperator;
@@ -152,5 +153,16 @@ public class RenderCondition implements Serializable, Cloneable {
             }
         }
         return condition.getOperator().isValid(l, r);
+    }
+
+    public JsonObject toJson() {
+        JsonObject json = new JsonObject();
+        json.addProperty("type", this.type.name());
+        json.addProperty("operator", this.operator.name());
+        json.addProperty("param", this.param);
+        if (this.children != null) {
+            json.add("children", this.children.toJson());
+        }
+        return json;
     }
 }

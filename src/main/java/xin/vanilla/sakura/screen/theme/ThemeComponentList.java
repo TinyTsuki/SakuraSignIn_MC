@@ -1,5 +1,7 @@
 package xin.vanilla.sakura.screen.theme;
 
+import com.google.gson.JsonArray;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -43,5 +45,11 @@ public class ThemeComponentList extends ArrayList<ThemeComponent> {
         } else {
             return super.get(index);
         }
+    }
+
+    public JsonArray toJson() {
+        JsonArray jsonArray = new JsonArray();
+        this.forEach(component -> jsonArray.add(component.toJson()));
+        return jsonArray;
     }
 }

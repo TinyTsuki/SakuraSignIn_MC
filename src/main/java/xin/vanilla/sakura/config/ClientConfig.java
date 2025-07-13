@@ -58,27 +58,31 @@ public class ClientConfig {
     /**
      * 配置界面 - 复制
      */
-    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> KEY_REWARD_OPTION_COPY;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> KEY_OPTION_COPY;
     /**
      * 配置界面 - 粘贴
      */
-    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> KEY_REWARD_OPTION_PASTE;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> KEY_OPTION_PASTE;
     /**
      * 配置界面 - 裁剪
      */
-    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> KEY_REWARD_OPTION_CUT;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> KEY_OPTION_CUT;
     /**
      * 配置界面 - 删除
      */
-    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> KEY_REWARD_OPTION_DELETE;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> KEY_OPTION_DELETE;
     /**
      * 配置界面 - 撤销
      */
-    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> KEY_REWARD_OPTION_UNDO;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> KEY_OPTION_UNDO;
     /**
      * 配置界面 - 重做
      */
-    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> KEY_REWARD_OPTION_REDO;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> KEY_OPTION_REDO;
+    /**
+     * 配置界面 - 保存
+     */
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> KEY_OPTION_SAVE;
 
     /**
      * 签到界面 - 签到
@@ -175,55 +179,63 @@ public class ClientConfig {
             CLIENT_BUILDER.comment("Key Settings").push("key");
 
             {
-                CLIENT_BUILDER.comment("Reward Option").push("rewardOption");
+                CLIENT_BUILDER.comment("Option").push("option");
 
-                KEY_REWARD_OPTION_COPY = CLIENT_BUILDER
-                        .comment("Keys used to copy on the reward option screen",
-                                "奖励配置页面进行 复制操作 时所使用的按键")
+                KEY_OPTION_COPY = CLIENT_BUILDER
+                        .comment("Keys used to copy on the option screen",
+                                "配置页面进行 复制操作 时所使用的按键")
                         .defineList("copy", new ArrayList<String>() {{
                             add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_CONTROL, GLFWKey.GLFW_KEY_C));
                             add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_RIGHT_CONTROL, GLFWKey.GLFW_KEY_C));
                         }}, s -> s instanceof String);
 
-                KEY_REWARD_OPTION_PASTE = CLIENT_BUILDER
-                        .comment("Keys used to paste on the reward option screen",
-                                "奖励配置页面进行 粘贴操作 时所使用的按键")
+                KEY_OPTION_PASTE = CLIENT_BUILDER
+                        .comment("Keys used to paste on the option screen",
+                                "配置页面进行 粘贴操作 时所使用的按键")
                         .defineList("paste", new ArrayList<String>() {{
                             add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_CONTROL, GLFWKey.GLFW_KEY_V));
                             add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_RIGHT_CONTROL, GLFWKey.GLFW_KEY_V));
                         }}, s -> s instanceof String);
 
-                KEY_REWARD_OPTION_CUT = CLIENT_BUILDER
-                        .comment("Keys used to cut on the reward option screen",
-                                "奖励配置页面进行 裁剪操作 时所使用的按键")
+                KEY_OPTION_CUT = CLIENT_BUILDER
+                        .comment("Keys used to cut on the option screen",
+                                "配置页面进行 裁剪操作 时所使用的按键")
                         .defineList("cut", new ArrayList<String>() {{
                             add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_CONTROL, GLFWKey.GLFW_KEY_X));
                             add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_RIGHT_CONTROL, GLFWKey.GLFW_KEY_X));
                         }}, s -> s instanceof String);
 
-                KEY_REWARD_OPTION_DELETE = CLIENT_BUILDER
-                        .comment("Keys used to delete on the reward option screen",
-                                "奖励配置页面进行 删除操作 时所使用的按键")
+                KEY_OPTION_DELETE = CLIENT_BUILDER
+                        .comment("Keys used to delete on the option screen",
+                                "配置页面进行 删除操作 时所使用的按键")
                         .defineList("delete", new ArrayList<String>() {{
                             add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_DELETE));
                             add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_CONTROL, GLFWKey.GLFW_KEY_Y));
                             add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_CONTROL) + "+" + GLFWKeyHelper.getMouseDisplayString(GLFWKey.GLFW_MOUSE_BUTTON_RIGHT));
                         }}, s -> s instanceof String);
 
-                KEY_REWARD_OPTION_UNDO = CLIENT_BUILDER
-                        .comment("Keys used to undo on the reward option screen",
-                                "奖励配置页面进行 撤销操作 时所使用的按键")
+                KEY_OPTION_UNDO = CLIENT_BUILDER
+                        .comment("Keys used to undo on the option screen",
+                                "配置页面进行 撤销操作 时所使用的按键")
                         .defineList("undo", new ArrayList<String>() {{
                             add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_CONTROL, GLFWKey.GLFW_KEY_Z));
                             add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_RIGHT_CONTROL, GLFWKey.GLFW_KEY_Z));
                         }}, s -> s instanceof String);
 
-                KEY_REWARD_OPTION_REDO = CLIENT_BUILDER
-                        .comment("Keys used to redo on the reward option screen",
-                                "奖励配置页面进行 重做操作 时所使用的按键")
+                KEY_OPTION_REDO = CLIENT_BUILDER
+                        .comment("Keys used to redo on the option screen",
+                                "配置页面进行 重做操作 时所使用的按键")
                         .defineList("redo", new ArrayList<String>() {{
                             add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_CONTROL, GLFWKey.GLFW_KEY_LEFT_SHIFT, GLFWKey.GLFW_KEY_Z));
                             add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_RIGHT_CONTROL, GLFWKey.GLFW_KEY_RIGHT_SHIFT, GLFWKey.GLFW_KEY_Z));
+                        }}, s -> s instanceof String);
+
+                KEY_OPTION_SAVE = CLIENT_BUILDER
+                        .comment("Keys used to save on the option screen",
+                                "配置页面进行 保存操作 时所使用的按键")
+                        .defineList("save", new ArrayList<String>() {{
+                            add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_CONTROL, GLFWKey.GLFW_KEY_S));
+                            add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_RIGHT_CONTROL, GLFWKey.GLFW_KEY_S));
                         }}, s -> s instanceof String);
 
                 CLIENT_BUILDER.pop();

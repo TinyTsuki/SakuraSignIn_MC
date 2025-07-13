@@ -47,6 +47,8 @@ public class SakuraSignIn {
     public static final String ARTIFACT_ID = "xin.vanilla";
     public static final String PNG_CHUNK_NAME = "vacb";
     public static final String THEME_FILE_SUFFIX = ".sakura.png";
+    public static final String THEME_JSON_SUFFIX = ".sakura.json";
+    public static final String THEME_EDITING_SUFFIX = ".sakura.texture";
 
 
     // region 服务端全局变量

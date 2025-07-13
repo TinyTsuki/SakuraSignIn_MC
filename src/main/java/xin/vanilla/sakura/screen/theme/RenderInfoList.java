@@ -1,5 +1,6 @@
 package xin.vanilla.sakura.screen.theme;
 
+import com.google.gson.JsonArray;
 import lombok.Getter;
 
 import java.util.ArrayList;
@@ -54,5 +55,11 @@ public class RenderInfoList extends ArrayList<RenderInfo> {
             index.set(0);
         }
         return renderInfo;
+    }
+
+    public JsonArray toJson() {
+        JsonArray jsonArray = new JsonArray();
+        this.forEach(renderInfo -> jsonArray.add(renderInfo.toJson()));
+        return jsonArray;
     }
 }

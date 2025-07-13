@@ -34,6 +34,8 @@ import xin.vanilla.sakura.util.*;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -749,11 +751,11 @@ public class SignInScreen extends Screen {
             } else if (I18nUtils.getTranslationClient(EnumI18nType.OPTION, "edit_theme_file").equals(popupOption.getSelectedString())) {
                 // TODO
             } else if (I18nUtils.getTranslationClient(EnumI18nType.OPTION, "create_theme_file").equals(popupOption.getSelectedString())) {
-                Theme theme = new Theme();
+                Theme theme = new Theme(true);
                 ThemeEditScreen themeScreen = new ThemeEditScreen(theme);
                 StringInputScreen.Args args = new StringInputScreen.Args()
                         .setParentScreen(themeScreen)
-                        .addWidget(new StringInputScreen.InputWidget()
+                        .addWidget(new StringInputScreen.Widget()
                                 .setName("name")
                                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_theme_name").setShadow(true))
                                 .setValidator((input) -> {
@@ -763,25 +765,36 @@ public class SignInScreen extends Screen {
                                     return null;
                                 })
                         )
-                        .addWidget(new StringInputScreen.InputWidget()
+                        .addWidget(new StringInputScreen.Widget()
                                 .setName("author")
                                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_author_name").setShadow(true))
                         )
-                        .addWidget(new StringInputScreen.InputWidget()
+                        .addWidget(new StringInputScreen.Widget()
                                 .setName("version")
                                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_theme_version").setShadow(true))
                                 .setDefaultValue("1.0")
                         )
-                        .addWidget(new StringInputScreen.InputWidget()
+                        .addWidget(new StringInputScreen.Widget()
                                 .setName("description")
                                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_theme_description").setShadow(true))
                                 .setAllowEmpty(true)
                         )
-                        .setCallback(input -> theme.setName(input.getValue("name"))
-                                .setAuthor(input.getValue("author"))
-                                .setVersion(input.getValue("version"))
-                                .setDescription(input.getValue("description"))
-                        );
+                        .setCallback(input -> {
+                            theme.setName(input.getValue("name"))
+                                    .setAuthor(input.getValue("author"))
+                                    .setVersion(input.getValue("version"))
+                                    .setDescription(input.getValue("description"));
+                            File dir = SakuraUtils.getThemePath()
+                                    .resolve("edit")
+                                    .resolve(FileUtils.replacePathChar(theme.getName())).toFile();
+                            if (!dir.exists()) dir.mkdirs();
+                            theme.setConfigFile(new File(dir, "config" + SakuraSignIn.THEME_JSON_SUFFIX));
+                            try (FileWriter writer = new FileWriter(theme.getConfigFile())) {
+                                writer.write(JsonUtils.PRETTY_GSON.toJson(theme.toJson()));
+                            } catch (IOException e) {
+                                LOGGER.error("Error saving theme config: ", e);
+                            }
+                        });
                 StringInputScreen inputScreen = new StringInputScreen(args);
                 Minecraft.getInstance().setScreen(inputScreen);
             } else if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT && CollectionUtils.isNotNullOrEmpty(themeFileList)) {

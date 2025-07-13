@@ -1,6 +1,8 @@
 package xin.vanilla.sakura.screen.theme;
 
+import com.google.gson.JsonObject;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import net.minecraft.util.ResourceLocation;
 import xin.vanilla.sakura.config.ClientConfig;
@@ -14,6 +16,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Data
+@NoArgsConstructor
 @Accessors(chain = true)
 public class Theme implements Serializable {
     /**
@@ -33,9 +36,9 @@ public class Theme implements Serializable {
      */
     private String description = "";
     /**
-     * 是否允许二次编辑
+     * 编辑模式
      */
-    private boolean editable;
+    private boolean editing;
     /**
      * 是否启用原版背景渲染
      */
@@ -49,9 +52,16 @@ public class Theme implements Serializable {
      */
     private ThemeComponentList darkComponents = new ThemeComponentList();
     /**
-     * 纹理地图
+     * 纹理地图</br>
+     * TextureId -> Coordinate
      */
-    private Map<String, Coordinate> texureMap = new HashMap<>();
+    private Map<String, Coordinate> textureMap = new HashMap<>();
+
+
+    /**
+     * 主题缓存参数
+     */
+    private transient RenderCondition.Args args = new RenderCondition.Args();
 
 
     /**
@@ -59,9 +69,19 @@ public class Theme implements Serializable {
      */
     private transient File file;
     /**
-     * 主题资源
+     * 主题纹理资源
      */
     private transient ResourceLocation resourceLocation;
+
+    /**
+     * 主题纹理缓存</br>
+     * TextureId -> ResourceLocation
+     */
+    private transient Map<String, ResourceLocation> textureCache = new HashMap<>();
+    /**
+     * 主题配置路径
+     */
+    private transient File configFile;
     /**
      * 主题纹理图片总宽度
      */
@@ -71,10 +91,9 @@ public class Theme implements Serializable {
      */
     private transient int totalHeight;
 
-    /**
-     * 主题缓存参数
-     */
-    private RenderCondition.Args args = new RenderCondition.Args();
+    public Theme(boolean editing) {
+        this.editing = editing;
+    }
 
     public ThemeComponentList getVisible() {
         if (ClientConfig.THEME_ARGS.get().contains("darkComponents")
@@ -92,6 +111,24 @@ public class Theme implements Serializable {
                     .collect(Collectors.toList()))
                     ;
         }
+    }
+
+    public JsonObject toJson() {
+        JsonObject json = new JsonObject();
+        json.addProperty("name", this.name);
+        json.addProperty("author", this.author);
+        json.addProperty("version", this.version);
+        json.addProperty("description", this.description);
+        json.addProperty("editing", this.editing);
+        json.addProperty("minecraftBackground", this.minecraftBackground);
+        json.add("components", this.components.toJson());
+        json.add("darkComponents", this.darkComponents.toJson());
+
+        JsonObject textureMapJson = new JsonObject();
+        this.textureMap.forEach((key, value) -> textureMapJson.add(key, value.toJson()));
+        json.add("textureMap", textureMapJson);
+
+        return json;
     }
 
 }

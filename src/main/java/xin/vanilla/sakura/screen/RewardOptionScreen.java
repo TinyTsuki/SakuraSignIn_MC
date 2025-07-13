@@ -28,6 +28,7 @@ import xin.vanilla.sakura.data.KeyValue;
 import xin.vanilla.sakura.data.Reward;
 import xin.vanilla.sakura.data.RewardList;
 import xin.vanilla.sakura.enums.EnumI18nType;
+import xin.vanilla.sakura.enums.EnumRegex;
 import xin.vanilla.sakura.enums.EnumRewardRule;
 import xin.vanilla.sakura.enums.EnumRewardType;
 import xin.vanilla.sakura.network.packet.RewardOptionRequestToServer;
@@ -304,7 +305,7 @@ public class RewardOptionScreen extends SakuraScreen {
         String regex = rule == EnumRewardRule.RANDOM_REWARD ? "(0?1(\\.0{0,10})?|0(\\.\\d{0,10})?)?" : "[\\d +~/:.T-]*";
         StringInputScreen.Args args = new StringInputScreen.Args()
                 .setParentScreen(callbackScreen)
-                .addWidget(new StringInputScreen.InputWidget()
+                .addWidget(new StringInputScreen.Widget()
                         .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_rule_key_" + rule.getCode()).setShadow(true))
                         .setRegex(regex)
                         .setValidator((input) -> {
@@ -321,7 +322,7 @@ public class RewardOptionScreen extends SakuraScreen {
     private StringInputScreen getCdkRuleKeyInputScreen(Screen callbackScreen, EnumRewardRule rule, String[] key) {
         StringInputScreen.Args args = new StringInputScreen.Args()
                 .setParentScreen(callbackScreen)
-                .addWidget(new StringInputScreen.InputWidget()
+                .addWidget(new StringInputScreen.Widget()
                         .setName("key")
                         .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_rule_key_" + rule.getCode()).setShadow(true))
                         .setRegex("\\w*")
@@ -332,7 +333,7 @@ public class RewardOptionScreen extends SakuraScreen {
                             return null;
                         })
                 )
-                .addWidget(new StringInputScreen.InputWidget()
+                .addWidget(new StringInputScreen.Widget()
                         .setName("valid")
                         .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_valid_until").setShadow(true))
                         .setDefaultValue(DateUtils.toString(DateUtils.addMonth(DateUtils.getClientDate(), 1)))
@@ -343,7 +344,7 @@ public class RewardOptionScreen extends SakuraScreen {
                             return null;
                         })
                 )
-                .addWidget(new StringInputScreen.InputWidget()
+                .addWidget(new StringInputScreen.Widget()
                         .setName("num")
                         .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_num").setShadow(true))
                         .setRegex("\\d*")
@@ -856,10 +857,10 @@ public class RewardOptionScreen extends SakuraScreen {
             else if (I18nUtils.getTranslationClient(EnumI18nType.WORD, "reward_type_" + EnumRewardType.EXP_POINT.getCode()).equalsIgnoreCase(selectedString)) {
                 StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                         .setParentScreen(this)
-                        .addWidget(new StringInputScreen.InputWidget()
+                        .addWidget(new StringInputScreen.Widget()
                                 .setName("count")
                                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_exp_point").setShadow(true))
-                                .setRegex("-?\\d*")
+                                .setRegex(EnumRegex.INTEGER.getRegex())
                                 .setDefaultValue("1")
                                 .setValidator((input) -> {
                                     if (StringUtils.toInt(input.getValue()) <= 0) {
@@ -868,10 +869,10 @@ public class RewardOptionScreen extends SakuraScreen {
                                     return null;
                                 })
                         )
-                        .addWidget(new StringInputScreen.InputWidget()
+                        .addWidget(new StringInputScreen.Widget()
                                 .setName("probability")
                                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                                .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                .setRegex(EnumRegex.PERCENTAGE_5.getRegex())
                                 .setDefaultValue("1")
                         )
                         .setInvisible(() -> StringUtils.isNullOrEmpty(key[0]))
@@ -897,18 +898,18 @@ public class RewardOptionScreen extends SakuraScreen {
             else if (I18nUtils.getTranslationClient(EnumI18nType.WORD, "reward_type_" + EnumRewardType.ECONOMY.getCode()).equalsIgnoreCase(selectedString)) {
                 StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                         .setParentScreen(this)
-                        .addWidget(new StringInputScreen.InputWidget()
+                        .addWidget(new StringInputScreen.Widget()
                                 .setName("amount")
                                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_economy_point").setShadow(true))
-                                .setRegex("-?(?:\\d+\\.\\d+|\\d+|\\.\\d+)")
+                                .setRegex(EnumRegex.DECIMAL.getRegex())
                                 .setDefaultValue("1")
                                 // due to regex can only input +- double number, no need to validate it
                                 .setValidator((input) -> null)
                         )
-                        .addWidget(new StringInputScreen.InputWidget()
+                        .addWidget(new StringInputScreen.Widget()
                                 .setName("probability")
                                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                                .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                .setRegex(EnumRegex.PERCENTAGE_5.getRegex())
                                 .setDefaultValue("1")
                         )
                         .setInvisible(() -> StringUtils.isNullOrEmpty(key[0]))
@@ -934,10 +935,10 @@ public class RewardOptionScreen extends SakuraScreen {
             else if (I18nUtils.getTranslationClient(EnumI18nType.WORD, "reward_type_" + EnumRewardType.EXP_LEVEL.getCode()).equalsIgnoreCase(selectedString)) {
                 StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                         .setParentScreen(this)
-                        .addWidget(new StringInputScreen.InputWidget()
+                        .addWidget(new StringInputScreen.Widget()
                                 .setName("level")
                                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_exp_level").setShadow(true))
-                                .setRegex("-?\\d*")
+                                .setRegex(EnumRegex.INTEGER.getRegex())
                                 .setDefaultValue("1")
                                 .setValidator((input) -> {
                                     if (StringUtils.toInt(input.getValue()) <= 0) {
@@ -946,10 +947,10 @@ public class RewardOptionScreen extends SakuraScreen {
                                     return null;
                                 })
                         )
-                        .addWidget(new StringInputScreen.InputWidget()
+                        .addWidget(new StringInputScreen.Widget()
                                 .setName("probability")
                                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                                .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                .setRegex(EnumRegex.PERCENTAGE_5.getRegex())
                                 .setDefaultValue("1")
                         )
                         .setInvisible(() -> StringUtils.isNullOrEmpty(key[0]))
@@ -975,10 +976,10 @@ public class RewardOptionScreen extends SakuraScreen {
             else if (I18nUtils.getTranslationClient(EnumI18nType.WORD, "reward_type_" + EnumRewardType.SIGN_IN_CARD.getCode()).equalsIgnoreCase(selectedString)) {
                 StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                         .setParentScreen(this)
-                        .addWidget(new StringInputScreen.InputWidget()
+                        .addWidget(new StringInputScreen.Widget()
                                 .setName("card")
                                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_sign_in_card").setShadow(true))
-                                .setRegex("-?\\d*")
+                                .setRegex(EnumRegex.INTEGER.getRegex())
                                 .setDefaultValue("1")
                                 .setValidator((input) -> {
                                     if (StringUtils.toInt(input.getValue()) <= 0) {
@@ -987,10 +988,10 @@ public class RewardOptionScreen extends SakuraScreen {
                                     return null;
                                 })
                         )
-                        .addWidget(new StringInputScreen.InputWidget()
+                        .addWidget(new StringInputScreen.Widget()
                                 .setName("probability")
                                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                                .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                .setRegex(EnumRegex.PERCENTAGE_5.getRegex())
                                 .setDefaultValue("1")
                         )
                         .setInvisible(() -> StringUtils.isNullOrEmpty(key[0]))
@@ -1039,14 +1040,14 @@ public class RewardOptionScreen extends SakuraScreen {
             else if (I18nUtils.getTranslationClient(EnumI18nType.WORD, "reward_type_" + EnumRewardType.MESSAGE.getCode()).equalsIgnoreCase(selectedString)) {
                 StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                         .setParentScreen(this)
-                        .addWidget(new StringInputScreen.InputWidget()
+                        .addWidget(new StringInputScreen.Widget()
                                 .setName("message")
                                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_message").setShadow(true))
                         )
-                        .addWidget(new StringInputScreen.InputWidget()
+                        .addWidget(new StringInputScreen.Widget()
                                 .setName("probability")
                                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                                .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                .setRegex(EnumRegex.PERCENTAGE_5.getRegex())
                                 .setDefaultValue("1")
                         )
                         .setInvisible(() -> StringUtils.isNullOrEmptyEx(key[0]))
@@ -1072,7 +1073,7 @@ public class RewardOptionScreen extends SakuraScreen {
             else if (I18nUtils.getTranslationClient(EnumI18nType.WORD, "reward_type_" + EnumRewardType.COMMAND.getCode()).equalsIgnoreCase(selectedString)) {
                 StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                         .setParentScreen(this)
-                        .addWidget(new StringInputScreen.InputWidget()
+                        .addWidget(new StringInputScreen.Widget()
                                 .setName("command")
                                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_command").setShadow(true))
                                 .setValidator((input) -> {
@@ -1082,10 +1083,10 @@ public class RewardOptionScreen extends SakuraScreen {
                                     return null;
                                 })
                         )
-                        .addWidget(new StringInputScreen.InputWidget()
+                        .addWidget(new StringInputScreen.Widget()
                                 .setName("probability")
                                 .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                                .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                .setRegex(EnumRegex.PERCENTAGE_5.getRegex())
                                 .setDefaultValue("1")
                         )
                         .setInvisible(() -> StringUtils.isNullOrEmpty(key[0]))
@@ -1123,10 +1124,10 @@ public class RewardOptionScreen extends SakuraScreen {
 
                             StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                                     .setParentScreen(this)
-                                    .addWidget(new StringInputScreen.InputWidget()
+                                    .addWidget(new StringInputScreen.Widget()
                                             .setName("key")
                                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_rule_key_" + rule.getCode()).setShadow(true))
-                                            .setRegex("\\w*")
+                                            .setRegex(EnumRegex.WORD.getRegex())
                                             .setDefaultValue(split[0])
                                             .setValidator((input) -> {
                                                 if (!RewardConfigManager.validateKeyName(rule, input.getValue())) {
@@ -1135,7 +1136,7 @@ public class RewardOptionScreen extends SakuraScreen {
                                                 return null;
                                             })
                                     )
-                                    .addWidget(new StringInputScreen.InputWidget()
+                                    .addWidget(new StringInputScreen.Widget()
                                             .setName("valid")
                                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_valid_until").setShadow(true))
                                             .setDefaultValue(split[1])
@@ -1146,10 +1147,10 @@ public class RewardOptionScreen extends SakuraScreen {
                                                 return null;
                                             })
                                     )
-                                    .addWidget(new StringInputScreen.InputWidget()
+                                    .addWidget(new StringInputScreen.Widget()
                                             .setName("num")
                                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_num").setShadow(true))
-                                            .setRegex("\\d*")
+                                            .setRegex(EnumRegex.POSITIVE_INTEGER.getRegex())
                                             .setDefaultValue(split[3])
                                             .setValidator((input) -> {
                                                 if (StringUtils.toInt(input.getValue()) <= 0) {
@@ -1173,7 +1174,7 @@ public class RewardOptionScreen extends SakuraScreen {
                             String validator = rule == EnumRewardRule.RANDOM_REWARD ? "(0?1(\\.0{0,10})?|0(\\.\\d{0,10})?)?" : "[\\d +~/:.T-]*";
                             StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                                     .setParentScreen(this)
-                                    .addWidget(new StringInputScreen.InputWidget()
+                                    .addWidget(new StringInputScreen.Widget()
                                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_rule_key_" + rule.getCode()).setShadow(true))
                                             .setRegex(validator)
                                             .setDefaultValue(key)
@@ -1225,7 +1226,7 @@ public class RewardOptionScreen extends SakuraScreen {
                 }
                 // 删除
                 else if (Component.translatableClient(EnumI18nType.OPTION, "delete").toString().equalsIgnoreCase(selectedString)) {
-                    if (ClientConfig.KEY_REWARD_OPTION_DELETE.get().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
+                    if (ClientConfig.KEY_OPTION_DELETE.get().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
                         editHandler.handleDelete();
                     }
                 }
@@ -1261,10 +1262,10 @@ public class RewardOptionScreen extends SakuraScreen {
                 else if (I18nUtils.getTranslationClient(EnumI18nType.WORD, "reward_type_" + EnumRewardType.EXP_POINT.getCode()).equalsIgnoreCase(selectedString)) {
                     StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                             .setParentScreen(this)
-                            .addWidget(new StringInputScreen.InputWidget()
+                            .addWidget(new StringInputScreen.Widget()
                                     .setName("point")
                                     .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_exp_point").setShadow(true))
-                                    .setRegex("-?\\d*")
+                                    .setRegex(EnumRegex.INTEGER.getRegex())
                                     .setDefaultValue("1")
                                     .setValidator((input) -> {
                                         if (StringUtils.toInt(input.getValue()) <= 0) {
@@ -1273,10 +1274,10 @@ public class RewardOptionScreen extends SakuraScreen {
                                         return null;
                                     })
                             )
-                            .addWidget(new StringInputScreen.InputWidget()
+                            .addWidget(new StringInputScreen.Widget()
                                     .setName("probability")
                                     .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                                    .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                    .setRegex(EnumRegex.PERCENTAGE_5.getRegex())
                                     .setDefaultValue("1")
                             )
                             .setCallback(input -> {
@@ -1293,10 +1294,10 @@ public class RewardOptionScreen extends SakuraScreen {
                 else if (I18nUtils.getTranslationClient(EnumI18nType.WORD, "reward_type_" + EnumRewardType.EXP_LEVEL.getCode()).equalsIgnoreCase(selectedString)) {
                     StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                             .setParentScreen(this)
-                            .addWidget(new StringInputScreen.InputWidget()
+                            .addWidget(new StringInputScreen.Widget()
                                     .setName("level")
                                     .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_exp_level").setShadow(true))
-                                    .setRegex("-?\\d*")
+                                    .setRegex(EnumRegex.INTEGER.getRegex())
                                     .setDefaultValue("1")
                                     .setValidator((input) -> {
                                         if (StringUtils.toInt(input.getValue()) <= 0) {
@@ -1305,10 +1306,10 @@ public class RewardOptionScreen extends SakuraScreen {
                                         return null;
                                     })
                             )
-                            .addWidget(new StringInputScreen.InputWidget()
+                            .addWidget(new StringInputScreen.Widget()
                                     .setName("probability")
                                     .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                                    .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                    .setRegex(EnumRegex.PERCENTAGE_5.getRegex())
                                     .setDefaultValue("1")
                             )
                             .setCallback(input -> {
@@ -1325,10 +1326,10 @@ public class RewardOptionScreen extends SakuraScreen {
                 else if (I18nUtils.getTranslationClient(EnumI18nType.WORD, "reward_type_" + EnumRewardType.SIGN_IN_CARD.getCode()).equalsIgnoreCase(selectedString)) {
                     StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                             .setParentScreen(this)
-                            .addWidget(new StringInputScreen.InputWidget()
+                            .addWidget(new StringInputScreen.Widget()
                                     .setName("card")
                                     .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_sign_in_card").setShadow(true))
-                                    .setRegex("-?\\d*")
+                                    .setRegex(EnumRegex.INTEGER.getRegex())
                                     .setDefaultValue("1")
                                     .setValidator((input) -> {
                                         if (StringUtils.toInt(input.getValue()) <= 0) {
@@ -1337,10 +1338,10 @@ public class RewardOptionScreen extends SakuraScreen {
                                         return null;
                                     })
                             )
-                            .addWidget(new StringInputScreen.InputWidget()
+                            .addWidget(new StringInputScreen.Widget()
                                     .setName("probability")
                                     .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                                    .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                    .setRegex(EnumRegex.PERCENTAGE_5.getRegex())
                                     .setDefaultValue("1")
                             )
                             .setCallback(input -> {
@@ -1372,14 +1373,14 @@ public class RewardOptionScreen extends SakuraScreen {
                 else if (I18nUtils.getTranslationClient(EnumI18nType.WORD, "reward_type_" + EnumRewardType.MESSAGE.getCode()).equalsIgnoreCase(selectedString)) {
                     StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                             .setParentScreen(this)
-                            .addWidget(new StringInputScreen.InputWidget()
+                            .addWidget(new StringInputScreen.Widget()
                                     .setName("message")
                                     .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_message").setShadow(true))
                             )
-                            .addWidget(new StringInputScreen.InputWidget()
+                            .addWidget(new StringInputScreen.Widget()
                                     .setName("probability")
                                     .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                                    .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                    .setRegex(EnumRegex.PERCENTAGE_5.getRegex())
                                     .setDefaultValue("1")
                             )
                             .setCallback(input -> {
@@ -1396,7 +1397,7 @@ public class RewardOptionScreen extends SakuraScreen {
                 else if (I18nUtils.getTranslationClient(EnumI18nType.WORD, "reward_type_" + EnumRewardType.COMMAND.getCode()).equalsIgnoreCase(selectedString)) {
                     StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                             .setParentScreen(this)
-                            .addWidget(new StringInputScreen.InputWidget()
+                            .addWidget(new StringInputScreen.Widget()
                                     .setName("command")
                                     .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_command").setShadow(true))
                                     .setValidator((input) -> {
@@ -1406,10 +1407,10 @@ public class RewardOptionScreen extends SakuraScreen {
                                         return null;
                                     })
                             )
-                            .addWidget(new StringInputScreen.InputWidget()
+                            .addWidget(new StringInputScreen.Widget()
                                     .setName("probability")
                                     .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                                    .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                    .setRegex(EnumRegex.PERCENTAGE_5.getRegex())
                                     .setDefaultValue("1")
                             )
                             .setCallback(input -> {
@@ -1466,10 +1467,10 @@ public class RewardOptionScreen extends SakuraScreen {
                         else if (reward.getType() == EnumRewardType.EXP_POINT) {
                             StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                                     .setParentScreen(this)
-                                    .addWidget(new StringInputScreen.InputWidget()
+                                    .addWidget(new StringInputScreen.Widget()
                                             .setName("point")
                                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_exp_point").setShadow(true))
-                                            .setRegex("-?\\d*")
+                                            .setRegex(EnumRegex.INTEGER.getRegex())
                                             .setDefaultValue(String.valueOf((Integer) RewardManager.deserializeReward(reward)))
                                             .setValidator((input) -> {
                                                 if (StringUtils.toInt(input.getValue()) <= 0) {
@@ -1478,10 +1479,10 @@ public class RewardOptionScreen extends SakuraScreen {
                                                 return null;
                                             })
                                     )
-                                    .addWidget(new StringInputScreen.InputWidget()
+                                    .addWidget(new StringInputScreen.Widget()
                                             .setName("probability")
                                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                                            .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                            .setRegex(EnumRegex.PERCENTAGE_5.getRegex())
                                             .setDefaultValue(StringUtils.toFixedEx(reward.getProbability(), 5))
                                     )
                                     .setCallback(input -> {
@@ -1498,10 +1499,10 @@ public class RewardOptionScreen extends SakuraScreen {
                         else if (reward.getType() == EnumRewardType.EXP_LEVEL) {
                             StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                                     .setParentScreen(this)
-                                    .addWidget(new StringInputScreen.InputWidget()
+                                    .addWidget(new StringInputScreen.Widget()
                                             .setName("level")
                                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_exp_level").setShadow(true))
-                                            .setRegex("-?\\d*")
+                                            .setRegex(EnumRegex.INTEGER.getRegex())
                                             .setDefaultValue(String.valueOf((Integer) RewardManager.deserializeReward(reward)))
                                             .setValidator((input) -> {
                                                 if (StringUtils.toInt(input.getValue()) <= 0) {
@@ -1510,10 +1511,10 @@ public class RewardOptionScreen extends SakuraScreen {
                                                 return null;
                                             })
                                     )
-                                    .addWidget(new StringInputScreen.InputWidget()
+                                    .addWidget(new StringInputScreen.Widget()
                                             .setName("probability")
                                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                                            .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                            .setRegex(EnumRegex.PERCENTAGE_5.getRegex())
                                             .setDefaultValue(StringUtils.toFixedEx(reward.getProbability(), 5))
                                     )
                                     .setCallback(input -> {
@@ -1530,10 +1531,10 @@ public class RewardOptionScreen extends SakuraScreen {
                         else if (reward.getType() == EnumRewardType.SIGN_IN_CARD) {
                             StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                                     .setParentScreen(this)
-                                    .addWidget(new StringInputScreen.InputWidget()
+                                    .addWidget(new StringInputScreen.Widget()
                                             .setName("card")
                                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_sign_in_card").setShadow(true))
-                                            .setRegex("-?\\d*")
+                                            .setRegex(EnumRegex.INTEGER.getRegex())
                                             .setDefaultValue(String.valueOf((Integer) RewardManager.deserializeReward(reward)))
                                             .setValidator((input) -> {
                                                 if (StringUtils.toInt(input.getValue()) <= 0) {
@@ -1542,10 +1543,10 @@ public class RewardOptionScreen extends SakuraScreen {
                                                 return null;
                                             })
                                     )
-                                    .addWidget(new StringInputScreen.InputWidget()
+                                    .addWidget(new StringInputScreen.Widget()
                                             .setName("probability")
                                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                                            .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                            .setRegex(EnumRegex.PERCENTAGE_5.getRegex())
                                             .setDefaultValue(StringUtils.toFixedEx(reward.getProbability(), 5))
                                     )
                                     .setCallback(input -> {
@@ -1577,15 +1578,15 @@ public class RewardOptionScreen extends SakuraScreen {
                         else if (reward.getType() == EnumRewardType.MESSAGE) {
                             StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                                     .setParentScreen(this)
-                                    .addWidget(new StringInputScreen.InputWidget()
+                                    .addWidget(new StringInputScreen.Widget()
                                             .setName("message")
                                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_message").setShadow(true))
                                             .setDefaultValue(RewardManager.deserializeReward(reward).toString())
                                     )
-                                    .addWidget(new StringInputScreen.InputWidget()
+                                    .addWidget(new StringInputScreen.Widget()
                                             .setName("probability")
                                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                                            .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                            .setRegex(EnumRegex.PERCENTAGE_5.getRegex())
                                             .setDefaultValue(StringUtils.toFixedEx(reward.getProbability(), 5))
                                     )
                                     .setCallback(input -> {
@@ -1602,7 +1603,7 @@ public class RewardOptionScreen extends SakuraScreen {
                         else if (reward.getType() == EnumRewardType.COMMAND) {
                             StringInputScreen.Args screenArgs = new StringInputScreen.Args()
                                     .setParentScreen(this)
-                                    .addWidget(new StringInputScreen.InputWidget()
+                                    .addWidget(new StringInputScreen.Widget()
                                             .setName("command")
                                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_command").setShadow(true))
                                             .setDefaultValue(RewardManager.deserializeReward(reward))
@@ -1613,9 +1614,9 @@ public class RewardOptionScreen extends SakuraScreen {
                                                 return null;
                                             })
                                     )
-                                    .addWidget(new StringInputScreen.InputWidget()
+                                    .addWidget(new StringInputScreen.Widget()
                                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                                            .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                                            .setRegex(EnumRegex.PERCENTAGE_5.getRegex())
                                             .setDefaultValue(StringUtils.toFixedEx(reward.getProbability(), 5))
                                     )
                                     .setCallback(input -> {
@@ -1641,7 +1642,7 @@ public class RewardOptionScreen extends SakuraScreen {
                         editHandler.handlePaste();
                     }
                 } else if (Component.translatableClient(EnumI18nType.OPTION, "delete").toString().equalsIgnoreCase(selectedString)) {
-                    if (ClientConfig.KEY_REWARD_OPTION_DELETE.get().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
+                    if (ClientConfig.KEY_OPTION_DELETE.get().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
                         editHandler.handleDelete();
                     }
                 }
@@ -1784,10 +1785,10 @@ public class RewardOptionScreen extends SakuraScreen {
                     if (rule == EnumRewardRule.CDK_REWARD) {
                         StringInputScreen.Args args = new StringInputScreen.Args()
                                 .setParentScreen(screen)
-                                .addWidget(new StringInputScreen.InputWidget()
+                                .addWidget(new StringInputScreen.Widget()
                                         .setName("key")
                                         .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_rule_key_" + rule.getCode()).setShadow(true))
-                                        .setRegex("\\w*")
+                                        .setRegex(EnumRegex.WORD.getRegex())
                                         .setDefaultValue(RewardConfigManager.getCdkRewardKey(RewardClipboardManager.deSerializeRewardList().getKey()))
                                         .setValidator((input) -> {
                                             if (!RewardConfigManager.validateKeyName(rule, input.getValue())) {
@@ -1796,7 +1797,7 @@ public class RewardOptionScreen extends SakuraScreen {
                                             return null;
                                         })
                                 )
-                                .addWidget(new StringInputScreen.InputWidget()
+                                .addWidget(new StringInputScreen.Widget()
                                         .setName("valid")
                                         .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_valid_until").setShadow(true))
                                         .setDefaultValue(DateUtils.toString(DateUtils.addMonth(DateUtils.getClientDate(), 1)))
@@ -1807,10 +1808,10 @@ public class RewardOptionScreen extends SakuraScreen {
                                             return null;
                                         })
                                 )
-                                .addWidget(new StringInputScreen.InputWidget()
+                                .addWidget(new StringInputScreen.Widget()
                                         .setName("num")
                                         .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_num").setShadow(true))
-                                        .setRegex("\\d*")
+                                        .setRegex(EnumRegex.POSITIVE_INTEGER.getRegex())
                                         .setDefaultValue(RewardConfigManager.getCdkRewardNum(RewardClipboardManager.deSerializeRewardList().getKey()) + "")
                                         .setValidator((input) -> {
                                             if (StringUtils.toInt(input.getValue()) <= 0) {
@@ -1837,7 +1838,7 @@ public class RewardOptionScreen extends SakuraScreen {
                         String validator = rule == EnumRewardRule.RANDOM_REWARD ? "(0?1(\\.0{0,10})?|0(\\.\\d{0,10})?)?" : "[\\d +~/:.T-]*";
                         StringInputScreen.Args args = new StringInputScreen.Args()
                                 .setParentScreen(screen)
-                                .addWidget(new StringInputScreen.InputWidget()
+                                .addWidget(new StringInputScreen.Widget()
                                         .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_rule_key_" + rule.getCode()).setShadow(true))
                                         .setRegex(validator)
                                         .setDefaultValue(RewardClipboardManager.deSerializeRewardList().getKey())
@@ -2343,27 +2344,27 @@ public class RewardOptionScreen extends SakuraScreen {
     public void keyReleased_(KeyReleasedHandleArgs args) {
 
         // Ctrl + C
-        if (ClientConfig.KEY_REWARD_OPTION_COPY.get().stream().anyMatch(keyManager::isKeyPressed)) {
+        if (ClientConfig.KEY_OPTION_COPY.get().stream().anyMatch(keyManager::isKeyPressed)) {
             args.setConsumed(editHandler.handleCopy());
         }
         // Ctrl + V
-        else if (ClientConfig.KEY_REWARD_OPTION_PASTE.get().stream().anyMatch(keyManager::isKeyPressed)) {
+        else if (ClientConfig.KEY_OPTION_PASTE.get().stream().anyMatch(keyManager::isKeyPressed)) {
             args.setConsumed(editHandler.handlePaste());
         }
         // Ctrl + X
-        else if (ClientConfig.KEY_REWARD_OPTION_CUT.get().stream().anyMatch(keyManager::isKeyPressed)) {
+        else if (ClientConfig.KEY_OPTION_CUT.get().stream().anyMatch(keyManager::isKeyPressed)) {
             args.setConsumed(editHandler.handleCut());
         }
         // Ctrl + Y / DELETE
-        else if (ClientConfig.KEY_REWARD_OPTION_DELETE.get().stream().anyMatch(keyManager::isKeyPressed)) {
+        else if (ClientConfig.KEY_OPTION_DELETE.get().stream().anyMatch(keyManager::isKeyPressed)) {
             args.setConsumed(editHandler.handleDelete());
         }
         // Ctrl + Z
-        else if (ClientConfig.KEY_REWARD_OPTION_UNDO.get().stream().anyMatch(keyManager::isKeyPressed)) {
+        else if (ClientConfig.KEY_OPTION_UNDO.get().stream().anyMatch(keyManager::isKeyPressed)) {
             args.setConsumed(editHandler.handleUndo());
         }
         // Ctrl + Shift + Z
-        else if (ClientConfig.KEY_REWARD_OPTION_REDO.get().stream().anyMatch(keyManager::isKeyPressed)) {
+        else if (ClientConfig.KEY_OPTION_REDO.get().stream().anyMatch(keyManager::isKeyPressed)) {
             args.setConsumed(editHandler.handleRedo());
         }
 
@@ -2371,11 +2372,6 @@ public class RewardOptionScreen extends SakuraScreen {
 
     @Override
     void onClose_() {
-    }
-
-    @Override
-    public boolean shouldCloseOnEsc() {
-        return false;
     }
 
     /**

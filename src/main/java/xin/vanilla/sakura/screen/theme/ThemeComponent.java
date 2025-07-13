@@ -1,5 +1,6 @@
 package xin.vanilla.sakura.screen.theme;
 
+import com.google.gson.JsonObject;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import xin.vanilla.sakura.enums.EnumThemeComponentType;
@@ -76,6 +77,21 @@ public class ThemeComponent implements Serializable {
 
     public boolean isVisible(RenderCondition.Args args) {
         return this.condition == null || condition.isValid(args);
+    }
+
+    public JsonObject toJson() {
+        JsonObject json = new JsonObject();
+        json.addProperty("id", this.id);
+        json.addProperty("parentId", this.parentId);
+        json.addProperty("type", this.type.name());
+        json.addProperty("param", this.param);
+        if (this.condition != null) {
+            json.add("condition", this.condition.toJson());
+        }
+        json.add("renderList", this.renderList.toJson());
+        json.add("hoverRenderList", this.hoverRenderList.toJson());
+        json.add("tapRenderList", this.tapRenderList.toJson());
+        return json;
     }
 
 }

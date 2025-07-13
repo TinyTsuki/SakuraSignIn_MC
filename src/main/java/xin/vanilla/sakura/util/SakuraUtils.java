@@ -646,8 +646,12 @@ public class SakuraUtils {
     /**
      * 获取主题路径
      */
-    public static Path getThemePath() {
-        return getConfigPath().resolve("themes");
+    public static Path getThemePath(String... relativePath) {
+        Path path = getConfigPath().resolve("themes");
+        for (String node : relativePath) {
+            path = path.resolve(node);
+        }
+        return path;
     }
 
     /**

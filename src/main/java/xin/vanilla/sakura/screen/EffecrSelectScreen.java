@@ -20,6 +20,7 @@ import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.data.Reward;
 import xin.vanilla.sakura.enums.EnumI18nType;
+import xin.vanilla.sakura.enums.EnumRegex;
 import xin.vanilla.sakura.enums.EnumRewardType;
 import xin.vanilla.sakura.rewards.RewardManager;
 import xin.vanilla.sakura.rewards.impl.EffectRewardParser;
@@ -538,7 +539,7 @@ public class EffecrSelectScreen extends Screen {
             String effectRewardJsonString = GSON.toJson(this.currentEffect.getContent());
             StringInputScreen.Args args = new StringInputScreen.Args()
                     .setParentScreen(this)
-                    .addWidget(new StringInputScreen.InputWidget()
+                    .addWidget(new StringInputScreen.Widget()
                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_effect_json").setShadow(true))
                             .setMessage(Text.translatable(EnumI18nType.TIPS, "enter_something"))
                             .setDefaultValue(effectRewardJsonString)
@@ -563,7 +564,7 @@ public class EffecrSelectScreen extends Screen {
         else if (bt.getOperation() == OperationButtonType.DURATION.getCode()) {
             StringInputScreen.Args args = new StringInputScreen.Args()
                     .setParentScreen(this)
-                    .addWidget(new StringInputScreen.InputWidget()
+                    .addWidget(new StringInputScreen.Widget()
                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_effect_duration").setShadow(true))
                             .setMessage(Text.translatable(EnumI18nType.TIPS, "enter_something"))
                             .setRegex("\\d{0,4}")
@@ -587,7 +588,7 @@ public class EffecrSelectScreen extends Screen {
         else if (bt.getOperation() == OperationButtonType.AMPLIFIER.getCode()) {
             StringInputScreen.Args args = new StringInputScreen.Args()
                     .setParentScreen(this)
-                    .addWidget(new StringInputScreen.InputWidget()
+                    .addWidget(new StringInputScreen.Widget()
                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_effect_amplifier").setShadow(true))
                             .setDefaultValue(String.valueOf(((EffectInstance) RewardManager.deserializeReward(this.currentEffect)).getAmplifier() + 1))
                             .setValidator((input) -> {
@@ -609,9 +610,9 @@ public class EffecrSelectScreen extends Screen {
         else if (bt.getOperation() == OperationButtonType.PROBABILITY.getCode()) {
             StringInputScreen.Args args = new StringInputScreen.Args()
                     .setParentScreen(this)
-                    .addWidget(new StringInputScreen.InputWidget()
+                    .addWidget(new StringInputScreen.Widget()
                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                            .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                            .setRegex(EnumRegex.PERCENTAGE_5.getRegex())
                             .setDefaultValue(StringUtils.toFixedEx(this.probability, 5))
                             .setValidator((input) -> {
                                 BigDecimal p = StringUtils.toBigDecimal(input.getValue());

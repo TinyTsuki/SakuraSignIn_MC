@@ -18,6 +18,7 @@ import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.data.Reward;
 import xin.vanilla.sakura.enums.EnumI18nType;
+import xin.vanilla.sakura.enums.EnumRegex;
 import xin.vanilla.sakura.enums.EnumRewardType;
 import xin.vanilla.sakura.network.data.AdvancementData;
 import xin.vanilla.sakura.rewards.RewardManager;
@@ -512,7 +513,7 @@ public class AdvancementSelectScreen extends Screen {
             String effectRewardJsonString = GSON.toJson(this.currentAdvancement.getContent());
             StringInputScreen.Args args = new StringInputScreen.Args()
                     .setParentScreen(this)
-                    .addWidget(new StringInputScreen.InputWidget()
+                    .addWidget(new StringInputScreen.Widget()
                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_advancement_json").setShadow(true))
                             .setMessage(Text.translatable(EnumI18nType.TIPS, "enter_something"))
                             .setDefaultValue(effectRewardJsonString)
@@ -538,10 +539,10 @@ public class AdvancementSelectScreen extends Screen {
         else if (bt.getOperation() == OperationButtonType.PROBABILITY.getCode()) {
             StringInputScreen.Args args = new StringInputScreen.Args()
                     .setParentScreen(this)
-                    .addWidget(new StringInputScreen.InputWidget()
+                    .addWidget(new StringInputScreen.Widget()
                             .setTitle(Text.translatable(EnumI18nType.TIPS, "enter_reward_probability").setShadow(true))
                             .setMessage(Text.translatable(EnumI18nType.TIPS, "enter_something"))
-                            .setRegex("(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
+                            .setRegex(EnumRegex.PERCENTAGE_5.getRegex())
                             .setDefaultValue(StringUtils.toFixedEx(this.probability, 5))
                             .setValidator((input) -> {
                                 BigDecimal p = StringUtils.toBigDecimal(input.getValue());

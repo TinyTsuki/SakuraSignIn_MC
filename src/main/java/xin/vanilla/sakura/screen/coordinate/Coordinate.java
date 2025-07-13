@@ -1,5 +1,6 @@
 package xin.vanilla.sakura.screen.coordinate;
 
+import com.google.gson.JsonObject;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
@@ -67,7 +68,7 @@ public class Coordinate implements Cloneable, Serializable {
     }
 
     public Coordinate readUV(Theme theme) {
-        Coordinate coordinate = theme.getTexureMap().getOrDefault(this.textureId, this);
+        Coordinate coordinate = theme.getTextureMap().getOrDefault(this.textureId, this);
         this.u0 = coordinate.getU0();
         this.v0 = coordinate.getV0();
         this.uWidth = coordinate.getUWidth();
@@ -75,6 +76,34 @@ public class Coordinate implements Cloneable, Serializable {
         this.uvWidth = coordinate.getUvWidth();
         this.uvHeight = coordinate.getUvHeight();
         return this;
+    }
+
+    public JsonObject toJson() {
+        JsonObject json = new JsonObject();
+        if (this.parent != null) {
+            json.add("parent", this.parent.toJson());
+        }
+        json.addProperty("x", this.x);
+        json.addProperty("y", this.y);
+        json.addProperty("xType", this.xType.name());
+        json.addProperty("yType", this.yType.name());
+
+        json.addProperty("width", this.width);
+        json.addProperty("height", this.height);
+        json.addProperty("wType", this.wType.name());
+        json.addProperty("hType", this.hType.name());
+
+        json.addProperty("u0", this.u0);
+        json.addProperty("v0", this.v0);
+        json.addProperty("uWidth", this.uWidth);
+        json.addProperty("vHeight", this.vHeight);
+
+        json.addProperty("uvWidth", this.uvWidth);
+        json.addProperty("uvHeight", this.uvHeight);
+
+        json.addProperty("textureId", this.textureId);
+
+        return json;
     }
 
 }

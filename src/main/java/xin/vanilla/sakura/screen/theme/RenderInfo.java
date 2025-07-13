@@ -1,5 +1,6 @@
 package xin.vanilla.sakura.screen.theme;
 
+import com.google.gson.JsonObject;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import xin.vanilla.sakura.enums.EnumRotationCenter;
@@ -97,5 +98,25 @@ public class RenderInfo implements Serializable, Cloneable {
 
     public boolean hasTooltipInfo() {
         return this.tooltip != null;
+    }
+
+    public JsonObject toJson() {
+        JsonObject json = new JsonObject();
+        json.add("coordinate", this.coordinate.toJson());
+        json.addProperty("bgColor", this.bgColor);
+        json.addProperty("fgColor", this.fgColor);
+        json.addProperty("depth", this.depth);
+        json.addProperty("rotationAngle", this.rotationAngle);
+        json.addProperty("rotationCenter", this.rotationCenter.name());
+        json.addProperty("flipHorizontal", this.flipHorizontal);
+        json.addProperty("flipVertical", this.flipVertical);
+        json.addProperty("scale", this.scale);
+        json.addProperty("alpha", this.alpha);
+        json.addProperty("fillType", this.fillType.name());
+        if (this.text != null)
+            json.add("text", Component.serialize(this.text));
+        if (this.tooltip != null)
+            json.add("tooltip", Component.serialize(this.tooltip));
+        return json;
     }
 }

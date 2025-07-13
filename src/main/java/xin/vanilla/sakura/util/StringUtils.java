@@ -4,8 +4,11 @@ package xin.vanilla.sakura.util;
 import lombok.NonNull;
 import xin.vanilla.sakura.enums.EnumMCColor;
 
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -175,30 +178,6 @@ public class StringUtils {
     public static int getLineCount(String s) {
         if (StringUtils.isNullOrEmpty(s)) return 0;
         return StringUtils.replaceLine(s).split("\n").length;
-    }
-
-    /**
-     * 替换路径保留符
-     */
-    public static String replacePathChar(String name) {
-        if (StringUtils.isNullOrEmptyEx(name)) return "_";
-
-        // 替换非法字符为 _
-        String sanitized = name.replaceAll("[\\\\/:*?\"<>|]", "_");
-
-        // 删除控制字符（ASCII < 32）
-        sanitized = sanitized.replaceAll("\\p{Cntrl}", "_");
-
-        if (sanitized.equals(".") || sanitized.equals("..")) {
-            sanitized = "_";
-        }
-
-        // 避免空文件名
-        if (sanitized.isEmpty()) {
-            sanitized = "_";
-        }
-
-        return sanitized;
     }
 
     public static int toInt(String s) {
@@ -487,6 +466,45 @@ public class StringUtils {
         Arrays.fill(chars, paddingChar);
 
         return left ? new String(chars) + str : str + new String(chars);
+    }
+
+    public static String md5(byte[] data) {
+        return digest(data);
+    }
+
+    public static String md5(String text) {
+        return digest(text.getBytes(StandardCharsets.UTF_8));
+    }
+
+    public static String md5(InputStream input) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte[] buffer = new byte[8192];
+            int len;
+            while ((len = input.read(buffer)) != -1) {
+                md.update(buffer, 0, len);
+            }
+            return bytesToHex(md.digest());
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static String digest(byte[] data) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            return bytesToHex(md.digest(data));
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static String bytesToHex(byte[] bytes) {
+        StringBuilder hex = new StringBuilder();
+        for (byte b : bytes) {
+            hex.append(String.format("%02x", b & 0xff));
+        }
+        return hex.toString();
     }
 
 }
