@@ -12,7 +12,6 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.config.RewardConfig;
@@ -27,15 +26,14 @@ import xin.vanilla.sakura.enums.ESignInType;
 import xin.vanilla.sakura.enums.ETimeCoolingMethod;
 import xin.vanilla.sakura.network.packet.SignInPacket;
 import xin.vanilla.sakura.rewards.impl.*;
-import xin.vanilla.sakura.util.Component;
 import xin.vanilla.sakura.util.*;
+import xin.vanilla.sakura.util.Component;
 
 import java.awt.*;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.List;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
@@ -653,12 +651,11 @@ public class RewardManager {
         // 尝试将物品堆添加到玩家的库存中
         boolean added = player.getInventory().add(itemStack);
         // 如果物品堆无法添加到库存，则以物品实体的形式生成在世界上
-        if (!added && drop) {
-            ItemEntity itemEntity = new ItemEntity(player.level(), player.getX(), player.getY(), player.getZ(), itemStack);
-            try (Level level = player.level()) {
-                added = level.addFreshEntity(itemEntity);
-            } catch (IOException e) {
-                LOGGER.error("Failed to add item entity to world", e);
+        if (!added && !itemStack.isEmpty() && drop) {
+            ItemEntity itemEntity = player.drop(itemStack, false);
+            if (itemEntity != null) {
+                itemEntity.setNoPickUpDelay();
+                itemEntity.setThrower(player.getUUID());
             }
         }
         return added;
