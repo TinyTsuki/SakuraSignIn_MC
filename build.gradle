@@ -5,6 +5,8 @@ plugins {
     // 若以上行报错则大概率为网络问题, 请切换网络并刷新Gradle
 }
 
+def javaVer = 16
+
 group = mod_group_id
 version = mod_version
 
@@ -13,7 +15,7 @@ base {
 }
 
 java {
-    toolchain.languageVersion = JavaLanguageVersion.of(16)
+    toolchain.languageVersion = JavaLanguageVersion.of(javaVer)
 }
 
 minecraft {
