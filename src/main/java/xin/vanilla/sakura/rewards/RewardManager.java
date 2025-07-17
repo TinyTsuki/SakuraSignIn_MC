@@ -25,14 +25,14 @@ import xin.vanilla.sakura.enums.ESignInType;
 import xin.vanilla.sakura.enums.ETimeCoolingMethod;
 import xin.vanilla.sakura.network.packet.SignInPacket;
 import xin.vanilla.sakura.rewards.impl.*;
-import xin.vanilla.sakura.util.Component;
 import xin.vanilla.sakura.util.*;
+import xin.vanilla.sakura.util.Component;
 
 import java.awt.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.List;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
@@ -650,9 +650,12 @@ public class RewardManager {
         // 尝试将物品堆添加到玩家的库存中
         boolean added = player.getInventory().add(itemStack);
         // 如果物品堆无法添加到库存，则以物品实体的形式生成在世界上
-        if (!added && drop) {
-            ItemEntity itemEntity = new ItemEntity(player.level, player.getX(), player.getY(), player.getZ(), itemStack);
-            added = player.level.addFreshEntity(itemEntity);
+        if (!added && !itemStack.isEmpty() && drop) {
+            ItemEntity itemEntity = player.drop(itemStack, false);
+            if (itemEntity != null) {
+                itemEntity.setNoPickUpDelay();
+                itemEntity.setThrower(player.getUUID());
+            }
         }
         return added;
     }
