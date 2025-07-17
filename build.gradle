@@ -7,6 +7,8 @@ plugins {
     // 若以上行报错则大概率为网络问题, 请切换网络并刷新Gradle
 }
 
+def javaVer = 21
+
 group = mod_group_id
 version = mod_version
 
@@ -15,7 +17,7 @@ base {
 }
 
 java {
-    toolchain.languageVersion = JavaLanguageVersion.of(21)
+    toolchain.languageVersion = JavaLanguageVersion.of(javaVer)
 }
 
 //minecraft.accessTransformers.file rootProject.file('src/main/resources/META-INF/accesstransformer.cfg')
