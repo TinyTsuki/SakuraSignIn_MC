@@ -1022,7 +1022,7 @@ public class RewardOptionScreen extends SakuraScreen {
                             if (input != null && StringUtils.isNotNullOrEmpty(input.toString()) && StringUtils.isNotNullOrEmpty(key[0])) {
                                 RewardConfigManager.addUndoRewardOption(rule);
                                 RewardConfigManager.clearRedoList();
-                                RewardConfigManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(input, EnumRewardType.ADVANCEMENT), EnumRewardType.ADVANCEMENT));
+                                RewardConfigManager.addReward(rule, key[0], input);
                                 RewardConfigManager.saveRewardOption();
                             }
                         });
