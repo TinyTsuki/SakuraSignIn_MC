@@ -1,8 +1,10 @@
 package xin.vanilla.sakura.rewards.impl;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.datafixers.util.Pair;
+import com.mojang.serialization.DataResult;
 import com.mojang.serialization.JsonOps;
 import lombok.NonNull;
 import net.minecraft.core.component.DataComponentMap;
@@ -27,22 +29,23 @@ public class ItemRewardParser implements RewardParser<ItemStack> {
             jsonObject.add("components", jsonObject.remove("nbt"));
         }
         ItemStack first = ItemStack.CODEC.decode(JsonOps.INSTANCE, jsonObject).result().orElse(new Pair<>(null, null)).getFirst();
-        if (first == null) {
+        if (first == null && jsonObject.has("id")) {
             try {
                 String itemId = jsonObject.get("id").getAsString();
-                int count = jsonObject.get("count").getAsInt();
-                count = Math.max(count, 1);
+                int count = 1;
+                if (jsonObject.has("count")) {
+                    count = Math.max(jsonObject.get("count").getAsInt(), 1);
+                }
                 Item item = BuiltInRegistries.ITEM.get(ResourceLocation.parse(itemId));
                 if (item == null) {
                     item = Items.AIR;
                 }
                 first = new ItemStack(item, count);
             } catch (Exception e) {
-                LOGGER.debug("Failed to parse item reward");
-                first = new ItemStack(Items.AIR);
+                LOGGER.debug("Failed to parse item reward", e);
             }
         }
-        return first;
+        return first == null ? new ItemStack(Items.AIR) : first;
     }
 
     private static JsonObject getJsonObject(ItemStack reward) {
@@ -100,8 +103,18 @@ public class ItemRewardParser implements RewardParser<ItemStack> {
 
     public static String getNbtString(ItemStack itemStack) {
         JsonObject json = new JsonObject();
-        if (!itemStack.getComponents().isEmpty()) {
-            json = DataComponentMap.CODEC.encodeStart(JsonOps.INSTANCE, itemStack.getComponents()).result().orElse(new JsonObject()).getAsJsonObject();
+        try {
+            if (!itemStack.getComponents().isEmpty()) {
+                DataResult<JsonElement> jsonElementDataResult = DataComponentMap.CODEC.encodeStart(JsonOps.INSTANCE, itemStack.getComponents());
+                if (jsonElementDataResult != null) {
+                    json = jsonElementDataResult
+                            .result()
+                            .orElse(new JsonObject())
+                            .getAsJsonObject();
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.error("Failed to parse NBT data", e);
         }
         return json.toString();
     }
