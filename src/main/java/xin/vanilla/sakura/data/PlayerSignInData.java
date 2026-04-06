@@ -7,6 +7,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import xin.vanilla.sakura.config.KeyValue;
+import xin.vanilla.sakura.config.ServerConfig;
 import xin.vanilla.sakura.rewards.RewardManager;
 import xin.vanilla.sakura.util.DateUtils;
 import xin.vanilla.sakura.util.SakuraUtils;
@@ -17,7 +18,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 /**
  * 玩家签到数据
@@ -141,6 +141,24 @@ public class PlayerSignInData implements IPlayerSignInData {
     }
 
     @Override
+    public void trimSignInRecordsForRetention() {
+        Date anchor = DateUtils.toTheDayStart(RewardManager.getCompensateDate(DateUtils.getServerDate()));
+        int detailDays = ServerConfig.SIGN_IN_RECORD_DETAIL_RETENTION_DAYS.get();
+        if (detailDays > 0) {
+            int detailCutoffInt = DateUtils.toDateInt(DateUtils.addDay(anchor, -detailDays));
+            for (SignInRecord r : this.getSignInRecords()) {
+                if (DateUtils.toDateInt(r.getCompensateTime()) < detailCutoffInt) {
+                    r.stripDetailsPreservingSignInState();
+                }
+            }
+        }
+        int configured = ServerConfig.SIGN_IN_RECORD_RETENTION_DAYS.get();
+        int effective = Math.max(configured, ServerConfig.RE_SIGN_IN_DAYS.get() + 45);
+        int cutoffInt = DateUtils.toDateInt(DateUtils.addDay(anchor, -effective));
+        this.getSignInRecords().removeIf(r -> DateUtils.toDateInt(r.getCompensateTime()) < cutoffInt);
+    }
+
+    @Override
     public @NonNull List<KeyValue<String, KeyValue<Date, Boolean>>> getCdkRecords() {
         if (this.cdkRecords == null) {
             this.cdkRecords = new ArrayList<>();
@@ -179,7 +197,7 @@ public class PlayerSignInData implements IPlayerSignInData {
 
     public void writeToBuffer(FriendlyByteBuf buffer) {
         buffer.writeInt(this.getTotalSignInDays());
-        buffer.writeInt(this.calculateContinuousDays());
+        buffer.writeInt(this.getContinuousSignInDays());
         buffer.writeUtf(DateUtils.toDateTimeString(this.getLastSignInTime()));
         buffer.writeInt(this.getSignInCard());
         buffer.writeBoolean(this.isAutoRewarded());
@@ -219,13 +237,14 @@ public class PlayerSignInData implements IPlayerSignInData {
 
     public void copyFrom(IPlayerSignInData capability) {
         this.totalSignInDays.set(capability.getTotalSignInDays());
-        this.continuousSignInDays.set(capability.calculateContinuousDays());
+        this.continuousSignInDays.set(capability.getContinuousSignInDays());
         this.lastSignInTime = capability.getLastSignInTime();
         this.signInCard.set(capability.getSignInCard());
         this.autoRewarded = capability.isAutoRewarded();
         this.language = capability.getLanguage();
         this.setSignInRecords(capability.getSignInRecords());
         this.setCdkRecords(capability.getCdkRecords());
+        this.trimSignInRecordsForRetention();
     }
 
     @Override
@@ -233,7 +252,7 @@ public class PlayerSignInData implements IPlayerSignInData {
         // 创建一个CompoundNBT对象，并将玩家的分数和活跃状态写入其中
         CompoundTag tag = new CompoundTag();
         tag.putInt("totalSignInDays", this.getTotalSignInDays());
-        tag.putInt("continuousSignInDays", this.calculateContinuousDays());
+        tag.putInt("continuousSignInDays", this.getContinuousSignInDays());
         tag.putString("lastSignInTime", DateUtils.toDateTimeString(this.getLastSignInTime()));
         tag.putInt("signInCard", this.getSignInCard());
         tag.putBoolean("autoRewarded", this.isAutoRewarded());
@@ -276,6 +295,14 @@ public class PlayerSignInData implements IPlayerSignInData {
             records.add(SignInRecord.readFromNBT(recordsNBT.getCompound(i)));
         }
         this.setSignInRecords(records);
+        List<Date> compensateDates = new ArrayList<>();
+        for (SignInRecord r : this.getSignInRecords()) {
+            compensateDates.add(r.getCompensateTime());
+        }
+        if (!compensateDates.isEmpty()) {
+            this.setContinuousSignInDays(DateUtils.calculateContinuousDays(compensateDates, RewardManager.getCompensateDate(DateUtils.getServerDate())));
+        }
+        this.trimSignInRecordsForRetention();
 
         ListTag cdkRecordsNBT = nbt.getList("cdkRecords", 10); // 10 是 CompoundNBT 的类型ID
         List<KeyValue<String, KeyValue<Date, Boolean>>> cdkRecords = new ArrayList<>();
@@ -292,11 +319,6 @@ public class PlayerSignInData implements IPlayerSignInData {
     }
 
     public int calculateContinuousDays() {
-        try {
-            return DateUtils.calculateContinuousDays(this.getSignInRecords().stream().map(SignInRecord::getCompensateTime).collect(Collectors.toList())
-                    , RewardManager.getCompensateDate(DateUtils.getServerDate()));
-        } catch (Exception e) {
-            return 0;
-        }
+        return this.getContinuousSignInDays();
     }
 }

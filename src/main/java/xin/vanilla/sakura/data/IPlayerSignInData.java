@@ -115,6 +115,11 @@ public interface IPlayerSignInData extends INBTSerializable<CompoundTag> {
     void setSignInRecords(List<SignInRecord> records);
 
     /**
+     * 按服务器配置裁剪过旧的签到记录，避免列表无限增长
+     */
+    void trimSignInRecordsForRetention();
+
+    /**
      * 获取CDK输入记录
      */
     @NonNull

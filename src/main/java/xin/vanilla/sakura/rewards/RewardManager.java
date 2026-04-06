@@ -122,7 +122,7 @@ public class RewardManager {
      * @param signInData 玩家签到数据
      */
     public static int getTotalSignInDays(IPlayerSignInData signInData) {
-        return (int) signInData.getSignInRecords().stream().map(SignInRecord::getCompensateTime).map(DateUtils::toDateInt).distinct().count();
+        return signInData.getTotalSignInDays();
     }
 
     /**
@@ -577,6 +577,7 @@ public class RewardManager {
             signInData.getSignInRecords().add(signInRecord);
             signInData.setContinuousSignInDays(DateUtils.calculateContinuousDays(signInData.getSignInRecords().stream().map(SignInRecord::getCompensateTime).collect(Collectors.toList()), serverCompensateDate));
             signInData.plusTotalSignInDays();
+            signInData.trimSignInRecordsForRetention();
             SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "sign_in_success_s", DateUtils.toString(signInRecord.getCompensateTime()), signInData.calculateContinuousDays(), getTotalSignInDays(signInData)));
         }
         signInData.save(player);

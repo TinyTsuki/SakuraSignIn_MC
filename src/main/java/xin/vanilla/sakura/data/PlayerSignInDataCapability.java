@@ -10,6 +10,10 @@ import net.minecraftforge.network.PacketDistributor;
 import xin.vanilla.sakura.network.ModNetworkHandler;
 import xin.vanilla.sakura.network.packet.PlayerDataSyncPacket;
 
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * 玩家签到数据能力
  */
@@ -17,6 +21,9 @@ public class PlayerSignInDataCapability {
     // 定义 Capability 实例
     public static Capability<IPlayerSignInData> PLAYER_DATA = CapabilityManager.get(new CapabilityToken<>() {
     });
+
+    private static final int PENDING_RESYNC_MIN_INTERVAL_TICKS = 100;
+    private static final Map<UUID, Long> lastPendingResyncGameTime = new ConcurrentHashMap<>();
 
     /**
      * 获取玩家签到数据
@@ -51,10 +58,31 @@ public class PlayerSignInDataCapability {
      * 同步玩家签到数据到客户端
      */
     public static void syncPlayerData(ServerPlayer player) {
-        // 创建自定义包并发送到客户端
         PlayerDataSyncPacket packet = new PlayerDataSyncPacket(player.getUUID(), PlayerSignInDataCapability.getData(player));
         for (PlayerDataSyncPacket syncPacket : packet.split()) {
             ModNetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), syncPacket);
         }
+    }
+
+    /**
+     * 客户端尚未确认收到数据时的重试同步，限制频率避免每 tick 全量序列化
+     */
+    public static void syncPlayerDataWhilePendingAck(ServerPlayer player) {
+        UUID id = player.getUUID();
+        long gameTime = player.serverLevel().getGameTime();
+        Long last = lastPendingResyncGameTime.get(id);
+        if (last != null && gameTime - last < PENDING_RESYNC_MIN_INTERVAL_TICKS) {
+            return;
+        }
+        lastPendingResyncGameTime.put(id, gameTime);
+        syncPlayerData(player);
+    }
+
+    public static void onPlayerDataAcknowledged(ServerPlayer player) {
+        lastPendingResyncGameTime.remove(player.getUUID());
+    }
+
+    public static void clearPlayerDataSyncState(UUID playerId) {
+        lastPendingResyncGameTime.remove(playerId);
     }
 }

@@ -4,6 +4,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
 import xin.vanilla.sakura.SakuraSignIn;
+import xin.vanilla.sakura.data.PlayerSignInDataCapability;
 
 import java.util.function.Supplier;
 
@@ -25,6 +26,7 @@ public class PlayerDataReceivedNotice {
             ServerPlayer player = ctx.get().getSender();
             if (player != null) {
                 SakuraSignIn.getPlayerCapabilityStatus().put(player.getUUID().toString(), true);
+                PlayerSignInDataCapability.onPlayerDataAcknowledged(player);
             }
         });
         // 设置数据包已处理状态，防止重复处理

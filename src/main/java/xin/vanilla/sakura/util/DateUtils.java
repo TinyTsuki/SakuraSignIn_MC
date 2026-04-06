@@ -738,6 +738,7 @@ public class DateUtils {
         if (dateList == null || dateList.isEmpty()) {
             return 0;
         }
+        dateList = new ArrayList<>(dateList);
         dateList.add(current);
         dateList = dateList.stream()
                 .map(DateUtils::toDateInt)

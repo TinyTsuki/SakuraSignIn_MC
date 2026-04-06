@@ -70,6 +70,14 @@ public class ServerConfig {
      */
     public static final ForgeConfigSpec.IntValue PLAYER_DATA_SYNC_PACKET_SIZE;
     /**
+     * 签到记录在存档/同步中保留的日历天数（更早的记录会被丢弃以控制体积；实际保留天数不会小于补签可回溯天数）
+     */
+    public static final ForgeConfigSpec.IntValue SIGN_IN_RECORD_RETENTION_DAYS;
+    /**
+     * 签到记录保留「完整奖励明细」的天数；更早的记录仍保留该日是否已签/是否已领奖，但清空奖励列表等细节以减小存档与同步
+     */
+    public static final ForgeConfigSpec.IntValue SIGN_IN_RECORD_DETAIL_RETENTION_DAYS;
+    /**
      * 服务器默认语言
      */
     public static final ForgeConfigSpec.ConfigValue<String> DEFAULT_LANGUAGE;
@@ -259,6 +267,21 @@ public class ServerConfig {
                             , "please reduce this value."
                             , "玩家数据同步网络包的大小。当玩家签到数据量过大，导致玩家进入服务器报错『无效的玩家数据』时请将此值改小。")
                     .defineInRange("playerDataSyncPacketSize", 100, 1, 1024);
+
+            SIGN_IN_RECORD_RETENTION_DAYS = SERVER_BUILDER
+                    .comment("How many calendar days of per-day sign-in records to keep (by compensated sign-in date). Older records are removed to cap save size and sync cost."
+                            , "Effective retention is at least (reSignInDays + 45) so make-up sign-in and calendar UI still work."
+                            , "累计签到天数与连续签到数以已保存的统计字段为准；裁剪仅影响历史某天的奖励明细展示。"
+                            , "按校准签到日保留多少天的逐日签到记录，更早的会被删除以控制存档与同步体积。"
+                            , "实际保留天数至少为「补签可回溯天数 + 45」，以保证补签与日历界面所需数据。")
+                    .defineInRange("signInRecordRetentionDays", 400, 45, 3650);
+
+            SIGN_IN_RECORD_DETAIL_RETENTION_DAYS = SERVER_BUILDER
+                    .comment("For sign-in records older than this many calendar days (by compensated sign-in date), drop reward list and other details but keep the day and rewarded flag."
+                            , "Set to 0 to disable stripping (keep full details until records are removed by signInRecordRetentionDays)."
+                            , "超过该天数（按校准签到日）的签到记录会清空奖励明细，仅保留是否签到与是否已领奖，以减小体积。"
+                            , "填 0 表示不按天数剥离明细（仅在达到 signInRecordRetentionDays 时整段删除记录）。")
+                    .defineInRange("signInRecordDetailRetentionDays", 7, 0, 365);
 
             // 服务器默认语言
             DEFAULT_LANGUAGE = SERVER_BUILDER

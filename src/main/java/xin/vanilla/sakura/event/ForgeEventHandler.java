@@ -66,7 +66,7 @@ public class ForgeEventHandler {
                     // 如果玩家还活着则同步玩家传送数据到客户端
                     if (player.isAlive()) {
                         try {
-                            PlayerSignInDataCapability.syncPlayerData(player);
+                            PlayerSignInDataCapability.syncPlayerDataWhilePendingAck(player);
                         } catch (Exception e) {
                             LOGGER.error("Failed to sync player data: ", e);
                         }
@@ -166,8 +166,9 @@ public class ForgeEventHandler {
     @SubscribeEvent
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         // 玩家退出服务器时移除键(移除mod安装状态)
-        if (event.getEntity() instanceof ServerPlayer) {
+        if (event.getEntity() instanceof ServerPlayer serverPlayer) {
             SakuraSignIn.getPlayerCapabilityStatus().remove(event.getEntity().getStringUUID());
+            PlayerSignInDataCapability.clearPlayerDataSyncState(serverPlayer.getUUID());
         }
     }
 }

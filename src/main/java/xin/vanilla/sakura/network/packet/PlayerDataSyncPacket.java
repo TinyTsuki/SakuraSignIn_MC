@@ -35,7 +35,7 @@ public class PlayerDataSyncPacket extends SplitPacket {
         this.lastSignInTime = data.getLastSignInTime();
         this.signInCard = data.getSignInCard();
         this.autoRewarded = data.isAutoRewarded();
-        this.signInRecords = data.getSignInRecords();
+        this.signInRecords = new ArrayList<>(data.getSignInRecords());
     }
 
     public PlayerDataSyncPacket(FriendlyByteBuf buffer) {
