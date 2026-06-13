@@ -26,8 +26,8 @@ import xin.vanilla.sakura.enums.ETimeCoolingMethod;
 import xin.vanilla.sakura.network.packet.SignInPacket;
 import xin.vanilla.sakura.rewards.RewardList;
 import xin.vanilla.sakura.rewards.RewardManager;
-import xin.vanilla.sakura.util.Component;
 import xin.vanilla.sakura.util.*;
+import xin.vanilla.sakura.util.Component;
 
 import java.awt.*;
 import java.time.LocalDateTime;
@@ -513,7 +513,7 @@ public class SignInCommand {
                         .then(Commands.literal("language")
                                 .executes(context -> {
                                     ServerPlayer player = context.getSource().getPlayerOrException();
-                                    SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "server_default_language", ServerConfig.DEFAULT_LANGUAGE.get()));
+                                    SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "server_default_language", ServerConfig.getDefaultLanguage()));
                                     return 1;
                                 })
                         )
@@ -720,7 +720,7 @@ public class SignInCommand {
                                             String code = StringArgumentType.getString(context, "language");
                                             ServerConfig.DEFAULT_LANGUAGE.set(code);
                                             ServerPlayer player = context.getSource().getPlayerOrException();
-                                            SakuraUtils.broadcastMessage(player, Component.translatable(player, EI18nType.MESSAGE, "server_default_language", ServerConfig.DEFAULT_LANGUAGE.get()));
+                                            SakuraUtils.broadcastMessage(player, Component.translatable(player, EI18nType.MESSAGE, "server_default_language", ServerConfig.getDefaultLanguage()));
                                             return 1;
                                         })
                                 )

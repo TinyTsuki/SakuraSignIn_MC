@@ -246,7 +246,7 @@ public class SakuraUtils {
                 result = SakuraUtils.getClientLanguage();
             }
         } else if ("server".equalsIgnoreCase(language)) {
-            result = ServerConfig.DEFAULT_LANGUAGE.get();
+            result = ServerConfig.getDefaultLanguage();
         } else {
             result = language;
         }

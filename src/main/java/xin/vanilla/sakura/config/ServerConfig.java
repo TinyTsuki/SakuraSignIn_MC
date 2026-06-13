@@ -11,6 +11,8 @@ import java.util.Date;
  */
 public class ServerConfig {
 
+    public static final String DEFAULT_LANGUAGE_CODE = "en_us";
+
     public static final ModConfigSpec SERVER_CONFIG;
 
     /**
@@ -264,7 +266,7 @@ public class ServerConfig {
             DEFAULT_LANGUAGE = SERVER_BUILDER
                     .comment("The default language of the server."
                             , "服务器默认语言。")
-                    .define("defaultLanguage", "en_us");
+                    .define("defaultLanguage", DEFAULT_LANGUAGE_CODE);
             SERVER_BUILDER.pop();
         }
 
@@ -386,6 +388,14 @@ public class ServerConfig {
         SERVER_BUILDER.pop();
 
         SERVER_CONFIG = SERVER_BUILDER.build();
+    }
+
+    public static String getDefaultLanguage() {
+        try {
+            return DEFAULT_LANGUAGE.get();
+        } catch (IllegalStateException e) {
+            return DEFAULT_LANGUAGE_CODE;
+        }
     }
 
 }

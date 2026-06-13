@@ -22,7 +22,7 @@ public class I18nUtils {
     private static final String LANG_FILE_PATH = String.format("%s%%s.json", LANG_PATH);
 
     static {
-        loadLanguage(ServerConfig.DEFAULT_LANGUAGE.get());
+        loadLanguage(ServerConfig.getDefaultLanguage());
         getI18nFiles().forEach(I18nUtils::loadLanguage);
     }
 
@@ -62,7 +62,7 @@ public class I18nUtils {
      */
     public static String getTranslation(@NonNull String key, @NonNull String languageCode) {
         languageCode = languageCode.toLowerCase(Locale.ROOT);
-        JsonObject language = LANGUAGES.getOrDefault(languageCode, LANGUAGES.get(ServerConfig.DEFAULT_LANGUAGE.get()));
+        JsonObject language = LANGUAGES.getOrDefault(languageCode, LANGUAGES.get(ServerConfig.getDefaultLanguage()));
         if (language != null && language.has(key)) {
             return language.get(key).getAsString();
         }
