@@ -58,14 +58,8 @@ versionRange = "${minecraft_version_range}"
 ordering = "NONE"
 side = "BOTH"
 [[dependencies."${mod_id}"]]
-modId = "${mod_id}" # 模组ID
-mandatory = true # 模组必须在服务器上安装
-versionRange = "[1.0.0,)"
-ordering = "NONE"
-side = "SERVER" # 强制模组在服务器端运行
-[[dependencies."${mod_id}"]]
-modId = "${mod_id}" # 模组ID
-mandatory = false # 客户端可以不安装
-versionRange = "[1.0.0,)"
-ordering = "NONE"
-side = "CLIENT" # 客户端安装是可选的
+modId = "banira_codex"
+mandatory = true
+versionRange = "${banira_version_range}"
+ordering = "AFTER"
+side = "BOTH"
