@@ -24,6 +24,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL11;
 import xin.vanilla.sakura.SakuraSignIn;
+import xin.vanilla.sakura.client.gui.AdvancementRewardSelectionFlow;
+import xin.vanilla.sakura.client.gui.EffectRewardSelectionFlow;
 import xin.vanilla.sakura.client.gui.ItemRewardSelectionFlow;
 import xin.vanilla.sakura.config.*;
 import xin.vanilla.sakura.enums.EI18nType;
@@ -837,14 +839,17 @@ public class RewardOptionScreen extends Screen {
             }
             // 药水效果
             else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.EFFECT.getCode()).equalsIgnoreCase(selectedString)) {
-                EffecrSelectScreen callbackScreen = new EffecrSelectScreen(this, input -> {
+                Screen callbackScreen = EffectRewardSelectionFlow.create(this,
+                        new Reward(new EffectInstance(Effects.LUCK), ERewardType.EFFECT),
+                        () -> StringUtils.isNullOrEmpty(key[0]),
+                        input -> {
                     if (input != null && ((EffectInstance) RewardManager.deserializeReward(input)).getDuration() > 0 && StringUtils.isNotNullOrEmpty(key[0])) {
                         RewardConfigManager.addUndoRewardOption(rule);
                         RewardConfigManager.clearRedoList();
                         RewardConfigManager.addReward(rule, key[0], input);
                         RewardConfigManager.saveRewardOption();
                     }
-                }, new Reward(new EffectInstance(Effects.LUCK), ERewardType.EFFECT), () -> StringUtils.isNullOrEmpty(key[0]));
+                });
                 if (rule == ERewardRule.CDK_REWARD) {
                     Minecraft.getInstance().setScreen(this.getCdkRuleKeyInputScreen(callbackScreen, rule, key));
                 } else if (rule != ERewardRule.BASE_REWARD) {
@@ -952,14 +957,17 @@ public class RewardOptionScreen extends Screen {
             }
             // 进度
             else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.ADVANCEMENT.getCode()).equalsIgnoreCase(selectedString)) {
-                AdvancementSelectScreen callbackScreen = new AdvancementSelectScreen(this, input -> {
+                Screen callbackScreen = AdvancementRewardSelectionFlow.create(this,
+                        new Reward(new ResourceLocation(""), ERewardType.ADVANCEMENT),
+                        () -> StringUtils.isNullOrEmpty(key[0]),
+                        input -> {
                     if (input != null && StringUtils.isNotNullOrEmpty(input.toString()) && StringUtils.isNotNullOrEmpty(key[0])) {
                         RewardConfigManager.addUndoRewardOption(rule);
                         RewardConfigManager.clearRedoList();
                         RewardConfigManager.addReward(rule, key[0], input);
                         RewardConfigManager.saveRewardOption();
                     }
-                }, new Reward(new ResourceLocation(""), ERewardType.ADVANCEMENT), () -> StringUtils.isNullOrEmpty(key[0]));
+                });
                 if (rule == ERewardRule.CDK_REWARD) {
                     Minecraft.getInstance().setScreen(this.getCdkRuleKeyInputScreen(callbackScreen, rule, key));
                 } else if (rule != ERewardRule.BASE_REWARD) {
@@ -1127,14 +1135,17 @@ public class RewardOptionScreen extends Screen {
                 }
                 // 药水效果
                 else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.EFFECT.getCode()).equalsIgnoreCase(selectedString)) {
-                    Minecraft.getInstance().setScreen(new EffecrSelectScreen(this, input -> {
+                    Minecraft.getInstance().setScreen(EffectRewardSelectionFlow.create(
+                            this,
+                            new Reward(new EffectInstance(Effects.LUCK), ERewardType.EFFECT),
+                            input -> {
                         if (input != null && ((EffectInstance) RewardManager.deserializeReward(input)).getDuration() > 0) {
                             RewardConfigManager.addUndoRewardOption(rule);
                             RewardConfigManager.clearRedoList();
                             RewardConfigManager.addReward(rule, key, input);
                             RewardConfigManager.saveRewardOption();
                         }
-                    }, new Reward(new EffectInstance(Effects.LUCK), ERewardType.EFFECT)));
+                    }));
                 }
                 // 经验点
                 else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.EXP_POINT.getCode()).equalsIgnoreCase(selectedString)) {
@@ -1210,14 +1221,17 @@ public class RewardOptionScreen extends Screen {
                 }
                 // 进度
                 else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.ADVANCEMENT.getCode()).equalsIgnoreCase(selectedString)) {
-                    Minecraft.getInstance().setScreen(new AdvancementSelectScreen(this, input -> {
+                    Minecraft.getInstance().setScreen(AdvancementRewardSelectionFlow.create(
+                            this,
+                            new Reward(new ResourceLocation(""), ERewardType.ADVANCEMENT),
+                            input -> {
                         if (input != null && StringUtils.isNotNullOrEmpty(((ResourceLocation) RewardManager.deserializeReward(input)).toString())) {
                             RewardConfigManager.addUndoRewardOption(rule);
                             RewardConfigManager.clearRedoList();
                             RewardConfigManager.addReward(rule, key, input);
                             RewardConfigManager.saveRewardOption();
                         }
-                    }, new Reward(new ResourceLocation(""), ERewardType.ADVANCEMENT)));
+                    }));
 
                 }
                 // 消息
@@ -1286,14 +1300,17 @@ public class RewardOptionScreen extends Screen {
                         }
                         // 药水效果
                         else if (reward.getType() == ERewardType.EFFECT) {
-                            Minecraft.getInstance().setScreen(new EffecrSelectScreen(this, input -> {
+                            Minecraft.getInstance().setScreen(EffectRewardSelectionFlow.create(
+                                    this,
+                                    reward,
+                                    input -> {
                                 if (input != null && ((EffectInstance) RewardManager.deserializeReward(input)).getDuration() > 0) {
                                     RewardConfigManager.addUndoRewardOption(rule);
                                     RewardConfigManager.clearRedoList();
                                     RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), input);
                                     RewardConfigManager.saveRewardOption();
                                 }
-                            }, reward));
+                            }));
                         }
                         // 经验点
                         else if (reward.getType() == ERewardType.EXP_POINT) {
@@ -1372,14 +1389,17 @@ public class RewardOptionScreen extends Screen {
                         }
                         // 进度
                         else if (reward.getType() == ERewardType.ADVANCEMENT) {
-                            Minecraft.getInstance().setScreen(new AdvancementSelectScreen(this, input -> {
+                            Minecraft.getInstance().setScreen(AdvancementRewardSelectionFlow.create(
+                                    this,
+                                    reward,
+                                    input -> {
                                 if (input != null && StringUtils.isNotNullOrEmpty(((ResourceLocation) RewardManager.deserializeReward(input)).toString()) && StringUtils.isNotNullOrEmpty(key)) {
                                     RewardConfigManager.addUndoRewardOption(rule);
                                     RewardConfigManager.clearRedoList();
                                     RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), input);
                                     RewardConfigManager.saveRewardOption();
                                 }
-                            }, reward));
+                            }));
                         }
                         // 消息
                         else if (reward.getType() == ERewardType.MESSAGE) {
