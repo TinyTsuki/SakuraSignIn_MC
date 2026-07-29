@@ -1,5 +1,7 @@
 package xin.vanilla.sakura.util;
 
+import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.sakura.text.SakuraComponent;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.Getter;
@@ -23,7 +25,7 @@ import xin.vanilla.sakura.enums.ERewardType;
 import xin.vanilla.sakura.network.data.AdvancementData;
 import xin.vanilla.sakura.rewards.Reward;
 import xin.vanilla.sakura.rewards.RewardManager;
-import xin.vanilla.sakura.screen.component.Text;
+import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
 
@@ -219,25 +221,25 @@ public class AbstractGuiUtils {
     // region 绘制文字
 
     public static void drawString(MatrixStack matrixStack, FontRenderer font, String text, float x, float y) {
-        AbstractGuiUtils.drawString(Text.literal(text).setMatrixStack(matrixStack).setFont(font), x, y);
+        AbstractGuiUtils.drawString(Text.literal(text).stack(matrixStack).font(font), x, y);
     }
 
     public static void drawString(MatrixStack matrixStack, FontRenderer font, String text, float x, float y, int color) {
-        AbstractGuiUtils.drawString(Text.literal(text).setColor(color).setMatrixStack(matrixStack).setFont(font), x, y);
+        AbstractGuiUtils.drawString(Text.literal(text).color(color).stack(matrixStack).font(font), x, y);
     }
 
     public static void drawString(MatrixStack matrixStack, FontRenderer font, String text, float x, float y, boolean shadow) {
-        AbstractGuiUtils.drawString(Text.literal(text).setShadow(shadow).setMatrixStack(matrixStack).setFont(font), x, y);
+        AbstractGuiUtils.drawString(Text.literal(text).shadow(shadow).stack(matrixStack).font(font), x, y);
     }
 
     public static void drawString(MatrixStack matrixStack, FontRenderer font, String text, float x, float y, int color, boolean shadow) {
-        AbstractGuiUtils.drawString(Text.literal(text).setColor(color).setShadow(shadow).setMatrixStack(matrixStack).setFont(font), x, y);
+        AbstractGuiUtils.drawString(Text.literal(text).color(color).shadow(shadow).stack(matrixStack).font(font), x, y);
     }
 
     public static void drawString(Text text, float x, float y, EDepth depth) {
-        if (depth != null) AbstractGuiUtils.setDepth(text.getMatrixStack(), depth);
+        if (depth != null) AbstractGuiUtils.setDepth(text.stack(), depth);
         AbstractGuiUtils.drawString(text, x, y);
-        if (depth != null) AbstractGuiUtils.resetDepth(text.getMatrixStack());
+        if (depth != null) AbstractGuiUtils.resetDepth(text.stack());
     }
 
     public static void drawString(Text text, float x, float y) {
@@ -256,7 +258,7 @@ public class AbstractGuiUtils {
      * @param text 要绘制的文本
      */
     public static int multilineTextHeight(Text text) {
-        return AbstractGuiUtils.multilineTextHeight(text.getFont(), text.getContent());
+        return AbstractGuiUtils.multilineTextHeight(text.font(), text.content());
     }
 
     /**
@@ -284,7 +286,7 @@ public class AbstractGuiUtils {
     public static int getTextWidth(FontRenderer font, Collection<Text> texts) {
         int width = 0;
         for (Text text : texts) {
-            for (String string : StringUtils.replaceLine(text.getContent()).split("\n")) {
+            for (String string : StringUtils.replaceLine(text.content()).split("\n")) {
                 width = Math.max(width, font.width(string));
             }
         }
@@ -292,7 +294,7 @@ public class AbstractGuiUtils {
     }
 
     public static int getTextHeight(FontRenderer font, Collection<Text> texts) {
-        return AbstractGuiUtils.multilineTextHeight(font, texts.stream().map(Text::getContent).collect(Collectors.joining("\n")));
+        return AbstractGuiUtils.multilineTextHeight(font, texts.stream().map(Text::content).collect(Collectors.joining("\n")));
     }
 
     /**
@@ -301,7 +303,7 @@ public class AbstractGuiUtils {
      * @param text 要绘制的文本
      */
     public static int multilineTextWidth(Text text) {
-        return AbstractGuiUtils.multilineTextWidth(text.getFont(), text.getContent());
+        return AbstractGuiUtils.multilineTextWidth(text.font(), text.content());
     }
 
     /**
@@ -331,7 +333,7 @@ public class AbstractGuiUtils {
      * @param colors      文本颜色
      */
     public static void drawMultilineText(MatrixStack matrixStack, FontRenderer font, String text, float x, float y, int... colors) {
-        AbstractGuiUtils.drawMultilineText(Text.literal(text).setMatrixStack(matrixStack).setFont(font), x, y, colors);
+        AbstractGuiUtils.drawMultilineText(Text.literal(text).stack(matrixStack).font(font), x, y, colors);
     }
 
     /**
@@ -343,8 +345,8 @@ public class AbstractGuiUtils {
      * @param colors 文本颜色
      */
     public static void drawMultilineText(@NonNull Text text, float x, float y, int... colors) {
-        if (StringUtils.isNotNullOrEmpty(text.getContent())) {
-            String[] lines = StringUtils.replaceLine(text.getContent()).split("\n");
+        if (StringUtils.isNotNullOrEmpty(text.content())) {
+            String[] lines = StringUtils.replaceLine(text.content()).split("\n");
             for (int i = 0; i < lines.length; i++) {
                 int color;
                 if (colors.length == lines.length) {
@@ -352,9 +354,9 @@ public class AbstractGuiUtils {
                 } else if (colors.length > 0) {
                     color = colors[i % colors.length];
                 } else {
-                    color = text.getColor();
+                    color = text.colorArgb();
                 }
-                AbstractGuiUtils.drawString(text.copy().setText(lines[i]).setColor(color), x, y + i * text.getFont().lineHeight);
+                AbstractGuiUtils.drawString(text.clone().text(lines[i]).color(color), x, y + i * text.font().lineHeight);
             }
         }
     }
@@ -371,7 +373,7 @@ public class AbstractGuiUtils {
      * @param color       文本颜色
      */
     public static void drawLimitedText(MatrixStack matrixStack, FontRenderer font, String text, float x, float y, int maxWidth, int color) {
-        AbstractGuiUtils.drawLimitedText(Text.literal(text).setMatrixStack(matrixStack).setFont(font).setColor(color).setShadow(true), x, y, maxWidth, 0, EllipsisPosition.END);
+        AbstractGuiUtils.drawLimitedText(Text.literal(text).stack(matrixStack).font(font).color(color).shadow(true), x, y, maxWidth, 0, EllipsisPosition.END);
     }
 
     /**
@@ -387,7 +389,7 @@ public class AbstractGuiUtils {
      * @param shadow      是否显示阴影
      */
     public static void drawLimitedText(MatrixStack matrixStack, FontRenderer font, String text, float x, float y, int maxWidth, int color, boolean shadow) {
-        AbstractGuiUtils.drawLimitedText(Text.literal(text).setMatrixStack(matrixStack).setFont(font).setColor(color).setShadow(shadow), x, y, maxWidth, 0, EllipsisPosition.END);
+        AbstractGuiUtils.drawLimitedText(Text.literal(text).stack(matrixStack).font(font).color(color).shadow(shadow), x, y, maxWidth, 0, EllipsisPosition.END);
     }
 
     /**
@@ -403,7 +405,7 @@ public class AbstractGuiUtils {
      * @param color       文本颜色
      */
     public static void drawLimitedText(MatrixStack matrixStack, FontRenderer font, String text, float x, float y, int maxWidth, EllipsisPosition position, int color) {
-        AbstractGuiUtils.drawLimitedText(Text.literal(text).setMatrixStack(matrixStack).setFont(font).setColor(color).setShadow(true), x, y, maxWidth, 0, position);
+        AbstractGuiUtils.drawLimitedText(Text.literal(text).stack(matrixStack).font(font).color(color).shadow(true), x, y, maxWidth, 0, position);
     }
 
     /**
@@ -420,7 +422,7 @@ public class AbstractGuiUtils {
      * @param shadow      是否显示阴影
      */
     public static void drawLimitedText(MatrixStack matrixStack, FontRenderer font, String text, float x, float y, int maxWidth, EllipsisPosition position, int color, boolean shadow) {
-        AbstractGuiUtils.drawLimitedText(Text.literal(text).setMatrixStack(matrixStack).setFont(font).setColor(color).setShadow(shadow), x, y, maxWidth, 0, position);
+        AbstractGuiUtils.drawLimitedText(Text.literal(text).stack(matrixStack).font(font).color(color).shadow(shadow), x, y, maxWidth, 0, position);
     }
 
     /**
@@ -472,13 +474,13 @@ public class AbstractGuiUtils {
      * @param position 省略号位置（开头、中间、结尾）
      */
     public static void drawLimitedText(Text text, double x, double y, int maxWidth, int maxLine, EllipsisPosition position) {
-        if (StringUtils.isNotNullOrEmpty(text.getContent())) {
+        if (StringUtils.isNotNullOrEmpty(text.content())) {
             String ellipsis = "...";
-            FontRenderer font = text.getFont();
+            FontRenderer font = text.font();
             int ellipsisWidth = font.width(ellipsis);
 
             // 拆分文本行
-            String[] lines = StringUtils.replaceLine(text.getContent()).split("\n");
+            String[] lines = StringUtils.replaceLine(text.content()).split("\n");
 
             // 如果 maxLine <= 1 或 maxLine 大于等于行数，则正常显示所有行
             if (maxLine <= 0 || maxLine >= lines.length) {
@@ -553,11 +555,11 @@ public class AbstractGuiUtils {
 
                 // 计算水平偏移
                 float xOffset;
-                switch (text.getAlign()) {
+                switch (text.align()) {
                     case CENTER:
                         xOffset = (maxLineWidth - font.width(line)) / 2.0f;
                         break;
-                    case RIGHT:
+                    case END:
                         xOffset = maxLineWidth - font.width(line);
                         break;
                     default:
@@ -566,11 +568,11 @@ public class AbstractGuiUtils {
                 }
 
                 // 绘制每行文本
-                MatrixStack matrixStack = text.getMatrixStack();
-                if (text.isShadow()) {
-                    font.drawShadow(matrixStack, text.copyWithoutChildren().setText(line).toComponent().toTextComponent(SakuraUtils.getClientLanguage()), (float) x + xOffset, (float) y + index * font.lineHeight, text.getColor());
+                MatrixStack matrixStack = text.stack();
+                if (text.shadow()) {
+                    font.drawShadow(matrixStack, text.copyWithoutChildren().text(line).toComponent().toVanilla(SakuraUtils.getClientLanguage()), (float) x + xOffset, (float) y + index * font.lineHeight, text.colorArgb());
                 } else {
-                    font.draw(matrixStack, text.copyWithoutChildren().setText(line).toComponent().toTextComponent(SakuraUtils.getClientLanguage()), (float) x + xOffset, (float) y + index * font.lineHeight, text.getColor());
+                    font.draw(matrixStack, text.copyWithoutChildren().text(line).toComponent().toVanilla(SakuraUtils.getClientLanguage()), (float) x + xOffset, (float) y + index * font.lineHeight, text.colorArgb());
                 }
 
                 index++;
@@ -607,21 +609,21 @@ public class AbstractGuiUtils {
         if (showText) {
             // 效果等级
             if (effectInstance.getAmplifier() >= 0) {
-                Component amplifierString = Component.literal(StringUtils.intToRoman(effectInstance.getAmplifier() + 1));
+                Component amplifierString = SakuraComponent.get().literal(StringUtils.intToRoman(effectInstance.getAmplifier() + 1));
                 int amplifierWidth = font.width(amplifierString.toString());
                 float fontX = x + width - (float) amplifierWidth / 2;
                 float fontY = y - 1;
                 int color = 0xFFFFFFFF;
-                font.drawShadow(matrixStack, amplifierString.setColor(color).toTextComponent(), fontX, fontY, color);
+                font.drawShadow(matrixStack, amplifierString.color(color).toVanilla(), fontX, fontY, color);
             }
             // 效果持续时间
             if (effectInstance.getDuration() > 0) {
-                Component durationString = Component.literal(DateUtils.toMaxUnitString(effectInstance.getDuration(), DateUtils.DateUnit.SECOND, 0, 1));
+                Component durationString = SakuraComponent.get().literal(DateUtils.toMaxUnitString(effectInstance.getDuration(), DateUtils.DateUnit.SECOND, 0, 1));
                 int durationWidth = font.width(durationString.toString());
                 float fontX = x + width - (float) durationWidth / 2 - 2;
                 float fontY = y + (float) height / 2 + 1;
                 int color = 0xFFFFFFFF;
-                font.drawShadow(matrixStack, durationString.setColor(color).toTextComponent(), fontX, fontY, color);
+                font.drawShadow(matrixStack, durationString.color(color).toVanilla(), fontX, fontY, color);
             }
         }
     }
@@ -674,12 +676,12 @@ public class AbstractGuiUtils {
         Minecraft.getInstance().getTextureManager().bind(textureLocation);
         AbstractGuiUtils.blit(matrixStack, x, y, ITEM_ICON_SIZE, ITEM_ICON_SIZE, (float) textureUV.getU0(), (float) textureUV.getV0(), (int) textureUV.getUWidth(), (int) textureUV.getVHeight(), totalWidth, totalHeight);
         if (showText) {
-            Component num = Component.literal(String.valueOf((Integer) RewardManager.deserializeReward(reward)));
+            Component num = SakuraComponent.get().literal(String.valueOf((Integer) RewardManager.deserializeReward(reward)));
             int numWidth = font.width(num.toString());
             float fontX = x + ITEM_ICON_SIZE - (float) numWidth / 2 - 2;
             float fontY = y + (float) ITEM_ICON_SIZE - font.lineHeight + 2;
             int color = 0xFFFFFFFF;
-            font.drawShadow(matrixStack, num.setColor(color).toTextComponent(), fontX, fontY, color);
+            font.drawShadow(matrixStack, num.color(color).toVanilla(), fontX, fontY, color);
         }
     }
 
@@ -1088,7 +1090,7 @@ public class AbstractGuiUtils {
      * @param textColor    文本颜色
      */
     public static void drawPopupMessage(MatrixStack matrixStack, FontRenderer font, String message, int x, int y, int screenWidth, int screenHeight, int margin, int padding, int textColor, int bgColor) {
-        AbstractGuiUtils.drawPopupMessage(Text.literal(message).setMatrixStack(matrixStack).setFont(font).setColor(textColor), x, y, screenWidth, screenHeight, margin, padding, bgColor);
+        AbstractGuiUtils.drawPopupMessage(Text.literal(message).stack(matrixStack).font(font).color(textColor), x, y, screenWidth, screenHeight, margin, padding, bgColor);
     }
 
     /**
@@ -1178,14 +1180,14 @@ public class AbstractGuiUtils {
             adjustedY = Math.max(margin, Math.min(adjustedY, screenHeight - msgHeight - margin));
         }
 
-        AbstractGuiUtils.setDepth(text.getMatrixStack(), EDepth.POPUP_TIPS);
+        AbstractGuiUtils.setDepth(text.stack(), EDepth.POPUP_TIPS);
         // 在计算完的坐标位置绘制消息框背景
-        AbstractGui.fill(text.getMatrixStack(), adjustedX, adjustedY, adjustedX + msgWidth, adjustedY + msgHeight, bgColor);
-        AbstractGuiUtils.resetDepth(text.getMatrixStack());
-        AbstractGuiUtils.setDepth(text.getMatrixStack(), EDepth.POPUP_TIPS);
+        AbstractGui.fill(text.stack(), adjustedX, adjustedY, adjustedX + msgWidth, adjustedY + msgHeight, bgColor);
+        AbstractGuiUtils.resetDepth(text.stack());
+        AbstractGuiUtils.setDepth(text.stack(), EDepth.POPUP_TIPS);
         // 绘制消息文字
-        AbstractGuiUtils.drawLimitedText(text, adjustedX + (float) padding / 2, adjustedY + (float) padding / 2, msgWidth, msgHeight / text.getFont().lineHeight, EllipsisPosition.MIDDLE);
-        AbstractGuiUtils.resetDepth(text.getMatrixStack());
+        AbstractGuiUtils.drawLimitedText(text, adjustedX + (float) padding / 2, adjustedY + (float) padding / 2, msgWidth, msgHeight / text.font().lineHeight, EllipsisPosition.MIDDLE);
+        AbstractGuiUtils.resetDepth(text.stack());
     }
 
     //  endregion 绘制弹出层提示
@@ -1193,11 +1195,11 @@ public class AbstractGuiUtils {
     // region 重写方法签名
 
     public static TextFieldWidget newTextFieldWidget(FontRenderer font, int x, int y, int width, int height, Component content) {
-        return new TextFieldWidget(font, x, y, width, height, content.toTextComponent());
+        return new TextFieldWidget(font, x, y, width, height, content.toVanilla());
     }
 
     public static Button newButton(int x, int y, int width, int height, Component content, Button.IPressable onPress) {
-        return new Button(x, y, width, height, content.toTextComponent(), onPress);
+        return new Button(x, y, width, height, content.toVanilla(), onPress);
     }
 
     // endregion 重写方法签名

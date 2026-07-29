@@ -1,5 +1,6 @@
 package xin.vanilla.sakura.screen.component;
 
+import xin.vanilla.banira.client.gui.component.Text;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Getter;
 import lombok.NonNull;
@@ -135,8 +136,8 @@ public class PopupOption {
     public PopupOption addOption(@NonNull Text text) {
         if (this.x >= 0 || this.y >= 0)
             throw new RuntimeException("The addOption method must be called after the clear/init method and before the resize method.");
-        List<Text> renderList = Arrays.stream(StringUtils.replaceLine(text.getContent()).split("\n"))
-                .map(s -> text.copy().setText(s).setHoverText(s).withStyle(text))
+        List<Text> renderList = Arrays.stream(StringUtils.replaceLine(text.content()).split("\n"))
+                .map(s -> text.clone().text(s).hoverText(s).withStyle(text))
                 .collect(Collectors.toList());
         for (int i = 0; i < renderList.size(); i++) {
             this.relationMap.put(this.renderList.size() + i, optionList.size());
@@ -269,7 +270,7 @@ public class PopupOption {
                 && this.getSelectedIndex() >= 0
                 && this.getSelectedIndex() < this.optionList.size()
                 && this.relationMap.getOrDefault(selectedIndex, -1) >= 0)
-                ? this.optionList.get(this.relationMap.get(selectedIndex)).getContent() : "";
+                ? this.optionList.get(this.relationMap.get(selectedIndex)).content() : "";
     }
 
     /**
@@ -319,7 +320,7 @@ public class PopupOption {
                     int index = -1;
                     for (int i = 0; i < (this.maxLines > 0 ? this.maxLines : renderList.size()); i++) {
                         if (scrollOffset + i >= renderList.size()) break;
-                        int curLines = StringUtils.getLineCount(renderList.get(scrollOffset + i).getContent());
+                        int curLines = StringUtils.getLineCount(renderList.get(scrollOffset + i).content());
                         if (relativeY >= lines * (font.lineHeight + 1) && relativeY < (lines + curLines) * (font.lineHeight + 1) - 1 && relativeY < this.height - this.topPadding - this.bottomPadding) {
                             index = scrollOffset + i;
                         }
@@ -341,14 +342,14 @@ public class PopupOption {
             if (index >= 0 && index < renderList.size()) {
                 Text text = renderList.get(index);
                 if (selectedIndex == index) {
-                    AbstractGuiUtils.fill(matrixStack, adjustedX + 1, adjustedY + topPadding + (lineOffset * (this.font.lineHeight + 1)), width - 2, this.font.lineHeight * StringUtils.getLineCount(text.getContent()), 0x88ACACAC);
+                    AbstractGuiUtils.fill(matrixStack, adjustedX + 1, adjustedY + topPadding + (lineOffset * (this.font.lineHeight + 1)), width - 2, this.font.lineHeight * StringUtils.getLineCount(text.content()), 0x88ACACAC);
                 }
                 if (maxWidth > 0) {
-                    AbstractGuiUtils.drawLimitedText(text.setMatrixStack(matrixStack).setFont(this.font), adjustedX + leftPadding, adjustedY + topPadding + (i * (this.font.lineHeight + 1)), maxWidth, AbstractGuiUtils.EllipsisPosition.MIDDLE);
+                    AbstractGuiUtils.drawLimitedText(text.stack(matrixStack).font(this.font), adjustedX + leftPadding, adjustedY + topPadding + (i * (this.font.lineHeight + 1)), maxWidth, AbstractGuiUtils.EllipsisPosition.MIDDLE);
                 } else {
-                    AbstractGuiUtils.drawString(text.setMatrixStack(matrixStack).setFont(this.font), adjustedX + leftPadding, adjustedY + topPadding + (i * (this.font.lineHeight + 1)));
+                    AbstractGuiUtils.drawString(text.stack(matrixStack).font(this.font), adjustedX + leftPadding, adjustedY + topPadding + (i * (this.font.lineHeight + 1)));
                 }
-                lineOffset += StringUtils.getLineCount(text.getContent());
+                lineOffset += StringUtils.getLineCount(text.content());
             }
         }
         AbstractGuiUtils.resetDepth(matrixStack);
@@ -356,11 +357,11 @@ public class PopupOption {
         if (StringUtils.isNullOrEmptyEx(this.tipsKeyNames) || keyManager.isKeyPressed(this.tipsKeyNames)) {
             if (this.getSelectedIndex() >= 0 && !tipsMap.isEmpty()) {
                 Text text = tipsMap.getOrDefault(this.getSelectedIndex(), Text.literal(""));
-                if (StringUtils.isNullOrEmpty(text.getContent())) {
+                if (StringUtils.isNullOrEmpty(text.content())) {
                     text = tipsMap.getOrDefault(this.getSelectedIndex() - renderList.size(), Text.literal(""));
                 }
-                if (StringUtils.isNotNullOrEmpty(text.getContent())) {
-                    AbstractGuiUtils.drawPopupMessage(text.setMatrixStack(matrixStack).setFont(this.font), (int) keyManager.getMouseX(), (int) keyManager.getMouseY(), this.screenWidth, this.screenHeight);
+                if (StringUtils.isNotNullOrEmpty(text.content())) {
+                    AbstractGuiUtils.drawPopupMessage(text.stack(matrixStack).font(this.font), (int) keyManager.getMouseX(), (int) keyManager.getMouseY(), this.screenWidth, this.screenHeight);
                 }
             }
         }

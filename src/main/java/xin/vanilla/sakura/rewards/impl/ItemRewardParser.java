@@ -1,5 +1,6 @@
 package xin.vanilla.sakura.rewards.impl;
 
+import xin.vanilla.sakura.text.SakuraComponent;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -12,7 +13,7 @@ import net.minecraft.nbt.JsonToNBT;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.registries.ForgeRegistries;
 import xin.vanilla.sakura.rewards.RewardParser;
-import xin.vanilla.sakura.util.Component;
+import xin.vanilla.banira.common.data.Component;
 
 public class ItemRewardParser implements RewardParser<ItemStack> {
 
@@ -79,7 +80,7 @@ public class ItemRewardParser implements RewardParser<ItemStack> {
     @Override
     public @NonNull Component getDisplayName(String languageCode, JsonObject json, boolean withNum) {
         ItemStack itemStack = this.deserialize(json);
-        return Component.original(itemStack.getHoverName())
+        return SakuraComponent.get().object(itemStack.getHoverName())
                 .append(withNum ? "x" + itemStack.getCount() : "");
     }
 

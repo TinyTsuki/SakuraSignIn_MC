@@ -1,5 +1,6 @@
 package xin.vanilla.sakura.screen.component;
 
+import xin.vanilla.banira.client.gui.component.Text;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -10,7 +11,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.util.AbstractGuiUtils;
-import xin.vanilla.sakura.util.Component;
+import xin.vanilla.banira.common.data.Component;
 
 import java.util.*;
 
@@ -127,7 +128,7 @@ public class NotificationManager {
         }
 
         public static Notification ofComponentWithBlack(Component component) {
-            return new Notification(component.setColor(0xFF000000));
+            return new Notification(component.color(0xFF000000));
         }
 
         public static Notification ofComponent(Component component) {
@@ -379,7 +380,7 @@ public class NotificationManager {
                     this.getBorderSize(), this.getBorderColor(), this.getRadius()
             );
             AbstractGuiUtils.drawLimitedText(
-                    cachedText.setMatrixStack(matrixStack),
+                    cachedText.stack(matrixStack),
                     coordinate.getX() + this.getPadding(),
                     coordinate.getY() + this.getPadding(),
                     0, 0,

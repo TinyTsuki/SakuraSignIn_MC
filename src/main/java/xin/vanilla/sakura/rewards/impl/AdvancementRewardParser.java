@@ -1,16 +1,16 @@
 package xin.vanilla.sakura.rewards.impl;
 
+import xin.vanilla.sakura.text.SakuraComponent;
 import com.google.gson.JsonObject;
 import lombok.NonNull;
 import net.minecraft.advancements.Advancement;
 import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.util.ResourceLocation;
 import xin.vanilla.sakura.SakuraSignIn;
-import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ERewardType;
 import xin.vanilla.sakura.network.data.AdvancementData;
 import xin.vanilla.sakura.rewards.RewardParser;
-import xin.vanilla.sakura.util.Component;
+import xin.vanilla.banira.common.data.Component;
 
 public class AdvancementRewardParser implements RewardParser<ResourceLocation> {
 
@@ -79,9 +79,9 @@ public class AdvancementRewardParser implements RewardParser<ResourceLocation> {
     @Override
     public @NonNull Component getDisplayName(String languageCode, JsonObject json, boolean withNum) {
         ResourceLocation deserialize = deserialize(json);
-        return Component.translatable(languageCode, EI18nType.WORD, "reward_type_" + ERewardType.ADVANCEMENT.getCode())
+        return SakuraComponent.get().transLang(languageCode, "word", "reward_type_" + ERewardType.ADVANCEMENT.getCode())
                 .append(": ")
-                .append(Component.original(SakuraSignIn.getAdvancementData().stream()
+                .append(SakuraComponent.get().object(SakuraSignIn.getAdvancementData().stream()
                         .filter(data -> data.getId().equals(deserialize))
                         .findFirst().orElse(new AdvancementData(deserialize, null))
                         .getDisplayInfo().getTitle()));

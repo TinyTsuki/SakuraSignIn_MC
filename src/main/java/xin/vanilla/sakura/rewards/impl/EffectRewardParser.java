@@ -1,5 +1,6 @@
 package xin.vanilla.sakura.rewards.impl;
 
+import xin.vanilla.sakura.text.SakuraComponent;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -9,10 +10,9 @@ import net.minecraft.potion.EffectInstance;
 import net.minecraft.potion.Effects;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.registries.ForgeRegistries;
-import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ERewardType;
 import xin.vanilla.sakura.rewards.RewardParser;
-import xin.vanilla.sakura.util.Component;
+import xin.vanilla.banira.common.data.Component;
 
 public class EffectRewardParser implements RewardParser<EffectInstance> {
 
@@ -52,9 +52,9 @@ public class EffectRewardParser implements RewardParser<EffectInstance> {
 
     @Override
     public @NonNull Component getDisplayName(String languageCode, JsonObject json, boolean withNum) {
-        return Component.translatable(languageCode, EI18nType.WORD, "reward_type_" + ERewardType.EFFECT.getCode())
+        return SakuraComponent.get().transLang(languageCode, "word", "reward_type_" + ERewardType.EFFECT.getCode())
                 .append(": ")
-                .append(Component.original(this.deserialize(json).getEffect().getDisplayName()));
+                .append(SakuraComponent.get().object(this.deserialize(json).getEffect().getDisplayName()));
     }
 
     public static @NonNull String getDisplayName(EffectInstance instance) {

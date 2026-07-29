@@ -1,5 +1,7 @@
 package xin.vanilla.sakura.screen.component;
 
+import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.sakura.text.SakuraComponent;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Getter;
 import lombok.Setter;
@@ -12,10 +14,9 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
-import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.util.AbstractGuiUtils;
-import xin.vanilla.sakura.util.Component;
+import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.sakura.util.GLFWKey;
 import xin.vanilla.sakura.util.StringUtils;
 
@@ -67,7 +68,7 @@ public class InventoryButton extends Widget {
     private Consumer<Coordinate> onDragEnd;
 
     public InventoryButton(int x, int y, int width, int height, String title) {
-        super(x, y, width, height, Component.literal(title).toTextComponent());
+        super(x, y, width, height, SakuraComponent.get().literal(title).toVanilla());
         this.x_ = x;
         this.y_ = y;
     }
@@ -115,12 +116,12 @@ public class InventoryButton extends Widget {
             } else {
                 text = Text.literal(String.format("X: %d\nY: %d", this.x, this.y));
             }
-            AbstractGuiUtils.drawPopupMessage(text.setMatrixStack(matrixStack), this.x + (AbstractGuiUtils.multilineTextWidth(text) - this.width) / 2, this.y + this.height / 2, screenWidth, screenHeight);
+            AbstractGuiUtils.drawPopupMessage(text.stack(matrixStack), this.x + (AbstractGuiUtils.multilineTextWidth(text) - this.width) / 2, this.y + this.height / 2, screenWidth, screenHeight);
         } else if (this.isHovered) {
             if (this.modifiers == GLFWKey.GLFW_MOD_SHIFT) {
-                AbstractGuiUtils.drawPopupMessage(Text.translatable(EI18nType.TIPS, "drag_inventory_button").setMatrixStack(matrixStack), mouseX, mouseY, screenWidth, screenHeight);
+                AbstractGuiUtils.drawPopupMessage(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.drag_inventory_button").stack(matrixStack), mouseX, mouseY, screenWidth, screenHeight);
             } else {
-                AbstractGuiUtils.drawPopupMessage(Text.fromTextComponent(this.getMessage().copy()).setMatrixStack(matrixStack), mouseX, mouseY, screenWidth, screenHeight);
+                AbstractGuiUtils.drawPopupMessage(Text.from(this.getMessage().copy()).stack(matrixStack), mouseX, mouseY, screenWidth, screenHeight);
             }
         }
     }

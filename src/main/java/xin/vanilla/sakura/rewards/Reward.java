@@ -6,8 +6,7 @@ import lombok.experimental.Accessors;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import xin.vanilla.sakura.enums.ERewardType;
-import xin.vanilla.sakura.screen.component.Text;
-import xin.vanilla.sakura.util.Component;
+import xin.vanilla.banira.common.data.Component;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -80,10 +79,6 @@ public class Reward implements Cloneable, Serializable {
         } catch (Exception e) {
             return new Reward();
         }
-    }
-
-    public Text getName(String languageCode) {
-        return new Text(getName(languageCode, true));
     }
 
     public Component getName(String languageCode, boolean withNum) {

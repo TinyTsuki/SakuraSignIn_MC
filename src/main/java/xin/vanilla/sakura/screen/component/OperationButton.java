@@ -1,5 +1,6 @@
 package xin.vanilla.sakura.screen.component;
 
+import xin.vanilla.banira.client.gui.component.Text;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -439,10 +440,10 @@ public class OperationButton {
     public void renderPopup(MatrixStack matrixStack, FontRenderer font, KeyEventManager keyManager) {
         // 绘制提示
         if (StringUtils.isNullOrEmptyEx(this.keyNames) || keyManager.isKeyPressed(this.keyNames)) {
-            if (this.isHovered() && tooltip != null && StringUtils.isNotNullOrEmpty(tooltip.getContent())) {
+            if (this.isHovered() && tooltip != null && StringUtils.isNotNullOrEmpty(tooltip.content())) {
                 if (Minecraft.getInstance().screen != null) {
                     if (font == null) font = Minecraft.getInstance().font;
-                    AbstractGuiUtils.drawPopupMessage(tooltip.setMatrixStack(matrixStack).setFont(font), (int) keyManager.getMouseX(), (int) keyManager.getMouseY(), Minecraft.getInstance().screen.width, Minecraft.getInstance().screen.height);
+                    AbstractGuiUtils.drawPopupMessage(tooltip.stack(matrixStack).font(font), (int) keyManager.getMouseX(), (int) keyManager.getMouseY(), Minecraft.getInstance().screen.width, Minecraft.getInstance().screen.height);
                 }
             }
         }
