@@ -1,28 +1,15 @@
 package xin.vanilla.sakura.network.packet;
 
-import io.netty.buffer.ByteBuf;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
-import org.jetbrains.annotations.NotNull;
+import net.minecraftforge.event.network.CustomPayloadEvent;
+import net.minecraftforge.network.PacketDistributor;
 import xin.vanilla.sakura.SakuraSignIn;
+import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.config.RewardConfigManager;
-import xin.vanilla.sakura.data.PlayerDataAttachment;
+import xin.vanilla.sakura.network.ModNetworkHandler;
 
-public class ClientModLoadedNotice implements CustomPacketPayload {
-    public final static Type<ClientModLoadedNotice> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(SakuraSignIn.MODID, "client_mod_loaded"));
-    public final static StreamCodec<ByteBuf, ClientModLoadedNotice> STREAM_CODEC = new StreamCodec<>() {
-        public @NotNull ClientModLoadedNotice decode(@NotNull ByteBuf byteBuf) {
-            return new ClientModLoadedNotice((new FriendlyByteBuf(byteBuf)));
-        }
-
-        public void encode(@NotNull ByteBuf byteBuf, @NotNull ClientModLoadedNotice packet) {
-            packet.toBytes(new FriendlyByteBuf(byteBuf));
-        }
-    };
+public class ClientModLoadedNotice {
 
     public ClientModLoadedNotice() {
     }
@@ -30,33 +17,29 @@ public class ClientModLoadedNotice implements CustomPacketPayload {
     public ClientModLoadedNotice(FriendlyByteBuf buf) {
     }
 
-    public void toBytes(@NotNull FriendlyByteBuf buf) {
+    public void toBytes(FriendlyByteBuf buf) {
     }
 
-    @Override
-    public @NotNull Type<? extends CustomPacketPayload> type() {
-        return TYPE;
-    }
-
-    public static void handle(ClientModLoadedNotice packet, IPayloadContext ctx) {
-        if (ctx.flow().isServerbound()) {
-            // 获取网络事件上下文并排队执行工作
-            ctx.enqueueWork(() -> {
-                // 获取发送数据包的玩家实体
-                if (ctx.player() instanceof ServerPlayer player) {
-                    SakuraSignIn.getPlayerCapabilityStatus().put(player.getUUID().toString(), false);
-                    // 同步玩家签到数据到客户端
-                    PlayerDataAttachment.syncPlayerData(player);
-                    // 同步签到奖励配置到客户端
-                    for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardConfigManager.toSyncPacket(player).split()) {
-                        player.connection.send(rewardOptionSyncPacket);
-                    }
-                    // 同步进度列表到客户端
-                    for (AdvancementPacket advancementPacket : new AdvancementPacket((player).server.getAdvancements().getAllAdvancements()).split()) {
-                        player.connection.send(advancementPacket);
-                    }
+    public static void handle(ClientModLoadedNotice packet, CustomPayloadEvent.Context ctx) {
+        // 获取网络事件上下文并排队执行工作
+        ctx.enqueueWork(() -> {
+            // 获取发送数据包的玩家实体
+            ServerPlayer player = ctx.getSender();
+            if (player != null) {
+                SakuraSignIn.getPlayerCapabilityStatus().put(player.getUUID().toString(), false);
+                // 同步玩家签到数据到客户端
+                SakuraPlayerData.sync(player);
+                // 同步签到奖励配置到客户端
+                for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardConfigManager.toSyncPacket(player).split()) {
+                    ModNetworkHandler.INSTANCE.send(rewardOptionSyncPacket, PacketDistributor.PLAYER.with(player));
                 }
-            });
-        }
+                // 同步进度列表到客户端
+                for (AdvancementPacket advancementPacket : new AdvancementPacket((player).server.getAdvancements().getAllAdvancements()).split()) {
+                    ModNetworkHandler.INSTANCE.send(advancementPacket, PacketDistributor.PLAYER.with(player));
+                }
+            }
+        });
+        // 设置数据包已处理状态，防止重复处理
+        ctx.setPacketHandled(true);
     }
 }

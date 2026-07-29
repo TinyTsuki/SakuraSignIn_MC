@@ -10,21 +10,22 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.fml.loading.FMLPaths;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.fml.loading.FMLPaths;
+import net.minecraftforge.network.PacketDistributor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.config.ServerConfig;
-import xin.vanilla.sakura.data.PlayerDataAttachment;
-import xin.vanilla.sakura.data.PlayerSignInData;
+import xin.vanilla.sakura.data.IPlayerSignInData;
+import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ESignInStatus;
 import xin.vanilla.sakura.enums.ESignInType;
-import xin.vanilla.sakura.event.ClientModEventHandler;
+import xin.vanilla.sakura.event.ClientEventHandler;
+import xin.vanilla.sakura.network.ModNetworkHandler;
 import xin.vanilla.sakura.network.packet.SignInPacket;
 import xin.vanilla.sakura.rewards.RewardList;
 import xin.vanilla.sakura.rewards.RewardManager;
@@ -179,7 +180,7 @@ public class SignInScreen extends Screen {
      * 更新材质及材质坐标信息
      */
     private void updateTextureAndCoordinate() {
-        ClientModEventHandler.loadThemeTexture();
+        ClientEventHandler.loadThemeTexture();
         // 更新按钮信息
         this.updateButtons();
     }
@@ -300,7 +301,7 @@ public class SignInScreen extends Screen {
         // 获取奖励列表
         LocalPlayer player = Minecraft.getInstance().player;
         if (player != null) {
-            PlayerSignInData signInData = PlayerDataAttachment.getData(player);
+            IPlayerSignInData signInData = SakuraPlayerData.get(player);
             Map<Integer, RewardList> monthRewardList;
             if ((player.hasPermissions(ServerConfig.PERMISSION_REWARD_DETAIL.get()))) {
                 monthRewardList = RewardManager.getMonthRewardList(current, signInData, lastOffset, nextOffset);
@@ -521,7 +522,7 @@ public class SignInScreen extends Screen {
                     NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
                 } else {
                     cell.status = ClientConfig.AUTO_REWARDED.get() ? ESignInStatus.REWARDED.getCode() : ESignInStatus.SIGNED_IN.getCode();
-                    PacketDistributor.sendToServer(new SignInPacket(DateUtils.toDateTimeString(DateUtils.getClientDate()), ClientConfig.AUTO_REWARDED.get(), ESignInType.SIGN_IN));
+                    ModNetworkHandler.INSTANCE.send(new SignInPacket(DateUtils.toDateTimeString(DateUtils.getClientDate()), ClientConfig.AUTO_REWARDED.get(), ESignInType.SIGN_IN), PacketDistributor.SERVER.noArg());
                 }
             }
         }
@@ -531,12 +532,12 @@ public class SignInScreen extends Screen {
                 Component component = Component.translatableClient(EI18nType.MESSAGE, "already_signed");
                 NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
             } else {
-                if (RewardManager.isRewarded(PlayerDataAttachment.getData(player), cellDate, false)) {
+                if (RewardManager.isRewarded(SakuraPlayerData.get(player), cellDate, false)) {
                     Component component = Component.translatableClient(EI18nType.MESSAGE, "already_get_reward");
                     NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
                 } else {
                     cell.status = ESignInStatus.REWARDED.getCode();
-                    PacketDistributor.sendToServer(new SignInPacket(DateUtils.toDateTimeString(cellDate), ClientConfig.AUTO_REWARDED.get(), ESignInType.REWARD));
+                    ModNetworkHandler.INSTANCE.send(new SignInPacket(DateUtils.toDateTimeString(cellDate), ClientConfig.AUTO_REWARDED.get(), ESignInType.REWARD), PacketDistributor.SERVER.noArg());
                 }
             }
         }
@@ -547,12 +548,12 @@ public class SignInScreen extends Screen {
                     Component component = Component.translatableClient(EI18nType.MESSAGE, "server_not_enable_sign_in_card");
                     NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
                 } else {
-                    if (PlayerDataAttachment.getData(player).getSignInCard() <= 0) {
+                    if (SakuraPlayerData.get(player).getSignInCard() <= 0) {
                         Component component = Component.translatableClient(EI18nType.MESSAGE, "not_enough_sign_in_card");
                         NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
                     } else {
                         cell.status = ClientConfig.AUTO_REWARDED.get() ? ESignInStatus.REWARDED.getCode() : ESignInStatus.SIGNED_IN.getCode();
-                        PacketDistributor.sendToServer(new SignInPacket(DateUtils.toDateTimeString(cellDate), ClientConfig.AUTO_REWARDED.get(), ESignInType.RE_SIGN_IN));
+                        ModNetworkHandler.INSTANCE.send(new SignInPacket(DateUtils.toDateTimeString(cellDate), ClientConfig.AUTO_REWARDED.get(), ESignInType.RE_SIGN_IN), PacketDistributor.SERVER.noArg());
                     }
                 }
             }
@@ -701,7 +702,7 @@ public class SignInScreen extends Screen {
                 OperationButton button = BUTTONS.get(op);
                 if (op == INFO.getCode()) {
                     if (Minecraft.getInstance().player != null) {
-                        PlayerSignInData signInData = PlayerDataAttachment.getData(Minecraft.getInstance().player);
+                        IPlayerSignInData signInData = SakuraPlayerData.get(Minecraft.getInstance().player);
                         button.setTooltip(
                                 Text.translatable(EI18nType.TIPS, "sign_in_info"
                                                 , signInData.getSignInCard()
@@ -854,7 +855,7 @@ public class SignInScreen extends Screen {
         keyManager.keyPressed(keyCode);
         boolean consumed = false;
         // 当按键等于SIGN_IN_SCREEN_KEY键的值或Inventory键时，调用onClose方法，并返回true，表示该按键事件已被消耗
-        if (keyCode == GLFWKey.GLFW_KEY_ESCAPE || keyCode == ClientModEventHandler.SIGN_IN_SCREEN_KEY.getKey().getValue() || keyCode == Minecraft.getInstance().options.keyInventory.getKey().getValue()) {
+        if (keyCode == GLFWKey.GLFW_KEY_ESCAPE || keyCode == ClientEventHandler.SIGN_IN_SCREEN_KEY.getKey().getValue() || keyCode == Minecraft.getInstance().options.keyInventory.getKey().getValue()) {
             if (this.SIGN_IN_SCREEN_TIPS) this.SIGN_IN_SCREEN_TIPS = false;
             else if (this.previousScreen != null) Minecraft.getInstance().setScreen(this.previousScreen);
             else this.onClose();
