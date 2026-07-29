@@ -1,12 +1,12 @@
 package xin.vanilla.sakura.network;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
-import net.minecraftforge.network.PacketDistributor;
+import net.minecraft.client.entity.player.ClientPlayerEntity;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
-import xin.vanilla.sakura.data.PlayerSignInDataCapability;
+import xin.vanilla.sakura.api.SakuraPlayerData;
+import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.network.packet.AdvancementPacket;
 import xin.vanilla.sakura.network.packet.PlayerDataReceivedNotice;
 import xin.vanilla.sakura.network.packet.PlayerDataSyncPacket;
@@ -15,11 +15,12 @@ public class ClientProxy {
     public static final Logger LOGGER = LogManager.getLogger();
 
     public static void handleSynPlayerData(PlayerDataSyncPacket packet) {
-        LocalPlayer player = Minecraft.getInstance().player;
+        ClientPlayerEntity player = Minecraft.getInstance().player;
         if (player != null) {
             try {
-                PlayerSignInDataCapability.setData(player, packet.getData());
-                ModNetworkHandler.INSTANCE.send(new PlayerDataReceivedNotice(), PacketDistributor.SERVER.noArg());
+                IPlayerSignInData clientData = packet.getData();
+                SakuraPlayerData.setClient(player.getUUID(), clientData);
+                ModNetworkHandler.INSTANCE.sendToServer(new PlayerDataReceivedNotice());
                 LOGGER.debug("Client: Player data received successfully.");
             } catch (Exception ignored) {
                 LOGGER.debug("Client: Player data received failed.");

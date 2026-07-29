@@ -1,12 +1,12 @@
 package xin.vanilla.sakura.network.packet;
 
 import lombok.Getter;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.event.network.CustomPayloadEvent;
+import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.network.PacketBuffer;
+import net.minecraftforge.fml.network.NetworkEvent;
+import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.data.IPlayerSignInData;
-import xin.vanilla.sakura.data.PlayerSignInDataCapability;
 
 @Getter
 public class ClientConfigSyncPacket {
@@ -19,21 +19,21 @@ public class ClientConfigSyncPacket {
         this.autoRewarded = ClientConfig.AUTO_REWARDED.get();
     }
 
-    public ClientConfigSyncPacket(FriendlyByteBuf buf) {
+    public ClientConfigSyncPacket(PacketBuffer buf) {
         this.autoRewarded = buf.readBoolean();
     }
 
-    public void toBytes(FriendlyByteBuf buf) {
+    public void toBytes(PacketBuffer buf) {
         buf.writeBoolean(this.autoRewarded);
     }
 
-    public static void handle(ClientConfigSyncPacket packet, CustomPayloadEvent.Context ctx) {
-        ctx.enqueueWork(() -> {
-            ServerPlayer player = ctx.getSender();
+    public static void handle(ClientConfigSyncPacket packet, Supplier<NetworkEvent.Context> ctx) {
+        ctx.get().enqueueWork(() -> {
+            ServerPlayerEntity player = ctx.get().getSender();
             if (player != null) {
-                IPlayerSignInData signInData = PlayerSignInDataCapability.getData(player);
+                IPlayerSignInData signInData = SakuraPlayerData.get(player);
                 signInData.setAutoRewarded(packet.autoRewarded);
-                signInData.save(player);
+                SakuraPlayerData.saveAndSync(player);
             }
         });
         ctx.setPacketHandled(true);

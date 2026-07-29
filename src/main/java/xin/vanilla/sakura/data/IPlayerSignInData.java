@@ -1,11 +1,9 @@
 package xin.vanilla.sakura.data;
 
 import lombok.NonNull;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.common.capabilities.AutoRegisterCapability;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.network.PacketBuffer;
 import net.minecraftforge.common.util.INBTSerializable;
 import xin.vanilla.sakura.config.KeyValue;
 
@@ -16,10 +14,7 @@ import java.util.List;
 /**
  * 玩家签到数据
  */
-@AutoRegisterCapability
-public interface IPlayerSignInData extends INBTSerializable<CompoundTag> {
-    // TIPS 加完属性记得去 PlayerSignInDataStorage 里注册
-
+public interface IPlayerSignInData extends INBTSerializable<CompoundNBT> {
     /**
      * 获取累计签到天数
      */
@@ -141,15 +136,13 @@ public interface IPlayerSignInData extends INBTSerializable<CompoundTag> {
      * 获取有效的语言
      */
     @NonNull
-    String getValidLanguage(@Nullable Player player);
+    String getValidLanguage(@Nullable PlayerEntity player);
 
-    void writeToBuffer(FriendlyByteBuf buffer);
+    void writeToBuffer(PacketBuffer buffer);
 
-    void readFromBuffer(FriendlyByteBuf buffer);
+    void readFromBuffer(PacketBuffer buffer);
 
     void copyFrom(IPlayerSignInData capability);
-
-    void save(ServerPlayer player);
 
     int calculateContinuousDays();
 }

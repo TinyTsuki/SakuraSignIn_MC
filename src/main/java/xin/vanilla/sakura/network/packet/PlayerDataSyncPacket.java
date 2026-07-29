@@ -91,11 +91,10 @@ public class PlayerDataSyncPacket extends SplitPacket {
         }
     }
 
-    public static void handle(PlayerDataSyncPacket packet, CustomPayloadEvent.Context ctx) {
-        ctx.enqueueWork(() -> {
-            if (ctx.isClientSide()) {
-                // 在客户端更新 PlayerSignInDataCapability
-                // 获取玩家并更新 Capability 数据
+    public static void handle(PlayerDataSyncPacket packet, Supplier<NetworkEvent.Context> ctx) {
+        ctx.get().enqueueWork(() -> {
+            if (ctx.get().getDirection().getReceptionSide().isClient()) {
+                // 客户端只更新网络同步副本，不参与服务端持久化。
                 List<PlayerDataSyncPacket> packets = SplitPacket.handle(packet);
                 if (CollectionUtils.isNotNullOrEmpty(packets)) {
                     DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientProxy.handleSynPlayerData(new PlayerDataSyncPacket(packets)));
