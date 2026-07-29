@@ -1,22 +1,22 @@
 package xin.vanilla.sakura.screen.component;
 
+import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.sakura.text.SakuraComponent;
+import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.AbstractWidget;
-import net.minecraft.client.gui.narration.NarrationElementOutput;
-import net.minecraft.client.gui.screens.Screen;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.widget.Widget;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
-import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.util.AbstractGuiUtils;
-import xin.vanilla.sakura.util.Component;
+import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.sakura.util.GLFWKey;
 import xin.vanilla.sakura.util.StringUtils;
 
@@ -27,7 +27,7 @@ import java.util.function.Consumer;
 @Setter
 @OnlyIn(Dist.CLIENT)
 @Accessors(chain = true)
-public class InventoryButton extends AbstractWidget {
+public class InventoryButton extends Widget {
     private static final Logger LOGGER = LogManager.getLogger();
 
     /**
@@ -68,7 +68,7 @@ public class InventoryButton extends AbstractWidget {
     private Consumer<Coordinate> onDragEnd;
 
     public InventoryButton(int x, int y, int width, int height, String title) {
-        super(x, y, width, height, Component.literal(title).toTextComponent());
+        super(x, y, width, height, SakuraComponent.get().literal(title).toVanilla());
         this.x_ = x;
         this.y_ = y;
     }
@@ -87,7 +87,13 @@ public class InventoryButton extends AbstractWidget {
         return this;
     }
 
-    public void render_(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+    @Override
+    @ParametersAreNonnullByDefault
+    public void render(MatrixStack matrixStack, int mouseX, int mouseY, float partialTicks) {
+        // 重写并且啥也不干
+    }
+
+    public void render_(MatrixStack matrixStack, int mouseX, int mouseY, float partialTicks) {
         // 无法直接监听鼠标移动事件, 直接在绘制时调用
         this.mouseMoved(mouseX, mouseY);
         Screen screen = Minecraft.getInstance().screen;
@@ -96,10 +102,11 @@ public class InventoryButton extends AbstractWidget {
             this.screenHeight = screen.height;
         }
         // 绘制自定义纹理
+        Minecraft.getInstance().getTextureManager().bind(SakuraSignIn.getThemeTexture());
         int offset = this.isHovered && !this.mouseDrag ? 1 : 0;
-        AbstractGuiUtils.setDepth(graphics, AbstractGuiUtils.EDepth.TOOLTIP);
-        AbstractGuiUtils.blit(graphics, SakuraSignIn.getThemeTexture(), super.getX() - offset, super.getY() - offset, this.width + offset * 2, this.height + offset * 2, (int) this.u0, (int) this.v0, (int) this.uWidth, (int) this.vHeight, (int) totalWidth, (int) totalHeight);
-        AbstractGuiUtils.resetDepth(graphics);
+        AbstractGuiUtils.setDepth(matrixStack, AbstractGuiUtils.EDepth.TOOLTIP);
+        AbstractGuiUtils.blit(matrixStack, this.x - offset, this.y - offset, this.width + offset * 2, this.height + offset * 2, (int) this.u0, (int) this.v0, (int) this.uWidth, (int) this.vHeight, (int) totalWidth, (int) totalHeight);
+        AbstractGuiUtils.resetDepth(matrixStack);
         if (this.mouseDrag) {
             Text text;
             if (this.modifiers == GLFWKey.GLFW_MOD_ALT) {
@@ -109,12 +116,12 @@ public class InventoryButton extends AbstractWidget {
             } else {
                 text = Text.literal(String.format("X: %d\nY: %d", super.getX(), super.getY()));
             }
-            AbstractGuiUtils.drawPopupMessage(text.setGraphics(graphics), super.getX() + (AbstractGuiUtils.multilineTextWidth(text) - this.width) / 2, super.getY() + this.height / 2, screenWidth, screenHeight);
+            AbstractGuiUtils.drawPopupMessage(text.stack(matrixStack), this.x + (AbstractGuiUtils.multilineTextWidth(text) - this.width) / 2, this.y + this.height / 2, screenWidth, screenHeight);
         } else if (this.isHovered) {
             if (this.modifiers == GLFWKey.GLFW_MOD_SHIFT) {
-                AbstractGuiUtils.drawPopupMessage(Text.translatable(EI18nType.TIPS, "drag_inventory_button").setGraphics(graphics), mouseX, mouseY, screenWidth, screenHeight);
+                AbstractGuiUtils.drawPopupMessage(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.drag_inventory_button").stack(matrixStack), mouseX, mouseY, screenWidth, screenHeight);
             } else {
-                AbstractGuiUtils.drawPopupMessage(Text.fromTextComponent(this.getMessage().copy()).setGraphics(graphics), mouseX, mouseY, screenWidth, screenHeight);
+                AbstractGuiUtils.drawPopupMessage(Text.from(this.getMessage().copy()).stack(matrixStack), mouseX, mouseY, screenWidth, screenHeight);
             }
         }
     }
@@ -189,16 +196,6 @@ public class InventoryButton extends AbstractWidget {
         this.keyCode = -1;
         this.modifiers = -1;
         return false;
-    }
-
-    @Override
-    @ParametersAreNonnullByDefault
-    public void updateWidgetNarration(NarrationElementOutput narration) {
-    }
-
-    @Override
-    @ParametersAreNonnullByDefault
-    public void renderWidget(GuiGraphics graphics, int i, int i1, float v) {
     }
 
     /**
