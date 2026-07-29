@@ -1,9 +1,9 @@
 package xin.vanilla.sakura.util;
 
+import xin.vanilla.sakura.config.CommonConfig;
 import lombok.Getter;
 import lombok.NonNull;
 import xin.vanilla.sakura.SakuraSignIn;
-import xin.vanilla.sakura.config.ServerConfig;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -631,8 +631,8 @@ public class DateUtils {
 
     public static Date getServerValidDate(Date date) {
         // 校准客户端传过来的时间
-        Date originalTime = DateUtils.format(ServerConfig.SERVER_TIME.get());
-        Date actualTime = DateUtils.format(ServerConfig.ACTUAL_TIME.get());
+        Date originalTime = DateUtils.format(CommonConfig.get().dateTime().serverTime());
+        Date actualTime = DateUtils.format(CommonConfig.get().dateTime().serverCalibrationTime());
         if (originalTime.compareTo(actualTime) != 0) {
             date = DateUtils.addDate(date, DateUtils.dateOfTwo(originalTime, actualTime));
         }

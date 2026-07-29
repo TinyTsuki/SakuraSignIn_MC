@@ -13,9 +13,7 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.server.FMLServerStartingEvent;
 import net.minecraftforge.fml.event.server.FMLServerStoppingEvent;
@@ -32,6 +30,7 @@ import xin.vanilla.sakura.network.data.AdvancementData;
 import xin.vanilla.sakura.network.packet.SplitPacket;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
 import xin.vanilla.sakura.util.DateUtils;
+import xin.vanilla.banira.common.config.BaniraConfig;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -131,6 +130,8 @@ public class SakuraSignIn {
 
     public SakuraSignIn() {
         SakuraPlayerData.install(ForgePlayerSignInDataService.INSTANCE);
+        BaniraConfig.register(CommonConfig.class, MODID);
+        BaniraConfig.register(ClientConfig.class, MODID);
 
         // 注册网络通道
         ModNetworkHandler.registerPackets();
@@ -141,12 +142,6 @@ public class SakuraSignIn {
 
         // 注册当前实例到MinecraftForge的事件总线，以便监听和处理游戏内的各种事件
         MinecraftForge.EVENT_BUS.register(this);
-
-        // 注册服务器和客户端配置
-        // MinecraftForge.EVENT_BUS.addListener(this::onLoadConfig);
-        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, CommonConfig.COMMON_CONFIG);
-        ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, ServerConfig.SERVER_CONFIG);
-        ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, ClientConfig.CLIENT_CONFIG);
 
         // 注册客户端设置事件到MOD事件总线
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::onClientSetup);

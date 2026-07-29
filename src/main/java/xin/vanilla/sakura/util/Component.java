@@ -1,5 +1,6 @@
 package xin.vanilla.sakura.util;
 
+import xin.vanilla.sakura.config.CommonConfig;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -8,9 +9,10 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.minecraft.network.chat.*;
-import net.minecraft.server.level.ServerPlayer;
-import xin.vanilla.sakura.config.ServerConfig;
+import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.util.text.*;
+import net.minecraft.util.text.event.ClickEvent;
+import net.minecraft.util.text.event.HoverEvent;
 import xin.vanilla.sakura.enums.EI18nType;
 
 import java.io.Serializable;
@@ -18,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Accessors(chain = true)
 @NoArgsConstructor
@@ -164,7 +167,7 @@ public class Component implements Cloneable, Serializable {
      * 获取语言代码
      */
     public @NonNull String getLanguageCode() {
-        return this.languageCode == null ? ServerConfig.DEFAULT_LANGUAGE.get() : this.languageCode;
+        return this.languageCode == null ? CommonConfig.get().server().defaultLanguage() : this.languageCode;
     }
 
     /**
@@ -434,10 +437,10 @@ public class Component implements Cloneable, Serializable {
     public Style getStyle() {
         Style style = Style.EMPTY;
         if (!isColorEmpty() && getColor() != 0xFFFFFFFF)
-            style = style.withColor(TextColor.fromRgb(getColor()));
-        style = style.withUnderlined(this.isUnderlined())
-                .withStrikethrough(this.isStrikethrough())
-                .withObfuscated(this.isObfuscated())
+            style = style.withColor(Color.fromRgb(getColor()));
+        style = style.setUnderlined(this.isUnderlined())
+                .setStrikethrough(this.isStrikethrough())
+                .setObfuscated(this.isObfuscated())
                 .withBold(this.isBold())
                 .withItalic(this.isItalic())
                 .withClickEvent(this.clickEvent)
@@ -511,7 +514,7 @@ public class Component implements Cloneable, Serializable {
             if (this.i18nType == EI18nType.PLAIN) {
                 result.append(this.text);
             } else if (i18nType == EI18nType.ORIGINAL) {
-                result.append(((net.minecraft.network.chat.Component) this.original).getString());
+                result.append(((ITextComponent) this.original).getString());
             } else {
                 result.append(I18nUtils.getTranslation(I18nUtils.getKey(this.i18nType, this.text), languageCode));
             }
@@ -524,7 +527,7 @@ public class Component implements Cloneable, Serializable {
     /**
      * 获取文本组件
      */
-    public net.minecraft.network.chat.Component toTextComponent() {
+    public ITextComponent toTextComponent() {
         return this.toTextComponent(this.getLanguageCode());
     }
 
@@ -533,10 +536,10 @@ public class Component implements Cloneable, Serializable {
      *
      * @param languageCode 语言代码
      */
-    public net.minecraft.network.chat.Component toTextComponent(String languageCode) {
-        List<MutableComponent> components = new ArrayList<>();
+    public ITextComponent toTextComponent(String languageCode) {
+        List<IFormattableTextComponent> components = new ArrayList<>();
         if (this.i18nType == EI18nType.ORIGINAL) {
-            components.add((MutableComponent) this.original);
+            components.add((IFormattableTextComponent) this.original);
         } else {
             // 如果颜色值为null则说明为透明，则不显示内容，所以返回空文本组件
             if (!this.isColorEmpty()) {
@@ -544,7 +547,7 @@ public class Component implements Cloneable, Serializable {
                     String text = I18nUtils.getTranslation(I18nUtils.getKey(this.i18nType, this.text), languageCode);
                     String[] split = text.split(StringUtils.FORMAT_REGEX, -1);
                     for (String s : split) {
-                        components.add(net.minecraft.network.chat.Component.literal(s).withStyle(this.getStyle()));
+                        components.add(new StringTextComponent(s).withStyle(this.getStyle()));
                     }
                     Pattern pattern = Pattern.compile(StringUtils.FORMAT_REGEX);
                     Matcher matcher = pattern.matcher(text);
@@ -588,15 +591,15 @@ public class Component implements Cloneable, Serializable {
                         i++;
                     }
                 } else {
-                    components.add(net.minecraft.network.chat.Component.literal(this.text).withStyle(this.getStyle()));
+                    components.add(new StringTextComponent(this.text).withStyle(this.getStyle()));
                 }
             }
         }
-        components.addAll(this.getChildren().stream().map(component -> (MutableComponent) component.toTextComponent(languageCode)).toList());
+        components.addAll(this.getChildren().stream().map(component -> (IFormattableTextComponent) component.toTextComponent(languageCode)).collect(Collectors.toList()));
         if (components.isEmpty()) {
-            components.add(net.minecraft.network.chat.Component.literal(""));
+            components.add(new StringTextComponent(""));
         }
-        MutableComponent result = components.get(0);
+        IFormattableTextComponent result = components.get(0);
         for (int j = 1; j < components.size(); j++) {
             result.append(components.get(j));
         }
@@ -606,8 +609,8 @@ public class Component implements Cloneable, Serializable {
     /**
      * 获取翻译文本组件
      */
-    public net.minecraft.network.chat.Component toTranslatedTextComponent() {
-        MutableComponent result = net.minecraft.network.chat.Component.translatable("");
+    public ITextComponent toTranslatedTextComponent() {
+        IFormattableTextComponent result = new TranslationTextComponent("");
         if (!this.isColorEmpty() || !this.isBgColorEmpty()) {
             if (this.i18nType != EI18nType.PLAIN) {
                 Object[] objects = this.getArgs().stream().map(component -> {
@@ -618,12 +621,12 @@ public class Component implements Cloneable, Serializable {
                     }
                 }).toArray();
                 if (CollectionUtils.isNotNullOrEmpty(objects)) {
-                    result = net.minecraft.network.chat.Component.translatable(I18nUtils.getKey(this.i18nType, this.text), objects);
+                    result = new TranslationTextComponent(I18nUtils.getKey(this.i18nType, this.text), objects);
                 } else {
-                    result = net.minecraft.network.chat.Component.translatable(I18nUtils.getKey(this.i18nType, this.text));
+                    result = new TranslationTextComponent(I18nUtils.getKey(this.i18nType, this.text));
                 }
             } else {
-                result = net.minecraft.network.chat.Component.literal(this.text).withStyle(this.getStyle());
+                result = new StringTextComponent(this.text).withStyle(this.getStyle());
             }
         }
         for (Component child : this.getChildren()) {
@@ -637,7 +640,7 @@ public class Component implements Cloneable, Serializable {
      *
      * @return 格式化颜色后的文本组件
      */
-    public net.minecraft.network.chat.Component toChatComponent() {
+    public ITextComponent toChatComponent() {
         return this.toChatComponent(this.getLanguageCode());
     }
 
@@ -646,20 +649,20 @@ public class Component implements Cloneable, Serializable {
      *
      * @return 格式化颜色后的文本组件
      */
-    public net.minecraft.network.chat.Component toChatComponent(String languageCode) {
+    public ITextComponent toChatComponent(String languageCode) {
         return rewriteColor(this.toTextComponent(languageCode));
     }
 
     // 😵‍💫
-    public static net.minecraft.network.chat.Component rewriteColor(net.minecraft.network.chat.Component component) {
-        if (component instanceof MutableComponent) {
-            TextColor color = component.getStyle().getColor();
+    public static ITextComponent rewriteColor(ITextComponent component) {
+        if (component instanceof IFormattableTextComponent) {
+            Color color = component.getStyle().getColor();
             if (color != null && color.serialize().startsWith("#")) {
-                Style style = component.getStyle().withColor(TextColor.parseColor(StringUtils.argbToMinecraftColor(StringUtils.argbToHex(color.serialize())).name().toLowerCase()));
-                ((MutableComponent) component).setStyle(style);
+                Style style = component.getStyle().withColor(Color.parseColor(StringUtils.argbToMinecraftColor(StringUtils.argbToHex(color.serialize())).name().toLowerCase()));
+                ((IFormattableTextComponent) component).setStyle(style);
             }
         }
-        for (net.minecraft.network.chat.Component sibling : component.getSiblings()) {
+        for (ITextComponent sibling : component.getSiblings()) {
             rewriteColor(sibling);
         }
         return component;
@@ -750,7 +753,7 @@ public class Component implements Cloneable, Serializable {
      * @param key    翻译键
      * @param args   参数
      */
-    public static Component translatable(ServerPlayer player, EI18nType type, String key, Object... args) {
+    public static Component translatable(ServerPlayerEntity player, EI18nType type, String key, Object... args) {
         return new Component(key, type).setLanguageCode(SakuraUtils.getPlayerLanguage(player)).appendArg(args);
     }
 
