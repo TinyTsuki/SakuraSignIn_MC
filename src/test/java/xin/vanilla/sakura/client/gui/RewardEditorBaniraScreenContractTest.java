@@ -29,6 +29,8 @@ public class RewardEditorBaniraScreenContractTest {
         assertTrue(screen.contains("protected void onRender("));
         assertTrue(screen.contains("renderWidgets("));
         assertTrue(screen.contains("popupOption.onSelect(this::handlePopupSelection)"));
+        assertTrue(screen.contains("new ConfirmDialogScreen("));
+        assertTrue(screen.contains("requestDeleteConfirmation()"));
         assertTrue(screen.contains("if (!popupOption.isEmpty())"));
         assertTrue(screen.contains("inputState.onlyShiftPressed()"));
         assertTrue(operationWidget.contains("extends BaseWidget"));
@@ -42,6 +44,8 @@ public class RewardEditorBaniraScreenContractTest {
         assertFalse(screen.contains("new OperationButton("));
         assertFalse(screen.contains("OperationButton.RenderContext"));
         assertFalse(screen.contains("screen.component.PopupOption"));
+        assertFalse(screen.contains("isKeyAndMousePressed"));
+        assertFalse(screen.contains("onlyCtrlPressed()"));
         assertFalse(screen.contains("void mouseClicked("));
         assertFalse(screen.contains("void mouseReleased("));
         assertFalse(screen.contains("void mouseMoved("));
@@ -51,6 +55,18 @@ public class RewardEditorBaniraScreenContractTest {
     @Test
     public void obsoleteRewardEditorCursorIsRemoved() {
         assertFalse(Files.exists(MAIN.resolve("screen/component/MouseCursor.java")));
+    }
+
+    @Test
+    public void itemCountIsRenderedAfterTheItemModel() {
+        String gui = read(MAIN.resolve("util/AbstractGuiUtils.java"));
+
+        int item = gui.indexOf("ItemWidget.renderItem(itemRenderer, fontRenderer, itemStack, x, y, false)");
+        int foreground = gui.indexOf("setDepth(matrixStack, EDepth.FOREGROUND)", item);
+        int count = gui.indexOf("fontRenderer.drawShadow(matrixStack, count", foreground);
+        assertTrue(item >= 0);
+        assertTrue(foreground > item);
+        assertTrue(count > foreground);
     }
 
     private static String read(Path path) {

@@ -2,6 +2,7 @@ package xin.vanilla.sakura.screen;
 
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.enums.EnumAlignment;
+import xin.vanilla.banira.client.gui.ConfirmDialogScreen;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.sakura.text.SakuraComponent;
 import xin.vanilla.sakura.config.CommonConfig;
@@ -30,6 +31,8 @@ import xin.vanilla.sakura.enums.ESignInType;
 import xin.vanilla.sakura.event.ClientEventHandler;
 import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.network.packet.SignInPacket;
+import xin.vanilla.sakura.notification.SakuraClientNotifications;
+import xin.vanilla.sakura.notification.SakuraNotificationTypes;
 import xin.vanilla.sakura.rewards.RewardList;
 import xin.vanilla.sakura.rewards.RewardManager;
 import xin.vanilla.sakura.screen.component.*;
@@ -422,7 +425,7 @@ public class SignInScreen extends Screen {
         if (this.SIGN_IN_SCREEN_TIPS) return;
         // 上个月
         if (value.getOperation() == LEFT_ARROW.getCode()) {
-            if (ClientConfig.get().signKeys().lastMonth().stream().anyMatch(keyManager::isMousePressed)) {
+            if (keyManager.onlyMouseLeftPressed()) {
                 SakuraSignIn.setCalendarCurrentDate(DateUtils.addMonth(SakuraSignIn.getCalendarCurrentDate(), -1));
                 SakuraNetwork.requestMonth(SakuraSignIn.getCalendarCurrentDate());
                 updateLayout.set(true);
@@ -431,7 +434,7 @@ public class SignInScreen extends Screen {
         }
         // 下个月
         else if (value.getOperation() == RIGHT_ARROW.getCode()) {
-            if (ClientConfig.get().signKeys().nextMonth().stream().anyMatch(keyManager::isMousePressed)) {
+            if (keyManager.onlyMouseLeftPressed()) {
                 SakuraSignIn.setCalendarCurrentDate(DateUtils.addMonth(SakuraSignIn.getCalendarCurrentDate(), 1));
                 SakuraNetwork.requestMonth(SakuraSignIn.getCalendarCurrentDate());
                 updateLayout.set(true);
@@ -440,7 +443,7 @@ public class SignInScreen extends Screen {
         }
         // 上一年
         else if (value.getOperation() == UP_ARROW.getCode()) {
-            if (ClientConfig.get().signKeys().lastYear().stream().anyMatch(keyManager::isMousePressed)) {
+            if (keyManager.onlyMouseLeftPressed()) {
                 SakuraSignIn.setCalendarCurrentDate(DateUtils.addYear(SakuraSignIn.getCalendarCurrentDate(), -1));
                 SakuraNetwork.requestMonth(SakuraSignIn.getCalendarCurrentDate());
                 updateLayout.set(true);
@@ -449,7 +452,7 @@ public class SignInScreen extends Screen {
         }
         // 下一年
         else if (value.getOperation() == DOWN_ARROW.getCode()) {
-            if (ClientConfig.get().signKeys().nextYear().stream().anyMatch(keyManager::isMousePressed)) {
+            if (keyManager.onlyMouseLeftPressed()) {
                 SakuraSignIn.setCalendarCurrentDate(DateUtils.addYear(SakuraSignIn.getCalendarCurrentDate(), 1));
                 SakuraNetwork.requestMonth(SakuraSignIn.getCalendarCurrentDate());
                 updateLayout.set(true);
@@ -533,7 +536,7 @@ public class SignInScreen extends Screen {
             if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                 if (RewardManager.getCompensateDateInt() < DateUtils.toDateInt(RewardManager.getCompensateDate(DateUtils.getClientDate()))) {
                     Component component = SakuraComponent.get().transClient("message", "next_day_cannot_operate");
-                    NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
+                    SakuraClientNotifications.warning(component, SakuraNotificationTypes.SIGN_IN);
                 } else {
                     cell.status = ClientConfig.get().display().autoRewarded() ? ESignInStatus.REWARDED.getCode() : ESignInStatus.SIGNED_IN.getCode();
                     SakuraNetwork.sendToServer(new SignInPacket(DateUtils.toDateTimeString(DateUtils.getClientDate()), ClientConfig.get().display().autoRewarded(), ESignInType.SIGN_IN));
@@ -543,12 +546,9 @@ public class SignInScreen extends Screen {
         // 领取奖励
         else if (cell.status == ESignInStatus.SIGNED_IN.getCode()) {
             if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
-                Component component = SakuraComponent.get().transClient("message", "already_signed");
-                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
-            } else {
                 if (RewardManager.isRewarded(SakuraPlayerData.get(player), cellDate, false)) {
                     Component component = SakuraComponent.get().transClient("message", "already_get_reward");
-                    NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
+                    SakuraClientNotifications.warning(component, SakuraNotificationTypes.SIGN_IN);
                 } else {
                     cell.status = ESignInStatus.REWARDED.getCode();
                     SakuraNetwork.sendToServer(new SignInPacket(DateUtils.toDateTimeString(cellDate), ClientConfig.get().display().autoRewarded(), ESignInType.REWARD));
@@ -557,35 +557,49 @@ public class SignInScreen extends Screen {
         }
         // 补签
         else if (cell.status == ESignInStatus.CAN_REPAIR.getCode()) {
-            if (button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
+            if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                 if (!CommonConfig.get().makeUp().signInCard()) {
                     Component component = SakuraComponent.get().transClient("message", "server_not_enable_sign_in_card");
-                    NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
+                    SakuraClientNotifications.warning(component, SakuraNotificationTypes.SIGN_IN);
                 } else {
                     if (SakuraPlayerData.get(player).getSignInCard() <= 0) {
                         Component component = SakuraComponent.get().transClient("message", "not_enough_sign_in_card");
-                        NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
+                        SakuraClientNotifications.warning(component, SakuraNotificationTypes.SIGN_IN);
                     } else {
-                        cell.status = ClientConfig.get().display().autoRewarded() ? ESignInStatus.REWARDED.getCode() : ESignInStatus.SIGNED_IN.getCode();
-                        SakuraNetwork.sendToServer(new SignInPacket(DateUtils.toDateTimeString(cellDate), ClientConfig.get().display().autoRewarded(), ESignInType.RE_SIGN_IN));
+                        Minecraft.getInstance().setScreen(new ConfirmDialogScreen(
+                                new ConfirmDialogScreen.Args()
+                                        .parentScreen(this)
+                                        .title(SakuraComponent.get().transClient("title", "confirm_operation"))
+                                        .message(SakuraComponent.get().transClient("tips", "confirm_make_up_sign_in"))
+                                        .onConfirm(() -> {
+                                            cell.status = ClientConfig.get().display().autoRewarded()
+                                                    ? ESignInStatus.REWARDED.getCode()
+                                                    : ESignInStatus.SIGNED_IN.getCode();
+                                            SakuraNetwork.sendToServer(new SignInPacket(
+                                                    DateUtils.toDateTimeString(cellDate),
+                                                    ClientConfig.get().display().autoRewarded(),
+                                                    ESignInType.RE_SIGN_IN
+                                            ));
+                                        })
+                        ));
                     }
                 }
             }
         } else if (cell.status == ESignInStatus.NO_ACTION.getCode()) {
             if (cellDate.after(RewardManager.getCompensateDate(DateUtils.getClientDate()))) {
                 Component component = SakuraComponent.get().transClient("message", "next_day_cannot_operate");
-                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
+                SakuraClientNotifications.warning(component, SakuraNotificationTypes.SIGN_IN);
             } else {
                 Component component = SakuraComponent.get().transClient("message", "past_day_cannot_operate");
-                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
+                SakuraClientNotifications.warning(component, SakuraNotificationTypes.SIGN_IN);
             }
         } else if (cell.status == ESignInStatus.REWARDED.getCode()) {
             Component component = SakuraComponent.get().transClient("message", "already_get_reward");
-            NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
+            SakuraClientNotifications.warning(component, SakuraNotificationTypes.SIGN_IN);
         } else {
             if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                 Component component = SakuraComponent.get().literal(ESignInStatus.valueOf(cell.status).getDescription() + ": " + DateUtils.toString(cellDate));
-                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0x88FF5555));
+                SakuraClientNotifications.error(component, SakuraNotificationTypes.SIGN_IN);
             }
         }
     }
@@ -791,7 +805,7 @@ public class SignInScreen extends Screen {
                 String selectedFile = themeFileList.get(popupOption.getSelectedIndex()).getPath();
                 if (player != null) {
                     Component component = SakuraComponent.get().transClient("message", "selected_theme_file_s", selectedFile);
-                    NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component));
+                    SakuraClientNotifications.show(component, SakuraNotificationTypes.COMMAND_FEEDBACK);
                     ResourceLocation resourceLocation = TextureUtils.loadCustomTexture(selectedFile);
                     if (TextureUtils.isTextureAvailable(resourceLocation)) {
                         ClientConfig.get().display().theme(selectedFile);
@@ -885,22 +899,22 @@ public class SignInScreen extends Screen {
     @Override
     public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
         boolean consumed = false;
-        if (ClientConfig.get().signKeys().lastMonth().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
+        if (ClientConfig.get().signKeys().lastMonth().stream().anyMatch(keyManager::isKeyPressed)) {
             SakuraSignIn.setCalendarCurrentDate(DateUtils.addMonth(SakuraSignIn.getCalendarCurrentDate(), -1));
             SakuraNetwork.requestMonth(SakuraSignIn.getCalendarCurrentDate());
             updateLayout();
             consumed = true;
-        } else if (ClientConfig.get().signKeys().nextMonth().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
+        } else if (ClientConfig.get().signKeys().nextMonth().stream().anyMatch(keyManager::isKeyPressed)) {
             SakuraSignIn.setCalendarCurrentDate(DateUtils.addMonth(SakuraSignIn.getCalendarCurrentDate(), 1));
             SakuraNetwork.requestMonth(SakuraSignIn.getCalendarCurrentDate());
             updateLayout();
             consumed = true;
-        } else if (ClientConfig.get().signKeys().lastYear().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
+        } else if (ClientConfig.get().signKeys().lastYear().stream().anyMatch(keyManager::isKeyPressed)) {
             SakuraSignIn.setCalendarCurrentDate(DateUtils.addYear(SakuraSignIn.getCalendarCurrentDate(), -1));
             SakuraNetwork.requestMonth(SakuraSignIn.getCalendarCurrentDate());
             updateLayout();
             consumed = true;
-        } else if (ClientConfig.get().signKeys().nextYear().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
+        } else if (ClientConfig.get().signKeys().nextYear().stream().anyMatch(keyManager::isKeyPressed)) {
             SakuraSignIn.setCalendarCurrentDate(DateUtils.addYear(SakuraSignIn.getCalendarCurrentDate(), 1));
             SakuraNetwork.requestMonth(SakuraSignIn.getCalendarCurrentDate());
             updateLayout();

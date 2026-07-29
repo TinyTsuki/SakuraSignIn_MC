@@ -14,7 +14,8 @@ import xin.vanilla.sakura.network.packet.PlayerDataSyncPacket;
 import xin.vanilla.sakura.network.packet.PlayerMonthSyncPacket;
 import xin.vanilla.sakura.network.packet.RewardOptionSyncPacket;
 import xin.vanilla.sakura.config.RewardConfigManager;
-import xin.vanilla.sakura.screen.component.NotificationManager;
+import xin.vanilla.sakura.notification.SakuraClientNotifications;
+import xin.vanilla.sakura.notification.SakuraNotificationTypes;
 import xin.vanilla.banira.common.data.Component;
 
 import java.util.ArrayList;
@@ -67,16 +68,14 @@ public class ClientProxy {
             ));
             RewardConfigManager.setRewardOptionDataChanged(true);
             RewardConfigManager.saveRewardOption();
-            NotificationManager.get().addNotification(
-                    NotificationManager.Notification.ofComponentWithBlack(
-                            SakuraComponent.get().trans("message", "reward_option_download_success")
-                    )
+            SakuraClientNotifications.success(
+                    SakuraComponent.get().trans("message", "reward_option_download_success"),
+                    SakuraNotificationTypes.REWARD
             );
         } catch (RuntimeException exception) {
-            NotificationManager.get().addNotification(
-                    NotificationManager.Notification.ofComponentWithBlack(
-                            SakuraComponent.get().trans("message", "reward_option_download_failed")
-                    ).setBgColor(0x88FF5555)
+            SakuraClientNotifications.error(
+                    SakuraComponent.get().trans("message", "reward_option_download_failed"),
+                    SakuraNotificationTypes.REWARD
             );
             throw exception;
         }
@@ -85,11 +84,10 @@ public class ClientProxy {
     public static void handleRewardOptionUploadResult(boolean success) {
         Component message = SakuraComponent.get().trans("message", success ? "reward_option_upload_success" : "reward_option_upload_failed"
         );
-        NotificationManager.Notification notification =
-                NotificationManager.Notification.ofComponentWithBlack(message);
-        if (!success) {
-            notification.setBgColor(0x88FF5555);
+        if (success) {
+            SakuraClientNotifications.success(message, SakuraNotificationTypes.REWARD);
+        } else {
+            SakuraClientNotifications.error(message, SakuraNotificationTypes.REWARD);
         }
-        NotificationManager.get().addNotification(notification);
     }
 }
