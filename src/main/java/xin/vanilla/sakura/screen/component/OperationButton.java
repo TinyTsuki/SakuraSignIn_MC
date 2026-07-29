@@ -1,12 +1,13 @@
 package xin.vanilla.sakura.screen.component;
 
-import com.mojang.blaze3d.platform.NativeImage;
+import xin.vanilla.banira.client.gui.component.Text;
+import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.renderer.texture.NativeImage;
+import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
@@ -27,7 +28,16 @@ public class OperationButton {
     /**
      * 渲染辅助类：用于向自定义渲染函数传递上下文
      */
-    public record RenderContext(GuiGraphics graphics, KeyEventManager keyManager, OperationButton button) {
+    public static class RenderContext {
+        public final MatrixStack matrixStack;
+        public final KeyEventManager keyManager;
+        public final OperationButton button;
+
+        public RenderContext(MatrixStack matrixStack, KeyEventManager keyManager, OperationButton button) {
+            this.matrixStack = matrixStack;
+            this.keyManager = keyManager;
+            this.button = button;
+        }
     }
 
     /**
@@ -39,11 +49,6 @@ public class OperationButton {
      * 自定义渲染函数
      */
     private Consumer<RenderContext> customRenderFunction;
-
-    /**
-     * 自定义弹出层渲染函数
-     */
-    private Runnable customPopupFunction = null;
 
     /**
      * 按钮材质资源
@@ -383,8 +388,8 @@ public class OperationButton {
     /**
      * 绘制按钮
      */
-    public void render(GuiGraphics graphics, KeyEventManager keyManager) {
-        this.render(graphics, false, keyManager);
+    public void render(MatrixStack matrixStack, KeyEventManager keyManager) {
+        this.render(matrixStack, false, keyManager);
     }
 
     /**
@@ -392,10 +397,10 @@ public class OperationButton {
      *
      * @param renderPopup 是否绘制弹出层提示
      */
-    public void render(GuiGraphics graphics, boolean renderPopup, KeyEventManager keyManager) {
+    public void render(MatrixStack matrixStack, boolean renderPopup, KeyEventManager keyManager) {
         if (customRenderFunction != null) {
             // 使用自定义渲染逻辑
-            customRenderFunction.accept(new RenderContext(graphics, keyManager, this));
+            customRenderFunction.accept(new RenderContext(matrixStack, keyManager, this));
         } else {
             TextureCoordinate textureCoordinate = new TextureCoordinate().setTotalWidth(this.textureWidth).setTotalHeight(this.textureHeight);
             Coordinate coordinate = new Coordinate().setX(this.x).setY(this.y).setWidth(this.width).setHeight(this.height)
@@ -403,44 +408,42 @@ public class OperationButton {
             // 绘制背景颜色
             int bgColor = this.getBackgroundColor();
             if (bgColor != 0) {
-                AbstractGuiUtils.fill(graphics, (int) (baseX + coordinate.getX() * scale), (int) (baseY + coordinate.getY() * scale), (int) (coordinate.getWidth() * scale), (int) (coordinate.getHeight() * scale), bgColor);
+                AbstractGuiUtils.fill(matrixStack, (int) (baseX + coordinate.getX() * scale), (int) (baseY + coordinate.getY() * scale), (int) (coordinate.getWidth() * scale), (int) (coordinate.getHeight() * scale), bgColor);
             }
             // 绘制纹理
             if (this.isHovered() && this.getTremblingAmplitude() > 0) {
-                AbstractGuiUtils.renderTremblingTexture(graphics, this.texture, textureCoordinate, coordinate, this.baseX, this.baseY, this.scale, true, this.getTremblingAmplitude());
+                AbstractGuiUtils.renderTremblingTexture(matrixStack, this.texture, textureCoordinate, coordinate, this.baseX, this.baseY, this.scale, true, this.getTremblingAmplitude());
             } else {
-                AbstractGuiUtils.renderRotatedTexture(graphics, this.texture, textureCoordinate, coordinate, this.baseX, this.baseY, this.scale, this.rotatedAngle, this.flipHorizontal, this.flipVertical);
+                AbstractGuiUtils.renderRotatedTexture(matrixStack, this.texture, textureCoordinate, coordinate, this.baseX, this.baseY, this.scale, this.rotatedAngle, this.flipHorizontal, this.flipVertical);
             }
             // 绘制前景颜色
             int fgColor = this.getForegroundColor();
             if (fgColor != 0) {
-                AbstractGuiUtils.fill(graphics, (int) (baseX + coordinate.getX() * scale), (int) (baseY + coordinate.getY() * scale), (int) (coordinate.getWidth() * scale), (int) (coordinate.getHeight() * scale), fgColor);
+                AbstractGuiUtils.fill(matrixStack, (int) (baseX + coordinate.getX() * scale), (int) (baseY + coordinate.getY() * scale), (int) (coordinate.getWidth() * scale), (int) (coordinate.getHeight() * scale), fgColor);
             }
         }
         if (renderPopup) {
-            this.renderPopup(graphics, null, keyManager);
+            this.renderPopup(matrixStack, null, keyManager);
         }
     }
 
     /**
      * 绘制弹出层
      */
-    public void renderPopup(GuiGraphics graphics, KeyEventManager keyManager) {
-        this.renderPopup(graphics, null, keyManager);
+    public void renderPopup(MatrixStack matrixStack, KeyEventManager keyManager) {
+        this.renderPopup(matrixStack, null, keyManager);
     }
 
     /**
      * 绘制弹出层
      */
-    public void renderPopup(GuiGraphics graphics, Font font, KeyEventManager keyManager) {
+    public void renderPopup(MatrixStack matrixStack, FontRenderer font, KeyEventManager keyManager) {
         // 绘制提示
         if (StringUtils.isNullOrEmptyEx(this.keyNames) || keyManager.isKeyPressed(this.keyNames)) {
-            if (this.isHovered()) {
-                if (customPopupFunction != null) {
-                    customPopupFunction.run();
-                } else if (tooltip != null && StringUtils.isNotNullOrEmpty(tooltip.getContent()) && Minecraft.getInstance().screen != null) {
+            if (this.isHovered() && tooltip != null && StringUtils.isNotNullOrEmpty(tooltip.content())) {
+                if (Minecraft.getInstance().screen != null) {
                     if (font == null) font = Minecraft.getInstance().font;
-                    AbstractGuiUtils.drawPopupMessage(tooltip.setGraphics(graphics).setFont(font), (int) keyManager.getMouseX(), (int) keyManager.getMouseY(), Minecraft.getInstance().screen.width, Minecraft.getInstance().screen.height);
+                    AbstractGuiUtils.drawPopupMessage(tooltip.stack(matrixStack).font(font), (int) keyManager.getMouseX(), (int) keyManager.getMouseY(), Minecraft.getInstance().screen.width, Minecraft.getInstance().screen.height);
                 }
             }
         }

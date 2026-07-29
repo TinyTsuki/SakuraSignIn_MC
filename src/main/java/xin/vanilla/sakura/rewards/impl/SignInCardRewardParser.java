@@ -1,11 +1,11 @@
 package xin.vanilla.sakura.rewards.impl;
 
+import xin.vanilla.sakura.text.SakuraComponent;
 import com.google.gson.JsonObject;
 import lombok.NonNull;
-import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ERewardType;
 import xin.vanilla.sakura.rewards.RewardParser;
-import xin.vanilla.sakura.util.Component;
+import xin.vanilla.banira.common.data.Component;
 
 public class SignInCardRewardParser implements RewardParser<Integer> {
 
@@ -34,7 +34,7 @@ public class SignInCardRewardParser implements RewardParser<Integer> {
     @Override
     public @NonNull Component getDisplayName(String languageCode, JsonObject json, boolean withNum) {
         int num = deserialize(json);
-        return Component.translatable(languageCode, EI18nType.WORD, "reward_type_" + ERewardType.SIGN_IN_CARD.getCode())
+        return SakuraComponent.get().transLang(languageCode, "word", "reward_type_" + ERewardType.SIGN_IN_CARD.getCode())
                 .append(withNum ? "x" + num : "");
     }
 }

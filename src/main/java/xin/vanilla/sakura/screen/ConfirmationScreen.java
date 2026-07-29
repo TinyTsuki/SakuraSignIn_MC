@@ -1,15 +1,14 @@
 package xin.vanilla.sakura.screen;
 
+import xin.vanilla.sakura.text.SakuraComponent;
+import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.NonNull;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.Renderable;
-import net.minecraft.client.gui.screens.Screen;
-import xin.vanilla.sakura.enums.EI18nType;
-import xin.vanilla.sakura.screen.component.Text;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.widget.button.Button;
+import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.sakura.util.AbstractGuiUtils;
-import xin.vanilla.sakura.util.Component;
+import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.sakura.util.GLFWKey;
 
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -19,7 +18,7 @@ import java.util.function.Supplier;
  * 操作确认 Screen
  */
 public class ConfirmationScreen extends Screen {
-    private final static Component TITLE = Component.literal("ConfirmationScreen");
+    private final static Component TITLE = SakuraComponent.get().literal("ConfirmationScreen");
 
     /**
      * 父级 Screen
@@ -40,7 +39,7 @@ public class ConfirmationScreen extends Screen {
 
 
     public ConfirmationScreen(Screen callbackScreen, Text titleText, @NonNull Runnable onConfirm) {
-        super(TITLE.toTextComponent());
+        super(TITLE.toVanilla());
         this.previousScreen = callbackScreen;
         this.onConfirm = onConfirm;
         this.titleText = titleText;
@@ -48,7 +47,7 @@ public class ConfirmationScreen extends Screen {
     }
 
     public ConfirmationScreen(Screen callbackScreen, Text titleText, @NonNull Runnable onConfirm, Supplier<Boolean> shouldClose) {
-        super(TITLE.toTextComponent());
+        super(TITLE.toVanilla());
         this.previousScreen = callbackScreen;
         this.onConfirm = onConfirm;
         this.titleText = titleText;
@@ -60,13 +59,13 @@ public class ConfirmationScreen extends Screen {
         if (this.shouldClose != null && Boolean.TRUE.equals(this.shouldClose.get()))
             Minecraft.getInstance().setScreen(previousScreen);
         // 创建提交按钮
-        Button submitButton = AbstractGuiUtils.newButton(this.width / 2 + 5, this.height / 2 + 10, 95, 20, Component.translatableClient(EI18nType.OPTION, "confirm"), button -> {
+        Button submitButton = AbstractGuiUtils.newButton(this.width / 2 + 5, this.height / 2 + 10, 95, 20, SakuraComponent.get().transClient("option", "confirm"), button -> {
             onConfirm.run();
             Minecraft.getInstance().setScreen(previousScreen);
         });
-        this.addRenderableWidget(submitButton);
+        this.addButton(submitButton);
         // 创建取消按钮
-        this.addRenderableWidget(AbstractGuiUtils.newButton(this.width / 2 - 100, this.height / 2 + 10, 95, 20, Component.translatableClient(EI18nType.OPTION, "cancel"), button -> {
+        this.addButton(AbstractGuiUtils.newButton(this.width / 2 - 100, this.height / 2 + 10, 95, 20, SakuraComponent.get().transClient("option", "cancel"), button -> {
             // 关闭当前屏幕并返回到调用者的 Screen
             Minecraft.getInstance().setScreen(previousScreen);
         }));
@@ -74,12 +73,10 @@ public class ConfirmationScreen extends Screen {
 
     @Override
     @ParametersAreNonnullByDefault
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+    public void render(MatrixStack matrixStack, int mouseX, int mouseY, float delta) {
+        this.renderBackground(matrixStack);
         // 绘制背景
-        this.renderBackground(graphics, mouseX, mouseY, partialTicks);
-        for (Renderable renderable : this.renderables) {
-            renderable.render(graphics, mouseX, mouseY, partialTicks);
-        }
+        super.render(matrixStack, mouseX, mouseY, delta);
         // 绘制标题
         AbstractGuiUtils.drawString(titleText.setGraphics(graphics), this.width / 2.0f - 100, this.height / 2.0f - 33);
     }

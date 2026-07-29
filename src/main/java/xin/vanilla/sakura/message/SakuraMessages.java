@@ -1,12 +1,11 @@
 package xin.vanilla.sakura.message;
 
 import net.minecraft.entity.player.ServerPlayerEntity;
-import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.BaniraModPresence;
+import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.util.MessageUtils;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
-import xin.vanilla.sakura.util.Component;
 import xin.vanilla.sakura.util.SakuraUtils;
 
 /**
@@ -21,9 +20,7 @@ public final class SakuraMessages {
     }
 
     public static void send(ServerPlayerEntity player, Component message, String notificationType) {
-        xin.vanilla.banira.common.data.Component payload = BaniraComponent.get().object(
-                message.toChatComponent(SakuraUtils.getPlayerLanguage(player))
-        );
+        Component payload = message.clone().languageCode(SakuraUtils.getPlayerLanguage(player));
         if (BaniraModPresence.isRemoteClientInstalled(player, SakuraSignIn.MODID)) {
             MessageUtils.sendNotification(player, payload, notificationType);
         } else {
