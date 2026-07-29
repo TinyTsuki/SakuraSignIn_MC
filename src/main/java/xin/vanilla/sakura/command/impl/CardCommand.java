@@ -1,5 +1,6 @@
 package xin.vanilla.sakura.command.impl;
 
+import xin.vanilla.sakura.text.SakuraComponent;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.command.CommandSource;
@@ -9,9 +10,8 @@ import net.minecraft.entity.player.ServerPlayerEntity;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.data.IPlayerSignInData;
-import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.message.SakuraMessages;
-import xin.vanilla.sakura.util.Component;
+import xin.vanilla.banira.common.data.Component;
 
 import java.util.Collection;
 
@@ -76,10 +76,9 @@ public final class CardCommand {
                 ? "has_sign_in_card_d"
                 : "server_not_enable_sign_in_card";
         Component message = CommonConfig.get().makeUp().signInCard()
-                ? Component.translatable(
-                        player, EI18nType.MESSAGE, key, SakuraPlayerData.get(player).getSignInCard()
+                ? SakuraComponent.get().trans(player, "message", key, SakuraPlayerData.get(player).getSignInCard()
                 )
-                : Component.translatable(player, EI18nType.MESSAGE, key);
+                : SakuraComponent.get().trans(player, "message", key);
         SakuraMessages.send(player, message);
         return 1;
     }
@@ -88,8 +87,7 @@ public final class CardCommand {
         for (ServerPlayerEntity player : players) {
             IPlayerSignInData data = SakuraPlayerData.get(player);
             data.setSignInCard(data.getSignInCard() + amount);
-            SakuraMessages.send(player, Component.translatable(
-                    player, EI18nType.MESSAGE, "get_sign_in_card_d", amount
+            SakuraMessages.send(player, SakuraComponent.get().trans(player, "message", "get_sign_in_card_d", amount
             ));
             SakuraPlayerData.saveAndSync(player);
         }
@@ -99,8 +97,7 @@ public final class CardCommand {
     private static int set(Collection<ServerPlayerEntity> players, int amount) {
         for (ServerPlayerEntity player : players) {
             SakuraPlayerData.get(player).setSignInCard(amount);
-            SakuraMessages.send(player, Component.translatable(
-                    player, EI18nType.MESSAGE, "set_sign_in_card_d", amount
+            SakuraMessages.send(player, SakuraComponent.get().trans(player, "message", "set_sign_in_card_d", amount
             ));
             SakuraPlayerData.saveAndSync(player);
         }
@@ -108,9 +105,9 @@ public final class CardCommand {
     }
 
     private static int showTarget(ServerPlayerEntity source, ServerPlayerEntity target) {
-        SakuraMessages.send(source, Component.translatable(
+        SakuraMessages.send(source, SakuraComponent.get().trans(
                 source,
-                EI18nType.MESSAGE,
+                "message",
                 "set_player_s_sign_in_card_d",
                 target.getDisplayName().getString(),
                 SakuraPlayerData.get(target).getSignInCard()

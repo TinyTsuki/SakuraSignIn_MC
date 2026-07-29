@@ -1,5 +1,9 @@
 package xin.vanilla.sakura.screen;
 
+import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.client.gui.component.TextList;
+import xin.vanilla.sakura.text.SakuraComponent;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.Data;
@@ -28,7 +32,6 @@ import xin.vanilla.sakura.client.gui.AdvancementRewardSelectionFlow;
 import xin.vanilla.sakura.client.gui.EffectRewardSelectionFlow;
 import xin.vanilla.sakura.client.gui.ItemRewardSelectionFlow;
 import xin.vanilla.sakura.config.*;
-import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ERewardRule;
 import xin.vanilla.sakura.enums.ERewardType;
 import xin.vanilla.sakura.event.ClientEventHandler;
@@ -308,19 +311,20 @@ public class RewardOptionScreen extends Screen {
                     .setWidth(itemIconSize)
                     .setHeight(itemIconSize)
                     .setBaseX(leftBarWidth)
-                    .setTooltip(rewardMap.get(key).get(j).getName(SakuraUtils.getClientLanguage())));
+                    .setTooltip(Text.from(rewardMap.get(key).get(j)
+                            .getName(SakuraUtils.getClientLanguage(), true))));
         }
     }
 
     private StringInputScreen getRuleKeyInputScreen(Screen callbackScreen, ERewardRule rule, String[] key) {
         String validator = rule == ERewardRule.RANDOM_REWARD ? "(0?1(\\.0{0,10})?|0(\\.\\d{0,10})?)?" : "[\\d +~/:.T-]*";
-        return new StringInputScreen(callbackScreen, Text.translatable(EI18nType.TIPS, "enter_reward_rule_key_" + rule.getCode()).setShadow(true), Text.translatable(EI18nType.TIPS, "enter_something"), validator, "", input -> {
+        return new StringInputScreen(callbackScreen, Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_rule_key_" + rule.getCode()).shadow(true), Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"), validator, "", input -> {
             StringList result = new StringList();
             if (CollectionUtils.isNotNullOrEmpty(input)) {
                 if (RewardConfigManager.validateKeyName(rule, input.get(0))) {
                     key[0] = input.get(0);
                 } else {
-                    result.add(Component.translatableClient(EI18nType.TIPS, "reward_rule_s_error", input.get(0)).toString());
+                    result.add(SakuraComponent.get().transClient("tips", "reward_rule_s_error", input.get(0)).toString());
                 }
             }
             return result;
@@ -329,26 +333,26 @@ public class RewardOptionScreen extends Screen {
 
     private StringInputScreen getCdkRuleKeyInputScreen(Screen callbackScreen, ERewardRule rule, String[] key) {
         return new StringInputScreen(callbackScreen
-                , new TextList(Text.translatable(EI18nType.TIPS, "enter_reward_rule_key_" + rule.getCode()).setShadow(true)
-                , Text.translatable(EI18nType.TIPS, "enter_valid_until").setShadow(true)
-                , Text.translatable(EI18nType.TIPS, "enter_num").setShadow(true))
-                , new TextList(Text.translatable(EI18nType.TIPS, "enter_something"))
+                , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_rule_key_" + rule.getCode()).shadow(true)
+                , Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_valid_until").shadow(true)
+                , Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_num").shadow(true))
+                , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"))
                 , new StringList("\\w*", "", "\\d*")
                 , new StringList("", DateUtils.toString(DateUtils.addMonth(DateUtils.getClientDate(), 1)), "1")
                 , input -> {
             StringList result = new StringList("", "", "");
             if (CollectionUtils.isNotNullOrEmpty(input)) {
                 if (!RewardConfigManager.validateKeyName(rule, input.get(0))) {
-                    result.set(0, Component.translatableClient(EI18nType.TIPS, "reward_rule_s_error", input.get(0)).toString());
+                    result.set(0, SakuraComponent.get().transClient("tips", "reward_rule_s_error", input.get(0)).toString());
                 }
                 if (StringUtils.isNotNullOrEmpty(input.get(1))) {
                     if (DateUtils.format(input.get(1)) == null) {
-                        result.set(1, Component.translatableClient(EI18nType.TIPS, "valid_until_s_error", input.get(1)).toString());
+                        result.set(1, SakuraComponent.get().transClient("tips", "valid_until_s_error", input.get(1)).toString());
                     }
                 }
                 if (StringUtils.isNotNullOrEmpty(input.get(2))) {
                     if (StringUtils.toInt(input.get(2)) == 0) {
-                        result.set(2, Component.translatableClient(EI18nType.TIPS, "num_s_error", input.get(2)).toString());
+                        result.set(2, SakuraComponent.get().transClient("tips", "num_s_error", input.get(2)).toString());
                     }
                 }
                 if (result.stream().allMatch(StringUtils::isNullOrEmptyEx)) {
@@ -371,7 +375,7 @@ public class RewardOptionScreen extends Screen {
         rewardListIndex.set(0);
         switch (OperationButtonType.valueOf(currOpButton)) {
             case BASE_REWARD: {
-                this.addRewardTitleButton(Component.translatableClient(EI18nType.TITLE, "base_reward").toString(), "base", titleIndex, rewardListIndex.get());
+                this.addRewardTitleButton(SakuraComponent.get().transClient("title", "base_reward").toString(), "base", titleIndex, rewardListIndex.get());
                 rewardListIndex.addAndGet(lineItemCount);
                 this.addRewardButton(new HashMap<String, RewardList>() {{
                     put("base", rewardConfig.getBaseRewards());
@@ -383,7 +387,7 @@ public class RewardOptionScreen extends Screen {
                     if (rewardListIndex.get() > 0) {
                         rewardListIndex.set((int) ((Math.floor((double) rewardListIndex.get() / lineItemCount) + 1) * lineItemCount));
                     }
-                    this.addRewardTitleButton(Component.translatableClient(EI18nType.TITLE, "day_s", key).toString(), key, titleIndex, rewardListIndex.get());
+                    this.addRewardTitleButton(SakuraComponent.get().transClient("title", "day_s", key).toString(), key, titleIndex, rewardListIndex.get());
                     rewardListIndex.addAndGet(lineItemCount);
                     this.addRewardButton(rewardConfig.getContinuousRewards(), key, rewardListIndex);
                     titleIndex--;
@@ -395,7 +399,7 @@ public class RewardOptionScreen extends Screen {
                     if (rewardListIndex.get() > 0) {
                         rewardListIndex.set((int) ((Math.floor((double) rewardListIndex.get() / lineItemCount) + 1) * lineItemCount));
                     }
-                    this.addRewardTitleButton(Component.translatableClient(EI18nType.TITLE, "day_s", key).toString(), key, titleIndex, rewardListIndex.get());
+                    this.addRewardTitleButton(SakuraComponent.get().transClient("title", "day_s", key).toString(), key, titleIndex, rewardListIndex.get());
                     rewardListIndex.addAndGet(lineItemCount);
                     this.addRewardButton(rewardConfig.getCycleRewards(), key, rewardListIndex);
                     titleIndex--;
@@ -407,7 +411,7 @@ public class RewardOptionScreen extends Screen {
                     if (rewardListIndex.get() > 0) {
                         rewardListIndex.set((int) ((Math.floor((double) rewardListIndex.get() / lineItemCount) + 1) * lineItemCount));
                     }
-                    this.addRewardTitleButton(Component.translatableClient(EI18nType.TITLE, "year_day_s", key).toString(), key, titleIndex, rewardListIndex.get());
+                    this.addRewardTitleButton(SakuraComponent.get().transClient("title", "year_day_s", key).toString(), key, titleIndex, rewardListIndex.get());
                     rewardListIndex.addAndGet(lineItemCount);
                     this.addRewardButton(rewardConfig.getYearRewards(), key, rewardListIndex);
                     titleIndex--;
@@ -419,7 +423,7 @@ public class RewardOptionScreen extends Screen {
                     if (rewardListIndex.get() > 0) {
                         rewardListIndex.set((int) ((Math.floor((double) rewardListIndex.get() / lineItemCount) + 1) * lineItemCount));
                     }
-                    this.addRewardTitleButton(Component.translatableClient(EI18nType.TITLE, "month_day_s", key).toString(), key, titleIndex, rewardListIndex.get());
+                    this.addRewardTitleButton(SakuraComponent.get().transClient("title", "month_day_s", key).toString(), key, titleIndex, rewardListIndex.get());
                     rewardListIndex.addAndGet(lineItemCount);
                     this.addRewardButton(rewardConfig.getMonthRewards(), key, rewardListIndex);
                     titleIndex--;
@@ -431,7 +435,7 @@ public class RewardOptionScreen extends Screen {
                     if (rewardListIndex.get() > 0) {
                         rewardListIndex.set((int) ((Math.floor((double) rewardListIndex.get() / lineItemCount) + 1) * lineItemCount));
                     }
-                    this.addRewardTitleButton(Component.translatableClient(EI18nType.TITLE, "week_" + key).toString(), key, titleIndex, rewardListIndex.get());
+                    this.addRewardTitleButton(SakuraComponent.get().transClient("title", "week_" + key).toString(), key, titleIndex, rewardListIndex.get());
                     rewardListIndex.addAndGet(lineItemCount);
                     this.addRewardButton(rewardConfig.getWeekRewards(), key, rewardListIndex);
                     titleIndex--;
@@ -455,7 +459,7 @@ public class RewardOptionScreen extends Screen {
                     if (rewardListIndex.get() > 0) {
                         rewardListIndex.set((int) ((Math.floor((double) rewardListIndex.get() / lineItemCount) + 1) * lineItemCount));
                     }
-                    this.addRewardTitleButton(Component.translatableClient(EI18nType.TITLE, "day_s", key).toString(), key, titleIndex, rewardListIndex.get());
+                    this.addRewardTitleButton(SakuraComponent.get().transClient("title", "day_s", key).toString(), key, titleIndex, rewardListIndex.get());
                     rewardListIndex.addAndGet(lineItemCount);
                     this.addRewardButton(rewardConfig.getCumulativeRewards(), key, rewardListIndex);
                     titleIndex--;
@@ -485,7 +489,7 @@ public class RewardOptionScreen extends Screen {
                     if (rewardListIndex.get() > 0) {
                         rewardListIndex.set((int) ((Math.floor((double) rewardListIndex.get() / lineItemCount) + 1) * lineItemCount));
                     }
-                    this.addRewardTitleButton(Component.translatableClient(EI18nType.TITLE, "s_valid_until_s", keyValue.getKey().getKey(), keyValue.getKey().getValue(), keyValue.getValue().getValue()).toString(), key, titleIndex, rewardListIndex.get());
+                    this.addRewardTitleButton(SakuraComponent.get().transClient("title", "s_valid_until_s", keyValue.getKey().getKey(), keyValue.getKey().getValue(), keyValue.getValue().getValue()).toString(), key, titleIndex, rewardListIndex.get());
                     rewardListIndex.addAndGet(lineItemCount);
                     this.addRewardButton(new HashMap<String, RewardList>() {{
                         put(key, keyValue.getValue().getKey());
@@ -527,11 +531,11 @@ public class RewardOptionScreen extends Screen {
     }
 
     private final Consumer<PopupOption> pasteConsumer = option -> {
-        String paste = Component.translatableClient(EI18nType.OPTION, "paste").toString();
+        String paste = SakuraComponent.get().transClient("option", "paste").toString();
         if (paste.equalsIgnoreCase(option.getSelectedString())) {
             option.getRenderList().stream()
-                    .filter(item -> paste.equalsIgnoreCase(item.getContent()))
-                    .forEach(item -> item.setColor(RewardClipboardManager.isClipboardValid() ? 0xFFFFFFFF : 0xFF999999));
+                    .filter(item -> paste.equalsIgnoreCase(item.content()))
+                    .forEach(item -> item.color(RewardClipboardManager.isClipboardValid() ? 0xFFFFFFFF : 0xFF999999));
         }
     };
 
@@ -573,11 +577,11 @@ public class RewardOptionScreen extends Screen {
                     assert player != null;
                     ERewardRule rewardRule = ERewardRule.valueOf(OperationButtonType.valueOf(value.getOperation()).name());
                     if (!player.hasPermissions(SakuraUtils.getRewardPermissionLevel(rewardRule))) {
-                        Component component = Component.translatableClient(EI18nType.MESSAGE, "no_permission_to_view_reward", Component.translatableClient(EI18nType.WORD, SakuraUtils.getRewardRuleI18nKeyName(rewardRule)));
+                        Component component = SakuraComponent.get().transClient("message", "no_permission_to_view_reward", SakuraComponent.get().transClient("word", SakuraUtils.getRewardRuleI18nKeyName(rewardRule)));
                         NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0x88FF5555));
                     }
                     if (!player.hasPermissions(CommonConfig.get().permission().permissionEditReward())) {
-                        Component component = Component.translatableClient(EI18nType.MESSAGE, "no_permission_to_edit_reward");
+                        Component component = SakuraComponent.get().transClient("message", "no_permission_to_edit_reward");
                         NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
                     }
                 } catch (Exception ignored) {
@@ -585,8 +589,8 @@ public class RewardOptionScreen extends Screen {
             } else {
                 // 绘制弹出层选项
                 this.popupOption.clear();
-                this.popupOption.addOption(Text.translatable(EI18nType.OPTION, "clear").setColor(0xFFFF0000))
-                        .addTips(Text.translatable(EI18nType.TIPS, "cancel_or_confirm"))
+                this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.clear").color(0xFFFF0000))
+                        .addTips(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.cancel_or_confirm"))
                         .setTipsKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_SHIFT))
                         .build(super.font, mouseX, mouseY, String.format("奖励规则类型按钮:%s", value.getOperation()));
                 flag.set(true);
@@ -608,9 +612,9 @@ public class RewardOptionScreen extends Screen {
             if (button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
                 if (this.currOpButton > 200 && this.currOpButton <= 299) {
                     this.popupOption.clear();
-                    this.popupOption.addOption(Text.translatable(EI18nType.OPTION, "paste"));
+                    this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.paste"));
                     for (ERewardType rewardType : ERewardType.values()) {
-                        this.popupOption.addOption(Text.translatable(EI18nType.WORD, "reward_type_" + rewardType.getCode()));
+                        this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.reward_type_" + rewardType.getCode()));
                     }
                     this.popupOption.build(super.font, mouseX, mouseY, String.format("奖励面板按钮:%s", this.currOpButton));
                     this.popupOption.setBeforeRender(pasteConsumer);
@@ -622,16 +626,16 @@ public class RewardOptionScreen extends Screen {
         else if (value.getOperation() == OperationButtonType.HELP.getCode()) {
             // 绘制弹出层提示
             this.popupOption.clear();
-            this.popupOption.addOption(Text.translatable(EI18nType.TIPS, "reward_rule_description_1"))
-                    .addOption(Text.translatable(EI18nType.TIPS, "reward_rule_description_2"))
-                    .addOption(Text.translatable(EI18nType.TIPS, "reward_rule_description_3"))
-                    .addOption(Text.translatable(EI18nType.TIPS, "reward_rule_description_4"))
-                    .addOption(Text.translatable(EI18nType.TIPS, "reward_rule_description_5"))
-                    .addOption(Text.translatable(EI18nType.TIPS, "reward_rule_description_6"))
-                    .addOption(Text.translatable(EI18nType.TIPS, "reward_rule_description_7"))
-                    .addOption(Text.translatable(EI18nType.TIPS, "reward_rule_description_8"))
-                    .addOption(Text.translatable(EI18nType.TIPS, "reward_rule_description_9"))
-                    .addOption(Text.translatable(EI18nType.TIPS, "reward_rule_description_10"))
+            this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.reward_rule_description_1"))
+                    .addOption(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.reward_rule_description_2"))
+                    .addOption(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.reward_rule_description_3"))
+                    .addOption(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.reward_rule_description_4"))
+                    .addOption(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.reward_rule_description_5"))
+                    .addOption(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.reward_rule_description_6"))
+                    .addOption(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.reward_rule_description_7"))
+                    .addOption(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.reward_rule_description_8"))
+                    .addOption(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.reward_rule_description_9"))
+                    .addOption(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.reward_rule_description_10"))
                     .build(super.font, mouseX, mouseY, "reward_rule_description");
             flag.set(true);
         }
@@ -647,7 +651,7 @@ public class RewardOptionScreen extends Screen {
                     }
                 }
             } else {
-                Component component = Component.translatable(EI18nType.MESSAGE, "local_server_not_support_this_operation");
+                Component component = SakuraComponent.get().trans("message", "local_server_not_support_this_operation");
                 NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
             }
         }
@@ -661,7 +665,7 @@ public class RewardOptionScreen extends Screen {
                     SakuraNetwork.sendToServer(new DownloadRewardOptionNotice());
                     flag.set(true);
                 } else {
-                    Component component = Component.translatable(EI18nType.MESSAGE, "local_server_not_support_this_operation");
+                    Component component = SakuraComponent.get().trans("message", "local_server_not_support_this_operation");
                     NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
                 }
             }
@@ -704,32 +708,32 @@ public class RewardOptionScreen extends Screen {
             if (key.startsWith("标题")) {
                 this.popupOption.clear();
                 if (!"标题,base".equalsIgnoreCase(key)) {
-                    this.popupOption.addOption(Text.translatable(EI18nType.OPTION, "edit"));
+                    this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.edit"));
                 }
-                this.popupOption.addOption(Text.translatable(EI18nType.OPTION, "copy"));
+                this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.copy"));
                 if (!"标题,base".equalsIgnoreCase(key)) {
-                    this.popupOption.addOption(Text.translatable(EI18nType.OPTION, "cut"));
+                    this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.cut"));
                 }
-                this.popupOption.addOption(Text.translatable(EI18nType.OPTION, "paste"));
+                this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.paste"));
                 for (ERewardType rewardType : ERewardType.values()) {
-                    this.popupOption.addOption(Text.translatable(EI18nType.WORD, "reward_type_" + rewardType.getCode()));
+                    this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.reward_type_" + rewardType.getCode()));
                 }
-                this.popupOption.addOption(Text.translatable(EI18nType.OPTION, "clear").setColor(0xFFFF0000));
+                this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.clear").color(0xFFFF0000));
                 if (!"标题,base".equalsIgnoreCase(key)) {
-                    this.popupOption.addOption(Text.translatable(EI18nType.OPTION, "delete").setColor(0xFFFF0000));
+                    this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.delete").color(0xFFFF0000));
                 }
-                this.popupOption.addTips(Text.translatable(EI18nType.TIPS, "cancel_or_confirm"), -1)
-                        .addTips(Text.translatable(EI18nType.TIPS, "cancel_or_confirm"), -2)
+                this.popupOption.addTips(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.cancel_or_confirm"), -1)
+                        .addTips(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.cancel_or_confirm"), -2)
                         .setTipsKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_SHIFT))
                         .build(super.font, mouseX, mouseY, String.format("奖励按钮:%s", key));
             } else {
                 this.popupOption.clear();
-                this.popupOption.addOption(Text.translatable(EI18nType.OPTION, "edit"))
-                        .addOption(Text.translatable(EI18nType.OPTION, "copy"))
-                        .addOption(Text.translatable(EI18nType.OPTION, "cut"))
-                        .addOption(Text.translatable(EI18nType.OPTION, "paste"))
-                        .addOption(Text.translatable(EI18nType.OPTION, "delete").setColor(0xFFFF0000))
-                        .addTips(Text.translatable(EI18nType.TIPS, "cancel_or_confirm"), -1)
+                this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.edit"))
+                        .addOption(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.copy"))
+                        .addOption(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.cut"))
+                        .addOption(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.paste"))
+                        .addOption(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.delete").color(0xFFFF0000))
+                        .addTips(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.cancel_or_confirm"), -1)
                         .setTipsKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_SHIFT))
                         .build(super.font, mouseX, mouseY, String.format("奖励按钮:%s", key));
             }
@@ -812,11 +816,11 @@ public class RewardOptionScreen extends Screen {
             }
         } else if (popupOption.getId().startsWith("奖励面板按钮:")) {
             String[] key = new String[]{""};
-            if (Component.translatableClient(EI18nType.OPTION, "paste").toString().equalsIgnoreCase(selectedString)) {
+            if (SakuraComponent.get().transClient("option", "paste").toString().equalsIgnoreCase(selectedString)) {
                 editHandler.handlePaste();
             }
             // 物品
-            else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.ITEM.getCode()).equalsIgnoreCase(selectedString)) {
+            else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.ITEM.getCode()).equalsIgnoreCase(selectedString)) {
                 Screen callbackScreen = ItemRewardSelectionFlow.create(this,
                         new Reward(new ItemStack(Items.AIR), ERewardType.ITEM),
                         () -> StringUtils.isNullOrEmpty(key[0]),
@@ -838,7 +842,7 @@ public class RewardOptionScreen extends Screen {
                 }
             }
             // 药水效果
-            else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.EFFECT.getCode()).equalsIgnoreCase(selectedString)) {
+            else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.EFFECT.getCode()).equalsIgnoreCase(selectedString)) {
                 Screen callbackScreen = EffectRewardSelectionFlow.create(this,
                         new Reward(new EffectInstance(Effects.LUCK), ERewardType.EFFECT),
                         () -> StringUtils.isNullOrEmpty(key[0]),
@@ -860,10 +864,10 @@ public class RewardOptionScreen extends Screen {
                 }
             }
             // 经验点
-            else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.EXP_POINT.getCode()).equalsIgnoreCase(selectedString)) {
+            else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.EXP_POINT.getCode()).equalsIgnoreCase(selectedString)) {
                 StringInputScreen callbackScreen = new StringInputScreen(this
-                        , new TextList(Text.translatable(EI18nType.TIPS, "enter_exp_point").setShadow(true), Text.translatable(EI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                        , new TextList(Text.translatable(EI18nType.TIPS, "enter_something"))
+                        , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_exp_point").shadow(true), Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_probability").shadow(true))
+                        , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"))
                         , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                         , new StringList("1")
                         , input -> {
@@ -877,7 +881,7 @@ public class RewardOptionScreen extends Screen {
                             RewardConfigManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(count, ERewardType.EXP_POINT), ERewardType.EXP_POINT, p));
                             RewardConfigManager.saveRewardOption();
                         } else {
-                            result.add(Component.translatableClient(EI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
+                            result.add(SakuraComponent.get().transClient("tips", "enter_value_s_error", input.get(0)).toString());
                         }
                     }
                     return result;
@@ -892,10 +896,10 @@ public class RewardOptionScreen extends Screen {
                 }
             }
             // 经验等级
-            else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.EXP_LEVEL.getCode()).equalsIgnoreCase(selectedString)) {
+            else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.EXP_LEVEL.getCode()).equalsIgnoreCase(selectedString)) {
                 StringInputScreen callbackScreen = new StringInputScreen(this
-                        , new TextList(Text.translatable(EI18nType.TIPS, "enter_exp_level").setShadow(true), Text.translatable(EI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                        , new TextList(Text.translatable(EI18nType.TIPS, "enter_something"))
+                        , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_exp_level").shadow(true), Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_probability").shadow(true))
+                        , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"))
                         , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                         , new StringList("1")
                         , input -> {
@@ -909,7 +913,7 @@ public class RewardOptionScreen extends Screen {
                             RewardConfigManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(count, ERewardType.EXP_LEVEL), ERewardType.EXP_LEVEL, p));
                             RewardConfigManager.saveRewardOption();
                         } else {
-                            result.add(Component.translatableClient(EI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
+                            result.add(SakuraComponent.get().transClient("tips", "enter_value_s_error", input.get(0)).toString());
                         }
                     }
                     return result;
@@ -924,10 +928,10 @@ public class RewardOptionScreen extends Screen {
                 }
             }
             // 补签卡
-            else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.SIGN_IN_CARD.getCode()).equalsIgnoreCase(selectedString)) {
+            else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.SIGN_IN_CARD.getCode()).equalsIgnoreCase(selectedString)) {
                 StringInputScreen callbackScreen = new StringInputScreen(this
-                        , new TextList(Text.translatable(EI18nType.TIPS, "enter_sign_in_card").setShadow(true), Text.translatable(EI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                        , new TextList(Text.translatable(EI18nType.TIPS, "enter_something"))
+                        , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_sign_in_card").shadow(true), Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_probability").shadow(true))
+                        , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"))
                         , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                         , new StringList("1")
                         , input -> {
@@ -941,7 +945,7 @@ public class RewardOptionScreen extends Screen {
                             RewardConfigManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(count, ERewardType.SIGN_IN_CARD), ERewardType.SIGN_IN_CARD, p));
                             RewardConfigManager.saveRewardOption();
                         } else {
-                            result.add(Component.translatableClient(EI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
+                            result.add(SakuraComponent.get().transClient("tips", "enter_value_s_error", input.get(0)).toString());
                         }
                     }
                     return result;
@@ -956,7 +960,7 @@ public class RewardOptionScreen extends Screen {
                 }
             }
             // 进度
-            else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.ADVANCEMENT.getCode()).equalsIgnoreCase(selectedString)) {
+            else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.ADVANCEMENT.getCode()).equalsIgnoreCase(selectedString)) {
                 Screen callbackScreen = AdvancementRewardSelectionFlow.create(this,
                         new Reward(new ResourceLocation(""), ERewardType.ADVANCEMENT),
                         () -> StringUtils.isNullOrEmpty(key[0]),
@@ -978,17 +982,17 @@ public class RewardOptionScreen extends Screen {
                 }
             }
             // 消息
-            else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.MESSAGE.getCode()).equalsIgnoreCase(selectedString)) {
+            else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.MESSAGE.getCode()).equalsIgnoreCase(selectedString)) {
                 StringInputScreen callbackScreen = new StringInputScreen(this
-                        , new TextList(Text.translatable(EI18nType.TIPS, "enter_message").setShadow(true), Text.translatable(EI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                        , new TextList(Text.translatable(EI18nType.TIPS, "enter_something"))
+                        , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_message").shadow(true), Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_probability").shadow(true))
+                        , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"))
                         , new StringList("", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                         , new StringList("", "1")
                         , input -> {
                     if (CollectionUtils.isNotNullOrEmpty(input) && StringUtils.isNotNullOrEmpty(key[0])) {
                         RewardConfigManager.addUndoRewardOption(rule);
                         RewardConfigManager.clearRedoList();
-                        Component component = Component.literal(input.get(0));
+                        Component component = SakuraComponent.get().literal(input.get(0));
                         BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                         RewardConfigManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(component, ERewardType.MESSAGE), ERewardType.MESSAGE, p));
                         RewardConfigManager.saveRewardOption();
@@ -1004,10 +1008,10 @@ public class RewardOptionScreen extends Screen {
                 }
             }
             // 指令
-            else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.COMMAND.getCode()).equalsIgnoreCase(selectedString)) {
+            else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.COMMAND.getCode()).equalsIgnoreCase(selectedString)) {
                 StringInputScreen callbackScreen = new StringInputScreen(this
-                        , new TextList(Text.translatable(EI18nType.TIPS, "enter_command").setShadow(true), Text.translatable(EI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                        , new TextList(Text.translatable(EI18nType.TIPS, "enter_something"))
+                        , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_command").shadow(true), Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_probability").shadow(true))
+                        , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"))
                         , new StringList("", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                         , new StringList("", "1")
                         , input -> {
@@ -1019,7 +1023,7 @@ public class RewardOptionScreen extends Screen {
                         RewardConfigManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(input.get(0), ERewardType.COMMAND), ERewardType.COMMAND, p));
                         RewardConfigManager.saveRewardOption();
                     } else {
-                        result.add(Component.translatableClient(EI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
+                        result.add(SakuraComponent.get().transClient("tips", "enter_value_s_error", input.get(0)).toString());
                     }
                     return result;
                 }, () -> StringUtils.isNullOrEmpty(key[0]));
@@ -1037,33 +1041,33 @@ public class RewardOptionScreen extends Screen {
             String id = popupOption.getId().replace("奖励按钮:", "");
             if (id.startsWith("标题")) {
                 String key = id.substring(3);
-                if (Component.translatableClient(EI18nType.OPTION, "edit").toString().equalsIgnoreCase(selectedString)) {
+                if (SakuraComponent.get().transClient("option", "edit").toString().equalsIgnoreCase(selectedString)) {
                     if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                         if (rule == ERewardRule.CDK_REWARD) {
                             String[] split = key.split("\\|");
                             if (split.length != 4 && split.length != 3 && split.length != 2)
                                 split = new String[]{"", DateUtils.toString(DateUtils.addMonth(DateUtils.getClientDate(), 1)), "-1", "1"};
                             Minecraft.getInstance().setScreen(new StringInputScreen(this
-                                    , new TextList(Text.translatable(EI18nType.TIPS, "enter_reward_rule_key_" + rule.getCode()).setShadow(true)
-                                    , Text.translatable(EI18nType.TIPS, "enter_valid_until").setShadow(true)
-                                    , Text.translatable(EI18nType.TIPS, "enter_num").setShadow(true))
-                                    , new TextList(Text.translatable(EI18nType.TIPS, "enter_something"))
+                                    , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_rule_key_" + rule.getCode()).shadow(true)
+                                    , Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_valid_until").shadow(true)
+                                    , Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_num").shadow(true))
+                                    , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"))
                                     , new StringList("\\w*", "", "\\d*")
                                     , new StringList(split[0], split[1], split[3])
                                     , input -> {
                                 StringList result = new StringList("", "", "");
                                 if (CollectionUtils.isNotNullOrEmpty(input)) {
                                     if (!RewardConfigManager.validateKeyName(rule, input.get(0))) {
-                                        result.set(0, Component.translatableClient(EI18nType.TIPS, "reward_rule_s_error", input.get(0)).toString());
+                                        result.set(0, SakuraComponent.get().transClient("tips", "reward_rule_s_error", input.get(0)).toString());
                                     }
                                     if (StringUtils.isNotNullOrEmpty(input.get(1))) {
                                         if (DateUtils.format(input.get(1)) == null) {
-                                            result.set(1, Component.translatableClient(EI18nType.TIPS, "valid_until_s_error", input.get(1)).toString());
+                                            result.set(1, SakuraComponent.get().transClient("tips", "valid_until_s_error", input.get(1)).toString());
                                         }
                                     }
                                     if (StringUtils.isNotNullOrEmpty(input.get(2))) {
                                         if (StringUtils.toInt(input.get(2)) == 0) {
-                                            result.set(2, Component.translatableClient(EI18nType.TIPS, "num_s_error", input.get(2)).toString());
+                                            result.set(2, SakuraComponent.get().transClient("tips", "num_s_error", input.get(2)).toString());
                                         }
                                     }
                                     if (result.stream().allMatch(StringUtils::isNullOrEmptyEx)) {
@@ -1077,7 +1081,7 @@ public class RewardOptionScreen extends Screen {
                             }));
                         } else {
                             String validator = rule == ERewardRule.RANDOM_REWARD ? "(0?1(\\.0{0,10})?|0(\\.\\d{0,10})?)?" : "[\\d +~/:.T-]*";
-                            Minecraft.getInstance().setScreen(new StringInputScreen(this, Text.translatable(EI18nType.TIPS, "enter_reward_rule_key_" + rule.getCode()).setShadow(true), Text.translatable(EI18nType.TIPS, "enter_something"), validator, key, input -> {
+                            Minecraft.getInstance().setScreen(new StringInputScreen(this, Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_rule_key_" + rule.getCode()).shadow(true), Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"), validator, key, input -> {
                                 StringList result = new StringList();
                                 if (CollectionUtils.isNotNullOrEmpty(input)) {
                                     if (RewardConfigManager.validateKeyName(rule, input.get(0))) {
@@ -1086,26 +1090,26 @@ public class RewardOptionScreen extends Screen {
                                         RewardConfigManager.updateKeyName(rule, key, input.get(0));
                                         RewardConfigManager.saveRewardOption();
                                     } else {
-                                        result.add(Component.translatableClient(EI18nType.TIPS, "reward_rule_s_error", input.get(0)).toString());
+                                        result.add(SakuraComponent.get().transClient("tips", "reward_rule_s_error", input.get(0)).toString());
                                     }
                                 }
                                 return result;
                             }));
                         }
                     }
-                } else if (Component.translatableClient(EI18nType.OPTION, "copy").toString().equalsIgnoreCase(selectedString)) {
+                } else if (SakuraComponent.get().transClient("option", "copy").toString().equalsIgnoreCase(selectedString)) {
                     if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                         editHandler.handleCopy();
                     }
-                } else if (Component.translatableClient(EI18nType.OPTION, "cut").toString().equalsIgnoreCase(selectedString)) {
+                } else if (SakuraComponent.get().transClient("option", "cut").toString().equalsIgnoreCase(selectedString)) {
                     if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                         editHandler.handleCut();
                     }
-                } else if (Component.translatableClient(EI18nType.OPTION, "paste").toString().equalsIgnoreCase(selectedString)) {
+                } else if (SakuraComponent.get().transClient("option", "paste").toString().equalsIgnoreCase(selectedString)) {
                     if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                         editHandler.handlePaste();
                     }
-                } else if (Component.translatableClient(EI18nType.OPTION, "clear").toString().equalsIgnoreCase(selectedString)) {
+                } else if (SakuraComponent.get().transClient("option", "clear").toString().equalsIgnoreCase(selectedString)) {
                     if (button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
                         if (keyManager.onlyCtrlPressed()) {
                             RewardConfigManager.addUndoRewardOption(rule);
@@ -1114,13 +1118,13 @@ public class RewardOptionScreen extends Screen {
                             RewardConfigManager.saveRewardOption();
                         }
                     }
-                } else if (Component.translatableClient(EI18nType.OPTION, "delete").toString().equalsIgnoreCase(selectedString)) {
+                } else if (SakuraComponent.get().transClient("option", "delete").toString().equalsIgnoreCase(selectedString)) {
                     if (ClientConfig.get().rewardKeys().delete().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
                         editHandler.handleDelete();
                     }
                 }
                 // 添加物品
-                else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.ITEM.getCode()).equalsIgnoreCase(selectedString)) {
+                else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.ITEM.getCode()).equalsIgnoreCase(selectedString)) {
                     Minecraft.getInstance().setScreen(ItemRewardSelectionFlow.create(
                             this,
                             new Reward(new ItemStack(Items.AIR), ERewardType.ITEM),
@@ -1134,7 +1138,7 @@ public class RewardOptionScreen extends Screen {
                     }));
                 }
                 // 药水效果
-                else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.EFFECT.getCode()).equalsIgnoreCase(selectedString)) {
+                else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.EFFECT.getCode()).equalsIgnoreCase(selectedString)) {
                     Minecraft.getInstance().setScreen(EffectRewardSelectionFlow.create(
                             this,
                             new Reward(new EffectInstance(Effects.LUCK), ERewardType.EFFECT),
@@ -1148,10 +1152,10 @@ public class RewardOptionScreen extends Screen {
                     }));
                 }
                 // 经验点
-                else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.EXP_POINT.getCode()).equalsIgnoreCase(selectedString)) {
+                else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.EXP_POINT.getCode()).equalsIgnoreCase(selectedString)) {
                     Minecraft.getInstance().setScreen(new StringInputScreen(this
-                            , new TextList(Text.translatable(EI18nType.TIPS, "enter_exp_point").setShadow(true), Text.translatable(EI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                            , new TextList(Text.translatable(EI18nType.TIPS, "enter_something"))
+                            , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_exp_point").shadow(true), Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_probability").shadow(true))
+                            , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"))
                             , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                             , new StringList("1")
                             , input -> {
@@ -1165,17 +1169,17 @@ public class RewardOptionScreen extends Screen {
                                 RewardConfigManager.addReward(rule, key, new Reward(RewardManager.serializeReward(count, ERewardType.EXP_POINT), ERewardType.EXP_POINT, p));
                                 RewardConfigManager.saveRewardOption();
                             } else {
-                                result.add(Component.translatableClient(EI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
+                                result.add(SakuraComponent.get().transClient("tips", "enter_value_s_error", input.get(0)).toString());
                             }
                         }
                         return result;
                     }));
                 }
                 // 经验等级
-                else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.EXP_LEVEL.getCode()).equalsIgnoreCase(selectedString)) {
+                else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.EXP_LEVEL.getCode()).equalsIgnoreCase(selectedString)) {
                     Minecraft.getInstance().setScreen(new StringInputScreen(this
-                            , new TextList(Text.translatable(EI18nType.TIPS, "enter_exp_level").setShadow(true), Text.translatable(EI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                            , new TextList(Text.translatable(EI18nType.TIPS, "enter_something"))
+                            , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_exp_level").shadow(true), Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_probability").shadow(true))
+                            , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"))
                             , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                             , new StringList("1")
                             , input -> {
@@ -1189,17 +1193,17 @@ public class RewardOptionScreen extends Screen {
                                 RewardConfigManager.addReward(rule, key, new Reward(RewardManager.serializeReward(count, ERewardType.EXP_LEVEL), ERewardType.EXP_LEVEL, p));
                                 RewardConfigManager.saveRewardOption();
                             } else {
-                                result.add(Component.translatableClient(EI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
+                                result.add(SakuraComponent.get().transClient("tips", "enter_value_s_error", input.get(0)).toString());
                             }
                         }
                         return result;
                     }));
                 }
                 // 补签卡
-                else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.SIGN_IN_CARD.getCode()).equalsIgnoreCase(selectedString)) {
+                else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.SIGN_IN_CARD.getCode()).equalsIgnoreCase(selectedString)) {
                     Minecraft.getInstance().setScreen(new StringInputScreen(this
-                            , new TextList(Text.translatable(EI18nType.TIPS, "enter_sign_in_card").setShadow(true), Text.translatable(EI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                            , new TextList(Text.translatable(EI18nType.TIPS, "enter_something"))
+                            , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_sign_in_card").shadow(true), Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_probability").shadow(true))
+                            , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"))
                             , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                             , new StringList("1")
                             , input -> {
@@ -1213,14 +1217,14 @@ public class RewardOptionScreen extends Screen {
                                 RewardConfigManager.addReward(rule, key, new Reward(RewardManager.serializeReward(count, ERewardType.SIGN_IN_CARD), ERewardType.SIGN_IN_CARD, p));
                                 RewardConfigManager.saveRewardOption();
                             } else {
-                                result.add(Component.translatableClient(EI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
+                                result.add(SakuraComponent.get().transClient("tips", "enter_value_s_error", input.get(0)).toString());
                             }
                         }
                         return result;
                     }));
                 }
                 // 进度
-                else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.ADVANCEMENT.getCode()).equalsIgnoreCase(selectedString)) {
+                else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.ADVANCEMENT.getCode()).equalsIgnoreCase(selectedString)) {
                     Minecraft.getInstance().setScreen(AdvancementRewardSelectionFlow.create(
                             this,
                             new Reward(new ResourceLocation(""), ERewardType.ADVANCEMENT),
@@ -1235,17 +1239,17 @@ public class RewardOptionScreen extends Screen {
 
                 }
                 // 消息
-                else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.MESSAGE.getCode()).equalsIgnoreCase(selectedString)) {
+                else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.MESSAGE.getCode()).equalsIgnoreCase(selectedString)) {
                     Minecraft.getInstance().setScreen(new StringInputScreen(this
-                            , new TextList(Text.translatable(EI18nType.TIPS, "enter_message").setShadow(true), Text.translatable(EI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                            , new TextList(Text.translatable(EI18nType.TIPS, "enter_something"))
+                            , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_message").shadow(true), Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_probability").shadow(true))
+                            , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"))
                             , new StringList("", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                             , new StringList("", "1")
                             , input -> {
                         if (CollectionUtils.isNotNullOrEmpty(input)) {
                             RewardConfigManager.addUndoRewardOption(rule);
                             RewardConfigManager.clearRedoList();
-                            Component component = Component.literal(input.get(0));
+                            Component component = SakuraComponent.get().literal(input.get(0));
                             BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                             RewardConfigManager.addReward(rule, key, new Reward(RewardManager.serializeReward(component, ERewardType.MESSAGE), ERewardType.MESSAGE, p));
                             RewardConfigManager.saveRewardOption();
@@ -1253,10 +1257,10 @@ public class RewardOptionScreen extends Screen {
                     }));
                 }
                 // 指令
-                else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.COMMAND.getCode()).equalsIgnoreCase(selectedString)) {
+                else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.COMMAND.getCode()).equalsIgnoreCase(selectedString)) {
                     Minecraft.getInstance().setScreen(new StringInputScreen(this
-                            , new TextList(Text.translatable(EI18nType.TIPS, "enter_command").setShadow(true), Text.translatable(EI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                            , new TextList(Text.translatable(EI18nType.TIPS, "enter_something"))
+                            , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_command").shadow(true), Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_probability").shadow(true))
+                            , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"))
                             , new StringList("", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                             , new StringList("", "1")
                             , input -> {
@@ -1268,7 +1272,7 @@ public class RewardOptionScreen extends Screen {
                             RewardConfigManager.addReward(rule, key, new Reward(RewardManager.serializeReward(input.get(0), ERewardType.COMMAND), ERewardType.COMMAND, p));
                             RewardConfigManager.saveRewardOption();
                         } else {
-                            result.add(Component.translatableClient(EI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
+                            result.add(SakuraComponent.get().transClient("tips", "enter_value_s_error", input.get(0)).toString());
                         }
                         return result;
                     }));
@@ -1282,7 +1286,7 @@ public class RewardOptionScreen extends Screen {
                 }
                 String key = split[0];
                 String index = split[1];
-                if (Component.translatableClient(EI18nType.OPTION, "edit").toString().equalsIgnoreCase(selectedString)) {
+                if (SakuraComponent.get().transClient("option", "edit").toString().equalsIgnoreCase(selectedString)) {
                     if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                         Reward reward = RewardConfigManager.getReward(rule, key, Integer.parseInt(index)).clone();
                         if (reward.getType() == ERewardType.ITEM) {
@@ -1315,8 +1319,8 @@ public class RewardOptionScreen extends Screen {
                         // 经验点
                         else if (reward.getType() == ERewardType.EXP_POINT) {
                             Minecraft.getInstance().setScreen(new StringInputScreen(this
-                                    , new TextList(Text.translatable(EI18nType.TIPS, "enter_exp_point").setShadow(true), Text.translatable(EI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                                    , new TextList(Text.translatable(EI18nType.TIPS, "enter_something"))
+                                    , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_exp_point").shadow(true), Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_probability").shadow(true))
+                                    , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"))
                                     , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                                     , new StringList(String.valueOf((Integer) RewardManager.deserializeReward(reward)), StringUtils.toFixedEx(reward.getProbability(), 5))
                                     , input -> {
@@ -1330,7 +1334,7 @@ public class RewardOptionScreen extends Screen {
                                         RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(count, ERewardType.EXP_POINT), ERewardType.EXP_POINT, p));
                                         RewardConfigManager.saveRewardOption();
                                     } else {
-                                        result.add(Component.translatableClient(EI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
+                                        result.add(SakuraComponent.get().transClient("tips", "enter_value_s_error", input.get(0)).toString());
                                     }
                                 }
                                 return result;
@@ -1340,8 +1344,8 @@ public class RewardOptionScreen extends Screen {
                         // 经验等级
                         else if (reward.getType() == ERewardType.EXP_LEVEL) {
                             Minecraft.getInstance().setScreen(new StringInputScreen(this
-                                    , new TextList(Text.translatable(EI18nType.TIPS, "enter_exp_level").setShadow(true), Text.translatable(EI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                                    , new TextList(Text.translatable(EI18nType.TIPS, "enter_something"))
+                                    , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_exp_level").shadow(true), Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_probability").shadow(true))
+                                    , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"))
                                     , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                                     , new StringList(String.valueOf((Integer) RewardManager.deserializeReward(reward)), StringUtils.toFixedEx(reward.getProbability(), 5))
                                     , input -> {
@@ -1355,7 +1359,7 @@ public class RewardOptionScreen extends Screen {
                                         RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(count, ERewardType.EXP_LEVEL), ERewardType.EXP_LEVEL, p));
                                         RewardConfigManager.saveRewardOption();
                                     } else {
-                                        result.add(Component.translatableClient(EI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
+                                        result.add(SakuraComponent.get().transClient("tips", "enter_value_s_error", input.get(0)).toString());
                                     }
                                 }
                                 return result;
@@ -1365,8 +1369,8 @@ public class RewardOptionScreen extends Screen {
                         // 补签卡
                         else if (reward.getType() == ERewardType.SIGN_IN_CARD) {
                             Minecraft.getInstance().setScreen(new StringInputScreen(this
-                                    , new TextList(Text.translatable(EI18nType.TIPS, "enter_sign_in_card").setShadow(true), Text.translatable(EI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                                    , new TextList(Text.translatable(EI18nType.TIPS, "enter_something"))
+                                    , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_sign_in_card").shadow(true), Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_probability").shadow(true))
+                                    , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"))
                                     , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                                     , new StringList(String.valueOf((Integer) RewardManager.deserializeReward(reward)), StringUtils.toFixedEx(reward.getProbability(), 5))
                                     , input -> {
@@ -1380,7 +1384,7 @@ public class RewardOptionScreen extends Screen {
                                         RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(count, ERewardType.SIGN_IN_CARD), ERewardType.SIGN_IN_CARD, p));
                                         RewardConfigManager.saveRewardOption();
                                     } else {
-                                        result.add(Component.translatableClient(EI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
+                                        result.add(SakuraComponent.get().transClient("tips", "enter_value_s_error", input.get(0)).toString());
                                     }
                                 }
                                 return result;
@@ -1404,15 +1408,15 @@ public class RewardOptionScreen extends Screen {
                         // 消息
                         else if (reward.getType() == ERewardType.MESSAGE) {
                             Minecraft.getInstance().setScreen(new StringInputScreen(this
-                                    , new TextList(Text.translatable(EI18nType.TIPS, "enter_message").setShadow(true), Text.translatable(EI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                                    , new TextList(Text.translatable(EI18nType.TIPS, "enter_something"))
+                                    , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_message").shadow(true), Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_probability").shadow(true))
+                                    , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"))
                                     , new StringList("", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                                     , new StringList(RewardManager.deserializeReward(reward).toString(), StringUtils.toFixedEx(reward.getProbability(), 5))
                                     , input -> {
                                 if (CollectionUtils.isNotNullOrEmpty(input)) {
                                     RewardConfigManager.addUndoRewardOption(rule);
                                     RewardConfigManager.clearRedoList();
-                                    Component textToComponent = Component.literal(input.get(0));
+                                    Component textToComponent = SakuraComponent.get().literal(input.get(0));
                                     BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                                     RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(textToComponent, ERewardType.MESSAGE), ERewardType.MESSAGE, p));
                                     RewardConfigManager.saveRewardOption();
@@ -1423,8 +1427,8 @@ public class RewardOptionScreen extends Screen {
                         // 指令
                         else if (reward.getType() == ERewardType.COMMAND) {
                             Minecraft.getInstance().setScreen(new StringInputScreen(this
-                                    , new TextList(Text.translatable(EI18nType.TIPS, "enter_command").setShadow(true), Text.translatable(EI18nType.TIPS, "enter_reward_probability").setShadow(true))
-                                    , new TextList(Text.translatable(EI18nType.TIPS, "enter_something"))
+                                    , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_command").shadow(true), Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_probability").shadow(true))
+                                    , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"))
                                     , new StringList("", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                                     , new StringList(RewardManager.deserializeReward(reward), StringUtils.toFixedEx(reward.getProbability(), 5))
                                     , input -> {
@@ -1436,26 +1440,26 @@ public class RewardOptionScreen extends Screen {
                                     RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(input.get(0), ERewardType.COMMAND), ERewardType.COMMAND, p));
                                     RewardConfigManager.saveRewardOption();
                                 } else {
-                                    result.add(Component.translatableClient(EI18nType.TIPS, "enter_value_s_error", input.get(0)).toString());
+                                    result.add(SakuraComponent.get().transClient("tips", "enter_value_s_error", input.get(0)).toString());
                                 }
                                 return result;
                             }
                             ));
                         }
                     }
-                } else if (Component.translatableClient(EI18nType.OPTION, "copy").toString().equalsIgnoreCase(selectedString)) {
+                } else if (SakuraComponent.get().transClient("option", "copy").toString().equalsIgnoreCase(selectedString)) {
                     if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                         editHandler.handleCopy();
                     }
-                } else if (Component.translatableClient(EI18nType.OPTION, "cut").toString().equalsIgnoreCase(selectedString)) {
+                } else if (SakuraComponent.get().transClient("option", "cut").toString().equalsIgnoreCase(selectedString)) {
                     if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                         editHandler.handleCut();
                     }
-                } else if (Component.translatableClient(EI18nType.OPTION, "paste").toString().equalsIgnoreCase(selectedString)) {
+                } else if (SakuraComponent.get().transClient("option", "paste").toString().equalsIgnoreCase(selectedString)) {
                     if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                         editHandler.handlePaste();
                     }
-                } else if (Component.translatableClient(EI18nType.OPTION, "delete").toString().equalsIgnoreCase(selectedString)) {
+                } else if (SakuraComponent.get().transClient("option", "delete").toString().equalsIgnoreCase(selectedString)) {
                     if (ClientConfig.get().rewardKeys().delete().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
                         editHandler.handleDelete();
                     }
@@ -1485,7 +1489,7 @@ public class RewardOptionScreen extends Screen {
             if (context.button.isHovered()) {
                 AbstractGui.fill(context.matrixStack, realX, realY, realX2, realY2, 0x99ACACAC);
             }
-            AbstractGuiUtils.drawLimitedText(context.matrixStack, super.font, Component.translatableClient(EI18nType.WORD, content).toString(), realX + 4, (int) (realY + (realHeight - super.font.lineHeight) / 2), (int) (realWidth - 22), 0xFFEBD4B1);
+            AbstractGuiUtils.drawLimitedText(context.matrixStack, super.font, SakuraComponent.get().transClient("word", content).toString(), realX + 4, (int) (realY + (realHeight - super.font.lineHeight) / 2), (int) (realWidth - 22), 0xFFEBD4B1);
         };
     }
 
@@ -1596,10 +1600,10 @@ public class RewardOptionScreen extends Screen {
                 if (currRewardButton.equalsIgnoreCase("panel")) {
                     if (rule == ERewardRule.CDK_REWARD) {
                         Minecraft.getInstance().setScreen(new StringInputScreen(screen
-                                , new TextList(Text.translatable(EI18nType.TIPS, "enter_reward_rule_key_" + rule.getCode()).setShadow(true)
-                                , Text.translatable(EI18nType.TIPS, "enter_valid_until").setShadow(true)
-                                , Text.translatable(EI18nType.TIPS, "enter_num").setShadow(true))
-                                , new TextList(Text.translatable(EI18nType.TIPS, "enter_something"))
+                                , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_rule_key_" + rule.getCode()).shadow(true)
+                                , Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_valid_until").shadow(true)
+                                , Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_num").shadow(true))
+                                , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"))
                                 , new StringList("\\w*"
                                 , ""
                                 , "\\d*")
@@ -1610,16 +1614,16 @@ public class RewardOptionScreen extends Screen {
                             StringList result = new StringList("", "", "");
                             if (CollectionUtils.isNotNullOrEmpty(input)) {
                                 if (!RewardConfigManager.validateKeyName(rule, input.get(0))) {
-                                    result.set(0, Component.translatableClient(EI18nType.TIPS, "reward_rule_s_error", input.get(0)).toString());
+                                    result.set(0, SakuraComponent.get().transClient("tips", "reward_rule_s_error", input.get(0)).toString());
                                 }
                                 if (StringUtils.isNotNullOrEmpty(input.get(1))) {
                                     if (DateUtils.format(input.get(1)) == null) {
-                                        result.set(1, Component.translatableClient(EI18nType.TIPS, "valid_until_s_error", input.get(1)).toString());
+                                        result.set(1, SakuraComponent.get().transClient("tips", "valid_until_s_error", input.get(1)).toString());
                                     }
                                 }
                                 if (StringUtils.isNotNullOrEmpty(input.get(2))) {
                                     if (StringUtils.toInt(input.get(2)) == 0) {
-                                        result.set(2, Component.translatableClient(EI18nType.TIPS, "num_s_error", input.get(2)).toString());
+                                        result.set(2, SakuraComponent.get().transClient("tips", "num_s_error", input.get(2)).toString());
                                     }
                                 }
                                 if (result.stream().allMatch(StringUtils::isNullOrEmptyEx)) {
@@ -1635,8 +1639,8 @@ public class RewardOptionScreen extends Screen {
                     } else if (rule != ERewardRule.BASE_REWARD) {
                         String validator = rule == ERewardRule.RANDOM_REWARD ? "(0?1(\\.0{0,10})?|0(\\.\\d{0,10})?)?" : "[\\d +~/:.T-]*";
                         Minecraft.getInstance().setScreen(new StringInputScreen(screen
-                                , Text.translatable(EI18nType.TIPS, "enter_reward_rule_key_" + rule.getCode()).setShadow(true)
-                                , Text.translatable(EI18nType.TIPS, "enter_something")
+                                , Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_rule_key_" + rule.getCode()).shadow(true)
+                                , Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something")
                                 , validator
                                 , RewardClipboardManager.deSerializeRewardList().getKey()
                                 , input -> {
@@ -1649,7 +1653,7 @@ public class RewardOptionScreen extends Screen {
                                     RewardConfigManager.addKeyName(rule, input.get(0), rewardList);
                                     RewardConfigManager.saveRewardOption();
                                 } else {
-                                    result.add(Component.translatableClient(EI18nType.TIPS, "reward_rule_s_error", input.get(0)).toString());
+                                    result.add(SakuraComponent.get().transClient("tips", "reward_rule_s_error", input.get(0)).toString());
                                 }
                             }
                             return result;
@@ -1747,7 +1751,7 @@ public class RewardOptionScreen extends Screen {
     }
 
     public RewardOptionScreen() {
-        super(Component.translatableClient(EI18nType.TITLE, "reward_option_title").toTextComponent());
+        super(SakuraComponent.get().transClient("title", "reward_option_title").toVanilla());
     }
 
     @Override
@@ -1767,7 +1771,7 @@ public class RewardOptionScreen extends Screen {
                 .setTextureWidth(SakuraSignIn.getThemeTextureCoordinate().getTotalWidth())
                 .setTextureHeight(SakuraSignIn.getThemeTextureCoordinate().getTotalHeight())
                 .setTransparentCheck(false)
-                .setTooltip(Component.translatableClient(EI18nType.TIPS, "open_sidebar").toString()));
+                .setTooltip(SakuraComponent.get().transClient("tips", "open_sidebar").toString()));
         OP_BUTTONS.put(OperationButtonType.CLOSE.getCode(), new OperationButton(OperationButtonType.CLOSE.getCode(), SakuraSignIn.getThemeTexture())
                 .setCoordinate(new Coordinate().setX(80).setY((5 * 2 + super.font.lineHeight - 16) / 2.0).setWidth(16).setHeight(16))
                 .setNormal(SakuraSignIn.getThemeTextureCoordinate().getArrowUV()).setHover(SakuraSignIn.getThemeTextureCoordinate().getArrowHoverUV()).setTap(SakuraSignIn.getThemeTextureCoordinate().getArrowTapUV())
@@ -1775,7 +1779,7 @@ public class RewardOptionScreen extends Screen {
                 .setTextureHeight(SakuraSignIn.getThemeTextureCoordinate().getTotalHeight())
                 .setFlipHorizontal(true)
                 .setTransparentCheck(false)
-                .setTooltip(Component.translatableClient(EI18nType.TIPS, "close_sidebar").toString()));
+                .setTooltip(SakuraComponent.get().transClient("tips", "close_sidebar").toString()));
         OP_BUTTONS.put(OperationButtonType.BASE_REWARD.getCode()
                 , new OperationButton(OperationButtonType.BASE_REWARD.getCode(), this.generateCustomRenderFunction(SakuraUtils.getRewardRuleI18nKeyName(ERewardRule.BASE_REWARD)))
                         .setX(0).setY(this.leftBarTitleHeight).setWidth(100).setHeight(this.leftBarTitleHeight - 2));
@@ -1828,7 +1832,7 @@ public class RewardOptionScreen extends Screen {
                 .setX(super.width - rightBarWidth + 1).setY(22).setWidth(18).setHeight(18)
                 .setHoverFgColor(0xAA808080).setTapFgColor(0xAAA0A0A0)
                 .setTransparentCheck(false)
-                .setTooltip(Component.translatableClient(EI18nType.TIPS, "download_reward_config").toString()));
+                .setTooltip(SakuraComponent.get().transClient("tips", "download_reward_config").toString()));
         OP_BUTTONS.put(OperationButtonType.UPLOAD.getCode(), new OperationButton(OperationButtonType.UPLOAD.getCode(), SakuraSignIn.getThemeTexture())
                 .setCoordinate(SakuraSignIn.getThemeTextureCoordinate().getUploadUV())
                 .setNormal(SakuraSignIn.getThemeTextureCoordinate().getUploadUV()).setHover(SakuraSignIn.getThemeTextureCoordinate().getUploadUV()).setTap(SakuraSignIn.getThemeTextureCoordinate().getUploadUV())
@@ -1845,7 +1849,7 @@ public class RewardOptionScreen extends Screen {
                 .setX(super.width - rightBarWidth + 1).setY(62).setWidth(18).setHeight(18)
                 .setHoverFgColor(0xAA808080).setTapFgColor(0xAAA0A0A0)
                 .setTransparentCheck(false)
-                .setTooltip(Component.translatableClient(EI18nType.TIPS, "open_config_folder").toString()));
+                .setTooltip(SakuraComponent.get().transClient("tips", "open_config_folder").toString()));
         OP_BUTTONS.put(OperationButtonType.SORT.getCode(), new OperationButton(OperationButtonType.SORT.getCode(), SakuraSignIn.getThemeTexture())
                 .setCoordinate(SakuraSignIn.getThemeTextureCoordinate().getSortUV())
                 .setNormal(SakuraSignIn.getThemeTextureCoordinate().getSortUV()).setHover(SakuraSignIn.getThemeTextureCoordinate().getSortUV()).setTap(SakuraSignIn.getThemeTextureCoordinate().getSortUV())
@@ -1854,10 +1858,10 @@ public class RewardOptionScreen extends Screen {
                 .setX(super.width - rightBarWidth + 1).setY(82).setWidth(18).setHeight(18)
                 .setHoverFgColor(0xAA808080).setTapFgColor(0xAAA0A0A0)
                 .setTransparentCheck(false)
-                .setTooltip(Component.translatableClient(EI18nType.TIPS, "reward_rule_sort").toString()));
+                .setTooltip(SakuraComponent.get().transClient("tips", "reward_rule_sort").toString()));
         this.updateLayout();
 
-        tips = Text.translatable(EI18nType.TIPS, "reward_option_screen_tips");
+        tips = Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.reward_option_screen_tips");
     }
 
     @Override
@@ -1889,7 +1893,7 @@ public class RewardOptionScreen extends Screen {
         if (OperationButtonType.valueOf(currOpButton) == null) {
             AbstractGuiUtils.fill(matrixStack, this.leftBarWidth + 4, 4, super.width - this.leftBarWidth - this.rightBarWidth - 8, super.height - 8, 0x88000000, 15);
             float x, y;
-            tips.setMatrixStack(matrixStack).setFont(super.font);
+            tips.stack(matrixStack).font(super.font);
             int textHeight = AbstractGuiUtils.multilineTextHeight(tips);
             int textWidth = AbstractGuiUtils.multilineTextWidth(tips);
             x = this.leftBarWidth + ((super.width - this.leftBarWidth - this.rightBarWidth) - textWidth) / 2.0f;
@@ -1906,7 +1910,7 @@ public class RewardOptionScreen extends Screen {
         AbstractGuiUtils.fillOutLine(matrixStack, 0, 0, leftBarWidth, super.height, 1, 0xFF000000);
         // 绘制左侧边栏列表标题
         if (SakuraSignIn.isRewardOptionBarOpened()) {
-            AbstractGui.drawString(matrixStack, super.font, Component.translatableClient(EI18nType.TITLE, "reward_rule_type").toString(), 4, 5, 0xFFACACAC);
+            AbstractGui.drawString(matrixStack, super.font, SakuraComponent.get().transClient("title", "reward_rule_type").toString(), 4, 5, 0xFFACACAC);
             AbstractGui.fill(matrixStack, 0, leftBarTitleHeight, leftBarWidth, leftBarTitleHeight - 1, 0xAA000000);
         }
         // 绘制右侧边栏列表背景
@@ -1931,7 +1935,7 @@ public class RewardOptionScreen extends Screen {
             // 绘制其他按钮
             else {
                 if (op == OperationButtonType.OFFSET_Y.getCode()) {
-                    button.setTooltip(Component.translatableClient(EI18nType.TIPS, "y_offset", StringUtils.toFixedEx(this.yOffset, 1)).toString());
+                    button.setTooltip(SakuraComponent.get().transClient("tips", "y_offset", StringUtils.toFixedEx(this.yOffset, 1)).toString());
                 } else if (op == OperationButtonType.REWARD_PANEL.getCode()) {
                     // 绘制选中边框
                     if ("panel".equals(this.currRewardButton)) {
@@ -1965,22 +1969,22 @@ public class RewardOptionScreen extends Screen {
             // 绘制其他按钮
             else {
                 if (op == OperationButtonType.OFFSET_Y.getCode()) {
-                    button.setTooltip(Component.translatableClient(EI18nType.TIPS, "y_offset", StringUtils.toFixedEx(this.yOffset, 1)).toString());
+                    button.setTooltip(SakuraComponent.get().transClient("tips", "y_offset", StringUtils.toFixedEx(this.yOffset, 1)).toString());
                 }
                 // 帮助按钮
                 else if (op == OperationButtonType.HELP.getCode()) {
                     if (keyManager.onlyShiftPressed()) {
-                        button.setTooltip(Component.translatableClient(EI18nType.TIPS, "help_button_shift").toString());
+                        button.setTooltip(SakuraComponent.get().transClient("tips", "help_button_shift").toString());
                     } else {
-                        button.setTooltip(Component.translatableClient(EI18nType.TIPS, "help_button").toString());
+                        button.setTooltip(SakuraComponent.get().transClient("tips", "help_button").toString());
                     }
                 } else if (op == OperationButtonType.UPLOAD.getCode()) {
                     ClientPlayerEntity player = Minecraft.getInstance().player;
                     if (player != null && player.hasPermissions(CommonConfig.get().permission().permissionEditReward())) {
-                        button.setTooltip(Component.translatableClient(EI18nType.TIPS, "upload_reward_config").toString())
+                        button.setTooltip(SakuraComponent.get().transClient("tips", "upload_reward_config").toString())
                                 .setHoverFgColor(0xAA808080).setTapFgColor(0xAAA0A0A0);
                     } else {
-                        button.setTooltip(Text.translatable(EI18nType.TIPS, "upload_reward_config_no_permission").setColor(0xFFFF0000))
+                        button.setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.upload_reward_config_no_permission").color(0xFFFF0000))
                                 .setHoverFgColor(0xAA808080).setTapFgColor(0xAA808080);
                     }
                 }

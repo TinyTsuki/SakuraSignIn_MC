@@ -53,6 +53,25 @@ public class CommandArchitectureContractTest {
         assertTrue(messages.contains("BaniraModPresence.isRemoteClientInstalled"));
         assertTrue(messages.contains("MessageUtils.sendNotification"));
         assertTrue(messages.contains("MessageUtils.sendMessage"));
+        assertTrue("Per-player language must not mutate a shared message",
+                messages.contains("message.clone().languageCode"));
+    }
+
+    @Test
+    public void configCommandOnlyComposesQueryAndUpdateBuilders() throws Exception {
+        Path configCommand = MAIN.resolve("command/impl/ConfigCommand.java");
+        String source = read(configCommand);
+        long lines;
+        try (Stream<String> sourceLines = Files.lines(configCommand)) {
+            lines = sourceLines.count();
+        }
+
+        assertTrue("Config command entry should remain small", lines <= 80);
+        assertTrue(source.contains("ConfigQueryCommand.build()"));
+        assertTrue(source.contains("ConfigUpdateCommand.build()"));
+        assertFalse(source.contains("RewardConfigManager"));
+        assertTrue(Files.exists(MAIN.resolve("command/impl/ConfigQueryCommand.java")));
+        assertTrue(Files.exists(MAIN.resolve("command/impl/ConfigUpdateCommand.java")));
     }
 
     private static String read(Path path) {
