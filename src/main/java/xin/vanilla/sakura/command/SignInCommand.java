@@ -17,7 +17,6 @@ import net.minecraft.entity.player.ServerPlayerEntity;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.config.KeyValue;
 import xin.vanilla.sakura.config.RewardConfigManager;
-import xin.vanilla.sakura.config.ServerConfig;
 import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.enums.EI18nType;
@@ -130,11 +129,11 @@ public class SignInCommand {
             IPlayerSignInData signInData = SakuraPlayerData.get(player);
             try {
                 String string = StringArgumentType.getString(context, "date");
-                if (ServerConfig.SIGN_IN_CARD.get() && "all".equalsIgnoreCase(string)) {
+                if (CommonConfig.get().makeUp().signInCard() && "all".equalsIgnoreCase(string)) {
                     int days = 0;
-                    for (int i = 1; i <= ServerConfig.RE_SIGN_IN_DAYS.get() && days < signInData.getSignInCard(); i++) {
+                    for (int i = 1; i <= CommonConfig.get().makeUp().reSignInDays() && days < signInData.getSignInCard(); i++) {
                         Date date = DateUtils.addDay(DateUtils.getServerDate(), -i);
-                        if (signInData.getSignInRecords().stream().noneMatch(data -> DateUtils.toDateInt(data.getCompensateTime()) == DateUtils.toDateInt(date))) {
+                        if (!RewardManager.isSignedIn(signInData, date, false)) {
                             signInTimeList.add(new KeyValue<>(DateUtils.format(DateUtils.toString(date)), ESignInType.RE_SIGN_IN));
                             days++;
                         }
@@ -184,11 +183,11 @@ public class SignInCommand {
             IPlayerSignInData signInData = SakuraPlayerData.get(player);
             try {
                 String string = StringArgumentType.getString(context, "date");
-                if (ServerConfig.SIGN_IN_CARD.get() && "all".equalsIgnoreCase(string)) {
+                if (CommonConfig.get().makeUp().signInCard() && "all".equalsIgnoreCase(string)) {
                     int days = 0;
-                    for (int i = 1; i <= ServerConfig.RE_SIGN_IN_DAYS.get() && days < signInData.getSignInCard(); i++) {
+                    for (int i = 1; i <= CommonConfig.get().makeUp().reSignInDays() && days < signInData.getSignInCard(); i++) {
                         Date date = DateUtils.addDay(DateUtils.getServerDate(), -i);
-                        if (signInData.getSignInRecords().stream().noneMatch(data -> DateUtils.toDateInt(data.getCompensateTime()) == DateUtils.toDateInt(date))) {
+                        if (!RewardManager.isSignedIn(signInData, date, false)) {
                             signInTimeList.add(new KeyValue<>(date, ESignInType.RE_SIGN_IN));
                             days++;
                         }
@@ -284,30 +283,30 @@ public class SignInCommand {
             return 1;
         };
 
-        LiteralArgumentBuilder<CommandSource> sign = Commands.literal(CommonConfig.COMMAND_SIGN_IN.get()).executes(signInCommand)
+        LiteralArgumentBuilder<CommandSource> sign = Commands.literal(CommonConfig.get().command().commandSignIn()).executes(signInCommand)
                 // 带有日期参数 -> 补签
                 .then(Commands.argument("date", StringArgumentType.greedyString())
                         .suggests(dateSuggestions)
                         .executes(signInCommand)
                 );
-        LiteralArgumentBuilder<CommandSource> reward = Commands.literal(CommonConfig.COMMAND_REWARD.get()).executes(rewardCommand)
+        LiteralArgumentBuilder<CommandSource> reward = Commands.literal(CommonConfig.get().command().commandReward()).executes(rewardCommand)
                 // 带有日期参数 -> 补签
                 .then(Commands.argument("date", StringArgumentType.greedyString())
                         .suggests(dateSuggestions)
                         .executes(rewardCommand)
                 );
-        LiteralArgumentBuilder<CommandSource> signex = Commands.literal(CommonConfig.COMMAND_SIGN_IN_EX.get()).executes(signAndRewardCommand)
+        LiteralArgumentBuilder<CommandSource> signex = Commands.literal(CommonConfig.get().command().commandSignInEx()).executes(signAndRewardCommand)
                 // 带有日期参数 -> 补签
                 .then(Commands.argument("date", StringArgumentType.greedyString())
                         .suggests(dateSuggestions)
                         .executes(signAndRewardCommand)
                 );
-        LiteralArgumentBuilder<CommandSource> cdk = Commands.literal(CommonConfig.COMMAND_CDK.get())
+        LiteralArgumentBuilder<CommandSource> cdk = Commands.literal(CommonConfig.get().command().commandCdk())
                 // 补签 /sakura signex <year> <month> <day>
                 .then(Commands.argument("key", StringArgumentType.greedyString())
                         .executes(cdkCommand)
                 );
-        LiteralArgumentBuilder<CommandSource> language = Commands.literal(CommonConfig.COMMAND_LANGUAGE.get())
+        LiteralArgumentBuilder<CommandSource> language = Commands.literal(CommonConfig.get().command().commandLanguage())
                 // 设置语言 /sakura language <code>
                 .then(Commands.argument("language", StringArgumentType.word())
                         .suggests((context, builder) -> {
@@ -318,10 +317,10 @@ public class SignInCommand {
                         })
                         .executes(languageCommand)
                 );
-        LiteralArgumentBuilder<CommandSource> card = Commands.literal(CommonConfig.COMMAND_CARD.get())
+        LiteralArgumentBuilder<CommandSource> card = Commands.literal(CommonConfig.get().command().commandCard())
                 .executes(context -> {
                     ServerPlayerEntity player = context.getSource().getPlayerOrException();
-                    if (!ServerConfig.SIGN_IN_CARD.get()) {
+                    if (!CommonConfig.get().makeUp().signInCard()) {
                         SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "server_not_enable_sign_in_card"));
                     } else {
                         SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "has_sign_in_card_d", SakuraPlayerData.get(player).getSignInCard()));
@@ -421,18 +420,18 @@ public class SignInCommand {
         LiteralArgumentBuilder<CommandSource> config = Commands.literal("config")
                 // region 获取服务器配置
                 .then(Commands.literal("get")
-                        .requires(source -> source.hasPermission(ServerConfig.PERMISSION_SERVER_CONFIG_GET.get()))
+                        .requires(source -> source.hasPermission(CommonConfig.get().permission().permissionServerConfigGet()))
                         .then(Commands.literal("autoSignIn")
                                 .executes(context -> {
                                     ServerPlayerEntity player = context.getSource().getPlayerOrException();
-                                    SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "server_enabled_or_not_auto_sign", I18nUtils.enabled(SakuraUtils.getPlayerLanguage(player), ServerConfig.AUTO_SIGN_IN.get())));
+                                    SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "server_enabled_or_not_auto_sign", I18nUtils.enabled(SakuraUtils.getPlayerLanguage(player), CommonConfig.get().server().autoSignIn())));
                                     return 1;
                                 })
                         )
                         .then(Commands.literal("timeCoolingMethod")
                                 .executes(context -> {
                                     ServerPlayerEntity player = context.getSource().getPlayerOrException();
-                                    ETimeCoolingMethod coolingMethod = ServerConfig.TIME_COOLING_METHOD.get();
+                                    ETimeCoolingMethod coolingMethod = CommonConfig.get().cooling().timeCoolingMethod();
                                     SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "sign_in_time_cool_down_mode_s", coolingMethod.name()));
                                     return 1;
                                 })
@@ -440,7 +439,7 @@ public class SignInCommand {
                         .then(Commands.literal("timeCoolingTime")
                                 .executes(context -> {
                                     ServerPlayerEntity player = context.getSource().getPlayerOrException();
-                                    Double time = ServerConfig.TIME_COOLING_TIME.get();
+                                    Double time = CommonConfig.get().cooling().timeCoolingTime();
                                     SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "sign_in_time_cool_down_refresh_time_f", time));
                                     return 1;
                                 })
@@ -448,7 +447,7 @@ public class SignInCommand {
                         .then(Commands.literal("timeCoolingInterval")
                                 .executes(context -> {
                                     ServerPlayerEntity player = context.getSource().getPlayerOrException();
-                                    Double time = ServerConfig.TIME_COOLING_INTERVAL.get();
+                                    Double time = CommonConfig.get().cooling().timeCoolingInterval();
                                     SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "sign_in_time_cool_down_refresh_interval_f", time));
                                     return 1;
                                 })
@@ -456,14 +455,14 @@ public class SignInCommand {
                         .then(Commands.literal("signInCard")
                                 .executes(context -> {
                                     ServerPlayerEntity player = context.getSource().getPlayerOrException();
-                                    SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "server_enabled_or_not_sign_in_card", I18nUtils.enabled(SakuraUtils.getPlayerLanguage(player), ServerConfig.SIGN_IN_CARD.get())));
+                                    SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "server_enabled_or_not_sign_in_card", I18nUtils.enabled(SakuraUtils.getPlayerLanguage(player), CommonConfig.get().makeUp().signInCard())));
                                     return 1;
                                 })
                         )
                         .then(Commands.literal("reSignInDays")
                                 .executes(context -> {
                                     ServerPlayerEntity player = context.getSource().getPlayerOrException();
-                                    int time = ServerConfig.RE_SIGN_IN_DAYS.get();
+                                    int time = CommonConfig.get().makeUp().reSignInDays();
                                     SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "max_sign_in_day_d", time));
                                     return 1;
                                 })
@@ -471,7 +470,7 @@ public class SignInCommand {
                         .then(Commands.literal("signInCardOnlyBaseReward")
                                 .executes(context -> {
                                     ServerPlayerEntity player = context.getSource().getPlayerOrException();
-                                    SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "server_enabled_or_not_sign_in_card_only_basic_reward", I18nUtils.enabled(SakuraUtils.getPlayerLanguage(player), ServerConfig.SIGN_IN_CARD_ONLY_BASE_REWARD.get())));
+                                    SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "server_enabled_or_not_sign_in_card_only_basic_reward", I18nUtils.enabled(SakuraUtils.getPlayerLanguage(player), CommonConfig.get().makeUp().signInCardOnlyBaseReward())));
                                     return 1;
                                 })
                         )
@@ -485,35 +484,35 @@ public class SignInCommand {
                         .then(Commands.literal("playerDataSyncPacketSize")
                                 .executes(context -> {
                                     ServerPlayerEntity player = context.getSource().getPlayerOrException();
-                                    SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "player_data_sync_packet_size_d", ServerConfig.PLAYER_DATA_SYNC_PACKET_SIZE.get()));
+                                    SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "player_data_sync_packet_size_d", CommonConfig.get().server().playerDataSyncPacketSize()));
                                     return 1;
                                 })
                         )
                         .then(Commands.literal("rewardAffectedByLuck")
                                 .executes(context -> {
                                     ServerPlayerEntity player = context.getSource().getPlayerOrException();
-                                    SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "server_enabled_or_not_reward_affected_by_luck", I18nUtils.enabled(SakuraUtils.getPlayerLanguage(player), ServerConfig.REWARD_AFFECTED_BY_LUCK.get())));
+                                    SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "server_enabled_or_not_reward_affected_by_luck", I18nUtils.enabled(SakuraUtils.getPlayerLanguage(player), CommonConfig.get().reward().rewardAffectedByLuck())));
                                     return 1;
                                 })
                         )
                         .then(Commands.literal("continuousRewardsRepeatable")
                                 .executes(context -> {
                                     ServerPlayerEntity player = context.getSource().getPlayerOrException();
-                                    SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "server_enabled_or_not_continuous_rewards_repeatable", I18nUtils.enabled(SakuraUtils.getPlayerLanguage(player), ServerConfig.CONTINUOUS_REWARDS_REPEATABLE.get())));
+                                    SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "server_enabled_or_not_continuous_rewards_repeatable", I18nUtils.enabled(SakuraUtils.getPlayerLanguage(player), CommonConfig.get().reward().continuousRewardsRepeatable())));
                                     return 1;
                                 })
                         )
                         .then(Commands.literal("cycleRewardsRepeatable")
                                 .executes(context -> {
                                     ServerPlayerEntity player = context.getSource().getPlayerOrException();
-                                    SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "server_enabled_or_not_cycle_rewards_repeatable", I18nUtils.enabled(SakuraUtils.getPlayerLanguage(player), ServerConfig.CYCLE_REWARDS_REPEATABLE.get())));
+                                    SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "server_enabled_or_not_cycle_rewards_repeatable", I18nUtils.enabled(SakuraUtils.getPlayerLanguage(player), CommonConfig.get().reward().cycleRewardsRepeatable())));
                                     return 1;
                                 })
                         )
                         .then(Commands.literal("language")
                                 .executes(context -> {
                                     ServerPlayerEntity player = context.getSource().getPlayerOrException();
-                                    SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "server_default_language", ServerConfig.DEFAULT_LANGUAGE.get()));
+                                    SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "server_default_language", CommonConfig.get().server().defaultLanguage()));
                                     return 1;
                                 })
                         )
@@ -522,7 +521,7 @@ public class SignInCommand {
                 // region 修改服务器配置
                 // 设置服务器时间 /sakura config set date <year> <month> <day> <hour> <minute> <second>
                 .then(Commands.literal("set")
-                        .requires(source -> source.hasPermission(ServerConfig.PERMISSION_SERVER_CONFIG_SET.get()))
+                        .requires(source -> source.hasPermission(CommonConfig.get().permission().permissionServerConfigSet()))
                         .then(Commands.literal("date")
                                 .then(Commands.argument("datetime", StringArgumentType.greedyString())
                                         .suggests(datetimeSuggestions)
@@ -530,8 +529,9 @@ public class SignInCommand {
                                             String string = StringArgumentType.getString(context, "datetime");
                                             long datetime = getRelativeLong(string, "datetime");
                                             Date date = DateUtils.getDate(datetime);
-                                            ServerConfig.SERVER_TIME.set(DateUtils.toDateTimeString(new Date()));
-                                            ServerConfig.ACTUAL_TIME.set(DateUtils.toDateTimeString(date));
+                                            CommonConfig.get().dateTime().serverTime(DateUtils.toDateTimeString(new Date()));
+                                            CommonConfig.get().dateTime().serverCalibrationTime(DateUtils.toDateTimeString(date));
+                                            CommonConfig.save();
                                             ServerPlayerEntity player = context.getSource().getPlayerOrException();
                                             SakuraUtils.broadcastMessage(player, Component.translatable(player, EI18nType.MESSAGE, "set_server_time_s", DateUtils.toDateTimeString(date)));
                                             return 1;
@@ -544,7 +544,8 @@ public class SignInCommand {
                                         .executes(context -> {
                                             String boolString = StringArgumentType.getString(context, "bool");
                                             boolean bool = StringUtils.stringToBoolean(boolString);
-                                            ServerConfig.AUTO_SIGN_IN.set(bool);
+                                            CommonConfig.get().server().autoSignIn(bool);
+                                            CommonConfig.save();
                                             ServerPlayerEntity player = context.getSource().getPlayerOrException();
                                             SakuraUtils.broadcastMessage(player, Component.translatable(player, EI18nType.MESSAGE, "server_enabled_or_not_auto_sign", I18nUtils.enabled(SakuraUtils.getPlayerLanguage(player), bool)));
                                             return 1;
@@ -557,7 +558,8 @@ public class SignInCommand {
                                         .executes(context -> {
                                             String boolString = StringArgumentType.getString(context, "bool");
                                             boolean bool = StringUtils.stringToBoolean(boolString);
-                                            ServerConfig.SIGN_IN_CARD.set(bool);
+                                            CommonConfig.get().makeUp().signInCard(bool);
+                                            CommonConfig.save();
                                             ServerPlayerEntity player = context.getSource().getPlayerOrException();
                                             SakuraUtils.broadcastMessage(player, Component.translatable(player, EI18nType.MESSAGE, "server_enabled_or_not_sign_in_card", I18nUtils.enabled(SakuraUtils.getPlayerLanguage(player), bool)));
                                             return 1;
@@ -575,7 +577,8 @@ public class SignInCommand {
                                         })
                                         .executes(context -> {
                                             int days = IntegerArgumentType.getInteger(context, "days");
-                                            ServerConfig.RE_SIGN_IN_DAYS.set(days);
+                                            CommonConfig.get().makeUp().reSignInDays(days);
+                                            CommonConfig.save();
                                             ServerPlayerEntity player = context.getSource().getPlayerOrException();
                                             SakuraUtils.broadcastMessage(player, Component.translatable(player, EI18nType.MESSAGE, "set_max_sign_in_day_d", days));
                                             return 1;
@@ -588,7 +591,8 @@ public class SignInCommand {
                                         .executes(context -> {
                                             String boolString = StringArgumentType.getString(context, "bool");
                                             boolean bool = StringUtils.stringToBoolean(boolString);
-                                            ServerConfig.SIGN_IN_CARD_ONLY_BASE_REWARD.set(bool);
+                                            CommonConfig.get().makeUp().signInCardOnlyBaseReward(bool);
+                                            CommonConfig.save();
                                             ServerPlayerEntity player = context.getSource().getPlayerOrException();
                                             SakuraUtils.broadcastMessage(player, Component.translatable(player, EI18nType.MESSAGE, "server_enabled_or_not_sign_in_card_only_basic_reward", I18nUtils.enabled(SakuraUtils.getPlayerLanguage(player), bool)));
                                             return 1;
@@ -605,7 +609,8 @@ public class SignInCommand {
                                         })
                                         .executes(context -> {
                                             String method = StringArgumentType.getString(context, "method");
-                                            ServerConfig.TIME_COOLING_METHOD.set(ETimeCoolingMethod.valueOf(method));
+                                            CommonConfig.get().cooling().timeCoolingMethod(ETimeCoolingMethod.valueOf(method));
+                                            CommonConfig.save();
                                             ServerPlayerEntity player = context.getSource().getPlayerOrException();
                                             SakuraUtils.broadcastMessage(player, Component.translatable(player, EI18nType.MESSAGE, "set_sign_in_time_cool_down_mode_s", method));
                                             return 1;
@@ -625,7 +630,8 @@ public class SignInCommand {
                                         .executes(context -> {
                                             double time = DoubleArgumentType.getDouble(context, "time");
                                             SignInCommand.checkTime(time);
-                                            ServerConfig.TIME_COOLING_TIME.set(time);
+                                            CommonConfig.get().cooling().timeCoolingTime(time);
+                                            CommonConfig.save();
                                             ServerPlayerEntity player = context.getSource().getPlayerOrException();
                                             SakuraUtils.broadcastMessage(player, Component.translatable(player, EI18nType.MESSAGE, "set_sign_in_time_cool_down_refresh_time_f", time));
                                             return 1;
@@ -644,7 +650,8 @@ public class SignInCommand {
                                         .executes(context -> {
                                             double time = DoubleArgumentType.getDouble(context, "time");
                                             SignInCommand.checkTime(time);
-                                            ServerConfig.TIME_COOLING_INTERVAL.set(time);
+                                            CommonConfig.get().cooling().timeCoolingInterval(time);
+                                            CommonConfig.save();
                                             ServerPlayerEntity player = context.getSource().getPlayerOrException();
                                             SakuraUtils.broadcastMessage(player, Component.translatable(player, EI18nType.MESSAGE, "set_sign_in_time_cool_down_refresh_interval_f", time));
                                             return 1;
@@ -662,7 +669,8 @@ public class SignInCommand {
                                         })
                                         .executes(context -> {
                                             int size = IntegerArgumentType.getInteger(context, "size");
-                                            ServerConfig.PLAYER_DATA_SYNC_PACKET_SIZE.set(size);
+                                            CommonConfig.get().server().playerDataSyncPacketSize(size);
+                                            CommonConfig.save();
                                             ServerPlayerEntity player = context.getSource().getPlayerOrException();
                                             SakuraUtils.broadcastMessage(player, Component.translatable(player, EI18nType.MESSAGE, "set_player_data_sync_packet_size_d", size));
                                             return 1;
@@ -675,7 +683,8 @@ public class SignInCommand {
                                         .executes(context -> {
                                             String boolString = StringArgumentType.getString(context, "bool");
                                             boolean bool = StringUtils.stringToBoolean(boolString);
-                                            ServerConfig.REWARD_AFFECTED_BY_LUCK.set(bool);
+                                            CommonConfig.get().reward().rewardAffectedByLuck(bool);
+                                            CommonConfig.save();
                                             ServerPlayerEntity player = context.getSource().getPlayerOrException();
                                             SakuraUtils.broadcastMessage(player, Component.translatable(player, EI18nType.MESSAGE, "server_enabled_or_not_reward_affected_by_luck", I18nUtils.enabled(SakuraUtils.getPlayerLanguage(player), bool)));
                                             return 1;
@@ -688,7 +697,8 @@ public class SignInCommand {
                                         .executes(context -> {
                                             String boolString = StringArgumentType.getString(context, "bool");
                                             boolean bool = StringUtils.stringToBoolean(boolString);
-                                            ServerConfig.CONTINUOUS_REWARDS_REPEATABLE.set(bool);
+                                            CommonConfig.get().reward().continuousRewardsRepeatable(bool);
+                                            CommonConfig.save();
                                             RewardConfigManager.getRewardConfig().refreshContinuousRewardsRelation();
                                             ServerPlayerEntity player = context.getSource().getPlayerOrException();
                                             SakuraUtils.broadcastMessage(player, Component.translatable(player, EI18nType.MESSAGE, "server_enabled_or_not_continuous_rewards_repeatable", I18nUtils.enabled(SakuraUtils.getPlayerLanguage(player), bool)));
@@ -702,7 +712,8 @@ public class SignInCommand {
                                         .executes(context -> {
                                             String boolString = StringArgumentType.getString(context, "bool");
                                             boolean bool = StringUtils.stringToBoolean(boolString);
-                                            ServerConfig.CYCLE_REWARDS_REPEATABLE.set(bool);
+                                            CommonConfig.get().reward().cycleRewardsRepeatable(bool);
+                                            CommonConfig.save();
                                             RewardConfigManager.getRewardConfig().refreshCycleRewardsRelation();
                                             ServerPlayerEntity player = context.getSource().getPlayerOrException();
                                             SakuraUtils.broadcastMessage(player, Component.translatable(player, EI18nType.MESSAGE, "server_enabled_or_not_cycle_rewards_repeatable", I18nUtils.enabled(SakuraUtils.getPlayerLanguage(player), bool)));
@@ -718,9 +729,10 @@ public class SignInCommand {
                                         })
                                         .executes(context -> {
                                             String code = StringArgumentType.getString(context, "language");
-                                            ServerConfig.DEFAULT_LANGUAGE.set(code);
+                                            CommonConfig.get().server().defaultLanguage(code);
+                                            CommonConfig.save();
                                             ServerPlayerEntity player = context.getSource().getPlayerOrException();
-                                            SakuraUtils.broadcastMessage(player, Component.translatable(player, EI18nType.MESSAGE, "server_default_language", ServerConfig.DEFAULT_LANGUAGE.get()));
+                                            SakuraUtils.broadcastMessage(player, Component.translatable(player, EI18nType.MESSAGE, "server_default_language", CommonConfig.get().server().defaultLanguage()));
                                             return 1;
                                         })
                                 )
@@ -732,32 +744,32 @@ public class SignInCommand {
         // 注册简短的指令
         {
             // 签到 /sign
-            if (CommonConfig.CONCISE_SIGN_IN.get()) {
+            if (CommonConfig.get().concise().conciseSignIn()) {
                 dispatcher.register(sign);
             }
 
             // 领取奖励 /reward
-            if (CommonConfig.CONCISE_REWARD.get()) {
+            if (CommonConfig.get().concise().conciseReward()) {
                 dispatcher.register(reward);
             }
 
             // 签到并领取奖励 /signex
-            if (CommonConfig.CONCISE_SIGN_IN_EX.get()) {
+            if (CommonConfig.get().concise().conciseSignInEx()) {
                 dispatcher.register(signex);
             }
 
             // 領取CDK奖励 /cdk
-            if (CommonConfig.CONCISE_CDK.get()) {
+            if (CommonConfig.get().concise().conciseCdk()) {
                 dispatcher.register(cdk);
             }
 
             // 获取补签卡数量 /card
-            if (CommonConfig.CONCISE_CARD.get()) {
+            if (CommonConfig.get().concise().conciseCard()) {
                 dispatcher.register(card);
             }
 
             // 设置语言 /language
-            if (CommonConfig.CONCISE_LANGUAGE.get()) {
+            if (CommonConfig.get().concise().conciseLanguage()) {
                 dispatcher.register(language);
             }
         }

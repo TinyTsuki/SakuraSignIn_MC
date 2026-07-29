@@ -1,26 +1,29 @@
 package xin.vanilla.sakura.screen;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.*;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiComponent;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
+import net.minecraft.client.entity.player.ClientPlayerEntity;
+import net.minecraft.client.gui.AbstractGui;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.renderer.BufferBuilder;
+import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.potion.EffectInstance;
+import net.minecraft.potion.Effects;
+import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.loading.FMLPaths;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.lwjgl.opengl.GL11;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.*;
 import xin.vanilla.sakura.enums.EI18nType;
@@ -100,7 +103,7 @@ public class RewardOptionScreen extends Screen {
      */
     private int lineItemCount;
     // 矩阵栈
-    private PoseStack ms;
+    private MatrixStack ms;
     /**
      * 奖励列表索引(用于计算渲染Y坐标)
      */
@@ -175,16 +178,13 @@ public class RewardOptionScreen extends Screen {
     /**
      * 绘制背景纹理
      */
-    private void renderBackgroundTexture(PoseStack poseStack) {
+    private void renderBackgroundTexture(MatrixStack matrixStack) {
         // 启用混合模式以支持透明度
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        RenderSystem.enableTexture();
-        RenderSystem.disableDepthTest();
 
         // 绑定背景纹理
-        AbstractGuiUtils.bindTexture(SakuraSignIn.getThemeTexture());
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        Minecraft.getInstance().getTextureManager().bind(SakuraSignIn.getThemeTexture());
 
         // 获取屏幕宽高
         int screenWidth = super.width;
@@ -207,18 +207,18 @@ public class RewardOptionScreen extends Screen {
         float vMax = (v0 + regionHeight) / textureTotalHeight;
 
         // 使用Tessellator绘制平铺的纹理片段
-        Tesselator tesselator = Tesselator.getInstance();
-        BufferBuilder buffer = tesselator.getBuilder();
+        Tessellator tessellator = Tessellator.getInstance();
+        BufferBuilder buffer = tessellator.getBuilder();
 
         // 绘制完整的纹理块
         for (int x = 0; x <= screenWidth - regionWidth; x += (int) regionWidth) {
             for (int y = 0; y <= screenHeight - regionHeight; y += (int) regionHeight) {
-                buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-                buffer.vertex(poseStack.last().pose(), x, y + regionHeight, 0).uv(uMin, vMax).endVertex();
-                buffer.vertex(poseStack.last().pose(), x + regionWidth, y + regionHeight, 0).uv(uMax, vMax).endVertex();
-                buffer.vertex(poseStack.last().pose(), x + regionWidth, y, 0).uv(uMax, vMin).endVertex();
-                buffer.vertex(poseStack.last().pose(), x, y, 0).uv(uMin, vMin).endVertex();
-                tesselator.end();
+                buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX);
+                buffer.vertex(matrixStack.last().pose(), x, y + regionHeight, 0).uv(uMin, vMax).endVertex();
+                buffer.vertex(matrixStack.last().pose(), x + regionWidth, y + regionHeight, 0).uv(uMax, vMax).endVertex();
+                buffer.vertex(matrixStack.last().pose(), x + regionWidth, y, 0).uv(uMax, vMin).endVertex();
+                buffer.vertex(matrixStack.last().pose(), x, y, 0).uv(uMin, vMin).endVertex();
+                tessellator.end();
             }
         }
 
@@ -227,12 +227,12 @@ public class RewardOptionScreen extends Screen {
         float u = uMin + (leftoverWidth / regionWidth) * (uMax - uMin);
         if (leftoverWidth > 0) {
             for (int y = 0; y <= screenHeight - regionHeight; y += (int) regionHeight) {
-                buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-                buffer.vertex(poseStack.last().pose(), screenWidth - leftoverWidth, y + regionHeight, 0).uv(uMin, vMax).endVertex();
-                buffer.vertex(poseStack.last().pose(), screenWidth, y + regionHeight, 0).uv(u, vMax).endVertex();
-                buffer.vertex(poseStack.last().pose(), screenWidth, y, 0).uv(u, vMin).endVertex();
-                buffer.vertex(poseStack.last().pose(), screenWidth - leftoverWidth, y, 0).uv(uMin, vMin).endVertex();
-                tesselator.end();
+                buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX);
+                buffer.vertex(matrixStack.last().pose(), screenWidth - leftoverWidth, y + regionHeight, 0).uv(uMin, vMax).endVertex();
+                buffer.vertex(matrixStack.last().pose(), screenWidth, y + regionHeight, 0).uv(u, vMax).endVertex();
+                buffer.vertex(matrixStack.last().pose(), screenWidth, y, 0).uv(u, vMin).endVertex();
+                buffer.vertex(matrixStack.last().pose(), screenWidth - leftoverWidth, y, 0).uv(uMin, vMin).endVertex();
+                tessellator.end();
             }
         }
 
@@ -241,26 +241,25 @@ public class RewardOptionScreen extends Screen {
         float v = vMin + (leftoverHeight / regionHeight) * (vMax - vMin);
         if (leftoverHeight > 0) {
             for (int x = 0; x <= screenWidth - regionWidth; x += (int) regionWidth) {
-                buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-                buffer.vertex(poseStack.last().pose(), x, screenHeight, 0).uv(uMin, v).endVertex();
-                buffer.vertex(poseStack.last().pose(), x + regionWidth, screenHeight, 0).uv(uMax, v).endVertex();
-                buffer.vertex(poseStack.last().pose(), x + regionWidth, screenHeight - leftoverHeight, 0).uv(uMax, vMin).endVertex();
-                buffer.vertex(poseStack.last().pose(), x, screenHeight - leftoverHeight, 0).uv(uMin, vMin).endVertex();
-                tesselator.end();
+                buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX);
+                buffer.vertex(matrixStack.last().pose(), x, screenHeight, 0).uv(uMin, v).endVertex();
+                buffer.vertex(matrixStack.last().pose(), x + regionWidth, screenHeight, 0).uv(uMax, v).endVertex();
+                buffer.vertex(matrixStack.last().pose(), x + regionWidth, screenHeight - leftoverHeight, 0).uv(uMax, vMin).endVertex();
+                buffer.vertex(matrixStack.last().pose(), x, screenHeight - leftoverHeight, 0).uv(uMin, vMin).endVertex();
+                tessellator.end();
             }
         }
 
         // 绘制右下角的剩余区域
         if (leftoverWidth > 0 && leftoverHeight > 0) {
-            buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-            buffer.vertex(poseStack.last().pose(), screenWidth - leftoverWidth, screenHeight, 0).uv(uMin, v).endVertex();
-            buffer.vertex(poseStack.last().pose(), screenWidth, screenHeight, 0).uv(u, v).endVertex();
-            buffer.vertex(poseStack.last().pose(), screenWidth, screenHeight - leftoverHeight, 0).uv(u, vMin).endVertex();
-            buffer.vertex(poseStack.last().pose(), screenWidth - leftoverWidth, screenHeight - leftoverHeight, 0).uv(uMin, vMin).endVertex();
-            tesselator.end();
+            buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX);
+            buffer.vertex(matrixStack.last().pose(), screenWidth - leftoverWidth, screenHeight, 0).uv(uMin, v).endVertex();
+            buffer.vertex(matrixStack.last().pose(), screenWidth, screenHeight, 0).uv(u, v).endVertex();
+            buffer.vertex(matrixStack.last().pose(), screenWidth, screenHeight - leftoverHeight, 0).uv(u, vMin).endVertex();
+            buffer.vertex(matrixStack.last().pose(), screenWidth - leftoverWidth, screenHeight - leftoverHeight, 0).uv(uMin, vMin).endVertex();
+            tessellator.end();
         }
 
-        RenderSystem.enableDepthTest();
         // 禁用混合模式
         RenderSystem.disableBlend();
     }
@@ -275,10 +274,10 @@ public class RewardOptionScreen extends Screen {
      */
     private void addRewardTitleButton(String title, String key, int titleIndex, int index) {
         REWARD_BUTTONS.put(String.format("标题,%s", key), new OperationButton(titleIndex, context -> {
-            if (context.button().getRealY() < super.height && context.button().getRealY() + context.button().getRealHeight() >= 0) {
-                GuiComponent.fill(this.ms, (int) context.button().getRealX(), (int) (context.button().getRealY()), (int) (context.button().getRealX() + context.button().getRealWidth()), (int) (context.button().getRealY() + 1), 0xAC000000);
-                AbstractGuiUtils.drawLimitedText(this.ms, super.font, title, (int) context.button().getRealX(), (int) (context.button().getRealY() + (context.button().getRealHeight() - super.font.lineHeight) / 2), (int) context.button().getRealWidth(), 0xAC000000, false);
-                GuiComponent.fill(this.ms, (int) context.button().getRealX(), (int) (context.button().getRealY() + context.button().getRealHeight()), (int) (context.button().getRealX() + super.font.width(title)), (int) (context.button().getRealY() + context.button().getRealHeight() - 1), 0xAC000000);
+            if (context.button.getRealY() < super.height && context.button.getRealY() + context.button.getRealHeight() >= 0) {
+                AbstractGui.fill(this.ms, (int) context.button.getRealX(), (int) (context.button.getRealY()), (int) (context.button.getRealX() + context.button.getRealWidth()), (int) (context.button.getRealY() + 1), 0xAC000000);
+                AbstractGuiUtils.drawLimitedText(this.ms, super.font, title, (int) context.button.getRealX(), (int) (context.button.getRealY() + (context.button.getRealHeight() - super.font.lineHeight) / 2), (int) context.button.getRealWidth(), 0xAC000000, false);
+                AbstractGui.fill(this.ms, (int) context.button.getRealX(), (int) (context.button.getRealY() + context.button.getRealHeight()), (int) (context.button.getRealX() + super.font.width(title)), (int) (context.button.getRealY() + context.button.getRealHeight() - 1), 0xAC000000);
             }
         })
                 .setX(leftMargin)
@@ -298,9 +297,9 @@ public class RewardOptionScreen extends Screen {
     private void addRewardButton(Map<String, RewardList> rewardMap, String key, AtomicInteger index) {
         for (int j = 0; j < rewardMap.get(key).size(); j++, index.incrementAndGet()) {
             REWARD_BUTTONS.put(String.format("%s,%s", key, j), new OperationButton(j, context -> {
-                if (context.button().getRealY() < super.height && context.button().getRealY() + context.button().getRealHeight() >= 0) {
-                    Reward reward = rewardMap.get(key).get(context.button().getOperation());
-                    AbstractGuiUtils.renderCustomReward(this.ms, this.itemRenderer, super.font, SakuraSignIn.getThemeTexture(), SakuraSignIn.getThemeTextureCoordinate(), reward, (int) context.button().getRealX(), (int) context.button().getRealY(), true);
+                if (context.button.getRealY() < super.height && context.button.getRealY() + context.button.getRealHeight() >= 0) {
+                    Reward reward = rewardMap.get(key).get(context.button.getOperation());
+                    AbstractGuiUtils.renderCustomReward(this.ms, this.itemRenderer, super.font, SakuraSignIn.getThemeTexture(), SakuraSignIn.getThemeTextureCoordinate(), reward, (int) context.button.getRealX(), (int) context.button.getRealY(), true);
                 }
             })
                     .setX(leftMargin + (j % lineItemCount) * (itemIconSize + itemRightMargin))
@@ -373,7 +372,7 @@ public class RewardOptionScreen extends Screen {
             case BASE_REWARD: {
                 this.addRewardTitleButton(Component.translatableClient(EI18nType.TITLE, "base_reward").toString(), "base", titleIndex, rewardListIndex.get());
                 rewardListIndex.addAndGet(lineItemCount);
-                this.addRewardButton(new HashMap<>() {{
+                this.addRewardButton(new HashMap<String, RewardList>() {{
                     put("base", rewardConfig.getBaseRewards());
                 }}, "base", rewardListIndex);
             }
@@ -483,7 +482,7 @@ public class RewardOptionScreen extends Screen {
                     }
                     this.addRewardTitleButton(Component.translatableClient(EI18nType.TITLE, "s_valid_until_s", keyValue.getKey().getKey(), keyValue.getKey().getValue(), keyValue.getValue().getValue()).toString(), key, titleIndex, rewardListIndex.get());
                     rewardListIndex.addAndGet(lineItemCount);
-                    this.addRewardButton(new HashMap<>() {{
+                    this.addRewardButton(new HashMap<String, RewardList>() {{
                         put(key, keyValue.getValue().getKey());
                     }}, key, rewardListIndex);
                 }
@@ -495,7 +494,7 @@ public class RewardOptionScreen extends Screen {
     /**
      * 渲染奖励列表
      */
-    private void renderRewardList(PoseStack poseStack) {
+    private void renderRewardList(MatrixStack matrixStack) {
         if (REWARD_BUTTONS.isEmpty()) return;
 
         // 直接渲染奖励列表 REWARD_BUTTONS
@@ -503,7 +502,7 @@ public class RewardOptionScreen extends Screen {
             OperationButton operationButton = REWARD_BUTTONS.get(key);
             // 绘制选中边框
             if (key.equals(this.currRewardButton)) {
-                AbstractGuiUtils.fillOutLine(poseStack,
+                AbstractGuiUtils.fillOutLine(matrixStack,
                         (int) operationButton.getRealX() - 1,
                         (int) operationButton.getRealY() - 1,
                         (int) operationButton.getRealWidth() + 2,
@@ -512,13 +511,13 @@ public class RewardOptionScreen extends Screen {
                         0x88FFF13B);
             }
             // 渲染物品图标
-            operationButton.setBaseY(yOffset).render(poseStack, keyManager);
+            operationButton.setBaseY(yOffset).render(matrixStack, keyManager);
         }
         // 渲染Tips
         for (String key : REWARD_BUTTONS.keySet()) {
             OperationButton operationButton = REWARD_BUTTONS.get(key);
             // 渲染物品图标
-            operationButton.setBaseY(yOffset).renderPopup(poseStack, keyManager);
+            operationButton.setBaseY(yOffset).renderPopup(matrixStack, keyManager);
         }
     }
 
@@ -565,14 +564,14 @@ public class RewardOptionScreen extends Screen {
                 updateLayout.set(true);
                 flag.set(true);
                 try {
-                    LocalPlayer player = Minecraft.getInstance().player;
+                    ClientPlayerEntity player = Minecraft.getInstance().player;
                     assert player != null;
                     ERewardRule rewardRule = ERewardRule.valueOf(OperationButtonType.valueOf(value.getOperation()).name());
                     if (!player.hasPermissions(SakuraUtils.getRewardPermissionLevel(rewardRule))) {
                         Component component = Component.translatableClient(EI18nType.MESSAGE, "no_permission_to_view_reward", Component.translatableClient(EI18nType.WORD, SakuraUtils.getRewardRuleI18nKeyName(rewardRule)));
                         NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0x88FF5555));
                     }
-                    if (!player.hasPermissions(ServerConfig.PERMISSION_EDIT_REWARD.get())) {
+                    if (!player.hasPermissions(CommonConfig.get().permission().permissionEditReward())) {
                         Component component = Component.translatableClient(EI18nType.MESSAGE, "no_permission_to_edit_reward");
                         NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
                     }
@@ -635,9 +634,9 @@ public class RewardOptionScreen extends Screen {
         else if (value.getOperation() == OperationButtonType.UPLOAD.getCode()) {
             // 仅管理员可上传
             if (!Minecraft.getInstance().isLocalServer()) {
-                LocalPlayer player = Minecraft.getInstance().player;
+                ClientPlayerEntity player = Minecraft.getInstance().player;
                 if (player != null) {
-                    if (player.hasPermissions(ServerConfig.PERMISSION_EDIT_REWARD.get())) {
+                    if (player.hasPermissions(CommonConfig.get().permission().permissionEditReward())) {
                         for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardConfigManager.toSyncPacket(player).split()) {
                             ModNetworkHandler.INSTANCE.sendToServer(rewardOptionSyncPacket);
                         }
@@ -833,13 +832,13 @@ public class RewardOptionScreen extends Screen {
             // 药水效果
             else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.EFFECT.getCode()).equalsIgnoreCase(selectedString)) {
                 EffecrSelectScreen callbackScreen = new EffecrSelectScreen(this, input -> {
-                    if (input != null && ((MobEffectInstance) RewardManager.deserializeReward(input)).getDuration() > 0 && StringUtils.isNotNullOrEmpty(key[0])) {
+                    if (input != null && ((EffectInstance) RewardManager.deserializeReward(input)).getDuration() > 0 && StringUtils.isNotNullOrEmpty(key[0])) {
                         RewardConfigManager.addUndoRewardOption(rule);
                         RewardConfigManager.clearRedoList();
                         RewardConfigManager.addReward(rule, key[0], input);
                         RewardConfigManager.saveRewardOption();
                     }
-                }, new Reward(new MobEffectInstance(MobEffects.LUCK), ERewardType.EFFECT), () -> StringUtils.isNullOrEmpty(key[0]));
+                }, new Reward(new EffectInstance(Effects.LUCK), ERewardType.EFFECT), () -> StringUtils.isNullOrEmpty(key[0]));
                 if (rule == ERewardRule.CDK_REWARD) {
                     Minecraft.getInstance().setScreen(this.getCdkRuleKeyInputScreen(callbackScreen, rule, key));
                 } else if (rule != ERewardRule.BASE_REWARD) {
@@ -1102,7 +1101,7 @@ public class RewardOptionScreen extends Screen {
                         }
                     }
                 } else if (Component.translatableClient(EI18nType.OPTION, "delete").toString().equalsIgnoreCase(selectedString)) {
-                    if (ClientConfig.KEY_REWARD_OPTION_DELETE.get().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
+                    if (ClientConfig.get().rewardKeys().delete().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
                         editHandler.handleDelete();
                     }
                 }
@@ -1120,13 +1119,13 @@ public class RewardOptionScreen extends Screen {
                 // 药水效果
                 else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.EFFECT.getCode()).equalsIgnoreCase(selectedString)) {
                     Minecraft.getInstance().setScreen(new EffecrSelectScreen(this, input -> {
-                        if (input != null && ((MobEffectInstance) RewardManager.deserializeReward(input)).getDuration() > 0) {
+                        if (input != null && ((EffectInstance) RewardManager.deserializeReward(input)).getDuration() > 0) {
                             RewardConfigManager.addUndoRewardOption(rule);
                             RewardConfigManager.clearRedoList();
                             RewardConfigManager.addReward(rule, key, input);
                             RewardConfigManager.saveRewardOption();
                         }
-                    }, new Reward(new MobEffectInstance(MobEffects.LUCK), ERewardType.EFFECT)));
+                    }, new Reward(new EffectInstance(Effects.LUCK), ERewardType.EFFECT)));
                 }
                 // 经验点
                 else if (I18nUtils.getTranslationClient(EI18nType.WORD, "reward_type_" + ERewardType.EXP_POINT.getCode()).equalsIgnoreCase(selectedString)) {
@@ -1276,7 +1275,7 @@ public class RewardOptionScreen extends Screen {
                         // 药水效果
                         else if (reward.getType() == ERewardType.EFFECT) {
                             Minecraft.getInstance().setScreen(new EffecrSelectScreen(this, input -> {
-                                if (input != null && ((MobEffectInstance) RewardManager.deserializeReward(input)).getDuration() > 0) {
+                                if (input != null && ((EffectInstance) RewardManager.deserializeReward(input)).getDuration() > 0) {
                                     RewardConfigManager.addUndoRewardOption(rule);
                                     RewardConfigManager.clearRedoList();
                                     RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), input);
@@ -1425,7 +1424,7 @@ public class RewardOptionScreen extends Screen {
                         editHandler.handlePaste();
                     }
                 } else if (Component.translatableClient(EI18nType.OPTION, "delete").toString().equalsIgnoreCase(selectedString)) {
-                    if (ClientConfig.KEY_REWARD_OPTION_DELETE.get().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
+                    if (ClientConfig.get().rewardKeys().delete().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
                         editHandler.handleDelete();
                     }
                 }
@@ -1442,19 +1441,19 @@ public class RewardOptionScreen extends Screen {
      */
     private Consumer<OperationButton.RenderContext> generateCustomRenderFunction(String content) {
         return context -> {
-            int realX = (int) context.button().getRealX();
-            int realY = (int) context.button().getRealY();
-            double realWidth = context.button().getRealWidth();
-            double realHeight = context.button().getRealHeight();
-            int realX2 = (int) (context.button().getRealX() + realWidth);
-            int realY2 = (int) (context.button().getRealY() + realHeight);
-            if (this.currOpButton == context.button().getOperation()) {
-                GuiComponent.fill(context.poseStack(), realX + 1, realY, realX2 - 1, realY2, 0x44ACACAC);
+            int realX = (int) context.button.getRealX();
+            int realY = (int) context.button.getRealY();
+            double realWidth = context.button.getRealWidth();
+            double realHeight = context.button.getRealHeight();
+            int realX2 = (int) (context.button.getRealX() + realWidth);
+            int realY2 = (int) (context.button.getRealY() + realHeight);
+            if (this.currOpButton == context.button.getOperation()) {
+                AbstractGui.fill(context.matrixStack, realX + 1, realY, realX2 - 1, realY2, 0x44ACACAC);
             }
-            if (context.button().isHovered()) {
-                GuiComponent.fill(context.poseStack(), realX, realY, realX2, realY2, 0x99ACACAC);
+            if (context.button.isHovered()) {
+                AbstractGui.fill(context.matrixStack, realX, realY, realX2, realY2, 0x99ACACAC);
             }
-            AbstractGuiUtils.drawLimitedText(context.poseStack(), super.font, Component.translatableClient(EI18nType.WORD, content).toString(), realX + 4, (int) (realY + (realHeight - super.font.lineHeight) / 2), (int) (realWidth - 22), 0xFFEBD4B1);
+            AbstractGuiUtils.drawLimitedText(context.matrixStack, super.font, Component.translatableClient(EI18nType.WORD, content).toString(), realX + 4, (int) (realY + (realHeight - super.font.lineHeight) / 2), (int) (realWidth - 22), 0xFFEBD4B1);
         };
     }
 
@@ -1776,8 +1775,8 @@ public class RewardOptionScreen extends Screen {
                 , new OperationButton(OperationButtonType.CDK_REWARD.getCode(), this.generateCustomRenderFunction(SakuraUtils.getRewardRuleI18nKeyName(ERewardRule.CDK_REWARD)))
                         .setX(0).setY(this.leftBarTitleHeight + (this.leftBarTitleHeight - 1) * 9).setWidth(100).setHeight(this.leftBarTitleHeight - 2));
         OP_BUTTONS.put(OperationButtonType.OFFSET_Y.getCode(), new OperationButton(OperationButtonType.OFFSET_Y.getCode(), context -> {
-            AbstractGuiUtils.drawString(context.poseStack(), super.font, "OY:", super.width - rightBarWidth + 1, super.height - font.lineHeight * 2 - 2, 0xFFACACAC);
-            AbstractGuiUtils.drawLimitedText(context.poseStack(), super.font, String.valueOf((int) yOffset), super.width - rightBarWidth + 1, super.height - font.lineHeight - 2, rightBarWidth, 0xFFACACAC);
+            AbstractGuiUtils.drawString(context.matrixStack, super.font, "OY:", super.width - rightBarWidth + 1, super.height - font.lineHeight * 2 - 2, 0xFFACACAC);
+            AbstractGuiUtils.drawLimitedText(context.matrixStack, super.font, String.valueOf((int) yOffset), super.width - rightBarWidth + 1, super.height - font.lineHeight - 2, rightBarWidth, 0xFFACACAC);
         })
                 .setX(super.width - rightBarWidth).setY(super.height - font.lineHeight * 2 - 2).setWidth(rightBarWidth).setHeight(font.lineHeight * 2 + 2)
                 .setTransparentCheck(false));
@@ -1831,11 +1830,11 @@ public class RewardOptionScreen extends Screen {
 
     @Override
     @ParametersAreNonnullByDefault
-    public void render(PoseStack poseStack, int mouseX, int mouseY, float partialTicks) {
-        this.ms = poseStack;
+    public void render(MatrixStack matrixStack, int mouseX, int mouseY, float partialTicks) {
+        this.ms = matrixStack;
         this.keyManager.refresh(mouseX, mouseY);
         // 绘制缩放背景纹理
-        this.renderBackgroundTexture(poseStack);
+        this.renderBackgroundTexture(matrixStack);
 
         // 重置Y轴偏移
         if (this.yOffsetResetTime > 0) {
@@ -1856,9 +1855,9 @@ public class RewardOptionScreen extends Screen {
 
         // 绘制操作提示
         if (OperationButtonType.valueOf(currOpButton) == null) {
-            AbstractGuiUtils.fill(poseStack, this.leftBarWidth + 4, 4, super.width - this.leftBarWidth - this.rightBarWidth - 8, super.height - 8, 0x88000000, 15);
+            AbstractGuiUtils.fill(matrixStack, this.leftBarWidth + 4, 4, super.width - this.leftBarWidth - this.rightBarWidth - 8, super.height - 8, 0x88000000, 15);
             float x, y;
-            tips.setPoseStack(poseStack).setFont(super.font);
+            tips.setMatrixStack(matrixStack).setFont(super.font);
             int textHeight = AbstractGuiUtils.multilineTextHeight(tips);
             int textWidth = AbstractGuiUtils.multilineTextWidth(tips);
             x = this.leftBarWidth + ((super.width - this.leftBarWidth - this.rightBarWidth) - textWidth) / 2.0f;
@@ -1867,20 +1866,20 @@ public class RewardOptionScreen extends Screen {
         }
         // 绘制奖励项目
         else {
-            this.renderRewardList(poseStack);
+            this.renderRewardList(matrixStack);
         }
 
         // 绘制左侧边栏列表背景
-        GuiComponent.fill(poseStack, 0, 0, leftBarWidth, super.height, 0xAA000000);
-        AbstractGuiUtils.fillOutLine(poseStack, 0, 0, leftBarWidth, super.height, 1, 0xFF000000);
+        AbstractGui.fill(matrixStack, 0, 0, leftBarWidth, super.height, 0xAA000000);
+        AbstractGuiUtils.fillOutLine(matrixStack, 0, 0, leftBarWidth, super.height, 1, 0xFF000000);
         // 绘制左侧边栏列表标题
         if (SakuraSignIn.isRewardOptionBarOpened()) {
-            GuiComponent.drawString(poseStack, super.font, Component.translatableClient(EI18nType.TITLE, "reward_rule_type").toString(), 4, 5, 0xFFACACAC);
-            GuiComponent.fill(poseStack, 0, leftBarTitleHeight, leftBarWidth, leftBarTitleHeight - 1, 0xAA000000);
+            AbstractGui.drawString(matrixStack, super.font, Component.translatableClient(EI18nType.TITLE, "reward_rule_type").toString(), 4, 5, 0xFFACACAC);
+            AbstractGui.fill(matrixStack, 0, leftBarTitleHeight, leftBarWidth, leftBarTitleHeight - 1, 0xAA000000);
         }
         // 绘制右侧边栏列表背景
-        GuiComponent.fill(poseStack, super.width - rightBarWidth, 0, super.width, super.height, 0xAA000000);
-        AbstractGuiUtils.fillOutLine(poseStack, super.width - rightBarWidth, 0, rightBarWidth, super.height, 1, 0xFF000000);
+        AbstractGui.fill(matrixStack, super.width - rightBarWidth, 0, super.width, super.height, 0xAA000000);
+        AbstractGuiUtils.fillOutLine(matrixStack, super.width - rightBarWidth, 0, rightBarWidth, super.height, 1, 0xFF000000);
 
         // 渲染操作按钮
         for (Integer op : OP_BUTTONS.keySet()) {
@@ -1888,13 +1887,13 @@ public class RewardOptionScreen extends Screen {
             // 展开类按钮仅在关闭时绘制
             if (String.valueOf(op).startsWith(String.valueOf(OperationButtonType.OPEN.getCode()))) {
                 if (!SakuraSignIn.isRewardOptionBarOpened()) {
-                    button.render(poseStack, keyManager);
+                    button.render(matrixStack, keyManager);
                 }
             }
             // 收起类按钮仅在展开时绘制
             else if (String.valueOf(op).startsWith(String.valueOf(OperationButtonType.CLOSE.getCode()))) {
                 if (SakuraSignIn.isRewardOptionBarOpened()) {
-                    button.render(poseStack, keyManager);
+                    button.render(matrixStack, keyManager);
                 }
             }
             // 绘制其他按钮
@@ -1904,7 +1903,7 @@ public class RewardOptionScreen extends Screen {
                 } else if (op == OperationButtonType.REWARD_PANEL.getCode()) {
                     // 绘制选中边框
                     if ("panel".equals(this.currRewardButton)) {
-                        AbstractGuiUtils.fillOutLine(poseStack,
+                        AbstractGuiUtils.fillOutLine(matrixStack,
                                 (int) button.getRealX() - 1,
                                 (int) button.getRealY(),
                                 (int) button.getRealWidth() + 2,
@@ -1913,7 +1912,7 @@ public class RewardOptionScreen extends Screen {
                                 0x88FFF13B);
                     }
                 }
-                button.render(poseStack, keyManager);
+                button.render(matrixStack, keyManager);
             }
         }
         // 渲染操作按钮 提示
@@ -1922,13 +1921,13 @@ public class RewardOptionScreen extends Screen {
             // 展开类按钮仅在关闭时绘制
             if (String.valueOf(op).startsWith(String.valueOf(OperationButtonType.OPEN.getCode()))) {
                 if (!SakuraSignIn.isRewardOptionBarOpened()) {
-                    button.renderPopup(poseStack, keyManager);
+                    button.renderPopup(matrixStack, keyManager);
                 }
             }
             // 收起类按钮仅在展开时绘制
             else if (String.valueOf(op).startsWith(String.valueOf(OperationButtonType.CLOSE.getCode()))) {
                 if (SakuraSignIn.isRewardOptionBarOpened()) {
-                    button.renderPopup(poseStack, keyManager);
+                    button.renderPopup(matrixStack, keyManager);
                 }
             }
             // 绘制其他按钮
@@ -1944,8 +1943,8 @@ public class RewardOptionScreen extends Screen {
                         button.setTooltip(Component.translatableClient(EI18nType.TIPS, "help_button").toString());
                     }
                 } else if (op == OperationButtonType.UPLOAD.getCode()) {
-                    LocalPlayer player = Minecraft.getInstance().player;
-                    if (player != null && player.hasPermissions(ServerConfig.PERMISSION_EDIT_REWARD.get())) {
+                    ClientPlayerEntity player = Minecraft.getInstance().player;
+                    if (player != null && player.hasPermissions(CommonConfig.get().permission().permissionEditReward())) {
                         button.setTooltip(Component.translatableClient(EI18nType.TIPS, "upload_reward_config").toString())
                                 .setHoverFgColor(0xAA808080).setTapFgColor(0xAAA0A0A0);
                     } else {
@@ -1953,14 +1952,14 @@ public class RewardOptionScreen extends Screen {
                                 .setHoverFgColor(0xAA808080).setTapFgColor(0xAA808080);
                     }
                 }
-                button.renderPopup(poseStack, keyManager);
+                button.renderPopup(matrixStack, keyManager);
             }
         }
 
         // 绘制弹出选项
-        popupOption.render(poseStack, keyManager);
+        popupOption.render(matrixStack, keyManager);
         // 绘制鼠标光标
-        cursor.draw(poseStack, mouseX, mouseY);
+        cursor.draw(matrixStack, mouseX, mouseY);
     }
 
     /**
@@ -2124,27 +2123,27 @@ public class RewardOptionScreen extends Screen {
         boolean consumed = false;
 
         // Ctrl + C
-        if (ClientConfig.KEY_REWARD_OPTION_COPY.get().stream().anyMatch(keyManager::isKeyPressed)) {
+        if (ClientConfig.get().rewardKeys().copy().stream().anyMatch(keyManager::isKeyPressed)) {
             consumed = editHandler.handleCopy();
         }
         // Ctrl + V
-        else if (ClientConfig.KEY_REWARD_OPTION_PASTE.get().stream().anyMatch(keyManager::isKeyPressed)) {
+        else if (ClientConfig.get().rewardKeys().paste().stream().anyMatch(keyManager::isKeyPressed)) {
             consumed = editHandler.handlePaste();
         }
         // Ctrl + X
-        else if (ClientConfig.KEY_REWARD_OPTION_CUT.get().stream().anyMatch(keyManager::isKeyPressed)) {
+        else if (ClientConfig.get().rewardKeys().cut().stream().anyMatch(keyManager::isKeyPressed)) {
             consumed = editHandler.handleCut();
         }
         // Ctrl + Y / DELETE
-        else if (ClientConfig.KEY_REWARD_OPTION_DELETE.get().stream().anyMatch(keyManager::isKeyPressed)) {
+        else if (ClientConfig.get().rewardKeys().delete().stream().anyMatch(keyManager::isKeyPressed)) {
             consumed = editHandler.handleDelete();
         }
         // Ctrl + Z
-        else if (ClientConfig.KEY_REWARD_OPTION_UNDO.get().stream().anyMatch(keyManager::isKeyPressed)) {
+        else if (ClientConfig.get().rewardKeys().undo().stream().anyMatch(keyManager::isKeyPressed)) {
             consumed = editHandler.handleUndo();
         }
         // Ctrl + Shift + Z
-        else if (ClientConfig.KEY_REWARD_OPTION_REDO.get().stream().anyMatch(keyManager::isKeyPressed)) {
+        else if (ClientConfig.get().rewardKeys().redo().stream().anyMatch(keyManager::isKeyPressed)) {
             consumed = editHandler.handleRedo();
         }
 

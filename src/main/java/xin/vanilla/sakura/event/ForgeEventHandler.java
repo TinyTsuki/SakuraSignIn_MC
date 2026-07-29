@@ -1,5 +1,6 @@
 package xin.vanilla.sakura.event;
 
+import xin.vanilla.sakura.config.CommonConfig;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -14,7 +15,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.api.SakuraPlayerData;
-import xin.vanilla.sakura.config.ServerConfig;
 import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.data.migration.LegacyMigrationResult;
 import xin.vanilla.sakura.enums.ESignInType;
@@ -143,7 +143,7 @@ public final class ForgeEventHandler {
 
             Objects.requireNonNull(player.getServer()).execute(() -> {
                 IPlayerSignInData data = SakuraPlayerData.get(player);
-                if (ServerConfig.AUTO_SIGN_IN.get()
+                if (CommonConfig.get().server().autoSignIn()
                         && !RewardManager.isSignedIn(data, DateUtils.getServerDate(), true)) {
                     RewardManager.signIn(player, new SignInPacket(
                             DateUtils.toDateTimeString(DateUtils.getServerDate()),

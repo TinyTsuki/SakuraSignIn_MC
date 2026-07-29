@@ -5,10 +5,10 @@ import com.google.gson.JsonObject;
 import com.google.gson.annotations.Expose;
 import lombok.Data;
 import lombok.NonNull;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.potion.EffectInstance;
+import net.minecraft.potion.Effects;
 import xin.vanilla.sakura.enums.ERewardType;
 import xin.vanilla.sakura.rewards.Reward;
 import xin.vanilla.sakura.rewards.RewardList;
@@ -23,6 +23,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Data
 public class RewardConfig implements Serializable {
@@ -203,8 +204,8 @@ public class RewardConfig implements Serializable {
         // 处理映射关系
         if (!this.continuousRewards.isEmpty()) {
             this.continuousRewardsRelation = new LinkedHashMap<>();
-            List<Integer> keyList = this.continuousRewards.keySet().stream().map(Integer::parseInt).sorted().toList();
-            if (ServerConfig.CONTINUOUS_REWARDS_REPEATABLE.get()) {
+            List<Integer> keyList = this.continuousRewards.keySet().stream().map(Integer::parseInt).sorted().collect(Collectors.toList());
+            if (CommonConfig.get().reward().continuousRewardsRepeatable()) {
                 int max = keyList.stream().max(Comparator.naturalOrder()).orElse(0);
                 int cur = keyList.get(0);
                 for (int i = 1; i <= max; i++) {
@@ -253,8 +254,8 @@ public class RewardConfig implements Serializable {
         // 处理映射关系
         if (!this.cycleRewards.isEmpty()) {
             this.cycleRewardsRelation = new LinkedHashMap<>();
-            List<Integer> keyList = this.cycleRewards.keySet().stream().map(Integer::parseInt).sorted().toList();
-            if (ServerConfig.CYCLE_REWARDS_REPEATABLE.get()) {
+            List<Integer> keyList = this.cycleRewards.keySet().stream().map(Integer::parseInt).sorted().collect(Collectors.toList());
+            if (CommonConfig.get().reward().cycleRewardsRepeatable()) {
                 int max = keyList.stream().max(Comparator.naturalOrder()).orElse(0);
                 int cur = keyList.get(0);
                 for (int i = 1; i <= max; i++) {
@@ -487,7 +488,7 @@ public class RewardConfig implements Serializable {
                     setType(ERewardType.ITEM);
                 }});
             }});
-            setContinuousRewards(new LinkedHashMap<>() {{
+            setContinuousRewards(new LinkedHashMap<String, RewardList>() {{
                 put("1", new RewardList() {{
                     add(new Reward() {{
                         setContent(new ExpPointRewardParser().serialize(5));
@@ -507,7 +508,7 @@ public class RewardConfig implements Serializable {
                     }});
                 }});
             }});
-            setCycleRewards(new LinkedHashMap<>() {{
+            setCycleRewards(new LinkedHashMap<String, RewardList>() {{
                 put("2", new RewardList() {{
                     add(new Reward() {{
                         setContent(new ExpPointRewardParser().serialize(3));
@@ -523,21 +524,21 @@ public class RewardConfig implements Serializable {
             }});
             setYearRewards(new LinkedHashMap<>());
             setMonthRewards(new LinkedHashMap<>());
-            setWeekRewards(new LinkedHashMap<>() {{
+            setWeekRewards(new LinkedHashMap<String, RewardList>() {{
                 put("6", new RewardList() {{
                     add(new Reward() {{
-                        setContent(new EffectRewardParser().serialize(new MobEffectInstance(MobEffects.LUCK, 6000, 1)));
+                        setContent(new EffectRewardParser().serialize(new EffectInstance(Effects.LUCK, 6000, 1)));
                         setType(ERewardType.EFFECT);
                     }});
                 }});
                 put("7", new RewardList() {{
                     add(new Reward() {{
                         // 急促
-                        setContent(new EffectRewardParser().serialize(new MobEffectInstance(MobEffects.HEAL, 6000, 0)));
+                        setContent(new EffectRewardParser().serialize(new EffectInstance(Effects.HEAL, 6000, 0)));
                         setType(ERewardType.EFFECT);
                     }});
                     add(new Reward() {{
-                        setContent(new EffectRewardParser().serialize(new MobEffectInstance(MobEffects.JUMP, 6000, 0)));
+                        setContent(new EffectRewardParser().serialize(new EffectInstance(Effects.JUMP, 6000, 0)));
                         setType(ERewardType.EFFECT);
                     }});
                     add(new Reward() {{
@@ -546,22 +547,22 @@ public class RewardConfig implements Serializable {
                     }});
                 }});
             }});
-            setDateTimeRewards(new LinkedHashMap<>() {{
+            setDateTimeRewards(new LinkedHashMap<String, RewardList>() {{
                 put("0000-10-06~1", new RewardList() {{
                     add(new Reward() {{
                         setContent(new ItemRewardParser().serialize(new ItemStack(Items.EXPERIENCE_BOTTLE, 1)));
                         setType(ERewardType.ITEM);
                     }});
                     add(new Reward() {{
-                        setContent(new EffectRewardParser().serialize(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 300, 1)));
+                        setContent(new EffectRewardParser().serialize(new EffectInstance(Effects.DAMAGE_RESISTANCE, 300, 1)));
                         setType(ERewardType.EFFECT);
                     }});
                 }});
             }});
-            setCumulativeRewards(new LinkedHashMap<>() {{
+            setCumulativeRewards(new LinkedHashMap<String, RewardList>() {{
                 put("100", new RewardList() {{
                     add(new Reward() {{
-                        setContent(new EffectRewardParser().serialize(new MobEffectInstance(MobEffects.LUCK, 99999, 2)));
+                        setContent(new EffectRewardParser().serialize(new EffectInstance(Effects.LUCK, 99999, 2)));
                         setType(ERewardType.EFFECT);
                     }});
                 }});

@@ -6,10 +6,12 @@ import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.PacketBuffer;
 import net.minecraftforge.common.util.INBTSerializable;
 import xin.vanilla.sakura.config.KeyValue;
+import xin.vanilla.sakura.domain.player.MonthSignInIndex;
 
 import javax.annotation.Nullable;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 玩家签到数据
@@ -112,6 +114,20 @@ public interface IPlayerSignInData extends INBTSerializable<CompoundNBT> {
     void setSignInRecords(List<SignInRecord> records);
 
     /**
+     * 获取不依赖详情文件的月度签到位图。
+     */
+    @NonNull
+    Map<String, MonthSignInIndex> getMonthIndexes();
+
+    void setMonthIndexes(Map<String, MonthSignInIndex> indexes);
+
+    boolean isSignedOn(Date date);
+
+    boolean isRewardedOn(Date date);
+
+    void markSigned(Date date, boolean rewarded);
+
+    /**
      * 获取CDK输入记录
      */
     @NonNull
@@ -145,4 +161,6 @@ public interface IPlayerSignInData extends INBTSerializable<CompoundNBT> {
     void copyFrom(IPlayerSignInData capability);
 
     int calculateContinuousDays();
+
+    int calculateContinuousDays(Date current);
 }
