@@ -174,7 +174,8 @@ public class ClientEventHandler {
                         AbstractGuiUtils.ITEM_ICON_SIZE,
                         SakuraComponent.get().translateClient("key", "reward_option"))
                         .setUV(SakuraSignIn.getThemeTextureCoordinate().getRewardOptionBtnUV(), SakuraSignIn.getThemeTextureCoordinate().getTotalWidth(), SakuraSignIn.getThemeTextureCoordinate().getTotalHeight())
-                        .setOnClick((button) -> Minecraft.getInstance().setScreen(new RewardOptionScreen().setPreviousScreen(event.getGui())))
+                        .setOnClick((button) -> Minecraft.getInstance().setScreen(
+                                new RewardOptionScreen().previousScreen(event.getGui())))
                         .setOnDragEnd((coordinate) -> {
                             ClientConfig.get().display().inventoryRewardOptionButtonCoordinate(
                                     String.format("%.6f,%.6f", coordinate.getX(), coordinate.getY()));
