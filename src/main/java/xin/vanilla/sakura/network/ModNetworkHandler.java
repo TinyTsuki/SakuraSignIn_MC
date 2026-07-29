@@ -1,35 +1,42 @@
 package xin.vanilla.sakura.network;
 
-import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
-import net.neoforged.neoforge.network.registration.PayloadRegistrar;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.network.ChannelBuilder;
+import net.minecraftforge.network.SimpleChannel;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.network.packet.*;
 
 public class ModNetworkHandler {
-    public static void registerPackets(final RegisterPayloadHandlersEvent event) {
-        final PayloadRegistrar registrar = event.registrar(SakuraSignIn.MODID).optional();
+    private static final String PROTOCOL_VERSION = "2";
+    private static int ID = 0;
+    public static final SimpleChannel INSTANCE = NetworkRegistry.newSimpleChannel(
+            new ResourceLocation(SakuraSignIn.MODID, "main_network"),
+            () -> PROTOCOL_VERSION,
+            ModNetworkHandler::acceptsVersion,
+            ModNetworkHandler::acceptsVersion
+    );
 
-        registrar.playToClient(PlayerDataSyncPacket.TYPE, PlayerDataSyncPacket.STREAM_CODEC,
-                PlayerDataSyncPacket::handle);
-        registrar.playToServer(ClientConfigSyncPacket.TYPE, ClientConfigSyncPacket.STREAM_CODEC,
-                ClientConfigSyncPacket::handle);
-        registrar.playBidirectional(RewardOptionSyncPacket.TYPE, RewardOptionSyncPacket.STREAM_CODEC,
-                RewardOptionSyncPacket::handle);
-        registrar.playToServer(ItemStackPacket.TYPE, ItemStackPacket.STREAM_CODEC,
-                ItemStackPacket::handle);
-        registrar.playToServer(SignInPacket.TYPE, SignInPacket.STREAM_CODEC,
-                SignInPacket::handle);
-        registrar.playToClient(AdvancementPacket.TYPE, AdvancementPacket.STREAM_CODEC,
-                AdvancementPacket::handle);
-        registrar.playToServer(DownloadRewardOptionNotice.TYPE, DownloadRewardOptionNotice.STREAM_CODEC,
-                DownloadRewardOptionNotice::handle);
-        registrar.playToServer(PlayerDataReceivedNotice.TYPE, PlayerDataReceivedNotice.STREAM_CODEC,
-                PlayerDataReceivedNotice::handle);
-        registrar.playToServer(ClientModLoadedNotice.TYPE, ClientModLoadedNotice.STREAM_CODEC,
-                ClientModLoadedNotice::handle);
-        registrar.playToClient(ServerTimeSyncPacket.TYPE, ServerTimeSyncPacket.STREAM_CODEC,
-                ServerTimeSyncPacket::handle);
-        registrar.playToClient(RewardOptionDataReceivedNotice.TYPE, RewardOptionDataReceivedNotice.STREAM_CODEC,
-                RewardOptionDataReceivedNotice::handle);
+    private static boolean acceptsVersion(String version) {
+        return PROTOCOL_VERSION.equals(version)
+                || NetworkRegistry.ABSENT.equals(version)
+                || NetworkRegistry.ACCEPTVANILLA.equals(version);
+    }
+
+    public static int nextID() {
+        return ID++;
+    }
+
+    public static void registerPackets() {
+        INSTANCE.messageBuilder(PlayerDataSyncPacket.class, nextID()).encoder(PlayerDataSyncPacket::toBytes).decoder(PlayerDataSyncPacket::new).consumerMainThread(PlayerDataSyncPacket::handle).add();
+        INSTANCE.messageBuilder(ClientConfigSyncPacket.class, nextID()).encoder(ClientConfigSyncPacket::toBytes).decoder(ClientConfigSyncPacket::new).consumerMainThread(ClientConfigSyncPacket::handle).add();
+        INSTANCE.messageBuilder(RewardOptionSyncPacket.class, nextID()).encoder(RewardOptionSyncPacket::toBytes).decoder(RewardOptionSyncPacket::new).consumerMainThread(RewardOptionSyncPacket::handle).add();
+        INSTANCE.messageBuilder(ItemStackPacket.class, nextID()).encoder(ItemStackPacket::toBytes).decoder(ItemStackPacket::new).consumerMainThread(ItemStackPacket::handle).add();
+        INSTANCE.messageBuilder(SignInPacket.class, nextID()).encoder(SignInPacket::toBytes).decoder(SignInPacket::new).consumerMainThread(SignInPacket::handle).add();
+        INSTANCE.messageBuilder(AdvancementPacket.class, nextID()).encoder(AdvancementPacket::toBytes).decoder(AdvancementPacket::new).consumerMainThread(AdvancementPacket::handle).add();
+        INSTANCE.messageBuilder(DownloadRewardOptionNotice.class, nextID()).encoder(DownloadRewardOptionNotice::toBytes).decoder(DownloadRewardOptionNotice::new).consumerMainThread(DownloadRewardOptionNotice::handle).add();
+        INSTANCE.messageBuilder(PlayerDataReceivedNotice.class, nextID()).encoder(PlayerDataReceivedNotice::toBytes).decoder(PlayerDataReceivedNotice::new).consumerMainThread(PlayerDataReceivedNotice::handle).add();
+        INSTANCE.messageBuilder(ClientModLoadedNotice.class, nextID()).encoder(ClientModLoadedNotice::toBytes).decoder(ClientModLoadedNotice::new).consumerMainThread(ClientModLoadedNotice::handle).add();
+        INSTANCE.messageBuilder(ServerTimeSyncPacket.class, nextID()).encoder(ServerTimeSyncPacket::toBytes).decoder(ServerTimeSyncPacket::new).consumerMainThread(ServerTimeSyncPacket::handle).add();
+        INSTANCE.messageBuilder(RewardOptionDataReceivedNotice.class, nextID()).encoder(RewardOptionDataReceivedNotice::toBytes).decoder(RewardOptionDataReceivedNotice::new).consumerMainThread(RewardOptionDataReceivedNotice::handle).add();
     }
 }

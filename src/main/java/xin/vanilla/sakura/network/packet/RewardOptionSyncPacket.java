@@ -2,21 +2,18 @@ package xin.vanilla.sakura.network.packet;
 
 import xin.vanilla.sakura.config.CommonConfig;
 import com.google.gson.reflect.TypeToken;
-import io.netty.buffer.ByteBuf;
 import lombok.Getter;
-import lombok.NonNull;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
-import org.jetbrains.annotations.NotNull;
+import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.network.PacketBuffer;
+import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraftforge.fml.network.PacketDistributor;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.RewardConfigManager;
 import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ERewardRule;
+import xin.vanilla.sakura.network.ModNetworkHandler;
 import xin.vanilla.sakura.network.data.RewardOptionSyncData;
+import xin.vanilla.sakura.network.data.RewardOptionSyncKind;
 import xin.vanilla.sakura.rewards.Reward;
 import xin.vanilla.sakura.screen.component.NotificationManager;
 import xin.vanilla.sakura.util.CollectionUtils;
@@ -29,18 +26,7 @@ import java.util.List;
 import static xin.vanilla.sakura.config.RewardConfigManager.GSON;
 
 @Getter
-public class RewardOptionSyncPacket extends SplitPacket implements CustomPacketPayload {
-    public final static Type<RewardOptionSyncPacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(SakuraSignIn.MODID, "reward_option_sync"));
-    public final static StreamCodec<ByteBuf, RewardOptionSyncPacket> STREAM_CODEC = new StreamCodec<>() {
-        public @NotNull RewardOptionSyncPacket decode(@NotNull ByteBuf byteBuf) {
-            return new RewardOptionSyncPacket((new FriendlyByteBuf(byteBuf)));
-        }
-
-        public void encode(@NotNull ByteBuf byteBuf, @NotNull RewardOptionSyncPacket packet) {
-            packet.toBytes(new FriendlyByteBuf(byteBuf));
-        }
-    };
-
+public class RewardOptionSyncPacket extends SplitPacket {
     private final List<RewardOptionSyncData> rewardOptionData;
 
     public RewardOptionSyncPacket(List<RewardOptionSyncData> rewardOptionData) {
@@ -48,40 +34,30 @@ public class RewardOptionSyncPacket extends SplitPacket implements CustomPacketP
         this.rewardOptionData = rewardOptionData;
     }
 
-    public RewardOptionSyncPacket(FriendlyByteBuf buf) {
+    public RewardOptionSyncPacket(PacketBuffer buf) {
         super(buf);
         this.rewardOptionData = new ArrayList<>();
         int size = buf.readInt();
         for (int i = 0; i < size; i++) {
+            RewardOptionSyncKind kind = RewardOptionSyncKind.valueOf(buf.readInt());
             this.rewardOptionData.add(new RewardOptionSyncData(
+                    kind,
                     ERewardRule.valueOf(buf.readInt()),
                     buf.readUtf(),
-                    GSON.fromJson(new String(buf.readByteArray(), StandardCharsets.UTF_8), new TypeToken<Reward>() {
-                    }.getType())
+                    kind == RewardOptionSyncKind.REWARD
+                            ? GSON.fromJson(new String(buf.readByteArray(), StandardCharsets.UTF_8),
+                            new TypeToken<Reward>() {
+                            }.getType())
+                            : null
             ));
         }
     }
 
-    public void toBytes(@NonNull FriendlyByteBuf buf) {
-        super.toBytes(buf);
-        buf.writeInt(rewardOptionData.size());
-        for (RewardOptionSyncData data : rewardOptionData) {
-            buf.writeInt(data.rule().getCode());
-            buf.writeUtf(data.key());
-            buf.writeByteArray(GSON.toJson(data.reward().toJsonObject()).getBytes(StandardCharsets.UTF_8));
-        }
-    }
-
-    @Override
-    public @NotNull Type<? extends CustomPacketPayload> type() {
-        return TYPE;
-    }
-
-    public static void handle(RewardOptionSyncPacket packet, IPayloadContext ctx) {
+    public static void handle(RewardOptionSyncPacket packet, CustomPayloadEvent.Context ctx) {
         ctx.enqueueWork(() -> {
             List<RewardOptionSyncPacket> packets = SplitPacket.handle(packet);
             if (CollectionUtils.isNotNullOrEmpty(packets)) {
-                if (ctx.flow().isClientbound()) {
+                if (ctx.isClientSide()) {
                     try {
                         // 备份 RewardOption
                         RewardConfigManager.backupRewardOption();
@@ -96,8 +72,9 @@ public class RewardOptionSyncPacket extends SplitPacket implements CustomPacketP
                     }
                     Component component = Component.translatable(EI18nType.MESSAGE, "reward_option_download_success");
                     NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component));
-                } else if (ctx.flow().isServerbound()) {
-                    if (ctx.player() instanceof ServerPlayer sender) {
+                } else if (ctx.get().getDirection().getReceptionSide().isServer()) {
+                    ServerPlayerEntity sender = ctx.get().getSender();
+                    if (sender != null) {
                         try {
                             // 判断是否拥有修改权限
                             if (sender.hasPermissions(CommonConfig.get().permission().permissionEditReward())) {
@@ -108,32 +85,28 @@ public class RewardOptionSyncPacket extends SplitPacket implements CustomPacketP
                                 RewardConfigManager.saveRewardOption();
 
                                 // 同步 RewardOption 至所有在线玩家
-                                for (ServerPlayer player : sender.server.getPlayerList().getPlayers()) {
+                                for (ServerPlayerEntity player : sender.server.getPlayerList().getPlayers()) {
                                     if (player.getStringUUID().equals(sender.getStringUUID()))
                                         continue;
                                     // 仅给客户端已安装mod的玩家同步数据
                                     if (!SakuraSignIn.getPlayerCapabilityStatus().containsKey(player.getUUID().toString()))
                                         continue;
                                     for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardConfigManager.toSyncPacket(player).split()) {
-                                        player.connection.send(rewardOptionSyncPacket);
+                                        ModNetworkHandler.INSTANCE.send(rewardOptionSyncPacket, PacketDistributor.PLAYER.with(player));
                                     }
                                 }
                             }
                         } catch (Exception e) {
-                            sender.connection.send(new RewardOptionDataReceivedNotice(false));
+                            ModNetworkHandler.INSTANCE.send(new RewardOptionDataReceivedNotice(false), PacketDistributor.PLAYER.with(sender));
                             throw e;
                         }
-                        sender.connection.send(new RewardOptionDataReceivedNotice(true));
+                        ModNetworkHandler.INSTANCE.send(new RewardOptionDataReceivedNotice(true), PacketDistributor.PLAYER.with(sender));
                     }
 
                 }
             }
         });
-    }
-
-    @Override
-    public int getChunkSize() {
-        return 1024;
+        ctx.setPacketHandled(true);
     }
 
     /**
@@ -156,5 +129,24 @@ public class RewardOptionSyncPacket extends SplitPacket implements CustomPacketP
             result.forEach(packet -> packet.setTotal(result.size()));
         }
         return result;
+    }
+
+    public void toBytes(PacketBuffer buf) {
+        super.toBytes(buf);
+        buf.writeInt(rewardOptionData.size());
+        for (RewardOptionSyncData data : rewardOptionData) {
+            buf.writeInt(data.getKind().ordinal());
+            buf.writeInt(data.getRule().getCode());
+            buf.writeUtf(data.getKey());
+            if (data.getKind() == RewardOptionSyncKind.REWARD) {
+                buf.writeByteArray(GSON.toJson(data.getReward().toJsonObject())
+                        .getBytes(StandardCharsets.UTF_8));
+            }
+        }
+    }
+
+    @Override
+    public int getChunkSize() {
+        return 1024;
     }
 }

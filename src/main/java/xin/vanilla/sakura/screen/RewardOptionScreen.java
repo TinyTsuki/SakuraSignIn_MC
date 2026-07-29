@@ -20,8 +20,6 @@ import net.minecraft.potion.Effects;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.fml.loading.FMLPaths;
-import net.minecraftforge.network.PacketDistributor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL11;
@@ -43,7 +41,6 @@ import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.util.*;
 
 import javax.annotation.ParametersAreNonnullByDefault;
-import java.io.File;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -463,13 +460,17 @@ public class RewardOptionScreen extends Screen {
             }
             break;
             case RANDOM_REWARD: {
-                for (String key : rewardConfig.getRandomRewards().keySet()) {
+                Map<String, RewardList> randomRewards =
+                        RewardConfigManager.getRewardMap(ERewardRule.RANDOM_REWARD);
+                for (String key : randomRewards.keySet()) {
                     if (rewardListIndex.get() > 0) {
                         rewardListIndex.set((int) ((Math.floor((double) rewardListIndex.get() / lineItemCount) + 1) * lineItemCount));
                     }
-                    this.addRewardTitleButton(String.format("%s%%", StringUtils.toFixedEx(new BigDecimal(key).multiply(new BigDecimal(100)), 10)), key, titleIndex, rewardListIndex.get());
+                    String probability = RewardConfigManager.getDisplayKey(
+                            ERewardRule.RANDOM_REWARD, key);
+                    this.addRewardTitleButton(String.format("%s%%", StringUtils.toFixedEx(new BigDecimal(probability).multiply(new BigDecimal(100)), 10)), key, titleIndex, rewardListIndex.get());
                     rewardListIndex.addAndGet(lineItemCount);
-                    this.addRewardButton(rewardConfig.getRandomRewards(), key, rewardListIndex);
+                    this.addRewardButton(randomRewards, key, rewardListIndex);
                     titleIndex--;
                 }
             }
@@ -673,7 +674,9 @@ public class RewardOptionScreen extends Screen {
         }
         // 打开配置文件夹
         else if (value.getOperation() == OperationButtonType.FOLDER.getCode()) {
-            SakuraSignIn.openFileInFolder(new File(FMLPaths.CONFIGDIR.get().resolve(SakuraSignIn.MODID).toFile(), RewardConfigManager.FILE_NAME).toPath());
+            SakuraSignIn.openFileInFolder(
+                    RewardConfigManager.getConfigDirectory()
+                            .resolve(RewardConfigManager.FILE_NAME));
             flag.set(true);
         }
     }
@@ -792,7 +795,7 @@ public class RewardOptionScreen extends Screen {
                             }
                             break;
                             case RANDOM_REWARD: {
-                                RewardConfigManager.getRewardConfig().getRandomRewards().clear();
+                                RewardConfigManager.getRewardConfig().getRandomRewardGroups().clear();
                             }
                             break;
                             case CDK_REWARD: {

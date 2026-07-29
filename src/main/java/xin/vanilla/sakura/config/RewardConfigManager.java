@@ -5,32 +5,34 @@ import com.google.gson.reflect.TypeToken;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import net.minecraft.world.entity.player.Player;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.loading.FMLEnvironment;
-import net.neoforged.fml.loading.FMLPaths;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.api.BaniraDataPaths;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.enums.ERewardRule;
 import xin.vanilla.sakura.enums.ERewardType;
 import xin.vanilla.sakura.network.data.RewardOptionSyncData;
+import xin.vanilla.sakura.network.data.RewardOptionSyncKind;
 import xin.vanilla.sakura.network.packet.RewardOptionSyncPacket;
+import xin.vanilla.sakura.reward.config.LegacyRewardConfigReader;
+import xin.vanilla.sakura.reward.config.RewardConfigCodec;
+import xin.vanilla.sakura.reward.config.RewardConfigRepository;
+import xin.vanilla.sakura.reward.config.RewardGroup;
 import xin.vanilla.sakura.rewards.Reward;
 import xin.vanilla.sakura.rewards.RewardList;
-import xin.vanilla.sakura.util.DateUtils;
 import xin.vanilla.sakura.util.SakuraUtils;
 import xin.vanilla.sakura.util.StringUtils;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -43,7 +45,11 @@ import java.util.stream.Stream;
 public class RewardConfigManager {
     public static final Gson GSON = new GsonBuilder().enableComplexMapKeySerialization().create();
 
-    public static final String FILE_NAME = "reward_option_data.json";
+    public static final String FILE_NAME = RewardConfigRepository.REWARD_FILE_NAME;
+    private static final String RANDOM_GROUP_SEPARATOR = "#";
+    private static final RewardConfigCodec REWARD_CONFIG_CODEC = new RewardConfigCodec();
+    private static final LegacyRewardConfigReader LEGACY_REWARD_CONFIG_READER =
+            new LegacyRewardConfigReader();
 
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -89,14 +95,7 @@ public class RewardConfigManager {
      * 获取配置文件路径
      */
     public static Path getConfigDirectory() {
-        return FMLPaths.CONFIGDIR.get().resolve(SakuraSignIn.MODID);
-    }
-
-    /**
-     * 获取服务端配置文件路径
-     */
-    public static Path getServerConfigDirectory() {
-        return new File(SakuraSignIn.getServerInstance().getServerDirectory().toFile(), "serverconfig" + File.separator + SakuraSignIn.MODID).toPath();
+        return BaniraDataPaths.gameConfigPath().resolve(SakuraSignIn.MODID);
     }
 
     /**
@@ -104,17 +103,12 @@ public class RewardConfigManager {
      */
     public static void loadRewardOption() {
         {
-            File file = new File(RewardConfigManager.getConfigDirectory().toFile(), FILE_NAME);
-            if (file.exists()) {
-                try {
-                    rewardConfig = RewardConfigManager.deserializeRewardOption(new String(Files.readAllBytes(Paths.get(file.getPath()))));
-                } catch (Exception e) {
-                    LOGGER.error("Error loading sign-in data: ", e);
-                }
-            } else {
-                // 如果文件不存在，初始化默认值
-                rewardConfig = RewardConfig.getDefault();
-                RewardConfigManager.saveRewardOption();
+            try {
+                rewardConfig = repository().loadOrCreate(RewardConfig.getDefault());
+                rewardConfig.refreshContinuousRewardsRelation();
+                rewardConfig.refreshCycleRewardsRelation();
+            } catch (Exception e) {
+                LOGGER.error("Error loading reward configuration: ", e);
             }
         }
         {
@@ -171,17 +165,10 @@ public class RewardConfigManager {
      */
     public static void saveRewardOption() {
         {
-            File dir = RewardConfigManager.getConfigDirectory().toFile();
-            if (!dir.exists()) {
-                dir.mkdirs();
-            }
-            File file = new File(dir, FILE_NAME);
-            try (FileWriter writer = new FileWriter(file)) {
-                // 格式化输出
-                Gson gson = new GsonBuilder().setPrettyPrinting().enableComplexMapKeySerialization().create();
-                writer.write(gson.toJson(rewardConfig.toJsonObject()));
+            try {
+                repository().save(rewardConfig);
             } catch (IOException e) {
-                LOGGER.error("Error saving sign-in data: ", e);
+                LOGGER.error("Error saving reward configuration: ", e);
             }
         }
         {
@@ -317,36 +304,82 @@ public class RewardConfigManager {
      * 备份 JSON 数据
      */
     public static void backupRewardOption(boolean save) {
-        // 备份文件
-        long dateTimeInt = DateUtils.toDateTimeInt(new Date());
-        File sourceFolder = FMLPaths.CONFIGDIR.get().resolve(SakuraSignIn.MODID).toFile();
-        File sourceFile = new File(sourceFolder, RewardConfigManager.FILE_NAME);
-        if (sourceFile.exists()) {
-            try {
-                File target = new File(new File(sourceFolder, "backups"), String.format("%s_%s.%s", RewardConfigManager.FILE_NAME, dateTimeInt, "old"));
-                if (target.getParent() != null && !Files.exists(target.getParentFile().toPath())) {
-                    Files.createDirectories(target.getParentFile().toPath());
-                }
-                Files.move(sourceFile.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            } catch (IOException e) {
-                LOGGER.error("Error moving file: ", e);
-            }
-            // 备份最新编辑的文件
-            if (save) {
-                RewardConfigManager.saveRewardOption();
-                try {
-                    File target = new File(new File(sourceFolder, "backups"), String.format("%s_%s.%s", RewardConfigManager.FILE_NAME, dateTimeInt, "bak"));
-                    if (target.getParent() != null && !Files.exists(target.getParentFile().toPath())) {
-                        Files.createDirectories(target.getParentFile().toPath());
-                    }
-                    Files.move(sourceFile.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                } catch (IOException e) {
-                    LOGGER.error("Error moving file: ", e);
-                }
-            }
-            // 删除旧文件
-            deleteOldFile(sourceFolder, 20);
+        try {
+            repository().backupCurrent(save ? "client-before-sync" : "server-before-sync");
+        } catch (IOException e) {
+            LOGGER.error("Error backing up reward configuration: ", e);
         }
+    }
+
+    /**
+     * 随机组的内部键附带列表索引，界面只显示概率部分。
+     */
+    public static String getDisplayKey(ERewardRule rule, String key) {
+        return rule == ERewardRule.RANDOM_REWARD ? randomProbability(key) : key;
+    }
+
+    private static String randomGroupToken(String probability, int index) {
+        return probability + RANDOM_GROUP_SEPARATOR + index;
+    }
+
+    private static String randomProbability(String key) {
+        if (key == null) {
+            return "";
+        }
+        int separator = key.lastIndexOf(RANDOM_GROUP_SEPARATOR);
+        if (separator < 0) {
+            return key;
+        }
+        try {
+            Integer.parseInt(key.substring(separator + RANDOM_GROUP_SEPARATOR.length()));
+            return key.substring(0, separator);
+        } catch (NumberFormatException ignored) {
+            return key;
+        }
+    }
+
+    private static int randomGroupIndex(String key) {
+        if (key == null) {
+            return -1;
+        }
+        int separator = key.lastIndexOf(RANDOM_GROUP_SEPARATOR);
+        if (separator >= 0) {
+            try {
+                int index = Integer.parseInt(
+                        key.substring(separator + RANDOM_GROUP_SEPARATOR.length()));
+                if (index >= 0 && index < rewardConfig.getRandomRewardGroups().size()
+                        && rewardConfig.getRandomRewardGroups().get(index).getKey()
+                        .equals(key.substring(0, separator))) {
+                    return index;
+                }
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        String probability = randomProbability(key);
+        for (int i = 0; i < rewardConfig.getRandomRewardGroups().size(); i++) {
+            if (rewardConfig.getRandomRewardGroups().get(i).getKey().equals(probability)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static RewardGroup randomGroup(String key) {
+        int index = randomGroupIndex(key);
+        return index < 0 ? null : rewardConfig.getRandomRewardGroups().get(index);
+    }
+
+    private static Map<String, RewardList> randomRewardMap(RewardConfig config) {
+        Map<String, RewardList> result = new LinkedHashMap<>();
+        for (int i = 0; i < config.getRandomRewardGroups().size(); i++) {
+            RewardGroup group = config.getRandomRewardGroups().get(i);
+            result.put(randomGroupToken(group.getKey(), i), group.getRewards());
+        }
+        return result;
+    }
+
+    private static RewardConfigRepository repository() {
+        return new RewardConfigRepository(getConfigDirectory());
     }
 
     private static void deleteOldFile(File dir, int num) {
@@ -414,7 +447,7 @@ public class RewardConfigManager {
             }
             break;
             case RANDOM_REWARD: {
-                BigDecimal property = StringUtils.toBigDecimal(keyName);
+                BigDecimal property = StringUtils.toBigDecimal(randomProbability(keyName));
                 result = property.compareTo(new BigDecimal("0.0000000001")) >= 0 && property.compareTo(BigDecimal.ONE) <= 0;
             }
             break;
@@ -463,7 +496,8 @@ public class RewardConfigManager {
                 result = rewardConfig.getCumulativeRewards().get(keyName);
                 break;
             case RANDOM_REWARD:
-                result = rewardConfig.getRandomRewards().get(keyName);
+                RewardGroup randomGroup = randomGroup(keyName);
+                result = randomGroup == null ? null : randomGroup.getRewards();
                 break;
             case CDK_REWARD:
                 String[] split = keyName.replaceAll("\\|", ",").split(",");
@@ -517,7 +551,14 @@ public class RewardConfigManager {
                 rewardConfig.addCumulativeReward(keyName, rewardList);
                 break;
             case RANDOM_REWARD:
-                rewardConfig.addRandomReward(keyName, rewardList);
+                RewardGroup existingRandomGroup = keyName.contains(RANDOM_GROUP_SEPARATOR)
+                        ? randomGroup(keyName)
+                        : null;
+                if (existingRandomGroup == null) {
+                    rewardConfig.addRandomRewardGroup(randomProbability(keyName), rewardList);
+                } else {
+                    existingRandomGroup.getRewards().addAll(rewardList);
+                }
                 break;
             case CDK_REWARD:
                 String date = getCdkRewardDate(keyName);
@@ -580,8 +621,10 @@ public class RewardConfigManager {
             }
             break;
             case RANDOM_REWARD: {
-                RewardList remove = rewardConfig.getRandomRewards().remove(oldKeyName);
-                rewardConfig.addRandomReward(newKeyName, remove);
+                RewardGroup group = randomGroup(oldKeyName);
+                if (group != null) {
+                    group.setKey(randomProbability(newKeyName));
+                }
             }
             break;
             case CDK_REWARD: {
@@ -638,7 +681,10 @@ public class RewardConfigManager {
                 rewardConfig.getCumulativeRewards().get(keyName).clear();
                 break;
             case RANDOM_REWARD:
-                rewardConfig.getRandomRewards().get(keyName).clear();
+                RewardGroup randomGroup = randomGroup(keyName);
+                if (randomGroup != null) {
+                    randomGroup.getRewards().clear();
+                }
                 break;
             case CDK_REWARD:
                 String[] split = keyName.replaceAll("\\|", ",").split(",");
@@ -687,7 +733,10 @@ public class RewardConfigManager {
                 rewardConfig.getCumulativeRewards().remove(keyName);
                 break;
             case RANDOM_REWARD:
-                rewardConfig.getRandomRewards().remove(keyName);
+                int randomIndex = randomGroupIndex(keyName);
+                if (randomIndex >= 0) {
+                    rewardConfig.getRandomRewardGroups().remove(randomIndex);
+                }
                 break;
             case CDK_REWARD:
                 String[] split = keyName.replaceAll("\\|", ",").split(",");
@@ -741,7 +790,8 @@ public class RewardConfigManager {
                     result = rewardConfig.getCumulativeRewards().get(keyName).get(index);
                     break;
                 case RANDOM_REWARD:
-                    result = rewardConfig.getRandomRewards().get(keyName).get(index);
+                    RewardGroup randomGroup = randomGroup(keyName);
+                    result = randomGroup == null ? null : randomGroup.getRewards().get(index);
                     break;
                 case CDK_REWARD:
                     String[] split = keyName.replaceAll("\\|", ",").split(",");
@@ -820,10 +870,14 @@ public class RewardConfigManager {
                 rewardConfig.getCumulativeRewards().get(keyName).add(reward);
                 break;
             case RANDOM_REWARD:
-                if (!rewardConfig.getRandomRewards().containsKey(keyName)) {
-                    rewardConfig.getRandomRewards().put(keyName, new RewardList());
+                RewardGroup randomGroup = randomGroup(keyName);
+                if (randomGroup == null) {
+                    rewardConfig.addRandomRewardGroup(
+                            randomProbability(keyName),
+                            new RewardList(Collections.singletonList(reward)));
+                } else {
+                    randomGroup.getRewards().add(reward);
                 }
-                rewardConfig.getRandomRewards().get(keyName).add(reward);
                 break;
             case CDK_REWARD:
                 String[] split = keyName.replaceAll("\\|", ",").split(",");
@@ -921,12 +975,14 @@ public class RewardConfigManager {
                     rewardConfig.getCumulativeRewards().get(keyName).set(index, reward);
                     break;
                 case RANDOM_REWARD:
-                    if (!rewardConfig.getRandomRewards().containsKey(keyName)) {
-                        rewardConfig.getRandomRewards().put(keyName, new RewardList() {{
-                            add(reward);
-                        }});
+                    RewardGroup randomGroup = randomGroup(keyName);
+                    if (randomGroup == null) {
+                        rewardConfig.addRandomRewardGroup(
+                                randomProbability(keyName),
+                                new RewardList(Collections.singletonList(reward)));
+                    } else {
+                        randomGroup.getRewards().set(index, reward);
                     }
-                    rewardConfig.getRandomRewards().get(keyName).set(index, reward);
                     break;
                 case CDK_REWARD:
                     String[] split = keyName.replaceAll("\\|", ",").split(",");
@@ -988,7 +1044,10 @@ public class RewardConfigManager {
                     rewardConfig.getCumulativeRewards().get(keyName).remove(index);
                     break;
                 case RANDOM_REWARD:
-                    rewardConfig.getRandomRewards().get(keyName).remove(index);
+                    RewardGroup randomGroup = randomGroup(keyName);
+                    if (randomGroup != null) {
+                        randomGroup.getRewards().remove(index);
+                    }
                     break;
                 case CDK_REWARD:
                     String[] split = keyName.replaceAll("\\|", ",").split(",");
@@ -1056,7 +1115,8 @@ public class RewardConfigManager {
                     replaceWithSortedMap((LinkedHashMap<String, RewardList>) rewardConfig.getCumulativeRewards());
                     break;
                 case RANDOM_REWARD:
-                    replaceWithSortedMap((LinkedHashMap<String, RewardList>) rewardConfig.getRandomRewards());
+                    rewardConfig.getRandomRewardGroups().sort(
+                            Comparator.comparing(RewardGroup::getKey, RewardConfigManager::keyComparator));
                     break;
                 case CDK_REWARD:
                     rewardConfig.getCdkRewards().sort(Comparator.comparing(keyVal -> keyVal.getKey().getKey()));
@@ -1069,7 +1129,11 @@ public class RewardConfigManager {
      * 序列化 RewardOption
      */
     public static String serializeRewardOption(RewardConfig rewardConfig) {
-        return GSON.toJson(rewardConfig.toJsonObject());
+        try {
+            return REWARD_CONFIG_CODEC.encode(rewardConfig);
+        } catch (IOException e) {
+            throw new IllegalStateException("Unable to serialize reward configuration", e);
+        }
     }
 
     /**
@@ -1077,58 +1141,19 @@ public class RewardConfigManager {
      */
     @NonNull
     public static RewardConfig deserializeRewardOption(String jsonString) {
-        RewardConfig result = new RewardConfig();
-        if (StringUtils.isNotNullOrEmpty(jsonString)) {
-            try {
-                JsonObject jsonObject = GSON.fromJson(jsonString, JsonObject.class);
-                result.setBaseRewards(fromJsonOrDefault(jsonObject.get("baseRewards"), new TypeToken<RewardList>() {
-                }.getType(), new RewardList()));
-                result.setContinuousRewards(fromJsonOrDefault(jsonObject.get("continuousRewards"), new TypeToken<LinkedHashMap<String, RewardList>>() {
-                }.getType(), new LinkedHashMap<>()));
-                result.setCycleRewards(fromJsonOrDefault(jsonObject.get("cycleRewards"), new TypeToken<LinkedHashMap<String, RewardList>>() {
-                }.getType(), new LinkedHashMap<>()));
-                result.setYearRewards(fromJsonOrDefault(jsonObject.get("yearRewards"), new TypeToken<LinkedHashMap<String, RewardList>>() {
-                }.getType(), new LinkedHashMap<>()));
-                result.setMonthRewards(fromJsonOrDefault(jsonObject.get("monthRewards"), new TypeToken<LinkedHashMap<String, RewardList>>() {
-                }.getType(), new LinkedHashMap<>()));
-                result.setWeekRewards(fromJsonOrDefault(jsonObject.get("weekRewards"), new TypeToken<LinkedHashMap<String, RewardList>>() {
-                }.getType(), new LinkedHashMap<>()));
-                result.setDateTimeRewards(fromJsonOrDefault(jsonObject.get("dateTimeRewards"), new TypeToken<LinkedHashMap<String, RewardList>>() {
-                }.getType(), new LinkedHashMap<>()));
-                result.setCumulativeRewards(fromJsonOrDefault(jsonObject.get("cumulativeRewards"), new TypeToken<LinkedHashMap<String, RewardList>>() {
-                }.getType(), new LinkedHashMap<>()));
-                result.setRandomRewards(fromJsonOrDefault(jsonObject.get("randomRewards"), new TypeToken<LinkedHashMap<String, RewardList>>() {
-                }.getType(), new LinkedHashMap<>()));
-                JsonArray cdkRewards = jsonObject.getAsJsonArray("cdkRewards");
-                for (JsonElement cdkReward : cdkRewards) {
-                    String key = ((JsonObject) cdkReward).get("key").getAsString();
-                    String date = ((JsonObject) cdkReward).get("date").getAsString();
-                    int num = 1;
-                    try {
-                        num = ((JsonObject) cdkReward).get("num").getAsInt();
-                    } catch (Exception ignored) {
-                    }
-                    RewardList rewardList = fromJsonOrDefault(((JsonObject) cdkReward).get("value"), new TypeToken<RewardList>() {
-                    }.getType(), new RewardList());
-                    result.addCdkReward(new KeyValue<>(new KeyValue<>(key, date), new KeyValue<>(rewardList, new AtomicInteger(num))));
-                }
-                result.refreshContinuousRewardsRelation();
-                result.refreshCycleRewardsRelation();
-            } catch (Exception e) {
-                LOGGER.error("Error loading sign-in data: ", e);
-            }
-        } else {
-            // 如果文件不存在，初始化默认值
-            result = RewardConfig.getDefault();
-            RewardConfigManager.saveRewardOption();
+        if (StringUtils.isNullOrEmpty(jsonString)) {
+            return RewardConfig.getDefault();
         }
-        return result;
-    }
-
-    @NonNull
-    public static <T> T fromJsonOrDefault(JsonElement json, Type typeOfT, T defaultValue) {
-        T result = GSON.fromJson(json, typeOfT);
-        return result == null ? defaultValue : result;
+        try {
+            JsonObject root = new JsonParser().parse(jsonString).getAsJsonObject();
+            if (root.has("schemaVersion")) {
+                return REWARD_CONFIG_CODEC.decode(jsonString);
+            }
+            return REWARD_CONFIG_CODEC.toRuntimeConfig(
+                    LEGACY_REWARD_CONFIG_READER.read(jsonString));
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Unable to deserialize reward configuration", e);
+        }
     }
 
     /**
@@ -1152,39 +1177,43 @@ public class RewardConfigManager {
     }
 
     public static Map<String, RewardList> getRewardMap(ERewardRule rule) {
+        return getRewardMap(rewardConfig, rule);
+    }
+
+    public static Map<String, RewardList> getRewardMap(RewardConfig data, ERewardRule rule) {
         Map<String, RewardList> result = new LinkedHashMap<>();
         switch (rule) {
             case BASE_REWARD:
-                result.put("base", rewardConfig.getBaseRewards());
+                result.put("base", data.getBaseRewards());
                 break;
             case CONTINUOUS_REWARD:
-                result = rewardConfig.getContinuousRewards();
+                result = data.getContinuousRewards();
                 break;
             case CYCLE_REWARD:
-                result = rewardConfig.getCycleRewards();
+                result = data.getCycleRewards();
                 break;
             case YEAR_REWARD:
-                result = rewardConfig.getYearRewards();
+                result = data.getYearRewards();
                 break;
             case MONTH_REWARD:
-                result = rewardConfig.getMonthRewards();
+                result = data.getMonthRewards();
                 break;
             case WEEK_REWARD:
-                result = rewardConfig.getWeekRewards();
+                result = data.getWeekRewards();
                 break;
             case DATE_TIME_REWARD:
-                result = rewardConfig.getDateTimeRewards();
+                result = data.getDateTimeRewards();
                 break;
             case CUMULATIVE_REWARD:
-                result = rewardConfig.getCumulativeRewards();
+                result = data.getCumulativeRewards();
                 break;
             case RANDOM_REWARD:
-                result = rewardConfig.getRandomRewards();
+                result = randomRewardMap(data);
                 break;
             case CDK_REWARD:
                 result = new LinkedHashMap<>();
-                for (int i = 0; i < rewardConfig.getCdkRewards().size(); i++) {
-                    KeyValue<KeyValue<String, String>, KeyValue<RewardList, AtomicInteger>> keyValue = rewardConfig.getCdkRewards().get(i);
+                for (int i = 0; i < data.getCdkRewards().size(); i++) {
+                    KeyValue<KeyValue<String, String>, KeyValue<RewardList, AtomicInteger>> keyValue = data.getCdkRewards().get(i);
                     // key | 过期时间 | 序号 | 数量
                     result.put(String.format("%s|%s|%d|%d", keyValue.getKey().getKey(), keyValue.getKey().getValue(), i, keyValue.getValue().getValue().get()), keyValue.getValue().getKey());
                 }
@@ -1220,7 +1249,9 @@ public class RewardConfigManager {
                 data.setCumulativeRewards(map);
                 break;
             case RANDOM_REWARD:
-                data.setRandomRewards(map);
+                data.getRandomRewardGroups().clear();
+                map.forEach((key, rewards) -> data.addRandomRewardGroup(
+                        randomProbability(key), rewards));
                 break;
             case CDK_REWARD:
                 List<KeyValue<KeyValue<String, String>, KeyValue<RewardList, AtomicInteger>>> cdkRewards = new ArrayList<>();
@@ -1242,44 +1273,56 @@ public class RewardConfigManager {
      *
      * @param player 玩家，用于判断是否有权限
      */
-    public static RewardOptionSyncPacket toSyncPacket(Player player) {
+    public static RewardOptionSyncPacket toSyncPacket(PlayerEntity player) {
         List<RewardOptionSyncData> dataList = new ArrayList<>();
         for (ERewardRule rule : ERewardRule.values()) {
             // 如果对应查看权限不足则将数据置为空，并在服务端解析时不进行该数据的覆盖
             if (!player.hasPermissions(SakuraUtils.getRewardPermissionLevel(rule))) {
-                dataList.add(new RewardOptionSyncData(rule, "", new Reward(0, ERewardType.SIGN_IN_CARD).setDisabled(true)));
+                dataList.add(RewardOptionSyncData.redactedRule(rule));
             } else {
-                RewardConfigManager.getRewardMap(rule).forEach((key, value) -> {
-                    List<RewardOptionSyncData> list = value.stream()
-                            .map(reward -> new RewardOptionSyncData(rule, key, reward))
-                            .collect(Collectors.toList());
-                    dataList.addAll(list);
-                });
+                dataList.addAll(toSyncData(rewardConfig, rule));
             }
         }
         return new RewardOptionSyncPacket(dataList);
     }
 
+    /**
+     * 空规则组也需要显式同步，否则会改变随机奖励的总权重。
+     */
+    public static List<RewardOptionSyncData> toSyncData(RewardConfig config, ERewardRule rule) {
+        List<RewardOptionSyncData> result = new ArrayList<>();
+        getRewardMap(config, rule).forEach((key, rewards) -> {
+            if (rewards.isEmpty()) {
+                result.add(RewardOptionSyncData.emptyGroup(rule, key));
+            } else {
+                rewards.forEach(reward ->
+                        result.add(new RewardOptionSyncData(rule, key, reward)));
+            }
+        });
+        return result;
+    }
+
     public static RewardConfig fromSyncPacketList(List<RewardOptionSyncPacket> packetList) {
         RewardConfig result = new RewardConfig();
         packetList.stream().flatMap(packet -> packet.getRewardOptionData().stream())
-                .collect(Collectors.groupingBy(RewardOptionSyncData::rule))
+                .collect(Collectors.groupingBy(RewardOptionSyncData::getRule))
                 .forEach((rule, dataList) -> {
                     Map<String, RewardList> rewardMap = new LinkedHashMap<>();
                     for (RewardOptionSyncData data : dataList) {
-                        RewardList rewardList = rewardMap.computeIfAbsent(data.key(), key -> new RewardList());
-                        rewardList.add(data.reward());
+                        RewardList rewardList = rewardMap.computeIfAbsent(data.getKey(), key -> new RewardList());
+                        if (data.getKind() == RewardOptionSyncKind.REWARD) {
+                            rewardList.add(data.getReward());
+                        }
                     }
                     // 如果当前为服务器环境，且玩家发送的数据为空则使用原数据，不进行覆盖
-                    if (FMLEnvironment.dist == Dist.DEDICATED_SERVER
-                            && rewardMap.size() == 1
-                            && rewardMap.containsKey("")
-                            && rewardMap.get("").size() == 1
-                            && rewardMap.get("").get(0).getType() == ERewardType.SIGN_IN_CARD
-                            && rewardMap.get("").get(0).isDisabled()) {
+                    boolean redacted = dataList.stream()
+                            .anyMatch(data -> data.getKind() == RewardOptionSyncKind.REDACTED_RULE);
+                    if (redacted && FMLEnvironment.dist == Dist.DEDICATED_SERVER) {
                         rewardMap = RewardConfigManager.getRewardMap(rule);
                     }
-                    rewardMap.keySet().removeIf(StringUtils::isNullOrEmpty);
+                    if (redacted) {
+                        rewardMap.remove("");
+                    }
                     RewardConfigManager.setRewardMap(result, rule, rewardMap);
                 });
         return result;

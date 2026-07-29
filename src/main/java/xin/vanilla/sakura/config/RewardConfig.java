@@ -1,7 +1,5 @@
 package xin.vanilla.sakura.config;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
 import com.google.gson.annotations.Expose;
 import lombok.Data;
 import lombok.NonNull;
@@ -13,6 +11,7 @@ import xin.vanilla.sakura.enums.ERewardType;
 import xin.vanilla.sakura.rewards.Reward;
 import xin.vanilla.sakura.rewards.RewardList;
 import xin.vanilla.sakura.rewards.impl.*;
+import xin.vanilla.sakura.reward.config.RewardGroup;
 import xin.vanilla.sakura.util.CollectionUtils;
 import xin.vanilla.sakura.util.DateUtils;
 import xin.vanilla.sakura.util.StringUtils;
@@ -145,7 +144,7 @@ public class RewardConfig implements Serializable {
      * 在每次签到时随机获得一组奖励
      */
     @NonNull
-    private Map<String, RewardList> randomRewards;
+    private List<RewardGroup> randomRewardGroups;
 
     /**
      * 兑换码奖励<p>
@@ -166,7 +165,7 @@ public class RewardConfig implements Serializable {
         this.dateTimeRewards = new LinkedHashMap<>();
         this.dateTimeRewardsRelation = new LinkedHashMap<>();
         this.cumulativeRewards = new LinkedHashMap<>();
-        this.randomRewards = new LinkedHashMap<>();
+        this.randomRewardGroups = new ArrayList<>();
         this.cdkRewards = new ArrayList<>();
     }
 
@@ -201,11 +200,16 @@ public class RewardConfig implements Serializable {
     }
 
     public void refreshContinuousRewardsRelation() {
+        refreshContinuousRewardsRelation(
+                CommonConfig.get().reward().continuousRewardsRepeatable());
+    }
+
+    public void refreshContinuousRewardsRelation(boolean repeatable) {
         // 处理映射关系
         if (!this.continuousRewards.isEmpty()) {
             this.continuousRewardsRelation = new LinkedHashMap<>();
             List<Integer> keyList = this.continuousRewards.keySet().stream().map(Integer::parseInt).sorted().collect(Collectors.toList());
-            if (CommonConfig.get().reward().continuousRewardsRepeatable()) {
+            if (repeatable) {
                 int max = keyList.stream().max(Comparator.naturalOrder()).orElse(0);
                 int cur = keyList.get(0);
                 for (int i = 1; i <= max; i++) {
@@ -251,11 +255,15 @@ public class RewardConfig implements Serializable {
     }
 
     public void refreshCycleRewardsRelation() {
+        refreshCycleRewardsRelation(CommonConfig.get().reward().cycleRewardsRepeatable());
+    }
+
+    public void refreshCycleRewardsRelation(boolean repeatable) {
         // 处理映射关系
         if (!this.cycleRewards.isEmpty()) {
             this.cycleRewardsRelation = new LinkedHashMap<>();
             List<Integer> keyList = this.cycleRewards.keySet().stream().map(Integer::parseInt).sorted().collect(Collectors.toList());
-            if (CommonConfig.get().reward().cycleRewardsRepeatable()) {
+            if (repeatable) {
                 int max = keyList.stream().max(Comparator.naturalOrder()).orElse(0);
                 int cur = keyList.get(0);
                 for (int i = 1; i <= max; i++) {
@@ -427,29 +435,27 @@ public class RewardConfig implements Serializable {
     /**
      * 设置随机签到奖励
      */
-    public void setRandomRewards(@NonNull Map<String, RewardList> randomRewards) {
-        this.randomRewards = new LinkedHashMap<>();
-        randomRewards.forEach((key, value) -> {
-            if (StringUtils.isNotNullOrEmpty(key)) {
-                this.addRandomReward(key, value);
+    public void setRandomRewardGroups(@NonNull List<RewardGroup> randomRewardGroups) {
+        this.randomRewardGroups = new ArrayList<>();
+        randomRewardGroups.forEach(group -> {
+            if (group != null) {
+                this.addRandomRewardGroup(group.getKey(), group.getRewards());
             }
         });
     }
 
     /**
-     * 添加随机签到奖励
+     * 添加独立随机奖励组，相同概率不会被合并。
      */
     @SuppressWarnings("ConstantConditions")
-    public void addRandomReward(@NonNull String key, @NonNull RewardList value) {
-        if (this.randomRewards == null) this.randomRewards = new LinkedHashMap<>();
+    public void addRandomRewardGroup(@NonNull String key, @NonNull RewardList value) {
+        if (this.randomRewardGroups == null) this.randomRewardGroups = new ArrayList<>();
         BigDecimal probability = StringUtils.toBigDecimal(key);
         if (probability.compareTo(BigDecimal.ZERO) > 0 && probability.compareTo(BigDecimal.ONE) <= 0) {
-            String fixedKey = StringUtils.toFixedEx(probability, 10);
-            if (this.randomRewards.containsKey(fixedKey)) {
-                this.randomRewards.get(fixedKey).addAll(value);
-            } else {
-                this.randomRewards.put(fixedKey, value);
-            }
+            this.randomRewardGroups.add(new RewardGroup(
+                    xin.vanilla.sakura.enums.ERewardRule.RANDOM_REWARD,
+                    StringUtils.toFixedEx(probability, 10),
+                    value));
         }
     }
 
@@ -641,86 +647,4 @@ public class RewardConfig implements Serializable {
         return result;
     }
 
-    public JsonObject toJsonObject() {
-        JsonObject json = new JsonObject();
-        json.add("baseRewards", baseRewards.toJsonArray());
-
-        JsonObject continuousRewardsJson = new JsonObject();
-        for (Map.Entry<String, RewardList> entry : continuousRewards.entrySet()) {
-            continuousRewardsJson.add(entry.getKey(), entry.getValue().toJsonArray());
-        }
-        json.add("continuousRewards", continuousRewardsJson);
-
-        JsonObject continuousRewardsRelationJson = new JsonObject();
-        for (Map.Entry<String, String> entry : continuousRewardsRelation.entrySet()) {
-            continuousRewardsRelationJson.addProperty(entry.getKey(), entry.getValue());
-        }
-        json.add("continuousRewardsRelation", continuousRewardsRelationJson);
-
-        JsonObject cycleRewardsJson = new JsonObject();
-        for (Map.Entry<String, RewardList> entry : cycleRewards.entrySet()) {
-            cycleRewardsJson.add(entry.getKey(), entry.getValue().toJsonArray());
-        }
-        json.add("cycleRewards", cycleRewardsJson);
-
-        JsonObject cycleRewardsRelationJson = new JsonObject();
-        for (Map.Entry<String, String> entry : cycleRewardsRelation.entrySet()) {
-            cycleRewardsRelationJson.addProperty(entry.getKey(), entry.getValue());
-        }
-        json.add("cycleRewardsRelation", cycleRewardsRelationJson);
-
-        JsonObject yearRewardsJson = new JsonObject();
-        for (Map.Entry<String, RewardList> entry : yearRewards.entrySet()) {
-            yearRewardsJson.add(entry.getKey(), entry.getValue().toJsonArray());
-        }
-        json.add("yearRewards", yearRewardsJson);
-
-        JsonObject monthRewardsJson = new JsonObject();
-        for (Map.Entry<String, RewardList> entry : monthRewards.entrySet()) {
-            monthRewardsJson.add(entry.getKey(), entry.getValue().toJsonArray());
-        }
-        json.add("monthRewards", monthRewardsJson);
-
-        JsonObject weekRewardsJson = new JsonObject();
-        for (Map.Entry<String, RewardList> entry : weekRewards.entrySet()) {
-            weekRewardsJson.add(entry.getKey(), entry.getValue().toJsonArray());
-        }
-        json.add("weekRewards", weekRewardsJson);
-
-        JsonObject dateTimeRewardsJson = new JsonObject();
-        for (Map.Entry<String, RewardList> entry : dateTimeRewards.entrySet()) {
-            dateTimeRewardsJson.add(entry.getKey(), entry.getValue().toJsonArray());
-        }
-        json.add("dateTimeRewards", dateTimeRewardsJson);
-
-        JsonObject dateTimeRewardsRelationJson = new JsonObject();
-        for (Map.Entry<String, String> entry : dateTimeRewardsRelation.entrySet()) {
-            dateTimeRewardsRelationJson.addProperty(entry.getKey(), entry.getValue());
-        }
-        json.add("dateTimeRewardsRelation", dateTimeRewardsRelationJson);
-
-        JsonObject cumulativeRewardsJson = new JsonObject();
-        for (Map.Entry<String, RewardList> entry : cumulativeRewards.entrySet()) {
-            cumulativeRewardsJson.add(entry.getKey(), entry.getValue().toJsonArray());
-        }
-        json.add("cumulativeRewards", cumulativeRewardsJson);
-
-        JsonObject randomRewardsJson = new JsonObject();
-        for (Map.Entry<String, RewardList> entry : randomRewards.entrySet()) {
-            randomRewardsJson.add(entry.getKey(), entry.getValue().toJsonArray());
-        }
-        json.add("randomRewards", randomRewardsJson);
-
-        JsonArray cdkRewardsArray = new JsonArray();
-        for (KeyValue<KeyValue<String, String>, KeyValue<RewardList, AtomicInteger>> entry : cdkRewards) {
-            JsonObject keyValueJson = new JsonObject();
-            keyValueJson.addProperty("key", entry.getKey().getKey());
-            keyValueJson.addProperty("date", entry.getKey().getValue());
-            keyValueJson.addProperty("num", entry.getValue().getValue().get());
-            keyValueJson.add("value", entry.getValue().getKey().toJsonArray());
-            cdkRewardsArray.add(keyValueJson);
-        }
-        json.add("cdkRewards", cdkRewardsArray);
-        return json;
-    }
 }

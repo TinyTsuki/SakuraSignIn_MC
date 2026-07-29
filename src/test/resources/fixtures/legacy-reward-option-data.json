@@ -1,0 +1,65 @@
+{
+  "baseRewards": [
+    {
+      "type": "ITEM",
+      "probability": 1,
+      "content": {
+        "item": "minecraft:apple",
+        "count": 1
+      }
+    }
+  ],
+  "continuousRewards": {
+    "1": [
+      {
+        "type": "EXP_POINT",
+        "probability": 1,
+        "content": {
+          "expPoint": 5
+        }
+      }
+    ]
+  },
+  "cycleRewards": {},
+  "yearRewards": {},
+  "monthRewards": {},
+  "weekRewards": {},
+  "dateTimeRewards": {},
+  "cumulativeRewards": {},
+  "randomRewards": {
+    "0.5": [
+      {
+        "type": "MESSAGE",
+        "probability": 1,
+        "content": {
+          "text": "first"
+        }
+      }
+    ],
+    "0.5": [
+      {
+        "type": "MESSAGE",
+        "probability": 1,
+        "content": {
+          "text": "second"
+        }
+      }
+    ]
+  },
+  "cdkRewards": [
+    {
+      "key": "WELCOME",
+      "date": "2099-12-31",
+      "num": 3,
+      "value": [
+        {
+          "type": "SIGN_IN_CARD",
+          "probability": 1,
+          "content": {
+            "signInCard": 2
+          }
+        }
+      ]
+    }
+  ]
+}

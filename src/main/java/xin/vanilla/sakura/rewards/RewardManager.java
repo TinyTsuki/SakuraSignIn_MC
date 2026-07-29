@@ -21,6 +21,7 @@ import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.data.SignInRecord;
 import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ERewardType;
+import xin.vanilla.sakura.reward.config.RewardGroup;
 import xin.vanilla.sakura.enums.ESignInType;
 import xin.vanilla.sakura.enums.ETimeCoolingMethod;
 import xin.vanilla.sakura.network.packet.SignInPacket;
@@ -357,12 +358,9 @@ public class RewardManager {
 
     public static RewardList getRandomRewardList() {
         RewardList result = new RewardList();
-        Map<String, RewardList> randomRewards = RewardConfigManager.getRewardConfig().getRandomRewards();
-        // 将概率字符串转换为 BigDecimal，并计算总概率
-        Set<Map.Entry<BigDecimal, RewardList>> entries = randomRewards.entrySet().stream()
-                .collect(Collectors.toMap(entry -> new BigDecimal(entry.getKey()), Map.Entry::getValue)).entrySet();
-        BigDecimal totalProbability = entries.stream()
-                .map(Map.Entry::getKey)
+        List<RewardGroup> groups = RewardConfigManager.getRewardConfig().getRandomRewardGroups();
+        BigDecimal totalProbability = groups.stream()
+                .map(group -> new BigDecimal(group.getKey()))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         // 如果总概率为 0，则返回空结果
         if (totalProbability.compareTo(BigDecimal.ZERO) != 0) {
@@ -372,10 +370,10 @@ public class RewardManager {
                     .setScale(10, RoundingMode.HALF_UP);
             // 遍历概率池，找到对应的奖励
             BigDecimal cumulative = BigDecimal.ZERO;
-            for (Map.Entry<BigDecimal, RewardList> entry : entries) {
-                cumulative = cumulative.add(entry.getKey());
+            for (RewardGroup group : groups) {
+                cumulative = cumulative.add(new BigDecimal(group.getKey()));
                 if (randomValue.compareTo(cumulative) <= 0) {
-                    result = entry.getValue();
+                    result = group.getRewards();
                     break;
                 }
             }
