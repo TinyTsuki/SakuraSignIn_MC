@@ -9,7 +9,6 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.GuiScreenEvent;
-import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
@@ -20,11 +19,12 @@ import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.internal.client.dev.SakuraUiSmokeRunner;
+import xin.vanilla.sakura.notification.SakuraClientNotifications;
+import xin.vanilla.sakura.notification.SakuraNotificationTypes;
 import xin.vanilla.sakura.rewards.RewardManager;
 import xin.vanilla.sakura.screen.RewardOptionScreen;
 import xin.vanilla.sakura.screen.SignInScreen;
 import xin.vanilla.sakura.screen.component.InventoryButton;
-import xin.vanilla.sakura.screen.component.NotificationManager;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
 import xin.vanilla.sakura.util.*;
 
@@ -240,16 +240,6 @@ public class ClientEventHandler {
                         ));
             }
         }
-        if (event instanceof GuiScreenEvent.DrawScreenEvent.Post) {
-            NotificationManager.get().render(((GuiScreenEvent.DrawScreenEvent.Post) event).getMatrixStack());
-        }
-    }
-
-    @SubscribeEvent()
-    public static void onRenderOverlay(RenderGameOverlayEvent.Post event) {
-        if (event.getType() != RenderGameOverlayEvent.ElementType.ALL) return;
-        if (Minecraft.getInstance().screen != null) return;
-        NotificationManager.get().render(event.getMatrixStack());
     }
 
     public static void openSignInScreen(Screen previousScreen) {
@@ -260,7 +250,7 @@ public class ClientEventHandler {
             ClientPlayerEntity player = Minecraft.getInstance().player;
             if (player != null) {
                 Component component = SakuraComponent.get().transClient("message", "sakura_is_offline");
-                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0x88FF5555));
+                SakuraClientNotifications.error(component, SakuraNotificationTypes.SIGN_IN);
             }
         }
     }

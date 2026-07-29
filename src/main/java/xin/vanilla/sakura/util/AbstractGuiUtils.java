@@ -724,7 +724,17 @@ public class AbstractGuiUtils {
         // 物品
         if (reward.getType().equals(ERewardType.ITEM)) {
             ItemStack itemStack = RewardManager.deserializeReward(reward);
-            ItemWidget.renderItem(itemRenderer, fontRenderer, itemStack, x, y, showText);
+            ItemWidget.renderItem(itemRenderer, fontRenderer, itemStack, x, y, false);
+            if (showText) {
+                // 奖励数量最后在前景层绘制，避免被物品模型或后续装饰覆盖。
+                String count = String.valueOf(itemStack.getCount());
+                AbstractGuiUtils.setDepth(matrixStack, EDepth.FOREGROUND);
+                fontRenderer.drawShadow(matrixStack, count,
+                        x + ITEM_ICON_SIZE + 1 - fontRenderer.width(count),
+                        y + ITEM_ICON_SIZE - fontRenderer.lineHeight + 1,
+                        0xFFFFFFFF);
+                AbstractGuiUtils.resetDepth(matrixStack);
+            }
         }
         // 效果
         else if (reward.getType().equals(ERewardType.EFFECT)) {

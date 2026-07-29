@@ -85,9 +85,6 @@ public class ClientConfig implements ConfigData {
     }
 
     public interface SignKeysView {
-        List<String> signIn();
-        List<String> reSignIn();
-        List<String> reward();
         List<String> lastMonth();
         List<String> nextMonth();
         List<String> lastYear();
@@ -123,10 +120,7 @@ public class ClientConfig implements ConfigData {
                 key(GLFWKey.GLFW_KEY_LEFT_CONTROL, GLFWKey.GLFW_KEY_X),
                 key(GLFWKey.GLFW_KEY_RIGHT_CONTROL, GLFWKey.GLFW_KEY_X));
         private List<String> delete = Arrays.asList(
-                key(GLFWKey.GLFW_KEY_DELETE),
-                key(GLFWKey.GLFW_KEY_LEFT_CONTROL, GLFWKey.GLFW_KEY_Y),
-                GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_CONTROL)
-                        + "+" + GLFWKeyHelper.getMouseDisplayString(GLFWKey.GLFW_MOUSE_BUTTON_RIGHT));
+                key(GLFWKey.GLFW_KEY_DELETE));
         private List<String> undo = Arrays.asList(
                 key(GLFWKey.GLFW_KEY_LEFT_CONTROL, GLFWKey.GLFW_KEY_Z),
                 key(GLFWKey.GLFW_KEY_RIGHT_CONTROL, GLFWKey.GLFW_KEY_Z));
@@ -139,27 +133,14 @@ public class ClientConfig implements ConfigData {
     @Setter
     @Accessors(chain = true, fluent = true)
     public static class SignKeysCategory {
-        private List<String> signIn = Arrays.asList(
-                key(GLFWKey.GLFW_KEY_ENTER),
-                GLFWKeyHelper.getMouseDisplayString(GLFWKey.GLFW_MOUSE_BUTTON_LEFT));
-        private List<String> reSignIn = Arrays.asList(
-                key(GLFWKey.GLFW_KEY_LEFT_SHIFT, GLFWKey.GLFW_KEY_ENTER),
-                GLFWKeyHelper.getMouseDisplayString(GLFWKey.GLFW_MOUSE_BUTTON_RIGHT));
-        private List<String> reward = Arrays.asList(
-                key(GLFWKey.GLFW_KEY_LEFT_SHIFT, GLFWKey.GLFW_KEY_ENTER),
-                GLFWKeyHelper.getMouseDisplayString(GLFWKey.GLFW_MOUSE_BUTTON_RIGHT));
         private List<String> lastMonth = Arrays.asList(
-                key(GLFWKey.GLFW_KEY_LEFT),
-                GLFWKeyHelper.getMouseDisplayString(GLFWKey.GLFW_MOUSE_BUTTON_LEFT));
+                key(GLFWKey.GLFW_KEY_LEFT));
         private List<String> nextMonth = Arrays.asList(
-                key(GLFWKey.GLFW_KEY_RIGHT),
-                GLFWKeyHelper.getMouseDisplayString(GLFWKey.GLFW_MOUSE_BUTTON_LEFT));
+                key(GLFWKey.GLFW_KEY_RIGHT));
         private List<String> lastYear = Arrays.asList(
-                key(GLFWKey.GLFW_KEY_UP),
-                GLFWKeyHelper.getMouseDisplayString(GLFWKey.GLFW_MOUSE_BUTTON_LEFT));
+                key(GLFWKey.GLFW_KEY_UP));
         private List<String> nextYear = Arrays.asList(
-                key(GLFWKey.GLFW_KEY_DOWN),
-                GLFWKeyHelper.getMouseDisplayString(GLFWKey.GLFW_MOUSE_BUTTON_LEFT));
+                key(GLFWKey.GLFW_KEY_DOWN));
     }
 
     private static String key(int... keys) {

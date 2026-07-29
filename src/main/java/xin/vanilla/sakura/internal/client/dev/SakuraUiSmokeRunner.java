@@ -1,7 +1,11 @@
 package xin.vanilla.sakura.internal.client.dev;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screen.MainMenuScreen;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraftforge.fml.loading.FMLEnvironment;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.screen.RewardOptionScreen;
 
 /**
@@ -9,6 +13,7 @@ import xin.vanilla.sakura.screen.RewardOptionScreen;
  */
 public final class SakuraUiSmokeRunner {
     public static final String ENVIRONMENT_KEY = "SAKURA_UI_SMOKE";
+    private static final Logger LOGGER = LogManager.getLogger();
 
     private static boolean opened;
 
@@ -26,11 +31,19 @@ public final class SakuraUiSmokeRunner {
         }
 
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || minecraft.level == null || minecraft.screen != null) {
+        Screen parent = minecraft.screen;
+        boolean inWorldWithoutScreen = minecraft.player != null
+                && minecraft.level != null
+                && parent == null;
+        boolean atMainMenu = parent instanceof MainMenuScreen;
+        if (!inWorldWithoutScreen && !atMainMenu) {
             return;
         }
 
         opened = true;
-        minecraft.setScreen(new RewardOptionScreen());
+        RewardOptionScreen screen = new RewardOptionScreen();
+        screen.previousScreen(parent);
+        minecraft.setScreen(screen);
+        LOGGER.info("Sakura UI smoke opened target: reward");
     }
 }
