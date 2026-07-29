@@ -26,6 +26,8 @@ import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.event.ClientEventHandler;
 import xin.vanilla.sakura.internal.forge.player.ForgePlayerSignInDataService;
 import xin.vanilla.sakura.network.SakuraNetwork;
+import xin.vanilla.sakura.notification.SakuraClientNotificationTypes;
+import xin.vanilla.sakura.notification.SakuraNotificationTypes;
 import xin.vanilla.sakura.network.SakuraClientPacketHandlers;
 import xin.vanilla.sakura.network.ClientProxy;
 import xin.vanilla.sakura.network.data.AdvancementData;
@@ -119,6 +121,7 @@ public class SakuraSignIn {
         SakuraPlayerData.install(ForgePlayerSignInDataService.INSTANCE);
         BaniraConfig.register(CommonConfig.class, MODID);
         BaniraConfig.register(ClientConfig.class, MODID);
+        SakuraNotificationTypes.registerServerTypes();
 
         SakuraNetwork.initialize();
 
@@ -151,6 +154,7 @@ public class SakuraSignIn {
      */
     @SubscribeEvent
     public void onClientSetup(final FMLClientSetupEvent event) {
+        SakuraClientNotificationTypes.register();
         SakuraClientPacketHandlers.register(
                 ClientProxy::handleSynPlayerData,
                 ClientProxy::handleMonthData,
