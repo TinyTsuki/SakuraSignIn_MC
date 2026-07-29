@@ -2,10 +2,10 @@ package xin.vanilla.sakura.client.gui;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.item.ItemStack;
+import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import xin.vanilla.banira.client.gui.ItemSelectScreen;
+import xin.vanilla.banira.client.gui.AdvancementSelectScreen;
 import xin.vanilla.sakura.enums.ERewardType;
 import xin.vanilla.sakura.rewards.Reward;
 import xin.vanilla.sakura.rewards.RewardManager;
@@ -17,11 +17,11 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
- * 将 Banira 物品选择器与 Sakura 奖励概率组合为一个编辑流程。
+ * 将 Banira 进度选择器与 Sakura 奖励概率组合为一个编辑流程。
  */
 @OnlyIn(Dist.CLIENT)
-public final class ItemRewardSelectionFlow {
-    private ItemRewardSelectionFlow() {
+public final class AdvancementRewardSelectionFlow {
+    private AdvancementRewardSelectionFlow() {
     }
 
     public static Screen create(
@@ -42,24 +42,24 @@ public final class ItemRewardSelectionFlow {
         Objects.requireNonNull(defaultReward);
         Objects.requireNonNull(onSelected);
 
-        ItemStack defaultItem = RewardManager.deserializeReward(defaultReward);
-        ItemSelectScreen.Args args = new ItemSelectScreen.Args()
+        ResourceLocation defaultAdvancement = RewardManager.deserializeReward(defaultReward);
+        AdvancementSelectScreen.Args args = new AdvancementSelectScreen.Args()
                 .parentScreen(parent)
-                .defaultItem(defaultItem)
+                .defaultAdvancement(defaultAdvancement)
                 .shouldClose(shouldClose)
                 .closeAfterSubmit(false)
-                .onDataReceived((Consumer<ItemStack>) itemStack -> Minecraft.getInstance().setScreen(
+                .onDataReceived((Consumer<ResourceLocation>) advancement -> Minecraft.getInstance().setScreen(
                         RewardProbabilityFlow.create(
                                 parent,
                                 defaultReward.getProbability(),
-                                probability -> toReward(itemStack, probability),
+                                probability -> toReward(advancement, probability),
                                 onSelected
                         )
                 ));
-        return new ItemSelectScreen(args);
+        return new AdvancementSelectScreen(args);
     }
 
-    static Reward toReward(ItemStack itemStack, BigDecimal probability) {
-        return new Reward(itemStack.copy(), ERewardType.ITEM, probability);
+    static Reward toReward(ResourceLocation advancement, BigDecimal probability) {
+        return new Reward(advancement, ERewardType.ADVANCEMENT, probability);
     }
 }
