@@ -8,7 +8,9 @@ import net.minecraft.client.Minecraft;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
+import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.client.gui.event.MouseDragEvent;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.widget.BaseShapeWidget;
 import xin.vanilla.banira.client.gui.widget.BaseWidget;
@@ -36,9 +38,14 @@ public final class RewardListEntryWidget extends BaseWidget {
     private int selectedColor = 0xCCFFFFFF;
     @Setter
     private Text tooltip = Text.empty();
+    @Setter
+    private Consumer<MouseEvent> releaseHandler;
+    @Setter
+    private Consumer<MouseDragEvent> dragHandler;
+    private boolean dragged;
 
-    public RewardListEntryWidget(int operation, Consumer<RenderContext> renderer) {
-        super(null, new ScreenCoordinate());
+    public RewardListEntryWidget(BaniraScreen screen, int operation, Consumer<RenderContext> renderer) {
+        super(screen, new ScreenCoordinate());
         this.operation = operation;
         this.renderer = renderer;
     }
@@ -108,12 +115,30 @@ public final class RewardListEntryWidget extends BaseWidget {
 
     @Override
     protected boolean onMouseClick(MouseEvent event) {
+        dragged = false;
         return true;
     }
 
     @Override
     protected boolean onMouseRelease(MouseEvent event, boolean inside) {
-        return inside;
+        boolean activate = inside && !dragged;
+        dragged = false;
+        if (activate && releaseHandler != null) {
+            releaseHandler.accept(event);
+        }
+        return true;
+    }
+
+    @Override
+    protected boolean onMouseDrag(MouseDragEvent event) {
+        if (Math.abs(event.dragX()) > 0.01 || Math.abs(event.dragY()) > 0.01) {
+            dragged = true;
+        }
+        if (dragHandler != null) {
+            dragHandler.accept(event);
+            return true;
+        }
+        return false;
     }
 
     @Getter

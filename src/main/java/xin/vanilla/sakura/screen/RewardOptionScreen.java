@@ -3,14 +3,15 @@ package xin.vanilla.sakura.screen;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.client.gui.component.TextList;
-import xin.vanilla.banira.client.gui.event.MouseEvent;
+import xin.vanilla.banira.client.data.ScreenCoordinate;
+import xin.vanilla.banira.client.gui.BaniraScreen;
+import xin.vanilla.banira.client.util.InputStateManager;
+import xin.vanilla.banira.client.gui.widget.PopupOption;
 import xin.vanilla.sakura.text.SakuraComponent;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.Data;
 import lombok.Getter;
-import lombok.Setter;
-import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.gui.AbstractGui;
@@ -33,6 +34,7 @@ import xin.vanilla.sakura.client.gui.AdvancementRewardSelectionFlow;
 import xin.vanilla.sakura.client.gui.EffectRewardSelectionFlow;
 import xin.vanilla.sakura.client.gui.ItemRewardSelectionFlow;
 import xin.vanilla.sakura.client.gui.RewardListEntryWidget;
+import xin.vanilla.sakura.client.gui.RewardOperationWidget;
 import xin.vanilla.sakura.config.*;
 import xin.vanilla.sakura.enums.ERewardRule;
 import xin.vanilla.sakura.enums.ERewardType;
@@ -44,14 +46,21 @@ import xin.vanilla.sakura.rewards.Reward;
 import xin.vanilla.sakura.rewards.RewardClipboardManager;
 import xin.vanilla.sakura.rewards.RewardList;
 import xin.vanilla.sakura.rewards.RewardManager;
-import xin.vanilla.sakura.screen.component.*;
+import xin.vanilla.sakura.screen.component.NotificationManager;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
-import xin.vanilla.sakura.util.*;
+import xin.vanilla.sakura.util.AbstractGuiUtils;
+import xin.vanilla.sakura.util.CollectionUtils;
+import xin.vanilla.sakura.util.DateUtils;
+import xin.vanilla.sakura.util.GLFWKey;
+import xin.vanilla.sakura.util.GLFWKeyHelper;
+import xin.vanilla.sakura.util.SakuraUtils;
+import xin.vanilla.sakura.util.StringUtils;
 
-import javax.annotation.ParametersAreNonnullByDefault;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -59,18 +68,10 @@ import java.util.function.Consumer;
 
 
 @OnlyIn(Dist.CLIENT)
-public class RewardOptionScreen extends Screen {
+public class RewardOptionScreen extends BaniraScreen {
     private static final Logger LOGGER = LogManager.getLogger();
 
-    /**
-     * 父级 Screen
-     */
-    @Getter
-    @Setter
-    @Accessors(chain = true)
-    private Screen previousScreen;
     private final EditCommandHandler editHandler = new EditCommandHandler(this);
-    private final KeyEventManager keyManager = new KeyEventManager();
 
     private Text tips;
 
@@ -86,11 +87,6 @@ public class RewardOptionScreen extends Screen {
      * 右侧边栏宽度
      */
     private final int rightBarWidth = 20;
-
-    /**
-     * 弹出层选项
-     */
-    private PopupOption popupOption;
 
     // region 奖励列表相关参数
     // 物品图标的大小
@@ -119,10 +115,6 @@ public class RewardOptionScreen extends Screen {
     // endregion 奖励列表相关参数
 
     /**
-     * 鼠标光标
-     */
-    private MouseCursor cursor;
-    /**
      * 当前选中的操作按钮
      */
     private int currOpButton;
@@ -131,19 +123,18 @@ public class RewardOptionScreen extends Screen {
      */
     private String currRewardButton;
     /**
-     * 是否已处理过奖励按钮选中
+     * 弹出菜单会在回调前清空，因此由界面保存本次菜单的业务上下文。
      */
-    private boolean handledRewardButton;
-
+    private String popupContextId;
     /**
      * 操作按钮集合
      */
-    private final Map<Integer, OperationButton> OP_BUTTONS = new HashMap<>();
+    private final Map<Integer, RewardOperationWidget> OP_BUTTONS = new LinkedHashMap<>();
 
     /**
      * 奖励列表按钮集合
      */
-    private final Map<String, RewardListEntryWidget> REWARD_BUTTONS = new HashMap<>();
+    private final Map<String, RewardListEntryWidget> REWARD_BUTTONS = new LinkedHashMap<>();
 
     /**
      * 操作按钮类型
@@ -279,7 +270,7 @@ public class RewardOptionScreen extends Screen {
      * @param index      奖励列表的索引
      */
     private void addRewardTitleButton(String title, String key, int titleIndex, int index) {
-        RewardListEntryWidget entry = new RewardListEntryWidget(titleIndex, context -> {
+        RewardListEntryWidget entry = new RewardListEntryWidget(this, titleIndex, context -> {
             RewardListEntryWidget widget = context.getEntry();
             AbstractGui.fill(context.getStack(), (int) widget.realX(), (int) widget.realY(),
                     (int) (widget.realX() + widget.realWidth()), (int) widget.realY() + 1, 0xAC000000);
@@ -298,7 +289,7 @@ public class RewardOptionScreen extends Screen {
                         * Math.floor((double) index / lineItemCount))
                 .width(super.width - leftBarWidth - leftMargin - rightMargin - rightBarWidth)
                 .height(titleHeight);
-        REWARD_BUTTONS.put(String.format("标题,%s", key), entry);
+        registerRewardEntry(String.format("标题,%s", key), entry);
     }
 
     /**
@@ -310,7 +301,7 @@ public class RewardOptionScreen extends Screen {
      */
     private void addRewardButton(Map<String, RewardList> rewardMap, String key, AtomicInteger index) {
         for (int j = 0; j < rewardMap.get(key).size(); j++, index.incrementAndGet()) {
-            RewardListEntryWidget entry = new RewardListEntryWidget(j, context -> {
+            RewardListEntryWidget entry = new RewardListEntryWidget(this, j, context -> {
                 RewardListEntryWidget widget = context.getEntry();
                 Reward reward = rewardMap.get(key).get(widget.getOperation());
                 AbstractGuiUtils.renderCustomReward(context.getStack(), this.itemRenderer, super.font,
@@ -325,8 +316,23 @@ public class RewardOptionScreen extends Screen {
                             * Math.floor((double) index.get() / lineItemCount))
                     .width(itemIconSize)
                     .height(itemIconSize);
-            REWARD_BUTTONS.put(String.format("%s,%s", key, j), entry);
+            registerRewardEntry(String.format("%s,%s", key, j), entry);
         }
+    }
+
+    private void registerRewardEntry(String key, RewardListEntryWidget entry) {
+        entry.setDragHandler(event -> setYOffset(yOffset + event.dragY()));
+        entry.setReleaseHandler(event -> {
+            AtomicBoolean updateLayout = new AtomicBoolean(false);
+            AtomicBoolean handled = new AtomicBoolean(false);
+            handleRewardOption(event.mouseX(), event.mouseY(), event.button(),
+                    key, entry, updateLayout, handled);
+            if (updateLayout.get()) {
+                updateLayout();
+            }
+        });
+        REWARD_BUTTONS.put(key, entry);
+        addWidget(entry);
     }
 
     private StringInputScreen getRuleKeyInputScreen(Screen callbackScreen, ERewardRule rule, String[] key) {
@@ -381,8 +387,9 @@ public class RewardOptionScreen extends Screen {
      */
     private void updateRewardList() {
         RewardConfigManager.setRewardOptionDataChanged(false);
-        if (OperationButtonType.valueOf(currOpButton) == null) return;
+        REWARD_BUTTONS.values().forEach(this::removeWidget);
         REWARD_BUTTONS.clear();
+        if (OperationButtonType.valueOf(currOpButton) == null) return;
         RewardConfig rewardConfig = RewardConfigManager.getRewardConfig();
         int titleIndex = -1;
         rewardListIndex.set(0);
@@ -516,7 +523,7 @@ public class RewardOptionScreen extends Screen {
     /**
      * 渲染奖励列表
      */
-    private void renderRewardList(MatrixStack matrixStack) {
+    private void prepareRewardList() {
         if (REWARD_BUTTONS.isEmpty()) return;
 
         int selectedColor = SakuraSignIn.getThemeTextureCoordinate().getTextColorCanRepair();
@@ -525,12 +532,7 @@ public class RewardOptionScreen extends Screen {
                     .setBaseY(yOffset)
                     .setViewportHeight(super.height)
                     .setSelected(item.getKey().equals(this.currRewardButton))
-                    .setSelectedColor((selectedColor & 0x00FFFFFF) | 0xCC000000)
-                    .render(matrixStack, 0);
-        }
-        // 提示在所有列表内容之后绘制，避免被后续条目覆盖。
-        for (RewardListEntryWidget entry : REWARD_BUTTONS.values()) {
-            entry.renderTooltip(matrixStack, keyManager.getMouseX(), keyManager.getMouseY());
+                    .setSelectedColor((selectedColor & 0x00FFFFFF) | 0xCC000000);
         }
     }
 
@@ -553,7 +555,7 @@ public class RewardOptionScreen extends Screen {
      * @param updateLayout 是否更新布局
      * @param flag         是否处理过事件
      */
-    private void handleOperation(double mouseX, double mouseY, int button, OperationButton value, AtomicBoolean updateLayout, AtomicBoolean flag) {
+    private void handleOperation(double mouseX, double mouseY, int button, RewardOperationWidget value, AtomicBoolean updateLayout, AtomicBoolean flag) {
         // 展开左侧边栏
         if (value.getOperation() == OperationButtonType.OPEN.getCode()) {
             if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
@@ -592,11 +594,12 @@ public class RewardOptionScreen extends Screen {
                 }
             } else {
                 // 绘制弹出层选项
-                this.popupOption.clear();
-                this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.clear").color(0xFFFF0000))
-                        .addTips(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.cancel_or_confirm"))
-                        .setTipsKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_SHIFT))
-                        .build(super.font, mouseX, mouseY, String.format("奖励规则类型按钮:%s", value.getOperation()));
+                this.popupOption.clear()
+                        .addOptionWithId("clear",
+                                Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.clear").color(0xFFFF0000),
+                                Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.cancel_or_confirm"))
+                        .setTipsKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_SHIFT));
+                this.showPopup(mouseX, mouseY, String.format("奖励规则类型按钮:%s", value.getOperation()));
                 flag.set(true);
             }
         }
@@ -608,11 +611,6 @@ public class RewardOptionScreen extends Screen {
         }
         // 奖励配置列表面板
         else if (value.getOperation() == OperationButtonType.REWARD_PANEL.getCode()) {
-            if (!this.handledRewardButton) {
-                this.handledRewardButton = true;
-                this.currRewardButton = button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT && "panel".equalsIgnoreCase(this.currRewardButton) ? null : "panel";
-            }
-
             if (button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
                 if (this.currOpButton > 200 && this.currOpButton <= 299) {
                     this.popupOption.clear();
@@ -620,8 +618,8 @@ public class RewardOptionScreen extends Screen {
                     for (ERewardType rewardType : ERewardType.values()) {
                         this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.reward_type_" + rewardType.getCode()));
                     }
-                    this.popupOption.build(super.font, mouseX, mouseY, String.format("奖励面板按钮:%s", this.currOpButton));
                     this.popupOption.setBeforeRender(pasteConsumer);
+                    this.showPopup(mouseX, mouseY, String.format("奖励面板按钮:%s", this.currOpButton));
                     flag.set(true);
                 }
             }
@@ -639,8 +637,8 @@ public class RewardOptionScreen extends Screen {
                     .addOption(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.reward_rule_description_7"))
                     .addOption(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.reward_rule_description_8"))
                     .addOption(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.reward_rule_description_9"))
-                    .addOption(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.reward_rule_description_10"))
-                    .build(super.font, mouseX, mouseY, "reward_rule_description");
+                    .addOption(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.reward_rule_description_10"));
+            this.showPopup(mouseX, mouseY, "reward_rule_description");
             flag.set(true);
         }
         // 上传奖励配置
@@ -705,12 +703,10 @@ public class RewardOptionScreen extends Screen {
                                     AtomicBoolean flag) {
         LOGGER.debug("选择了奖励配置:\tButton: {}\tOperation: {}\tKey: {}\tIndex: {}", button, this.currOpButton, key, value.getOperation());
 
-        if (!this.handledRewardButton) {
-            this.handledRewardButton = true;
-            this.currRewardButton = button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT && key.equalsIgnoreCase(this.currRewardButton) ? null : key;
-        }
+        this.currRewardButton = button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT
+                && key.equalsIgnoreCase(this.currRewardButton) ? null : key;
 
-        if (button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT && !keyManager.isMouseMoved()) {
+        if (button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
             if (key.startsWith("标题")) {
                 this.popupOption.clear();
                 if (!"标题,base".equalsIgnoreCase(key)) {
@@ -724,51 +720,67 @@ public class RewardOptionScreen extends Screen {
                 for (ERewardType rewardType : ERewardType.values()) {
                     this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.reward_type_" + rewardType.getCode()));
                 }
-                this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.clear").color(0xFFFF0000));
+                this.popupOption.addOptionWithId("clear",
+                        Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.clear").color(0xFFFF0000),
+                        Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.cancel_or_confirm"));
                 if (!"标题,base".equalsIgnoreCase(key)) {
-                    this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.delete").color(0xFFFF0000));
+                    this.popupOption.addOptionWithId("delete",
+                            Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.delete").color(0xFFFF0000),
+                            Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.cancel_or_confirm"));
                 }
-                this.popupOption.addTips(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.cancel_or_confirm"), -1)
-                        .addTips(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.cancel_or_confirm"), -2)
-                        .setTipsKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_SHIFT))
-                        .build(super.font, mouseX, mouseY, String.format("奖励按钮:%s", key));
+                this.popupOption.setTipsKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_SHIFT));
+                this.showPopup(mouseX, mouseY, String.format("奖励按钮:%s", key));
             } else {
                 this.popupOption.clear();
                 this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.edit"))
                         .addOption(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.copy"))
                         .addOption(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.cut"))
                         .addOption(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.paste"))
-                        .addOption(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.delete").color(0xFFFF0000))
-                        .addTips(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.cancel_or_confirm"), -1)
-                        .setTipsKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_SHIFT))
-                        .build(super.font, mouseX, mouseY, String.format("奖励按钮:%s", key));
+                        .addOptionWithId("delete",
+                                Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.delete").color(0xFFFF0000),
+                                Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.cancel_or_confirm"))
+                        .setTipsKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_SHIFT));
+                this.showPopup(mouseX, mouseY, String.format("奖励按钮:%s", key));
             }
             this.popupOption.setBeforeRender(pasteConsumer);
             flag.set(true);
         }
     }
 
+    private void showPopup(double mouseX, double mouseY, String contextId) {
+        this.popupContextId = contextId;
+        this.popupOption.onSelect(this::handlePopupSelection).showAt(mouseX, mouseY, contextId);
+    }
+
+    private void handlePopupSelection(PopupOption.SelectEvent event) {
+        AtomicBoolean updateLayout = new AtomicBoolean(false);
+        AtomicBoolean handled = new AtomicBoolean(false);
+        this.handlePopupOption(event.button(), popupContextId, event.index(), event.text(), updateLayout, handled);
+        if (updateLayout.get()) {
+            this.updateLayout();
+        }
+    }
+
     /**
      * 处理弹出层选项
      *
-     * @param mouseX       鼠标X坐标
-     * @param mouseY       鼠标Y坐标
      * @param button       鼠标按键
      * @param updateLayout 是否更新布局
      * @param flag         是否处理过事件
      */
-    private void handlePopupOption(double mouseX, double mouseY, int button, AtomicBoolean updateLayout, AtomicBoolean flag) {
-        LOGGER.debug("选择了弹出选项:\tButton: {}\tId: {}\tIndex: {}\tContent: {}", button, popupOption.getId(), popupOption.getSelectedIndex(), popupOption.getSelectedString());
-        String selectedString = popupOption.getSelectedString();
+    private void handlePopupOption(int button, String popupId, int selectedIndex, String selectedString,
+                                   AtomicBoolean updateLayout, AtomicBoolean flag) {
+        LOGGER.debug("选择了弹出选项:\tButton: {}\tId: {}\tIndex: {}\tContent: {}",
+                button, popupId, selectedIndex, selectedString);
         OperationButtonType buttonType = OperationButtonType.valueOf(currOpButton);
         if (buttonType == null) return;
         ERewardRule rule = ERewardRule.valueOf(buttonType.toString());
-        if (popupOption.getId().startsWith("奖励规则类型按钮:")) {
-            int opCode = StringUtils.toInt(popupOption.getId().replace("奖励规则类型按钮:", ""));
+        if (popupId.startsWith("奖励规则类型按钮:")) {
+            int opCode = StringUtils.toInt(popupId.replace("奖励规则类型按钮:", ""));
             // 若选择了清空
-            if (popupOption.getSelectedIndex() == 0 && button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
+            if (selectedIndex == 0 && button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
                 // 并且按住了Control按钮
-                if (keyManager.onlyCtrlPressed()) {
+                if (inputState.onlyCtrlPressed()) {
                     if (opCode > 200 && opCode <= 299) {
                         RewardConfigManager.addUndoRewardOption(rule);
                         RewardConfigManager.clearRedoList();
@@ -820,7 +832,7 @@ public class RewardOptionScreen extends Screen {
                     }
                 }
             }
-        } else if (popupOption.getId().startsWith("奖励面板按钮:")) {
+        } else if (popupId.startsWith("奖励面板按钮:")) {
             String[] key = new String[]{""};
             if (SakuraComponent.get().transClient("option", "paste").toString().equalsIgnoreCase(selectedString)) {
                 editHandler.handlePaste();
@@ -1043,8 +1055,8 @@ public class RewardOptionScreen extends Screen {
                 }
             }
             // 实现其他奖励类型
-        } else if (popupOption.getId().startsWith("奖励按钮:")) {
-            String id = popupOption.getId().replace("奖励按钮:", "");
+        } else if (popupId.startsWith("奖励按钮:")) {
+            String id = popupId.replace("奖励按钮:", "");
             if (id.startsWith("标题")) {
                 String key = id.substring(3);
                 if (SakuraComponent.get().transClient("option", "edit").toString().equalsIgnoreCase(selectedString)) {
@@ -1117,7 +1129,7 @@ public class RewardOptionScreen extends Screen {
                     }
                 } else if (SakuraComponent.get().transClient("option", "clear").toString().equalsIgnoreCase(selectedString)) {
                     if (button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
-                        if (keyManager.onlyCtrlPressed()) {
+                        if (inputState.onlyCtrlPressed()) {
                             RewardConfigManager.addUndoRewardOption(rule);
                             RewardConfigManager.clearRedoList();
                             RewardConfigManager.clearKey(rule, key);
@@ -1125,7 +1137,8 @@ public class RewardOptionScreen extends Screen {
                         }
                     }
                 } else if (SakuraComponent.get().transClient("option", "delete").toString().equalsIgnoreCase(selectedString)) {
-                    if (ClientConfig.get().rewardKeys().delete().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
+                    if (ClientConfig.get().rewardKeys().delete().stream()
+                            .anyMatch(binding -> isKeyAndMousePressed(binding, button))) {
                         editHandler.handleDelete();
                     }
                 }
@@ -1466,7 +1479,8 @@ public class RewardOptionScreen extends Screen {
                         editHandler.handlePaste();
                     }
                 } else if (SakuraComponent.get().transClient("option", "delete").toString().equalsIgnoreCase(selectedString)) {
-                    if (ClientConfig.get().rewardKeys().delete().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
+                    if (ClientConfig.get().rewardKeys().delete().stream()
+                            .anyMatch(binding -> isKeyAndMousePressed(binding, button))) {
                         editHandler.handleDelete();
                     }
                 }
@@ -1476,34 +1490,62 @@ public class RewardOptionScreen extends Screen {
         }
     }
 
+    private boolean isKeyAndMousePressed(String binding, int mouseButton) {
+        if (StringUtils.isNullOrEmptyEx(binding)) {
+            return false;
+        }
+        List<String> keys = new java.util.ArrayList<>();
+        List<String> mice = new java.util.ArrayList<>();
+        for (String part : binding.split("\\+")) {
+            if (part.startsWith("Mouse")) {
+                mice.add(part);
+            } else {
+                keys.add(part);
+            }
+        }
+        String keyBinding = String.join("+", keys);
+        String mouseBinding = String.join("+", mice);
+        return (keys.isEmpty() || inputState.isKeyPressed(keyBinding))
+                && (mice.isEmpty() || GLFWKeyHelper.matchMouse(mouseBinding, mouseButton));
+    }
+
     /**
      * 生成操作按钮的自定义渲染函数
      *
      * @param content 按钮内容
      */
-    private Consumer<OperationButton.RenderContext> generateCustomRenderFunction(String content) {
+    private Consumer<RewardOperationWidget.RenderContext> generateCustomRenderFunction(String content) {
         return context -> {
-            int realX = (int) context.button.getRealX();
-            int realY = (int) context.button.getRealY();
-            double realWidth = context.button.getRealWidth();
-            double realHeight = context.button.getRealHeight();
-            int realX2 = (int) (context.button.getRealX() + realWidth);
-            int realY2 = (int) (context.button.getRealY() + realHeight);
-            if (this.currOpButton == context.button.getOperation()) {
-                AbstractGui.fill(context.matrixStack, realX + 1, realY, realX2 - 1, realY2, 0x44ACACAC);
+            RewardOperationWidget widget = context.getWidget();
+            MatrixStack stack = context.getStack();
+            int realX = (int) widget.realX();
+            int realY = (int) widget.realY();
+            double realWidth = widget.realWidth();
+            double realHeight = widget.realHeight();
+            int realX2 = (int) (widget.realX() + realWidth);
+            int realY2 = (int) (widget.realY() + realHeight);
+            if (this.currOpButton == widget.getOperation()) {
+                AbstractGui.fill(stack, realX + 1, realY, realX2 - 1, realY2, 0x44ACACAC);
             }
-            if (context.button.isHovered()) {
-                AbstractGui.fill(context.matrixStack, realX, realY, realX2, realY2, 0x99ACACAC);
+            if (widget.hovered()) {
+                AbstractGui.fill(stack, realX, realY, realX2, realY2, 0x99ACACAC);
             }
-            AbstractGuiUtils.drawLimitedText(context.matrixStack, super.font, SakuraComponent.get().transClient("word", content).toString(), realX + 4, (int) (realY + (realHeight - super.font.lineHeight) / 2), (int) (realWidth - 22), 0xFFEBD4B1);
+            AbstractGuiUtils.drawLimitedText(stack, super.font,
+                    SakuraComponent.get().transClient("word", content).toString(),
+                    realX + 4, (int) (realY + (realHeight - super.font.lineHeight) / 2),
+                    (int) (realWidth - 22), 0xFFEBD4B1);
         };
     }
 
     private void updateLayout() {
         this.leftBarWidth = SakuraSignIn.isRewardOptionBarOpened() ? 100 : 20;
-        this.lineItemCount = (super.width - leftBarWidth - leftMargin - rightMargin - rightBarWidth) / (itemIconSize + itemRightMargin);
+        this.lineItemCount = Math.max(1,
+                (super.width - leftBarWidth - leftMargin - rightMargin - rightBarWidth)
+                        / (itemIconSize + itemRightMargin));
         // 重置奖励面板坐标
-        OP_BUTTONS.get(OperationButtonType.REWARD_PANEL.getCode()).setX(leftBarWidth).setY(0).setWidth(super.width - leftBarWidth - rightBarWidth).setHeight(super.height);
+        OP_BUTTONS.get(OperationButtonType.REWARD_PANEL.getCode()).bounds(
+                new ScreenCoordinate(leftBarWidth, 0,
+                        super.width - leftBarWidth - rightBarWidth, super.height));
         // 清空弹出层选项
         popupOption.clear();
         // 更新奖励面板列表内容
@@ -1757,125 +1799,127 @@ public class RewardOptionScreen extends Screen {
     }
 
     public RewardOptionScreen() {
-        super(SakuraComponent.get().transClient("title", "reward_option_title").toVanilla());
+        super(SakuraComponent.get().transClient("title", "reward_option_title"));
     }
 
     @Override
-    protected void init() {
-        this.cursor = MouseCursor.init();
-        this.popupOption = PopupOption.init(super.font);
-        super.init();
+    protected void onInit() {
         this.leftBarTitleHeight = 5 * 2 + super.font.lineHeight;
-        // 初始化材质及材质坐标信息
         ClientEventHandler.loadThemeTexture();
-        OP_BUTTONS.put(OperationButtonType.REWARD_PANEL.getCode(), new OperationButton(OperationButtonType.REWARD_PANEL.getCode(), context -> {
-        })
-                .setTransparentCheck(false));
-        OP_BUTTONS.put(OperationButtonType.OPEN.getCode(), new OperationButton(OperationButtonType.OPEN.getCode(), SakuraSignIn.getThemeTexture())
-                .setCoordinate(new Coordinate().setX(4).setY((super.height - 16) / 2.0).setWidth(16).setHeight(16))
-                .setNormal(SakuraSignIn.getThemeTextureCoordinate().getArrowUV()).setHover(SakuraSignIn.getThemeTextureCoordinate().getArrowHoverUV()).setTap(SakuraSignIn.getThemeTextureCoordinate().getArrowTapUV())
-                .setTextureWidth(SakuraSignIn.getThemeTextureCoordinate().getTotalWidth())
-                .setTextureHeight(SakuraSignIn.getThemeTextureCoordinate().getTotalHeight())
-                .setTransparentCheck(false)
-                .setTooltip(SakuraComponent.get().transClient("tips", "open_sidebar").toString()));
-        OP_BUTTONS.put(OperationButtonType.CLOSE.getCode(), new OperationButton(OperationButtonType.CLOSE.getCode(), SakuraSignIn.getThemeTexture())
-                .setCoordinate(new Coordinate().setX(80).setY((5 * 2 + super.font.lineHeight - 16) / 2.0).setWidth(16).setHeight(16))
-                .setNormal(SakuraSignIn.getThemeTextureCoordinate().getArrowUV()).setHover(SakuraSignIn.getThemeTextureCoordinate().getArrowHoverUV()).setTap(SakuraSignIn.getThemeTextureCoordinate().getArrowTapUV())
-                .setTextureWidth(SakuraSignIn.getThemeTextureCoordinate().getTotalWidth())
-                .setTextureHeight(SakuraSignIn.getThemeTextureCoordinate().getTotalHeight())
-                .setFlipHorizontal(true)
-                .setTransparentCheck(false)
-                .setTooltip(SakuraComponent.get().transClient("tips", "close_sidebar").toString()));
-        OP_BUTTONS.put(OperationButtonType.BASE_REWARD.getCode()
-                , new OperationButton(OperationButtonType.BASE_REWARD.getCode(), this.generateCustomRenderFunction(SakuraUtils.getRewardRuleI18nKeyName(ERewardRule.BASE_REWARD)))
-                        .setX(0).setY(this.leftBarTitleHeight).setWidth(100).setHeight(this.leftBarTitleHeight - 2));
-        OP_BUTTONS.put(OperationButtonType.CONTINUOUS_REWARD.getCode()
-                , new OperationButton(OperationButtonType.CONTINUOUS_REWARD.getCode(), this.generateCustomRenderFunction(SakuraUtils.getRewardRuleI18nKeyName(ERewardRule.CONTINUOUS_REWARD)))
-                        .setX(0).setY(this.leftBarTitleHeight + (this.leftBarTitleHeight - 1)).setWidth(100).setHeight(this.leftBarTitleHeight - 2));
-        OP_BUTTONS.put(OperationButtonType.CYCLE_REWARD.getCode()
-                , new OperationButton(OperationButtonType.CYCLE_REWARD.getCode(), this.generateCustomRenderFunction(SakuraUtils.getRewardRuleI18nKeyName(ERewardRule.CYCLE_REWARD)))
-                        .setX(0).setY(this.leftBarTitleHeight + (this.leftBarTitleHeight - 1) * 2).setWidth(100).setHeight(this.leftBarTitleHeight - 2));
-        OP_BUTTONS.put(OperationButtonType.YEAR_REWARD.getCode()
-                , new OperationButton(OperationButtonType.YEAR_REWARD.getCode(), this.generateCustomRenderFunction(SakuraUtils.getRewardRuleI18nKeyName(ERewardRule.YEAR_REWARD)))
-                        .setX(0).setY(this.leftBarTitleHeight + (this.leftBarTitleHeight - 1) * 3).setWidth(100).setHeight(this.leftBarTitleHeight - 2));
-        OP_BUTTONS.put(OperationButtonType.MONTH_REWARD.getCode()
-                , new OperationButton(OperationButtonType.MONTH_REWARD.getCode(), this.generateCustomRenderFunction(SakuraUtils.getRewardRuleI18nKeyName(ERewardRule.MONTH_REWARD)))
-                        .setX(0).setY(this.leftBarTitleHeight + (this.leftBarTitleHeight - 1) * 4).setWidth(100).setHeight(this.leftBarTitleHeight - 2));
-        OP_BUTTONS.put(OperationButtonType.WEEK_REWARD.getCode()
-                , new OperationButton(OperationButtonType.WEEK_REWARD.getCode(), this.generateCustomRenderFunction(SakuraUtils.getRewardRuleI18nKeyName(ERewardRule.WEEK_REWARD)))
-                        .setX(0).setY(this.leftBarTitleHeight + (this.leftBarTitleHeight - 1) * 5).setWidth(100).setHeight(this.leftBarTitleHeight - 2));
-        OP_BUTTONS.put(OperationButtonType.DATE_TIME_REWARD.getCode()
-                , new OperationButton(OperationButtonType.DATE_TIME_REWARD.getCode(), this.generateCustomRenderFunction(SakuraUtils.getRewardRuleI18nKeyName(ERewardRule.DATE_TIME_REWARD)))
-                        .setX(0).setY(this.leftBarTitleHeight + (this.leftBarTitleHeight - 1) * 6).setWidth(100).setHeight(this.leftBarTitleHeight - 2));
-        OP_BUTTONS.put(OperationButtonType.CUMULATIVE_REWARD.getCode()
-                , new OperationButton(OperationButtonType.CUMULATIVE_REWARD.getCode(), this.generateCustomRenderFunction(SakuraUtils.getRewardRuleI18nKeyName(ERewardRule.CUMULATIVE_REWARD)))
-                        .setX(0).setY(this.leftBarTitleHeight + (this.leftBarTitleHeight - 1) * 7).setWidth(100).setHeight(this.leftBarTitleHeight - 2));
-        OP_BUTTONS.put(OperationButtonType.RANDOM_REWARD.getCode()
-                , new OperationButton(OperationButtonType.RANDOM_REWARD.getCode(), this.generateCustomRenderFunction(SakuraUtils.getRewardRuleI18nKeyName(ERewardRule.RANDOM_REWARD)))
-                        .setX(0).setY(this.leftBarTitleHeight + (this.leftBarTitleHeight - 1) * 8).setWidth(100).setHeight(this.leftBarTitleHeight - 2));
-        OP_BUTTONS.put(OperationButtonType.CDK_REWARD.getCode()
-                , new OperationButton(OperationButtonType.CDK_REWARD.getCode(), this.generateCustomRenderFunction(SakuraUtils.getRewardRuleI18nKeyName(ERewardRule.CDK_REWARD)))
-                        .setX(0).setY(this.leftBarTitleHeight + (this.leftBarTitleHeight - 1) * 9).setWidth(100).setHeight(this.leftBarTitleHeight - 2));
-        OP_BUTTONS.put(OperationButtonType.OFFSET_Y.getCode(), new OperationButton(OperationButtonType.OFFSET_Y.getCode(), context -> {
-            AbstractGuiUtils.drawString(context.matrixStack, super.font, "OY:", super.width - rightBarWidth + 1, super.height - font.lineHeight * 2 - 2, 0xFFACACAC);
-            AbstractGuiUtils.drawLimitedText(context.matrixStack, super.font, String.valueOf((int) yOffset), super.width - rightBarWidth + 1, super.height - font.lineHeight - 2, rightBarWidth, 0xFFACACAC);
-        })
-                .setX(super.width - rightBarWidth).setY(super.height - font.lineHeight * 2 - 2).setWidth(rightBarWidth).setHeight(font.lineHeight * 2 + 2)
-                .setTransparentCheck(false));
-        OP_BUTTONS.put(OperationButtonType.HELP.getCode(), new OperationButton(OperationButtonType.HELP.getCode(), SakuraSignIn.getThemeTexture())
-                .setCoordinate(SakuraSignIn.getThemeTextureCoordinate().getHelpUV())
-                .setNormal(SakuraSignIn.getThemeTextureCoordinate().getHelpUV()).setHover(SakuraSignIn.getThemeTextureCoordinate().getHelpUV()).setTap(SakuraSignIn.getThemeTextureCoordinate().getHelpUV())
-                .setTextureWidth(SakuraSignIn.getThemeTextureCoordinate().getTotalWidth())
-                .setTextureHeight(SakuraSignIn.getThemeTextureCoordinate().getTotalHeight())
-                .setX(super.width - rightBarWidth + 1).setY(2).setWidth(18).setHeight(18)
-                .setHoverFgColor(0xAA808080).setTapFgColor(0xAA808080)
-                .setTransparentCheck(false));
-        OP_BUTTONS.put(OperationButtonType.DOWNLOAD.getCode(), new OperationButton(OperationButtonType.DOWNLOAD.getCode(), SakuraSignIn.getThemeTexture())
-                .setCoordinate(SakuraSignIn.getThemeTextureCoordinate().getDownloadUV())
-                .setNormal(SakuraSignIn.getThemeTextureCoordinate().getDownloadUV()).setHover(SakuraSignIn.getThemeTextureCoordinate().getDownloadUV()).setTap(SakuraSignIn.getThemeTextureCoordinate().getDownloadUV())
-                .setTextureWidth(SakuraSignIn.getThemeTextureCoordinate().getTotalWidth())
-                .setTextureHeight(SakuraSignIn.getThemeTextureCoordinate().getTotalHeight())
-                .setX(super.width - rightBarWidth + 1).setY(22).setWidth(18).setHeight(18)
-                .setHoverFgColor(0xAA808080).setTapFgColor(0xAAA0A0A0)
-                .setTransparentCheck(false)
-                .setTooltip(SakuraComponent.get().transClient("tips", "download_reward_config").toString()));
-        OP_BUTTONS.put(OperationButtonType.UPLOAD.getCode(), new OperationButton(OperationButtonType.UPLOAD.getCode(), SakuraSignIn.getThemeTexture())
-                .setCoordinate(SakuraSignIn.getThemeTextureCoordinate().getUploadUV())
-                .setNormal(SakuraSignIn.getThemeTextureCoordinate().getUploadUV()).setHover(SakuraSignIn.getThemeTextureCoordinate().getUploadUV()).setTap(SakuraSignIn.getThemeTextureCoordinate().getUploadUV())
-                .setTextureWidth(SakuraSignIn.getThemeTextureCoordinate().getTotalWidth())
-                .setTextureHeight(SakuraSignIn.getThemeTextureCoordinate().getTotalHeight())
-                .setX(super.width - rightBarWidth + 1).setY(42).setWidth(18).setHeight(18)
-                .setHoverFgColor(0xAA808080).setTapFgColor(0xAAA0A0A0)
-                .setTransparentCheck(false));
-        OP_BUTTONS.put(OperationButtonType.FOLDER.getCode(), new OperationButton(OperationButtonType.FOLDER.getCode(), SakuraSignIn.getThemeTexture())
-                .setCoordinate(SakuraSignIn.getThemeTextureCoordinate().getFolderUV())
-                .setNormal(SakuraSignIn.getThemeTextureCoordinate().getFolderUV()).setHover(SakuraSignIn.getThemeTextureCoordinate().getFolderUV()).setTap(SakuraSignIn.getThemeTextureCoordinate().getFolderUV())
-                .setTextureWidth(SakuraSignIn.getThemeTextureCoordinate().getTotalWidth())
-                .setTextureHeight(SakuraSignIn.getThemeTextureCoordinate().getTotalHeight())
-                .setX(super.width - rightBarWidth + 1).setY(62).setWidth(18).setHeight(18)
-                .setHoverFgColor(0xAA808080).setTapFgColor(0xAAA0A0A0)
-                .setTransparentCheck(false)
-                .setTooltip(SakuraComponent.get().transClient("tips", "open_config_folder").toString()));
-        OP_BUTTONS.put(OperationButtonType.SORT.getCode(), new OperationButton(OperationButtonType.SORT.getCode(), SakuraSignIn.getThemeTexture())
-                .setCoordinate(SakuraSignIn.getThemeTextureCoordinate().getSortUV())
-                .setNormal(SakuraSignIn.getThemeTextureCoordinate().getSortUV()).setHover(SakuraSignIn.getThemeTextureCoordinate().getSortUV()).setTap(SakuraSignIn.getThemeTextureCoordinate().getSortUV())
-                .setTextureWidth(SakuraSignIn.getThemeTextureCoordinate().getTotalWidth())
-                .setTextureHeight(SakuraSignIn.getThemeTextureCoordinate().getTotalHeight())
-                .setX(super.width - rightBarWidth + 1).setY(82).setWidth(18).setHeight(18)
-                .setHoverFgColor(0xAA808080).setTapFgColor(0xAAA0A0A0)
-                .setTransparentCheck(false)
-                .setTooltip(SakuraComponent.get().transClient("tips", "reward_rule_sort").toString()));
-        this.updateLayout();
-
         tips = Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.reward_option_screen_tips");
     }
 
     @Override
-    @ParametersAreNonnullByDefault
-    public void render(MatrixStack matrixStack, int mouseX, int mouseY, float partialTicks) {
+    protected void initWidgets() {
+        OP_BUTTONS.clear();
+        REWARD_BUTTONS.clear();
+
+        registerOperation(new RewardOperationWidget(this, OperationButtonType.REWARD_PANEL.getCode(), context -> {
+            if ("panel".equals(currRewardButton)) {
+                RewardOperationWidget widget = context.getWidget();
+                AbstractGuiUtils.fillOutLine(context.getStack(),
+                        (int) widget.realX() - 1, (int) widget.realY(),
+                        (int) widget.realWidth() + 2, (int) widget.realHeight(),
+                        1, 0x88FFF13B);
+            }
+        }), new ScreenCoordinate(20, 0, width - 40, height));
+        OP_BUTTONS.get(OperationButtonType.REWARD_PANEL.getCode())
+                .setDragHandler(event -> setYOffset(yOffset + event.dragY()));
+
+        registerOperation(createThemeIcon(OperationButtonType.OPEN,
+                        SakuraSignIn.getThemeTextureCoordinate().getArrowUV(),
+                        SakuraSignIn.getThemeTextureCoordinate().getArrowHoverUV(),
+                        SakuraSignIn.getThemeTextureCoordinate().getArrowTapUV())
+                        .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.open_sidebar")),
+                new ScreenCoordinate(4, (height - 16) / 2.0, 16, 16));
+        registerOperation(createThemeIcon(OperationButtonType.CLOSE,
+                        SakuraSignIn.getThemeTextureCoordinate().getArrowUV(),
+                        SakuraSignIn.getThemeTextureCoordinate().getArrowHoverUV(),
+                        SakuraSignIn.getThemeTextureCoordinate().getArrowTapUV())
+                        .setFlipHorizontal(true)
+                        .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.close_sidebar")),
+                new ScreenCoordinate(80, (leftBarTitleHeight - 16) / 2.0, 16, 16));
+
+        ERewardRule[] rules = {
+                ERewardRule.BASE_REWARD, ERewardRule.CONTINUOUS_REWARD, ERewardRule.CYCLE_REWARD,
+                ERewardRule.YEAR_REWARD, ERewardRule.MONTH_REWARD, ERewardRule.WEEK_REWARD,
+                ERewardRule.DATE_TIME_REWARD, ERewardRule.CUMULATIVE_REWARD,
+                ERewardRule.RANDOM_REWARD, ERewardRule.CDK_REWARD
+        };
+        for (int i = 0; i < rules.length; i++) {
+            OperationButtonType type = OperationButtonType.valueOf(rules[i].name());
+            registerOperation(new RewardOperationWidget(this, type.getCode(),
+                            generateCustomRenderFunction(SakuraUtils.getRewardRuleI18nKeyName(rules[i]))),
+                    new ScreenCoordinate(0, leftBarTitleHeight + (leftBarTitleHeight - 1) * i,
+                            100, leftBarTitleHeight - 2));
+        }
+
+        registerOperation(new RewardOperationWidget(this, OperationButtonType.OFFSET_Y.getCode(), context -> {
+            AbstractGuiUtils.drawString(context.getStack(), font, "OY:",
+                    width - rightBarWidth + 1, height - font.lineHeight * 2 - 2, 0xFFACACAC);
+            AbstractGuiUtils.drawLimitedText(context.getStack(), font, String.valueOf((int) yOffset),
+                    width - rightBarWidth + 1, height - font.lineHeight - 2,
+                    rightBarWidth, 0xFFACACAC);
+        }), new ScreenCoordinate(width - rightBarWidth, height - font.lineHeight * 2 - 2,
+                rightBarWidth, font.lineHeight * 2 + 2));
+
+        registerOperation(createThemeIcon(OperationButtonType.HELP,
+                        SakuraSignIn.getThemeTextureCoordinate().getHelpUV()),
+                new ScreenCoordinate(width - rightBarWidth + 1, 2, 18, 18));
+        registerOperation(createThemeIcon(OperationButtonType.DOWNLOAD,
+                        SakuraSignIn.getThemeTextureCoordinate().getDownloadUV())
+                        .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.download_reward_config")),
+                new ScreenCoordinate(width - rightBarWidth + 1, 22, 18, 18));
+        registerOperation(createThemeIcon(OperationButtonType.UPLOAD,
+                        SakuraSignIn.getThemeTextureCoordinate().getUploadUV()),
+                new ScreenCoordinate(width - rightBarWidth + 1, 42, 18, 18));
+        registerOperation(createThemeIcon(OperationButtonType.FOLDER,
+                        SakuraSignIn.getThemeTextureCoordinate().getFolderUV())
+                        .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.open_config_folder")),
+                new ScreenCoordinate(width - rightBarWidth + 1, 62, 18, 18));
+        registerOperation(createThemeIcon(OperationButtonType.SORT,
+                        SakuraSignIn.getThemeTextureCoordinate().getSortUV())
+                        .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.reward_rule_sort")),
+                new ScreenCoordinate(width - rightBarWidth + 1, 82, 18, 18));
+        updateLayout();
+    }
+
+    private RewardOperationWidget createThemeIcon(OperationButtonType type, Coordinate coordinate) {
+        return createThemeIcon(type, coordinate, coordinate, coordinate);
+    }
+
+    private RewardOperationWidget createThemeIcon(OperationButtonType type, Coordinate normal,
+                                                   Coordinate hover, Coordinate pressed) {
+        return new RewardOperationWidget(this, type.getCode(), SakuraSignIn.getThemeTexture())
+                .setNormal(normal)
+                .setHover(hover)
+                .setPressed(pressed)
+                .setTextureWidth(SakuraSignIn.getThemeTextureCoordinate().getTotalWidth())
+                .setTextureHeight(SakuraSignIn.getThemeTextureCoordinate().getTotalHeight())
+                .setHoverTint(0xAA808080)
+                .setPressedTint(0xAAA0A0A0);
+    }
+
+    private void registerOperation(RewardOperationWidget widget, ScreenCoordinate bounds) {
+        widget.bounds(bounds);
+        widget.setReleaseHandler(event -> {
+            AtomicBoolean updateLayout = new AtomicBoolean(false);
+            AtomicBoolean handled = new AtomicBoolean(false);
+            handleOperation(event.mouseX(), event.mouseY(), event.button(), widget, updateLayout, handled);
+            if (handled.get()) {
+                currRewardButton = null;
+            }
+            if (updateLayout.get()) {
+                updateLayout();
+            }
+        });
+        OP_BUTTONS.put(widget.getOperation(), widget);
+        addWidget(widget);
+    }
+
+    @Override
+    protected void onRender(MatrixStack matrixStack, float partialTicks) {
         this.ms = matrixStack;
-        this.keyManager.refresh(mouseX, mouseY);
-        // 绘制缩放背景纹理
         this.renderBackgroundTexture(matrixStack);
 
         // 重置Y轴偏移
@@ -1906,10 +1950,7 @@ public class RewardOptionScreen extends Screen {
             y = (super.height - (textHeight + 4)) / 2.0f;
             AbstractGuiUtils.drawString(tips, x, y);
         }
-        // 绘制奖励项目
-        else {
-            this.renderRewardList(matrixStack);
-        }
+        else this.prepareRewardList();
 
         // 绘制左侧边栏列表背景
         AbstractGui.fill(matrixStack, 0, 0, leftBarWidth, super.height, 0xAA000000);
@@ -1923,288 +1964,108 @@ public class RewardOptionScreen extends Screen {
         AbstractGui.fill(matrixStack, super.width - rightBarWidth, 0, super.width, super.height, 0xAA000000);
         AbstractGuiUtils.fillOutLine(matrixStack, super.width - rightBarWidth, 0, rightBarWidth, super.height, 1, 0xFF000000);
 
-        // 渲染操作按钮
-        for (Integer op : OP_BUTTONS.keySet()) {
-            OperationButton button = OP_BUTTONS.get(op);
-            // 展开类按钮仅在关闭时绘制
-            if (String.valueOf(op).startsWith(String.valueOf(OperationButtonType.OPEN.getCode()))) {
-                if (!SakuraSignIn.isRewardOptionBarOpened()) {
-                    button.render(matrixStack, keyManager);
-                }
+        updateOperationPresentation();
+        renderWidgets(matrixStack, partialTicks);
+        addDeferredTooltipRender(stack -> {
+            // 弹出菜单是当前交互焦点，避免下层奖励或工具提示穿透到菜单上方。
+            if (!popupOption.isEmpty()) {
+                return;
             }
-            // 收起类按钮仅在展开时绘制
-            else if (String.valueOf(op).startsWith(String.valueOf(OperationButtonType.CLOSE.getCode()))) {
-                if (SakuraSignIn.isRewardOptionBarOpened()) {
-                    button.render(matrixStack, keyManager);
-                }
+            for (RewardListEntryWidget entry : REWARD_BUTTONS.values()) {
+                entry.renderTooltip(stack, inputState.mouseX(), inputState.mouseY());
             }
-            // 绘制其他按钮
-            else {
-                if (op == OperationButtonType.OFFSET_Y.getCode()) {
-                    button.setTooltip(SakuraComponent.get().transClient("tips", "y_offset", StringUtils.toFixedEx(this.yOffset, 1)).toString());
-                } else if (op == OperationButtonType.REWARD_PANEL.getCode()) {
-                    // 绘制选中边框
-                    if ("panel".equals(this.currRewardButton)) {
-                        AbstractGuiUtils.fillOutLine(matrixStack,
-                                (int) button.getRealX() - 1,
-                                (int) button.getRealY(),
-                                (int) button.getRealWidth() + 2,
-                                (int) button.getRealHeight(),
-                                1,
-                                0x88FFF13B);
-                    }
-                }
-                button.render(matrixStack, keyManager);
-            }
-        }
-        // 渲染操作按钮 提示
-        for (Integer op : OP_BUTTONS.keySet()) {
-            OperationButton button = OP_BUTTONS.get(op);
-            // 展开类按钮仅在关闭时绘制
-            if (String.valueOf(op).startsWith(String.valueOf(OperationButtonType.OPEN.getCode()))) {
-                if (!SakuraSignIn.isRewardOptionBarOpened()) {
-                    button.renderPopup(matrixStack, keyManager);
-                }
-            }
-            // 收起类按钮仅在展开时绘制
-            else if (String.valueOf(op).startsWith(String.valueOf(OperationButtonType.CLOSE.getCode()))) {
-                if (SakuraSignIn.isRewardOptionBarOpened()) {
-                    button.renderPopup(matrixStack, keyManager);
-                }
-            }
-            // 绘制其他按钮
-            else {
-                if (op == OperationButtonType.OFFSET_Y.getCode()) {
-                    button.setTooltip(SakuraComponent.get().transClient("tips", "y_offset", StringUtils.toFixedEx(this.yOffset, 1)).toString());
-                }
-                // 帮助按钮
-                else if (op == OperationButtonType.HELP.getCode()) {
-                    if (keyManager.onlyShiftPressed()) {
-                        button.setTooltip(SakuraComponent.get().transClient("tips", "help_button_shift").toString());
-                    } else {
-                        button.setTooltip(SakuraComponent.get().transClient("tips", "help_button").toString());
-                    }
-                } else if (op == OperationButtonType.UPLOAD.getCode()) {
-                    ClientPlayerEntity player = Minecraft.getInstance().player;
-                    if (player != null && player.hasPermissions(CommonConfig.get().permission().permissionEditReward())) {
-                        button.setTooltip(SakuraComponent.get().transClient("tips", "upload_reward_config").toString())
-                                .setHoverFgColor(0xAA808080).setTapFgColor(0xAAA0A0A0);
-                    } else {
-                        button.setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.upload_reward_config_no_permission").color(0xFFFF0000))
-                                .setHoverFgColor(0xAA808080).setTapFgColor(0xAA808080);
-                    }
-                }
-                button.renderPopup(matrixStack, keyManager);
-            }
-        }
-
-        // 绘制弹出选项
-        popupOption.render(matrixStack, keyManager);
-        // 绘制鼠标光标
-        cursor.draw(matrixStack, mouseX, mouseY);
-    }
-
-    /**
-     * 窗口关闭时
-     */
-    @Override
-    public void removed() {
-        cursor.removed();
-        super.removed();
-    }
-
-    /**
-     * 检测鼠标点击事件
-     */
-    @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        cursor.mouseClicked(mouseX, mouseY, button);
-        keyManager.mouseClicked(button, mouseX, mouseY);
-        this.yOffsetOld = this.yOffset;
-        this.handledRewardButton = false;
-        // 清空弹出选项
-        if (!popupOption.isHovered()) {
-            popupOption.clear();
-            if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT || button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
-                OP_BUTTONS.forEach((key, value) -> {
-                    if (value.isHovered()) {
-                        value.setPressed(true);
-                    }
-                });
-                MouseEvent event = MouseEvent.of(mouseX, mouseY, button);
-                REWARD_BUTTONS.values().forEach(value -> value.handleMouseClick(event));
-            }
-        }
-        return super.mouseClicked(mouseX, mouseY, button);
-    }
-
-    /**
-     * 检测鼠标松开事件
-     */
-    @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        cursor.mouseReleased(mouseX, mouseY, button);
-        keyManager.refresh(mouseX, mouseY);
-        AtomicBoolean updateLayout = new AtomicBoolean(false);
-        AtomicBoolean flag = new AtomicBoolean(false);
-        if (!keyManager.isMouseMoved()) {
-            if (popupOption.isHovered()) {
-                this.handlePopupOption(mouseX, mouseY, button, updateLayout, flag);
-                popupOption.clear();
-            } else if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT || button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
-                // 控制按钮
-                OP_BUTTONS.forEach((key, value) -> {
-                    // 忽略奖励配置列表面板, 后置处理
-                    if (key != OperationButtonType.REWARD_PANEL.getCode()) {
-                        if (value.isHovered() && value.isPressed()) {
-                            this.handleOperation(mouseX, mouseY, button, value, updateLayout, flag);
-                            if (flag.get()) {
-                                this.currRewardButton = null;
-                            }
-                        }
-                        value.setPressed(false);
-                    }
-                });
-                // 奖励按钮
-                if (!flag.get()) {
-                    MouseEvent event = MouseEvent.of(mouseX, mouseY, button);
-                    for (Map.Entry<String, RewardListEntryWidget> entry : REWARD_BUTTONS.entrySet()) {
-                        if (entry.getValue().handleMouseRelease(event)) {
-                            this.handleRewardOption(mouseX, mouseY, button, entry.getKey(),
-                                    entry.getValue(), updateLayout, flag);
-                            break;
-                        }
-                    }
-                }
-                // 奖励配置列表面板
-                if (!flag.get()) {
-                    OperationButton rewardPanel = OP_BUTTONS.get(OperationButtonType.REWARD_PANEL.getCode());
-                    if (rewardPanel.isHovered() && rewardPanel.isPressed()) {
-                        this.handleOperation(mouseX, mouseY, button, rewardPanel, updateLayout, flag);
-                        rewardPanel.setPressed(false);
-                    }
-                }
-            }
-        }
-        MouseEvent releaseEvent = MouseEvent.of(mouseX, mouseY, button);
-        REWARD_BUTTONS.values().forEach(value -> value.handleMouseRelease(releaseEvent));
-        if (updateLayout.get()) this.updateLayout();
-        keyManager.mouseReleased(button, mouseX, mouseY);
-        return flag.get() ? flag.get() : super.mouseReleased(mouseX, mouseY, button);
-    }
-
-    @Override
-    public void mouseMoved(double mouseX, double mouseY) {
-        keyManager.mouseMoved(mouseX, mouseY);
-        OP_BUTTONS.forEach((key, value) -> {
-            if (SakuraSignIn.isRewardOptionBarOpened()) {
-                // 若为开启状态则隐藏开启按钮及其附属按钮
-                if (!String.valueOf(key).startsWith(String.valueOf(OperationButtonType.OPEN.getCode()))) {
-                    value.setHovered(value.isMouseOverEx(mouseX, mouseY));
-                } else {
-                    value.setHovered(false);
-                }
-            } else {
-                // 若为关闭状态则隐藏关闭按钮及其附属按钮
-                if (!String.valueOf(key).startsWith(String.valueOf(OperationButtonType.CLOSE.getCode()))) {
-                    value.setHovered(value.isMouseOverEx(mouseX, mouseY));
-                } else {
-                    value.setHovered(false);
-                }
-            }
-            // 是否按下并拖动奖励面板
-            if (OperationButtonType.REWARD_PANEL.getCode() == key) {
-                if (value.isPressed() && keyManager.isMouseDragged()) {
-                    this.setYOffset(this.yOffsetOld + (mouseY - keyManager.getMouseDownY()));
-                }
+            for (RewardOperationWidget widget : OP_BUTTONS.values()) {
+                widget.renderTooltip(stack, inputState.mouseX(), inputState.mouseY());
             }
         });
-        REWARD_BUTTONS.values().forEach(value -> value.updateMouseHover(mouseX, mouseY));
-        super.mouseMoved(mouseX, mouseY);
     }
 
-    @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollH, double scrollV) {
-        cursor.mouseScrolled(mouseX, mouseY, scrollV);
-        keyManager.mouseScrolled(scrollV, mouseX, mouseY);
-        if (!popupOption.addScrollOffset(scrollV)) {
-            // y坐标往上(-)不应该超过奖励高度+屏幕高度, 往下(+)不应该超过屏幕高度
-            if (OP_BUTTONS.get(OperationButtonType.REWARD_PANEL.getCode()).isHovered()) {
-                this.setYOffset(yOffset + scrollV);
-            }
-        }
-        return super.mouseScrolled(mouseX, mouseY, scrollH, scrollV);
-    }
+    private void updateOperationPresentation() {
+        boolean opened = SakuraSignIn.isRewardOptionBarOpened();
+        OP_BUTTONS.forEach((operation, widget) -> {
+            boolean rule = operation > 200 && operation <= 299;
+            widget.visible(operation == OperationButtonType.OPEN.getCode() ? !opened
+                    : operation == OperationButtonType.CLOSE.getCode() || rule ? opened : true);
+        });
 
-    /**
-     * 键盘按键按下事件
-     *
-     * @param keyCode   按键的键码
-     * @param scanCode  按键的扫描码
-     * @param modifiers 按键时按下的修饰键（如Shift、Ctrl等）
-     * @return boolean 表示是否消耗了该按键事件
-     */
-    @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        // LOGGER.debug("keyPressed: keyCode = {}, scanCode = {}, modifiers = {}", keyCode, scanCode, modifiers);
-        keyManager.keyPressed(keyCode);
-        if (keyCode == GLFWKey.GLFW_KEY_ESCAPE) {
-            if (this.previousScreen != null) Minecraft.getInstance().setScreen(this.previousScreen);
-            else this.onClose();
-            return true;
+        OP_BUTTONS.get(OperationButtonType.OFFSET_Y.getCode()).setTooltip(
+                Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.y_offset",
+                        StringUtils.toFixedEx(yOffset, 1)));
+        OP_BUTTONS.get(OperationButtonType.HELP.getCode()).setTooltip(
+                Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in."
+                        + (inputState.onlyShiftPressed() ? "help_button_shift" : "help_button")));
+
+        ClientPlayerEntity player = Minecraft.getInstance().player;
+        RewardOperationWidget upload = OP_BUTTONS.get(OperationButtonType.UPLOAD.getCode());
+        if (player != null && player.hasPermissions(CommonConfig.get().permission().permissionEditReward())) {
+            upload.setTooltip(Text.trans(SakuraSignIn.MODID,
+                            "tips.sakura_sign_in.upload_reward_config"))
+                    .setPressedTint(0xAAA0A0A0);
         } else {
-            return super.keyPressed(keyCode, scanCode, modifiers);
+            upload.setTooltip(Text.trans(SakuraSignIn.MODID,
+                            "tips.sakura_sign_in.upload_reward_config_no_permission").color(0xFFFF0000))
+                    .setPressedTint(0xAA808080);
         }
     }
 
-    /**
-     * 键盘按键释放事件
-     */
     @Override
-    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
-        // LOGGER.debug("keyReleased: keyCode = {}, scanCode = {}, modifiers = {}", keyCode, scanCode, modifiers);
-        boolean consumed = false;
+    protected void onMouseScrolled(MouseScrolledHandleArgs eventArgs) {
+        RewardOperationWidget panel = OP_BUTTONS.get(OperationButtonType.REWARD_PANEL.getCode());
+        if (panel != null && panel.isMouseInside(eventArgs.mouseX(), eventArgs.mouseY())) {
+            setYOffset(yOffset + eventArgs.delta());
+            eventArgs.consumed(true);
+        }
+    }
 
-        // Ctrl + C
-        if (ClientConfig.get().rewardKeys().copy().stream().anyMatch(keyManager::isKeyPressed)) {
+    @Override
+    protected void onKeyPressed(KeyPressedHandleArgs eventArgs) {
+        if (eventArgs.keyCode() == GLFWKey.GLFW_KEY_ESCAPE) {
+            onClose();
+            eventArgs.consumed(true);
+        }
+    }
+
+    @Override
+    protected void onKeyReleased(KeyReleasedHandleArgs eventArgs) {
+        boolean consumed = false;
+        int keyCode = eventArgs.keyCode();
+        if (matchesShortcut(ClientConfig.get().rewardKeys().copy(), keyCode)) {
             consumed = editHandler.handleCopy();
-        }
-        // Ctrl + V
-        else if (ClientConfig.get().rewardKeys().paste().stream().anyMatch(keyManager::isKeyPressed)) {
+        } else if (matchesShortcut(ClientConfig.get().rewardKeys().paste(), keyCode)) {
             consumed = editHandler.handlePaste();
-        }
-        // Ctrl + X
-        else if (ClientConfig.get().rewardKeys().cut().stream().anyMatch(keyManager::isKeyPressed)) {
+        } else if (matchesShortcut(ClientConfig.get().rewardKeys().cut(), keyCode)) {
             consumed = editHandler.handleCut();
-        }
-        // Ctrl + Y / DELETE
-        else if (ClientConfig.get().rewardKeys().delete().stream().anyMatch(keyManager::isKeyPressed)) {
+        } else if (matchesShortcut(ClientConfig.get().rewardKeys().delete(), keyCode)) {
             consumed = editHandler.handleDelete();
-        }
-        // Ctrl + Z
-        else if (ClientConfig.get().rewardKeys().undo().stream().anyMatch(keyManager::isKeyPressed)) {
+        } else if (matchesShortcut(ClientConfig.get().rewardKeys().undo(), keyCode)) {
             consumed = editHandler.handleUndo();
-        }
-        // Ctrl + Shift + Z
-        else if (ClientConfig.get().rewardKeys().redo().stream().anyMatch(keyManager::isKeyPressed)) {
+        } else if (matchesShortcut(ClientConfig.get().rewardKeys().redo(), keyCode)) {
             consumed = editHandler.handleRedo();
         }
-
-        keyManager.keyReleased(keyCode);
-        return consumed || super.keyReleased(keyCode, scanCode, modifiers);
+        eventArgs.consumed(consumed);
     }
 
-    @Override
-    public boolean shouldCloseOnEsc() {
-        return false;
-    }
-
-    /**
-     * 窗口打开时是否暂停游戏
-     */
-    @Override
-    public boolean isPauseScreen() {
-        return false;
+    private boolean matchesShortcut(List<String> bindings, int releasedKey) {
+        int[] keys = {
+                releasedKey,
+                InputStateManager.isKeyPressing(GLFWKey.GLFW_KEY_LEFT_CONTROL)
+                        ? GLFWKey.GLFW_KEY_LEFT_CONTROL : GLFWKey.GLFW_KEY_UNKNOWN,
+                InputStateManager.isKeyPressing(GLFWKey.GLFW_KEY_RIGHT_CONTROL)
+                        ? GLFWKey.GLFW_KEY_RIGHT_CONTROL : GLFWKey.GLFW_KEY_UNKNOWN,
+                InputStateManager.isKeyPressing(GLFWKey.GLFW_KEY_LEFT_SHIFT)
+                        ? GLFWKey.GLFW_KEY_LEFT_SHIFT : GLFWKey.GLFW_KEY_UNKNOWN,
+                InputStateManager.isKeyPressing(GLFWKey.GLFW_KEY_RIGHT_SHIFT)
+                        ? GLFWKey.GLFW_KEY_RIGHT_SHIFT : GLFWKey.GLFW_KEY_UNKNOWN,
+                InputStateManager.isKeyPressing(GLFWKey.GLFW_KEY_LEFT_ALT)
+                        ? GLFWKey.GLFW_KEY_LEFT_ALT : GLFWKey.GLFW_KEY_UNKNOWN,
+                InputStateManager.isKeyPressing(GLFWKey.GLFW_KEY_RIGHT_ALT)
+                        ? GLFWKey.GLFW_KEY_RIGHT_ALT : GLFWKey.GLFW_KEY_UNKNOWN
+        };
+        int[] pressed = Arrays.stream(keys)
+                .filter(key -> key != GLFWKey.GLFW_KEY_UNKNOWN)
+                .distinct()
+                .toArray();
+        return bindings.stream().anyMatch(binding -> GLFWKeyHelper.matchKey(binding, pressed));
     }
 
 }
