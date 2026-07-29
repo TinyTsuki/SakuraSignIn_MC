@@ -262,20 +262,4 @@ public class KeyEventManager {
         return GLFWKeyHelper.matchMouseInOrder(mouseNames, this.pressedMouses.stream().mapToInt(i -> i).toArray());
     }
 
-    public boolean isKeyAndMousePressed(String names) {
-        if (StringUtils.isNullOrEmptyEx(names)) return false;
-        StringBuilder keyNames = new StringBuilder();
-        StringBuilder mouseNames = new StringBuilder();
-        String[] parts = names.split("\\+");
-        for (String part : parts) {
-            if (part.startsWith("Mouse")) {
-                mouseNames.append(part).append("+");
-            } else {
-                keyNames.append(part).append("+");
-            }
-        }
-        return (StringUtils.isNullOrEmptyEx(keyNames.toString()) || this.isKeyPressed(keyNames.toString()))
-                && (StringUtils.isNullOrEmptyEx(mouseNames.toString()) || this.isMousePressed(mouseNames.toString()));
-    }
-
 }

@@ -24,9 +24,10 @@ public class SakuraUiSmokeRunnerContractTest {
         assertTrue(runner.contains("SAKURA_UI_SMOKE"));
         assertTrue(runner.contains("FMLEnvironment.production"));
         assertTrue(runner.contains("\"reward\".equalsIgnoreCase(target)"));
-        assertTrue(runner.contains("minecraft.player == null"));
-        assertTrue(runner.contains("minecraft.screen != null"));
+        assertTrue(runner.contains("parent instanceof MainMenuScreen"));
+        assertTrue(runner.contains("inWorldWithoutScreen"));
         assertTrue(runner.contains("new RewardOptionScreen()"));
+        assertTrue(runner.contains("Sakura UI smoke opened target: reward"));
         assertTrue(events.contains("SakuraUiSmokeRunner.tick()"));
     }
 
