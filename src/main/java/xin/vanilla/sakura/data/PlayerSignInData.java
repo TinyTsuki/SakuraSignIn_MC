@@ -4,7 +4,6 @@ import lombok.NonNull;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
-import net.minecraft.network.PacketBuffer;
 import xin.vanilla.sakura.config.KeyValue;
 import xin.vanilla.sakura.domain.player.MonthSignInIndex;
 import xin.vanilla.sakura.util.DateUtils;
@@ -218,58 +217,6 @@ public class PlayerSignInData implements IPlayerSignInData {
     @Override
     public String getValidLanguage(@Nullable PlayerEntity player) {
         return SakuraUtils.getValidLanguage(player, this.getLanguage());
-    }
-
-    public void writeToBuffer(PacketBuffer buffer) {
-        buffer.writeInt(this.getTotalSignInDays());
-        buffer.writeInt(this.calculateContinuousDays());
-        buffer.writeUtf(DateUtils.toDateTimeString(this.getLastSignInTime()));
-        buffer.writeInt(this.getSignInCard());
-        buffer.writeBoolean(this.isAutoRewarded());
-        buffer.writeUtf(this.getLanguage());
-        buffer.writeInt(this.getMonthIndexes().size());
-        for (MonthSignInIndex index : this.getMonthIndexes().values()) {
-            buffer.writeNbt(index.serializeNBT());
-        }
-
-        buffer.writeInt(this.getSignInRecords().size());
-        for (SignInRecord record : this.getSignInRecords()) {
-            buffer.writeNbt(record.writeToNBT());
-        }
-
-        buffer.writeInt(this.getCdkRecords().size());
-        for (KeyValue<String, KeyValue<Date, Boolean>> record : this.getCdkRecords()) {
-            buffer.writeUtf(record.getKey());
-            buffer.writeUtf(DateUtils.toDateTimeString(record.getValue().getKey()));
-            buffer.writeBoolean(record.getValue().getValue());
-        }
-    }
-
-    public void readFromBuffer(PacketBuffer buffer) {
-        this.totalSignInDays.set(buffer.readInt());
-        this.continuousSignInDays.set(buffer.readInt());
-        this.lastSignInTime = DateUtils.format(buffer.readUtf());
-        this.signInCard.set(buffer.readInt());
-        this.autoRewarded = buffer.readBoolean();
-        this.language = buffer.readUtf();
-        this.monthIndexes = new LinkedHashMap<>();
-        int monthIndexCount = buffer.readInt();
-        for (int i = 0; i < monthIndexCount; i++) {
-            MonthSignInIndex index = MonthSignInIndex.deserializeNBT(Objects.requireNonNull(buffer.readNbt()));
-            this.monthIndexes.put(index.getMonth(), index);
-        }
-
-        this.signInRecords = new ArrayList<>();
-        int signInRecordCount = buffer.readInt();
-        for (int i = 0; i < signInRecordCount; i++) {
-            this.signInRecords.add(SignInRecord.readFromNBT(Objects.requireNonNull(buffer.readNbt())));
-        }
-
-        this.cdkRecords = new ArrayList<>();
-        int cdkRecordCount = buffer.readInt();
-        for (int i = 0; i < cdkRecordCount; i++) {
-            this.cdkRecords.add(new KeyValue<>(buffer.readUtf(), new KeyValue<>(DateUtils.format(buffer.readUtf()), buffer.readBoolean())));
-        }
     }
 
     public void copyFrom(IPlayerSignInData capability) {

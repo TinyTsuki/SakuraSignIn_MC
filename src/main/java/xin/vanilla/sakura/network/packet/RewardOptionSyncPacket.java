@@ -1,152 +1,145 @@
 package xin.vanilla.sakura.network.packet;
 
-import xin.vanilla.sakura.config.CommonConfig;
 import com.google.gson.reflect.TypeToken;
 import lombok.Getter;
 import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.fml.network.NetworkEvent;
-import net.minecraftforge.fml.network.PacketDistributor;
-import xin.vanilla.sakura.SakuraSignIn;
+import xin.vanilla.banira.api.BaniraNetwork;
+import xin.vanilla.banira.common.api.INetworkPacket;
+import xin.vanilla.banira.common.network.BaniraNetworkContext;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
+import xin.vanilla.banira.common.network.SplitPacket;
+import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.config.RewardConfigManager;
-import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ERewardRule;
-import xin.vanilla.sakura.network.ModNetworkHandler;
+import xin.vanilla.sakura.network.SakuraClientPacketHandlers;
+import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.network.data.RewardOptionSyncData;
 import xin.vanilla.sakura.network.data.RewardOptionSyncKind;
 import xin.vanilla.sakura.rewards.Reward;
-import xin.vanilla.sakura.screen.component.NotificationManager;
-import xin.vanilla.sakura.util.CollectionUtils;
-import xin.vanilla.sakura.util.Component;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static xin.vanilla.sakura.config.RewardConfigManager.GSON;
 
+/**
+ * 有序奖励配置分包；组顺序和重复概率组均保持不变。
+ */
 @Getter
-public class RewardOptionSyncPacket extends SplitPacket {
+public class RewardOptionSyncPacket extends SplitPacket implements INetworkPacket,
+        SplitPacket.MergeableSplitPacket<RewardOptionSyncPacket>,
+        SplitPacket.SplittableSplitPacket<RewardOptionSyncPacket> {
+    private static final int CHUNK_SIZE = 1024;
+
     private final List<RewardOptionSyncData> rewardOptionData;
 
     public RewardOptionSyncPacket(List<RewardOptionSyncData> rewardOptionData) {
-        super();
-        this.rewardOptionData = rewardOptionData;
+        this.rewardOptionData = new ArrayList<>(rewardOptionData);
     }
 
-    public RewardOptionSyncPacket(PacketBuffer buf) {
+    public RewardOptionSyncPacket(BaniraPacketBuffer buf) {
         super(buf);
         this.rewardOptionData = new ArrayList<>();
-        int size = buf.readInt();
+        int size = buf.readVarInt();
         for (int i = 0; i < size; i++) {
-            RewardOptionSyncKind kind = RewardOptionSyncKind.valueOf(buf.readInt());
-            this.rewardOptionData.add(new RewardOptionSyncData(
-                    kind,
-                    ERewardRule.valueOf(buf.readInt()),
-                    buf.readUtf(),
-                    kind == RewardOptionSyncKind.REWARD
-                            ? GSON.fromJson(new String(buf.readByteArray(), StandardCharsets.UTF_8),
-                            new TypeToken<Reward>() {
-                            }.getType())
-                            : null
-            ));
+            RewardOptionSyncKind kind = buf.readEnum(RewardOptionSyncKind.class);
+            ERewardRule rule = ERewardRule.valueOf(buf.readInt());
+            String key = buf.readUtf();
+            Reward reward = kind == RewardOptionSyncKind.REWARD
+                    ? GSON.fromJson(buf.readUtf(), new TypeToken<Reward>() {
+                    }.getType())
+                    : null;
+            rewardOptionData.add(new RewardOptionSyncData(kind, rule, key, reward));
         }
     }
 
-    public static void handle(RewardOptionSyncPacket packet, CustomPayloadEvent.Context ctx) {
-        ctx.enqueueWork(() -> {
-            List<RewardOptionSyncPacket> packets = SplitPacket.handle(packet);
-            if (CollectionUtils.isNotNullOrEmpty(packets)) {
-                if (ctx.isClientSide()) {
-                    try {
-                        // 备份 RewardOption
-                        RewardConfigManager.backupRewardOption();
-                        // 更新 RewardOption
-                        RewardConfigManager.setRewardConfig(RewardConfigManager.fromSyncPacketList(packets));
-                        RewardConfigManager.setRewardOptionDataChanged(true);
-                        RewardConfigManager.saveRewardOption();
-                    } catch (Exception e) {
-                        Component component = Component.translatable(EI18nType.MESSAGE, "reward_option_download_failed");
-                        NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0x88FF5555));
-                        throw e;
-                    }
-                    Component component = Component.translatable(EI18nType.MESSAGE, "reward_option_download_success");
-                    NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component));
-                } else if (ctx.get().getDirection().getReceptionSide().isServer()) {
-                    ServerPlayerEntity sender = ctx.get().getSender();
-                    if (sender != null) {
-                        try {
-                            // 判断是否拥有修改权限
-                            if (sender.hasPermissions(CommonConfig.get().permission().permissionEditReward())) {
-                                // 备份 RewardOption
-                                RewardConfigManager.backupRewardOption(false);
-                                // 更新 RewardOption
-                                RewardConfigManager.setRewardConfig(RewardConfigManager.fromSyncPacketList(packets));
-                                RewardConfigManager.saveRewardOption();
-
-                                // 同步 RewardOption 至所有在线玩家
-                                for (ServerPlayerEntity player : sender.server.getPlayerList().getPlayers()) {
-                                    if (player.getStringUUID().equals(sender.getStringUUID()))
-                                        continue;
-                                    // 仅给客户端已安装mod的玩家同步数据
-                                    if (!SakuraSignIn.getPlayerCapabilityStatus().containsKey(player.getUUID().toString()))
-                                        continue;
-                                    for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardConfigManager.toSyncPacket(player).split()) {
-                                        ModNetworkHandler.INSTANCE.send(rewardOptionSyncPacket, PacketDistributor.PLAYER.with(player));
-                                    }
-                                }
-                            }
-                        } catch (Exception e) {
-                            ModNetworkHandler.INSTANCE.send(new RewardOptionDataReceivedNotice(false), PacketDistributor.PLAYER.with(sender));
-                            throw e;
-                        }
-                        ModNetworkHandler.INSTANCE.send(new RewardOptionDataReceivedNotice(true), PacketDistributor.PLAYER.with(sender));
-                    }
-
-                }
-            }
-        });
-        ctx.setPacketHandled(true);
-    }
-
-    /**
-     * 将数据包拆分为多个小包
-     */
-    public List<RewardOptionSyncPacket> split() {
-        List<RewardOptionSyncPacket> result = new ArrayList<>();
-        if (CollectionUtils.isNotNullOrEmpty(this.rewardOptionData)) {
-            for (int i = 0, index = 0; i < this.rewardOptionData.size() / getChunkSize() + 1; i++) {
-                RewardOptionSyncPacket packet = new RewardOptionSyncPacket(new ArrayList<>());
-                for (int j = 0; j < getChunkSize(); j++) {
-                    if (index >= this.rewardOptionData.size()) break;
-                    packet.rewardOptionData.add(this.rewardOptionData.get(index));
-                    index++;
-                }
-                packet.setId(this.getId());
-                packet.setSort(i);
-                result.add(packet);
-            }
-            result.forEach(packet -> packet.setTotal(result.size()));
-        }
-        return result;
-    }
-
-    public void toBytes(PacketBuffer buf) {
+    public void toBytes(BaniraPacketBuffer buf) {
         super.toBytes(buf);
-        buf.writeInt(rewardOptionData.size());
+        buf.writeVarInt(rewardOptionData.size());
         for (RewardOptionSyncData data : rewardOptionData) {
-            buf.writeInt(data.getKind().ordinal());
+            buf.writeEnum(data.getKind());
             buf.writeInt(data.getRule().getCode());
             buf.writeUtf(data.getKey());
             if (data.getKind() == RewardOptionSyncKind.REWARD) {
-                buf.writeByteArray(GSON.toJson(data.getReward().toJsonObject())
-                        .getBytes(StandardCharsets.UTF_8));
+                buf.writeUtf(GSON.toJson(data.getReward().toJsonObject()));
             }
         }
+    }
+
+    public static void handle(RewardOptionSyncPacket packet, BaniraNetworkContext ctx) {
+        ctx.enqueueWork(() -> {
+            if (ctx.isClientSide()) {
+                SakuraClientPacketHandlers.handle(packet);
+                return;
+            }
+            ServerPlayerEntity sender = ctx.senderAs(ServerPlayerEntity.class);
+            if (sender == null) {
+                return;
+            }
+            try {
+                if (sender.hasPermissions(CommonConfig.get().permission().permissionEditReward())) {
+                    RewardConfigManager.backupRewardOption(false);
+                    RewardConfigManager.setRewardConfig(RewardConfigManager.fromSyncPacketList(
+                            Collections.singletonList(packet)
+                    ));
+                    RewardConfigManager.saveRewardOption();
+                    for (ServerPlayerEntity player : sender.server.getPlayerList().getPlayers()) {
+                        if (!player.getUUID().equals(sender.getUUID())) {
+                            SakuraNetwork.sendSplitToPlayer(
+                                    RewardConfigManager.toSyncPacket(player), player
+                            );
+                        }
+                    }
+                }
+                BaniraNetwork.sendToPlayer(new RewardOptionDataReceivedNotice(true), sender);
+            } catch (RuntimeException exception) {
+                BaniraNetwork.sendToPlayer(new RewardOptionDataReceivedNotice(false), sender);
+                throw exception;
+            }
+        });
+        ctx.markHandled();
+    }
+
+    @Override
+    public List<RewardOptionSyncPacket> splitPacket() {
+        if (rewardOptionData.isEmpty()) {
+            return singletonEmptyPart();
+        }
+        List<RewardOptionSyncPacket> result = new ArrayList<>();
+        for (int start = 0; start < rewardOptionData.size(); start += CHUNK_SIZE) {
+            int end = Math.min(start + CHUNK_SIZE, rewardOptionData.size());
+            result.add(new RewardOptionSyncPacket(rewardOptionData.subList(start, end)));
+        }
+        initializeParts(result);
+        return result;
+    }
+
+    @Override
+    public RewardOptionSyncPacket mergePackets(List<RewardOptionSyncPacket> packets) {
+        List<RewardOptionSyncData> merged = new ArrayList<>();
+        packets.forEach(packet -> merged.addAll(packet.rewardOptionData));
+        return new RewardOptionSyncPacket(merged);
     }
 
     @Override
     public int getChunkSize() {
-        return 1024;
+        return CHUNK_SIZE;
+    }
+
+    private List<RewardOptionSyncPacket> singletonEmptyPart() {
+        List<RewardOptionSyncPacket> result = new ArrayList<>();
+        result.add(new RewardOptionSyncPacket(Collections.emptyList()));
+        initializeParts(result);
+        return result;
+    }
+
+    private void initializeParts(List<RewardOptionSyncPacket> packets) {
+        for (int i = 0; i < packets.size(); i++) {
+            RewardOptionSyncPacket packet = packets.get(i);
+            packet.setId(getId());
+            packet.setSort(i);
+            packet.setTotal(packets.size());
+        }
     }
 }

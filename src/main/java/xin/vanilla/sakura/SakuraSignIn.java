@@ -25,9 +25,10 @@ import xin.vanilla.sakura.config.*;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.event.ClientEventHandler;
 import xin.vanilla.sakura.internal.forge.player.ForgePlayerSignInDataService;
-import xin.vanilla.sakura.network.ModNetworkHandler;
+import xin.vanilla.sakura.network.SakuraNetwork;
+import xin.vanilla.sakura.network.SakuraClientPacketHandlers;
+import xin.vanilla.sakura.network.ClientProxy;
 import xin.vanilla.sakura.network.data.AdvancementData;
-import xin.vanilla.sakura.network.packet.SplitPacket;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
 import xin.vanilla.sakura.util.DateUtils;
 import xin.vanilla.banira.common.config.BaniraConfig;
@@ -37,8 +38,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -111,18 +110,6 @@ public class SakuraSignIn {
     private static int permissionLevel;
 
     /**
-     * 分片网络包缓存
-     */
-    @Getter
-    private static final Map<String, List<? extends SplitPacket>> packetCache = new ConcurrentHashMap<>();
-
-    /**
-     * 玩家能力同步状态
-     */
-    @Getter
-    private static final Map<String, Boolean> playerCapabilityStatus = new ConcurrentHashMap<>();
-
-    /**
      * 客户端-服务器时间
      */
     @Getter
@@ -133,8 +120,7 @@ public class SakuraSignIn {
         BaniraConfig.register(CommonConfig.class, MODID);
         BaniraConfig.register(ClientConfig.class, MODID);
 
-        // 注册网络通道
-        ModNetworkHandler.registerPackets();
+        SakuraNetwork.initialize();
 
         // 注册服务器启动和关闭事件
         MinecraftForge.EVENT_BUS.addListener(this::onServerStarting);
@@ -165,6 +151,13 @@ public class SakuraSignIn {
      */
     @SubscribeEvent
     public void onClientSetup(final FMLClientSetupEvent event) {
+        SakuraClientPacketHandlers.register(
+                ClientProxy::handleSynPlayerData,
+                ClientProxy::handleMonthData,
+                ClientProxy::handleAdvancement,
+                ClientProxy::handleRewardOptionSync,
+                ClientProxy::handleRewardOptionUploadResult
+        );
         // 注册键绑定
         LOGGER.debug("Registering key bindings");
         ClientEventHandler.registerKeyBindings();

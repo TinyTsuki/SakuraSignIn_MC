@@ -481,13 +481,6 @@ public class SignInCommand {
                                     return 1;
                                 })
                         )
-                        .then(Commands.literal("playerDataSyncPacketSize")
-                                .executes(context -> {
-                                    ServerPlayerEntity player = context.getSource().getPlayerOrException();
-                                    SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "player_data_sync_packet_size_d", CommonConfig.get().server().playerDataSyncPacketSize()));
-                                    return 1;
-                                })
-                        )
                         .then(Commands.literal("rewardAffectedByLuck")
                                 .executes(context -> {
                                     ServerPlayerEntity player = context.getSource().getPlayerOrException();
@@ -654,25 +647,6 @@ public class SignInCommand {
                                             CommonConfig.save();
                                             ServerPlayerEntity player = context.getSource().getPlayerOrException();
                                             SakuraUtils.broadcastMessage(player, Component.translatable(player, EI18nType.MESSAGE, "set_sign_in_time_cool_down_refresh_interval_f", time));
-                                            return 1;
-                                        })
-                                )
-                        )
-                        .then(Commands.literal("playerDataSyncPacketSize")
-                                .then(Commands.argument("size", IntegerArgumentType.integer(1, 1024))
-                                        .suggests((context, builder) -> {
-                                            builder.suggest(1);
-                                            builder.suggest(10);
-                                            builder.suggest(100);
-                                            builder.suggest(1024);
-                                            return builder.buildFuture();
-                                        })
-                                        .executes(context -> {
-                                            int size = IntegerArgumentType.getInteger(context, "size");
-                                            CommonConfig.get().server().playerDataSyncPacketSize(size);
-                                            CommonConfig.save();
-                                            ServerPlayerEntity player = context.getSource().getPlayerOrException();
-                                            SakuraUtils.broadcastMessage(player, Component.translatable(player, EI18nType.MESSAGE, "set_player_data_sync_packet_size_d", size));
                                             return 1;
                                         })
                                 )
