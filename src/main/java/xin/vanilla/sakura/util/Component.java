@@ -1,5 +1,6 @@
 package xin.vanilla.sakura.util;
 
+import xin.vanilla.sakura.config.CommonConfig;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -12,7 +13,6 @@ import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.util.text.*;
 import net.minecraft.util.text.event.ClickEvent;
 import net.minecraft.util.text.event.HoverEvent;
-import xin.vanilla.sakura.config.ServerConfig;
 import xin.vanilla.sakura.enums.EI18nType;
 
 import java.io.Serializable;
@@ -167,7 +167,7 @@ public class Component implements Cloneable, Serializable {
      * 获取语言代码
      */
     public @NonNull String getLanguageCode() {
-        return this.languageCode == null ? ServerConfig.DEFAULT_LANGUAGE.get() : this.languageCode;
+        return this.languageCode == null ? CommonConfig.get().server().defaultLanguage() : this.languageCode;
     }
 
     /**

@@ -1,5 +1,6 @@
 package xin.vanilla.sakura.screen;
 
+import xin.vanilla.sakura.config.CommonConfig;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.Getter;
@@ -18,7 +19,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.ClientConfig;
-import xin.vanilla.sakura.config.ServerConfig;
 import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.enums.EI18nType;
@@ -56,7 +56,7 @@ public class SignInScreen extends Screen {
 
     private final KeyEventManager keyManager = new KeyEventManager();
 
-    private boolean SIGN_IN_SCREEN_TIPS = Boolean.TRUE.equals(ClientConfig.SHOW_SIGN_IN_SCREEN_TIPS.get());
+    private boolean SIGN_IN_SCREEN_TIPS = Boolean.TRUE.equals(ClientConfig.get().display().showSignInScreenTips());
 
     private Text tips;
 
@@ -170,7 +170,8 @@ public class SignInScreen extends Screen {
         Button notAgain = AbstractGuiUtils.newButton(0, 0, 0, 20,
                 Component.translatableClient(EI18nType.OPTION, "no_remind"), button -> {
                     this.SIGN_IN_SCREEN_TIPS = false;
-                    ClientConfig.SHOW_SIGN_IN_SCREEN_TIPS.set(false);
+                    ClientConfig.get().display().showSignInScreenTips(false);
+                    ClientConfig.save();
                 });
         super.addButton(submit);
         super.addButton(notAgain);
@@ -303,14 +304,14 @@ public class SignInScreen extends Screen {
         if (player != null) {
             IPlayerSignInData signInData = SakuraPlayerData.get(player);
             Map<Integer, RewardList> monthRewardList;
-            if ((player.hasPermissions(ServerConfig.PERMISSION_REWARD_DETAIL.get()))) {
+            if ((player.hasPermissions(CommonConfig.get().permission().permissionRewardDetail()))) {
                 monthRewardList = RewardManager.getMonthRewardList(current, signInData, lastOffset, nextOffset);
             } else {
                 monthRewardList = new HashMap<>();
             }
             boolean allCurrentDaysDisplayed = false;
-            boolean showLastReward = ClientConfig.SHOW_LAST_REWARD.get();
-            boolean showNextReward = ClientConfig.SHOW_NEXT_REWARD.get();
+            boolean showLastReward = ClientConfig.get().display().showLastReward();
+            boolean showNextReward = ClientConfig.get().display().showNextReward();
             for (int row = 0; row < rows; row++) {
                 if (allCurrentDaysDisplayed && !showNextReward) break;
                 for (int col = 0; col < columns; col++) {
@@ -366,9 +367,9 @@ public class SignInScreen extends Screen {
                     // if (CollectionUtils.isNullOrEmpty(rewards)) continue;
 
                     // 是否能补签
-                    if (ServerConfig.SIGN_IN_CARD.get()) {
+                    if (CommonConfig.get().makeUp().signInCard()) {
                         // 最早能补签的日期
-                        Date minDate = DateUtils.addDay(compensateDate, -ServerConfig.RE_SIGN_IN_DAYS.get());
+                        Date minDate = DateUtils.addDay(compensateDate, -CommonConfig.get().makeUp().reSignInDays());
                         if (DateUtils.toDateInt(minDate) <= key && key <= DateUtils.toDateInt(compensateDate) && status != ESignInStatus.NOT_SIGNED_IN.getCode()) {
                             status = ESignInStatus.CAN_REPAIR.getCode();
                         }
@@ -418,7 +419,7 @@ public class SignInScreen extends Screen {
         if (this.SIGN_IN_SCREEN_TIPS) return;
         // 上个月
         if (value.getOperation() == LEFT_ARROW.getCode()) {
-            if (ClientConfig.KEY_SIGN_LAST_MONTH.get().stream().anyMatch(keyManager::isMousePressed)) {
+            if (ClientConfig.get().signKeys().lastMonth().stream().anyMatch(keyManager::isMousePressed)) {
                 SakuraSignIn.setCalendarCurrentDate(DateUtils.addMonth(SakuraSignIn.getCalendarCurrentDate(), -1));
                 updateLayout.set(true);
                 flag.set(true);
@@ -426,7 +427,7 @@ public class SignInScreen extends Screen {
         }
         // 下个月
         else if (value.getOperation() == RIGHT_ARROW.getCode()) {
-            if (ClientConfig.KEY_SIGN_NEXT_MONTH.get().stream().anyMatch(keyManager::isMousePressed)) {
+            if (ClientConfig.get().signKeys().nextMonth().stream().anyMatch(keyManager::isMousePressed)) {
                 SakuraSignIn.setCalendarCurrentDate(DateUtils.addMonth(SakuraSignIn.getCalendarCurrentDate(), 1));
                 updateLayout.set(true);
                 flag.set(true);
@@ -434,7 +435,7 @@ public class SignInScreen extends Screen {
         }
         // 上一年
         else if (value.getOperation() == UP_ARROW.getCode()) {
-            if (ClientConfig.KEY_SIGN_LAST_YEAR.get().stream().anyMatch(keyManager::isMousePressed)) {
+            if (ClientConfig.get().signKeys().lastYear().stream().anyMatch(keyManager::isMousePressed)) {
                 SakuraSignIn.setCalendarCurrentDate(DateUtils.addYear(SakuraSignIn.getCalendarCurrentDate(), -1));
                 updateLayout.set(true);
                 flag.set(true);
@@ -442,7 +443,7 @@ public class SignInScreen extends Screen {
         }
         // 下一年
         else if (value.getOperation() == DOWN_ARROW.getCode()) {
-            if (ClientConfig.KEY_SIGN_NEXT_YEAR.get().stream().anyMatch(keyManager::isMousePressed)) {
+            if (ClientConfig.get().signKeys().nextYear().stream().anyMatch(keyManager::isMousePressed)) {
                 SakuraSignIn.setCalendarCurrentDate(DateUtils.addYear(SakuraSignIn.getCalendarCurrentDate(), 1));
                 updateLayout.set(true);
                 flag.set(true);
@@ -451,8 +452,9 @@ public class SignInScreen extends Screen {
         // 类原版主题
         else if (value.getOperation() == THEME_ORIGINAL_BUTTON.getCode()) {
             SakuraSignIn.setSpecialVersionTheme(keyManager.onlyMouseRightPressed());
-            ClientConfig.THEME.set(THEME_ORIGINAL_BUTTON.getPath());
-            ClientConfig.SPECIAL_THEME.set(SakuraSignIn.isSpecialVersionTheme());
+            ClientConfig.get().display().theme(THEME_ORIGINAL_BUTTON.getPath());
+            ClientConfig.get().display().specialTheme(SakuraSignIn.isSpecialVersionTheme());
+            ClientConfig.save();
             updateLayout.set(true);
             updateTexture.set(true);
             flag.set(true);
@@ -460,8 +462,9 @@ public class SignInScreen extends Screen {
         // 樱花粉主题
         else if (value.getOperation() == THEME_SAKURA_BUTTON.getCode()) {
             SakuraSignIn.setSpecialVersionTheme(keyManager.onlyMouseRightPressed());
-            ClientConfig.THEME.set(THEME_SAKURA_BUTTON.getPath());
-            ClientConfig.SPECIAL_THEME.set(SakuraSignIn.isSpecialVersionTheme());
+            ClientConfig.get().display().theme(THEME_SAKURA_BUTTON.getPath());
+            ClientConfig.get().display().specialTheme(SakuraSignIn.isSpecialVersionTheme());
+            ClientConfig.save();
             updateLayout.set(true);
             updateTexture.set(true);
             flag.set(true);
@@ -469,8 +472,9 @@ public class SignInScreen extends Screen {
         // 四叶草主题
         else if (value.getOperation() == THEME_CLOVER_BUTTON.getCode()) {
             SakuraSignIn.setSpecialVersionTheme(keyManager.onlyMouseRightPressed());
-            ClientConfig.THEME.set(THEME_CLOVER_BUTTON.getPath());
-            ClientConfig.SPECIAL_THEME.set(SakuraSignIn.isSpecialVersionTheme());
+            ClientConfig.get().display().theme(THEME_CLOVER_BUTTON.getPath());
+            ClientConfig.get().display().specialTheme(SakuraSignIn.isSpecialVersionTheme());
+            ClientConfig.save();
             updateLayout.set(true);
             updateTexture.set(true);
             flag.set(true);
@@ -478,8 +482,9 @@ public class SignInScreen extends Screen {
         // 枫叶主题
         else if (value.getOperation() == THEME_MAPLE_BUTTON.getCode()) {
             SakuraSignIn.setSpecialVersionTheme(keyManager.onlyMouseRightPressed());
-            ClientConfig.THEME.set(THEME_MAPLE_BUTTON.getPath());
-            ClientConfig.SPECIAL_THEME.set(SakuraSignIn.isSpecialVersionTheme());
+            ClientConfig.get().display().theme(THEME_MAPLE_BUTTON.getPath());
+            ClientConfig.get().display().specialTheme(SakuraSignIn.isSpecialVersionTheme());
+            ClientConfig.save();
             updateLayout.set(true);
             updateTexture.set(true);
             flag.set(true);
@@ -487,7 +492,8 @@ public class SignInScreen extends Screen {
         // 混沌主题
         else if (value.getOperation() == THEME_CHAOS_BUTTON.getCode()) {
             if (keyManager.onlyMouseLeftPressed()) {
-                ClientConfig.THEME.set(THEME_CHAOS_BUTTON.getPath());
+                ClientConfig.get().display().theme(THEME_CHAOS_BUTTON.getPath());
+                ClientConfig.save();
                 updateLayout.set(true);
                 updateTexture.set(true);
                 flag.set(true);
@@ -522,8 +528,8 @@ public class SignInScreen extends Screen {
                     Component component = Component.translatableClient(EI18nType.MESSAGE, "next_day_cannot_operate");
                     NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
                 } else {
-                    cell.status = ClientConfig.AUTO_REWARDED.get() ? ESignInStatus.REWARDED.getCode() : ESignInStatus.SIGNED_IN.getCode();
-                    ModNetworkHandler.INSTANCE.sendToServer(new SignInPacket(DateUtils.toDateTimeString(DateUtils.getClientDate()), ClientConfig.AUTO_REWARDED.get(), ESignInType.SIGN_IN));
+                    cell.status = ClientConfig.get().display().autoRewarded() ? ESignInStatus.REWARDED.getCode() : ESignInStatus.SIGNED_IN.getCode();
+                    ModNetworkHandler.INSTANCE.sendToServer(new SignInPacket(DateUtils.toDateTimeString(DateUtils.getClientDate()), ClientConfig.get().display().autoRewarded(), ESignInType.SIGN_IN));
                 }
             }
         }
@@ -538,14 +544,14 @@ public class SignInScreen extends Screen {
                     NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
                 } else {
                     cell.status = ESignInStatus.REWARDED.getCode();
-                    ModNetworkHandler.INSTANCE.sendToServer(new SignInPacket(DateUtils.toDateTimeString(cellDate), ClientConfig.AUTO_REWARDED.get(), ESignInType.REWARD));
+                    ModNetworkHandler.INSTANCE.sendToServer(new SignInPacket(DateUtils.toDateTimeString(cellDate), ClientConfig.get().display().autoRewarded(), ESignInType.REWARD));
                 }
             }
         }
         // 补签
         else if (cell.status == ESignInStatus.CAN_REPAIR.getCode()) {
             if (button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
-                if (!ServerConfig.SIGN_IN_CARD.get()) {
+                if (!CommonConfig.get().makeUp().signInCard()) {
                     Component component = Component.translatableClient(EI18nType.MESSAGE, "server_not_enable_sign_in_card");
                     NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
                 } else {
@@ -553,8 +559,8 @@ public class SignInScreen extends Screen {
                         Component component = Component.translatableClient(EI18nType.MESSAGE, "not_enough_sign_in_card");
                         NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
                     } else {
-                        cell.status = ClientConfig.AUTO_REWARDED.get() ? ESignInStatus.REWARDED.getCode() : ESignInStatus.SIGNED_IN.getCode();
-                        ModNetworkHandler.INSTANCE.sendToServer(new SignInPacket(DateUtils.toDateTimeString(cellDate), ClientConfig.AUTO_REWARDED.get(), ESignInType.RE_SIGN_IN));
+                        cell.status = ClientConfig.get().display().autoRewarded() ? ESignInStatus.REWARDED.getCode() : ESignInStatus.SIGNED_IN.getCode();
+                        ModNetworkHandler.INSTANCE.sendToServer(new SignInPacket(DateUtils.toDateTimeString(cellDate), ClientConfig.get().display().autoRewarded(), ESignInType.RE_SIGN_IN));
                     }
                 }
             }
@@ -680,7 +686,7 @@ public class SignInScreen extends Screen {
         if (!this.SIGN_IN_SCREEN_TIPS) {
             boolean showRewardDetail = true;
             if (Minecraft.getInstance().player != null) {
-                showRewardDetail = Minecraft.getInstance().player.hasPermissions(ServerConfig.PERMISSION_REWARD_DETAIL.get());
+                showRewardDetail = Minecraft.getInstance().player.hasPermissions(CommonConfig.get().permission().permissionRewardDetail());
             }
             if (showRewardDetail) {
                 // 渲染格子弹出层
@@ -781,7 +787,8 @@ public class SignInScreen extends Screen {
                     NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component));
                     ResourceLocation resourceLocation = TextureUtils.loadCustomTexture(selectedFile);
                     if (TextureUtils.isTextureAvailable(resourceLocation)) {
-                        ClientConfig.THEME.set(selectedFile);
+                        ClientConfig.get().display().theme(selectedFile);
+                        ClientConfig.save();
                         updateTextureAndCoordinate.set(true);
                         updateLayout.set(true);
                     }
@@ -871,19 +878,19 @@ public class SignInScreen extends Screen {
     @Override
     public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
         boolean consumed = false;
-        if (ClientConfig.KEY_SIGN_LAST_MONTH.get().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
+        if (ClientConfig.get().signKeys().lastMonth().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
             SakuraSignIn.setCalendarCurrentDate(DateUtils.addMonth(SakuraSignIn.getCalendarCurrentDate(), -1));
             updateLayout();
             consumed = true;
-        } else if (ClientConfig.KEY_SIGN_NEXT_MONTH.get().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
+        } else if (ClientConfig.get().signKeys().nextMonth().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
             SakuraSignIn.setCalendarCurrentDate(DateUtils.addMonth(SakuraSignIn.getCalendarCurrentDate(), 1));
             updateLayout();
             consumed = true;
-        } else if (ClientConfig.KEY_SIGN_LAST_YEAR.get().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
+        } else if (ClientConfig.get().signKeys().lastYear().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
             SakuraSignIn.setCalendarCurrentDate(DateUtils.addYear(SakuraSignIn.getCalendarCurrentDate(), -1));
             updateLayout();
             consumed = true;
-        } else if (ClientConfig.KEY_SIGN_NEXT_YEAR.get().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
+        } else if (ClientConfig.get().signKeys().nextYear().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
             SakuraSignIn.setCalendarCurrentDate(DateUtils.addYear(SakuraSignIn.getCalendarCurrentDate(), 1));
             updateLayout();
             consumed = true;

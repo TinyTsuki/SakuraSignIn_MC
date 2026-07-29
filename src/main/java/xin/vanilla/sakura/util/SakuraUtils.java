@@ -20,7 +20,6 @@ import net.minecraftforge.forgespi.language.IModInfo;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.CommonConfig;
-import xin.vanilla.sakura.config.ServerConfig;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.enums.ERewardRule;
 
@@ -35,11 +34,12 @@ public class SakuraUtils {
 
 
     public static String getCommandPrefix() {
-        String commandPrefix = CommonConfig.COMMAND_PREFIX.get();
+        String commandPrefix = CommonConfig.get().command().commandPrefix();
         if (StringUtils.isNullOrEmptyEx(commandPrefix) || !commandPrefix.matches("^(\\w ?)+$")) {
-            CommonConfig.COMMAND_PREFIX.set(SakuraSignIn.DEFAULT_COMMAND_PREFIX);
+            CommonConfig.get().command().commandPrefix(SakuraSignIn.DEFAULT_COMMAND_PREFIX);
+            CommonConfig.save();
         }
-        return CommonConfig.COMMAND_PREFIX.get().trim();
+        return CommonConfig.get().command().commandPrefix().trim();
     }
 
     // region 玩家与玩家背包
@@ -221,34 +221,34 @@ public class SakuraUtils {
         int result = 0;
         switch (rule) {
             case BASE_REWARD:
-                result = ServerConfig.PERMISSION_BASE_REWARD.get();
+                result = CommonConfig.get().permission().permissionBaseReward();
                 break;
             case CONTINUOUS_REWARD:
-                result = ServerConfig.PERMISSION_CONTINUOUS_REWARD.get();
+                result = CommonConfig.get().permission().permissionContinuousReward();
                 break;
             case CYCLE_REWARD:
-                result = ServerConfig.PERMISSION_CYCLE_REWARD.get();
+                result = CommonConfig.get().permission().permissionCycleReward();
                 break;
             case YEAR_REWARD:
-                result = ServerConfig.PERMISSION_YEAR_REWARD.get();
+                result = CommonConfig.get().permission().permissionYearReward();
                 break;
             case MONTH_REWARD:
-                result = ServerConfig.PERMISSION_MONTH_REWARD.get();
+                result = CommonConfig.get().permission().permissionMonthReward();
                 break;
             case WEEK_REWARD:
-                result = ServerConfig.PERMISSION_WEEK_REWARD.get();
+                result = CommonConfig.get().permission().permissionWeekReward();
                 break;
             case DATE_TIME_REWARD:
-                result = ServerConfig.PERMISSION_DATE_TIME_REWARD.get();
+                result = CommonConfig.get().permission().permissionDateTimeReward();
                 break;
             case CUMULATIVE_REWARD:
-                result = ServerConfig.PERMISSION_CUMULATIVE_REWARD.get();
+                result = CommonConfig.get().permission().permissionCumulativeReward();
                 break;
             case RANDOM_REWARD:
-                result = ServerConfig.PERMISSION_RANDOM_REWARD.get();
+                result = CommonConfig.get().permission().permissionRandomReward();
                 break;
             case CDK_REWARD:
-                result = ServerConfig.PERMISSION_CDK_REWARD.get();
+                result = CommonConfig.get().permission().permissionCdkReward();
                 break;
         }
         return result;
@@ -271,7 +271,7 @@ public class SakuraUtils {
                 result = SakuraUtils.getClientLanguage();
             }
         } else if ("server".equalsIgnoreCase(language)) {
-            result = ServerConfig.DEFAULT_LANGUAGE.get();
+            result = CommonConfig.get().server().defaultLanguage();
         } else {
             result = language;
         }

@@ -6,17 +6,20 @@ import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
 import net.minecraft.network.PacketBuffer;
 import xin.vanilla.sakura.config.KeyValue;
-import xin.vanilla.sakura.rewards.RewardManager;
+import xin.vanilla.sakura.domain.player.MonthSignInIndex;
 import xin.vanilla.sakura.util.DateUtils;
 import xin.vanilla.sakura.util.SakuraUtils;
 
 import javax.annotation.Nullable;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 /**
  * 玩家签到数据
@@ -28,6 +31,7 @@ public class PlayerSignInData implements IPlayerSignInData {
     private final AtomicInteger signInCard = new AtomicInteger();
     private boolean autoRewarded;
     private List<SignInRecord> signInRecords;
+    private Map<String, MonthSignInIndex> monthIndexes;
     // 兑换码:输入日期:是否有效
     private List<KeyValue<String, KeyValue<Date, Boolean>>> cdkRecords;
     private String language = "client";
@@ -140,6 +144,45 @@ public class PlayerSignInData implements IPlayerSignInData {
     }
 
     @Override
+    public @NonNull Map<String, MonthSignInIndex> getMonthIndexes() {
+        if (monthIndexes == null) {
+            monthIndexes = new LinkedHashMap<>();
+        }
+        return monthIndexes;
+    }
+
+    @Override
+    public void setMonthIndexes(Map<String, MonthSignInIndex> indexes) {
+        monthIndexes = new LinkedHashMap<>();
+        if (indexes != null) {
+            indexes.forEach((month, index) ->
+                    monthIndexes.put(month, MonthSignInIndex.deserializeNBT(index.serializeNBT())));
+        }
+    }
+
+    @Override
+    public boolean isSignedOn(Date date) {
+        MonthDay monthDay = monthDay(date);
+        MonthSignInIndex index = getMonthIndexes().get(monthDay.month);
+        return index != null && index.isSigned(monthDay.day);
+    }
+
+    @Override
+    public boolean isRewardedOn(Date date) {
+        MonthDay monthDay = monthDay(date);
+        MonthSignInIndex index = getMonthIndexes().get(monthDay.month);
+        return index != null && index.isRewarded(monthDay.day);
+    }
+
+    @Override
+    public void markSigned(Date date, boolean rewarded) {
+        MonthDay monthDay = monthDay(date);
+        getMonthIndexes()
+                .computeIfAbsent(monthDay.month, MonthSignInIndex::new)
+                .markSigned(monthDay.day, rewarded);
+    }
+
+    @Override
     public @NonNull List<KeyValue<String, KeyValue<Date, Boolean>>> getCdkRecords() {
         if (this.cdkRecords == null) {
             this.cdkRecords = new ArrayList<>();
@@ -183,6 +226,10 @@ public class PlayerSignInData implements IPlayerSignInData {
         buffer.writeInt(this.getSignInCard());
         buffer.writeBoolean(this.isAutoRewarded());
         buffer.writeUtf(this.getLanguage());
+        buffer.writeInt(this.getMonthIndexes().size());
+        for (MonthSignInIndex index : this.getMonthIndexes().values()) {
+            buffer.writeNbt(index.serializeNBT());
+        }
 
         buffer.writeInt(this.getSignInRecords().size());
         for (SignInRecord record : this.getSignInRecords()) {
@@ -204,14 +251,22 @@ public class PlayerSignInData implements IPlayerSignInData {
         this.signInCard.set(buffer.readInt());
         this.autoRewarded = buffer.readBoolean();
         this.language = buffer.readUtf();
+        this.monthIndexes = new LinkedHashMap<>();
+        int monthIndexCount = buffer.readInt();
+        for (int i = 0; i < monthIndexCount; i++) {
+            MonthSignInIndex index = MonthSignInIndex.deserializeNBT(Objects.requireNonNull(buffer.readNbt()));
+            this.monthIndexes.put(index.getMonth(), index);
+        }
 
         this.signInRecords = new ArrayList<>();
-        for (int i = 0; i < buffer.readInt(); i++) {
+        int signInRecordCount = buffer.readInt();
+        for (int i = 0; i < signInRecordCount; i++) {
             this.signInRecords.add(SignInRecord.readFromNBT(Objects.requireNonNull(buffer.readNbt())));
         }
 
         this.cdkRecords = new ArrayList<>();
-        for (int i = 0; i < buffer.readInt(); i++) {
+        int cdkRecordCount = buffer.readInt();
+        for (int i = 0; i < cdkRecordCount; i++) {
             this.cdkRecords.add(new KeyValue<>(buffer.readUtf(), new KeyValue<>(DateUtils.format(buffer.readUtf()), buffer.readBoolean())));
         }
     }
@@ -223,6 +278,7 @@ public class PlayerSignInData implements IPlayerSignInData {
         this.signInCard.set(capability.getSignInCard());
         this.autoRewarded = capability.isAutoRewarded();
         this.language = capability.getLanguage();
+        this.setMonthIndexes(capability.getMonthIndexes());
         this.setSignInRecords(capability.getSignInRecords());
         this.setCdkRecords(capability.getCdkRecords());
     }
@@ -237,6 +293,9 @@ public class PlayerSignInData implements IPlayerSignInData {
         tag.putInt("signInCard", this.getSignInCard());
         tag.putBoolean("autoRewarded", this.isAutoRewarded());
         tag.putString("language", this.getLanguage());
+        ListNBT indexesNBT = new ListNBT();
+        getMonthIndexes().values().forEach(index -> indexesNBT.add(index.serializeNBT()));
+        tag.put("monthIndexes", indexesNBT);
 
         // 序列化签到记录
         ListNBT recordsNBT = new ListNBT();
@@ -267,6 +326,13 @@ public class PlayerSignInData implements IPlayerSignInData {
         this.setSignInCard(nbt.getInt("signInCard"));
         this.setAutoRewarded(nbt.getBoolean("autoRewarded"));
         this.setLanguage(nbt.getString("language"));
+        Map<String, MonthSignInIndex> indexes = new LinkedHashMap<>();
+        ListNBT indexesNBT = nbt.getList("monthIndexes", 10);
+        for (int i = 0; i < indexesNBT.size(); i++) {
+            MonthSignInIndex index = MonthSignInIndex.deserializeNBT(indexesNBT.getCompound(i));
+            indexes.put(index.getMonth(), index);
+        }
+        this.setMonthIndexes(indexes);
 
         // 反序列化签到记录
         ListNBT recordsNBT = nbt.getList("signInRecords", 10); // 10 是 CompoundNBT 的类型ID
@@ -286,11 +352,39 @@ public class PlayerSignInData implements IPlayerSignInData {
     }
 
     public int calculateContinuousDays() {
-        try {
-            return DateUtils.calculateContinuousDays(this.getSignInRecords().stream().map(SignInRecord::getCompensateTime).collect(Collectors.toList())
-                    , RewardManager.getCompensateDate(DateUtils.getServerDate()));
-        } catch (Exception e) {
-            return 0;
+        return getContinuousSignInDays();
+    }
+
+    @Override
+    public int calculateContinuousDays(Date current) {
+        LocalDate day = current.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        int continuous = 0;
+        int limit = Math.max(1, getTotalSignInDays());
+        while (continuous < limit && isSignedOn(Date.from(day.atStartOfDay(ZoneId.systemDefault()).toInstant()))) {
+            continuous++;
+            day = day.minusDays(1);
+        }
+        return continuous;
+    }
+
+    private static MonthDay monthDay(Date date) {
+        if (date == null) {
+            throw new IllegalArgumentException("date");
+        }
+        LocalDate localDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        return new MonthDay(
+                String.format("%04d-%02d", localDate.getYear(), localDate.getMonthValue()),
+                localDate.getDayOfMonth()
+        );
+    }
+
+    private static final class MonthDay {
+        private final String month;
+        private final int day;
+
+        private MonthDay(String month, int day) {
+            this.month = month;
+            this.day = day;
         }
     }
 }

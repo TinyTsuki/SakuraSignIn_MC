@@ -571,7 +571,7 @@ public class RewardOptionScreen extends Screen {
                         Component component = Component.translatableClient(EI18nType.MESSAGE, "no_permission_to_view_reward", Component.translatableClient(EI18nType.WORD, SakuraUtils.getRewardRuleI18nKeyName(rewardRule)));
                         NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0x88FF5555));
                     }
-                    if (!player.hasPermissions(ServerConfig.PERMISSION_EDIT_REWARD.get())) {
+                    if (!player.hasPermissions(CommonConfig.get().permission().permissionEditReward())) {
                         Component component = Component.translatableClient(EI18nType.MESSAGE, "no_permission_to_edit_reward");
                         NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
                     }
@@ -636,7 +636,7 @@ public class RewardOptionScreen extends Screen {
             if (!Minecraft.getInstance().isLocalServer()) {
                 ClientPlayerEntity player = Minecraft.getInstance().player;
                 if (player != null) {
-                    if (player.hasPermissions(ServerConfig.PERMISSION_EDIT_REWARD.get())) {
+                    if (player.hasPermissions(CommonConfig.get().permission().permissionEditReward())) {
                         for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardConfigManager.toSyncPacket(player).split()) {
                             ModNetworkHandler.INSTANCE.sendToServer(rewardOptionSyncPacket);
                         }
@@ -1101,7 +1101,7 @@ public class RewardOptionScreen extends Screen {
                         }
                     }
                 } else if (Component.translatableClient(EI18nType.OPTION, "delete").toString().equalsIgnoreCase(selectedString)) {
-                    if (ClientConfig.KEY_REWARD_OPTION_DELETE.get().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
+                    if (ClientConfig.get().rewardKeys().delete().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
                         editHandler.handleDelete();
                     }
                 }
@@ -1424,7 +1424,7 @@ public class RewardOptionScreen extends Screen {
                         editHandler.handlePaste();
                     }
                 } else if (Component.translatableClient(EI18nType.OPTION, "delete").toString().equalsIgnoreCase(selectedString)) {
-                    if (ClientConfig.KEY_REWARD_OPTION_DELETE.get().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
+                    if (ClientConfig.get().rewardKeys().delete().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
                         editHandler.handleDelete();
                     }
                 }
@@ -1944,7 +1944,7 @@ public class RewardOptionScreen extends Screen {
                     }
                 } else if (op == OperationButtonType.UPLOAD.getCode()) {
                     ClientPlayerEntity player = Minecraft.getInstance().player;
-                    if (player != null && player.hasPermissions(ServerConfig.PERMISSION_EDIT_REWARD.get())) {
+                    if (player != null && player.hasPermissions(CommonConfig.get().permission().permissionEditReward())) {
                         button.setTooltip(Component.translatableClient(EI18nType.TIPS, "upload_reward_config").toString())
                                 .setHoverFgColor(0xAA808080).setTapFgColor(0xAAA0A0A0);
                     } else {
@@ -2123,27 +2123,27 @@ public class RewardOptionScreen extends Screen {
         boolean consumed = false;
 
         // Ctrl + C
-        if (ClientConfig.KEY_REWARD_OPTION_COPY.get().stream().anyMatch(keyManager::isKeyPressed)) {
+        if (ClientConfig.get().rewardKeys().copy().stream().anyMatch(keyManager::isKeyPressed)) {
             consumed = editHandler.handleCopy();
         }
         // Ctrl + V
-        else if (ClientConfig.KEY_REWARD_OPTION_PASTE.get().stream().anyMatch(keyManager::isKeyPressed)) {
+        else if (ClientConfig.get().rewardKeys().paste().stream().anyMatch(keyManager::isKeyPressed)) {
             consumed = editHandler.handlePaste();
         }
         // Ctrl + X
-        else if (ClientConfig.KEY_REWARD_OPTION_CUT.get().stream().anyMatch(keyManager::isKeyPressed)) {
+        else if (ClientConfig.get().rewardKeys().cut().stream().anyMatch(keyManager::isKeyPressed)) {
             consumed = editHandler.handleCut();
         }
         // Ctrl + Y / DELETE
-        else if (ClientConfig.KEY_REWARD_OPTION_DELETE.get().stream().anyMatch(keyManager::isKeyPressed)) {
+        else if (ClientConfig.get().rewardKeys().delete().stream().anyMatch(keyManager::isKeyPressed)) {
             consumed = editHandler.handleDelete();
         }
         // Ctrl + Z
-        else if (ClientConfig.KEY_REWARD_OPTION_UNDO.get().stream().anyMatch(keyManager::isKeyPressed)) {
+        else if (ClientConfig.get().rewardKeys().undo().stream().anyMatch(keyManager::isKeyPressed)) {
             consumed = editHandler.handleUndo();
         }
         // Ctrl + Shift + Z
-        else if (ClientConfig.KEY_REWARD_OPTION_REDO.get().stream().anyMatch(keyManager::isKeyPressed)) {
+        else if (ClientConfig.get().rewardKeys().redo().stream().anyMatch(keyManager::isKeyPressed)) {
             consumed = editHandler.handleRedo();
         }
 

@@ -70,8 +70,8 @@ public class ClientEventHandler {
      */
     public static void loadThemeTexture() {
         try {
-            SakuraSignIn.setThemeTexture(TextureUtils.loadCustomTexture(ClientConfig.THEME.get()));
-            SakuraSignIn.setSpecialVersionTheme(Boolean.TRUE.equals(ClientConfig.SPECIAL_THEME.get()));
+            SakuraSignIn.setThemeTexture(TextureUtils.loadCustomTexture(ClientConfig.get().display().theme()));
+            SakuraSignIn.setSpecialVersionTheme(Boolean.TRUE.equals(ClientConfig.get().display().specialTheme()));
             InputStream inputStream = Minecraft.getInstance().getResourceManager().getResource(SakuraSignIn.getThemeTexture()).getInputStream();
             SakuraSignIn.setThemeTextureCoordinate(PNGUtils.readLastPrivateChunk(inputStream, PNG_CHUNK_NAME));
         } catch (IOException | ClassNotFoundException ignored) {
@@ -114,8 +114,8 @@ public class ClientEventHandler {
             if (event instanceof GuiScreenEvent.InitGuiEvent.Post) {
                 if (SakuraSignIn.getThemeTexture() == null) ClientEventHandler.loadThemeTexture();
                 // 创建按钮并添加到界面
-                String[] signInCoordinate = ClientConfig.INVENTORY_SIGN_IN_BUTTON_COORDINATE.get().split(",");
-                String[] rewardOptionCoordinate = ClientConfig.INVENTORY_REWARD_OPTION_BUTTON_COORDINATE.get().split(",");
+                String[] signInCoordinate = ClientConfig.get().display().inventorySignInButtonCoordinate().split(",");
+                String[] rewardOptionCoordinate = ClientConfig.get().display().inventoryRewardOptionButtonCoordinate().split(",");
                 double signInX_ = signInCoordinate.length == 2 ? StringUtils.toFloat(signInCoordinate[0]) : 0;
                 double signInY_ = signInCoordinate.length == 2 ? StringUtils.toFloat(signInCoordinate[1]) : 0;
                 double rewardOptionX_ = rewardOptionCoordinate.length == 2 ? StringUtils.toFloat(rewardOptionCoordinate[0]) : 0;
@@ -134,10 +134,12 @@ public class ClientEventHandler {
 
                 // 如果坐标发生变化则保存到配置文件
                 if (signInX_ != signInX || signInY_ != signInY) {
-                    ClientConfig.INVENTORY_SIGN_IN_BUTTON_COORDINATE.set(String.format("%.6f,%.6f", signInX, signInY));
+                    ClientConfig.get().display().inventorySignInButtonCoordinate(String.format("%.6f,%.6f", signInX, signInY));
+                    ClientConfig.save();
                 }
                 if (rewardOptionX_ != rewardOptionX || rewardOptionY_ != rewardOptionY) {
-                    ClientConfig.INVENTORY_REWARD_OPTION_BUTTON_COORDINATE.set(String.format("%.6f,%.6f", rewardOptionX, rewardOptionY));
+                    ClientConfig.get().display().inventoryRewardOptionButtonCoordinate(String.format("%.6f,%.6f", rewardOptionX, rewardOptionY));
+                    ClientConfig.save();
                 }
 
                 // 如果坐标为百分比则转换为像素坐标
@@ -158,14 +160,22 @@ public class ClientEventHandler {
                         I18nUtils.getTranslationClient(EI18nType.KEY, "sign_in"))
                         .setUV(SakuraSignIn.getThemeTextureCoordinate().getSignInBtnUV(), SakuraSignIn.getThemeTextureCoordinate().getTotalWidth(), SakuraSignIn.getThemeTextureCoordinate().getTotalHeight())
                         .setOnClick((button) -> ClientEventHandler.openSignInScreen(event.getGui()))
-                        .setOnDragEnd((coordinate) -> ClientConfig.INVENTORY_SIGN_IN_BUTTON_COORDINATE.set(String.format("%.6f,%.6f", coordinate.getX(), coordinate.getY())));
+                        .setOnDragEnd((coordinate) -> {
+                            ClientConfig.get().display().inventorySignInButtonCoordinate(
+                                    String.format("%.6f,%.6f", coordinate.getX(), coordinate.getY()));
+                            ClientConfig.save();
+                        });
                 InventoryButton rewardOptionButton = new InventoryButton((int) rewardOptionX, (int) rewardOptionY,
                         AbstractGuiUtils.ITEM_ICON_SIZE,
                         AbstractGuiUtils.ITEM_ICON_SIZE,
                         I18nUtils.getTranslationClient(EI18nType.KEY, "reward_option"))
                         .setUV(SakuraSignIn.getThemeTextureCoordinate().getRewardOptionBtnUV(), SakuraSignIn.getThemeTextureCoordinate().getTotalWidth(), SakuraSignIn.getThemeTextureCoordinate().getTotalHeight())
                         .setOnClick((button) -> Minecraft.getInstance().setScreen(new RewardOptionScreen().setPreviousScreen(event.getGui())))
-                        .setOnDragEnd((coordinate) -> ClientConfig.INVENTORY_REWARD_OPTION_BUTTON_COORDINATE.set(String.format("%.6f,%.6f", coordinate.getX(), coordinate.getY())));
+                        .setOnDragEnd((coordinate) -> {
+                            ClientConfig.get().display().inventoryRewardOptionButtonCoordinate(
+                                    String.format("%.6f,%.6f", coordinate.getX(), coordinate.getY()));
+                            ClientConfig.save();
+                        });
                 ((GuiScreenEvent.InitGuiEvent.Post) event).addWidget(signInButton);
                 ((GuiScreenEvent.InitGuiEvent.Post) event).addWidget(rewardOptionButton);
             }

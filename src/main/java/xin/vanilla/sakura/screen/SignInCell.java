@@ -1,5 +1,6 @@
 package xin.vanilla.sakura.screen;
 
+import xin.vanilla.sakura.config.CommonConfig;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.Data;
@@ -11,7 +12,6 @@ import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.ItemRenderer;
 import net.minecraft.util.ResourceLocation;
 import xin.vanilla.sakura.config.ClientConfig;
-import xin.vanilla.sakura.config.ServerConfig;
 import xin.vanilla.sakura.enums.ESignInStatus;
 import xin.vanilla.sakura.rewards.Reward;
 import xin.vanilla.sakura.rewards.RewardList;
@@ -90,7 +90,7 @@ public class SignInCell {
             } else {
                 Coordinate rewardUV;
                 // 绘制奖励图标
-                if (status == ESignInStatus.SIGNED_IN.getCode() || ClientConfig.AUTO_REWARDED.get()) {
+                if (status == ESignInStatus.SIGNED_IN.getCode() || ClientConfig.get().display().autoRewarded()) {
                     rewardUV = textureCoordinate.getSignedInUV();
                 } else {
                     rewardUV = textureCoordinate.getNotSignedInUV();
@@ -201,7 +201,7 @@ public class SignInCell {
 
         boolean showQuality = true;
         if (Minecraft.getInstance().player != null) {
-            showQuality = Minecraft.getInstance().player.hasPermissions(ServerConfig.PERMISSION_REWARD_PROBABILITY.get());
+            showQuality = Minecraft.getInstance().player.hasPermissions(CommonConfig.get().permission().permissionRewardProbability());
         }
         for (int i = 0; i < TOOLTIP_MAX_VISIBLE_ITEMS; i++) {
             int index = i + (rewardList.size() > TOOLTIP_MAX_VISIBLE_ITEMS ? tooltipScrollOffset : 0);
