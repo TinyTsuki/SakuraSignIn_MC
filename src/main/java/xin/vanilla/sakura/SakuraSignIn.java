@@ -1,31 +1,32 @@
 package xin.vanilla.sakura;
 
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Setter;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.client.entity.player.ClientPlayerEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.server.ServerStartingEvent;
-import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.minecraftforge.fml.event.server.FMLServerStartingEvent;
+import net.minecraftforge.fml.event.server.FMLServerStoppingEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.command.SignInCommand;
 import xin.vanilla.sakura.config.*;
+import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.event.ClientEventHandler;
+import xin.vanilla.sakura.internal.forge.player.ForgePlayerSignInDataService;
 import xin.vanilla.sakura.network.ModNetworkHandler;
 import xin.vanilla.sakura.network.data.AdvancementData;
 import xin.vanilla.sakura.network.packet.SplitPacket;
@@ -88,6 +89,7 @@ public class SakuraSignIn {
     /**
      * 背景材质坐标
      */
+    @Getter
     @Setter
     public static TextureCoordinate themeTextureCoordinate = null;
     /**
@@ -128,6 +130,7 @@ public class SakuraSignIn {
     private static final KeyValue<String, String> clientServerTime = new KeyValue<>(DateUtils.toDateTimeString(new Date(0)), DateUtils.toString(new Date(0)));
 
     public SakuraSignIn() {
+        SakuraPlayerData.install(ForgePlayerSignInDataService.INSTANCE);
 
         // 注册网络通道
         ModNetworkHandler.registerPackets();
@@ -150,25 +153,15 @@ public class SakuraSignIn {
     }
 
     // 服务器启动时加载数据
-    private void onServerStarting(ServerStartingEvent event) {
+    private void onServerStarting(FMLServerStartingEvent event) {
         serverInstance = event.getServer();
         RewardConfigManager.loadRewardOption();
         LOGGER.debug("SignIn data loaded.");
     }
 
     // 服务器关闭时保存数据
-    private void onServerStopping(ServerStoppingEvent event) {
-        // RewardOptionDataManager.saveRewardOption();
-    }
-
-    public static TextureCoordinate getThemeTextureCoordinate(boolean nonNull) {
-        if (nonNull && (themeTextureCoordinate == null || themeTexture == null)) ClientEventHandler.loadThemeTexture();
-        return themeTextureCoordinate;
-    }
-
-    @NonNull
-    public static TextureCoordinate getThemeTextureCoordinate() {
-        return getThemeTextureCoordinate(true);
+    private void onServerStopping(FMLServerStoppingEvent event) {
+        SakuraPlayerData.saveAllAndClear();
     }
 
     /**
@@ -182,6 +175,8 @@ public class SakuraSignIn {
         ClientEventHandler.registerKeyBindings();
         // 创建配置文件目录
         ClientEventHandler.createConfigPath();
+        // 加载主题纹理
+        ClientEventHandler.loadThemeTexture();
     }
 
     /**
@@ -207,14 +202,15 @@ public class SakuraSignIn {
     public void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         LOGGER.debug("Player has logged out.");
         // 获取退出的玩家对象
-        Player player = event.getPlayer();
+        PlayerEntity player = event.getPlayer();
         // 判断是否在客户端并且退出的玩家是客户端的当前玩家
         if (player.getCommandSenderWorld().isClientSide) {
-            LocalPlayer clientPlayer = Minecraft.getInstance().player;
+            ClientPlayerEntity clientPlayer = Minecraft.getInstance().player;
             if (clientPlayer != null && clientPlayer.getUUID().equals(player.getUUID())) {
                 LOGGER.debug("Current player has logged out.");
                 // 当前客户端玩家与退出的玩家相同
                 enabled = false;
+                SakuraPlayerData.clearClient();
             }
         }
     }
