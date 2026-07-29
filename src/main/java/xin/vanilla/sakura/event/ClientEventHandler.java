@@ -1,16 +1,16 @@
 package xin.vanilla.sakura.event;
 
-import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.gui.screens.inventory.EffectRenderingInventoryScreen;
-import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.entity.player.ClientPlayerEntity;
+import net.minecraft.client.gui.DisplayEffectsScreen;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.settings.KeyBinding;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.ClientRegistry;
+import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
-import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.loading.FMLPaths;
 import org.apache.logging.log4j.LogManager;
@@ -42,9 +42,9 @@ public class ClientEventHandler {
     private static final String CATEGORIES = "key.sakura_sign_in.categories";
 
     // 定义按键绑定
-    public static KeyMapping SIGN_IN_SCREEN_KEY = new KeyMapping("key.sakura_sign_in.sign_in",
+    public static KeyBinding SIGN_IN_SCREEN_KEY = new KeyBinding("key.sakura_sign_in.sign_in",
             GLFWKey.GLFW_KEY_H, CATEGORIES);
-    public static KeyMapping REWARD_OPTION_SCREEN_KEY = new KeyMapping("key.sakura_sign_in.reward_option",
+    public static KeyBinding REWARD_OPTION_SCREEN_KEY = new KeyBinding("key.sakura_sign_in.reward_option",
             GLFWKey.GLFW_KEY_O, CATEGORIES);
 
     /**
@@ -70,13 +70,13 @@ public class ClientEventHandler {
      */
     public static void loadThemeTexture() {
         try {
-            SakuraSignIn.setThemeTexture(TextureUtils.loadCustomTexture(ClientConfig.THEME.get()));
-            SakuraSignIn.setSpecialVersionTheme(Boolean.TRUE.equals(ClientConfig.SPECIAL_THEME.get()));
+            SakuraSignIn.setThemeTexture(TextureUtils.loadCustomTexture(ClientConfig.get().display().theme()));
+            SakuraSignIn.setSpecialVersionTheme(Boolean.TRUE.equals(ClientConfig.get().display().specialTheme()));
             InputStream inputStream = Minecraft.getInstance().getResourceManager().getResource(SakuraSignIn.getThemeTexture()).getInputStream();
             SakuraSignIn.setThemeTextureCoordinate(PNGUtils.readLastPrivateChunk(inputStream, PNG_CHUNK_NAME));
         } catch (IOException | ClassNotFoundException ignored) {
         }
-        if (SakuraSignIn.getThemeTextureCoordinate(false) == null) {
+        if (SakuraSignIn.getThemeTexture() == null || SakuraSignIn.getThemeTextureCoordinate() == null) {
             // 使用默认配置
             SakuraSignIn.setThemeTextureCoordinate(TextureCoordinate.getDefault());
         }
@@ -108,14 +108,14 @@ public class ClientEventHandler {
     }
 
     @SubscribeEvent
-    public static void onRenderScreen(ScreenEvent event) {
-        if (event.getScreen() instanceof EffectRenderingInventoryScreen) {
+    public static void onRenderScreen(GuiScreenEvent event) {
+        if (event.getGui() instanceof DisplayEffectsScreen) {
             if (event.isCancelable()) event.setCanceled(false);
-            if (event instanceof ScreenEvent.InitScreenEvent.Post) {
+            if (event instanceof GuiScreenEvent.InitGuiEvent.Post) {
                 if (SakuraSignIn.getThemeTexture() == null) ClientEventHandler.loadThemeTexture();
                 // 创建按钮并添加到界面
-                String[] signInCoordinate = ClientConfig.INVENTORY_SIGN_IN_BUTTON_COORDINATE.get().split(",");
-                String[] rewardOptionCoordinate = ClientConfig.INVENTORY_REWARD_OPTION_BUTTON_COORDINATE.get().split(",");
+                String[] signInCoordinate = ClientConfig.get().display().inventorySignInButtonCoordinate().split(",");
+                String[] rewardOptionCoordinate = ClientConfig.get().display().inventoryRewardOptionButtonCoordinate().split(",");
                 double signInX_ = signInCoordinate.length == 2 ? StringUtils.toFloat(signInCoordinate[0]) : 0;
                 double signInY_ = signInCoordinate.length == 2 ? StringUtils.toFloat(signInCoordinate[1]) : 0;
                 double rewardOptionX_ = rewardOptionCoordinate.length == 2 ? StringUtils.toFloat(rewardOptionCoordinate[0]) : 0;
@@ -134,17 +134,19 @@ public class ClientEventHandler {
 
                 // 如果坐标发生变化则保存到配置文件
                 if (signInX_ != signInX || signInY_ != signInY) {
-                    ClientConfig.INVENTORY_SIGN_IN_BUTTON_COORDINATE.set(String.format("%.6f,%.6f", signInX, signInY));
+                    ClientConfig.get().display().inventorySignInButtonCoordinate(String.format("%.6f,%.6f", signInX, signInY));
+                    ClientConfig.save();
                 }
                 if (rewardOptionX_ != rewardOptionX || rewardOptionY_ != rewardOptionY) {
-                    ClientConfig.INVENTORY_REWARD_OPTION_BUTTON_COORDINATE.set(String.format("%.6f,%.6f", rewardOptionX, rewardOptionY));
+                    ClientConfig.get().display().inventoryRewardOptionButtonCoordinate(String.format("%.6f,%.6f", rewardOptionX, rewardOptionY));
+                    ClientConfig.save();
                 }
 
                 // 如果坐标为百分比则转换为像素坐标
-                if (signInX > 0 && signInX <= 1) signInX *= event.getScreen().width;
-                if (signInY > 0 && signInY <= 1) signInY *= event.getScreen().height;
-                if (rewardOptionX > 0 && rewardOptionX <= 1) rewardOptionX *= event.getScreen().width;
-                if (rewardOptionY > 0 && rewardOptionY <= 1) rewardOptionY *= event.getScreen().height;
+                if (signInX > 0 && signInX <= 1) signInX *= event.getGui().width;
+                if (signInY > 0 && signInY <= 1) signInY *= event.getGui().height;
+                if (rewardOptionX > 0 && rewardOptionX <= 1) rewardOptionX *= event.getGui().width;
+                if (rewardOptionY > 0 && rewardOptionY <= 1) rewardOptionY *= event.getGui().height;
 
                 // 转换为有效坐标
                 signInX = InventoryButton.getValidX(signInX, AbstractGuiUtils.ITEM_ICON_SIZE);
@@ -157,76 +159,84 @@ public class ClientEventHandler {
                         AbstractGuiUtils.ITEM_ICON_SIZE,
                         I18nUtils.getTranslationClient(EI18nType.KEY, "sign_in"))
                         .setUV(SakuraSignIn.getThemeTextureCoordinate().getSignInBtnUV(), SakuraSignIn.getThemeTextureCoordinate().getTotalWidth(), SakuraSignIn.getThemeTextureCoordinate().getTotalHeight())
-                        .setOnClick((button) -> ClientEventHandler.openSignInScreen(event.getScreen()))
-                        .setOnDragEnd((coordinate) -> ClientConfig.INVENTORY_SIGN_IN_BUTTON_COORDINATE.set(String.format("%.6f,%.6f", coordinate.getX(), coordinate.getY())));
+                        .setOnClick((button) -> ClientEventHandler.openSignInScreen(event.getGui()))
+                        .setOnDragEnd((coordinate) -> {
+                            ClientConfig.get().display().inventorySignInButtonCoordinate(
+                                    String.format("%.6f,%.6f", coordinate.getX(), coordinate.getY()));
+                            ClientConfig.save();
+                        });
                 InventoryButton rewardOptionButton = new InventoryButton((int) rewardOptionX, (int) rewardOptionY,
                         AbstractGuiUtils.ITEM_ICON_SIZE,
                         AbstractGuiUtils.ITEM_ICON_SIZE,
                         I18nUtils.getTranslationClient(EI18nType.KEY, "reward_option"))
                         .setUV(SakuraSignIn.getThemeTextureCoordinate().getRewardOptionBtnUV(), SakuraSignIn.getThemeTextureCoordinate().getTotalWidth(), SakuraSignIn.getThemeTextureCoordinate().getTotalHeight())
-                        .setOnClick((button) -> Minecraft.getInstance().setScreen(new RewardOptionScreen().setPreviousScreen(event.getScreen())))
-                        .setOnDragEnd((coordinate) -> ClientConfig.INVENTORY_REWARD_OPTION_BUTTON_COORDINATE.set(String.format("%.6f,%.6f", coordinate.getX(), coordinate.getY())));
-                ((ScreenEvent.InitScreenEvent.Post) event).addListener(signInButton);
-                ((ScreenEvent.InitScreenEvent.Post) event).addListener(rewardOptionButton);
+                        .setOnClick((button) -> Minecraft.getInstance().setScreen(new RewardOptionScreen().setPreviousScreen(event.getGui())))
+                        .setOnDragEnd((coordinate) -> {
+                            ClientConfig.get().display().inventoryRewardOptionButtonCoordinate(
+                                    String.format("%.6f,%.6f", coordinate.getX(), coordinate.getY()));
+                            ClientConfig.save();
+                        });
+                ((GuiScreenEvent.InitGuiEvent.Post) event).addWidget(signInButton);
+                ((GuiScreenEvent.InitGuiEvent.Post) event).addWidget(rewardOptionButton);
             }
             // 手动触发鼠标、键盘与渲染事件
-            else if (event instanceof ScreenEvent.KeyboardKeyPressedEvent.Pre) {
-                event.getScreen().children().stream()
+            else if (event instanceof GuiScreenEvent.KeyboardKeyPressedEvent.Pre) {
+                event.getGui().children().stream()
                         .filter(button -> button instanceof InventoryButton)
                         .forEach(button -> {
                             boolean cancel = ((InventoryButton) button).keyPressed_(
-                                    ((ScreenEvent.KeyboardKeyPressedEvent.Pre) event).getKeyCode(),
-                                    ((ScreenEvent.KeyboardKeyPressedEvent.Pre) event).getScanCode(),
-                                    ((ScreenEvent.KeyboardKeyPressedEvent.Pre) event).getModifiers()
+                                    ((GuiScreenEvent.KeyboardKeyPressedEvent.Pre) event).getKeyCode(),
+                                    ((GuiScreenEvent.KeyboardKeyPressedEvent.Pre) event).getScanCode(),
+                                    ((GuiScreenEvent.KeyboardKeyPressedEvent.Pre) event).getModifiers()
                             );
                             if (event.isCancelable()) event.setCanceled(cancel);
                         });
-            } else if (event instanceof ScreenEvent.KeyboardKeyReleasedEvent.Pre) {
-                event.getScreen().children().stream()
+            } else if (event instanceof GuiScreenEvent.KeyboardKeyReleasedEvent.Pre) {
+                event.getGui().children().stream()
                         .filter(button -> button instanceof InventoryButton)
                         .forEach(button -> {
                             boolean cancel = ((InventoryButton) button).keyReleased_(
-                                    ((ScreenEvent.KeyboardKeyReleasedEvent.Pre) event).getKeyCode(),
-                                    ((ScreenEvent.KeyboardKeyReleasedEvent.Pre) event).getScanCode(),
-                                    ((ScreenEvent.KeyboardKeyReleasedEvent.Pre) event).getModifiers()
+                                    ((GuiScreenEvent.KeyboardKeyReleasedEvent.Pre) event).getKeyCode(),
+                                    ((GuiScreenEvent.KeyboardKeyReleasedEvent.Pre) event).getScanCode(),
+                                    ((GuiScreenEvent.KeyboardKeyReleasedEvent.Pre) event).getModifiers()
                             );
                             if (event.isCancelable()) event.setCanceled(cancel);
                         });
-            } else if (event instanceof ScreenEvent.MouseClickedEvent.Pre) {
-                event.getScreen().children().stream()
+            } else if (event instanceof GuiScreenEvent.MouseClickedEvent.Pre) {
+                event.getGui().children().stream()
                         .filter(button -> button instanceof InventoryButton)
                         .forEach(button -> {
                             boolean cancel = ((InventoryButton) button).mouseClicked_(
-                                    ((ScreenEvent.MouseClickedEvent.Pre) event).getMouseX(),
-                                    ((ScreenEvent.MouseClickedEvent.Pre) event).getMouseY(),
-                                    ((ScreenEvent.MouseClickedEvent.Pre) event).getButton()
+                                    ((GuiScreenEvent.MouseClickedEvent.Pre) event).getMouseX(),
+                                    ((GuiScreenEvent.MouseClickedEvent.Pre) event).getMouseY(),
+                                    ((GuiScreenEvent.MouseClickedEvent.Pre) event).getButton()
                             );
                             if (event.isCancelable()) event.setCanceled(cancel);
                         });
-            } else if (event instanceof ScreenEvent.MouseReleasedEvent.Pre) {
-                event.getScreen().children().stream()
+            } else if (event instanceof GuiScreenEvent.MouseReleasedEvent.Pre) {
+                event.getGui().children().stream()
                         .filter(button -> button instanceof InventoryButton)
                         .forEach(button -> {
                             boolean cancel = ((InventoryButton) button).mouseReleased_(
-                                    ((ScreenEvent.MouseReleasedEvent.Pre) event).getMouseX(),
-                                    ((ScreenEvent.MouseReleasedEvent.Pre) event).getMouseY(),
-                                    ((ScreenEvent.MouseReleasedEvent.Pre) event).getButton()
+                                    ((GuiScreenEvent.MouseReleasedEvent.Pre) event).getMouseX(),
+                                    ((GuiScreenEvent.MouseReleasedEvent.Pre) event).getMouseY(),
+                                    ((GuiScreenEvent.MouseReleasedEvent.Pre) event).getButton()
                             );
                             if (event.isCancelable()) event.setCanceled(cancel);
                         });
-            } else if (event instanceof ScreenEvent.DrawScreenEvent.Post) {
-                event.getScreen().children().stream()
+            } else if (event instanceof GuiScreenEvent.DrawScreenEvent.Post) {
+                event.getGui().children().stream()
                         .filter(button -> button instanceof InventoryButton)
                         .forEach(button -> ((InventoryButton) button).render_(
-                                ((ScreenEvent.DrawScreenEvent.Post) event).getPoseStack(),
-                                ((ScreenEvent.DrawScreenEvent.Post) event).getMouseX(),
-                                ((ScreenEvent.DrawScreenEvent.Post) event).getMouseY(),
-                                ((ScreenEvent.DrawScreenEvent.Post) event).getPartialTicks()
+                                ((GuiScreenEvent.DrawScreenEvent.Post) event).getMatrixStack(),
+                                ((GuiScreenEvent.DrawScreenEvent.Post) event).getMouseX(),
+                                ((GuiScreenEvent.DrawScreenEvent.Post) event).getMouseY(),
+                                ((GuiScreenEvent.DrawScreenEvent.Post) event).getRenderPartialTicks()
                         ));
             }
         }
-        if (event instanceof ScreenEvent.DrawScreenEvent.Post) {
-            NotificationManager.get().render(((ScreenEvent.DrawScreenEvent.Post) event).getPoseStack());
+        if (event instanceof GuiScreenEvent.DrawScreenEvent.Post) {
+            NotificationManager.get().render(((GuiScreenEvent.DrawScreenEvent.Post) event).getMatrixStack());
         }
     }
 
@@ -242,7 +252,7 @@ public class ClientEventHandler {
             SakuraSignIn.setCalendarCurrentDate(RewardManager.getCompensateDate(DateUtils.getClientDate()));
             Minecraft.getInstance().setScreen(new SignInScreen().setPreviousScreen(previousScreen));
         } else {
-            LocalPlayer player = Minecraft.getInstance().player;
+            ClientPlayerEntity player = Minecraft.getInstance().player;
             if (player != null) {
                 Component component = Component.translatableClient(EI18nType.MESSAGE, "sakura_is_offline");
                 NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0x88FF5555));

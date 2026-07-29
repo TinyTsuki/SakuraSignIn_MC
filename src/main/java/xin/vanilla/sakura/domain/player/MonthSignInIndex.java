@@ -34,6 +34,14 @@ public class MonthSignInIndex {
         return (rewardedDays & dayBit(day)) != 0;
     }
 
+    public void merge(MonthSignInIndex other) {
+        if (other == null || !month.equals(other.month)) {
+            return;
+        }
+        signedDays |= other.signedDays;
+        rewardedDays |= other.rewardedDays;
+    }
+
     public CompoundNBT serializeNBT() {
         CompoundNBT tag = new CompoundNBT();
         tag.putString("month", month);
