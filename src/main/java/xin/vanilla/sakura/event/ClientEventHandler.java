@@ -19,6 +19,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.ClientConfig;
+import xin.vanilla.sakura.internal.client.dev.SakuraUiSmokeRunner;
 import xin.vanilla.sakura.rewards.RewardManager;
 import xin.vanilla.sakura.screen.RewardOptionScreen;
 import xin.vanilla.sakura.screen.SignInScreen;
@@ -98,6 +99,8 @@ public class ClientEventHandler {
      */
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
+        SakuraUiSmokeRunner.tick();
+
         // 检测并消费点击事件
         if (SIGN_IN_SCREEN_KEY.consumeClick()) {
             // 打开签到界面
