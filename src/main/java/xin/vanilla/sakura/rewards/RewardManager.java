@@ -1,5 +1,6 @@
 package xin.vanilla.sakura.rewards;
 
+import xin.vanilla.sakura.text.SakuraComponent;
 import xin.vanilla.sakura.config.CommonConfig;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
@@ -19,7 +20,6 @@ import xin.vanilla.sakura.config.RewardConfigManager;
 import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.data.SignInRecord;
-import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.message.SakuraMessages;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
 import xin.vanilla.sakura.enums.ERewardType;
@@ -29,7 +29,7 @@ import xin.vanilla.sakura.enums.ETimeCoolingMethod;
 import xin.vanilla.sakura.network.packet.SignInPacket;
 import xin.vanilla.sakura.rewards.impl.*;
 import xin.vanilla.sakura.util.*;
-import xin.vanilla.sakura.util.Component;
+import xin.vanilla.banira.common.data.Component;
 
 import java.awt.*;
 import java.math.BigDecimal;
@@ -488,19 +488,19 @@ public class RewardManager {
         ETimeCoolingMethod coolingMethod = CommonConfig.get().cooling().timeCoolingMethod();
         // 判断签到/补签时间合法性
         if (ESignInType.SIGN_IN.equals(packet.getSignInType()) && serverCompensateDateInt < signCompensateDateInt) {
-            SakuraMessages.send(player, Component.translatable(player, EI18nType.MESSAGE, "sign_in_date_late_server_current_date_fail"), notificationType);
+            SakuraMessages.send(player, SakuraComponent.get().trans(player, "message", "sign_in_date_late_server_current_date_fail"), notificationType);
             SakuraPlayerData.saveAndSync(player);
             return;
         } else if (ESignInType.SIGN_IN.equals(packet.getSignInType()) && serverCompensateDateInt > signCompensateDateInt) {
-            SakuraMessages.send(player, Component.translatable(player, EI18nType.MESSAGE, "sign_in_date_early_server_current_date_fail"), notificationType);
+            SakuraMessages.send(player, SakuraComponent.get().trans(player, "message", "sign_in_date_early_server_current_date_fail"), notificationType);
             SakuraPlayerData.saveAndSync(player);
             return;
         } else if (ESignInType.SIGN_IN.equals(packet.getSignInType()) && isSignedIn(signInData, signCompensateDate, false)) {
-            SakuraMessages.send(player, Component.translatable(player, EI18nType.MESSAGE, "already_signed"), notificationType);
+            SakuraMessages.send(player, SakuraComponent.get().trans(player, "message", "already_signed"), notificationType);
             SakuraPlayerData.saveAndSync(player);
             return;
         } else if (ESignInType.RE_SIGN_IN.equals(packet.getSignInType()) && serverCompensateDateInt <= signCompensateDateInt) {
-            SakuraMessages.send(player, Component.translatable(player, EI18nType.MESSAGE, "compensate_date_not_early_server_current_date_fail"), notificationType);
+            SakuraMessages.send(player, SakuraComponent.get().trans(player, "message", "compensate_date_not_early_server_current_date_fail"), notificationType);
             SakuraPlayerData.saveAndSync(player);
             return;
         }
@@ -508,38 +508,38 @@ public class RewardManager {
         if (ESignInType.SIGN_IN.equals(packet.getSignInType()) && coolingMethod.getCode() >= ETimeCoolingMethod.FIXED_INTERVAL.getCode()) {
             Date lastSignInTime = DateUtils.addDate(signInData.getLastSignInTime(), CommonConfig.get().cooling().timeCoolingInterval());
             if (serverDate.before(lastSignInTime)) {
-                SakuraMessages.send(player, Component.translatable(player, EI18nType.MESSAGE, "sign_in_cool_down_fail"), notificationType);
+                SakuraMessages.send(player, SakuraComponent.get().trans(player, "message", "sign_in_cool_down_fail"), notificationType);
                 SakuraPlayerData.saveAndSync(player);
                 return;
             }
         }
         // 判断补签
         if (ESignInType.RE_SIGN_IN.equals(packet.getSignInType()) && !CommonConfig.get().makeUp().signInCard()) {
-            SakuraMessages.send(player, Component.translatable(player, EI18nType.MESSAGE, "server_not_enable_sign_in_card_fail"), notificationType);
+            SakuraMessages.send(player, SakuraComponent.get().trans(player, "message", "server_not_enable_sign_in_card_fail"), notificationType);
             SakuraPlayerData.saveAndSync(player);
             return;
         } else if (ESignInType.RE_SIGN_IN.equals(packet.getSignInType()) && signInData.getSignInCard() <= 0) {
-            SakuraMessages.send(player, Component.translatable(player, EI18nType.MESSAGE, "not_enough_sign_in_card_fail"), notificationType);
+            SakuraMessages.send(player, SakuraComponent.get().trans(player, "message", "not_enough_sign_in_card_fail"), notificationType);
             SakuraPlayerData.saveAndSync(player);
             return;
         } else if (ESignInType.RE_SIGN_IN.equals(packet.getSignInType()) && isSignedIn(signInData, signCompensateDate, false)) {
-            SakuraMessages.send(player, Component.translatable(player, EI18nType.MESSAGE, "already_signed"), notificationType);
+            SakuraMessages.send(player, SakuraComponent.get().trans(player, "message", "already_signed"), notificationType);
             SakuraPlayerData.saveAndSync(player);
             return;
         }
         // 判断领取奖励
         if (ESignInType.REWARD.equals(packet.getSignInType())) {
             if (isRewarded(signInData, signCompensateDate, false)) {
-                SakuraMessages.send(player, Component.translatable(player, EI18nType.MESSAGE, "already_receive_reward_s", DateUtils.toString(signCompensateDate)), notificationType);
+                SakuraMessages.send(player, SakuraComponent.get().trans(player, "message", "already_receive_reward_s", DateUtils.toString(signCompensateDate)), notificationType);
                 SakuraPlayerData.saveAndSync(player);
                 return;
             } else if (!isSignedIn(signInData, signCompensateDate, false)) {
-                SakuraMessages.send(player, Component.translatable(player, EI18nType.MESSAGE, "not_sign_in", DateUtils.toString(signCompensateDate)), notificationType);
+                SakuraMessages.send(player, SakuraComponent.get().trans(player, "message", "not_sign_in", DateUtils.toString(signCompensateDate)), notificationType);
                 SakuraPlayerData.saveAndSync(player);
                 return;
             } else {
                 boolean showFailed = player.hasPermissions(CommonConfig.get().permission().permissionRewardFailedTips());
-                Component msg = Component.translatable(player, EI18nType.MESSAGE, "receive_reward_success");
+                Component msg = SakuraComponent.get().trans(player, "message", "receive_reward_success");
                 Optional<SignInRecord> storedRecord = signInData.getSignInRecords().stream()
                         .filter(record -> DateUtils.toDateInt(record.getCompensateTime()) == DateUtils.toDateInt(signCompensateDate))
                         .filter(record -> !record.isRewarded())
@@ -557,10 +557,10 @@ public class RewardManager {
                             reward.setRewarded(true);
                             Component detail = reward.getName(SakuraUtils.getPlayerLanguage(player), true);
                             if (giveRewardToPlayer(player, signInData, reward)) {
-                                detail.setColor(Color.GREEN.getRGB());
+                                detail.color(Color.GREEN.getRGB());
                                 msg.append(", ").append(detail);
                             } else if (showFailed) {
-                                detail.setColor(Color.RED.getRGB());
+                                detail.color(Color.RED.getRGB());
                                 msg.append(", ").append(detail);
                             }
                         });
@@ -582,15 +582,15 @@ public class RewardManager {
             // 是否自动领取
             if (packet.isAutoRewarded()) {
                 boolean showFailed = player.hasPermissions(CommonConfig.get().permission().permissionRewardFailedTips());
-                Component msg = Component.translatable(player, EI18nType.MESSAGE, "receive_reward_success");
+                Component msg = SakuraComponent.get().trans(player, "message", "receive_reward_success");
                 rewardList.forEach(reward -> {
                     Component detail = reward.getName(SakuraUtils.getPlayerLanguage(player), true);
                     if (giveRewardToPlayer(player, signInData, reward)) {
-                        detail.setColor(Color.GREEN.getRGB());
+                        detail.color(Color.GREEN.getRGB());
                         signInRecord.getRewardList().add(reward);
                         msg.append(", ").append(detail);
                     } else if (showFailed) {
-                        detail.setColor(Color.RED.getRGB());
+                        detail.color(Color.RED.getRGB());
                         msg.append(", ").append(detail);
                     }
                 });
@@ -603,7 +603,7 @@ public class RewardManager {
             signInData.markSigned(signCompensateDate, packet.isAutoRewarded());
             signInData.plusTotalSignInDays();
             signInData.setContinuousSignInDays(signInData.calculateContinuousDays(serverCompensateDate));
-            SakuraMessages.send(player, Component.translatable(player, EI18nType.MESSAGE, "sign_in_success_s", DateUtils.toString(signInRecord.getCompensateTime()), signInData.calculateContinuousDays(), getTotalSignInDays(signInData)), notificationType);
+            SakuraMessages.send(player, SakuraComponent.get().trans(player, "message", "sign_in_success_s", DateUtils.toString(signInRecord.getCompensateTime()), signInData.calculateContinuousDays(), getTotalSignInDays(signInData)), notificationType);
         }
         // 持久化后再同步，客户端不会参与服务端存储。
         SakuraPlayerData.saveAndSync(player);

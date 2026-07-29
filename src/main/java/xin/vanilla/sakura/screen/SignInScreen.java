@@ -1,5 +1,9 @@
 package xin.vanilla.sakura.screen;
 
+import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.client.enums.EnumAlignment;
+import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.sakura.text.SakuraComponent;
 import xin.vanilla.sakura.config.CommonConfig;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -21,7 +25,6 @@ import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.api.SakuraPlayerData;
-import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ESignInStatus;
 import xin.vanilla.sakura.enums.ESignInType;
 import xin.vanilla.sakura.event.ClientEventHandler;
@@ -164,11 +167,11 @@ public class SignInScreen extends Screen {
         // 初始化布局信息
         this.updateLayout();
 
-        tips = Text.translatable(EI18nType.TIPS, "sign_in_screen_tips");
+        tips = Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.sign_in_screen_tips");
         Button submit = AbstractGuiUtils.newButton(0, 0, 0, 20,
-                Component.translatableClient(EI18nType.OPTION, "confirm"), button -> this.SIGN_IN_SCREEN_TIPS = false);
+                SakuraComponent.get().transClient("option", "confirm"), button -> this.SIGN_IN_SCREEN_TIPS = false);
         Button notAgain = AbstractGuiUtils.newButton(0, 0, 0, 20,
-                Component.translatableClient(EI18nType.OPTION, "no_remind"), button -> {
+                SakuraComponent.get().transClient("option", "no_remind"), button -> {
                     this.SIGN_IN_SCREEN_TIPS = false;
                     ClientConfig.get().display().showSignInScreenTips(false);
                     ClientConfig.save();
@@ -198,14 +201,14 @@ public class SignInScreen extends Screen {
                 .setTextureWidth(textureCoordinate.getTotalWidth())
                 .setTextureHeight(textureCoordinate.getTotalHeight())
                 .setFlipHorizontal(true)
-                .setTooltip(Text.translatable(EI18nType.TIPS, "use_s_key", "←"))
+                .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.use_s_key", "←"))
                 .setKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_SHIFT)));
         BUTTONS.put(RIGHT_ARROW.getCode(), new OperationButton(RIGHT_ARROW.getCode(), texture)
                 .setCoordinate(textureCoordinate.getRightArrowCoordinate())
                 .setNormal(textureCoordinate.getArrowUV()).setHover(textureCoordinate.getArrowHoverUV()).setTap(textureCoordinate.getArrowTapUV())
                 .setTextureWidth(textureCoordinate.getTotalWidth())
                 .setTextureHeight(textureCoordinate.getTotalHeight())
-                .setTooltip(Text.translatable(EI18nType.TIPS, "use_s_key", "→"))
+                .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.use_s_key", "→"))
                 .setKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_SHIFT)));
         BUTTONS.put(UP_ARROW.getCode(), new OperationButton(UP_ARROW.getCode(), texture)
                 .setCoordinate(textureCoordinate.getUpArrowCoordinate())
@@ -213,7 +216,7 @@ public class SignInScreen extends Screen {
                 .setTextureWidth(textureCoordinate.getTotalWidth())
                 .setTextureHeight(textureCoordinate.getTotalHeight())
                 .setRotatedAngle(270)
-                .setTooltip(Text.translatable(EI18nType.TIPS, "use_s_key", "↑"))
+                .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.use_s_key", "↑"))
                 .setKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_SHIFT)));
         BUTTONS.put(DOWN_ARROW.getCode(), new OperationButton(DOWN_ARROW.getCode(), texture)
                 .setCoordinate(textureCoordinate.getDownArrowCoordinate())
@@ -221,7 +224,7 @@ public class SignInScreen extends Screen {
                 .setTextureWidth(textureCoordinate.getTotalWidth())
                 .setTextureHeight(textureCoordinate.getTotalHeight())
                 .setRotatedAngle(90).setFlipVertical(true)
-                .setTooltip(Text.translatable(EI18nType.TIPS, "use_s_key", "↓"))
+                .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.use_s_key", "↓"))
                 .setKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_SHIFT)));
         BUTTONS.put(INFO.getCode(), new OperationButton(INFO.getCode(), texture)
                 .setCoordinate(textureCoordinate.getSignInInfoCoordinate())
@@ -235,32 +238,32 @@ public class SignInScreen extends Screen {
                 .setNormal(textureCoordinate.getThemeUV()).setHover(textureCoordinate.getThemeHoverUV()).setTap(textureCoordinate.getThemeTapUV())
                 .setTextureWidth(textureCoordinate.getTotalWidth())
                 .setTextureHeight(textureCoordinate.getTotalHeight())
-                .setTooltip(Text.translatable(EI18nType.TIPS, "click_to_change_theme")));
+                .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.click_to_change_theme")));
         BUTTONS.put(THEME_SAKURA_BUTTON.getCode(), new OperationButton(THEME_SAKURA_BUTTON.getCode(), texture)
                 .setCoordinate(textureCoordinate.getThemeCoordinate())
                 .setNormal(textureCoordinate.getThemeUV()).setHover(textureCoordinate.getThemeHoverUV()).setTap(textureCoordinate.getThemeTapUV())
                 .setTextureWidth(textureCoordinate.getTotalWidth())
                 .setTextureHeight(textureCoordinate.getTotalHeight())
-                .setTooltip(Text.translatable(EI18nType.TIPS, "click_to_change_theme")));
+                .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.click_to_change_theme")));
         BUTTONS.put(THEME_CLOVER_BUTTON.getCode(), new OperationButton(THEME_CLOVER_BUTTON.getCode(), texture)
                 .setCoordinate(textureCoordinate.getThemeCoordinate())
                 .setNormal(textureCoordinate.getThemeUV()).setHover(textureCoordinate.getThemeHoverUV()).setTap(textureCoordinate.getThemeTapUV())
                 .setTextureWidth(textureCoordinate.getTotalWidth())
                 .setTextureHeight(textureCoordinate.getTotalHeight())
-                .setTooltip(Text.translatable(EI18nType.TIPS, "click_to_change_theme")));
+                .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.click_to_change_theme")));
         BUTTONS.put(THEME_MAPLE_BUTTON.getCode(), new OperationButton(THEME_MAPLE_BUTTON.getCode(), texture)
                 .setCoordinate(textureCoordinate.getThemeCoordinate())
                 .setNormal(textureCoordinate.getThemeUV()).setHover(textureCoordinate.getThemeHoverUV()).setTap(textureCoordinate.getThemeTapUV())
                 .setTextureWidth(textureCoordinate.getTotalWidth())
                 .setTextureHeight(textureCoordinate.getTotalHeight())
-                .setTooltip(Text.translatable(EI18nType.TIPS, "click_to_change_theme")));
+                .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.click_to_change_theme")));
         BUTTONS.put(THEME_CHAOS_BUTTON.getCode(), new OperationButton(THEME_CHAOS_BUTTON.getCode(), texture)
                 .setCoordinate(textureCoordinate.getThemeCoordinate())
                 .setNormal(textureCoordinate.getThemeUV()).setHover(textureCoordinate.getThemeHoverUV()).setTap(textureCoordinate.getThemeTapUV())
                 .setTextureWidth(textureCoordinate.getTotalWidth())
                 .setTextureHeight(textureCoordinate.getTotalHeight())
                 .setTremblingAmplitude(3.5)
-                .setTooltip(Text.translatable(EI18nType.TIPS, "click_to_change_theme_or_select_external_theme").setAlign(Text.Align.CENTER)));
+                .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.click_to_change_theme_or_select_external_theme").align(EnumAlignment.CENTER)));
     }
 
     /**
@@ -506,7 +509,7 @@ public class SignInScreen extends Screen {
                 popupOption.clear();
                 // 若文件夹为空, 绘制提示, 并在点击时打开主题文件夹
                 if (CollectionUtils.isNullOrEmpty(themeFileList)) {
-                    Component component = Component.translatableClient(EI18nType.TITLE, "theme_selector_empty");
+                    Component component = SakuraComponent.get().transClient("title", "theme_selector_empty");
                     popupOption.addOption(StringUtils.replaceLine(component.toString()).split("\n"));
                 } else {
                     popupOption.addOption(themeFileList.stream().map(file -> {
@@ -515,7 +518,7 @@ public class SignInScreen extends Screen {
                         return name;
                     }).toArray(String[]::new));
                 }
-                popupOption.setMaxWidth(AbstractGuiUtils.multilineTextWidth(Text.translatable(EI18nType.TITLE, "theme_selector_empty")))
+                popupOption.setMaxWidth(AbstractGuiUtils.multilineTextWidth(Text.trans(SakuraSignIn.MODID, "title.sakura_sign_in.theme_selector_empty")))
                         .setMaxLines(5)
                         .build(super.font, keyManager.getMouseX(), keyManager.getMouseY(), String.format("主题选择按钮:%s", value.getOperation()));
             }
@@ -529,7 +532,7 @@ public class SignInScreen extends Screen {
         if (cell.status == ESignInStatus.NOT_SIGNED_IN.getCode()) {
             if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                 if (RewardManager.getCompensateDateInt() < DateUtils.toDateInt(RewardManager.getCompensateDate(DateUtils.getClientDate()))) {
-                    Component component = Component.translatableClient(EI18nType.MESSAGE, "next_day_cannot_operate");
+                    Component component = SakuraComponent.get().transClient("message", "next_day_cannot_operate");
                     NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
                 } else {
                     cell.status = ClientConfig.get().display().autoRewarded() ? ESignInStatus.REWARDED.getCode() : ESignInStatus.SIGNED_IN.getCode();
@@ -540,11 +543,11 @@ public class SignInScreen extends Screen {
         // 领取奖励
         else if (cell.status == ESignInStatus.SIGNED_IN.getCode()) {
             if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
-                Component component = Component.translatableClient(EI18nType.MESSAGE, "already_signed");
+                Component component = SakuraComponent.get().transClient("message", "already_signed");
                 NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
             } else {
                 if (RewardManager.isRewarded(SakuraPlayerData.get(player), cellDate, false)) {
-                    Component component = Component.translatableClient(EI18nType.MESSAGE, "already_get_reward");
+                    Component component = SakuraComponent.get().transClient("message", "already_get_reward");
                     NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
                 } else {
                     cell.status = ESignInStatus.REWARDED.getCode();
@@ -556,11 +559,11 @@ public class SignInScreen extends Screen {
         else if (cell.status == ESignInStatus.CAN_REPAIR.getCode()) {
             if (button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
                 if (!CommonConfig.get().makeUp().signInCard()) {
-                    Component component = Component.translatableClient(EI18nType.MESSAGE, "server_not_enable_sign_in_card");
+                    Component component = SakuraComponent.get().transClient("message", "server_not_enable_sign_in_card");
                     NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
                 } else {
                     if (SakuraPlayerData.get(player).getSignInCard() <= 0) {
-                        Component component = Component.translatableClient(EI18nType.MESSAGE, "not_enough_sign_in_card");
+                        Component component = SakuraComponent.get().transClient("message", "not_enough_sign_in_card");
                         NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
                     } else {
                         cell.status = ClientConfig.get().display().autoRewarded() ? ESignInStatus.REWARDED.getCode() : ESignInStatus.SIGNED_IN.getCode();
@@ -570,18 +573,18 @@ public class SignInScreen extends Screen {
             }
         } else if (cell.status == ESignInStatus.NO_ACTION.getCode()) {
             if (cellDate.after(RewardManager.getCompensateDate(DateUtils.getClientDate()))) {
-                Component component = Component.translatableClient(EI18nType.MESSAGE, "next_day_cannot_operate");
+                Component component = SakuraComponent.get().transClient("message", "next_day_cannot_operate");
                 NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
             } else {
-                Component component = Component.translatableClient(EI18nType.MESSAGE, "past_day_cannot_operate");
+                Component component = SakuraComponent.get().transClient("message", "past_day_cannot_operate");
                 NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
             }
         } else if (cell.status == ESignInStatus.REWARDED.getCode()) {
-            Component component = Component.translatableClient(EI18nType.MESSAGE, "already_get_reward");
+            Component component = SakuraComponent.get().transClient("message", "already_get_reward");
             NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
         } else {
             if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
-                Component component = Component.literal(ESignInStatus.valueOf(cell.status).getDescription() + ": " + DateUtils.toString(cellDate));
+                Component component = SakuraComponent.get().literal(ESignInStatus.valueOf(cell.status).getDescription() + ": " + DateUtils.toString(cellDate));
                 NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0x88FF5555));
             }
         }
@@ -697,7 +700,7 @@ public class SignInScreen extends Screen {
                 for (SignInCell cell : signInCells) {
                     if (cell.isShowHover() && cell.isMouseOver(keyManager)) {
                         if (keyManager.onlyShiftPressed()) {
-                            AbstractGuiUtils.drawPopupMessage(Text.translatable(EI18nType.TIPS, "how_to_sign_in").setMatrixStack(matrixStack).setFont(this.font).setAlign(Text.Align.CENTER), mouseX, mouseY, super.width, super.height);
+                            AbstractGuiUtils.drawPopupMessage(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.how_to_sign_in").stack(matrixStack).font(this.font).align(EnumAlignment.CENTER), mouseX, mouseY, super.width, super.height);
                         } else {
                             cell.renderTooltip(matrixStack, super.font, this.itemRenderer, keyManager);
                         }
@@ -715,12 +718,12 @@ public class SignInScreen extends Screen {
                     if (Minecraft.getInstance().player != null) {
                         IPlayerSignInData signInData = SakuraPlayerData.get(Minecraft.getInstance().player);
                         button.setTooltip(
-                                Text.translatable(EI18nType.TIPS, "sign_in_info"
+                                Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.sign_in_info"
                                                 , signInData.getSignInCard()
                                                 , signInData.getContinuousSignInDays()
                                                 , signInData.getTotalSignInDays())
-                                        .setMatrixStack(matrixStack)
-                                        .setFont(this.font)
+                                        .stack(matrixStack)
+                                        .font(this.font)
                         );
                     }
                 }
@@ -731,7 +734,7 @@ public class SignInScreen extends Screen {
         else {
             AbstractGuiUtils.fill(matrixStack, 4, 4, super.width - 8, super.height - 8, 0xDD000000, 15);
             float x, y;
-            tips.setMatrixStack(matrixStack).setFont(super.font);
+            tips.stack(matrixStack).font(super.font);
             int textHeight = AbstractGuiUtils.multilineTextHeight(tips);
             int textWidth = AbstractGuiUtils.multilineTextWidth(tips);
             int buttonWidth = Math.min(100, textWidth / 2 - 5);
@@ -739,9 +742,9 @@ public class SignInScreen extends Screen {
             y = (super.height - (textHeight + 4 + 20)) / 2.0f;
             AbstractGuiUtils.drawString(tips, x, y);
             super.buttons.stream().filter(button -> button instanceof Button
-                    && (button.getMessage().getString().equalsIgnoreCase(Text.translatable(EI18nType.OPTION, "confirm").getContent()))
-                    || (button.getMessage().getString().equalsIgnoreCase(Text.translatable(EI18nType.OPTION, "no_remind").getContent()))).forEach(button -> {
-                if (button.getMessage().getString().equalsIgnoreCase(Text.translatable(EI18nType.OPTION, "confirm").getContent())) {
+                    && (button.getMessage().getString().equalsIgnoreCase(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.confirm").content()))
+                    || (button.getMessage().getString().equalsIgnoreCase(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.no_remind").content()))).forEach(button -> {
+                if (button.getMessage().getString().equalsIgnoreCase(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.confirm").content())) {
                     button.x = (int) x;
                 } else {
                     button.x = (int) x + textWidth - buttonWidth;
@@ -787,7 +790,7 @@ public class SignInScreen extends Screen {
                 ClientPlayerEntity player = Minecraft.getInstance().player;
                 String selectedFile = themeFileList.get(popupOption.getSelectedIndex()).getPath();
                 if (player != null) {
-                    Component component = Component.translatableClient(EI18nType.MESSAGE, "selected_theme_file_s", selectedFile);
+                    Component component = SakuraComponent.get().transClient("message", "selected_theme_file_s", selectedFile);
                     NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component));
                     ResourceLocation resourceLocation = TextureUtils.loadCustomTexture(selectedFile);
                     if (TextureUtils.isTextureAvailable(resourceLocation)) {

@@ -1,5 +1,6 @@
 package xin.vanilla.sakura.network;
 
+import xin.vanilla.sakura.text.SakuraComponent;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import org.apache.logging.log4j.LogManager;
@@ -8,14 +9,13 @@ import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.data.SignInRecord;
-import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.network.packet.AdvancementPacket;
 import xin.vanilla.sakura.network.packet.PlayerDataSyncPacket;
 import xin.vanilla.sakura.network.packet.PlayerMonthSyncPacket;
 import xin.vanilla.sakura.network.packet.RewardOptionSyncPacket;
 import xin.vanilla.sakura.config.RewardConfigManager;
 import xin.vanilla.sakura.screen.component.NotificationManager;
-import xin.vanilla.sakura.util.Component;
+import xin.vanilla.banira.common.data.Component;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -69,13 +69,13 @@ public class ClientProxy {
             RewardConfigManager.saveRewardOption();
             NotificationManager.get().addNotification(
                     NotificationManager.Notification.ofComponentWithBlack(
-                            Component.translatable(EI18nType.MESSAGE, "reward_option_download_success")
+                            SakuraComponent.get().trans("message", "reward_option_download_success")
                     )
             );
         } catch (RuntimeException exception) {
             NotificationManager.get().addNotification(
                     NotificationManager.Notification.ofComponentWithBlack(
-                            Component.translatable(EI18nType.MESSAGE, "reward_option_download_failed")
+                            SakuraComponent.get().trans("message", "reward_option_download_failed")
                     ).setBgColor(0x88FF5555)
             );
             throw exception;
@@ -83,9 +83,7 @@ public class ClientProxy {
     }
 
     public static void handleRewardOptionUploadResult(boolean success) {
-        Component message = Component.translatable(
-                EI18nType.MESSAGE,
-                success ? "reward_option_upload_success" : "reward_option_upload_failed"
+        Component message = SakuraComponent.get().trans("message", success ? "reward_option_upload_success" : "reward_option_upload_failed"
         );
         NotificationManager.Notification notification =
                 NotificationManager.Notification.ofComponentWithBlack(message);

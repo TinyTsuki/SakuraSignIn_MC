@@ -1,6 +1,7 @@
 package xin.vanilla.sakura.screen.component;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import xin.vanilla.banira.client.gui.component.Text;
+import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
@@ -10,7 +11,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.util.AbstractGuiUtils;
-import xin.vanilla.sakura.util.Component;
+import xin.vanilla.banira.common.data.Component;
 
 import java.util.*;
 
@@ -127,7 +128,7 @@ public class NotificationManager {
         }
 
         public static Notification ofComponentWithBlack(Component component) {
-            return new Notification(component.setColor(0xFF000000));
+            return new Notification(component.color(0xFF000000));
         }
 
         public static Notification ofComponent(Component component) {
@@ -152,7 +153,7 @@ public class NotificationManager {
          * @param currentTime 当前时间
          */
         @OnlyIn(Dist.CLIENT)
-        private void render(PoseStack poseStack, Coordinate preInfo, Coordinate screenInfo, long currentTime) {
+        private void render(MatrixStack matrixStack, Coordinate preInfo, Coordinate screenInfo, long currentTime) {
             if (this.finished) return;
             if (this.startTime < 0) this.startTime = currentTime;
             if (currentTime < this.scheduledTime) return;
@@ -179,7 +180,7 @@ public class NotificationManager {
             }
 
             // 实际渲染
-            this.doRender(poseStack, coordinate);
+            this.doRender(matrixStack, coordinate);
 
             // 更新布局上下文
             this.updateLayoutContext(coordinate, preInfo, currentTime);
@@ -366,26 +367,26 @@ public class NotificationManager {
          *
          * @param coordinate 当前通知的布局信息
          */
-        private void doRender(PoseStack poseStack, Coordinate coordinate) {
-            AbstractGuiUtils.setDepth(poseStack, AbstractGuiUtils.EDepth.POPUP_TIPS);
-            AbstractGuiUtils.fill(poseStack,
+        private void doRender(MatrixStack matrixStack, Coordinate coordinate) {
+            AbstractGuiUtils.setDepth(matrixStack, AbstractGuiUtils.EDepth.POPUP_TIPS);
+            AbstractGuiUtils.fill(matrixStack,
                     (int) coordinate.getX(), (int) coordinate.getY(),
                     (int) this.getCachedWidth(), (int) this.getCachedHeight(),
                     this.getBgColor(), this.getRadius()
             );
-            AbstractGuiUtils.fillOutLine(poseStack,
+            AbstractGuiUtils.fillOutLine(matrixStack,
                     (int) coordinate.getX(), (int) coordinate.getY(),
                     (int) this.getCachedWidth(), (int) this.getCachedHeight(),
                     this.getBorderSize(), this.getBorderColor(), this.getRadius()
             );
             AbstractGuiUtils.drawLimitedText(
-                    cachedText.setPoseStack(poseStack),
+                    cachedText.stack(matrixStack),
                     coordinate.getX() + this.getPadding(),
                     coordinate.getY() + this.getPadding(),
                     0, 0,
                     AbstractGuiUtils.EllipsisPosition.MIDDLE
             );
-            AbstractGuiUtils.resetDepth(poseStack);
+            AbstractGuiUtils.resetDepth(matrixStack);
         }
 
         /**
@@ -423,7 +424,7 @@ public class NotificationManager {
     }
 
     @OnlyIn(Dist.CLIENT)
-    public void render(PoseStack poseStack) {
+    public void render(MatrixStack matrixStack) {
         Minecraft mc = Minecraft.getInstance();
         Coordinate screenInfo = new Coordinate()
                 .setWidth(mc.getWindow().getGuiScaledWidth())
@@ -457,7 +458,7 @@ public class NotificationManager {
                 }
 
                 // 执行渲染
-                n.setIndex(i++).render(poseStack, preInfo, screenInfo, currentTime);
+                n.setIndex(i++).render(matrixStack, preInfo, screenInfo, currentTime);
 
                 // 更新布局上下文
                 preInfo.setY(n.getLastY());
@@ -475,10 +476,17 @@ public class NotificationManager {
      * @param screenInfo 屏幕信息
      */
     private boolean shouldSkipRendering(EPosition pos, Coordinate coordinate, Coordinate screenInfo) {
-        return switch (pos) {
-            case TOP_LEFT, TOP_CENTER, TOP_RIGHT -> coordinate.getY() + coordinate.getHeight() > screenInfo.getHeight();
-            case BOTTOM_LEFT, BOTTOM_CENTER, BOTTOM_RIGHT -> coordinate.getY() < 0;
-            default -> false;
-        };
+        switch (pos) {
+            case TOP_LEFT:
+            case TOP_CENTER:
+            case TOP_RIGHT:
+                return coordinate.getY() + coordinate.getHeight() > screenInfo.getHeight();
+            case BOTTOM_LEFT:
+            case BOTTOM_CENTER:
+            case BOTTOM_RIGHT:
+                return coordinate.getY() < 0;
+            default:
+                return false;
+        }
     }
 }

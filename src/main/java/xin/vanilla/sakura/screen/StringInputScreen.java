@@ -1,14 +1,16 @@
 package xin.vanilla.sakura.screen;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.sakura.text.SakuraComponent;
+import com.mojang.blaze3d.matrix.MatrixStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.gui.widget.Widget;
+import net.minecraft.client.gui.widget.button.Button;
 import xin.vanilla.sakura.config.StringList;
-import xin.vanilla.sakura.enums.EI18nType;
-import xin.vanilla.sakura.screen.component.Text;
-import xin.vanilla.sakura.screen.component.TextList;
+import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.client.gui.component.TextList;
 import xin.vanilla.sakura.util.*;
 
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -22,7 +24,7 @@ import java.util.function.Supplier;
  * 字符串输入 Screen
  */
 public class StringInputScreen extends Screen {
-    private final static Component TITLE = Component.literal("StringInputScreen");
+    private final static Component TITLE = SakuraComponent.get().literal("StringInputScreen");
 
     /**
      * 父级 Screen
@@ -55,7 +57,7 @@ public class StringInputScreen extends Screen {
     /**
      * 输入框
      */
-    private final List<EditBox> inputField = new ArrayList<>();
+    private final List<TextFieldWidget> inputField = new ArrayList<>();
     /**
      * 已输入内容
      */
@@ -82,7 +84,7 @@ public class StringInputScreen extends Screen {
 
 
     public StringInputScreen(Screen callbackScreen, TextList titleText, TextList messageText, StringList validator, Consumer<StringList> onDataReceived) {
-        super(TITLE.toTextComponent());
+        super(TITLE.toVanilla());
         this.previousScreen = callbackScreen;
         this.onDataReceived1 = onDataReceived;
         this.onDataReceived2 = null;
@@ -98,7 +100,7 @@ public class StringInputScreen extends Screen {
     }
 
     public StringInputScreen(Screen callbackScreen, TextList titleText, TextList messageText, StringList validator, StringList defaultValue, Consumer<StringList> onDataReceived) {
-        super(TITLE.toTextComponent());
+        super(TITLE.toVanilla());
         this.previousScreen = callbackScreen;
         this.onDataReceived1 = onDataReceived;
         this.onDataReceived2 = null;
@@ -114,7 +116,7 @@ public class StringInputScreen extends Screen {
     }
 
     public StringInputScreen(Screen callbackScreen, TextList titleText, TextList messageText, StringList validator, StringList defaultValue, Consumer<StringList> onDataReceived, Supplier<Boolean> shouldClose) {
-        super(TITLE.toTextComponent());
+        super(TITLE.toVanilla());
         this.previousScreen = callbackScreen;
         this.onDataReceived1 = onDataReceived;
         this.onDataReceived2 = null;
@@ -130,7 +132,7 @@ public class StringInputScreen extends Screen {
     }
 
     public StringInputScreen(Screen callbackScreen, TextList titleText, TextList messageText, StringList validator, Function<StringList, StringList> onDataReceived) {
-        super(TITLE.toTextComponent());
+        super(TITLE.toVanilla());
         this.previousScreen = callbackScreen;
         this.onDataReceived1 = null;
         this.onDataReceived2 = onDataReceived;
@@ -146,7 +148,7 @@ public class StringInputScreen extends Screen {
     }
 
     public StringInputScreen(Screen callbackScreen, TextList titleText, TextList messageText, StringList validator, StringList defaultValue, Function<StringList, StringList> onDataReceived) {
-        super(TITLE.toTextComponent());
+        super(TITLE.toVanilla());
         this.previousScreen = callbackScreen;
         this.onDataReceived1 = null;
         this.onDataReceived2 = onDataReceived;
@@ -162,7 +164,7 @@ public class StringInputScreen extends Screen {
     }
 
     public StringInputScreen(Screen callbackScreen, TextList titleText, TextList messageText, StringList validator, StringList defaultValue, Function<StringList, StringList> onDataReceived, Supplier<Boolean> shouldClose) {
-        super(TITLE.toTextComponent());
+        super(TITLE.toVanilla());
         this.previousScreen = callbackScreen;
         this.onDataReceived1 = null;
         this.onDataReceived2 = onDataReceived;
@@ -185,7 +187,7 @@ public class StringInputScreen extends Screen {
         this.inputField.clear();
         for (int i = 0; i < this.titleText.size(); i++) {
             Text text = this.messageText.get(i);
-            EditBox input = AbstractGuiUtils.newTextFieldWidget(this.font, this.width / 2 - 100, this.yStart + 15 + 45 * i, 200, 20
+            TextFieldWidget input = AbstractGuiUtils.newTextFieldWidget(this.font, this.width / 2 - 100, this.yStart + 15 + 45 * i, 200, 20
                     , text.toComponent());
             input.setMaxLength(Integer.MAX_VALUE);
             if (CollectionUtils.isNotNullOrEmpty(this.validator)) {
@@ -200,14 +202,14 @@ public class StringInputScreen extends Screen {
                 input.setValue(this.defaultValue.get(i));
             }
             this.inputField.add(input);
-            this.addRenderableWidget(input);
+            this.addButton(input);
         }
 
         // 创建提交按钮
-        this.submitButton = AbstractGuiUtils.newButton(this.width / 2 + 5, this.yStart + this.layoutHeight - 28, 95, 20, Component.translatableClient(EI18nType.OPTION, "cancel"), button -> {
+        this.submitButton = AbstractGuiUtils.newButton(this.width / 2 + 5, this.yStart + this.layoutHeight - 28, 95, 20, SakuraComponent.get().transClient("option", "cancel"), button -> {
             StringList value = new StringList();
-            this.inputField.stream().map(EditBox::getValue).forEach(value::add);
-            if (CollectionUtils.isNullOrEmpty(value) || button.getMessage().getString().equals(I18nUtils.getTranslationClient(EI18nType.OPTION, "cancel"))) {
+            this.inputField.stream().map(TextFieldWidget::getValue).forEach(value::add);
+            if (CollectionUtils.isNullOrEmpty(value) || button.getMessage().getString().equals(SakuraComponent.get().translateClient("option", "cancel"))) {
                 // 关闭当前屏幕并返回到调用者的 Screen
                 Minecraft.getInstance().setScreen(previousScreen);
             } else {
@@ -221,7 +223,7 @@ public class StringInputScreen extends Screen {
                     if (CollectionUtils.isNotNullOrEmpty(result) && result.stream().anyMatch(StringUtils::isNotNullOrEmpty)) {
                         this.errorText.clear();
                         for (String s : result) {
-                            this.errorText.add(Text.literal(s).setColor(0xFFFF0000));
+                            this.errorText.add(Text.literal(s).color(0xFFFF0000));
                         }
                     } else {
                         // 关闭当前屏幕并返回到调用者的 Screen
@@ -230,9 +232,9 @@ public class StringInputScreen extends Screen {
                 }
             }
         });
-        this.addRenderableWidget(this.submitButton);
+        this.addButton(this.submitButton);
         // 创建取消按钮
-        this.addRenderableWidget(AbstractGuiUtils.newButton(this.width / 2 - 100, this.yStart + this.layoutHeight - 28, 95, 20, Component.translatableClient(EI18nType.OPTION, "cancel"), button -> {
+        this.addButton(AbstractGuiUtils.newButton(this.width / 2 - 100, this.yStart + this.layoutHeight - 28, 95, 20, SakuraComponent.get().transClient("option", "cancel"), button -> {
             // 关闭当前屏幕并返回到调用者的 Screen
             Minecraft.getInstance().setScreen(previousScreen);
         }));
@@ -240,12 +242,12 @@ public class StringInputScreen extends Screen {
 
     @Override
     @ParametersAreNonnullByDefault
-    public void render(PoseStack poseStack, int mouseX, int mouseY, float delta) {
+    public void render(MatrixStack matrixStack, int mouseX, int mouseY, float delta) {
         this.inputValue.clear();
         this.inputField.forEach(in -> this.inputValue.add(in.getValue()));
-        this.renderBackground(poseStack);
+        this.renderBackground(matrixStack);
         // 绘制背景
-        super.render(poseStack, mouseX, mouseY, delta);
+        super.render(matrixStack, mouseX, mouseY, delta);
         // 绘制标题
         for (int i = 0; i < titleText.size(); i++) {
             Text text = titleText.get(i);
@@ -259,9 +261,9 @@ public class StringInputScreen extends Screen {
             }
         }
         if (this.inputField.stream().allMatch(in -> StringUtils.isNotNullOrEmpty(in.getValue()))) {
-            this.submitButton.setMessage(Component.translatableClient(EI18nType.OPTION, "submit").toTextComponent());
+            this.submitButton.setMessage(SakuraComponent.get().transClient("option", "submit").toVanilla());
         } else {
-            this.submitButton.setMessage(Component.translatableClient(EI18nType.OPTION, "cancel").toTextComponent());
+            this.submitButton.setMessage(SakuraComponent.get().transClient("option", "cancel").toVanilla());
         }
     }
 
@@ -280,7 +282,7 @@ public class StringInputScreen extends Screen {
      */
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == GLFWKey.GLFW_KEY_ESCAPE || (keyCode == GLFWKey.GLFW_KEY_BACKSPACE && this.inputField.stream().noneMatch(EditBox::isFocused))) {
+        if (keyCode == GLFWKey.GLFW_KEY_ESCAPE || (keyCode == GLFWKey.GLFW_KEY_BACKSPACE && this.inputField.stream().noneMatch(Widget::isFocused))) {
             Minecraft.getInstance().setScreen(previousScreen);
             return true;
         } else {

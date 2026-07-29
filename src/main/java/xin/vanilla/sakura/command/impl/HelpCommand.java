@@ -1,5 +1,6 @@
 package xin.vanilla.sakura.command.impl;
 
+import xin.vanilla.sakura.text.SakuraComponent;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -9,10 +10,9 @@ import net.minecraft.entity.player.ServerPlayerEntity;
 import xin.vanilla.banira.api.BaniraCommonSettings;
 import xin.vanilla.sakura.command.SignInCommand;
 import xin.vanilla.sakura.config.KeyValue;
-import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.message.SakuraMessages;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
-import xin.vanilla.sakura.util.Component;
+import xin.vanilla.banira.common.data.Component;
 
 import java.awt.Color;
 import java.util.Arrays;
@@ -75,18 +75,18 @@ public final class HelpCommand {
     private static void sendPage(ServerPlayerEntity player, int page) {
         int perPage = BaniraCommonSettings.helpInfoNumPerPage();
         int pages = pageCount();
-        Component help = Component.literal(
+        Component help = SakuraComponent.get().literal(
                 BaniraCommonSettings.formatHelpHeader("Sakura Sign In", page, pages) + "\n"
         );
         int start = (page - 1) * perPage;
         int end = Math.min(start + perPage, ENTRIES.size());
         for (int index = start; index < end; index++) {
             KeyValue<String, String> entry = ENTRIES.get(index);
-            Component description = Component
-                    .translatable(player, EI18nType.COMMAND, entry.getValue())
-                    .setColor(Color.GRAY.getRGB());
+            Component description = SakuraComponent.get()
+                    .trans(player, "command", entry.getValue())
+                    .color(Color.GRAY.getRGB());
             help.append(entry.getKey())
-                    .append(Component.literal(" -> ").setColor(Color.YELLOW.getRGB()))
+                    .append(SakuraComponent.get().literal(" -> ").color(Color.YELLOW.getRGB()))
                     .append(description);
             if (index + 1 < end) {
                 help.append("\n");

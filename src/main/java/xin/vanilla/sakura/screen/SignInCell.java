@@ -1,5 +1,6 @@
 package xin.vanilla.sakura.screen;
 
+import xin.vanilla.sakura.text.SakuraComponent;
 import xin.vanilla.sakura.config.CommonConfig;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -19,7 +20,7 @@ import xin.vanilla.sakura.screen.component.KeyEventManager;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
 import xin.vanilla.sakura.util.AbstractGuiUtils;
-import xin.vanilla.sakura.util.Component;
+import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.sakura.util.DateUtils;
 
 import java.util.Date;
@@ -130,11 +131,11 @@ public class SignInCell {
             // 绘制日期
             Date date = DateUtils.getClientDate();
             int color = textureCoordinate.getTextColorDefault();
-            Component dayComponent = Component.literal(String.valueOf(day));
+            Component dayComponent = SakuraComponent.get().literal(String.valueOf(day));
             if (year == DateUtils.getYearPart(date) && month == DateUtils.getMonthOfDate(date)) {
                 if (day == DateUtils.getDayOfMonth(date)) {
                     color = textureCoordinate.getTextColorToday();
-                    dayComponent.setUnderlined(true);
+                    dayComponent.underlined(true);
                 } else {
                     color = textureCoordinate.getTextColorCurrent();
                 }
@@ -142,7 +143,7 @@ public class SignInCell {
                 color = textureCoordinate.getTextColorCanRepair();
             }
             float dayWidth = font.width(dayComponent.toString());
-            font.draw(matrixStack, dayComponent.setColor(color).toTextComponent(), (float) (x + (width - dayWidth) / 2), (float) (y + textureCoordinate.getDateOffset() * this.scale + 0.1f), color);
+            font.draw(matrixStack, dayComponent.color(color).toVanilla(), (float) (x + (width - dayWidth) / 2), (float) (y + textureCoordinate.getDateOffset() * this.scale + 0.1f), color);
         }
     }
 
@@ -218,13 +219,13 @@ public class SignInCell {
         // 绘制文字
         String monthTitle = DateUtils.toLocalStringMonth(DateUtils.getDate(year, month, day), Minecraft.getInstance().options.languageCode);
         String dayTitle = DateUtils.toLocalStringDay(DateUtils.getDate(year, month, day), Minecraft.getInstance().options.languageCode);
-        Component title = Component.literal(String.format("%s %s", monthTitle, dayTitle));
+        Component title = SakuraComponent.get().literal(String.format("%s %s", monthTitle, dayTitle));
         double fontWidth = font.width(title.toString());
         Coordinate dateCoordinate = textureCoordinate.getTooltipDateCoordinate();
         double tooltipDateX = tooltipX0 + (tooltipWidth - fontWidth) / 2;
         double tooltipDateY = tooltipY0 + (dateCoordinate.getY() * tooltipScale);
         int color = 0xFFFFFFFF;
-        font.draw(matrixStack, title.setColor(color).toTextComponent(), (int) tooltipDateX, (int) tooltipDateY, color);
+        font.draw(matrixStack, title.color(color).toVanilla(), (int) tooltipDateX, (int) tooltipDateY, color);
 
         // 恢复原来的矩阵状态
         matrixStack.popPose();
