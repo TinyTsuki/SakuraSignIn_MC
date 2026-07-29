@@ -13,6 +13,7 @@ import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ERewardRule;
 import xin.vanilla.sakura.network.ModNetworkHandler;
 import xin.vanilla.sakura.network.data.RewardOptionSyncData;
+import xin.vanilla.sakura.network.data.RewardOptionSyncKind;
 import xin.vanilla.sakura.rewards.Reward;
 import xin.vanilla.sakura.screen.component.NotificationManager;
 import xin.vanilla.sakura.util.CollectionUtils;
@@ -39,11 +40,16 @@ public class RewardOptionSyncPacket extends SplitPacket {
         this.rewardOptionData = new ArrayList<>();
         int size = buf.readInt();
         for (int i = 0; i < size; i++) {
+            RewardOptionSyncKind kind = RewardOptionSyncKind.valueOf(buf.readInt());
             this.rewardOptionData.add(new RewardOptionSyncData(
+                    kind,
                     ERewardRule.valueOf(buf.readInt()),
                     buf.readUtf(),
-                    GSON.fromJson(new String(buf.readByteArray(), StandardCharsets.UTF_8), new TypeToken<Reward>() {
-                    }.getType())
+                    kind == RewardOptionSyncKind.REWARD
+                            ? GSON.fromJson(new String(buf.readByteArray(), StandardCharsets.UTF_8),
+                            new TypeToken<Reward>() {
+                            }.getType())
+                            : null
             ));
         }
     }
@@ -130,9 +136,13 @@ public class RewardOptionSyncPacket extends SplitPacket {
         super.toBytes(buf);
         buf.writeInt(rewardOptionData.size());
         for (RewardOptionSyncData data : rewardOptionData) {
+            buf.writeInt(data.getKind().ordinal());
             buf.writeInt(data.getRule().getCode());
             buf.writeUtf(data.getKey());
-            buf.writeByteArray(GSON.toJson(data.getReward().toJsonObject()).getBytes(StandardCharsets.UTF_8));
+            if (data.getKind() == RewardOptionSyncKind.REWARD) {
+                buf.writeByteArray(GSON.toJson(data.getReward().toJsonObject())
+                        .getBytes(StandardCharsets.UTF_8));
+            }
         }
     }
 
