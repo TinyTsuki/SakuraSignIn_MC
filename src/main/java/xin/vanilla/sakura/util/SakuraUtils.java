@@ -1,17 +1,12 @@
 package xin.vanilla.sakura.util;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.text.ChatType;
-import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.LightType;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.ModContainer;
@@ -149,71 +144,6 @@ public class SakuraUtils {
     }
 
     // endregion 玩家与玩家背包
-
-    // region 消息相关
-
-    /**
-     * 广播消息
-     *
-     * @param player  发送者
-     * @param message 消息
-     */
-    public static void broadcastMessage(ServerPlayerEntity player, Component message) {
-        player.server.getPlayerList().broadcastMessage(new TranslationTextComponent("chat.type.announcement", player.getDisplayName(), message.toChatComponent()), ChatType.SYSTEM, Util.NIL_UUID);
-    }
-
-    /**
-     * 广播消息
-     *
-     * @param server  发送者
-     * @param message 消息
-     */
-    public static void broadcastMessage(MinecraftServer server, Component message) {
-        server.getPlayerList().broadcastMessage(new TranslationTextComponent("chat.type.announcement", "Server", message.toChatComponent()), ChatType.SYSTEM, Util.NIL_UUID);
-    }
-
-    /**
-     * 发送消息
-     *
-     * @param player  玩家
-     * @param message 消息
-     */
-    public static void sendMessage(ServerPlayerEntity player, Component message) {
-        player.sendMessage(message.toChatComponent(SakuraUtils.getPlayerLanguage(player)), player.getUUID());
-    }
-
-    /**
-     * 发送消息
-     *
-     * @param player  玩家
-     * @param message 消息
-     */
-    public static void sendMessage(ClientPlayerEntity player, Component message) {
-        player.sendMessage(message.toChatComponent(SakuraUtils.getClientLanguage()), player.getUUID());
-    }
-
-    /**
-     * 发送消息
-     *
-     * @param player  玩家
-     * @param message 消息
-     */
-    public static void sendMessage(ServerPlayerEntity player, String message) {
-        player.sendMessage(Component.literal(message).toChatComponent(), player.getUUID());
-    }
-
-    /**
-     * 发送翻译消息
-     *
-     * @param player 玩家
-     * @param key    翻译键
-     * @param args   参数
-     */
-    public static void sendTranslatableMessage(ServerPlayerEntity player, String key, Object... args) {
-        player.sendMessage(Component.translatable(key, args).setLanguageCode(SakuraUtils.getPlayerLanguage(player)).toChatComponent(), player.getUUID());
-    }
-
-    // endregion 消息相关
 
     // region 权限相关
 
