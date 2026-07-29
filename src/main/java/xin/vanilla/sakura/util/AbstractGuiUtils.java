@@ -27,6 +27,7 @@ import xin.vanilla.sakura.network.data.AdvancementData;
 import xin.vanilla.sakura.rewards.Reward;
 import xin.vanilla.sakura.rewards.RewardManager;
 import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.client.gui.widget.ItemWidget;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
 
@@ -725,7 +726,7 @@ public class AbstractGuiUtils {
         // 物品
         if (reward.getType().equals(ERewardType.ITEM)) {
             ItemStack itemStack = RewardManager.deserializeReward(reward);
-            renderItem(graphics, fontRenderer, itemStack, x, y, showText);
+            ItemWidget.renderItem(itemRenderer, fontRenderer, itemStack, x, y, showText);
         }
         // 效果
         else if (reward.getType().equals(ERewardType.EFFECT)) {
