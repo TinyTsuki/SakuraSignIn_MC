@@ -26,11 +26,14 @@ public class RewardListWidgetContractTest {
         assertTrue(widget.contains("BaseShapeWidget.drawShape"));
         assertTrue(widget.contains("TooltipWidget.drawPopupMessage"));
         assertTrue(screen.contains("Map<String, RewardListEntryWidget>"));
-        assertTrue(screen.contains(".handleMouseClick("));
-        assertTrue(screen.contains(".handleMouseRelease("));
-        assertTrue(screen.contains(".updateMouseHover("));
+        assertTrue(screen.contains("registerRewardEntry("));
+        assertTrue(screen.contains("entry.setReleaseHandler("));
+        assertTrue(screen.contains("entry.setDragHandler("));
+        assertTrue(screen.contains("addWidget(entry)"));
         assertTrue(screen.contains("getTextColorCanRepair()"));
-        assertFalse(screen.contains("operationButton.renderPopup(matrixStack, keyManager)"));
+        assertFalse(screen.contains(".handleMouseClick("));
+        assertFalse(screen.contains(".handleMouseRelease("));
+        assertFalse(screen.contains(".updateMouseHover("));
     }
 
     @Test
