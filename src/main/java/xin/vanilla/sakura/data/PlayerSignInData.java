@@ -2,7 +2,6 @@ package xin.vanilla.sakura.data;
 
 import lombok.NonNull;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
 import net.minecraft.network.PacketBuffer;
@@ -284,11 +283,6 @@ public class PlayerSignInData implements IPlayerSignInData {
             cdkRecords.add(new KeyValue<>(cdkRecordNBT.getString("key"), new KeyValue<>(DateUtils.format(cdkRecordNBT.getString("date")), cdkRecordNBT.getBoolean("value"))));
         }
         this.setCdkRecords(cdkRecords);
-    }
-
-    @Override
-    public void save(ServerPlayerEntity player) {
-        player.getCapability(PlayerSignInDataCapability.PLAYER_DATA).ifPresent(this::copyFrom);
     }
 
     public int calculateContinuousDays() {

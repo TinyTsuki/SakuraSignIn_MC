@@ -2,7 +2,6 @@ package xin.vanilla.sakura.data;
 
 import lombok.NonNull;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.PacketBuffer;
 import net.minecraftforge.common.util.INBTSerializable;
@@ -16,8 +15,6 @@ import java.util.List;
  * 玩家签到数据
  */
 public interface IPlayerSignInData extends INBTSerializable<CompoundNBT> {
-    // TIPS 加完属性记得去 PlayerSignInDataStorage 里注册
-
     /**
      * 获取累计签到天数
      */
@@ -146,8 +143,6 @@ public interface IPlayerSignInData extends INBTSerializable<CompoundNBT> {
     void readFromBuffer(PacketBuffer buffer);
 
     void copyFrom(IPlayerSignInData capability);
-
-    void save(ServerPlayerEntity player);
 
     int calculateContinuousDays();
 }

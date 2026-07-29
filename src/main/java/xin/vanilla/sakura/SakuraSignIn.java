@@ -24,7 +24,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.command.SignInCommand;
 import xin.vanilla.sakura.config.*;
+import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.event.ClientEventHandler;
+import xin.vanilla.sakura.internal.forge.player.ForgePlayerSignInDataService;
 import xin.vanilla.sakura.network.ModNetworkHandler;
 import xin.vanilla.sakura.network.data.AdvancementData;
 import xin.vanilla.sakura.network.packet.SplitPacket;
@@ -128,6 +130,7 @@ public class SakuraSignIn {
     private static final KeyValue<String, String> clientServerTime = new KeyValue<>(DateUtils.toDateTimeString(new Date(0)), DateUtils.toString(new Date(0)));
 
     public SakuraSignIn() {
+        SakuraPlayerData.install(ForgePlayerSignInDataService.INSTANCE);
 
         // 注册网络通道
         ModNetworkHandler.registerPackets();
@@ -158,7 +161,7 @@ public class SakuraSignIn {
 
     // 服务器关闭时保存数据
     private void onServerStopping(FMLServerStoppingEvent event) {
-        // RewardOptionDataManager.saveRewardOption();
+        SakuraPlayerData.saveAllAndClear();
     }
 
     /**
@@ -207,6 +210,7 @@ public class SakuraSignIn {
                 LOGGER.debug("Current player has logged out.");
                 // 当前客户端玩家与退出的玩家相同
                 enabled = false;
+                SakuraPlayerData.clearClient();
             }
         }
     }

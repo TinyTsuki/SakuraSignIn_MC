@@ -4,9 +4,9 @@ import lombok.Getter;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.PacketBuffer;
 import net.minecraftforge.fml.network.NetworkEvent;
+import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.data.IPlayerSignInData;
-import xin.vanilla.sakura.data.PlayerSignInDataCapability;
 
 import java.util.function.Supplier;
 
@@ -33,9 +33,9 @@ public class ClientConfigSyncPacket {
         ctx.get().enqueueWork(() -> {
             ServerPlayerEntity player = ctx.get().getSender();
             if (player != null) {
-                IPlayerSignInData signInData = PlayerSignInDataCapability.getData(player);
+                IPlayerSignInData signInData = SakuraPlayerData.get(player);
                 signInData.setAutoRewarded(packet.autoRewarded);
-                signInData.save(player);
+                SakuraPlayerData.saveAndSync(player);
             }
         });
         ctx.get().setPacketHandled(true);

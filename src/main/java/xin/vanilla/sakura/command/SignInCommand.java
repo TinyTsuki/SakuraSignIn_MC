@@ -19,7 +19,7 @@ import xin.vanilla.sakura.config.KeyValue;
 import xin.vanilla.sakura.config.RewardConfigManager;
 import xin.vanilla.sakura.config.ServerConfig;
 import xin.vanilla.sakura.data.IPlayerSignInData;
-import xin.vanilla.sakura.data.PlayerSignInDataCapability;
+import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ESignInType;
 import xin.vanilla.sakura.enums.ETimeCoolingMethod;
@@ -127,7 +127,7 @@ public class SignInCommand {
         Command<CommandSource> signInCommand = context -> {
             List<KeyValue<Date, ESignInType>> signInTimeList = new ArrayList<>();
             ServerPlayerEntity player = context.getSource().getPlayerOrException();
-            IPlayerSignInData signInData = PlayerSignInDataCapability.getData(player);
+            IPlayerSignInData signInData = SakuraPlayerData.get(player);
             try {
                 String string = StringArgumentType.getString(context, "date");
                 if (ServerConfig.SIGN_IN_CARD.get() && "all".equalsIgnoreCase(string)) {
@@ -159,7 +159,7 @@ public class SignInCommand {
         Command<CommandSource> rewardCommand = context -> {
             List<Date> rewardTimeList = new ArrayList<>();
             ServerPlayerEntity player = context.getSource().getPlayerOrException();
-            IPlayerSignInData signInData = PlayerSignInDataCapability.getData(player);
+            IPlayerSignInData signInData = SakuraPlayerData.get(player);
             try {
                 String string = StringArgumentType.getString(context, "date");
                 if ("all".equalsIgnoreCase(string)) {
@@ -181,7 +181,7 @@ public class SignInCommand {
         Command<CommandSource> signAndRewardCommand = context -> {
             List<KeyValue<Date, ESignInType>> signInTimeList = new ArrayList<>();
             ServerPlayerEntity player = context.getSource().getPlayerOrException();
-            IPlayerSignInData signInData = PlayerSignInDataCapability.getData(player);
+            IPlayerSignInData signInData = SakuraPlayerData.get(player);
             try {
                 String string = StringArgumentType.getString(context, "date");
                 if (ServerConfig.SIGN_IN_CARD.get() && "all".equalsIgnoreCase(string)) {
@@ -212,7 +212,7 @@ public class SignInCommand {
         };
         Command<CommandSource> cdkCommand = context -> {
             ServerPlayerEntity player = context.getSource().getPlayerOrException();
-            IPlayerSignInData signInData = PlayerSignInDataCapability.getData(player);
+            IPlayerSignInData signInData = SakuraPlayerData.get(player);
             String string = StringArgumentType.getString(context, "key");
             if (signInData.getCdkRecords().stream()
                     .filter(keyValue -> DateUtils.toDateInt(keyValue.getValue().getKey()) == DateUtils.toDateInt(DateUtils.getServerDate()))
@@ -270,7 +270,7 @@ public class SignInCommand {
         };
         Command<CommandSource> languageCommand = context -> {
             ServerPlayerEntity player = context.getSource().getPlayerOrException();
-            IPlayerSignInData signInData = PlayerSignInDataCapability.getData(player);
+            IPlayerSignInData signInData = SakuraPlayerData.get(player);
             String language = StringArgumentType.getString(context, "language");
             if (I18nUtils.getI18nFiles().contains(language)) {
                 signInData.setLanguage(language);
@@ -324,7 +324,7 @@ public class SignInCommand {
                     if (!ServerConfig.SIGN_IN_CARD.get()) {
                         SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "server_not_enable_sign_in_card"));
                     } else {
-                        SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "has_sign_in_card_d", PlayerSignInDataCapability.getData(player).getSignInCard()));
+                        SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "has_sign_in_card_d", SakuraPlayerData.get(player).getSignInCard()));
                     }
                     return 1;
                 })
@@ -342,10 +342,10 @@ public class SignInCommand {
                                 .executes(context -> {
                                     int num = IntegerArgumentType.getInteger(context, "num");
                                     ServerPlayerEntity player = context.getSource().getPlayerOrException();
-                                    IPlayerSignInData signInData = PlayerSignInDataCapability.getData(player);
+                                    IPlayerSignInData signInData = SakuraPlayerData.get(player);
                                     signInData.setSignInCard(signInData.getSignInCard() + num);
                                     SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "give_sign_in_card_d", num));
-                                    PlayerSignInDataCapability.syncPlayerData(player);
+                                    SakuraPlayerData.saveAndSync(player);
                                     return 1;
                                 })
                                 .then(Commands.argument("player", EntityArgument.players())
@@ -353,10 +353,10 @@ public class SignInCommand {
                                             int num = IntegerArgumentType.getInteger(context, "num");
                                             Collection<ServerPlayerEntity> players = EntityArgument.getPlayers(context, "player");
                                             for (ServerPlayerEntity player : players) {
-                                                IPlayerSignInData signInData = PlayerSignInDataCapability.getData(player);
+                                                IPlayerSignInData signInData = SakuraPlayerData.get(player);
                                                 signInData.setSignInCard(signInData.getSignInCard() + num);
                                                 SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "get_sign_in_card_d", num));
-                                                PlayerSignInDataCapability.syncPlayerData(player);
+                                                SakuraPlayerData.saveAndSync(player);
                                             }
                                             return 1;
                                         })
@@ -379,10 +379,10 @@ public class SignInCommand {
                                 .executes(context -> {
                                     int num = IntegerArgumentType.getInteger(context, "num");
                                     ServerPlayerEntity player = context.getSource().getPlayerOrException();
-                                    IPlayerSignInData signInData = PlayerSignInDataCapability.getData(player);
+                                    IPlayerSignInData signInData = SakuraPlayerData.get(player);
                                     signInData.setSignInCard(num);
                                     SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "set_sign_in_card_d", num));
-                                    PlayerSignInDataCapability.syncPlayerData(player);
+                                    SakuraPlayerData.saveAndSync(player);
                                     return 1;
                                 })
                                 .then(Commands.argument("player", EntityArgument.players())
@@ -390,10 +390,10 @@ public class SignInCommand {
                                             int num = IntegerArgumentType.getInteger(context, "num");
                                             Collection<ServerPlayerEntity> players = EntityArgument.getPlayers(context, "player");
                                             for (ServerPlayerEntity player : players) {
-                                                IPlayerSignInData signInData = PlayerSignInDataCapability.getData(player);
+                                                IPlayerSignInData signInData = SakuraPlayerData.get(player);
                                                 signInData.setSignInCard(num);
                                                 SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "set_sign_in_card_d", num));
-                                                PlayerSignInDataCapability.syncPlayerData(player);
+                                                SakuraPlayerData.saveAndSync(player);
                                             }
                                             return 1;
                                         })
@@ -408,10 +408,10 @@ public class SignInCommand {
                         .then(Commands.argument("player", EntityArgument.player())
                                 .executes(context -> {
                                     ServerPlayerEntity target = EntityArgument.getPlayer(context, "player");
-                                    IPlayerSignInData signInData = PlayerSignInDataCapability.getData(target);
+                                    IPlayerSignInData signInData = SakuraPlayerData.get(target);
                                     ServerPlayerEntity player = context.getSource().getPlayerOrException();
                                     SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "set_player_s_sign_in_card_d", target.getDisplayName().getString(), signInData.getSignInCard()));
-                                    PlayerSignInDataCapability.syncPlayerData(target);
+                                    SakuraPlayerData.saveAndSync(target);
                                     return 1;
                                 })
                         )

@@ -21,7 +21,7 @@ import org.apache.maven.artifact.versioning.ArtifactVersion;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.config.ServerConfig;
-import xin.vanilla.sakura.data.PlayerSignInDataCapability;
+import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.enums.ERewardRule;
 
 import javax.annotation.Nullable;
@@ -259,7 +259,7 @@ public class SakuraUtils {
     // region 杂项
 
     public static String getPlayerLanguage(ServerPlayerEntity player) {
-        return PlayerSignInDataCapability.getData(player).getValidLanguage(player);
+        return SakuraPlayerData.get(player).getValidLanguage(player);
     }
 
     public static String getValidLanguage(@Nullable PlayerEntity player, @Nullable String language) {
