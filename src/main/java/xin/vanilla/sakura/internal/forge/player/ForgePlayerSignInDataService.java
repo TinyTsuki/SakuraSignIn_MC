@@ -2,7 +2,6 @@ package xin.vanilla.sakura.internal.forge.player;
 
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraftforge.fml.network.PacketDistributor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.BaniraDataPaths;
@@ -17,8 +16,9 @@ import xin.vanilla.sakura.domain.player.LegacyPlayerDataParser;
 import xin.vanilla.sakura.internal.forge.migration.BaniraPlayerSummaryRepository;
 import xin.vanilla.sakura.internal.forge.migration.LegacyForgeCapabilityStore;
 import xin.vanilla.sakura.internal.forge.migration.MonthlySignInHistoryRepository;
-import xin.vanilla.sakura.network.ModNetworkHandler;
+import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.network.packet.PlayerDataSyncPacket;
+import xin.vanilla.sakura.network.packet.PlayerMonthSyncPacket;
 import xin.vanilla.sakura.platform.SakuraPlayerDataService;
 import xin.vanilla.sakura.rewards.RewardManager;
 import xin.vanilla.sakura.util.DateUtils;
@@ -98,10 +98,16 @@ public final class ForgePlayerSignInDataService implements SakuraPlayerDataServi
     @Override
     public void sync(Object playerObject) {
         ServerPlayerEntity player = requireServerPlayer(playerObject);
-        PlayerDataSyncPacket packet = new PlayerDataSyncPacket(player.getUUID(), get(player));
-        for (PlayerDataSyncPacket part : packet.split()) {
-            ModNetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), part);
-        }
+        IPlayerSignInData data = get(player);
+        String currentMonth = YearMonth.from(
+                RewardManager.getCompensateDate(DateUtils.getServerDate())
+                        .toInstant()
+                        .atZone(ZoneId.systemDefault())
+        ).toString();
+        SakuraNetwork.sendToPlayer(new PlayerDataSyncPacket(player.getUUID(), data), player);
+        SakuraNetwork.sendToPlayer(new PlayerMonthSyncPacket(
+                player.getUUID(), currentMonth, data.getSignInRecords()
+        ), player);
     }
 
     @Override

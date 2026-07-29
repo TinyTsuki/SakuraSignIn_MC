@@ -25,7 +25,7 @@ import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ESignInStatus;
 import xin.vanilla.sakura.enums.ESignInType;
 import xin.vanilla.sakura.event.ClientEventHandler;
-import xin.vanilla.sakura.network.ModNetworkHandler;
+import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.network.packet.SignInPacket;
 import xin.vanilla.sakura.rewards.RewardList;
 import xin.vanilla.sakura.rewards.RewardManager;
@@ -421,6 +421,7 @@ public class SignInScreen extends Screen {
         if (value.getOperation() == LEFT_ARROW.getCode()) {
             if (ClientConfig.get().signKeys().lastMonth().stream().anyMatch(keyManager::isMousePressed)) {
                 SakuraSignIn.setCalendarCurrentDate(DateUtils.addMonth(SakuraSignIn.getCalendarCurrentDate(), -1));
+                SakuraNetwork.requestMonth(SakuraSignIn.getCalendarCurrentDate());
                 updateLayout.set(true);
                 flag.set(true);
             }
@@ -429,6 +430,7 @@ public class SignInScreen extends Screen {
         else if (value.getOperation() == RIGHT_ARROW.getCode()) {
             if (ClientConfig.get().signKeys().nextMonth().stream().anyMatch(keyManager::isMousePressed)) {
                 SakuraSignIn.setCalendarCurrentDate(DateUtils.addMonth(SakuraSignIn.getCalendarCurrentDate(), 1));
+                SakuraNetwork.requestMonth(SakuraSignIn.getCalendarCurrentDate());
                 updateLayout.set(true);
                 flag.set(true);
             }
@@ -437,6 +439,7 @@ public class SignInScreen extends Screen {
         else if (value.getOperation() == UP_ARROW.getCode()) {
             if (ClientConfig.get().signKeys().lastYear().stream().anyMatch(keyManager::isMousePressed)) {
                 SakuraSignIn.setCalendarCurrentDate(DateUtils.addYear(SakuraSignIn.getCalendarCurrentDate(), -1));
+                SakuraNetwork.requestMonth(SakuraSignIn.getCalendarCurrentDate());
                 updateLayout.set(true);
                 flag.set(true);
             }
@@ -445,6 +448,7 @@ public class SignInScreen extends Screen {
         else if (value.getOperation() == DOWN_ARROW.getCode()) {
             if (ClientConfig.get().signKeys().nextYear().stream().anyMatch(keyManager::isMousePressed)) {
                 SakuraSignIn.setCalendarCurrentDate(DateUtils.addYear(SakuraSignIn.getCalendarCurrentDate(), 1));
+                SakuraNetwork.requestMonth(SakuraSignIn.getCalendarCurrentDate());
                 updateLayout.set(true);
                 flag.set(true);
             }
@@ -529,7 +533,7 @@ public class SignInScreen extends Screen {
                     NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
                 } else {
                     cell.status = ClientConfig.get().display().autoRewarded() ? ESignInStatus.REWARDED.getCode() : ESignInStatus.SIGNED_IN.getCode();
-                    ModNetworkHandler.INSTANCE.sendToServer(new SignInPacket(DateUtils.toDateTimeString(DateUtils.getClientDate()), ClientConfig.get().display().autoRewarded(), ESignInType.SIGN_IN));
+                    SakuraNetwork.sendToServer(new SignInPacket(DateUtils.toDateTimeString(DateUtils.getClientDate()), ClientConfig.get().display().autoRewarded(), ESignInType.SIGN_IN));
                 }
             }
         }
@@ -544,7 +548,7 @@ public class SignInScreen extends Screen {
                     NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
                 } else {
                     cell.status = ESignInStatus.REWARDED.getCode();
-                    ModNetworkHandler.INSTANCE.sendToServer(new SignInPacket(DateUtils.toDateTimeString(cellDate), ClientConfig.get().display().autoRewarded(), ESignInType.REWARD));
+                    SakuraNetwork.sendToServer(new SignInPacket(DateUtils.toDateTimeString(cellDate), ClientConfig.get().display().autoRewarded(), ESignInType.REWARD));
                 }
             }
         }
@@ -560,7 +564,7 @@ public class SignInScreen extends Screen {
                         NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
                     } else {
                         cell.status = ClientConfig.get().display().autoRewarded() ? ESignInStatus.REWARDED.getCode() : ESignInStatus.SIGNED_IN.getCode();
-                        ModNetworkHandler.INSTANCE.sendToServer(new SignInPacket(DateUtils.toDateTimeString(cellDate), ClientConfig.get().display().autoRewarded(), ESignInType.RE_SIGN_IN));
+                        SakuraNetwork.sendToServer(new SignInPacket(DateUtils.toDateTimeString(cellDate), ClientConfig.get().display().autoRewarded(), ESignInType.RE_SIGN_IN));
                     }
                 }
             }
@@ -880,18 +884,22 @@ public class SignInScreen extends Screen {
         boolean consumed = false;
         if (ClientConfig.get().signKeys().lastMonth().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
             SakuraSignIn.setCalendarCurrentDate(DateUtils.addMonth(SakuraSignIn.getCalendarCurrentDate(), -1));
+            SakuraNetwork.requestMonth(SakuraSignIn.getCalendarCurrentDate());
             updateLayout();
             consumed = true;
         } else if (ClientConfig.get().signKeys().nextMonth().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
             SakuraSignIn.setCalendarCurrentDate(DateUtils.addMonth(SakuraSignIn.getCalendarCurrentDate(), 1));
+            SakuraNetwork.requestMonth(SakuraSignIn.getCalendarCurrentDate());
             updateLayout();
             consumed = true;
         } else if (ClientConfig.get().signKeys().lastYear().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
             SakuraSignIn.setCalendarCurrentDate(DateUtils.addYear(SakuraSignIn.getCalendarCurrentDate(), -1));
+            SakuraNetwork.requestMonth(SakuraSignIn.getCalendarCurrentDate());
             updateLayout();
             consumed = true;
         } else if (ClientConfig.get().signKeys().nextYear().stream().anyMatch(keyManager::isKeyAndMousePressed)) {
             SakuraSignIn.setCalendarCurrentDate(DateUtils.addYear(SakuraSignIn.getCalendarCurrentDate(), 1));
+            SakuraNetwork.requestMonth(SakuraSignIn.getCalendarCurrentDate());
             updateLayout();
             consumed = true;
         }

@@ -1,20 +1,22 @@
 package xin.vanilla.sakura.network.packet;
 
 import lombok.Getter;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.entity.item.ItemEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.fml.network.NetworkEvent;
-
-import java.util.function.Supplier;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.JsonToNBT;
+import xin.vanilla.banira.common.api.INetworkPacket;
+import xin.vanilla.banira.common.network.BaniraNetworkContext;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 
 /**
  * ItemStackPacket类用于在网络中传输ItemStack数据
  * 它提供了将ItemStack序列化和反序列化的方法，以便于网络传输
  */
 @Getter
-public class ItemStackPacket {
+public class ItemStackPacket implements INetworkPacket {
     // 存储要传输的ItemStack对象
     private final ItemStack itemStack;
 
@@ -32,8 +34,12 @@ public class ItemStackPacket {
      *
      * @param buf 包含ItemStack数据的PacketBuffer
      */
-    public ItemStackPacket(PacketBuffer buf) {
-        this.itemStack = buf.readItem();
+    public ItemStackPacket(BaniraPacketBuffer buf) {
+        try {
+            this.itemStack = ItemStack.of(JsonToNBT.parseTag(buf.readUtf()));
+        } catch (CommandSyntaxException exception) {
+            throw new IllegalArgumentException("Invalid item stack payload", exception);
+        }
     }
 
     /**
@@ -41,8 +47,8 @@ public class ItemStackPacket {
      *
      * @param buf 用于存储ItemStack数据的PacketBuffer
      */
-    public void toBytes(PacketBuffer buf) {
-        buf.writeItemStack(itemStack, false);
+    public void toBytes(BaniraPacketBuffer buf) {
+        buf.writeUtf(itemStack.save(new CompoundNBT()).toString());
     }
 
     /**
@@ -52,11 +58,11 @@ public class ItemStackPacket {
      * @param packet 包含物品堆信息的数据包
      * @param ctx    用于访问网络事件上下文的供应商函数，包括访问玩家信息和设置数据包处理状态
      */
-    public static void handle(ItemStackPacket packet, Supplier<NetworkEvent.Context> ctx) {
+    public static void handle(ItemStackPacket packet, BaniraNetworkContext ctx) {
         // 获取网络事件上下文并排队执行工作
-        ctx.get().enqueueWork(() -> {
+        ctx.enqueueWork(() -> {
             // 获取发送数据包的玩家实体
-            ServerPlayerEntity player = ctx.get().getSender();
+            ServerPlayerEntity player = ctx.senderAs(ServerPlayerEntity.class);
             if (player != null) {
                 // 尝试将物品堆添加到玩家的库存中
                 boolean added = player.inventory.add(packet.itemStack);
@@ -68,6 +74,6 @@ public class ItemStackPacket {
             }
         });
         // 设置数据包已处理状态，防止重复处理
-        ctx.get().setPacketHandled(true);
+        ctx.markHandled();
     }
 }

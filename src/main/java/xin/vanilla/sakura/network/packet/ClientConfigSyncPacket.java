@@ -2,16 +2,15 @@ package xin.vanilla.sakura.network.packet;
 
 import lombok.Getter;
 import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.fml.network.NetworkEvent;
+import xin.vanilla.banira.common.api.INetworkPacket;
+import xin.vanilla.banira.common.network.BaniraNetworkContext;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.data.IPlayerSignInData;
 
-import java.util.function.Supplier;
-
 @Getter
-public class ClientConfigSyncPacket {
+public class ClientConfigSyncPacket implements INetworkPacket {
     /**
      * 自动领取奖励
      */
@@ -21,23 +20,23 @@ public class ClientConfigSyncPacket {
         this.autoRewarded = ClientConfig.get().display().autoRewarded();
     }
 
-    public ClientConfigSyncPacket(PacketBuffer buf) {
+    public ClientConfigSyncPacket(BaniraPacketBuffer buf) {
         this.autoRewarded = buf.readBoolean();
     }
 
-    public void toBytes(PacketBuffer buf) {
+    public void toBytes(BaniraPacketBuffer buf) {
         buf.writeBoolean(this.autoRewarded);
     }
 
-    public static void handle(ClientConfigSyncPacket packet, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> {
-            ServerPlayerEntity player = ctx.get().getSender();
+    public static void handle(ClientConfigSyncPacket packet, BaniraNetworkContext ctx) {
+        ctx.enqueueWork(() -> {
+            ServerPlayerEntity player = ctx.senderAs(ServerPlayerEntity.class);
             if (player != null) {
                 IPlayerSignInData signInData = SakuraPlayerData.get(player);
                 signInData.setAutoRewarded(packet.autoRewarded);
                 SakuraPlayerData.saveAndSync(player);
             }
         });
-        ctx.get().setPacketHandled(true);
+        ctx.markHandled();
     }
 }

@@ -2,15 +2,14 @@ package xin.vanilla.sakura.network.packet;
 
 import lombok.Getter;
 import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.fml.network.NetworkEvent;
+import xin.vanilla.banira.common.api.INetworkPacket;
+import xin.vanilla.banira.common.network.BaniraNetworkContext;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.sakura.enums.ESignInType;
 import xin.vanilla.sakura.rewards.RewardManager;
 
-import java.util.function.Supplier;
-
 @Getter
-public class SignInPacket {
+public class SignInPacket implements INetworkPacket {
     private final String signInTime;
     private final boolean autoRewarded;
     private final ESignInType signInType;
@@ -21,25 +20,25 @@ public class SignInPacket {
         this.signInType = signInType;
     }
 
-    public SignInPacket(PacketBuffer buf) {
+    public SignInPacket(BaniraPacketBuffer buf) {
         this.signInTime = buf.readUtf();
         this.autoRewarded = buf.readBoolean();
         this.signInType = ESignInType.valueOf(buf.readInt());
     }
 
-    public void toBytes(PacketBuffer buf) {
+    public void toBytes(BaniraPacketBuffer buf) {
         buf.writeUtf(signInTime);
         buf.writeBoolean(autoRewarded);
         buf.writeInt(signInType.getCode());
     }
 
-    public static void handle(SignInPacket packet, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> {
-            ServerPlayerEntity player = ctx.get().getSender();
+    public static void handle(SignInPacket packet, BaniraNetworkContext ctx) {
+        ctx.enqueueWork(() -> {
+            ServerPlayerEntity player = ctx.senderAs(ServerPlayerEntity.class);
             if (player != null) {
                 RewardManager.signIn(player, packet);
             }
         });
-        ctx.get().setPacketHandled(true);
+        ctx.markHandled();
     }
 }
