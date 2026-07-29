@@ -3,7 +3,6 @@ package xin.vanilla.sakura.data;
 import lombok.NonNull;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.network.PacketBuffer;
 import net.minecraftforge.common.util.INBTSerializable;
 import xin.vanilla.sakura.config.KeyValue;
 import xin.vanilla.sakura.domain.player.MonthSignInIndex;
@@ -153,10 +152,6 @@ public interface IPlayerSignInData extends INBTSerializable<CompoundNBT> {
      */
     @NonNull
     String getValidLanguage(@Nullable PlayerEntity player);
-
-    void writeToBuffer(PacketBuffer buffer);
-
-    void readFromBuffer(PacketBuffer buffer);
 
     void copyFrom(IPlayerSignInData capability);
 
