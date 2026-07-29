@@ -3,6 +3,7 @@ package xin.vanilla.sakura.screen;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.client.gui.component.TextList;
+import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.sakura.text.SakuraComponent;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -31,6 +32,7 @@ import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.client.gui.AdvancementRewardSelectionFlow;
 import xin.vanilla.sakura.client.gui.EffectRewardSelectionFlow;
 import xin.vanilla.sakura.client.gui.ItemRewardSelectionFlow;
+import xin.vanilla.sakura.client.gui.RewardListEntryWidget;
 import xin.vanilla.sakura.config.*;
 import xin.vanilla.sakura.enums.ERewardRule;
 import xin.vanilla.sakura.enums.ERewardType;
@@ -141,7 +143,7 @@ public class RewardOptionScreen extends Screen {
     /**
      * 奖励列表按钮集合
      */
-    private final Map<String, OperationButton> REWARD_BUTTONS = new HashMap<>();
+    private final Map<String, RewardListEntryWidget> REWARD_BUTTONS = new HashMap<>();
 
     /**
      * 操作按钮类型
@@ -277,18 +279,26 @@ public class RewardOptionScreen extends Screen {
      * @param index      奖励列表的索引
      */
     private void addRewardTitleButton(String title, String key, int titleIndex, int index) {
-        REWARD_BUTTONS.put(String.format("标题,%s", key), new OperationButton(titleIndex, context -> {
-            if (context.button.getRealY() < super.height && context.button.getRealY() + context.button.getRealHeight() >= 0) {
-                AbstractGui.fill(this.ms, (int) context.button.getRealX(), (int) (context.button.getRealY()), (int) (context.button.getRealX() + context.button.getRealWidth()), (int) (context.button.getRealY() + 1), 0xAC000000);
-                AbstractGuiUtils.drawLimitedText(this.ms, super.font, title, (int) context.button.getRealX(), (int) (context.button.getRealY() + (context.button.getRealHeight() - super.font.lineHeight) / 2), (int) context.button.getRealWidth(), 0xAC000000, false);
-                AbstractGui.fill(this.ms, (int) context.button.getRealX(), (int) (context.button.getRealY() + context.button.getRealHeight()), (int) (context.button.getRealX() + super.font.width(title)), (int) (context.button.getRealY() + context.button.getRealHeight() - 1), 0xAC000000);
-            }
-        })
-                .setX(leftMargin)
-                .setY(topMargin + (itemIconSize + itemBottomMargin) * Math.floor((double) index / lineItemCount))
-                .setWidth(super.width - leftBarWidth - leftMargin - rightMargin - rightBarWidth)
-                .setHeight(titleHeight)
-                .setBaseX(leftBarWidth));
+        RewardListEntryWidget entry = new RewardListEntryWidget(titleIndex, context -> {
+            RewardListEntryWidget widget = context.getEntry();
+            AbstractGui.fill(context.getStack(), (int) widget.realX(), (int) widget.realY(),
+                    (int) (widget.realX() + widget.realWidth()), (int) widget.realY() + 1, 0xAC000000);
+            AbstractGuiUtils.drawLimitedText(context.getStack(), super.font, title,
+                    (int) widget.realX(),
+                    (int) (widget.realY() + (widget.realHeight() - super.font.lineHeight) / 2),
+                    (int) widget.realWidth(), 0xAC000000, false);
+            AbstractGui.fill(context.getStack(), (int) widget.realX(),
+                    (int) (widget.realY() + widget.realHeight()),
+                    (int) (widget.realX() + super.font.width(title)),
+                    (int) (widget.realY() + widget.realHeight() - 1), 0xAC000000);
+        }).setBaseX(leftBarWidth);
+        entry.bounds()
+                .x(leftMargin)
+                .y(topMargin + (itemIconSize + itemBottomMargin)
+                        * Math.floor((double) index / lineItemCount))
+                .width(super.width - leftBarWidth - leftMargin - rightMargin - rightBarWidth)
+                .height(titleHeight);
+        REWARD_BUTTONS.put(String.format("标题,%s", key), entry);
     }
 
     /**
@@ -300,19 +310,22 @@ public class RewardOptionScreen extends Screen {
      */
     private void addRewardButton(Map<String, RewardList> rewardMap, String key, AtomicInteger index) {
         for (int j = 0; j < rewardMap.get(key).size(); j++, index.incrementAndGet()) {
-            REWARD_BUTTONS.put(String.format("%s,%s", key, j), new OperationButton(j, context -> {
-                if (context.button.getRealY() < super.height && context.button.getRealY() + context.button.getRealHeight() >= 0) {
-                    Reward reward = rewardMap.get(key).get(context.button.getOperation());
-                    AbstractGuiUtils.renderCustomReward(this.ms, this.itemRenderer, super.font, SakuraSignIn.getThemeTexture(), SakuraSignIn.getThemeTextureCoordinate(), reward, (int) context.button.getRealX(), (int) context.button.getRealY(), true);
-                }
-            })
-                    .setX(leftMargin + (j % lineItemCount) * (itemIconSize + itemRightMargin))
-                    .setY(topMargin + (itemIconSize + itemBottomMargin) * Math.floor((double) index.get() / lineItemCount))
-                    .setWidth(itemIconSize)
-                    .setHeight(itemIconSize)
-                    .setBaseX(leftBarWidth)
+            RewardListEntryWidget entry = new RewardListEntryWidget(j, context -> {
+                RewardListEntryWidget widget = context.getEntry();
+                Reward reward = rewardMap.get(key).get(widget.getOperation());
+                AbstractGuiUtils.renderCustomReward(context.getStack(), this.itemRenderer, super.font,
+                        SakuraSignIn.getThemeTexture(), SakuraSignIn.getThemeTextureCoordinate(),
+                        reward, (int) widget.realX(), (int) widget.realY(), true);
+            }).setBaseX(leftBarWidth)
                     .setTooltip(Text.from(rewardMap.get(key).get(j)
-                            .getName(SakuraUtils.getClientLanguage(), true))));
+                            .getName(SakuraUtils.getClientLanguage(), true)));
+            entry.bounds()
+                    .x(leftMargin + (j % lineItemCount) * (itemIconSize + itemRightMargin))
+                    .y(topMargin + (itemIconSize + itemBottomMargin)
+                            * Math.floor((double) index.get() / lineItemCount))
+                    .width(itemIconSize)
+                    .height(itemIconSize);
+            REWARD_BUTTONS.put(String.format("%s,%s", key, j), entry);
         }
     }
 
@@ -506,27 +519,18 @@ public class RewardOptionScreen extends Screen {
     private void renderRewardList(MatrixStack matrixStack) {
         if (REWARD_BUTTONS.isEmpty()) return;
 
-        // 直接渲染奖励列表 REWARD_BUTTONS
-        for (String key : REWARD_BUTTONS.keySet()) {
-            OperationButton operationButton = REWARD_BUTTONS.get(key);
-            // 绘制选中边框
-            if (key.equals(this.currRewardButton)) {
-                AbstractGuiUtils.fillOutLine(matrixStack,
-                        (int) operationButton.getRealX() - 1,
-                        (int) operationButton.getRealY() - 1,
-                        (int) operationButton.getRealWidth() + 2,
-                        (int) operationButton.getRealHeight() + 2,
-                        1,
-                        0x88FFF13B);
-            }
-            // 渲染物品图标
-            operationButton.setBaseY(yOffset).render(matrixStack, keyManager);
+        int selectedColor = SakuraSignIn.getThemeTextureCoordinate().getTextColorCanRepair();
+        for (Map.Entry<String, RewardListEntryWidget> item : REWARD_BUTTONS.entrySet()) {
+            item.getValue()
+                    .setBaseY(yOffset)
+                    .setViewportHeight(super.height)
+                    .setSelected(item.getKey().equals(this.currRewardButton))
+                    .setSelectedColor((selectedColor & 0x00FFFFFF) | 0xCC000000)
+                    .render(matrixStack, 0);
         }
-        // 渲染Tips
-        for (String key : REWARD_BUTTONS.keySet()) {
-            OperationButton operationButton = REWARD_BUTTONS.get(key);
-            // 渲染物品图标
-            operationButton.setBaseY(yOffset).renderPopup(matrixStack, keyManager);
+        // 提示在所有列表内容之后绘制，避免被后续条目覆盖。
+        for (RewardListEntryWidget entry : REWARD_BUTTONS.values()) {
+            entry.renderTooltip(matrixStack, keyManager.getMouseX(), keyManager.getMouseY());
         }
     }
 
@@ -696,7 +700,9 @@ public class RewardOptionScreen extends Screen {
      * @param updateLayout 是否更新布局
      * @param flag         是否处理过事件
      */
-    private void handleRewardOption(double mouseX, double mouseY, int button, String key, OperationButton value, AtomicBoolean updateLayout, AtomicBoolean flag) {
+    private void handleRewardOption(double mouseX, double mouseY, int button, String key,
+                                    RewardListEntryWidget value, AtomicBoolean updateLayout,
+                                    AtomicBoolean flag) {
         LOGGER.debug("选择了奖励配置:\tButton: {}\tOperation: {}\tKey: {}\tIndex: {}", button, this.currOpButton, key, value.getOperation());
 
         if (!this.handledRewardButton) {
@@ -2025,11 +2031,8 @@ public class RewardOptionScreen extends Screen {
                         value.setPressed(true);
                     }
                 });
-                REWARD_BUTTONS.forEach((key, value) -> {
-                    if (value.isHovered()) {
-                        value.setPressed(true);
-                    }
-                });
+                MouseEvent event = MouseEvent.of(mouseX, mouseY, button);
+                REWARD_BUTTONS.values().forEach(value -> value.handleMouseClick(event));
             }
         }
         return super.mouseClicked(mouseX, mouseY, button);
@@ -2064,12 +2067,14 @@ public class RewardOptionScreen extends Screen {
                 });
                 // 奖励按钮
                 if (!flag.get()) {
-                    REWARD_BUTTONS.forEach((key, value) -> {
-                        if (value.isHovered() && value.isPressed()) {
-                            this.handleRewardOption(mouseX, mouseY, button, key, value, updateLayout, flag);
+                    MouseEvent event = MouseEvent.of(mouseX, mouseY, button);
+                    for (Map.Entry<String, RewardListEntryWidget> entry : REWARD_BUTTONS.entrySet()) {
+                        if (entry.getValue().handleMouseRelease(event)) {
+                            this.handleRewardOption(mouseX, mouseY, button, entry.getKey(),
+                                    entry.getValue(), updateLayout, flag);
+                            break;
                         }
-                        value.setPressed(false);
-                    });
+                    }
                 }
                 // 奖励配置列表面板
                 if (!flag.get()) {
@@ -2081,6 +2086,8 @@ public class RewardOptionScreen extends Screen {
                 }
             }
         }
+        MouseEvent releaseEvent = MouseEvent.of(mouseX, mouseY, button);
+        REWARD_BUTTONS.values().forEach(value -> value.handleMouseRelease(releaseEvent));
         if (updateLayout.get()) this.updateLayout();
         keyManager.mouseReleased(button, mouseX, mouseY);
         return flag.get() ? flag.get() : super.mouseReleased(mouseX, mouseY, button);
@@ -2112,7 +2119,7 @@ public class RewardOptionScreen extends Screen {
                 }
             }
         });
-        REWARD_BUTTONS.forEach((key, value) -> value.setHovered(value.isMouseOverEx(mouseX, mouseY)));
+        REWARD_BUTTONS.values().forEach(value -> value.updateMouseHover(mouseX, mouseY));
         super.mouseMoved(mouseX, mouseY);
     }
 
