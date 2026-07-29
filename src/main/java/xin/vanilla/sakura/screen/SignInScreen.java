@@ -19,7 +19,7 @@ import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.config.ServerConfig;
 import xin.vanilla.sakura.data.IPlayerSignInData;
-import xin.vanilla.sakura.data.PlayerSignInDataCapability;
+import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ESignInStatus;
 import xin.vanilla.sakura.enums.ESignInType;
@@ -300,7 +300,7 @@ public class SignInScreen extends Screen {
         // 获取奖励列表
         LocalPlayer player = Minecraft.getInstance().player;
         if (player != null) {
-            IPlayerSignInData signInData = PlayerSignInDataCapability.getData(player);
+            IPlayerSignInData signInData = SakuraPlayerData.get(player);
             Map<Integer, RewardList> monthRewardList;
             if ((player.hasPermissions(ServerConfig.PERMISSION_REWARD_DETAIL.get()))) {
                 monthRewardList = RewardManager.getMonthRewardList(current, signInData, lastOffset, nextOffset);
@@ -531,7 +531,7 @@ public class SignInScreen extends Screen {
                 Component component = Component.translatableClient(EI18nType.MESSAGE, "already_signed");
                 NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
             } else {
-                if (RewardManager.isRewarded(PlayerSignInDataCapability.getData(player), cellDate, false)) {
+                if (RewardManager.isRewarded(SakuraPlayerData.get(player), cellDate, false)) {
                     Component component = Component.translatableClient(EI18nType.MESSAGE, "already_get_reward");
                     NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
                 } else {
@@ -547,7 +547,7 @@ public class SignInScreen extends Screen {
                     Component component = Component.translatableClient(EI18nType.MESSAGE, "server_not_enable_sign_in_card");
                     NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
                 } else {
-                    if (PlayerSignInDataCapability.getData(player).getSignInCard() <= 0) {
+                    if (SakuraPlayerData.get(player).getSignInCard() <= 0) {
                         Component component = Component.translatableClient(EI18nType.MESSAGE, "not_enough_sign_in_card");
                         NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
                     } else {
@@ -701,7 +701,7 @@ public class SignInScreen extends Screen {
                 OperationButton button = BUTTONS.get(op);
                 if (op == INFO.getCode()) {
                     if (Minecraft.getInstance().player != null) {
-                        IPlayerSignInData signInData = PlayerSignInDataCapability.getData(Minecraft.getInstance().player);
+                        IPlayerSignInData signInData = SakuraPlayerData.get(Minecraft.getInstance().player);
                         button.setTooltip(
                                 Text.translatable(EI18nType.TIPS, "sign_in_info"
                                                 , signInData.getSignInCard()

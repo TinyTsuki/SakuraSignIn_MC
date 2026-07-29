@@ -1,11 +1,10 @@
 package xin.vanilla.sakura.data;
 
 import lombok.NonNull;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.ListNBT;
+import net.minecraft.network.PacketBuffer;
 import xin.vanilla.sakura.config.KeyValue;
 import xin.vanilla.sakura.config.ServerConfig;
 import xin.vanilla.sakura.rewards.RewardManager;
@@ -191,11 +190,11 @@ public class PlayerSignInData implements IPlayerSignInData {
 
     @NonNull
     @Override
-    public String getValidLanguage(@Nullable Player player) {
+    public String getValidLanguage(@Nullable PlayerEntity player) {
         return SakuraUtils.getValidLanguage(player, this.getLanguage());
     }
 
-    public void writeToBuffer(FriendlyByteBuf buffer) {
+    public void writeToBuffer(PacketBuffer buffer) {
         buffer.writeInt(this.getTotalSignInDays());
         buffer.writeInt(this.getContinuousSignInDays());
         buffer.writeUtf(DateUtils.toDateTimeString(this.getLastSignInTime()));
@@ -216,7 +215,7 @@ public class PlayerSignInData implements IPlayerSignInData {
         }
     }
 
-    public void readFromBuffer(FriendlyByteBuf buffer) {
+    public void readFromBuffer(PacketBuffer buffer) {
         this.totalSignInDays.set(buffer.readInt());
         this.continuousSignInDays.set(buffer.readInt());
         this.lastSignInTime = DateUtils.format(buffer.readUtf());
@@ -248,9 +247,9 @@ public class PlayerSignInData implements IPlayerSignInData {
     }
 
     @Override
-    public CompoundTag serializeNBT() {
+    public CompoundNBT serializeNBT() {
         // 创建一个CompoundNBT对象，并将玩家的分数和活跃状态写入其中
-        CompoundTag tag = new CompoundTag();
+        CompoundNBT tag = new CompoundNBT();
         tag.putInt("totalSignInDays", this.getTotalSignInDays());
         tag.putInt("continuousSignInDays", this.getContinuousSignInDays());
         tag.putString("lastSignInTime", DateUtils.toDateTimeString(this.getLastSignInTime()));
@@ -259,16 +258,16 @@ public class PlayerSignInData implements IPlayerSignInData {
         tag.putString("language", this.getLanguage());
 
         // 序列化签到记录
-        ListTag recordsNBT = new ListTag();
+        ListNBT recordsNBT = new ListNBT();
         for (SignInRecord record : this.getSignInRecords()) {
             recordsNBT.add(record.writeToNBT());
         }
         tag.put("signInRecords", recordsNBT);
 
         // 序列化CDK输入记录
-        ListTag cdkRecordsNBT = new ListTag();
+        ListNBT cdkRecordsNBT = new ListNBT();
         for (KeyValue<String, KeyValue<Date, Boolean>> record : this.getCdkRecords()) {
-            CompoundTag cdkRecordNBT = new CompoundTag();
+            CompoundNBT cdkRecordNBT = new CompoundNBT();
             cdkRecordNBT.putString("key", record.getKey());
             cdkRecordNBT.putString("date", DateUtils.toDateTimeString(record.getValue().getKey()));
             cdkRecordNBT.putBoolean("value", record.getValue().getValue());
@@ -279,7 +278,7 @@ public class PlayerSignInData implements IPlayerSignInData {
     }
 
     @Override
-    public void deserializeNBT(CompoundTag nbt) {
+    public void deserializeNBT(CompoundNBT nbt) {
         // 从NBT标签中读取玩家的分数和活跃状态，并更新到实例中
         this.setTotalSignInDays(nbt.getInt("totalSignInDays"));
         this.setContinuousSignInDays(nbt.getInt("continuousSignInDays"));
@@ -289,7 +288,7 @@ public class PlayerSignInData implements IPlayerSignInData {
         this.setLanguage(nbt.getString("language"));
 
         // 反序列化签到记录
-        ListTag recordsNBT = nbt.getList("signInRecords", 10); // 10 是 CompoundNBT 的类型ID
+        ListNBT recordsNBT = nbt.getList("signInRecords", 10); // 10 是 CompoundNBT 的类型ID
         List<SignInRecord> records = new ArrayList<>();
         for (int i = 0; i < recordsNBT.size(); i++) {
             records.add(SignInRecord.readFromNBT(recordsNBT.getCompound(i)));
@@ -304,18 +303,13 @@ public class PlayerSignInData implements IPlayerSignInData {
         }
         this.trimSignInRecordsForRetention();
 
-        ListTag cdkRecordsNBT = nbt.getList("cdkRecords", 10); // 10 是 CompoundNBT 的类型ID
+        ListNBT cdkRecordsNBT = nbt.getList("cdkRecords", 10); // 10 是 CompoundNBT 的类型ID
         List<KeyValue<String, KeyValue<Date, Boolean>>> cdkRecords = new ArrayList<>();
         for (int i = 0; i < cdkRecordsNBT.size(); i++) {
-            CompoundTag cdkRecordNBT = cdkRecordsNBT.getCompound(i);
+            CompoundNBT cdkRecordNBT = cdkRecordsNBT.getCompound(i);
             cdkRecords.add(new KeyValue<>(cdkRecordNBT.getString("key"), new KeyValue<>(DateUtils.format(cdkRecordNBT.getString("date")), cdkRecordNBT.getBoolean("value"))));
         }
         this.setCdkRecords(cdkRecords);
-    }
-
-    @Override
-    public void save(ServerPlayer player) {
-        player.getCapability(PlayerSignInDataCapability.PLAYER_DATA).ifPresent(this::copyFrom);
     }
 
     public int calculateContinuousDays() {

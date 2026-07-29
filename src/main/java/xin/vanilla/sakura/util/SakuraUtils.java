@@ -1,16 +1,19 @@
 package xin.vanilla.sakura.util;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.core.BlockPos;
+import net.minecraft.client.entity.player.ClientPlayerEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.inventory.IInventory;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LightLayer;
+import net.minecraft.util.Util;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.text.ChatType;
+import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraft.world.LightType;
+import net.minecraft.world.World;
 import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.forgespi.language.IModInfo;
@@ -18,7 +21,7 @@ import org.apache.maven.artifact.versioning.ArtifactVersion;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.config.ServerConfig;
-import xin.vanilla.sakura.data.PlayerSignInDataCapability;
+import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.enums.ERewardRule;
 
 import javax.annotation.Nullable;
@@ -44,9 +47,9 @@ public class SakuraUtils {
     /**
      * 获取随机玩家
      */
-    public static ServerPlayer getRandomPlayer() {
+    public static ServerPlayerEntity getRandomPlayer() {
         try {
-            List<ServerPlayer> players = SakuraSignIn.getServerInstance().getPlayerList().getPlayers();
+            List<ServerPlayerEntity> players = SakuraSignIn.getServerInstance().getPlayerList().getPlayers();
             return players.get(new Random().nextInt(players.size()));
         } catch (Exception ignored) {
             return null;
@@ -57,7 +60,7 @@ public class SakuraUtils {
      * 获取随机玩家UUID
      */
     public static UUID getRandomPlayerUUID() {
-        Player randomPlayer = getRandomPlayer();
+        PlayerEntity randomPlayer = getRandomPlayer();
         return randomPlayer != null ? randomPlayer.getUUID() : null;
     }
 
@@ -66,7 +69,7 @@ public class SakuraUtils {
      *
      * @param uuid 玩家UUID
      */
-    public static ServerPlayer getPlayer(UUID uuid) {
+    public static ServerPlayerEntity getPlayer(UUID uuid) {
         try {
             return Minecraft.getInstance().level.getServer().getPlayerList().getPlayer(uuid);
         } catch (Exception ignored) {
@@ -81,8 +84,8 @@ public class SakuraUtils {
      * @param itemToRemove 要移除的物品
      * @return 是否全部移除成功
      */
-    public static boolean removeItemFromPlayerInventory(ServerPlayer player, ItemStack itemToRemove) {
-        Inventory inventory = player.getInventory();
+    public static boolean removeItemFromPlayerInventory(ServerPlayerEntity player, ItemStack itemToRemove) {
+        IInventory inventory = player.inventory;
 
         // 剩余要移除的数量
         int remainingAmount = itemToRemove.getCount();
@@ -127,19 +130,19 @@ public class SakuraUtils {
             ItemStack copy = itemToRemove.copy();
             copy.setCount(successfullyRemoved);
             // 将已移除的物品添加回背包
-            player.getInventory().add(copy);
+            player.inventory.add(copy);
         }
 
         // 是否成功移除所有物品
         return remainingAmount == 0;
     }
 
-    public static List<ItemStack> getPlayerItemList(ServerPlayer player) {
+    public static List<ItemStack> getPlayerItemList(ServerPlayerEntity player) {
         List<ItemStack> result = new ArrayList<>();
         if (player != null) {
-            result.addAll(player.getInventory().items);
-            result.addAll(player.getInventory().armor);
-            result.addAll(player.getInventory().offhand);
+            result.addAll(player.inventory.items);
+            result.addAll(player.inventory.armor);
+            result.addAll(player.inventory.offhand);
             result = result.stream().filter(itemStack -> !itemStack.isEmpty() && itemStack.getItem() != Items.AIR).collect(Collectors.toList());
         }
         return result;
@@ -155,8 +158,8 @@ public class SakuraUtils {
      * @param player  发送者
      * @param message 消息
      */
-    public static void broadcastMessage(ServerPlayer player, Component message) {
-        player.server.getPlayerList().broadcastSystemMessage(net.minecraft.network.chat.Component.translatable("chat.type.announcement", player.getDisplayName(), message.toChatComponent()), false);
+    public static void broadcastMessage(ServerPlayerEntity player, Component message) {
+        player.server.getPlayerList().broadcastMessage(new TranslationTextComponent("chat.type.announcement", player.getDisplayName(), message.toChatComponent()), ChatType.SYSTEM, Util.NIL_UUID);
     }
 
     /**
@@ -166,7 +169,7 @@ public class SakuraUtils {
      * @param message 消息
      */
     public static void broadcastMessage(MinecraftServer server, Component message) {
-        server.getPlayerList().broadcastSystemMessage(net.minecraft.network.chat.Component.translatable("chat.type.announcement", "Server", message.toChatComponent()), false);
+        server.getPlayerList().broadcastMessage(new TranslationTextComponent("chat.type.announcement", "Server", message.toChatComponent()), ChatType.SYSTEM, Util.NIL_UUID);
     }
 
     /**
@@ -175,8 +178,8 @@ public class SakuraUtils {
      * @param player  玩家
      * @param message 消息
      */
-    public static void sendMessage(ServerPlayer player, Component message) {
-        player.sendSystemMessage(message.toChatComponent(SakuraUtils.getPlayerLanguage(player)), false);
+    public static void sendMessage(ServerPlayerEntity player, Component message) {
+        player.sendMessage(message.toChatComponent(SakuraUtils.getPlayerLanguage(player)), player.getUUID());
     }
 
     /**
@@ -185,8 +188,8 @@ public class SakuraUtils {
      * @param player  玩家
      * @param message 消息
      */
-    public static void sendMessage(LocalPlayer player, Component message) {
-        player.sendSystemMessage(message.toChatComponent(SakuraUtils.getClientLanguage()));
+    public static void sendMessage(ClientPlayerEntity player, Component message) {
+        player.sendMessage(message.toChatComponent(SakuraUtils.getClientLanguage()), player.getUUID());
     }
 
     /**
@@ -195,8 +198,8 @@ public class SakuraUtils {
      * @param player  玩家
      * @param message 消息
      */
-    public static void sendMessage(ServerPlayer player, String message) {
-        player.sendSystemMessage(Component.literal(message).toChatComponent(), false);
+    public static void sendMessage(ServerPlayerEntity player, String message) {
+        player.sendMessage(Component.literal(message).toChatComponent(), player.getUUID());
     }
 
     /**
@@ -206,8 +209,8 @@ public class SakuraUtils {
      * @param key    翻译键
      * @param args   参数
      */
-    public static void sendTranslatableMessage(ServerPlayer player, String key, Object... args) {
-        player.sendSystemMessage(Component.translatable(key, args).setLanguageCode(SakuraUtils.getPlayerLanguage(player)).toChatComponent(), false);
+    public static void sendTranslatableMessage(ServerPlayerEntity player, String key, Object... args) {
+        player.sendMessage(Component.translatable(key, args).setLanguageCode(SakuraUtils.getPlayerLanguage(player)).toChatComponent(), player.getUUID());
     }
 
     // endregion 消息相关
@@ -215,33 +218,55 @@ public class SakuraUtils {
     // region 权限相关
 
     public static int getRewardPermissionLevel(ERewardRule rule) {
-        return switch (rule) {
-            case BASE_REWARD -> ServerConfig.PERMISSION_BASE_REWARD.get();
-            case CONTINUOUS_REWARD -> ServerConfig.PERMISSION_CONTINUOUS_REWARD.get();
-            case CYCLE_REWARD -> ServerConfig.PERMISSION_CYCLE_REWARD.get();
-            case YEAR_REWARD -> ServerConfig.PERMISSION_YEAR_REWARD.get();
-            case MONTH_REWARD -> ServerConfig.PERMISSION_MONTH_REWARD.get();
-            case WEEK_REWARD -> ServerConfig.PERMISSION_WEEK_REWARD.get();
-            case DATE_TIME_REWARD -> ServerConfig.PERMISSION_DATE_TIME_REWARD.get();
-            case CUMULATIVE_REWARD -> ServerConfig.PERMISSION_CUMULATIVE_REWARD.get();
-            case RANDOM_REWARD -> ServerConfig.PERMISSION_RANDOM_REWARD.get();
-            case CDK_REWARD -> ServerConfig.PERMISSION_CDK_REWARD.get();
-        };
+        int result = 0;
+        switch (rule) {
+            case BASE_REWARD:
+                result = ServerConfig.PERMISSION_BASE_REWARD.get();
+                break;
+            case CONTINUOUS_REWARD:
+                result = ServerConfig.PERMISSION_CONTINUOUS_REWARD.get();
+                break;
+            case CYCLE_REWARD:
+                result = ServerConfig.PERMISSION_CYCLE_REWARD.get();
+                break;
+            case YEAR_REWARD:
+                result = ServerConfig.PERMISSION_YEAR_REWARD.get();
+                break;
+            case MONTH_REWARD:
+                result = ServerConfig.PERMISSION_MONTH_REWARD.get();
+                break;
+            case WEEK_REWARD:
+                result = ServerConfig.PERMISSION_WEEK_REWARD.get();
+                break;
+            case DATE_TIME_REWARD:
+                result = ServerConfig.PERMISSION_DATE_TIME_REWARD.get();
+                break;
+            case CUMULATIVE_REWARD:
+                result = ServerConfig.PERMISSION_CUMULATIVE_REWARD.get();
+                break;
+            case RANDOM_REWARD:
+                result = ServerConfig.PERMISSION_RANDOM_REWARD.get();
+                break;
+            case CDK_REWARD:
+                result = ServerConfig.PERMISSION_CDK_REWARD.get();
+                break;
+        }
+        return result;
     }
 
     // endregion 权限相关
 
     // region 杂项
 
-    public static String getPlayerLanguage(ServerPlayer player) {
-        return PlayerSignInDataCapability.getData(player).getValidLanguage(player);
+    public static String getPlayerLanguage(ServerPlayerEntity player) {
+        return SakuraPlayerData.get(player).getValidLanguage(player);
     }
 
-    public static String getValidLanguage(@Nullable Player player, @Nullable String language) {
+    public static String getValidLanguage(@Nullable PlayerEntity player, @Nullable String language) {
         String result;
         if (StringUtils.isNullOrEmptyEx(language) || "client".equalsIgnoreCase(language)) {
-            if (player instanceof ServerPlayer) {
-                result = SakuraUtils.getServerPlayerLanguage((ServerPlayer) player);
+            if (player instanceof ServerPlayerEntity) {
+                result = SakuraUtils.getServerPlayerLanguage((ServerPlayerEntity) player);
             } else {
                 result = SakuraUtils.getClientLanguage();
             }
@@ -253,7 +278,7 @@ public class SakuraUtils {
         return result;
     }
 
-    public static String getServerPlayerLanguage(ServerPlayer player) {
+    public static String getServerPlayerLanguage(ServerPlayerEntity player) {
         return player.getLanguage();
     }
 
@@ -263,8 +288,8 @@ public class SakuraUtils {
      * @param originalPlayer 原始玩家
      * @param targetPlayer   目标玩家
      */
-    public static void cloneServerPlayerLanguage(ServerPlayer originalPlayer, ServerPlayer targetPlayer) {
-        FieldUtils.setPrivateFieldValue(ServerPlayer.class, targetPlayer, FieldUtils.getPlayerLanguageFieldName(originalPlayer), getServerPlayerLanguage(originalPlayer));
+    public static void cloneServerPlayerLanguage(ServerPlayerEntity originalPlayer, ServerPlayerEntity targetPlayer) {
+        FieldUtils.setPrivateFieldValue(ServerPlayerEntity.class, targetPlayer, FieldUtils.getPlayerLanguageFieldName(originalPlayer), getServerPlayerLanguage(originalPlayer));
     }
 
     public static String getClientLanguage() {
@@ -301,21 +326,21 @@ public class SakuraUtils {
      * @param player 当前玩家实体
      * @return 当前环境亮度（范围0-15）
      */
-    public static int getEnvironmentBrightness(Player player) {
+    public static int getEnvironmentBrightness(PlayerEntity player) {
         int result = 0;
         if (player != null) {
-            Level world = player.level();
+            World world = player.level;
             BlockPos pos = player.blockPosition();
             // 获取基础的天空光亮度和方块光亮度
-            int skyLight = world.getBrightness(LightLayer.SKY, pos);
-            int blockLight = world.getBrightness(LightLayer.BLOCK, pos);
+            int skyLight = world.getBrightness(LightType.SKY, pos);
+            int blockLight = world.getBrightness(LightType.BLOCK, pos);
             // 获取世界时间、天气和维度的影响
             boolean isDay = world.isDay();
             boolean isRaining = world.isRaining();
             boolean isThundering = world.isThundering();
             boolean isUnderground = !world.canSeeSky(pos);
             // 判断世界维度（地表、下界、末地）
-            if (world.dimension() == Level.OVERWORLD) {
+            if (world.dimension() == World.OVERWORLD) {
                 // 如果在地表
                 if (!isUnderground) {
                     if (isDay) {
@@ -332,11 +357,11 @@ public class SakuraUtils {
                     // 没有光源时最黑，有光源则受距离影响
                     result = Math.max(Math.min(blockLight, 12), 0);
                 }
-            } else if (world.dimension() == Level.NETHER) {
+            } else if (world.dimension() == World.NETHER) {
                 // 下界亮度较暗，但部分地方有熔岩光源
                 // 近光源则亮度提升，但不会超过10
                 result = Math.min(7 + blockLight / 2, 10);
-            } else if (world.dimension() == Level.END) {
+            } else if (world.dimension() == World.END) {
                 // 末地亮度通常较暗
                 // 即使贴近光源，末地的亮度上限设为10
                 result = Math.min(6 + blockLight / 2, 10);
@@ -371,18 +396,40 @@ public class SakuraUtils {
     }
 
     public static String getRewardRuleI18nKeyName(ERewardRule rule) {
-        return switch (rule) {
-            case BASE_REWARD -> "reward_base";
-            case CONTINUOUS_REWARD -> "reward_continuous";
-            case CYCLE_REWARD -> "reward_cycle";
-            case YEAR_REWARD -> "reward_year";
-            case MONTH_REWARD -> "reward_month";
-            case WEEK_REWARD -> "reward_week";
-            case DATE_TIME_REWARD -> "reward_time";
-            case CUMULATIVE_REWARD -> "reward_cumulative";
-            case RANDOM_REWARD -> "reward_random";
-            case CDK_REWARD -> "reward_cdk";
-        };
+        String result = "";
+        switch (rule) {
+            case BASE_REWARD:
+                result = "reward_base";
+                break;
+            case CONTINUOUS_REWARD:
+                result = "reward_continuous";
+                break;
+            case CYCLE_REWARD:
+                result = "reward_cycle";
+                break;
+            case YEAR_REWARD:
+                result = "reward_year";
+                break;
+            case MONTH_REWARD:
+                result = "reward_month";
+                break;
+            case WEEK_REWARD:
+                result = "reward_week";
+                break;
+            case DATE_TIME_REWARD:
+                result = "reward_time";
+                break;
+            case CUMULATIVE_REWARD:
+                result = "reward_cumulative";
+                break;
+            case RANDOM_REWARD:
+                result = "reward_random";
+                break;
+            case CDK_REWARD:
+                result = "reward_cdk";
+                break;
+        }
+        return result;
     }
 
     // endregion 杂项

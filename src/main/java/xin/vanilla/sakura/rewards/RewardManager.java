@@ -5,20 +5,19 @@ import com.google.gson.JsonParseException;
 import lombok.NonNull;
 import net.minecraft.advancements.Advancement;
 import net.minecraft.advancements.AdvancementProgress;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.entity.item.ItemEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.potion.EffectInstance;
+import net.minecraft.potion.Effects;
+import net.minecraft.util.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.config.RewardConfig;
 import xin.vanilla.sakura.config.RewardConfigManager;
 import xin.vanilla.sakura.config.ServerConfig;
 import xin.vanilla.sakura.data.IPlayerSignInData;
-import xin.vanilla.sakura.data.PlayerSignInDataCapability;
+import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.data.SignInRecord;
 import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ERewardType;
@@ -146,10 +145,16 @@ public class RewardManager {
             date = DateUtils.getServerDate();
         }
         // 签到冷却刷新时间, 固定间隔不需要校准时间
-        double cooling = switch (ServerConfig.TIME_COOLING_METHOD.get()) {
-            case MIXED, FIXED_TIME -> ServerConfig.TIME_COOLING_TIME.get();
-            default -> 0;
-        };
+        double cooling;
+        switch (ServerConfig.TIME_COOLING_METHOD.get()) {
+            case MIXED:
+            case FIXED_TIME:
+                cooling = ServerConfig.TIME_COOLING_TIME.get();
+                break;
+            default:
+                cooling = 0;
+                break;
+        }
         // 校准后当前时间
         return DateUtils.addDate(date, -cooling);
     }
@@ -166,10 +171,16 @@ public class RewardManager {
             date = DateUtils.getServerDate();
         }
         // 签到冷却刷新时间, 固定间隔不需要校准时间
-        double cooling = switch (ServerConfig.TIME_COOLING_METHOD.get()) {
-            case MIXED, FIXED_TIME -> ServerConfig.TIME_COOLING_TIME.get();
-            default -> 0;
-        };
+        double cooling;
+        switch (ServerConfig.TIME_COOLING_METHOD.get()) {
+            case MIXED:
+            case FIXED_TIME:
+                cooling = ServerConfig.TIME_COOLING_TIME.get();
+                break;
+            default:
+                cooling = 0;
+                break;
+        }
         // 校准后当前时间
         return DateUtils.addDate(date, -cooling);
     }
@@ -263,7 +274,7 @@ public class RewardManager {
                     //     reward.setRewarded(true);
                     //     reward.setDisabled(true);
                     // })
-                    .toList();
+                    .collect(Collectors.toList());
         }
 
         // 若签到记录存在，则添加签到奖励记录并直接返回
@@ -298,7 +309,7 @@ public class RewardManager {
                         .distinct()
                         .map(serverData.getDateTimeRewards()::get)
                         .flatMap(Collection::stream)
-                        .toList();
+                        .collect(Collectors.toList());
                 if (CollectionUtils.isNotNullOrEmpty(dateTimeRewards)) result.addAll(dateTimeRewards);
                 // 累计签到奖励
                 result.addAll(serverData.getCumulativeRewards().getOrDefault(String.valueOf(playerData.getTotalSignInDays() + 1), new RewardList()));
@@ -380,16 +391,20 @@ public class RewardManager {
                             switch (type) {
                                 case ITEM:
                                     ItemStack itemStack = RewardManager.deserializeReward(reward);
-                                    key = ForgeRegistries.ITEMS.getKey(itemStack.getItem()).toString();
+                                    key = itemStack.getItem().getRegistryName().toString();
                                     if (itemStack.hasTag()) {
                                         key += itemStack.getTag().toString();
                                     }
                                     break;
                                 case EFFECT:
-                                    MobEffectInstance mobEffectInstance = RewardManager.deserializeReward(reward);
-                                    key = ForgeRegistries.MOB_EFFECTS.getKey(mobEffectInstance.getEffect()).toString() + " " + mobEffectInstance.getAmplifier();
+                                    EffectInstance effectInstance = RewardManager.deserializeReward(reward);
+                                    key = effectInstance.getEffect().getRegistryName().toString() + " " + effectInstance.getAmplifier();
                                     break;
-                                case EXP_POINT, SIGN_IN_CARD, EXP_LEVEL:
+                                case EXP_POINT:
+                                    break;
+                                case EXP_LEVEL:
+                                    break;
+                                case SIGN_IN_CARD:
                                     break;
                                 case ADVANCEMENT:
                                 case MESSAGE:
@@ -412,7 +427,7 @@ public class RewardManager {
                                     ((ItemStack) content1).setTag(((ItemStack) content2).getTag());
                                     break;
                                 case EFFECT:
-                                    content1 = new MobEffectInstance(((MobEffectInstance) content1).getEffect(), ((MobEffectInstance) content1).getDuration() + ((MobEffectInstance) content2).getDuration(), ((MobEffectInstance) content1).getAmplifier());
+                                    content1 = new EffectInstance(((EffectInstance) content1).getEffect(), ((EffectInstance) content1).getDuration() + ((EffectInstance) content2).getDuration(), ((EffectInstance) content1).getAmplifier());
                                     break;
                                 case EXP_POINT:
                                 case SIGN_IN_CARD:
@@ -454,8 +469,8 @@ public class RewardManager {
     /**
      * 签到or补签
      */
-    public static void signIn(ServerPlayer player, SignInPacket packet) {
-        IPlayerSignInData signInData = PlayerSignInDataCapability.getData(player);
+    public static void signIn(ServerPlayerEntity player, SignInPacket packet) {
+        IPlayerSignInData signInData = SakuraPlayerData.get(player);
         Date serverDate = DateUtils.getServerDate();
         Date serverCompensateDate = getCompensateDate(serverDate);
         Date signCompensateDate = packet.getSignInType() == ESignInType.SIGN_IN ? serverCompensateDate : DateUtils.format(packet.getSignInTime());
@@ -466,19 +481,19 @@ public class RewardManager {
         // 判断签到/补签时间合法性
         if (ESignInType.SIGN_IN.equals(packet.getSignInType()) && serverCompensateDateInt < signCompensateDateInt) {
             SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "sign_in_date_late_server_current_date_fail"));
-            PlayerSignInDataCapability.syncPlayerData(player);
+            SakuraPlayerData.saveAndSync(player);
             return;
         } else if (ESignInType.SIGN_IN.equals(packet.getSignInType()) && serverCompensateDateInt > signCompensateDateInt) {
             SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "sign_in_date_early_server_current_date_fail"));
-            PlayerSignInDataCapability.syncPlayerData(player);
+            SakuraPlayerData.saveAndSync(player);
             return;
         } else if (ESignInType.SIGN_IN.equals(packet.getSignInType()) && signInData.getSignInRecords().stream().anyMatch(record -> DateUtils.toDateInt(record.getCompensateTime()) == signCompensateDateInt)) {
             SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "already_signed"));
-            PlayerSignInDataCapability.syncPlayerData(player);
+            SakuraPlayerData.saveAndSync(player);
             return;
         } else if (ESignInType.RE_SIGN_IN.equals(packet.getSignInType()) && serverCompensateDateInt <= signCompensateDateInt) {
             SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "compensate_date_not_early_server_current_date_fail"));
-            PlayerSignInDataCapability.syncPlayerData(player);
+            SakuraPlayerData.saveAndSync(player);
             return;
         }
         // 判断签到CD
@@ -486,33 +501,33 @@ public class RewardManager {
             Date lastSignInTime = DateUtils.addDate(signInData.getLastSignInTime(), ServerConfig.TIME_COOLING_INTERVAL.get());
             if (serverDate.before(lastSignInTime)) {
                 SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "sign_in_cool_down_fail"));
-                PlayerSignInDataCapability.syncPlayerData(player);
+                SakuraPlayerData.saveAndSync(player);
                 return;
             }
         }
         // 判断补签
         if (ESignInType.RE_SIGN_IN.equals(packet.getSignInType()) && !ServerConfig.SIGN_IN_CARD.get()) {
             SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "server_not_enable_sign_in_card_fail"));
-            PlayerSignInDataCapability.syncPlayerData(player);
+            SakuraPlayerData.saveAndSync(player);
             return;
         } else if (ESignInType.RE_SIGN_IN.equals(packet.getSignInType()) && signInData.getSignInCard() <= 0) {
             SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "not_enough_sign_in_card_fail"));
-            PlayerSignInDataCapability.syncPlayerData(player);
+            SakuraPlayerData.saveAndSync(player);
             return;
         } else if (ESignInType.RE_SIGN_IN.equals(packet.getSignInType()) && isSignedIn(signInData, signCompensateDate, false)) {
             SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "already_signed"));
-            PlayerSignInDataCapability.syncPlayerData(player);
+            SakuraPlayerData.saveAndSync(player);
             return;
         }
         // 判断领取奖励
         if (ESignInType.REWARD.equals(packet.getSignInType())) {
             if (isRewarded(signInData, signCompensateDate, false)) {
                 SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "already_receive_reward_s", DateUtils.toString(signCompensateDate)));
-                PlayerSignInDataCapability.syncPlayerData(player);
+                SakuraPlayerData.saveAndSync(player);
                 return;
             } else if (!isSignedIn(signInData, signCompensateDate, false)) {
                 SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "not_sign_in", DateUtils.toString(signCompensateDate)));
-                PlayerSignInDataCapability.syncPlayerData(player);
+                SakuraPlayerData.saveAndSync(player);
                 return;
             } else {
                 boolean showFailed = player.hasPermissions(ServerConfig.PERMISSION_REWARD_FAILED_TIPS.get());
@@ -580,20 +595,19 @@ public class RewardManager {
             signInData.trimSignInRecordsForRetention();
             SakuraUtils.sendMessage(player, Component.translatable(player, EI18nType.MESSAGE, "sign_in_success_s", DateUtils.toString(signInRecord.getCompensateTime()), signInData.calculateContinuousDays(), getTotalSignInDays(signInData)));
         }
-        signInData.save(player);
-        // 同步数据至客户端
-        PlayerSignInDataCapability.syncPlayerData(player);
+        // 持久化后再同步，客户端不会参与服务端存储。
+        SakuraPlayerData.saveAndSync(player);
     }
 
-    public static boolean giveRewardToPlayer(ServerPlayer player, IPlayerSignInData signInData, Reward reward) {
+    public static boolean giveRewardToPlayer(ServerPlayerEntity player, IPlayerSignInData signInData, Reward reward) {
         reward.setRewarded(true);
         Object object = RewardManager.deserializeReward(reward);
         // 判断是否启用
         if (ServerConfig.REWARD_AFFECTED_BY_LUCK.get()) {
             int offset = player.getActiveEffects().stream()
-                    .filter(instance -> instance.getEffect() == MobEffects.LUCK || instance.getEffect() == MobEffects.UNLUCK)
+                    .filter(instance -> instance.getEffect() == Effects.LUCK || instance.getEffect() == Effects.UNLUCK)
                     .map(instance -> {
-                        if (instance.getEffect() == MobEffects.LUCK) {
+                        if (instance.getEffect() == Effects.LUCK) {
                             return instance.getAmplifier();
                         } else {
                             return -instance.getAmplifier();
@@ -610,7 +624,7 @@ public class RewardManager {
                 signInData.plusSignInCard((Integer) object);
                 break;
             case EFFECT:
-                player.addEffect((MobEffectInstance) object);
+                player.addEffect((EffectInstance) object);
                 break;
             case EXP_LEVEL:
                 player.giveExperienceLevels((Integer) object);
@@ -632,7 +646,7 @@ public class RewardManager {
                 String command = (String) object;
                 command = command.replaceAll("@s", player.getName().getString());
                 if (StringUtils.isNotNullOrEmpty(command)) {
-                    player.server.getCommands().performPrefixedCommand(player.createCommandSourceStack().withSuppressedOutput().withPermission(ServerConfig.PERMISSION_COMMAND_REWARD.get()), command);
+                    player.server.getCommands().performCommand(player.createCommandSourceStack().withSuppressedOutput().withPermission(ServerConfig.PERMISSION_COMMAND_REWARD.get()), command);
                 }
                 break;
             default:
@@ -648,9 +662,9 @@ public class RewardManager {
      * @param drop      若玩家背包空间不足, 是否以物品实体的形式生成在世界上
      * @return 是否添加成功
      */
-    public static boolean giveItemStack(ServerPlayer player, ItemStack itemStack, boolean drop) {
+    public static boolean giveItemStack(ServerPlayerEntity player, ItemStack itemStack, boolean drop) {
         // 尝试将物品堆添加到玩家的库存中
-        boolean added = player.getInventory().add(itemStack);
+        boolean added = player.inventory.add(itemStack);
         // 如果物品堆无法添加到库存，则以物品实体的形式生成在世界上
         if (!added && !itemStack.isEmpty() && drop) {
             ItemEntity itemEntity = player.drop(itemStack, false);
