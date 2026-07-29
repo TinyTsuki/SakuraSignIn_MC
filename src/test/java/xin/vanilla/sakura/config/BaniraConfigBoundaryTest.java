@@ -39,10 +39,11 @@ public class BaniraConfigBoundaryTest {
     @Test
     public void loginSendsTheServerCommonConfigSnapshot() throws Exception {
         String common = source("xin/vanilla/sakura/config/CommonConfig.java");
-        String loginPacket = source("xin/vanilla/sakura/network/packet/ClientModLoadedNotice.java");
+        String network = source("xin/vanilla/sakura/network/SakuraNetwork.java");
         assertTrue(common.contains("ConfigSnapshotToClient"));
         assertTrue(common.contains("syncToPlayer(Object player)"));
-        assertTrue(loginPacket.contains("CommonConfig.syncToPlayer(player)"));
+        assertTrue(network.contains("BaniraModPresence.register"));
+        assertTrue(network.contains("CommonConfig.syncToPlayer(player)"));
     }
 
     private static String source(String relative) throws Exception {

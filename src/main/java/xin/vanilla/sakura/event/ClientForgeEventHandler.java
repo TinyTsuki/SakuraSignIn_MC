@@ -2,14 +2,11 @@ package xin.vanilla.sakura.event;
 
 import xin.vanilla.sakura.config.CommonConfig;
 import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.LogicalSide;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.network.PacketDistributor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
@@ -17,9 +14,7 @@ import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.data.migration.LegacyMigrationResult;
 import xin.vanilla.sakura.enums.ESignInType;
-import xin.vanilla.sakura.network.ModNetworkHandler;
-import xin.vanilla.sakura.network.packet.ClientConfigSyncPacket;
-import xin.vanilla.sakura.network.packet.ClientModLoadedNotice;
+import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.network.packet.ServerTimeSyncPacket;
 import xin.vanilla.sakura.network.packet.SignInPacket;
 import xin.vanilla.sakura.rewards.RewardManager;
@@ -40,34 +35,12 @@ public final class ForgeEventHandler {
     }
 
     @SubscribeEvent
-    @OnlyIn(Dist.CLIENT)
-    public static void onClientPlayerLoggedIn(ClientPlayerNetworkEvent.LoggedInEvent event) {
-        LOGGER.debug("Client: Player logged in.");
-        ModNetworkHandler.INSTANCE.sendToServer(new ClientConfigSyncPacket());
-        ModNetworkHandler.INSTANCE.sendToServer(new ClientModLoadedNotice());
-    }
-
-    @SubscribeEvent
     public static void playerTickEvent(TickEvent.PlayerTickEvent event) {
         if (event.side != LogicalSide.SERVER || event.phase != TickEvent.Phase.END) {
             return;
         }
         ServerPlayerEntity player = (ServerPlayerEntity) event.player;
-        if (!SakuraSignIn.getPlayerCapabilityStatus().containsKey(player.getUUID().toString())) {
-            return;
-        }
-        if (!SakuraSignIn.getPlayerCapabilityStatus().getOrDefault(player.getUUID().toString(), true)
-                && player.isAlive()) {
-            try {
-                SakuraPlayerData.sync(player);
-            } catch (Exception syncFailure) {
-                LOGGER.error("Failed to sync player data", syncFailure);
-            }
-        }
-        ModNetworkHandler.INSTANCE.send(
-                PacketDistributor.PLAYER.with(() -> player),
-                new ServerTimeSyncPacket()
-        );
+        SakuraNetwork.sendToPlayer(new ServerTimeSyncPacket(), player);
     }
 
     /**
@@ -82,9 +55,7 @@ public final class ForgeEventHandler {
         ServerPlayerEntity original = (ServerPlayerEntity) event.getOriginal();
         ServerPlayerEntity newPlayer = (ServerPlayerEntity) event.getPlayer();
         SakuraUtils.cloneServerPlayerLanguage(original, newPlayer);
-        if (SakuraSignIn.getPlayerCapabilityStatus().containsKey(newPlayer.getUUID().toString())) {
-            SakuraSignIn.getPlayerCapabilityStatus().put(newPlayer.getUUID().toString(), false);
-        }
+        SakuraPlayerData.sync(newPlayer);
     }
 
     /**
@@ -107,9 +78,6 @@ public final class ForgeEventHandler {
             return;
         }
 
-        if (SakuraSignIn.getPlayerCapabilityStatus().containsKey(player.getUUID().toString())) {
-            SakuraSignIn.getPlayerCapabilityStatus().put(player.getUUID().toString(), false);
-        }
         scheduleAutoSignIn(player);
     }
 
@@ -117,7 +85,6 @@ public final class ForgeEventHandler {
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getPlayer() instanceof ServerPlayerEntity) {
             SakuraPlayerData.removeServer(event.getPlayer().getUUID());
-            SakuraSignIn.getPlayerCapabilityStatus().remove(event.getPlayer().getStringUUID());
         }
     }
 

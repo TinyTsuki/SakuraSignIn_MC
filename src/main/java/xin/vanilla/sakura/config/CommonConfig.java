@@ -164,8 +164,6 @@ public class CommonConfig implements ConfigData {
     public interface ServerView {
         boolean autoSignIn();
         ServerView autoSignIn(boolean value);
-        int playerDataSyncPacketSize();
-        ServerView playerDataSyncPacketSize(int value);
         String defaultLanguage();
         ServerView defaultLanguage(String value);
     }
@@ -263,8 +261,6 @@ public class CommonConfig implements ConfigData {
     @Accessors(chain = true, fluent = true)
     public static class ServerCategory {
         private boolean autoSignIn = true;
-        @ConfigEntry.BoundedDiscrete(min = 1, max = 1024)
-        private int playerDataSyncPacketSize = 100;
         private String defaultLanguage = "en_us";
     }
 

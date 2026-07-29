@@ -1,41 +1,33 @@
 package xin.vanilla.sakura.network.packet;
 
-import lombok.Getter;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.event.network.CustomPayloadEvent;
-import net.minecraftforge.network.PacketDistributor;
+import net.minecraft.entity.player.ServerPlayerEntity;
+import xin.vanilla.banira.common.api.INetworkPacket;
+import xin.vanilla.banira.common.network.BaniraNetworkContext;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.sakura.config.RewardConfigManager;
-import xin.vanilla.sakura.network.ModNetworkHandler;
+import xin.vanilla.sakura.network.SakuraNetwork;
 
 /**
  * 通知服务器将奖励配置文件同步到指定客户端
  */
-@Getter
-public class DownloadRewardOptionNotice {
+public class DownloadRewardOptionNotice implements INetworkPacket {
 
     public DownloadRewardOptionNotice() {
     }
 
-    public DownloadRewardOptionNotice(FriendlyByteBuf buf) {
+    public DownloadRewardOptionNotice(BaniraPacketBuffer buf) {
     }
 
-    public void toBytes(FriendlyByteBuf buf) {
+    public void toBytes(BaniraPacketBuffer buf) {
     }
 
-    public static void handle(DownloadRewardOptionNotice packet, CustomPayloadEvent.Context ctx) {
-        // 获取网络事件上下文并排队执行工作
+    public static void handle(DownloadRewardOptionNotice packet, BaniraNetworkContext ctx) {
         ctx.enqueueWork(() -> {
-            // 获取发送数据包的玩家实体
-            ServerPlayer player = ctx.getSender();
+            ServerPlayerEntity player = ctx.senderAs(ServerPlayerEntity.class);
             if (player != null) {
-                // 同步签到奖励配置到客户端
-                for (RewardOptionSyncPacket rewardOptionSyncPacket : RewardConfigManager.toSyncPacket(player).split()) {
-                    ModNetworkHandler.INSTANCE.send(rewardOptionSyncPacket, PacketDistributor.PLAYER.with(player));
-                }
+                SakuraNetwork.sendSplitToPlayer(RewardConfigManager.toSyncPacket(player), player);
             }
         });
-        // 设置数据包已处理状态，防止重复处理
-        ctx.setPacketHandled(true);
+        ctx.markHandled();
     }
 }
