@@ -1,0 +1,78 @@
+import groovy.json.JsonSlurper
+import org.gradle.api.tasks.PathSensitivity
+import org.gradle.api.tasks.compile.JavaCompile
+
+import java.security.MessageDigest
+
+def coordinateVersion = "${loader_type}-${minecraft_version}-${banira_version}"
+def coordinate = "xin.vanilla.banira:banira_codex:${coordinateVersion}"
+// 使用 Gradle 解析 Maven settings 后得到的真实本地仓库路径。
+def mavenLocalRepository = repositories.findByName("MavenLocal") ?: repositories.mavenLocal()
+def mavenLocalRoot = new File(mavenLocalRepository.url)
+def publicationDir = new File(
+        mavenLocalRoot,
+        "xin/vanilla/banira/banira_codex/${coordinateVersion}"
+)
+def publishedJar = new File(publicationDir, "banira_codex-${coordinateVersion}.jar")
+def fingerprintFile = new File(publicationDir, "banira_codex-${coordinateVersion}.local-build.json")
+def stateFile = file("${rootDir}/.gradle/banira-local-state/${coordinateVersion}.sha256")
+def remapRoot = file("${rootDir}/.gradle/loom-cache/remapped_mods/remapped/xin/vanilla/banira")
+
+def sha256 = { File file ->
+    MessageDigest digest = MessageDigest.getInstance("SHA-256")
+    file.withInputStream { input ->
+        byte[] buffer = new byte[8192]
+        int count
+        while ((count = input.read(buffer)) >= 0) {
+            if (count > 0) {
+                digest.update(buffer, 0, count)
+            }
+        }
+    }
+    digest.digest().collect { String.format("%02x", it & 0xff) }.join()
+}
+
+if (fingerprintFile.isFile()) {
+    if (!publishedJar.isFile()) {
+        throw new GradleException("Banira fingerprint exists without its Maven Local artifact: ${publishedJar}")
+    }
+
+    def fingerprint = new JsonSlurper().parse(fingerprintFile)
+    def expectedHash = fingerprint.sha256?.toString()
+    if (fingerprint.schema != 1 || fingerprint.coordinate != coordinate
+            || !(expectedHash ==~ /[0-9a-f]{64}/)) {
+        throw new GradleException("Invalid Banira Maven Local fingerprint: ${fingerprintFile}")
+    }
+
+    def actualHash = sha256(publishedJar)
+    if (actualHash != expectedHash || fingerprint.size != publishedJar.length()) {
+        throw new GradleException("Banira Maven Local artifact does not match its fingerprint: ${publishedJar}")
+    }
+
+    def previousHash = stateFile.isFile() ? stateFile.getText("UTF-8").trim() : ""
+    if (previousHash != actualHash) {
+        def staleRoots = [] as Set
+        if (remapRoot.isDirectory()) {
+            fileTree(remapRoot) {
+                include "**/${coordinateVersion}/banira_codex-*.jar"
+                exclude "**/*-sources.jar"
+            }.files.each { remappedJar ->
+                staleRoots.add(remappedJar.parentFile.parentFile)
+            }
+        }
+        staleRoots.each { staleRoot ->
+            logger.lifecycle("Refreshing Banira Loom cache for ${coordinateVersion}: ${staleRoot.name}")
+            delete(staleRoot)
+        }
+
+        stateFile.parentFile.mkdirs()
+        stateFile.setText(actualHash + System.lineSeparator(), "UTF-8")
+        logger.lifecycle("Using Banira Maven Local fingerprint ${actualHash.substring(0, 12)} for ${coordinateVersion}")
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        inputs.file(fingerprintFile)
+                .withPropertyName("baniraLocalFingerprint")
+                .withPathSensitivity(PathSensitivity.NONE)
+    }
+}
