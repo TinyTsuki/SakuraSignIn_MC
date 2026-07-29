@@ -1,26 +1,22 @@
 package xin.vanilla.sakura.network.packet;
 
 import lombok.Getter;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
-import net.minecraftforge.network.NetworkEvent;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.io.IOException;
-import java.util.function.Supplier;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import net.minecraft.entity.item.ItemEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.JsonToNBT;
+import xin.vanilla.banira.common.api.INetworkPacket;
+import xin.vanilla.banira.common.network.BaniraNetworkContext;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 
 /**
  * ItemStackPacket类用于在网络中传输ItemStack数据
  * 它提供了将ItemStack序列化和反序列化的方法，以便于网络传输
  */
 @Getter
-public class ItemStackPacket {
-    private static final Logger LOGGER = LogManager.getLogger();
-
+public class ItemStackPacket implements INetworkPacket {
     // 存储要传输的ItemStack对象
     private final ItemStack itemStack;
 
@@ -34,21 +30,25 @@ public class ItemStackPacket {
     }
 
     /**
-     * 构造函数，用于从FriendlyByteBuf中读取数据并重构ItemStackPacket
+     * 构造函数，用于从PacketBuffer中读取数据并重构ItemStackPacket
      *
-     * @param buf 包含ItemStack数据的FriendlyByteBuf
+     * @param buf 包含ItemStack数据的PacketBuffer
      */
-    public ItemStackPacket(FriendlyByteBuf buf) {
-        this.itemStack = buf.readItem();
+    public ItemStackPacket(BaniraPacketBuffer buf) {
+        try {
+            this.itemStack = ItemStack.of(JsonToNBT.parseTag(buf.readUtf()));
+        } catch (CommandSyntaxException exception) {
+            throw new IllegalArgumentException("Invalid item stack payload", exception);
+        }
     }
 
     /**
-     * 将ItemStack数据写入FriendlyByteBuf，准备进行网络传输
+     * 将ItemStack数据写入PacketBuffer，准备进行网络传输
      *
-     * @param buf 用于存储ItemStack数据的FriendlyByteBuf
+     * @param buf 用于存储ItemStack数据的PacketBuffer
      */
-    public void toBytes(FriendlyByteBuf buf) {
-        buf.writeItemStack(itemStack, false);
+    public void toBytes(BaniraPacketBuffer buf) {
+        buf.writeUtf(itemStack.save(new CompoundNBT()).toString());
     }
 
     /**
@@ -58,14 +58,14 @@ public class ItemStackPacket {
      * @param packet 包含物品堆信息的数据包
      * @param ctx    用于访问网络事件上下文的供应商函数，包括访问玩家信息和设置数据包处理状态
      */
-    public static void handle(ItemStackPacket packet, Supplier<NetworkEvent.Context> ctx) {
+    public static void handle(ItemStackPacket packet, BaniraNetworkContext ctx) {
         // 获取网络事件上下文并排队执行工作
-        ctx.get().enqueueWork(() -> {
+        ctx.enqueueWork(() -> {
             // 获取发送数据包的玩家实体
-            ServerPlayer player = ctx.get().getSender();
+            ServerPlayerEntity player = ctx.senderAs(ServerPlayerEntity.class);
             if (player != null) {
                 // 尝试将物品堆添加到玩家的库存中
-                boolean added = player.getInventory().add(packet.itemStack);
+                boolean added = player.inventory.add(packet.itemStack);
                 // 如果物品堆无法添加到库存，则以物品实体的形式生成在世界上
                 if (!added) {
                     ItemEntity itemEntity = new ItemEntity(player.level(), player.getX(), player.getY(), player.getZ(), packet.itemStack);
@@ -78,6 +78,6 @@ public class ItemStackPacket {
             }
         });
         // 设置数据包已处理状态，防止重复处理
-        ctx.get().setPacketHandled(true);
+        ctx.markHandled();
     }
 }
