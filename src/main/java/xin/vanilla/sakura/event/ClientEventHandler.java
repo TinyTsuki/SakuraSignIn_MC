@@ -1,5 +1,7 @@
 package xin.vanilla.sakura.event;
 
+import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.sakura.text.SakuraComponent;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.gui.DisplayEffectsScreen;
@@ -17,7 +19,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.ClientConfig;
-import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.rewards.RewardManager;
 import xin.vanilla.sakura.screen.RewardOptionScreen;
 import xin.vanilla.sakura.screen.SignInScreen;
@@ -157,7 +158,7 @@ public class ClientEventHandler {
                 InventoryButton signInButton = new InventoryButton((int) signInX, (int) signInY,
                         AbstractGuiUtils.ITEM_ICON_SIZE,
                         AbstractGuiUtils.ITEM_ICON_SIZE,
-                        I18nUtils.getTranslationClient(EI18nType.KEY, "sign_in"))
+                        SakuraComponent.get().translateClient("key", "sign_in"))
                         .setUV(SakuraSignIn.getThemeTextureCoordinate().getSignInBtnUV(), SakuraSignIn.getThemeTextureCoordinate().getTotalWidth(), SakuraSignIn.getThemeTextureCoordinate().getTotalHeight())
                         .setOnClick((button) -> ClientEventHandler.openSignInScreen(event.getGui()))
                         .setOnDragEnd((coordinate) -> {
@@ -168,7 +169,7 @@ public class ClientEventHandler {
                 InventoryButton rewardOptionButton = new InventoryButton((int) rewardOptionX, (int) rewardOptionY,
                         AbstractGuiUtils.ITEM_ICON_SIZE,
                         AbstractGuiUtils.ITEM_ICON_SIZE,
-                        I18nUtils.getTranslationClient(EI18nType.KEY, "reward_option"))
+                        SakuraComponent.get().translateClient("key", "reward_option"))
                         .setUV(SakuraSignIn.getThemeTextureCoordinate().getRewardOptionBtnUV(), SakuraSignIn.getThemeTextureCoordinate().getTotalWidth(), SakuraSignIn.getThemeTextureCoordinate().getTotalHeight())
                         .setOnClick((button) -> Minecraft.getInstance().setScreen(new RewardOptionScreen().setPreviousScreen(event.getGui())))
                         .setOnDragEnd((coordinate) -> {
@@ -254,7 +255,7 @@ public class ClientEventHandler {
         } else {
             ClientPlayerEntity player = Minecraft.getInstance().player;
             if (player != null) {
-                Component component = Component.translatableClient(EI18nType.MESSAGE, "sakura_is_offline");
+                Component component = SakuraComponent.get().transClient("message", "sakura_is_offline");
                 NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0x88FF5555));
             }
         }

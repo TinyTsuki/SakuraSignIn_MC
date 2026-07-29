@@ -1,5 +1,6 @@
 package xin.vanilla.sakura.network.data;
 
+import xin.vanilla.sakura.text.SakuraComponent;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -15,7 +16,7 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.ITextComponent;
 import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
-import xin.vanilla.sakura.util.Component;
+import xin.vanilla.banira.common.data.Component;
 
 /**
  * 进度信息
@@ -56,8 +57,8 @@ public class AdvancementData {
             FrameType frame = buffer.readEnum(FrameType.class);
             return new AdvancementData(id, new DisplayInfo(
                     icon,
-                    title == null ? Component.literal("").toTextComponent() : title,
-                    description == null ? Component.literal("").toTextComponent() : description,
+                    title == null ? SakuraComponent.get().literal("").toVanilla() : title,
+                    description == null ? SakuraComponent.get().literal("").toVanilla() : description,
                     background.isEmpty() ? null : new ResourceLocation(background),
                     frame,
                     buffer.readBoolean(),
@@ -83,7 +84,7 @@ public class AdvancementData {
 
     public static DisplayInfo createDisplayInfo(String title, String description, ItemStack itemStack) {
         return new DisplayInfo(itemStack
-                , Component.literal(title).toTextComponent(), Component.literal(description).toTextComponent()
+                , SakuraComponent.get().literal(title).toVanilla(), SakuraComponent.get().literal(description).toVanilla()
                 , new ResourceLocation(""), FrameType.TASK
                 , false, false, false);
     }

@@ -1,12 +1,13 @@
 package xin.vanilla.sakura.screen.component;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import xin.vanilla.banira.client.gui.component.Text;
+import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.FontRenderer;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import xin.vanilla.sakura.util.AbstractGuiUtils;
@@ -15,6 +16,7 @@ import xin.vanilla.sakura.util.StringUtils;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * 弹出层选项框
@@ -38,7 +40,7 @@ public class PopupOption {
      */
     @Getter
     private String id;
-    private Font font;
+    private FontRenderer font;
     private int width = -leftPadding - rightPadding;
     private int height = -topPadding - bottomPadding;
     private int screenWidth;
@@ -80,7 +82,7 @@ public class PopupOption {
     @Setter
     private Consumer<PopupOption> afterRender = null;
 
-    private PopupOption(Font font) {
+    private PopupOption(FontRenderer font) {
         this.font = font;
     }
 
@@ -123,20 +125,20 @@ public class PopupOption {
         return this;
     }
 
-    public static PopupOption init(Font font) {
+    public static PopupOption init(FontRenderer font) {
         return new PopupOption(font);
     }
 
-    public static PopupOption init(Font font, int x, int y) {
+    public static PopupOption init(FontRenderer font, int x, int y) {
         return new PopupOption(font).setPosition(x, y).calculateSize();
     }
 
     public PopupOption addOption(@NonNull Text text) {
         if (this.x >= 0 || this.y >= 0)
             throw new RuntimeException("The addOption method must be called after the clear/init method and before the resize method.");
-        List<Text> renderList = Arrays.stream(StringUtils.replaceLine(text.getContent()).split("\n"))
-                .map(s -> text.copy().setText(s).setHoverText(s).withStyle(text))
-                .toList();
+        List<Text> renderList = Arrays.stream(StringUtils.replaceLine(text.content()).split("\n"))
+                .map(s -> text.clone().text(s).hoverText(s).withStyle(text))
+                .collect(Collectors.toList());
         for (int i = 0; i < renderList.size(); i++) {
             this.relationMap.put(this.renderList.size() + i, optionList.size());
         }
@@ -150,7 +152,7 @@ public class PopupOption {
             throw new RuntimeException("The addOption method must be called after the clear/init method and before the resize method.");
         for (String s : text) {
             Text literal = Text.literal(s);
-            List<Text> renderList = Arrays.stream(StringUtils.replaceLine(s).split("\n")).map(Text::literal).toList();
+            List<Text> renderList = Arrays.stream(StringUtils.replaceLine(s).split("\n")).map(Text::literal).collect(Collectors.toList());
             for (int i = 0; i < renderList.size(); i++) {
                 this.relationMap.put(this.renderList.size() + i, optionList.size());
             }
@@ -223,7 +225,7 @@ public class PopupOption {
      * @param y    纵坐标
      * @param id   标识
      */
-    public PopupOption build(Font font, double x, double y, String id) {
+    public PopupOption build(FontRenderer font, double x, double y, String id) {
         if (CollectionUtils.isNullOrEmpty(this.optionList))
             throw new RuntimeException("The build method must be called after the addOption method.");
         this.font = font;
@@ -268,7 +270,7 @@ public class PopupOption {
                 && this.getSelectedIndex() >= 0
                 && this.getSelectedIndex() < this.optionList.size()
                 && this.relationMap.getOrDefault(selectedIndex, -1) >= 0)
-                ? this.optionList.get(this.relationMap.get(selectedIndex)).getContent() : "";
+                ? this.optionList.get(this.relationMap.get(selectedIndex)).content() : "";
     }
 
     /**
@@ -302,8 +304,9 @@ public class PopupOption {
         return result;
     }
 
-    public void render(PoseStack poseStack, KeyEventManager keyManager) {
+    public void render(MatrixStack matrixStack, KeyEventManager keyManager) {
         if (this.beforeRender != null) this.beforeRender.accept(this);
+
         if (CollectionUtils.isNullOrEmpty(optionList)) return;
         if (Minecraft.getInstance().screen == null) return;
 
@@ -317,7 +320,7 @@ public class PopupOption {
                     int index = -1;
                     for (int i = 0; i < (this.maxLines > 0 ? this.maxLines : renderList.size()); i++) {
                         if (scrollOffset + i >= renderList.size()) break;
-                        int curLines = StringUtils.getLineCount(renderList.get(scrollOffset + i).getContent());
+                        int curLines = StringUtils.getLineCount(renderList.get(scrollOffset + i).content());
                         if (relativeY >= lines * (font.lineHeight + 1) && relativeY < (lines + curLines) * (font.lineHeight + 1) - 1 && relativeY < this.height - this.topPadding - this.bottomPadding) {
                             index = scrollOffset + i;
                         }
@@ -330,35 +333,35 @@ public class PopupOption {
             }
         }
 
-        AbstractGuiUtils.setDepth(poseStack, AbstractGuiUtils.EDepth.TOOLTIP);
-        AbstractGuiUtils.fill(poseStack, adjustedX, adjustedY, width, height, 0x88000000, radius);
-        AbstractGuiUtils.fillOutLine(poseStack, adjustedX, adjustedY, width, height, 1, 0xFF000000, radius);
+        AbstractGuiUtils.setDepth(matrixStack, AbstractGuiUtils.EDepth.TOOLTIP);
+        AbstractGuiUtils.fill(matrixStack, adjustedX, adjustedY, width, height, 0x88000000, radius);
+        AbstractGuiUtils.fillOutLine(matrixStack, adjustedX, adjustedY, width, height, 1, 0xFF000000, radius);
         int lineOffset = 0;
         for (int i = 0; i < this.maxLines; i++) {
             int index = i + scrollOffset;
             if (index >= 0 && index < renderList.size()) {
                 Text text = renderList.get(index);
                 if (selectedIndex == index) {
-                    AbstractGuiUtils.fill(poseStack, adjustedX + 1, adjustedY + topPadding + (lineOffset * (this.font.lineHeight + 1)), width - 2, this.font.lineHeight * StringUtils.getLineCount(text.getContent()), 0x88ACACAC);
+                    AbstractGuiUtils.fill(matrixStack, adjustedX + 1, adjustedY + topPadding + (lineOffset * (this.font.lineHeight + 1)), width - 2, this.font.lineHeight * StringUtils.getLineCount(text.content()), 0x88ACACAC);
                 }
                 if (maxWidth > 0) {
-                    AbstractGuiUtils.drawLimitedText(text.setPoseStack(poseStack).setFont(this.font), adjustedX + leftPadding, adjustedY + topPadding + (i * (this.font.lineHeight + 1)), maxWidth, AbstractGuiUtils.EllipsisPosition.MIDDLE);
+                    AbstractGuiUtils.drawLimitedText(text.stack(matrixStack).font(this.font), adjustedX + leftPadding, adjustedY + topPadding + (i * (this.font.lineHeight + 1)), maxWidth, AbstractGuiUtils.EllipsisPosition.MIDDLE);
                 } else {
-                    AbstractGuiUtils.drawString(text.setPoseStack(poseStack).setFont(this.font), adjustedX + leftPadding, adjustedY + topPadding + (i * (this.font.lineHeight + 1)));
+                    AbstractGuiUtils.drawString(text.stack(matrixStack).font(this.font), adjustedX + leftPadding, adjustedY + topPadding + (i * (this.font.lineHeight + 1)));
                 }
-                lineOffset += StringUtils.getLineCount(text.getContent());
+                lineOffset += StringUtils.getLineCount(text.content());
             }
         }
-        AbstractGuiUtils.resetDepth(poseStack);
+        AbstractGuiUtils.resetDepth(matrixStack);
         // 绘制提示
         if (StringUtils.isNullOrEmptyEx(this.tipsKeyNames) || keyManager.isKeyPressed(this.tipsKeyNames)) {
             if (this.getSelectedIndex() >= 0 && !tipsMap.isEmpty()) {
                 Text text = tipsMap.getOrDefault(this.getSelectedIndex(), Text.literal(""));
-                if (StringUtils.isNullOrEmpty(text.getContent())) {
+                if (StringUtils.isNullOrEmpty(text.content())) {
                     text = tipsMap.getOrDefault(this.getSelectedIndex() - renderList.size(), Text.literal(""));
                 }
-                if (StringUtils.isNotNullOrEmpty(text.getContent())) {
-                    AbstractGuiUtils.drawPopupMessage(text.setPoseStack(poseStack).setFont(this.font), (int) keyManager.getMouseX(), (int) keyManager.getMouseY(), this.screenWidth, this.screenHeight);
+                if (StringUtils.isNotNullOrEmpty(text.content())) {
+                    AbstractGuiUtils.drawPopupMessage(text.stack(matrixStack).font(this.font), (int) keyManager.getMouseX(), (int) keyManager.getMouseY(), this.screenWidth, this.screenHeight);
                 }
             }
         }

@@ -1,5 +1,6 @@
 package xin.vanilla.sakura.command.impl;
 
+import xin.vanilla.sakura.text.SakuraComponent;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.command.CommandSource;
@@ -10,12 +11,11 @@ import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.config.KeyValue;
 import xin.vanilla.sakura.config.RewardConfigManager;
 import xin.vanilla.sakura.data.IPlayerSignInData;
-import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.message.SakuraMessages;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
 import xin.vanilla.sakura.rewards.RewardList;
 import xin.vanilla.sakura.rewards.RewardManager;
-import xin.vanilla.sakura.util.Component;
+import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.sakura.util.DateUtils;
 import xin.vanilla.sakura.util.SakuraUtils;
 
@@ -70,12 +70,11 @@ public final class CdkCommand {
             if (expiresAt.before(DateUtils.getServerDate())) {
                 send(player, "cdk_expired", 0xFFFF0000);
             } else {
-                Component message = Component.translatable(
-                        player, EI18nType.MESSAGE, "receive_reward_success"
+                Component message = SakuraComponent.get().trans(player, "message", "receive_reward_success"
                 );
                 reward.getValue().getKey().forEach(entry -> {
                     Component detail = entry.getName(SakuraUtils.getPlayerLanguage(player), true);
-                    detail.setColor(RewardManager.giveRewardToPlayer(player, data, entry)
+                    detail.color(RewardManager.giveRewardToPlayer(player, data, entry)
                             ? Color.GREEN.getRGB()
                             : Color.RED.getRGB());
                     message.append(", ").append(detail);
@@ -124,7 +123,7 @@ public final class CdkCommand {
     private static void send(ServerPlayerEntity player, String key, int color) {
         SakuraMessages.send(
                 player,
-                Component.translatable(player, EI18nType.MESSAGE, key).setColor(color),
+                SakuraComponent.get().trans(player, "message", key).color(color),
                 SakuraNotificationTypes.CDK
         );
     }
