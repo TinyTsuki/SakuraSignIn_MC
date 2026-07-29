@@ -11,6 +11,8 @@ import xin.vanilla.sakura.data.PlayerSignInData;
 import xin.vanilla.sakura.data.PlayerSignInDataRepository;
 import xin.vanilla.sakura.data.migration.LegacyMigrationResult;
 import xin.vanilla.sakura.data.migration.LegacyPlayerDataMigrationService;
+import xin.vanilla.sakura.config.CommonConfig;
+import xin.vanilla.sakura.domain.player.HistoryRetentionPolicy;
 import xin.vanilla.sakura.domain.player.LegacyPlayerDataParser;
 import xin.vanilla.sakura.internal.forge.migration.BaniraPlayerSummaryRepository;
 import xin.vanilla.sakura.internal.forge.migration.LegacyForgeCapabilityStore;
@@ -18,8 +20,12 @@ import xin.vanilla.sakura.internal.forge.migration.MonthlySignInHistoryRepositor
 import xin.vanilla.sakura.network.ModNetworkHandler;
 import xin.vanilla.sakura.network.packet.PlayerDataSyncPacket;
 import xin.vanilla.sakura.platform.SakuraPlayerDataService;
+import xin.vanilla.sakura.rewards.RewardManager;
+import xin.vanilla.sakura.util.DateUtils;
 
 import java.io.IOException;
+import java.time.YearMonth;
+import java.time.ZoneId;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -72,6 +78,7 @@ public final class ForgePlayerSignInDataService implements SakuraPlayerDataServi
         );
         LegacyMigrationResult result = migration.migrate(playerUuid);
         serverCache.remove(playerUuid);
+        applyRetention(playerUuid, histories);
         serverCache.put(playerUuid, new PlayerSignInDataRepository(summaries, histories).load(playerUuid));
         return result;
     }
@@ -127,7 +134,10 @@ public final class ForgePlayerSignInDataService implements SakuraPlayerDataServi
 
     private IPlayerSignInData loadServerData(UUID playerUuid) {
         try {
-            return repository().load(playerUuid);
+            MonthlySignInHistoryRepository histories =
+                    new MonthlySignInHistoryRepository(BaniraDataPaths.worldDataPath());
+            applyRetention(playerUuid, histories);
+            return repository(histories).load(playerUuid);
         } catch (IOException loadFailure) {
             throw new IllegalStateException("Unable to load Sakura player data: " + playerUuid, loadFailure);
         }
@@ -149,10 +159,52 @@ public final class ForgePlayerSignInDataService implements SakuraPlayerDataServi
     }
 
     private static PlayerSignInDataRepository repository() {
+        return repository(new MonthlySignInHistoryRepository(BaniraDataPaths.worldDataPath()));
+    }
+
+    private static PlayerSignInDataRepository repository(MonthlySignInHistoryRepository histories) {
         return new PlayerSignInDataRepository(
                 new BaniraPlayerSummaryRepository(),
-                new MonthlySignInHistoryRepository(BaniraDataPaths.worldDataPath())
+                histories
         );
+    }
+
+    private static void applyRetention(
+            UUID playerUuid,
+            MonthlySignInHistoryRepository histories
+    ) {
+        CommonConfig.HistoryView config = CommonConfig.get().history();
+        YearMonth currentMonth = YearMonth.from(
+                RewardManager.getCompensateDate(DateUtils.getServerDate())
+                        .toInstant()
+                        .atZone(ZoneId.systemDefault())
+        );
+        applyRetentionBestEffort(
+                playerUuid, histories, currentMonth,
+                config.retentionMonths(), config.retentionPolicy()
+        );
+    }
+
+    static void applyRetentionBestEffort(
+            UUID playerUuid,
+            MonthlySignInHistoryRepository histories,
+            YearMonth currentMonth,
+            int retentionMonths,
+            HistoryRetentionPolicy policy
+    ) {
+        try {
+            MonthlySignInHistoryRepository.RetentionResult result = histories.applyRetention(
+                    playerUuid, currentMonth, retentionMonths, policy
+            );
+            if (result.getDeletedMonthFiles() > 0 || result.getStrippedMonthFiles() > 0) {
+                LOGGER.info("Cleaned Sakura history for {}: stripped={}, deleted={}",
+                        playerUuid, result.getStrippedMonthFiles(), result.getDeletedMonthFiles());
+            }
+        } catch (IOException cleanupFailure) {
+            // 保留任务失败不应阻断玩家摘要与当前月详情的加载。
+            LOGGER.warn("Unable to clean Sakura history for {}; keeping existing files",
+                    playerUuid, cleanupFailure);
+        }
     }
 
     private static PlayerEntity requirePlayer(Object player) {

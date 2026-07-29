@@ -1,5 +1,6 @@
 package xin.vanilla.sakura.network.packet;
 
+import xin.vanilla.sakura.config.CommonConfig;
 import com.google.gson.reflect.TypeToken;
 import io.netty.buffer.ByteBuf;
 import lombok.Getter;
@@ -13,7 +14,6 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.jetbrains.annotations.NotNull;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.RewardConfigManager;
-import xin.vanilla.sakura.config.ServerConfig;
 import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ERewardRule;
 import xin.vanilla.sakura.network.data.RewardOptionSyncData;
@@ -100,7 +100,7 @@ public class RewardOptionSyncPacket extends SplitPacket implements CustomPacketP
                     if (ctx.player() instanceof ServerPlayer sender) {
                         try {
                             // 判断是否拥有修改权限
-                            if (sender.hasPermissions(ServerConfig.PERMISSION_EDIT_REWARD.get())) {
+                            if (sender.hasPermissions(CommonConfig.get().permission().permissionEditReward())) {
                                 // 备份 RewardOption
                                 RewardConfigManager.backupRewardOption(false);
                                 // 更新 RewardOption

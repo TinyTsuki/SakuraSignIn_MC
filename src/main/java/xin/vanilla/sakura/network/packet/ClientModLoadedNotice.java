@@ -6,6 +6,7 @@ import net.minecraftforge.event.network.CustomPayloadEvent;
 import net.minecraftforge.network.PacketDistributor;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.api.SakuraPlayerData;
+import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.config.RewardConfigManager;
 import xin.vanilla.sakura.network.ModNetworkHandler;
 
@@ -27,6 +28,7 @@ public class ClientModLoadedNotice {
             ServerPlayer player = ctx.getSender();
             if (player != null) {
                 SakuraSignIn.getPlayerCapabilityStatus().put(player.getUUID().toString(), false);
+                CommonConfig.syncToPlayer(player);
                 // 同步玩家签到数据到客户端
                 SakuraPlayerData.sync(player);
                 // 同步签到奖励配置到客户端
