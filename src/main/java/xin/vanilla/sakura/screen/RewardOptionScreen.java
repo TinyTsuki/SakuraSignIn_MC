@@ -5,6 +5,7 @@ import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.client.gui.component.TextList;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.BaniraScreen;
+import xin.vanilla.banira.client.gui.ConfirmDialogScreen;
 import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.client.gui.widget.PopupOption;
 import xin.vanilla.sakura.text.SakuraComponent;
@@ -42,11 +43,12 @@ import xin.vanilla.sakura.event.ClientEventHandler;
 import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.network.packet.DownloadRewardOptionNotice;
 import xin.vanilla.sakura.network.packet.RewardOptionSyncPacket;
+import xin.vanilla.sakura.notification.SakuraClientNotifications;
+import xin.vanilla.sakura.notification.SakuraNotificationTypes;
 import xin.vanilla.sakura.rewards.Reward;
 import xin.vanilla.sakura.rewards.RewardClipboardManager;
 import xin.vanilla.sakura.rewards.RewardList;
 import xin.vanilla.sakura.rewards.RewardManager;
-import xin.vanilla.sakura.screen.component.NotificationManager;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.util.AbstractGuiUtils;
 import xin.vanilla.sakura.util.CollectionUtils;
@@ -584,21 +586,19 @@ public class RewardOptionScreen extends BaniraScreen {
                     ERewardRule rewardRule = ERewardRule.valueOf(OperationButtonType.valueOf(value.getOperation()).name());
                     if (!player.hasPermissions(SakuraUtils.getRewardPermissionLevel(rewardRule))) {
                         Component component = SakuraComponent.get().transClient("message", "no_permission_to_view_reward", SakuraComponent.get().transClient("word", SakuraUtils.getRewardRuleI18nKeyName(rewardRule)));
-                        NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0x88FF5555));
+                        SakuraClientNotifications.error(component, SakuraNotificationTypes.REWARD);
                     }
                     if (!player.hasPermissions(CommonConfig.get().permission().permissionEditReward())) {
                         Component component = SakuraComponent.get().transClient("message", "no_permission_to_edit_reward");
-                        NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
+                        SakuraClientNotifications.warning(component, SakuraNotificationTypes.REWARD);
                     }
                 } catch (Exception ignored) {
                 }
-            } else {
+            } else if (button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
                 // 绘制弹出层选项
                 this.popupOption.clear()
                         .addOptionWithId("clear",
-                                Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.clear").color(0xFFFF0000),
-                                Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.cancel_or_confirm"))
-                        .setTipsKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_SHIFT));
+                                Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.clear").color(0xFFFF0000));
                 this.showPopup(mouseX, mouseY, String.format("奖励规则类型按钮:%s", value.getOperation()));
                 flag.set(true);
             }
@@ -654,7 +654,7 @@ public class RewardOptionScreen extends BaniraScreen {
                 }
             } else {
                 Component component = SakuraComponent.get().trans("message", "local_server_not_support_this_operation");
-                NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
+                SakuraClientNotifications.warning(component, SakuraNotificationTypes.REWARD);
             }
         }
         // 下载奖励配置
@@ -668,7 +668,7 @@ public class RewardOptionScreen extends BaniraScreen {
                     flag.set(true);
                 } else {
                     Component component = SakuraComponent.get().trans("message", "local_server_not_support_this_operation");
-                    NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component).setBgColor(0xAAFCFCB9));
+                    SakuraClientNotifications.warning(component, SakuraNotificationTypes.REWARD);
                 }
             }
         }
@@ -721,14 +721,11 @@ public class RewardOptionScreen extends BaniraScreen {
                     this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.reward_type_" + rewardType.getCode()));
                 }
                 this.popupOption.addOptionWithId("clear",
-                        Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.clear").color(0xFFFF0000),
-                        Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.cancel_or_confirm"));
+                        Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.clear").color(0xFFFF0000));
                 if (!"标题,base".equalsIgnoreCase(key)) {
                     this.popupOption.addOptionWithId("delete",
-                            Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.delete").color(0xFFFF0000),
-                            Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.cancel_or_confirm"));
+                            Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.delete").color(0xFFFF0000));
                 }
-                this.popupOption.setTipsKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_SHIFT));
                 this.showPopup(mouseX, mouseY, String.format("奖励按钮:%s", key));
             } else {
                 this.popupOption.clear();
@@ -737,9 +734,7 @@ public class RewardOptionScreen extends BaniraScreen {
                         .addOption(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.cut"))
                         .addOption(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.paste"))
                         .addOptionWithId("delete",
-                                Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.delete").color(0xFFFF0000),
-                                Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.cancel_or_confirm"))
-                        .setTipsKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_SHIFT));
+                                Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.delete").color(0xFFFF0000));
                 this.showPopup(mouseX, mouseY, String.format("奖励按钮:%s", key));
             }
             this.popupOption.setBeforeRender(pasteConsumer);
@@ -753,6 +748,9 @@ public class RewardOptionScreen extends BaniraScreen {
     }
 
     private void handlePopupSelection(PopupOption.SelectEvent event) {
+        if (event.button() != GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
+            return;
+        }
         AtomicBoolean updateLayout = new AtomicBoolean(false);
         AtomicBoolean handled = new AtomicBoolean(false);
         this.handlePopupOption(event.button(), popupContextId, event.index(), event.text(), updateLayout, handled);
@@ -777,60 +775,10 @@ public class RewardOptionScreen extends BaniraScreen {
         ERewardRule rule = ERewardRule.valueOf(buttonType.toString());
         if (popupId.startsWith("奖励规则类型按钮:")) {
             int opCode = StringUtils.toInt(popupId.replace("奖励规则类型按钮:", ""));
-            // 若选择了清空
-            if (selectedIndex == 0 && button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
-                // 并且按住了Control按钮
-                if (inputState.onlyCtrlPressed()) {
-                    if (opCode > 200 && opCode <= 299) {
-                        RewardConfigManager.addUndoRewardOption(rule);
-                        RewardConfigManager.clearRedoList();
-                        switch (OperationButtonType.valueOf(opCode)) {
-                            case BASE_REWARD: {
-                                RewardConfigManager.getRewardConfig().getBaseRewards().clear();
-                            }
-                            break;
-                            case CONTINUOUS_REWARD: {
-                                RewardConfigManager.getRewardConfig().getContinuousRewards().clear();
-                            }
-                            break;
-                            case CYCLE_REWARD: {
-                                RewardConfigManager.getRewardConfig().getCycleRewards().clear();
-                            }
-                            break;
-                            case YEAR_REWARD: {
-                                RewardConfigManager.getRewardConfig().getYearRewards().clear();
-                            }
-                            break;
-                            case MONTH_REWARD: {
-                                RewardConfigManager.getRewardConfig().getMonthRewards().clear();
-                            }
-                            break;
-                            case WEEK_REWARD: {
-                                RewardConfigManager.getRewardConfig().getWeekRewards().clear();
-                            }
-                            break;
-                            case DATE_TIME_REWARD: {
-                                RewardConfigManager.getRewardConfig().getDateTimeRewards().clear();
-                            }
-                            break;
-                            case CUMULATIVE_REWARD: {
-                                RewardConfigManager.getRewardConfig().getCumulativeRewards().clear();
-                            }
-                            break;
-                            case RANDOM_REWARD: {
-                                RewardConfigManager.getRewardConfig().getRandomRewardGroups().clear();
-                            }
-                            break;
-                            case CDK_REWARD: {
-                                RewardConfigManager.getRewardConfig().getCdkRewards().clear();
-                            }
-                            break;
-                        }
-                        RewardConfigManager.saveRewardOption();
-                        updateLayout.set(true);
-                        flag.set(true);
-                    }
-                }
+            if (selectedIndex == 0 && opCode > 200 && opCode <= 299) {
+                requestConfirmation("confirm_clear_reward_rule",
+                        () -> clearRewardRule(opCode, rule));
+                flag.set(true);
             }
         } else if (popupId.startsWith("奖励面板按钮:")) {
             String[] key = new String[]{""};
@@ -1128,19 +1076,15 @@ public class RewardOptionScreen extends BaniraScreen {
                         editHandler.handlePaste();
                     }
                 } else if (SakuraComponent.get().transClient("option", "clear").toString().equalsIgnoreCase(selectedString)) {
-                    if (button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
-                        if (inputState.onlyCtrlPressed()) {
-                            RewardConfigManager.addUndoRewardOption(rule);
-                            RewardConfigManager.clearRedoList();
-                            RewardConfigManager.clearKey(rule, key);
-                            RewardConfigManager.saveRewardOption();
-                        }
-                    }
+                    requestConfirmation("confirm_clear_reward_group", () -> {
+                        RewardConfigManager.addUndoRewardOption(rule);
+                        RewardConfigManager.clearRedoList();
+                        RewardConfigManager.clearKey(rule, key);
+                        RewardConfigManager.saveRewardOption();
+                        updateLayout();
+                    });
                 } else if (SakuraComponent.get().transClient("option", "delete").toString().equalsIgnoreCase(selectedString)) {
-                    if (ClientConfig.get().rewardKeys().delete().stream()
-                            .anyMatch(binding -> isKeyAndMousePressed(binding, button))) {
-                        editHandler.handleDelete();
-                    }
+                    requestDeleteConfirmation();
                 }
                 // 添加物品
                 else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.ITEM.getCode()).equalsIgnoreCase(selectedString)) {
@@ -1479,10 +1423,7 @@ public class RewardOptionScreen extends BaniraScreen {
                         editHandler.handlePaste();
                     }
                 } else if (SakuraComponent.get().transClient("option", "delete").toString().equalsIgnoreCase(selectedString)) {
-                    if (ClientConfig.get().rewardKeys().delete().stream()
-                            .anyMatch(binding -> isKeyAndMousePressed(binding, button))) {
-                        editHandler.handleDelete();
-                    }
+                    requestDeleteConfirmation();
                 }
             }
             updateLayout.set(true);
@@ -1490,23 +1431,76 @@ public class RewardOptionScreen extends BaniraScreen {
         }
     }
 
-    private boolean isKeyAndMousePressed(String binding, int mouseButton) {
-        if (StringUtils.isNullOrEmptyEx(binding)) {
+    /**
+     * 危险操作统一通过可见确认页执行，不再依赖组合键或特殊鼠标键。
+     */
+    private void requestConfirmation(String messageKey, Runnable action) {
+        Minecraft.getInstance().setScreen(new ConfirmDialogScreen(
+                new ConfirmDialogScreen.Args()
+                        .parentScreen(this)
+                        .title(SakuraComponent.get().transClient("title", "confirm_operation"))
+                        .message(SakuraComponent.get().transClient("tips", messageKey))
+                        .onConfirm(action)
+        ));
+    }
+
+    private boolean requestDeleteConfirmation() {
+        if (StringUtils.isNullOrEmptyEx(currRewardButton)
+                || currRewardButton.equalsIgnoreCase("panel")) {
             return false;
         }
-        List<String> keys = new java.util.ArrayList<>();
-        List<String> mice = new java.util.ArrayList<>();
-        for (String part : binding.split("\\+")) {
-            if (part.startsWith("Mouse")) {
-                mice.add(part);
-            } else {
-                keys.add(part);
-            }
+        requestConfirmation(
+                currRewardButton.startsWith("标题")
+                        ? "confirm_delete_reward_group"
+                        : "confirm_delete_reward",
+                editHandler::handleDelete
+        );
+        return true;
+    }
+
+    private void clearRewardRule(int opCode, ERewardRule rule) {
+        OperationButtonType operation = OperationButtonType.valueOf(opCode);
+        if (operation == null) {
+            return;
         }
-        String keyBinding = String.join("+", keys);
-        String mouseBinding = String.join("+", mice);
-        return (keys.isEmpty() || inputState.isKeyPressed(keyBinding))
-                && (mice.isEmpty() || GLFWKeyHelper.matchMouse(mouseBinding, mouseButton));
+        RewardConfigManager.addUndoRewardOption(rule);
+        RewardConfigManager.clearRedoList();
+        switch (operation) {
+            case BASE_REWARD:
+                RewardConfigManager.getRewardConfig().getBaseRewards().clear();
+                break;
+            case CONTINUOUS_REWARD:
+                RewardConfigManager.getRewardConfig().getContinuousRewards().clear();
+                break;
+            case CYCLE_REWARD:
+                RewardConfigManager.getRewardConfig().getCycleRewards().clear();
+                break;
+            case YEAR_REWARD:
+                RewardConfigManager.getRewardConfig().getYearRewards().clear();
+                break;
+            case MONTH_REWARD:
+                RewardConfigManager.getRewardConfig().getMonthRewards().clear();
+                break;
+            case WEEK_REWARD:
+                RewardConfigManager.getRewardConfig().getWeekRewards().clear();
+                break;
+            case DATE_TIME_REWARD:
+                RewardConfigManager.getRewardConfig().getDateTimeRewards().clear();
+                break;
+            case CUMULATIVE_REWARD:
+                RewardConfigManager.getRewardConfig().getCumulativeRewards().clear();
+                break;
+            case RANDOM_REWARD:
+                RewardConfigManager.getRewardConfig().getRandomRewardGroups().clear();
+                break;
+            case CDK_REWARD:
+                RewardConfigManager.getRewardConfig().getCdkRewards().clear();
+                break;
+            default:
+                return;
+        }
+        RewardConfigManager.saveRewardOption();
+        updateLayout();
     }
 
     /**
@@ -2036,7 +2030,7 @@ public class RewardOptionScreen extends BaniraScreen {
         } else if (matchesShortcut(ClientConfig.get().rewardKeys().cut(), keyCode)) {
             consumed = editHandler.handleCut();
         } else if (matchesShortcut(ClientConfig.get().rewardKeys().delete(), keyCode)) {
-            consumed = editHandler.handleDelete();
+            consumed = requestDeleteConfirmation();
         } else if (matchesShortcut(ClientConfig.get().rewardKeys().undo(), keyCode)) {
             consumed = editHandler.handleUndo();
         } else if (matchesShortcut(ClientConfig.get().rewardKeys().redo(), keyCode)) {
