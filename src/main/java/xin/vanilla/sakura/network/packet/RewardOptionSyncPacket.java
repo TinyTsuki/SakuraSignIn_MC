@@ -3,16 +3,17 @@ package xin.vanilla.sakura.network.packet;
 import xin.vanilla.sakura.config.CommonConfig;
 import com.google.gson.reflect.TypeToken;
 import lombok.Getter;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.NetworkEvent;
-import net.minecraftforge.network.PacketDistributor;
+import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.network.PacketBuffer;
+import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraftforge.fml.network.PacketDistributor;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.RewardConfigManager;
 import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ERewardRule;
 import xin.vanilla.sakura.network.ModNetworkHandler;
 import xin.vanilla.sakura.network.data.RewardOptionSyncData;
+import xin.vanilla.sakura.network.data.RewardOptionSyncKind;
 import xin.vanilla.sakura.rewards.Reward;
 import xin.vanilla.sakura.screen.component.NotificationManager;
 import xin.vanilla.sakura.util.CollectionUtils;
@@ -34,16 +35,21 @@ public class RewardOptionSyncPacket extends SplitPacket {
         this.rewardOptionData = rewardOptionData;
     }
 
-    public RewardOptionSyncPacket(FriendlyByteBuf buf) {
+    public RewardOptionSyncPacket(PacketBuffer buf) {
         super(buf);
         this.rewardOptionData = new ArrayList<>();
         int size = buf.readInt();
         for (int i = 0; i < size; i++) {
+            RewardOptionSyncKind kind = RewardOptionSyncKind.valueOf(buf.readInt());
             this.rewardOptionData.add(new RewardOptionSyncData(
+                    kind,
                     ERewardRule.valueOf(buf.readInt()),
                     buf.readUtf(),
-                    GSON.fromJson(new String(buf.readByteArray(), StandardCharsets.UTF_8), new TypeToken<Reward>() {
-                    }.getType())
+                    kind == RewardOptionSyncKind.REWARD
+                            ? GSON.fromJson(new String(buf.readByteArray(), StandardCharsets.UTF_8),
+                            new TypeToken<Reward>() {
+                            }.getType())
+                            : null
             ));
         }
     }
@@ -68,7 +74,7 @@ public class RewardOptionSyncPacket extends SplitPacket {
                     Component component = Component.translatable(EI18nType.MESSAGE, "reward_option_download_success");
                     NotificationManager.get().addNotification(NotificationManager.Notification.ofComponentWithBlack(component));
                 } else if (ctx.get().getDirection().getReceptionSide().isServer()) {
-                    ServerPlayer sender = ctx.get().getSender();
+                    ServerPlayerEntity sender = ctx.get().getSender();
                     if (sender != null) {
                         try {
                             // 判断是否拥有修改权限
@@ -80,7 +86,7 @@ public class RewardOptionSyncPacket extends SplitPacket {
                                 RewardConfigManager.saveRewardOption();
 
                                 // 同步 RewardOption 至所有在线玩家
-                                for (ServerPlayer player : sender.server.getPlayerList().getPlayers()) {
+                                for (ServerPlayerEntity player : sender.server.getPlayerList().getPlayers()) {
                                     if (player.getStringUUID().equals(sender.getStringUUID()))
                                         continue;
                                     // 仅给客户端已安装mod的玩家同步数据
@@ -104,21 +110,6 @@ public class RewardOptionSyncPacket extends SplitPacket {
         ctx.get().setPacketHandled(true);
     }
 
-    public void toBytes(FriendlyByteBuf buf) {
-        super.toBytes(buf);
-        buf.writeInt(rewardOptionData.size());
-        for (RewardOptionSyncData data : rewardOptionData) {
-            buf.writeInt(data.rule().getCode());
-            buf.writeUtf(data.key());
-            buf.writeByteArray(GSON.toJson(data.reward().toJsonObject()).getBytes(StandardCharsets.UTF_8));
-        }
-    }
-
-    @Override
-    public int getChunkSize() {
-        return 1024;
-    }
-
     /**
      * 将数据包拆分为多个小包
      */
@@ -139,5 +130,24 @@ public class RewardOptionSyncPacket extends SplitPacket {
             result.forEach(packet -> packet.setTotal(result.size()));
         }
         return result;
+    }
+
+    public void toBytes(PacketBuffer buf) {
+        super.toBytes(buf);
+        buf.writeInt(rewardOptionData.size());
+        for (RewardOptionSyncData data : rewardOptionData) {
+            buf.writeInt(data.getKind().ordinal());
+            buf.writeInt(data.getRule().getCode());
+            buf.writeUtf(data.getKey());
+            if (data.getKind() == RewardOptionSyncKind.REWARD) {
+                buf.writeByteArray(GSON.toJson(data.getReward().toJsonObject())
+                        .getBytes(StandardCharsets.UTF_8));
+            }
+        }
+    }
+
+    @Override
+    public int getChunkSize() {
+        return 1024;
     }
 }
