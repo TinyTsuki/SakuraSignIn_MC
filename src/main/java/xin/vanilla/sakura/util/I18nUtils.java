@@ -1,12 +1,12 @@
 package xin.vanilla.sakura.util;
 
+import xin.vanilla.sakura.config.CommonConfig;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import lombok.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
-import xin.vanilla.sakura.config.ServerConfig;
 import xin.vanilla.sakura.enums.EI18nType;
 
 import java.io.BufferedReader;
@@ -22,7 +22,7 @@ public class I18nUtils {
     private static final String LANG_FILE_PATH = String.format("%s%%s.json", LANG_PATH);
 
     static {
-        loadLanguage(ServerConfig.DEFAULT_LANGUAGE.get());
+        loadLanguage(CommonConfig.get().server().defaultLanguage());
         getI18nFiles().forEach(I18nUtils::loadLanguage);
     }
 
@@ -62,7 +62,7 @@ public class I18nUtils {
      */
     public static String getTranslation(@NonNull String key, @NonNull String languageCode) {
         languageCode = languageCode.toLowerCase(Locale.ROOT);
-        JsonObject language = LANGUAGES.getOrDefault(languageCode, LANGUAGES.get(ServerConfig.DEFAULT_LANGUAGE.get()));
+        JsonObject language = LANGUAGES.getOrDefault(languageCode, LANGUAGES.get(CommonConfig.get().server().defaultLanguage()));
         if (language != null && language.has(key)) {
             return language.get(key).getAsString();
         }

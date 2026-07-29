@@ -1,170 +1,333 @@
 package xin.vanilla.sakura.config;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
+import xin.vanilla.banira.common.config.BaniraConfig;
+import xin.vanilla.banira.common.config.ConfigData;
+import xin.vanilla.banira.common.config.ConfigHolder;
+import xin.vanilla.banira.common.config.ConfigScope;
+import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
+import xin.vanilla.banira.common.config.annotation.Config;
+import xin.vanilla.banira.common.config.annotation.ConfigEntry;
+import xin.vanilla.banira.common.network.packet.ConfigSnapshotToClient;
+import xin.vanilla.banira.common.network.packet.ConfigSyncToServer;
+import xin.vanilla.banira.api.BaniraNetwork;
+import xin.vanilla.sakura.SakuraSignIn;
+import xin.vanilla.sakura.config.access.CommonConfigAccess;
+import xin.vanilla.sakura.domain.player.HistoryRetentionPolicy;
+import xin.vanilla.sakura.enums.ETimeCoolingMethod;
 
-import net.minecraftforge.common.ForgeConfigSpec;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
-public class CommonConfig {
-    public static final ForgeConfigSpec COMMON_CONFIG;
-    // region 自定义指令
+/**
+ * 服务端与通用设置共用一份 Banira COMMON 配置。
+ */
+@Config(name = SakuraSignIn.MODID + "-common", type = ConfigScope.COMMON)
+public class CommonConfig implements ConfigData {
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    @ConfigEntry.Gui.CollapsibleObject
+    @ConfigEntry.Gui.Tooltip(zh_cn = "签到与补签", en_us = "Sign-in and make-up sign-in")
+    private MakeUpCategory makeUp = new MakeUpCategory();
 
-    /**
-     * 命令前缀
-     */
-    public static final ForgeConfigSpec.ConfigValue<String> COMMAND_PREFIX;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    @ConfigEntry.Gui.CollapsibleObject
+    @ConfigEntry.Gui.Tooltip(zh_cn = "签到冷却", en_us = "Sign-in cooldown")
+    private CoolingCategory cooling = new CoolingCategory();
 
-    /**
-     * 签到
-     */
-    public static final ForgeConfigSpec.ConfigValue<String> COMMAND_SIGN_IN;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    @ConfigEntry.Gui.CollapsibleObject
+    @ConfigEntry.Gui.Tooltip(zh_cn = "服务器时间校准", en_us = "Server time calibration")
+    private DateTimeCategory dateTime = new DateTimeCategory();
 
-    /**
-     * 签到并领取奖励
-     */
-    public static final ForgeConfigSpec.ConfigValue<String> COMMAND_SIGN_IN_EX;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    @ConfigEntry.Gui.CollapsibleObject
+    @ConfigEntry.Gui.Tooltip(zh_cn = "奖励规则", en_us = "Reward rules")
+    private RewardCategory reward = new RewardCategory();
 
-    /**
-     * 领取奖励
-     */
-    public static final ForgeConfigSpec.ConfigValue<String> COMMAND_REWARD;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    @ConfigEntry.Gui.CollapsibleObject
+    @ConfigEntry.Gui.Tooltip(zh_cn = "服务端运行设置", en_us = "Server runtime settings")
+    private ServerCategory server = new ServerCategory();
 
-    /**
-     * CDK
-     */
-    public static final ForgeConfigSpec.ConfigValue<String> COMMAND_CDK;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    @ConfigEntry.Gui.CollapsibleObject
+    @ConfigEntry.Gui.Tooltip(zh_cn = "签到历史详情保留", en_us = "Sign-in history retention")
+    private HistoryCategory history = new HistoryCategory();
 
-    /**
-     * 补签卡
-     */
-    public static final ForgeConfigSpec.ConfigValue<String> COMMAND_CARD;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    @ConfigEntry.Gui.CollapsibleObject
+    @ConfigEntry.Gui.Tooltip(zh_cn = "指令名称，请勿添加 /", en_us = "Command names without /")
+    private CommandCategory command = new CommandCategory();
 
-    /**
-     * 设置语言
-     */
-    public static final ForgeConfigSpec.ConfigValue<String> COMMAND_LANGUAGE;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    @ConfigEntry.Gui.CollapsibleObject
+    @ConfigEntry.Gui.Tooltip(zh_cn = "无前缀简短指令", en_us = "Commands without the mod prefix")
+    private ConciseCategory concise = new ConciseCategory();
 
-    // endregion 自定义指令
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    @ConfigEntry.Gui.CollapsibleObject
+    @ConfigEntry.Gui.Tooltip(zh_cn = "指令与奖励编辑权限", en_us = "Command and reward permissions")
+    private PermissionCategory permission = new PermissionCategory();
 
-    // region 简化指令
+    public static RootView get() {
+        return CommonConfigAccess.root(BaniraConfig.holder(CommonConfig.class));
+    }
 
-    /**
-     * 签到
-     */
-    public static final ForgeConfigSpec.BooleanValue CONCISE_SIGN_IN;
-
-    /**
-     * 签到并领取奖励
-     */
-    public static final ForgeConfigSpec.BooleanValue CONCISE_SIGN_IN_EX;
-
-    /**
-     * 领取奖励
-     */
-    public static final ForgeConfigSpec.BooleanValue CONCISE_REWARD;
-
-    /**
-     * CDK
-     */
-    public static final ForgeConfigSpec.BooleanValue CONCISE_CDK;
-
-    /**
-     * 补签卡
-     */
-    public static final ForgeConfigSpec.BooleanValue CONCISE_CARD;
-
-    /**
-     * 设置语言
-     */
-    public static final ForgeConfigSpec.BooleanValue CONCISE_LANGUAGE;
-
-    // endregion 简化指令
-
-    static {
-        ForgeConfigSpec.Builder COMMON_BUILDER = new ForgeConfigSpec.Builder();
-        // 定义自定义指令配置
-        {
-            COMMON_BUILDER.comment("Custom Command Settings, don't add prefix '/'", "自定义指令，请勿添加前缀'/'").push("command");
-
-            // 命令前缀
-            COMMAND_PREFIX = COMMON_BUILDER
-                    .comment("The prefix of the command, please only use English characters and underscores, otherwise it may cause problems.",
-                            "指令前缀，请仅使用英文字母及下划线，否则可能会出现问题。")
-                    .define("commandPrefix", "sakura");
-
-            // 签到
-            COMMAND_SIGN_IN = COMMON_BUILDER
-                    .comment("This command is used to sign In or make up for a specific date."
-                            , "签到或补签的指令。")
-                    .define("commandSignIn", "sign");
-
-            // 签到并领取奖励
-            COMMAND_SIGN_IN_EX = COMMON_BUILDER
-                    .comment("This command is used to sign In or make up for a specific date and claim the rewards."
-                            , "签到并领取奖励的指令。")
-                    .define("commandSignInEx", "signex");
-
-            // 领取奖励
-            COMMAND_REWARD = COMMON_BUILDER
-                    .comment("This command is used to claim the rewards."
-                            , "领取奖励的指令。")
-                    .define("commandReward", "reward");
-
-            // CDK
-            COMMAND_CDK = COMMON_BUILDER
-                    .comment("This command is used to claim the rewards by cdk."
-                            , "领取兑换码奖励的指令。")
-                    .define("commandCdk", "cdk");
-
-            // 补签卡
-            COMMAND_CARD = COMMON_BUILDER
-                    .comment("This command is used to get or set the Sign-in Card."
-                            , "补签卡领取奖励的指令。")
-                    .define("commandCard", "card");
-
-            // 设置语言
-            COMMAND_LANGUAGE = COMMON_BUILDER
-                    .comment("This command is used to set the language."
-                            , "设置语言的指令。")
-                    .define("commandLanguage", "language");
-
-            COMMON_BUILDER.pop();
+    public static void save() {
+        ConfigHolder holder = BaniraConfig.holder(CommonConfig.class);
+        if (holder != null) {
+            holder.save();
         }
+    }
 
-        // 定义简化指令
-        {
-            COMMON_BUILDER.comment("Concise Command Settings", "简化指令").push("concise");
-
-            CONCISE_SIGN_IN = COMMON_BUILDER
-                    .comment("Enable or disable the concise version of the 'Sign In or make up for a specific date' command.",
-                            "是否启用无前缀版本的 '签到' 指令。")
-                    .define("conciseSignIn", true);
-
-            CONCISE_SIGN_IN_EX = COMMON_BUILDER
-                    .comment("Enable or disable the concise version of the 'Sign In or make up for a specific date and claim the rewards' command.",
-                            "是否启用无前缀版本的 '签到并领取奖励' 指令。")
-                    .define("conciseSignInEx", true);
-
-            CONCISE_REWARD = COMMON_BUILDER
-                    .comment("Enable or disable the concise version of the 'Claim the rewards' command.",
-                            "是否启用无前缀版本的 '领取奖励' 指令。")
-                    .define("conciseReward", true);
-
-            CONCISE_CDK = COMMON_BUILDER
-                    .comment("Enable or disable the concise version of the 'Claim the rewards by cdk' command.",
-                            "是否启用无前缀版本的 '领取兑换码奖励' 指令。")
-                    .define("conciseCdk", true);
-
-            CONCISE_CARD = COMMON_BUILDER
-                    .comment("Enable or disable the concise version of the 'Get or set the Sign-in Card' command.",
-                            "是否启用无前缀版本的 '补签卡领取奖励' 指令。")
-                    .define("conciseCard", false);
-
-            CONCISE_LANGUAGE = COMMON_BUILDER
-                    .comment("Enable or disable the concise version of the 'Set the language' command.",
-                            "是否启用无前缀版本的 '设置语言' 指令。")
-                    .define("conciseLanguage", false);
-
-            COMMON_BUILDER.pop();
+    /**
+     * 多人游戏登录时将服务端 COMMON 配置写入客户端运行时视图。
+     */
+    public static void syncToPlayer(Object player) {
+        ConfigHolder holder = BaniraConfig.holder(CommonConfig.class);
+        if (holder == null) {
+            return;
         }
-        COMMON_CONFIG = COMMON_BUILDER.build();
+        Map<String, String> snapshot = new LinkedHashMap<>();
+        for (ConfigEntryDescriptor descriptor : holder.getDescriptors()) {
+            Object value = holder.get(descriptor.getPath());
+            snapshot.put(
+                    descriptor.getPath(),
+                    value != null ? ConfigSyncToServer.encodeConfigValue(value) : ""
+            );
+        }
+        BaniraNetwork.sendToPlayer(
+                new ConfigSnapshotToClient(holder.getConfigName(), snapshot),
+                player
+        );
+    }
+
+    public interface RootView {
+        MakeUpView makeUp();
+        CoolingView cooling();
+        DateTimeView dateTime();
+        RewardView reward();
+        ServerView server();
+        HistoryView history();
+        CommandView command();
+        ConciseView concise();
+        PermissionView permission();
+        ConfigHolder holder();
+    }
+
+    public interface MakeUpView {
+        boolean signInCard();
+        MakeUpView signInCard(boolean value);
+        int reSignInDays();
+        MakeUpView reSignInDays(int value);
+        boolean signInCardOnlyBaseReward();
+        MakeUpView signInCardOnlyBaseReward(boolean value);
+    }
+
+    public interface CoolingView {
+        ETimeCoolingMethod timeCoolingMethod();
+        CoolingView timeCoolingMethod(ETimeCoolingMethod value);
+        double timeCoolingTime();
+        CoolingView timeCoolingTime(double value);
+        double timeCoolingInterval();
+        CoolingView timeCoolingInterval(double value);
+    }
+
+    public interface DateTimeView {
+        String serverTime();
+        DateTimeView serverTime(String value);
+        String serverCalibrationTime();
+        DateTimeView serverCalibrationTime(String value);
+    }
+
+    public interface RewardView {
+        boolean rewardAffectedByLuck();
+        RewardView rewardAffectedByLuck(boolean value);
+        boolean continuousRewardsRepeatable();
+        RewardView continuousRewardsRepeatable(boolean value);
+        boolean cycleRewardsRepeatable();
+        RewardView cycleRewardsRepeatable(boolean value);
+    }
+
+    public interface ServerView {
+        boolean autoSignIn();
+        ServerView autoSignIn(boolean value);
+        int playerDataSyncPacketSize();
+        ServerView playerDataSyncPacketSize(int value);
+        String defaultLanguage();
+        ServerView defaultLanguage(String value);
+    }
+
+    public interface HistoryView {
+        int retentionMonths();
+        HistoryView retentionMonths(int value);
+        HistoryRetentionPolicy retentionPolicy();
+        HistoryView retentionPolicy(HistoryRetentionPolicy value);
+    }
+
+    public interface CommandView {
+        String commandPrefix();
+        CommandView commandPrefix(String value);
+        String commandSignIn();
+        String commandSignInEx();
+        String commandReward();
+        String commandCdk();
+        String commandCard();
+        String commandLanguage();
+    }
+
+    public interface ConciseView {
+        boolean conciseSignIn();
+        boolean conciseSignInEx();
+        boolean conciseReward();
+        boolean conciseCdk();
+        boolean conciseCard();
+        boolean conciseLanguage();
+    }
+
+    public interface PermissionView {
+        int permissionEditReward();
+        int permissionBaseReward();
+        int permissionContinuousReward();
+        int permissionCycleReward();
+        int permissionYearReward();
+        int permissionMonthReward();
+        int permissionWeekReward();
+        int permissionDateTimeReward();
+        int permissionCumulativeReward();
+        int permissionRandomReward();
+        int permissionCdkReward();
+        int permissionRewardProbability();
+        int permissionRewardDetail();
+        int permissionRewardFailedTips();
+        int permissionCommandReward();
+        int permissionServerConfigGet();
+        int permissionServerConfigSet();
+    }
+
+    @Getter
+    @Setter
+    @Accessors(chain = true, fluent = true)
+    public static class MakeUpCategory {
+        @ConfigEntry.Gui.Tooltip(zh_cn = "允许使用补签卡补签", en_us = "Allow make-up sign-in cards")
+        private boolean signInCard = true;
+        @ConfigEntry.BoundedDiscrete(min = 1, max = 365)
+        @ConfigEntry.Gui.Tooltip(zh_cn = "最远可补签的天数", en_us = "Maximum age of a make-up sign-in")
+        private int reSignInDays = 30;
+        @ConfigEntry.Gui.Tooltip(zh_cn = "补签时仅计算基础与累计奖励", en_us = "Only base and cumulative rewards for make-up sign-in")
+        private boolean signInCardOnlyBaseReward = true;
+    }
+
+    @Getter
+    @Setter
+    @Accessors(chain = true, fluent = true)
+    public static class CoolingCategory {
+        private ETimeCoolingMethod timeCoolingMethod = ETimeCoolingMethod.FIXED_TIME;
+        @ConfigEntry.BoundedDouble(min = -23.59, max = 23.59)
+        private double timeCoolingTime = 0.0;
+        @ConfigEntry.BoundedDouble(min = 0.0, max = 23.59)
+        private double timeCoolingInterval = 12.34;
+    }
+
+    @Getter
+    @Setter
+    @Accessors(chain = true, fluent = true)
+    public static class DateTimeCategory {
+        private String serverTime = "1970-01-01 00:00:00";
+        private String serverCalibrationTime = "1970-01-01 00:00:00";
+    }
+
+    @Getter
+    @Setter
+    @Accessors(chain = true, fluent = true)
+    public static class RewardCategory {
+        private boolean rewardAffectedByLuck = true;
+        private boolean continuousRewardsRepeatable = false;
+        private boolean cycleRewardsRepeatable = false;
+    }
+
+    @Getter
+    @Setter
+    @Accessors(chain = true, fluent = true)
+    public static class ServerCategory {
+        private boolean autoSignIn = true;
+        @ConfigEntry.BoundedDiscrete(min = 1, max = 1024)
+        private int playerDataSyncPacketSize = 100;
+        private String defaultLanguage = "en_us";
+    }
+
+    @Getter
+    @Setter
+    @Accessors(chain = true, fluent = true)
+    public static class HistoryCategory {
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 1200)
+        @ConfigEntry.Gui.Tooltip(
+                zh_cn = "保留最近几个月的签到详情，0 表示永久保留",
+                en_us = "Months of detailed history to retain; 0 keeps all details")
+        private int retentionMonths = 24;
+        @ConfigEntry.Gui.Tooltip(
+                zh_cn = "STRIP_REWARD_DETAILS 仅移除奖励快照\nDELETE_MONTH_FILE 删除整个过期月文件",
+                en_us = "STRIP_REWARD_DETAILS removes reward snapshots\nDELETE_MONTH_FILE removes expired month files")
+        private HistoryRetentionPolicy retentionPolicy = HistoryRetentionPolicy.STRIP_REWARD_DETAILS;
+    }
+
+    @Getter
+    @Setter
+    @Accessors(chain = true, fluent = true)
+    public static class CommandCategory {
+        private String commandPrefix = "sakura";
+        private String commandSignIn = "sign";
+        private String commandSignInEx = "signex";
+        private String commandReward = "reward";
+        private String commandCdk = "cdk";
+        private String commandCard = "card";
+        private String commandLanguage = "language";
+    }
+
+    @Getter
+    @Setter
+    @Accessors(chain = true, fluent = true)
+    public static class ConciseCategory {
+        private boolean conciseSignIn = true;
+        private boolean conciseSignInEx = true;
+        private boolean conciseReward = true;
+        private boolean conciseCdk = true;
+        private boolean conciseCard = false;
+        private boolean conciseLanguage = false;
+    }
+
+    @Getter
+    @Setter
+    @Accessors(chain = true, fluent = true)
+    public static class PermissionCategory {
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 4) private int permissionEditReward = 3;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 4) private int permissionBaseReward = 0;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 4) private int permissionContinuousReward = 0;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 4) private int permissionCycleReward = 0;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 4) private int permissionYearReward = 0;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 4) private int permissionMonthReward = 0;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 4) private int permissionWeekReward = 0;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 4) private int permissionDateTimeReward = 0;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 4) private int permissionCumulativeReward = 0;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 4) private int permissionRandomReward = 0;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 4) private int permissionCdkReward = 3;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 4) private int permissionRewardProbability = 0;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 4) private int permissionRewardDetail = 0;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 4) private int permissionRewardFailedTips = 0;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 4) private int permissionCommandReward = 2;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 4) private int permissionServerConfigGet = 0;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 4) private int permissionServerConfigSet = 3;
     }
 }

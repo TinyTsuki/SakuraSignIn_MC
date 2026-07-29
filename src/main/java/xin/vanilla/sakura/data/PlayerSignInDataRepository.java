@@ -44,6 +44,9 @@ public final class PlayerSignInDataRepository {
         legacyShape.putBoolean("autoRewarded", summary.isAutoRewarded());
         legacyShape.putString("language", summary.getLanguage());
         legacyShape.put("cdkRecords", copyList(summary.getCdkRecords()));
+        ListNBT indexes = new ListNBT();
+        summary.getMonthIndexes().values().forEach(index -> indexes.add(index.serializeNBT()));
+        legacyShape.put("monthIndexes", indexes);
 
         ListNBT records = new ListNBT();
         historyRepository.loadAll(playerUuid).forEach(record -> records.add(record.writeToNBT()));
@@ -61,6 +64,10 @@ public final class PlayerSignInDataRepository {
         LegacyPlayerData parsed = legacyParser.parse(serialized);
         Optional<PlayerSignInSummary> previous = summaryRepository.load(playerUuid);
         if (previous.isPresent()) {
+            previous.get().getMonthIndexes().forEach((month, previousIndex) ->
+                    parsed.getSummary().getMonthIndexes()
+                            .computeIfAbsent(month, xin.vanilla.sakura.domain.player.MonthSignInIndex::new)
+                            .merge(previousIndex));
             parsed.getSummary().setLegacyCapabilityMigrated(
                     previous.get().isLegacyCapabilityMigrated()
             );
@@ -68,6 +75,7 @@ public final class PlayerSignInDataRepository {
                     previous.get().getLegacyCapabilityBackup()
             );
         }
+        data.setMonthIndexes(parsed.getSummary().getMonthIndexes());
         historyRepository.saveAndVerify(playerUuid, parsed);
         summaryRepository.saveAndVerify(playerUuid, parsed.getSummary());
     }

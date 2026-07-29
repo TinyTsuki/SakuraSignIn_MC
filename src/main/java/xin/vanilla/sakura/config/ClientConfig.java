@@ -1,292 +1,168 @@
 package xin.vanilla.sakura.config;
 
-import net.minecraftforge.common.ForgeConfigSpec;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
+import xin.vanilla.banira.common.config.BaniraConfig;
+import xin.vanilla.banira.common.config.ConfigData;
+import xin.vanilla.banira.common.config.ConfigHolder;
+import xin.vanilla.banira.common.config.ConfigScope;
+import xin.vanilla.banira.common.config.annotation.Config;
+import xin.vanilla.banira.common.config.annotation.ConfigEntry;
+import xin.vanilla.sakura.SakuraSignIn;
+import xin.vanilla.sakura.config.access.ClientConfigAccess;
 import xin.vanilla.sakura.util.GLFWKey;
 import xin.vanilla.sakura.util.GLFWKeyHelper;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
- * 客户端配置
+ * 仅客户端使用的显示与快捷键设置。
  */
-public class ClientConfig {
-    public static final ForgeConfigSpec CLIENT_CONFIG;
-    /**
-     * 主题设置
-     */
-    public static final ForgeConfigSpec.ConfigValue<String> THEME;
-    /**
-     * 是否使用内置主题特殊图标
-     */
-    public static final ForgeConfigSpec.BooleanValue SPECIAL_THEME;
-    /**
-     * 签到页面显示上月奖励
-     */
-    public static final ForgeConfigSpec.BooleanValue SHOW_LAST_REWARD;
-    /**
-     * 签到页面显示下月奖励
-     */
-    public static final ForgeConfigSpec.BooleanValue SHOW_NEXT_REWARD;
-    /**
-     * 自动领取
-     */
-    public static final ForgeConfigSpec.BooleanValue AUTO_REWARDED;
+@Config(name = SakuraSignIn.MODID + "-client", type = ConfigScope.CLIENT)
+public class ClientConfig implements ConfigData {
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    @ConfigEntry.Gui.CollapsibleObject
+    @ConfigEntry.Gui.Tooltip(zh_cn = "签到界面与背包入口", en_us = "Sign-in screen and inventory shortcuts")
+    private DisplayCategory display = new DisplayCategory();
 
-    /**
-     * 背包界面签到按钮坐标
-     */
-    public static final ForgeConfigSpec.ConfigValue<String> INVENTORY_SIGN_IN_BUTTON_COORDINATE;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    @ConfigEntry.Gui.CollapsibleObject
+    @ConfigEntry.Gui.Tooltip(zh_cn = "奖励编辑快捷键", en_us = "Reward editor shortcuts")
+    private RewardKeysCategory rewardKeys = new RewardKeysCategory();
 
-    /**
-     * 背包界面奖励配置按钮坐标
-     */
-    public static final ForgeConfigSpec.ConfigValue<String> INVENTORY_REWARD_OPTION_BUTTON_COORDINATE;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    @ConfigEntry.Gui.CollapsibleObject
+    @ConfigEntry.Gui.Tooltip(zh_cn = "签到界面快捷键", en_us = "Sign-in screen shortcuts")
+    private SignKeysCategory signKeys = new SignKeysCategory();
 
-    /**
-     * 显示签到界面提示
-     */
-    public static final ForgeConfigSpec.BooleanValue SHOW_SIGN_IN_SCREEN_TIPS;
+    public static RootView get() {
+        return ClientConfigAccess.root(BaniraConfig.holder(ClientConfig.class));
+    }
 
-    // region 按键设置
-
-    /**
-     * 配置界面 - 复制
-     */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_REWARD_OPTION_COPY;
-    /**
-     * 配置界面 - 粘贴
-     */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_REWARD_OPTION_PASTE;
-    /**
-     * 配置界面 - 裁剪
-     */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_REWARD_OPTION_CUT;
-    /**
-     * 配置界面 - 删除
-     */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_REWARD_OPTION_DELETE;
-    /**
-     * 配置界面 - 撤销
-     */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_REWARD_OPTION_UNDO;
-    /**
-     * 配置界面 - 重做
-     */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_REWARD_OPTION_REDO;
-
-    /**
-     * 签到界面 - 签到
-     */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_SIGN_SIGN_IN;
-    /**
-     * 签到界面 - 补签
-     */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_SIGN_RE_SIGN_IN;
-    /**
-     * 签到界面 - 领取奖励
-     */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_SIGN_REWARD;
-    /**
-     * 签到界面 - 上月
-     */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_SIGN_LAST_MONTH;
-    /**
-     * 签到界面 - 下月
-     */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_SIGN_NEXT_MONTH;
-
-    /**
-     * 签到界面 - 去年
-     */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_SIGN_LAST_YEAR;
-    /**
-     * 签到界面 - 明年
-     */
-    public static final ForgeConfigSpec.ConfigValue<List<String>> KEY_SIGN_NEXT_YEAR;
-
-    // endregion 按键设置
-
-    static {
-        ForgeConfigSpec.Builder CLIENT_BUILDER = new ForgeConfigSpec.Builder();
-
-        // 定义客户端配置项
-        CLIENT_BUILDER.comment("Client Settings").push("client");
-
-        // 主题
-        THEME = CLIENT_BUILDER
-                .comment("theme textures path, can be external path: config/sakura_sign_in/themes/your_theme.png"
-                        , "主题材质路径，可为外部路径： config/sakura_sign_in/themes/your_theme.png")
-                .define("theme", "textures/gui/sign_in_calendar_sakura.png");
-
-        // 内置主题特殊图标
-        SPECIAL_THEME = CLIENT_BUILDER
-                .comment("Whether or not to use the built-in theme special icons."
-                        , "是否使用内置主题特殊图标。")
-                .define("specialTheme", true);
-
-        // 签到页面显示上月奖励
-        SHOW_LAST_REWARD = CLIENT_BUILDER
-                .comment("The sign-in page displays last month's rewards. Someone said it didn't look good on display."
-                        , "签到页面是否显示上个月的奖励，有人说它显示出来不好看。")
-                .define("showLastReward", false);
-
-        // 签到页面显示下月奖励
-        SHOW_NEXT_REWARD = CLIENT_BUILDER
-                .comment("The sign-in page displays next month's rewards. Someone said it didn't look good on display."
-                        , "签到页面是否显示下个月的奖励，有人说它显示出来不好看。")
-                .define("showNextReward", false);
-
-        // 自动领取
-        AUTO_REWARDED = CLIENT_BUILDER
-                .comment("Whether the rewards will be automatically claimed when you sign-in or re-sign-in."
-                        , "签到或补签时是否自动领取奖励。")
-                .define("autoRewarded", false);
-
-        // 背包界面签到按钮坐标
-        INVENTORY_SIGN_IN_BUTTON_COORDINATE = CLIENT_BUILDER
-                .comment("The coordinate of the sign-in button in the inventory screen. If the coordinate is 0~1, it is the percentage position."
-                        , "背包界面签到按钮坐标，若坐标为0~1之间的小数则为百分比位置。")
-                .define("inventorySignInButtonCoordinate", "92,2");
-
-        // 背包界面奖励配置按钮坐标
-        INVENTORY_REWARD_OPTION_BUTTON_COORDINATE = CLIENT_BUILDER
-                .comment("The coordinate of the reward option button in the inventory screen. If the coordinate is 0~1, it is the percentage position."
-                        , "背包界面奖励配置按钮坐标，若坐标为0~1之间的小数则为百分比位置。")
-                .define("inventoryRewardOptionButtonCoordinate", "72,2");
-
-        SHOW_SIGN_IN_SCREEN_TIPS = CLIENT_BUILDER
-                .comment("Whether or not to display a prompt for action when you open the sign-in screen."
-                        , "打开签到页面时是否显示操作提示。")
-                .define("showSignInScreenTips", true);
-
-        // 按键设置
-        {
-            CLIENT_BUILDER.comment("Key Settings").push("key");
-
-            {
-                CLIENT_BUILDER.comment("Reward Option").push("rewardOption");
-
-                KEY_REWARD_OPTION_COPY = CLIENT_BUILDER
-                        .comment("Keys used to copy on the reward option screen",
-                                "奖励配置页面进行 复制操作 时所使用的按键")
-                        .define("copy", new ArrayList<>() {{
-                            add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_CONTROL, GLFWKey.GLFW_KEY_C));
-                            add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_RIGHT_CONTROL, GLFWKey.GLFW_KEY_C));
-                        }});
-
-                KEY_REWARD_OPTION_PASTE = CLIENT_BUILDER
-                        .comment("Keys used to paste on the reward option screen",
-                                "奖励配置页面进行 粘贴操作 时所使用的按键")
-                        .define("paste", new ArrayList<>() {{
-                            add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_CONTROL, GLFWKey.GLFW_KEY_V));
-                            add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_RIGHT_CONTROL, GLFWKey.GLFW_KEY_V));
-                        }});
-
-                KEY_REWARD_OPTION_CUT = CLIENT_BUILDER
-                        .comment("Keys used to cut on the reward option screen",
-                                "奖励配置页面进行 裁剪操作 时所使用的按键")
-                        .define("cut", new ArrayList<>() {{
-                            add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_CONTROL, GLFWKey.GLFW_KEY_X));
-                            add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_RIGHT_CONTROL, GLFWKey.GLFW_KEY_X));
-                        }});
-
-                KEY_REWARD_OPTION_DELETE = CLIENT_BUILDER
-                        .comment("Keys used to delete on the reward option screen",
-                                "奖励配置页面进行 删除操作 时所使用的按键")
-                        .define("delete", new ArrayList<>() {{
-                            add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_DELETE));
-                            add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_CONTROL, GLFWKey.GLFW_KEY_Y));
-                            add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_CONTROL) + "+" + GLFWKeyHelper.getMouseDisplayString(GLFWKey.GLFW_MOUSE_BUTTON_RIGHT));
-                        }});
-
-                KEY_REWARD_OPTION_UNDO = CLIENT_BUILDER
-                        .comment("Keys used to undo on the reward option screen",
-                                "奖励配置页面进行 撤销操作 时所使用的按键")
-                        .define("undo", new ArrayList<>() {{
-                            add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_CONTROL, GLFWKey.GLFW_KEY_Z));
-                            add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_RIGHT_CONTROL, GLFWKey.GLFW_KEY_Z));
-                        }});
-
-                KEY_REWARD_OPTION_REDO = CLIENT_BUILDER
-                        .comment("Keys used to redo on the reward option screen",
-                                "奖励配置页面进行 重做操作 时所使用的按键")
-                        .define("redo", new ArrayList<>() {{
-                            add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_CONTROL, GLFWKey.GLFW_KEY_LEFT_SHIFT, GLFWKey.GLFW_KEY_Z));
-                            add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_RIGHT_CONTROL, GLFWKey.GLFW_KEY_RIGHT_SHIFT, GLFWKey.GLFW_KEY_Z));
-                        }});
-
-                CLIENT_BUILDER.pop();
-            }
-
-            {
-                CLIENT_BUILDER.comment("Sign").push("sign");
-
-                KEY_SIGN_SIGN_IN = CLIENT_BUILDER
-                        .comment("Keys used to sign in on the sign-in screen",
-                                "签到页面进行 签到操作 时所使用的按键")
-                        .define("signIn", new ArrayList<>() {{
-                            add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_ENTER));
-                            add(GLFWKeyHelper.getMouseDisplayString(GLFWKey.GLFW_MOUSE_BUTTON_LEFT));
-                        }});
-
-                KEY_SIGN_RE_SIGN_IN = CLIENT_BUILDER
-                        .comment("Keys used to re-sign in on the sign-in screen",
-                                "签到页面进行 补签操作 时所使用的按键")
-                        .define("reSignIn", new ArrayList<>() {{
-                            add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_SHIFT, GLFWKey.GLFW_KEY_ENTER));
-                            add(GLFWKeyHelper.getMouseDisplayString(GLFWKey.GLFW_MOUSE_BUTTON_RIGHT));
-                        }});
-
-                KEY_SIGN_REWARD = CLIENT_BUILDER
-                        .comment("Keys used to claim rewards on the sign-in screen",
-                                "签到页面进行 领取奖励操作 时所使用的按键")
-                        .define("reward", new ArrayList<>() {{
-                            add("LeftShift+Enter");
-                            add("MouseRight");
-                        }});
-
-                KEY_SIGN_LAST_MONTH = CLIENT_BUILDER
-                        .comment("Keys used to switch to the last month on the sign-in screen",
-                                "签到页面进行 切换到上个月 时所使用的按键")
-                        .define("lastMonth", new ArrayList<>() {{
-                            add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT));
-                            add(GLFWKeyHelper.getMouseDisplayString(GLFWKey.GLFW_MOUSE_BUTTON_LEFT));
-                        }});
-
-                KEY_SIGN_NEXT_MONTH = CLIENT_BUILDER
-                        .comment("Keys used to switch to the next month on the sign-in screen",
-                                "签到页面进行 切换到下个月 时所使用的按键")
-                        .define("nextMonth", new ArrayList<>() {{
-                            add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_RIGHT));
-                            add(GLFWKeyHelper.getMouseDisplayString(GLFWKey.GLFW_MOUSE_BUTTON_LEFT));
-                        }});
-
-                KEY_SIGN_LAST_YEAR = CLIENT_BUILDER
-                        .comment("Keys used to switch to the last year on the sign-in screen",
-                                "签到页面进行 切换到上一年 时所使用的按键")
-                        .define("lastYear", new ArrayList<>() {{
-                            add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_UP));
-                            add(GLFWKeyHelper.getMouseDisplayString(GLFWKey.GLFW_MOUSE_BUTTON_LEFT));
-                        }});
-
-                KEY_SIGN_NEXT_YEAR = CLIENT_BUILDER
-                        .comment("Keys used to switch to the next year on the sign-in screen",
-                                "签到页面进行 切换到下一年 时所使用的按键")
-                        .define("nextYear", new ArrayList<>() {{
-                            add(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_DOWN));
-                            add(GLFWKeyHelper.getMouseDisplayString(GLFWKey.GLFW_MOUSE_BUTTON_LEFT));
-                        }});
-
-                CLIENT_BUILDER.pop();
-            }
-
-            CLIENT_BUILDER.pop();
-
+    public static void save() {
+        ConfigHolder holder = BaniraConfig.holder(ClientConfig.class);
+        if (holder != null) {
+            holder.save();
         }
+    }
 
-        CLIENT_BUILDER.pop();
+    public interface RootView {
+        DisplayView display();
+        RewardKeysView rewardKeys();
+        SignKeysView signKeys();
+        ConfigHolder holder();
+    }
 
-        CLIENT_CONFIG = CLIENT_BUILDER.build();
+    public interface DisplayView {
+        String theme();
+        DisplayView theme(String value);
+        boolean specialTheme();
+        DisplayView specialTheme(boolean value);
+        boolean showLastReward();
+        boolean showNextReward();
+        boolean autoRewarded();
+        String inventorySignInButtonCoordinate();
+        DisplayView inventorySignInButtonCoordinate(String value);
+        String inventoryRewardOptionButtonCoordinate();
+        DisplayView inventoryRewardOptionButtonCoordinate(String value);
+        boolean showSignInScreenTips();
+        DisplayView showSignInScreenTips(boolean value);
+    }
+
+    public interface RewardKeysView {
+        List<String> copy();
+        List<String> paste();
+        List<String> cut();
+        List<String> delete();
+        List<String> undo();
+        List<String> redo();
+    }
+
+    public interface SignKeysView {
+        List<String> signIn();
+        List<String> reSignIn();
+        List<String> reward();
+        List<String> lastMonth();
+        List<String> nextMonth();
+        List<String> lastYear();
+        List<String> nextYear();
+    }
+
+    @Getter
+    @Setter
+    @Accessors(chain = true, fluent = true)
+    public static class DisplayCategory {
+        @ConfigEntry.Gui.Tooltip(zh_cn = "内置主题材质", en_us = "Built-in theme texture")
+        private String theme = "textures/gui/sign_in_calendar_sakura.png";
+        private boolean specialTheme = true;
+        private boolean showLastReward = false;
+        private boolean showNextReward = false;
+        private boolean autoRewarded = false;
+        private String inventorySignInButtonCoordinate = "92,2";
+        private String inventoryRewardOptionButtonCoordinate = "72,2";
+        private boolean showSignInScreenTips = true;
+    }
+
+    @Getter
+    @Setter
+    @Accessors(chain = true, fluent = true)
+    public static class RewardKeysCategory {
+        private List<String> copy = Arrays.asList(
+                key(GLFWKey.GLFW_KEY_LEFT_CONTROL, GLFWKey.GLFW_KEY_C),
+                key(GLFWKey.GLFW_KEY_RIGHT_CONTROL, GLFWKey.GLFW_KEY_C));
+        private List<String> paste = Arrays.asList(
+                key(GLFWKey.GLFW_KEY_LEFT_CONTROL, GLFWKey.GLFW_KEY_V),
+                key(GLFWKey.GLFW_KEY_RIGHT_CONTROL, GLFWKey.GLFW_KEY_V));
+        private List<String> cut = Arrays.asList(
+                key(GLFWKey.GLFW_KEY_LEFT_CONTROL, GLFWKey.GLFW_KEY_X),
+                key(GLFWKey.GLFW_KEY_RIGHT_CONTROL, GLFWKey.GLFW_KEY_X));
+        private List<String> delete = Arrays.asList(
+                key(GLFWKey.GLFW_KEY_DELETE),
+                key(GLFWKey.GLFW_KEY_LEFT_CONTROL, GLFWKey.GLFW_KEY_Y),
+                GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_CONTROL)
+                        + "+" + GLFWKeyHelper.getMouseDisplayString(GLFWKey.GLFW_MOUSE_BUTTON_RIGHT));
+        private List<String> undo = Arrays.asList(
+                key(GLFWKey.GLFW_KEY_LEFT_CONTROL, GLFWKey.GLFW_KEY_Z),
+                key(GLFWKey.GLFW_KEY_RIGHT_CONTROL, GLFWKey.GLFW_KEY_Z));
+        private List<String> redo = Arrays.asList(
+                key(GLFWKey.GLFW_KEY_LEFT_CONTROL, GLFWKey.GLFW_KEY_LEFT_SHIFT, GLFWKey.GLFW_KEY_Z),
+                key(GLFWKey.GLFW_KEY_RIGHT_CONTROL, GLFWKey.GLFW_KEY_RIGHT_SHIFT, GLFWKey.GLFW_KEY_Z));
+    }
+
+    @Getter
+    @Setter
+    @Accessors(chain = true, fluent = true)
+    public static class SignKeysCategory {
+        private List<String> signIn = Arrays.asList(
+                key(GLFWKey.GLFW_KEY_ENTER),
+                GLFWKeyHelper.getMouseDisplayString(GLFWKey.GLFW_MOUSE_BUTTON_LEFT));
+        private List<String> reSignIn = Arrays.asList(
+                key(GLFWKey.GLFW_KEY_LEFT_SHIFT, GLFWKey.GLFW_KEY_ENTER),
+                GLFWKeyHelper.getMouseDisplayString(GLFWKey.GLFW_MOUSE_BUTTON_RIGHT));
+        private List<String> reward = Arrays.asList(
+                key(GLFWKey.GLFW_KEY_LEFT_SHIFT, GLFWKey.GLFW_KEY_ENTER),
+                GLFWKeyHelper.getMouseDisplayString(GLFWKey.GLFW_MOUSE_BUTTON_RIGHT));
+        private List<String> lastMonth = Arrays.asList(
+                key(GLFWKey.GLFW_KEY_LEFT),
+                GLFWKeyHelper.getMouseDisplayString(GLFWKey.GLFW_MOUSE_BUTTON_LEFT));
+        private List<String> nextMonth = Arrays.asList(
+                key(GLFWKey.GLFW_KEY_RIGHT),
+                GLFWKeyHelper.getMouseDisplayString(GLFWKey.GLFW_MOUSE_BUTTON_LEFT));
+        private List<String> lastYear = Arrays.asList(
+                key(GLFWKey.GLFW_KEY_UP),
+                GLFWKeyHelper.getMouseDisplayString(GLFWKey.GLFW_MOUSE_BUTTON_LEFT));
+        private List<String> nextYear = Arrays.asList(
+                key(GLFWKey.GLFW_KEY_DOWN),
+                GLFWKeyHelper.getMouseDisplayString(GLFWKey.GLFW_MOUSE_BUTTON_LEFT));
+    }
+
+    private static String key(int... keys) {
+        return GLFWKeyHelper.getKeyDisplayString(keys);
     }
 }

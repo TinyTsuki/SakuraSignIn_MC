@@ -1,5 +1,6 @@
 package xin.vanilla.sakura.network.packet;
 
+import xin.vanilla.sakura.config.CommonConfig;
 import com.google.gson.reflect.TypeToken;
 import lombok.Getter;
 import net.minecraft.network.FriendlyByteBuf;
@@ -8,7 +9,6 @@ import net.minecraftforge.event.network.CustomPayloadEvent;
 import net.minecraftforge.network.PacketDistributor;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.RewardConfigManager;
-import xin.vanilla.sakura.config.ServerConfig;
 import xin.vanilla.sakura.enums.EI18nType;
 import xin.vanilla.sakura.enums.ERewardRule;
 import xin.vanilla.sakura.network.ModNetworkHandler;
@@ -71,7 +71,7 @@ public class RewardOptionSyncPacket extends SplitPacket {
                     if (sender != null) {
                         try {
                             // 判断是否拥有修改权限
-                            if (sender.hasPermissions(ServerConfig.PERMISSION_EDIT_REWARD.get())) {
+                            if (sender.hasPermissions(CommonConfig.get().permission().permissionEditReward())) {
                                 // 备份 RewardOption
                                 RewardConfigManager.backupRewardOption(false);
                                 // 更新 RewardOption
