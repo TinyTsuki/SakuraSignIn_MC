@@ -154,7 +154,7 @@ public final class StringInputScreen extends InputFormScreen {
                         if (StringUtils.isNotNullOrEmpty(regex)
                                 && value != null
                                 && !value.matches(regex)) {
-                            return SakuraComponent.get().translateClient("tips", "input_format_invalid");
+                            return SakuraComponent.get().translateClient("word", "input_format_invalid");
                         }
                         return "";
                     });

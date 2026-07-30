@@ -22,8 +22,18 @@ public class SignInScreenBaniraContractTest {
         assertTrue(screen.contains("renderWidgets(stack, partialTicks)"));
         assertTrue(screen.contains("addDeferredTooltipRender"));
         assertTrue(screen.contains("if (SakuraClientState.getCalendarCurrentDate() == null)"));
+        assertTrue(screen.contains("public void refreshPlayerData()"));
+        assertTrue(screen.contains("TooltipWidget.drawPopupMessage"));
         assertTrue(cell.contains("extends BaseWidget"));
         assertTrue(cell.contains("protected boolean onMouseScroll(MouseScrollEvent event)"));
+    }
+
+    @Test
+    public void synchronizedPlayerDataRefreshesTheOpenCalendar() throws Exception {
+        String proxy = read("src/main/java/xin/vanilla/sakura/network/ClientProxy.java");
+
+        assertTrue(proxy.contains("refreshOpenSignInScreen()"));
+        assertTrue(proxy.contains("((SignInScreen) Minecraft.getInstance().screen).refreshPlayerData()"));
     }
 
     @Test

@@ -39,10 +39,10 @@ public final class LanguageCommand {
                                     || "client".equalsIgnoreCase(language)) {
                                 data.setLanguage(language);
                                 SakuraPlayerData.saveAndSync(player);
-                                SakuraMessages.send(player, SakuraComponent.get().trans(player, "message", "player_default_language", language
+                                SakuraMessages.send(player, SakuraComponent.get().trans(player, "format", "player_default_language", language
                                 ));
                             } else {
-                                SakuraMessages.send(player, SakuraComponent.get().trans(player, "message", "language_not_exist", language
+                                SakuraMessages.send(player, SakuraComponent.get().trans(player, "format", "language_not_exist", language
                                 ).color(0xFFFF0000));
                             }
                             return 1;

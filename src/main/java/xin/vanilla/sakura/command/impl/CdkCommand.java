@@ -70,7 +70,7 @@ public final class CdkCommand {
             if (expiresAt.before(DateUtils.getServerDate())) {
                 send(player, "cdk_expired", 0xFFFF0000);
             } else {
-                Component message = SakuraComponent.get().trans(player, "message", "receive_reward_success"
+                Component message = SakuraComponent.get().trans(player, "word", "receive_reward_success"
                 );
                 reward.getValue().getKey().forEach(entry -> {
                     Component detail = entry.getName(SakuraUtils.getPlayerLanguage(player), true);
@@ -123,7 +123,7 @@ public final class CdkCommand {
     private static void send(ServerPlayerEntity player, String key, int color) {
         SakuraMessages.send(
                 player,
-                SakuraComponent.get().trans(player, "message", key).color(color),
+                SakuraComponent.get().trans(player, "word", key).color(color),
                 SakuraNotificationTypes.CDK
         );
     }
