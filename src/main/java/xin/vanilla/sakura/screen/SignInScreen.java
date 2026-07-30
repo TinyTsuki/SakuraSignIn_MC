@@ -493,7 +493,8 @@ public final class SignInScreen extends BaniraScreen {
                 new ConfirmDialogScreen.Args()
                         .parentScreen(this)
                         .title(SakuraComponent.get().transClient("title", "confirm_operation"))
-                        .message(SakuraComponent.get().transClient("tips", "confirm_make_up_sign_in"))
+                        .message(SakuraComponent.get().transClient("tips", "confirm_make_up_sign_in",
+                                DateUtils.toString(cellDate)))
                         .onConfirm(() -> {
                             cell.setStatus(ClientConfig.get().display().autoRewarded()
                                     ? ESignInStatus.REWARDED.getCode()
