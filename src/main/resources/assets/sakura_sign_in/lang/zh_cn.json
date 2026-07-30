@@ -2,6 +2,8 @@
   "key.sakura_sign_in.categories": "樱花签到",
   "key.sakura_sign_in.sign_in": "打开签到页面",
   "key.sakura_sign_in.reward_option": "打开奖励配置页面",
+  "key.sakura_sign_in.client_config": "客户端设置",
+  "key.sakura_sign_in.common_config": "服务器与通用设置",
   "command.sakura_sign_in.help": "查看指令帮助",
   "command.sakura_sign_in.concise_sign": "/sakura sign 的简短写法",
   "command.sakura_sign_in.concise_reward": "/sakura reward 的简短写法",

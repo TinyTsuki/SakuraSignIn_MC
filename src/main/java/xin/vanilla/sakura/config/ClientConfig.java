@@ -10,6 +10,7 @@ import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ConfigScope;
 import xin.vanilla.banira.common.config.annotation.Config;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
+import xin.vanilla.banira.api.client.theme.BaniraThemeMode;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.access.ClientConfigAccess;
 import xin.vanilla.sakura.util.GLFWKey;
@@ -60,6 +61,7 @@ public class ClientConfig implements ConfigData {
     }
 
     public interface DisplayView {
+        BaniraThemeMode interfaceThemeMode();
         String themeId();
         DisplayView themeId(String value);
         boolean specialVariant();
@@ -91,6 +93,10 @@ public class ClientConfig implements ConfigData {
     @Setter
     @Accessors(chain = true, fluent = true)
     public static class DisplayCategory {
+        @ConfigEntry.Gui.Tooltip(
+                zh_cn = "选择樱花签界面使用的 Banira 配色\n可跟随香草志、随季节自动或固定为某个季节",
+                en_us = "Choose the Banira color theme used by Sakura Sign-In screens\nFollow Banira, follow the current season, or lock a season")
+        private BaniraThemeMode interfaceThemeMode = BaniraThemeMode.SPRING;
         @ConfigEntry.Gui.Tooltip(zh_cn = "内置主题 ID", en_us = "Built-in theme ID")
         private String themeId = "sakura";
         @ConfigEntry.Gui.Tooltip(zh_cn = "使用主题的特殊签到图标", en_us = "Use the theme's alternate sign-in icons")
