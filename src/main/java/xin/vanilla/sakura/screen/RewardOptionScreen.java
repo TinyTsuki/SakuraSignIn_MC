@@ -7,6 +7,7 @@ import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.api.client.theme.BaniraThemes;
 import xin.vanilla.banira.client.gui.ConfirmDialogScreen;
+import xin.vanilla.banira.client.gui.ReadOnlyTextScreen;
 import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.client.util.SystemUtils;
 import xin.vanilla.banira.client.gui.widget.PopupOption;
@@ -37,6 +38,7 @@ import xin.vanilla.sakura.client.gui.EffectRewardSelectionFlow;
 import xin.vanilla.sakura.client.gui.ItemRewardSelectionFlow;
 import xin.vanilla.sakura.client.gui.RewardListEntryWidget;
 import xin.vanilla.sakura.client.gui.RewardOperationWidget;
+import xin.vanilla.sakura.client.gui.RewardSelectionModel;
 import xin.vanilla.sakura.config.*;
 import xin.vanilla.sakura.enums.ERewardRule;
 import xin.vanilla.sakura.enums.ERewardType;
@@ -60,7 +62,9 @@ import xin.vanilla.sakura.util.SakuraUtils;
 import xin.vanilla.sakura.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -122,6 +126,7 @@ public class RewardOptionScreen extends BaniraScreen {
      * 当前选中的奖励按钮
      */
     private String currRewardButton;
+    private final RewardSelectionModel rewardSelection = new RewardSelectionModel();
     /**
      * 弹出菜单会在回调前清空，因此由界面保存本次菜单的业务上下文。
      */
@@ -518,6 +523,8 @@ public class RewardOptionScreen extends BaniraScreen {
             }
             break;
         }
+        rewardSelection.retainAll(REWARD_BUTTONS.keySet());
+        currRewardButton = rewardSelection.primary();
     }
 
     /**
@@ -531,7 +538,7 @@ public class RewardOptionScreen extends BaniraScreen {
             item.getValue()
                     .setBaseY(yOffset)
                     .setViewportHeight(super.height)
-                    .setSelected(item.getKey().equals(this.currRewardButton))
+                    .setSelected(rewardSelection.isSelected(item.getKey()))
                     .setSelectedColor((selectedColor & 0x00FFFFFF) | 0xCC000000);
         }
     }
@@ -624,19 +631,19 @@ public class RewardOptionScreen extends BaniraScreen {
         }
         // 帮助按钮
         else if (value.getOperation() == OperationButtonType.HELP.getCode()) {
-            // 绘制弹出层提示
-            this.popupOption.clear();
-            this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.reward_rule_description_1"))
-                    .addOption(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.reward_rule_description_2"))
-                    .addOption(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.reward_rule_description_3"))
-                    .addOption(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.reward_rule_description_4"))
-                    .addOption(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.reward_rule_description_5"))
-                    .addOption(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.reward_rule_description_6"))
-                    .addOption(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.reward_rule_description_7"))
-                    .addOption(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.reward_rule_description_8"))
-                    .addOption(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.reward_rule_description_9"))
-                    .addOption(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.reward_rule_description_10"));
-            this.showPopup(mouseX, mouseY, "reward_rule_description");
+            List<Component> paragraphs = new ArrayList<>();
+            for (int i = 1; i <= 10; i++) {
+                paragraphs.add(SakuraComponent.get().transClient(
+                        "tips", "reward_rule_description_" + i));
+            }
+            Minecraft.getInstance().setScreen(new ReadOnlyTextScreen(
+                    new ReadOnlyTextScreen.Args()
+                            .parentScreen(this)
+                            .season(season())
+                            .title(SakuraComponent.get().transClient(
+                                    "title", "reward_rule_help"))
+                            .paragraphs(paragraphs)
+            ));
             flag.set(true);
         }
         // 上传奖励配置
@@ -701,8 +708,18 @@ public class RewardOptionScreen extends BaniraScreen {
                                     AtomicBoolean flag) {
         LOGGER.debug("选择了奖励配置:\tButton: {}\tOperation: {}\tKey: {}\tIndex: {}", button, this.currOpButton, key, value.getOperation());
 
-        this.currRewardButton = button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT
-                && key.equalsIgnoreCase(this.currRewardButton) ? null : key;
+        if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
+            if (key.startsWith("标题")) {
+                rewardSelection.selectOnly(key);
+            } else {
+                rewardSelection.select(key, selectableRewardIds(),
+                        inputState.isCtrlPressed(), inputState.isShiftPressed());
+            }
+        } else if (button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT
+                && !rewardSelection.isSelected(key)) {
+            rewardSelection.selectOnly(key);
+        }
+        this.currRewardButton = rewardSelection.primary();
 
         if (button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
             if (key.startsWith("标题")) {
@@ -738,6 +755,26 @@ public class RewardOptionScreen extends BaniraScreen {
             this.popupOption.setBeforeRender(pasteConsumer);
             flag.set(true);
         }
+    }
+
+    private List<String> selectableRewardIds() {
+        List<String> ids = new ArrayList<>();
+        for (String id : REWARD_BUTTONS.keySet()) {
+            if (!id.startsWith("标题")) {
+                ids.add(id);
+            }
+        }
+        return ids;
+    }
+
+    private List<String> selectedRewardIds() {
+        List<String> ids = new ArrayList<>();
+        for (String id : rewardSelection.selectedIds()) {
+            if (!id.startsWith("标题") && id.contains(",")) {
+                ids.add(id);
+            }
+        }
+        return ids;
     }
 
     private void showPopup(double mouseX, double mouseY, String contextId) {
@@ -1586,6 +1623,27 @@ public class RewardOptionScreen extends BaniraScreen {
         public boolean handleCopy() {
             if (update()) return false;
 
+            List<String> selectedIds = selectedRewardIds();
+            if (!selectedIds.isEmpty()) {
+                RewardList rewards = new RewardList();
+                String firstKey = key;
+                for (String selectedId : selectedIds) {
+                    String[] parts = selectedId.split(",", 2);
+                    if (parts.length != 2) {
+                        continue;
+                    }
+                    if (rewards.isEmpty()) {
+                        firstKey = parts[0];
+                    }
+                    rewards.add(RewardConfigManager.getReward(
+                            rule, parts[0], Integer.parseInt(parts[1])).clone());
+                }
+                if (!rewards.isEmpty()) {
+                    RewardClipboardManager.setClipboard(rewards, firstKey);
+                    return true;
+                }
+            }
+
             // 面板
             if (currRewardButton.equalsIgnoreCase("panel")) {
                 return false;
@@ -1605,6 +1663,11 @@ public class RewardOptionScreen extends BaniraScreen {
 
         public boolean handleCut() {
             if (update()) return false;
+
+            if (!selectedRewardIds().isEmpty()) {
+                handleCopy();
+                return deleteSelectedRewards();
+            }
 
             // 面板
             if (currRewardButton.equalsIgnoreCase("panel")) {
@@ -1733,6 +1796,10 @@ public class RewardOptionScreen extends BaniraScreen {
         public boolean handleDelete() {
             if (update()) return false;
 
+            if (!selectedRewardIds().isEmpty()) {
+                return deleteSelectedRewards();
+            }
+
             // 面板
             if (currRewardButton.equalsIgnoreCase("panel")) {
                 return false;
@@ -1751,6 +1818,37 @@ public class RewardOptionScreen extends BaniraScreen {
                 RewardConfigManager.deleteReward(rule, key, Integer.parseInt(index));
                 RewardConfigManager.saveRewardOption();
             }
+            updateLayout();
+            return true;
+        }
+
+        /**
+         * 按奖励组逆序删除索引，避免前一个删除动作改变后续条目的位置。
+         */
+        private boolean deleteSelectedRewards() {
+            Map<String, List<Integer>> groupedIndices = new LinkedHashMap<>();
+            for (String selectedId : selectedRewardIds()) {
+                String[] parts = selectedId.split(",", 2);
+                if (parts.length != 2) {
+                    continue;
+                }
+                groupedIndices.computeIfAbsent(parts[0], ignored -> new ArrayList<>())
+                        .add(Integer.parseInt(parts[1]));
+            }
+            if (groupedIndices.isEmpty()) {
+                return false;
+            }
+            RewardConfigManager.addUndoRewardOption(rule);
+            RewardConfigManager.clearRedoList();
+            groupedIndices.forEach((groupKey, indices) -> {
+                indices.sort(Collections.reverseOrder());
+                for (Integer rewardIndex : indices) {
+                    RewardConfigManager.deleteReward(rule, groupKey, rewardIndex);
+                }
+            });
+            RewardConfigManager.saveRewardOption();
+            rewardSelection.clear();
+            currRewardButton = null;
             updateLayout();
             return true;
         }
@@ -1823,8 +1921,9 @@ public class RewardOptionScreen extends BaniraScreen {
                         SakuraClientState.getThemeTextureCoordinate().getArrowUV(),
                         SakuraClientState.getThemeTextureCoordinate().getArrowHoverUV(),
                         SakuraClientState.getThemeTextureCoordinate().getArrowTapUV())
+                        .setVisualBounds(new ScreenCoordinate(4, (height - 16) / 2.0, 16, 16))
                         .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.open_sidebar")),
-                new ScreenCoordinate(4, (height - 16) / 2.0, 16, 16));
+                new ScreenCoordinate(0, 0, 20, height));
         registerOperation(createThemeIcon(OperationButtonType.CLOSE,
                         SakuraClientState.getThemeTextureCoordinate().getArrowUV(),
                         SakuraClientState.getThemeTextureCoordinate().getArrowHoverUV(),
@@ -1900,6 +1999,7 @@ public class RewardOptionScreen extends BaniraScreen {
             AtomicBoolean handled = new AtomicBoolean(false);
             handleOperation(event.mouseX(), event.mouseY(), event.button(), widget, updateLayout, handled);
             if (handled.get()) {
+                rewardSelection.clear();
                 currRewardButton = null;
             }
             if (updateLayout.get()) {
@@ -1985,8 +2085,7 @@ public class RewardOptionScreen extends BaniraScreen {
                 Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.y_offset",
                         StringUtils.toFixedEx(yOffset, 1)));
         OP_BUTTONS.get(OperationButtonType.HELP.getCode()).setTooltip(
-                Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in."
-                        + (inputState.onlyShiftPressed() ? "help_button_shift" : "help_button")));
+                Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.help_button"));
 
         ClientPlayerEntity player = Minecraft.getInstance().player;
         RewardOperationWidget upload = OP_BUTTONS.get(OperationButtonType.UPLOAD.getCode());
