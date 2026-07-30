@@ -22,7 +22,7 @@ public class SakuraUiSmokeRunnerContractTest {
         String events = read(MAIN.resolve("event/ClientEventHandler.java"));
 
         assertTrue(runner.contains("SAKURA_UI_SMOKE"));
-        assertTrue(runner.contains("FMLEnvironment.production"));
+        assertTrue(runner.contains("BaniraEnvironment.isProduction()"));
         assertTrue(runner.contains("\"reward\".equalsIgnoreCase(target)"));
         assertTrue(runner.contains("\"sign-in\".equalsIgnoreCase(target)"));
         assertTrue(runner.contains("\"theme-catalog\".equalsIgnoreCase(target)"));

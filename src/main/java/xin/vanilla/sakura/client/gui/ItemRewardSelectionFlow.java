@@ -3,8 +3,6 @@ package xin.vanilla.sakura.client.gui;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import xin.vanilla.banira.client.gui.ItemSelectScreen;
 import xin.vanilla.sakura.enums.ERewardType;
 import xin.vanilla.sakura.rewards.Reward;
@@ -19,7 +17,6 @@ import java.util.function.Supplier;
 /**
  * 将 Banira 物品选择器与 Sakura 奖励概率组合为一个编辑流程。
  */
-@OnlyIn(Dist.CLIENT)
 public final class ItemRewardSelectionFlow {
     private ItemRewardSelectionFlow() {
     }

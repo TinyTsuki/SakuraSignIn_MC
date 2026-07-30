@@ -6,6 +6,7 @@ import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionRegistry;
 import xin.vanilla.banira.client.gui.quickaction.QuickIcon;
 import xin.vanilla.sakura.SakuraSignIn;
+import xin.vanilla.sakura.client.SakuraClientState;
 import xin.vanilla.sakura.event.ClientEventHandler;
 import xin.vanilla.sakura.screen.RewardOptionScreen;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
@@ -24,7 +25,7 @@ public final class SakuraQuickActions {
     }
 
     public static void register() {
-        TextureCoordinate coordinates = SakuraSignIn.getThemeTextureCoordinate();
+        TextureCoordinate coordinates = SakuraClientState.getThemeTextureCoordinate();
         QuickActionRegistry registry = QuickActionRegistry.get();
         String signature = signature(coordinates);
         if (signature.equals(registeredSignature)
@@ -49,12 +50,12 @@ public final class SakuraQuickActions {
     }
 
     private static QuickIcon icon(Coordinate coordinate, Item fallback) {
-        TextureCoordinate textureCoordinate = SakuraSignIn.getThemeTextureCoordinate();
-        if (SakuraSignIn.getThemeTexture() == null || textureCoordinate == null || coordinate == null) {
+        TextureCoordinate textureCoordinate = SakuraClientState.getThemeTextureCoordinate();
+        if (SakuraClientState.getThemeTexture() == null || textureCoordinate == null || coordinate == null) {
             return QuickIcon.item(fallback);
         }
         Texture texture = Texture.of(
-                        SakuraSignIn.getThemeTexture(),
+                        SakuraClientState.getThemeTexture(),
                         textureCoordinate.getTotalWidth(),
                         textureCoordinate.getTotalHeight())
                 .u0((int) coordinate.getU0())
@@ -65,7 +66,7 @@ public final class SakuraQuickActions {
     }
 
     private static String signature(TextureCoordinate coordinates) {
-        String texture = String.valueOf(SakuraSignIn.getThemeTexture());
+        String texture = String.valueOf(SakuraClientState.getThemeTexture());
         String signIn = coordinates != null ? String.valueOf(coordinates.getSignInBtnUV()) : "";
         String reward = coordinates != null ? String.valueOf(coordinates.getRewardOptionBtnUV()) : "";
         return texture + "|" + signIn + "|" + reward
