@@ -29,7 +29,7 @@ public class SakuraUiSmokeRunnerContractTest {
         assertTrue(runner.contains("Sakura theme smoke PASS"));
         assertTrue(runner.contains("\"quick-action\".equalsIgnoreCase(target)"));
         assertTrue(runner.contains("\"input-form\".equalsIgnoreCase(target)"));
-        assertTrue(runner.contains("parent instanceof MainMenuScreen"));
+        assertTrue(runner.contains("inputForm && parent instanceof MainMenuScreen"));
         assertTrue(runner.contains("inWorldWithoutScreen"));
         assertTrue(runner.contains("new RewardOptionScreen()"));
         assertTrue(runner.contains("seedRewardSmokeData()"));
