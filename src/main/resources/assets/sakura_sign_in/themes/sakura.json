@@ -1,0 +1,391 @@
+{
+  "format": 1,
+  "id": "sakura",
+  "texture": "sakura_sign_in:textures/gui/sign_in_calendar_sakura.png",
+  "coordinates": {
+    "special": true,
+    "totalWidth": 500,
+    "totalHeight": 1000,
+    "weekStart": 7,
+    "textColorDefault": -9758,
+    "textColorCurrent": -887152,
+    "textColorCanRepair": -69,
+    "textColorToday": -2081437,
+    "textColorDate": -16777216,
+    "yearCoordinate": {
+      "x": 128.0,
+      "y": 60.0,
+      "width": 92.0,
+      "height": 16.0,
+      "u0": 0.0,
+      "v0": 0.0,
+      "uWidth": 0.0,
+      "vHeight": 0.0
+    },
+    "monthCoordinate": {
+      "x": 320.0,
+      "y": 60.0,
+      "width": 62.0,
+      "height": 16.0,
+      "u0": 0.0,
+      "v0": 0.0,
+      "uWidth": 0.0,
+      "vHeight": 0.0
+    },
+    "cellCoordinate": {
+      "x": 70.0,
+      "y": 128.0,
+      "width": 34.0,
+      "height": 34.0,
+      "u0": 0.0,
+      "v0": 0.0,
+      "uWidth": 0.0,
+      "vHeight": 0.0
+    },
+    "cellHMargin": 20,
+    "cellVMargin": 24,
+    "dateOffset": 36,
+    "leftArrowCoordinate": {
+      "x": 320.0,
+      "y": 60.0,
+      "width": 62.0,
+      "height": 16.0,
+      "u0": 0.0,
+      "v0": 0.0,
+      "uWidth": 0.0,
+      "vHeight": 0.0
+    },
+    "rightArrowCoordinate": {
+      "x": 320.0,
+      "y": 60.0,
+      "width": 62.0,
+      "height": 16.0,
+      "u0": 0.0,
+      "v0": 0.0,
+      "uWidth": 0.0,
+      "vHeight": 0.0
+    },
+    "upArrowCoordinate": {
+      "x": 128.0,
+      "y": 60.0,
+      "width": 92.0,
+      "height": 16.0,
+      "u0": 0.0,
+      "v0": 0.0,
+      "uWidth": 0.0,
+      "vHeight": 0.0
+    },
+    "downArrowCoordinate": {
+      "x": 128.0,
+      "y": 60.0,
+      "width": 92.0,
+      "height": 16.0,
+      "u0": 0.0,
+      "v0": 0.0,
+      "uWidth": 0.0,
+      "vHeight": 0.0
+    },
+    "signInInfoCoordinate": {
+      "x": 375.0,
+      "y": 5.0,
+      "width": 120.0,
+      "height": 96.0,
+      "u0": 0.0,
+      "v0": 0.0,
+      "uWidth": 0.0,
+      "vHeight": 0.0
+    },
+    "themeCoordinate": {
+      "x": 300.0,
+      "y": 552.0,
+      "width": 40.0,
+      "height": 48.0,
+      "u0": 0.0,
+      "v0": 0.0,
+      "uWidth": 0.0,
+      "vHeight": 0.0
+    },
+    "themeHMargin": 0,
+    "bgUV": {
+      "x": 0.0,
+      "y": 0.0,
+      "width": 0.0,
+      "height": 0.0,
+      "u0": 0.0,
+      "v0": 0.0,
+      "uWidth": 500.0,
+      "vHeight": 600.0
+    },
+    "tooltipUV": {
+      "x": 0.0,
+      "y": 0.0,
+      "width": 0.0,
+      "height": 0.0,
+      "u0": 0.0,
+      "v0": 784.0,
+      "uWidth": 300.0,
+      "vHeight": 96.0
+    },
+    "tooltipCellHMargin": 5,
+    "tooltipCellCoordinate": {
+      "x": 15.0,
+      "y": 10.0,
+      "width": 42.0,
+      "height": 42.0,
+      "u0": 0.0,
+      "v0": 0.0,
+      "uWidth": 0.0,
+      "vHeight": 0.0
+    },
+    "tooltipDateCoordinate": {
+      "x": 110.0,
+      "y": 64.0,
+      "width": 50.0,
+      "height": 19.0,
+      "u0": 0.0,
+      "v0": 0.0,
+      "uWidth": 0.0,
+      "vHeight": 0.0
+    },
+    "tooltipScrollCoordinate": {
+      "x": 10.0,
+      "y": 93.0,
+      "width": 280.0,
+      "height": 1.0,
+      "u0": 0.0,
+      "v0": 0.0,
+      "uWidth": 0.0,
+      "vHeight": 0.0
+    },
+    "arrowUV": {
+      "x": 0.0,
+      "y": 0.0,
+      "width": 0.0,
+      "height": 0.0,
+      "u0": 0.0,
+      "v0": 600.0,
+      "uWidth": 40.0,
+      "vHeight": 40.0
+    },
+    "arrowHoverUV": {
+      "x": 0.0,
+      "y": 0.0,
+      "width": 0.0,
+      "height": 0.0,
+      "u0": 0.0,
+      "v0": 600.0,
+      "uWidth": 40.0,
+      "vHeight": 40.0
+    },
+    "arrowTapUV": {
+      "x": 0.0,
+      "y": 0.0,
+      "width": 0.0,
+      "height": 0.0,
+      "u0": 40.0,
+      "v0": 600.0,
+      "uWidth": 40.0,
+      "vHeight": 40.0
+    },
+    "signInInfoUV": {
+      "x": 0.0,
+      "y": 0.0,
+      "width": 0.0,
+      "height": 0.0,
+      "u0": 200.0,
+      "v0": 640.0,
+      "uWidth": 60.0,
+      "vHeight": 48.0
+    },
+    "notSignedInUV": {
+      "x": 0.0,
+      "y": 0.0,
+      "width": 0.0,
+      "height": 0.0,
+      "u0": 80.0,
+      "v0": 600.0,
+      "uWidth": 40.0,
+      "vHeight": 40.0
+    },
+    "signedInUV": {
+      "x": 0.0,
+      "y": 0.0,
+      "width": 0.0,
+      "height": 0.0,
+      "u0": 120.0,
+      "v0": 600.0,
+      "uWidth": 40.0,
+      "vHeight": 40.0
+    },
+    "rewardedUV": {
+      "x": 0.0,
+      "y": 0.0,
+      "width": 0.0,
+      "height": 0.0,
+      "u0": 160.0,
+      "v0": 600.0,
+      "uWidth": 40.0,
+      "vHeight": 40.0
+    },
+    "buffUV": {
+      "x": 0.0,
+      "y": 0.0,
+      "width": 0.0,
+      "height": 0.0,
+      "u0": 200.0,
+      "v0": 600.0,
+      "uWidth": 40.0,
+      "vHeight": 40.0
+    },
+    "pointUV": {
+      "x": 0.0,
+      "y": 0.0,
+      "width": 0.0,
+      "height": 0.0,
+      "u0": 240.0,
+      "v0": 600.0,
+      "uWidth": 40.0,
+      "vHeight": 40.0
+    },
+    "levelUV": {
+      "x": 0.0,
+      "y": 0.0,
+      "width": 0.0,
+      "height": 0.0,
+      "u0": 280.0,
+      "v0": 600.0,
+      "uWidth": 40.0,
+      "vHeight": 40.0
+    },
+    "cardUV": {
+      "x": 0.0,
+      "y": 0.0,
+      "width": 0.0,
+      "height": 0.0,
+      "u0": 320.0,
+      "v0": 600.0,
+      "uWidth": 40.0,
+      "vHeight": 40.0
+    },
+    "messageUV": {
+      "x": 0.0,
+      "y": 0.0,
+      "width": 0.0,
+      "height": 0.0,
+      "u0": 360.0,
+      "v0": 600.0,
+      "uWidth": 40.0,
+      "vHeight": 40.0
+    },
+    "themeUV": {
+      "x": 0.0,
+      "y": 0.0,
+      "width": 0.0,
+      "height": 0.0,
+      "u0": 0.0,
+      "v0": 640.0,
+      "uWidth": 40.0,
+      "vHeight": 48.0
+    },
+    "themeHoverUV": {
+      "x": 0.0,
+      "y": 0.0,
+      "width": 0.0,
+      "height": 0.0,
+      "u0": 0.0,
+      "v0": 688.0,
+      "uWidth": 40.0,
+      "vHeight": 48.0
+    },
+    "themeTapUV": {
+      "x": 0.0,
+      "y": 0.0,
+      "width": 0.0,
+      "height": 0.0,
+      "u0": 0.0,
+      "v0": 736.0,
+      "uWidth": 40.0,
+      "vHeight": 48.0
+    },
+    "optionBgUV": {
+      "x": 0.0,
+      "y": 0.0,
+      "width": 0.0,
+      "height": 0.0,
+      "u0": 0.0,
+      "v0": 880.0,
+      "uWidth": 120.0,
+      "vHeight": 120.0
+    },
+    "helpUV": {
+      "x": 0.0,
+      "y": 0.0,
+      "width": 0.0,
+      "height": 0.0,
+      "u0": 120.0,
+      "v0": 880.0,
+      "uWidth": 40.0,
+      "vHeight": 40.0
+    },
+    "downloadUV": {
+      "x": 0.0,
+      "y": 0.0,
+      "width": 0.0,
+      "height": 0.0,
+      "u0": 160.0,
+      "v0": 880.0,
+      "uWidth": 40.0,
+      "vHeight": 40.0
+    },
+    "uploadUV": {
+      "x": 0.0,
+      "y": 0.0,
+      "width": 0.0,
+      "height": 0.0,
+      "u0": 200.0,
+      "v0": 880.0,
+      "uWidth": 40.0,
+      "vHeight": 40.0
+    },
+    "folderUV": {
+      "x": 0.0,
+      "y": 0.0,
+      "width": 0.0,
+      "height": 0.0,
+      "u0": 240.0,
+      "v0": 880.0,
+      "uWidth": 40.0,
+      "vHeight": 40.0
+    },
+    "sortUV": {
+      "x": 0.0,
+      "y": 0.0,
+      "width": 0.0,
+      "height": 0.0,
+      "u0": 280.0,
+      "v0": 880.0,
+      "uWidth": 40.0,
+      "vHeight": 40.0
+    },
+    "signInBtnUV": {
+      "x": 0.0,
+      "y": 0.0,
+      "width": 0.0,
+      "height": 0.0,
+      "u0": 120.0,
+      "v0": 920.0,
+      "uWidth": 60.0,
+      "vHeight": 60.0
+    },
+    "rewardOptionBtnUV": {
+      "x": 0.0,
+      "y": 0.0,
+      "width": 0.0,
+      "height": 0.0,
+      "u0": 180.0,
+      "v0": 920.0,
+      "uWidth": 60.0,
+      "vHeight": 60.0
+    }
+  }
+}
