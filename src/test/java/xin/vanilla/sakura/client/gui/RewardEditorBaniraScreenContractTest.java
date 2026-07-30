@@ -23,6 +23,7 @@ public class RewardEditorBaniraScreenContractTest {
         String operationWidget = read(MAIN.resolve("client/gui/RewardOperationWidget.java"));
         String rewardWidget = read(MAIN.resolve("client/gui/RewardListEntryWidget.java"));
         String clientEvents = read(MAIN.resolve("event/ClientEventHandler.java"));
+        String quickActions = read(MAIN.resolve("client/gui/SakuraQuickActions.java"));
 
         assertTrue(screen.contains("extends BaniraScreen"));
         assertTrue(screen.contains("Map<Integer, RewardOperationWidget>"));
@@ -36,7 +37,7 @@ public class RewardEditorBaniraScreenContractTest {
         assertTrue(operationWidget.contains("extends BaseWidget"));
         assertTrue(operationWidget.contains("TooltipWidget.drawPopupMessage"));
         assertTrue(rewardWidget.contains("MouseDragEvent"));
-        assertTrue(clientEvents.contains(".previousScreen(event.getGui())"));
+        assertTrue(quickActions.contains(".previousScreen(context.currentScreen())"));
 
         assertFalse(screen.contains("KeyEventManager"));
         assertFalse(screen.contains("MouseCursor"));
@@ -50,6 +51,7 @@ public class RewardEditorBaniraScreenContractTest {
         assertFalse(screen.contains("void mouseReleased("));
         assertFalse(screen.contains("void mouseMoved("));
         assertFalse(clientEvents.contains("new RewardOptionScreen().setPreviousScreen("));
+        assertFalse(clientEvents.contains("GuiScreenEvent"));
     }
 
     @Test
