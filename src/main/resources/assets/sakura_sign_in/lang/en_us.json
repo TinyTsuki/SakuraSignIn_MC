@@ -64,6 +64,7 @@
   "option.sakura_sign_in.confirm": "Confirm",
   "option.sakura_sign_in.no_remind": "Do Not Remind Again",
   "tips.sakura_sign_in.enter_something": "Please Enter",
+  "tips.sakura_sign_in.input_format_invalid": "Invalid input format",
   "tips.sakura_sign_in.enter_reward_rule_key": "Please Enter Rule",
   "tips.sakura_sign_in.enter_reward_rule_key_2": "Please Enter Rule (One day)",
   "tips.sakura_sign_in.enter_reward_rule_key_3": "Please Enter Rule (One day)",

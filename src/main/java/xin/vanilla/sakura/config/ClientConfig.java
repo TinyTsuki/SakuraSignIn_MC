@@ -26,7 +26,7 @@ public class ClientConfig implements ConfigData {
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     @ConfigEntry.Gui.CollapsibleObject
-    @ConfigEntry.Gui.Tooltip(zh_cn = "签到界面与背包入口", en_us = "Sign-in screen and inventory shortcuts")
+    @ConfigEntry.Gui.Tooltip(zh_cn = "签到界面显示设置", en_us = "Sign-in screen display settings")
     private DisplayCategory display = new DisplayCategory();
 
     @Getter(AccessLevel.NONE)
@@ -67,10 +67,6 @@ public class ClientConfig implements ConfigData {
         boolean showLastReward();
         boolean showNextReward();
         boolean autoRewarded();
-        String inventorySignInButtonCoordinate();
-        DisplayView inventorySignInButtonCoordinate(String value);
-        String inventoryRewardOptionButtonCoordinate();
-        DisplayView inventoryRewardOptionButtonCoordinate(String value);
         boolean showSignInScreenTips();
         DisplayView showSignInScreenTips(boolean value);
     }
@@ -101,8 +97,6 @@ public class ClientConfig implements ConfigData {
         private boolean showLastReward = false;
         private boolean showNextReward = false;
         private boolean autoRewarded = false;
-        private String inventorySignInButtonCoordinate = "92,2";
-        private String inventoryRewardOptionButtonCoordinate = "72,2";
         private boolean showSignInScreenTips = true;
     }
 
