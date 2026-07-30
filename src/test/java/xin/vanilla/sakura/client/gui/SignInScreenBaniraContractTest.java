@@ -21,7 +21,7 @@ public class SignInScreenBaniraContractTest {
         assertTrue(screen.contains("Map<Integer, RewardOperationWidget>"));
         assertTrue(screen.contains("renderWidgets(stack, partialTicks)"));
         assertTrue(screen.contains("addDeferredTooltipRender"));
-        assertTrue(screen.contains("if (SakuraSignIn.getCalendarCurrentDate() == null)"));
+        assertTrue(screen.contains("if (SakuraClientState.getCalendarCurrentDate() == null)"));
         assertTrue(cell.contains("extends BaseWidget"));
         assertTrue(cell.contains("protected boolean onMouseScroll(MouseScrollEvent event)"));
     }

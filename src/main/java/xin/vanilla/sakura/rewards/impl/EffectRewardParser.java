@@ -9,7 +9,7 @@ import net.minecraft.potion.Effect;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.potion.Effects;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.registries.ForgeRegistries;
+import xin.vanilla.banira.common.util.EffectUtils;
 import xin.vanilla.sakura.enums.ERewardType;
 import xin.vanilla.sakura.rewards.RewardParser;
 import xin.vanilla.banira.common.data.Component;
@@ -24,7 +24,7 @@ public class EffectRewardParser implements RewardParser<EffectInstance> {
             int duration = json.get("duration").getAsInt();
             int amplifier = json.get("amplifier").getAsInt();
 
-            Effect effect = ForgeRegistries.POTIONS.getValue(new ResourceLocation(effectId));
+            Effect effect = EffectUtils.getEffectFromRegistry(effectId);
             if (effect == null) {
                 throw new JsonParseException("Unknown potion effect ID: " + effectId);
             }
@@ -39,7 +39,7 @@ public class EffectRewardParser implements RewardParser<EffectInstance> {
     @Override
     public JsonObject serialize(EffectInstance reward) {
         JsonObject json = new JsonObject();
-        json.addProperty("effect", reward.getEffect().getRegistryName().toString());
+        json.addProperty("effect", getId(reward.getEffect()));
         json.addProperty("duration", reward.getDuration());
         json.addProperty("amplifier", reward.getAmplifier());
         return json;
@@ -70,15 +70,13 @@ public class EffectRewardParser implements RewardParser<EffectInstance> {
     }
 
     public static String getId(Effect effect) {
-        ResourceLocation resource = effect.getRegistryName();
-        if (resource == null) return "minecraft:luck";
-        else return resource.toString();
+        return EffectUtils.getEffectRegistryString(effect);
     }
 
     public static Effect getEffect(String id) {
         String resourceId = id;
         if (id.contains(" ") && id.split(" ").length == 3) resourceId = resourceId.substring(0, id.indexOf(" "));
-        return ForgeRegistries.POTIONS.getValue(new ResourceLocation(resourceId));
+        return EffectUtils.getEffectFromRegistry(resourceId);
     }
 
     public static EffectInstance getEffectInstance(String id, int duration, int amplifier) {

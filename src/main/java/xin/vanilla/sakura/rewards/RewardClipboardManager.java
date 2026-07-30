@@ -3,14 +3,10 @@ package xin.vanilla.sakura.rewards;
 import com.google.gson.reflect.TypeToken;
 import lombok.NonNull;
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import xin.vanilla.sakura.util.CollectionUtils;
 import xin.vanilla.sakura.util.StringUtils;
 
 import static xin.vanilla.sakura.config.RewardConfigManager.GSON;
-
-@OnlyIn(Dist.CLIENT)
 public class RewardClipboardManager {
 
     private static String lastClipboard = "";

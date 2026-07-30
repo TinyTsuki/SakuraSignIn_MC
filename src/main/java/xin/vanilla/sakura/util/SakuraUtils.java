@@ -1,6 +1,5 @@
 package xin.vanilla.sakura.util;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.inventory.IInventory;
@@ -9,10 +8,9 @@ import net.minecraft.item.Items;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.LightType;
 import net.minecraft.world.World;
-import net.minecraftforge.fml.ModContainer;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.forgespi.language.IModInfo;
-import org.apache.maven.artifact.versioning.ArtifactVersion;
+import xin.vanilla.banira.api.BaniraEnvironment;
+import xin.vanilla.banira.api.BaniraServer;
+import xin.vanilla.banira.common.util.Translator;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.api.SakuraPlayerData;
@@ -44,7 +42,8 @@ public class SakuraUtils {
      */
     public static ServerPlayerEntity getRandomPlayer() {
         try {
-            List<ServerPlayerEntity> players = SakuraSignIn.getServerInstance().getPlayerList().getPlayers();
+            List<ServerPlayerEntity> players = BaniraServer.require(
+                    net.minecraft.server.MinecraftServer.class).getPlayerList().getPlayers();
             return players.get(new Random().nextInt(players.size()));
         } catch (Exception ignored) {
             return null;
@@ -66,7 +65,8 @@ public class SakuraUtils {
      */
     public static ServerPlayerEntity getPlayer(UUID uuid) {
         try {
-            return Minecraft.getInstance().level.getServer().getPlayerList().getPlayer(uuid);
+            return BaniraServer.require(net.minecraft.server.MinecraftServer.class)
+                    .getPlayerList().getPlayer(uuid);
         } catch (Exception ignored) {
             return null;
         }
@@ -223,7 +223,7 @@ public class SakuraUtils {
     }
 
     public static String getClientLanguage() {
-        return Minecraft.getInstance().getLanguageManager().getSelected().getCode();
+        return Translator.getClientLanguage();
     }
 
     /**
@@ -232,22 +232,20 @@ public class SakuraUtils {
      * @return 主版本*1000000+次版本*1000+修订版本， 如 1.16.5 -> 1 * 1000000 + 16 * 1000 + 5 = 10016005
      */
     public static int getMcVersion() {
-        int version = 0;
-        ModContainer container = ModList.get().getModContainerById(SakuraSignIn.MODID).orElse(null);
-        if (container != null) {
-            IModInfo.ModVersion minecraftVersion = container.getModInfo().getDependencies().stream()
-                    .filter(dependency -> dependency.getModId().equalsIgnoreCase("minecraft"))
-                    .findFirst()
-                    .orElse(null);
-            if (minecraftVersion != null) {
-                ArtifactVersion lowerBound = minecraftVersion.getVersionRange().getRestrictions().get(0).getLowerBound();
-                int majorVersion = lowerBound.getMajorVersion();
-                int minorVersion = lowerBound.getMinorVersion();
-                int incrementalVersion = lowerBound.getIncrementalVersion();
-                version = majorVersion * 1000000 + minorVersion * 1000 + incrementalVersion;
+        String[] parts = BaniraEnvironment.minecraftVersion().split("[^0-9]+");
+        int[] numbers = new int[3];
+        int count = 0;
+        for (String part : parts) {
+            if (part.isEmpty() || count >= numbers.length) {
+                continue;
+            }
+            try {
+                numbers[count++] = Integer.parseInt(part);
+            } catch (NumberFormatException ignored) {
+                // 快照或开发版本中的非数字后缀不参与版本编码。
             }
         }
-        return version;
+        return numbers[0] * 1000000 + numbers[1] * 1000 + numbers[2];
     }
 
     /**
