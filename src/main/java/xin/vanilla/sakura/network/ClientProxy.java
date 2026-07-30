@@ -18,6 +18,7 @@ import xin.vanilla.sakura.network.packet.RewardOptionSyncPacket;
 import xin.vanilla.sakura.config.RewardConfigManager;
 import xin.vanilla.sakura.notification.SakuraClientNotifications;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
+import xin.vanilla.sakura.screen.SignInScreen;
 import xin.vanilla.banira.common.data.Component;
 
 import java.util.ArrayList;
@@ -45,6 +46,7 @@ public class ClientProxy {
                 LOGGER.warn("Unable to apply synchronized Sakura player data", exception);
             }
             SakuraClientState.setEnabled(true);
+            refreshOpenSignInScreen();
         }
     }
 
@@ -62,6 +64,13 @@ public class ClientProxy {
         merged.removeIf(record -> packet.getMonth().equals(PlayerMonthSyncPacket.monthOf(record)));
         merged.addAll(packet.getRecords());
         data.setSignInRecords(merged);
+        refreshOpenSignInScreen();
+    }
+
+    private static void refreshOpenSignInScreen() {
+        if (Minecraft.getInstance().screen instanceof SignInScreen) {
+            ((SignInScreen) Minecraft.getInstance().screen).refreshPlayerData();
+        }
     }
 
     public static void handleRewardOptionSync(RewardOptionSyncPacket packet) {
@@ -73,12 +82,12 @@ public class ClientProxy {
             RewardConfigManager.setRewardOptionDataChanged(true);
             RewardConfigManager.saveRewardOption();
             SakuraClientNotifications.success(
-                    SakuraComponent.get().trans("message", "reward_option_download_success"),
+                    SakuraComponent.get().trans("word", "reward_option_download_success"),
                     SakuraNotificationTypes.REWARD
             );
         } catch (RuntimeException exception) {
             SakuraClientNotifications.error(
-                    SakuraComponent.get().trans("message", "reward_option_download_failed"),
+                    SakuraComponent.get().trans("word", "reward_option_download_failed"),
                     SakuraNotificationTypes.REWARD
             );
             throw exception;
@@ -86,7 +95,7 @@ public class ClientProxy {
     }
 
     public static void handleRewardOptionUploadResult(boolean success) {
-        Component message = SakuraComponent.get().trans("message", success ? "reward_option_upload_success" : "reward_option_upload_failed"
+        Component message = SakuraComponent.get().trans("word", success ? "reward_option_upload_success" : "reward_option_upload_failed"
         );
         if (success) {
             SakuraClientNotifications.success(message, SakuraNotificationTypes.REWARD);
