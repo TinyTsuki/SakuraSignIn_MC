@@ -60,10 +60,10 @@ public class ClientConfig implements ConfigData {
     }
 
     public interface DisplayView {
-        String theme();
-        DisplayView theme(String value);
-        boolean specialTheme();
-        DisplayView specialTheme(boolean value);
+        String themeId();
+        DisplayView themeId(String value);
+        boolean specialVariant();
+        DisplayView specialVariant(boolean value);
         boolean showLastReward();
         boolean showNextReward();
         boolean autoRewarded();
@@ -91,9 +91,10 @@ public class ClientConfig implements ConfigData {
     @Setter
     @Accessors(chain = true, fluent = true)
     public static class DisplayCategory {
-        @ConfigEntry.Gui.Tooltip(zh_cn = "内置主题材质", en_us = "Built-in theme texture")
-        private String theme = "textures/gui/sign_in_calendar_sakura.png";
-        private boolean specialTheme = true;
+        @ConfigEntry.Gui.Tooltip(zh_cn = "内置主题 ID", en_us = "Built-in theme ID")
+        private String themeId = "sakura";
+        @ConfigEntry.Gui.Tooltip(zh_cn = "使用主题的特殊签到图标", en_us = "Use the theme's alternate sign-in icons")
+        private boolean specialVariant = true;
         private boolean showLastReward = false;
         private boolean showNextReward = false;
         private boolean autoRewarded = false;

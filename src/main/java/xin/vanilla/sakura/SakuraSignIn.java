@@ -49,7 +49,6 @@ public class SakuraSignIn {
     public final static String DEFAULT_COMMAND_PREFIX = "sakura";
 
     public static final String MODID = "sakura_sign_in";
-    public static final String PNG_CHUNK_NAME = "vacb";
 
     public static final ExecutorService EXECUTOR_SERVICE = Executors.newCachedThreadPool();
 
@@ -93,11 +92,17 @@ public class SakuraSignIn {
     @Setter
     public static TextureCoordinate themeTextureCoordinate = null;
     /**
-     * 是否使用内置主题特殊图标
+     * 当前实际加载的内置主题 ID
      */
     @Getter
     @Setter
-    private static boolean specialVersionTheme = false;
+    private static String activeThemeId = "sakura";
+    /**
+     * 是否使用当前主题的特殊签到图标
+     */
+    @Getter
+    @Setter
+    private static boolean specialThemeVariant = false;
     /**
      * 奖励配置数据
      */
@@ -165,8 +170,6 @@ public class SakuraSignIn {
         // 注册键绑定
         LOGGER.debug("Registering key bindings");
         ClientEventHandler.registerKeyBindings();
-        // 创建配置文件目录
-        ClientEventHandler.createConfigPath();
         // 加载主题纹理
         ClientEventHandler.loadThemeTexture();
     }

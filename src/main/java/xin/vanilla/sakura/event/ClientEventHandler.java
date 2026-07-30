@@ -11,11 +11,12 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.loading.FMLPaths;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.client.gui.SakuraQuickActions;
+import xin.vanilla.sakura.client.theme.BuiltInThemeCatalog;
+import xin.vanilla.sakura.client.theme.BuiltInThemeDescriptor;
 import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.internal.client.dev.SakuraUiSmokeRunner;
 import xin.vanilla.sakura.notification.SakuraClientNotifications;
@@ -24,13 +25,8 @@ import xin.vanilla.sakura.rewards.RewardManager;
 import xin.vanilla.sakura.screen.RewardOptionScreen;
 import xin.vanilla.sakura.screen.SignInScreen;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
-import xin.vanilla.sakura.util.*;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-
-import static xin.vanilla.sakura.SakuraSignIn.PNG_CHUNK_NAME;
+import xin.vanilla.sakura.util.DateUtils;
+import xin.vanilla.sakura.util.GLFWKey;
 
 /**
  * 客户端事件处理器
@@ -56,37 +52,27 @@ public class ClientEventHandler {
     }
 
     /**
-     * 创建配置文件目录
-     */
-    public static void createConfigPath() {
-        File themesPath = new File(FMLPaths.CONFIGDIR.get().resolve(SakuraSignIn.MODID).toFile(), "themes");
-        if (!themesPath.exists()) {
-            themesPath.mkdirs();
-        }
-    }
-
-    /**
      * 加载主题纹理
      */
     public static void loadThemeTexture() {
-        try {
-            SakuraSignIn.setThemeTexture(TextureUtils.loadCustomTexture(ClientConfig.get().display().theme()));
-            SakuraSignIn.setSpecialVersionTheme(Boolean.TRUE.equals(ClientConfig.get().display().specialTheme()));
-            InputStream inputStream = Minecraft.getInstance().getResourceManager().getResource(SakuraSignIn.getThemeTexture()).getInputStream();
-            SakuraSignIn.setThemeTextureCoordinate(PNGUtils.readLastPrivateChunk(inputStream, PNG_CHUNK_NAME));
-        } catch (IOException | ClassNotFoundException ignored) {
-        }
-        if (SakuraSignIn.getThemeTexture() == null || SakuraSignIn.getThemeTextureCoordinate() == null) {
-            // 使用默认配置
-            SakuraSignIn.setThemeTextureCoordinate(TextureCoordinate.getDefault());
-        }
-        // 设置内置主题特殊图标UV的偏移量
-        if (SakuraSignIn.isSpecialVersionTheme() && SakuraSignIn.getThemeTextureCoordinate().isSpecial()) {
-            SakuraSignIn.getThemeTextureCoordinate().getNotSignedInUV().setX(320);
-            SakuraSignIn.getThemeTextureCoordinate().getSignedInUV().setX(320);
+        BuiltInThemeDescriptor theme = BuiltInThemeCatalog.load(
+                ClientConfig.get().display().themeId());
+        TextureCoordinate coordinates = theme.getCoordinates();
+        boolean specialVariant = ClientConfig.get().display().specialVariant()
+                && coordinates.isSpecial();
+
+        SakuraSignIn.setActiveThemeId(theme.getId());
+        SakuraSignIn.setThemeTexture(theme.textureLocation());
+        SakuraSignIn.setThemeTextureCoordinate(coordinates);
+        SakuraSignIn.setSpecialThemeVariant(specialVariant);
+
+        // 特殊版本复用同一图集，只改变两个签到状态图标的绘制偏移。
+        if (specialVariant) {
+            coordinates.getNotSignedInUV().setX(320);
+            coordinates.getSignedInUV().setX(320);
         } else {
-            SakuraSignIn.getThemeTextureCoordinate().getNotSignedInUV().setX(0);
-            SakuraSignIn.getThemeTextureCoordinate().getSignedInUV().setX(0);
+            coordinates.getNotSignedInUV().setX(0);
+            coordinates.getSignedInUV().setX(0);
         }
         // 主题切换后重注册，快捷入口图标会同步使用新的纹理区域。
         SakuraQuickActions.register();
