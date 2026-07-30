@@ -5,6 +5,7 @@ import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.client.gui.component.TextList;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.BaniraScreen;
+import xin.vanilla.banira.api.client.theme.BaniraThemes;
 import xin.vanilla.banira.client.gui.ConfirmDialogScreen;
 import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.client.util.SystemUtils;
@@ -1791,6 +1792,7 @@ public class RewardOptionScreen extends BaniraScreen {
 
     public RewardOptionScreen() {
         super(SakuraComponent.get().transClient("title", "reward_option_title"));
+        season(BaniraThemes.seasonFor(SakuraSignIn.MODID));
     }
 
     @Override

@@ -1,12 +1,20 @@
 package xin.vanilla.sakura.client.gui;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
+import xin.vanilla.banira.api.client.theme.BaniraThemes;
 import xin.vanilla.banira.client.data.Texture;
+import xin.vanilla.banira.client.gui.ConfigEditorScreen;
+import xin.vanilla.banira.client.gui.quickaction.QuickActionContextMenuItem;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionRegistry;
 import xin.vanilla.banira.client.gui.quickaction.QuickIcon;
+import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.client.SakuraClientState;
+import xin.vanilla.sakura.config.ClientConfig;
+import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.event.ClientEventHandler;
 import xin.vanilla.sakura.screen.RewardOptionScreen;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
@@ -18,7 +26,6 @@ import xin.vanilla.sakura.text.SakuraComponent;
  */
 public final class SakuraQuickActions {
     static final String SIGN_IN_ID = SakuraSignIn.MODID + ":sign_in";
-    static final String REWARD_OPTION_ID = SakuraSignIn.MODID + ":reward_option";
     private static String registeredSignature;
 
     private SakuraQuickActions() {
@@ -29,24 +36,39 @@ public final class SakuraQuickActions {
         QuickActionRegistry registry = QuickActionRegistry.get();
         String signature = signature(coordinates);
         if (signature.equals(registeredSignature)
-                && registry.getEntry(SIGN_IN_ID) != null
-                && registry.getEntry(REWARD_OPTION_ID) != null) {
+                && registry.getEntry(SIGN_IN_ID) != null) {
             return;
         }
+        registry.unregister(SakuraSignIn.MODID + ":reward_option");
         registry.registerIcon(
                 SIGN_IN_ID,
                 icon(coordinates != null ? coordinates.getSignInBtnUV() : null, Items.CLOCK),
                 SakuraComponent.get().transClient("key", "sign_in"),
-                context -> ClientEventHandler.openSignInScreen(context.currentScreen())
-        );
-        registry.registerIcon(
-                REWARD_OPTION_ID,
-                icon(coordinates != null ? coordinates.getRewardOptionBtnUV() : null, Items.WRITABLE_BOOK),
-                SakuraComponent.get().transClient("key", "reward_option"),
-                context -> context.minecraft().setScreen(
-                        new RewardOptionScreen().previousScreen(context.currentScreen()))
+                context -> ClientEventHandler.openSignInScreen(context.currentScreen()),
+                new QuickActionContextMenuItem(
+                        SakuraComponent.get().transClient("key", "reward_option"),
+                        context -> Minecraft.getInstance().setScreen(
+                                new RewardOptionScreen().previousScreen(context.currentScreen()))
+                ),
+                new QuickActionContextMenuItem(
+                        SakuraComponent.get().transClient("key", "client_config"),
+                        context -> openConfig(ClientConfig.get().holder(), context.currentScreen())
+                ),
+                new QuickActionContextMenuItem(
+                        SakuraComponent.get().transClient("key", "common_config"),
+                        context -> openConfig(CommonConfig.get().holder(), context.currentScreen())
+                )
         );
         registeredSignature = signature;
+    }
+
+    private static void openConfig(ConfigHolder holder, Screen parent) {
+        Minecraft.getInstance().setScreen(new ConfigEditorScreen(
+                holder,
+                new ConfigEditorScreen.Args()
+                        .parentScreen(parent)
+                        .season(BaniraThemes.seasonFor(SakuraSignIn.MODID))
+        ));
     }
 
     private static QuickIcon icon(Coordinate coordinate, Item fallback) {
@@ -68,9 +90,10 @@ public final class SakuraQuickActions {
     private static String signature(TextureCoordinate coordinates) {
         String texture = String.valueOf(SakuraClientState.getThemeTexture());
         String signIn = coordinates != null ? String.valueOf(coordinates.getSignInBtnUV()) : "";
-        String reward = coordinates != null ? String.valueOf(coordinates.getRewardOptionBtnUV()) : "";
-        return texture + "|" + signIn + "|" + reward
+        return texture + "|" + signIn
                 + "|" + SakuraComponent.get().translateClient("key", "sign_in")
-                + "|" + SakuraComponent.get().translateClient("key", "reward_option");
+                + "|" + SakuraComponent.get().translateClient("key", "reward_option")
+                + "|" + SakuraComponent.get().translateClient("key", "client_config")
+                + "|" + SakuraComponent.get().translateClient("key", "common_config");
     }
 }

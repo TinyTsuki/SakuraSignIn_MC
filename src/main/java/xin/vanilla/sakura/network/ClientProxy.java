@@ -11,6 +11,7 @@ import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.data.SignInRecord;
 import xin.vanilla.sakura.network.packet.AdvancementPacket;
+import xin.vanilla.sakura.network.packet.ClientConfigSyncPacket;
 import xin.vanilla.sakura.network.packet.PlayerDataSyncPacket;
 import xin.vanilla.sakura.network.packet.PlayerMonthSyncPacket;
 import xin.vanilla.sakura.network.packet.RewardOptionSyncPacket;
@@ -29,6 +30,7 @@ public class ClientProxy {
     public static void handleSynPlayerData(PlayerDataSyncPacket packet) {
         ClientPlayerEntity player = Minecraft.getInstance().player;
         if (player != null) {
+            boolean initialSync = !SakuraClientState.isEnabled();
             try {
                 IPlayerSignInData clientData = packet.getData();
                 // 摘要刷新不能清除用户已按需加载的其他月份。
@@ -36,10 +38,11 @@ public class ClientProxy {
                         SakuraPlayerData.get(player).getSignInRecords()
                 ));
                 SakuraPlayerData.setClient(player.getUUID(), clientData);
-                SakuraNetwork.sendToServer(new xin.vanilla.sakura.network.packet.ClientConfigSyncPacket());
-                LOGGER.debug("Client: Player data received successfully.");
-            } catch (Exception ignored) {
-                LOGGER.debug("Client: Player data received failed.");
+                if (initialSync) {
+                    SakuraNetwork.sendToServer(new ClientConfigSyncPacket());
+                }
+            } catch (Exception exception) {
+                LOGGER.warn("Unable to apply synchronized Sakura player data", exception);
             }
             SakuraClientState.setEnabled(true);
         }
