@@ -3,7 +3,6 @@ package xin.vanilla.sakura.data;
 import lombok.NonNull;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
-import net.minecraftforge.common.util.INBTSerializable;
 import xin.vanilla.sakura.config.KeyValue;
 import xin.vanilla.sakura.domain.player.MonthSignInIndex;
 
@@ -15,7 +14,11 @@ import java.util.Map;
 /**
  * 玩家签到数据
  */
-public interface IPlayerSignInData extends INBTSerializable<CompoundNBT> {
+public interface IPlayerSignInData {
+    CompoundNBT serializeNBT();
+
+    void deserializeNBT(CompoundNBT nbt);
+
     /**
      * 获取累计签到天数
      */
