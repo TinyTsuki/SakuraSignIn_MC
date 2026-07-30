@@ -110,7 +110,8 @@ public class ItemRewardParser implements RewardParser<ItemStack> {
     @Override
     public @NonNull Component getDisplayName(String languageCode, JsonObject json, boolean withNum) {
         ItemStack itemStack = this.deserialize(json);
-        return SakuraComponent.get().object(itemStack.getHoverName())
+        // 原版悬浮名称组件可能被 ItemStack 缓存，不能在其上直接追加数量。
+        return SakuraComponent.get().literal(itemStack.getHoverName().getString())
                 .append(withNum ? "x" + itemStack.getCount() : "");
     }
 

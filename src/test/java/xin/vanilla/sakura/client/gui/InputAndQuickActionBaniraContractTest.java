@@ -38,6 +38,7 @@ public class InputAndQuickActionBaniraContractTest {
         assertTrue(actions.contains("QuickActionRegistry.get()"));
         assertTrue(actions.contains("QuickIcon.resource(texture)"));
         assertTrue(actions.contains("new QuickActionContextMenuItem("));
+        assertTrue(actions.contains("new CustomPlayerConfigEditScreen("));
         assertTrue(actions.contains("openConfig(ClientConfig.get().holder()"));
         assertTrue(actions.contains("openConfig(CommonConfig.get().holder()"));
         assertTrue(actions.contains("new RewardOptionScreen().previousScreen("));
@@ -57,12 +58,14 @@ public class InputAndQuickActionBaniraContractTest {
         String bootstrap = source("xin/vanilla/sakura/client/SakuraClientBootstrap.java");
         String signIn = source("xin/vanilla/sakura/screen/SignInScreen.java");
         String rewards = source("xin/vanilla/sakura/screen/RewardOptionScreen.java");
+        String actions = source("xin/vanilla/sakura/client/gui/SakuraQuickActions.java");
 
         assertTrue(config.contains(
                 "private BaniraThemeMode interfaceThemeMode = BaniraThemeMode.SPRING"));
         assertTrue(bootstrap.contains("BaniraThemes.register(SakuraSignIn.MODID"));
         assertTrue(signIn.contains("season(BaniraThemes.seasonFor(SakuraSignIn.MODID))"));
         assertTrue(rewards.contains("season(BaniraThemes.seasonFor(SakuraSignIn.MODID))"));
+        assertTrue(actions.contains(".season(BaniraThemes.seasonFor(SakuraSignIn.MODID))"));
     }
 
     private static String source(String relative) throws Exception {

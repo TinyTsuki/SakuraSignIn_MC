@@ -110,7 +110,7 @@ public final class RewardListEntryWidget extends BaseWidget {
         }
         TooltipWidget.drawPopupMessage(stack, FontDrawArgs.ofPopo(
                 tooltip.clone().stack(stack).font(Minecraft.getInstance().font)
-        ).x(mouseX).y(mouseY));
+        ).x(mouseX).y(mouseY), screen.getEffectiveTheme(), screen.season());
     }
 
     @Override

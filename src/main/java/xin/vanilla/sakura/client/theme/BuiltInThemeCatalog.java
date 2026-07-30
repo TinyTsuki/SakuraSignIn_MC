@@ -4,6 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import net.minecraft.resources.IResource;
+import net.minecraft.resources.IResourceManager;
+import net.minecraft.util.ResourceLocation;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
@@ -39,14 +42,21 @@ public final class BuiltInThemeCatalog {
     }
 
     public static BuiltInThemeDescriptor load(String requestedId) {
+        return load(requestedId, null);
+    }
+
+    /**
+     * 客户端优先从资源管理器读取描述文件，因此资源包可以替换 JSON 与纹理。
+     */
+    public static BuiltInThemeDescriptor load(String requestedId, IResourceManager resourceManager) {
         String id = normalize(requestedId);
         try {
-            return read(id);
+            return read(id, resourceManager);
         } catch (IOException | JsonParseException | IllegalArgumentException exception) {
             LOGGER.error("Failed to load built-in Sakura theme '{}'", id, exception);
             if (!DEFAULT_THEME_ID.equals(id)) {
                 try {
-                    return read(DEFAULT_THEME_ID);
+                    return read(DEFAULT_THEME_ID, resourceManager);
                 } catch (IOException | JsonParseException | IllegalArgumentException fallbackException) {
                     LOGGER.error("Failed to load default Sakura theme", fallbackException);
                 }
@@ -67,20 +77,32 @@ public final class BuiltInThemeCatalog {
         return THEME_IDS.contains(normalized) ? normalized : DEFAULT_THEME_ID;
     }
 
-    private static BuiltInThemeDescriptor read(String id) throws IOException {
+    private static BuiltInThemeDescriptor read(String id, IResourceManager resourceManager) throws IOException {
         String resourcePath = RESOURCE_ROOT + id + ".json";
+        if (resourceManager != null) {
+            String relativePath = resourcePath.substring(("assets/" + SakuraSignIn.MODID + "/").length());
+            try (IResource resource = resourceManager.getResource(
+                    new ResourceLocation(SakuraSignIn.MODID, relativePath));
+                 InputStream input = resource.getInputStream()) {
+                return readDescriptor(id, input);
+            }
+        }
         try (InputStream input = BuiltInThemeCatalog.class.getClassLoader()
                 .getResourceAsStream(resourcePath)) {
             if (input == null) {
                 throw new IOException("Missing theme descriptor: " + resourcePath);
             }
-            BuiltInThemeDescriptor descriptor = GSON.fromJson(
-                    new InputStreamReader(input, StandardCharsets.UTF_8),
-                    BuiltInThemeDescriptor.class
-            );
-            validate(id, descriptor);
-            return descriptor;
+            return readDescriptor(id, input);
         }
+    }
+
+    private static BuiltInThemeDescriptor readDescriptor(String id, InputStream input) {
+        BuiltInThemeDescriptor descriptor = GSON.fromJson(
+                new InputStreamReader(input, StandardCharsets.UTF_8),
+                BuiltInThemeDescriptor.class
+        );
+        validate(id, descriptor);
+        return descriptor;
     }
 
     private static void validate(String requestedId, BuiltInThemeDescriptor descriptor) {
