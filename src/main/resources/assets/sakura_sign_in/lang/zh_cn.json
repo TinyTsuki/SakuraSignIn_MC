@@ -64,6 +64,7 @@
   "option.sakura_sign_in.confirm": "确认",
   "option.sakura_sign_in.no_remind": "不再提醒",
   "tips.sakura_sign_in.enter_something": "请输入",
+  "tips.sakura_sign_in.input_format_invalid": "输入格式不正确",
   "tips.sakura_sign_in.enter_reward_rule_key": "请输入规则",
   "tips.sakura_sign_in.enter_reward_rule_key_2": "请输入规则（连续签到天数）",
   "tips.sakura_sign_in.enter_reward_rule_key_3": "请输入规则（循环签到天数）",

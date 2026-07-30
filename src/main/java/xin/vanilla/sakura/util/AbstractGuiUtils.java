@@ -9,8 +9,6 @@ import lombok.NonNull;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.AbstractGui;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.client.renderer.ItemRenderer;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.item.ItemStack;
@@ -1204,15 +1202,4 @@ public class AbstractGuiUtils {
 
     //  endregion 绘制弹出层提示
 
-    // region 重写方法签名
-
-    public static TextFieldWidget newTextFieldWidget(FontRenderer font, int x, int y, int width, int height, Component content) {
-        return new TextFieldWidget(font, x, y, width, height, content.toVanilla());
-    }
-
-    public static Button newButton(int x, int y, int width, int height, Component content, Button.IPressable onPress) {
-        return new Button(x, y, width, height, content.toVanilla(), onPress);
-    }
-
-    // endregion 重写方法签名
 }
