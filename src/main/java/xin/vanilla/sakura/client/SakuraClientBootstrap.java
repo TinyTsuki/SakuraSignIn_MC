@@ -4,6 +4,8 @@ import lombok.Getter;
 import xin.vanilla.banira.api.client.BaniraInput;
 import xin.vanilla.banira.api.client.BaniraKeyHandle;
 import xin.vanilla.banira.api.client.event.BaniraClientEvents;
+import xin.vanilla.banira.api.client.theme.BaniraThemes;
+import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.event.ClientEventHandler;
@@ -30,6 +32,8 @@ public final class SakuraClientBootstrap {
             return;
         }
 
+        BaniraThemes.register(SakuraSignIn.MODID,
+                () -> ClientConfig.get().display().interfaceThemeMode());
         signInKey = BaniraInput.registerKey(
                 SakuraSignIn.MODID, "sign_in", GLFWKey.GLFW_KEY_H);
         BaniraKeyHandle rewardOptionKey = BaniraInput.registerKey(

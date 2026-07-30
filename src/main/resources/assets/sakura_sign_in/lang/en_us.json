@@ -2,6 +2,8 @@
   "key.sakura_sign_in.categories": "Sakura Sign-In",
   "key.sakura_sign_in.sign_in": "Open Sign-In Page",
   "key.sakura_sign_in.reward_option": "Open Reward Configuration Page",
+  "key.sakura_sign_in.client_config": "Client Settings",
+  "key.sakura_sign_in.common_config": "Server and Common Settings",
   "command.sakura_sign_in.help": "Show command help",
   "command.sakura_sign_in.concise_sign": "Short form of /sakura sign",
   "command.sakura_sign_in.concise_reward": "Short form of /sakura reward",
