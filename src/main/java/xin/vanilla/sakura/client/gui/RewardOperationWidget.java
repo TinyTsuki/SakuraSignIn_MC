@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.texture.NativeImage;
 import net.minecraft.util.ResourceLocation;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -18,6 +19,7 @@ import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
 import xin.vanilla.sakura.util.AbstractGuiUtils;
 import xin.vanilla.sakura.util.GLFWKey;
+import xin.vanilla.sakura.util.TextureUtils;
 
 import java.util.function.Consumer;
 
@@ -43,6 +45,14 @@ public final class RewardOperationWidget extends BaseWidget {
     private int textureHeight;
     @Setter
     private boolean flipHorizontal;
+    @Setter
+    private boolean flipVertical;
+    @Setter
+    private double rotatedAngle;
+    @Setter
+    private double tremblingAmplitude;
+    @Setter
+    private boolean transparentCheck;
     @Setter
     private int hoverTint;
     @Setter
@@ -75,6 +85,16 @@ public final class RewardOperationWidget extends BaseWidget {
 
     public boolean pressed() {
         return mousePressed;
+    }
+
+    public RewardOperationWidget setBounds(Coordinate coordinate, double baseX, double baseY, double scale) {
+        bounds(new ScreenCoordinate(
+                baseX + coordinate.getX() * scale,
+                baseY + coordinate.getY() * scale,
+                coordinate.getWidth() * scale,
+                coordinate.getHeight() * scale
+        ));
+        return this;
     }
 
     public double realX() {
@@ -115,8 +135,13 @@ public final class RewardOperationWidget extends BaseWidget {
         TextureCoordinate textureCoordinate = new TextureCoordinate()
                 .setTotalWidth(textureWidth)
                 .setTotalHeight(textureHeight);
-        AbstractGuiUtils.renderRotatedTexture(stack, texture, textureCoordinate, coordinate,
-                0, 0, 1, 0, flipHorizontal, false);
+        if (mouseInside && tremblingAmplitude > 0) {
+            AbstractGuiUtils.renderTremblingTexture(stack, texture, textureCoordinate, coordinate,
+                    0, 0, 1, true, tremblingAmplitude);
+        } else {
+            AbstractGuiUtils.renderRotatedTexture(stack, texture, textureCoordinate, coordinate,
+                    0, 0, 1, rotatedAngle, flipHorizontal, flipVertical);
+        }
 
         int tint = mousePressed ? pressedTint : mouseInside ? hoverTint : 0;
         if (tint != 0) {
@@ -132,6 +157,25 @@ public final class RewardOperationWidget extends BaseWidget {
         TooltipWidget.drawPopupMessage(stack, FontDrawArgs.ofPopo(
                 tooltip.clone().stack(stack).font(Minecraft.getInstance().font)
         ).x(mouseX).y(mouseY));
+    }
+
+    @Override
+    public boolean isMouseInside(double mouseX, double mouseY) {
+        if (!super.isMouseInside(mouseX, mouseY) || !transparentCheck || texture == null) {
+            return super.isMouseInside(mouseX, mouseY);
+        }
+        Coordinate uv = hover != null ? hover : normal;
+        if (uv == null || realWidth() <= 0 || realHeight() <= 0) {
+            return true;
+        }
+        int textureX = (int) (uv.getU0() + (mouseX - realX()) * uv.getUWidth() / realWidth());
+        int textureY = (int) (uv.getV0() + (mouseY - realY()) * uv.getVHeight() / realHeight());
+        NativeImage image = TextureUtils.getTextureImage(texture);
+        if (image == null || textureX < 0 || textureY < 0
+                || textureX >= image.getWidth() || textureY >= image.getHeight()) {
+            return true;
+        }
+        return ((image.getPixelRGBA(textureX, textureY) >>> 24) & 0xFF) > 0;
     }
 
     @Override
