@@ -99,6 +99,7 @@ public final class SakuraNetwork {
         ServerPlayerEntity player = (ServerPlayerEntity) playerObject;
         CommonConfig.syncToPlayer(player);
         SakuraPlayerData.sync(player);
+        sendToPlayer(new ServerTimeSyncPacket(), player);
         sendSplitToPlayer(RewardConfigManager.toSyncPacket(player), player);
         sendSplitToPlayer(new AdvancementPacket(
                 player.server.getAdvancements().getAllAdvancements()
