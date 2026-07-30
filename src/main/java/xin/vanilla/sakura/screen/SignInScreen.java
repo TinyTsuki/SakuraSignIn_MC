@@ -9,6 +9,7 @@ import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.gui.BaniraScreen;
+import xin.vanilla.banira.api.client.theme.BaniraThemes;
 import xin.vanilla.banira.client.gui.ConfirmDialogScreen;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.widget.BaseShapeWidget;
@@ -116,6 +117,7 @@ public final class SignInScreen extends BaniraScreen {
 
     public SignInScreen() {
         super(SakuraComponent.get().transClient("title", "sign_in_title"));
+        season(BaniraThemes.seasonFor(SakuraSignIn.MODID));
     }
 
     @Override

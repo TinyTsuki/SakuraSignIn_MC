@@ -33,8 +33,11 @@ public class ClientConfigSyncPacket implements INetworkPacket {
             ServerPlayerEntity player = ctx.senderAs(ServerPlayerEntity.class);
             if (player != null) {
                 IPlayerSignInData signInData = SakuraPlayerData.get(player);
-                signInData.setAutoRewarded(packet.autoRewarded);
-                SakuraPlayerData.saveAndSync(player);
+                if (signInData.isAutoRewarded() != packet.autoRewarded) {
+                    signInData.setAutoRewarded(packet.autoRewarded);
+                    // 该值来自当前客户端，无需再把同一份玩家摘要反射回去。
+                    SakuraPlayerData.save(player);
+                }
             }
         });
         ctx.markHandled();

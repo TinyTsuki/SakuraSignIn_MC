@@ -4,7 +4,6 @@ import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -15,8 +14,6 @@ import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.data.migration.LegacyMigrationResult;
 import xin.vanilla.sakura.enums.ESignInType;
-import xin.vanilla.sakura.network.SakuraNetwork;
-import xin.vanilla.sakura.network.packet.ServerTimeSyncPacket;
 import xin.vanilla.sakura.network.packet.SignInPacket;
 import xin.vanilla.sakura.rewards.RewardManager;
 import xin.vanilla.sakura.util.DateUtils;
@@ -40,7 +37,6 @@ public final class ForgeSakuraGameEventAdapter {
             return;
         }
         MinecraftForge.EVENT_BUS.addListener(ForgeSakuraGameEventAdapter::onRegisterCommands);
-        MinecraftForge.EVENT_BUS.addListener(ForgeSakuraGameEventAdapter::onPlayerTick);
         MinecraftForge.EVENT_BUS.addListener(ForgeSakuraGameEventAdapter::onPlayerCloned);
         MinecraftForge.EVENT_BUS.addListener(ForgeSakuraGameEventAdapter::onPlayerLoggedIn);
         MinecraftForge.EVENT_BUS.addListener(ForgeSakuraGameEventAdapter::onPlayerLoggedOut);
@@ -48,14 +44,6 @@ public final class ForgeSakuraGameEventAdapter {
 
     private static void onRegisterCommands(RegisterCommandsEvent event) {
         SignInCommand.register(event.getDispatcher());
-    }
-
-    private static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (event.side.isClient() || event.phase != TickEvent.Phase.END
-                || !(event.player instanceof ServerPlayerEntity)) {
-            return;
-        }
-        SakuraNetwork.sendToPlayer(new ServerTimeSyncPacket(), event.player);
     }
 
     /**
