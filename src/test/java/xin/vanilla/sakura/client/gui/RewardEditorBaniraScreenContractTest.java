@@ -32,7 +32,7 @@ public class RewardEditorBaniraScreenContractTest {
         assertTrue(screen.contains("popupOption.onSelect(this::handlePopupSelection)"));
         assertTrue(screen.contains("new ConfirmDialogScreen("));
         assertTrue(screen.contains("requestDeleteConfirmation()"));
-        assertTrue(screen.contains("if (!popupOption.isEmpty())"));
+        assertTrue(screen.contains("!popupOption.isEmpty() || draggingRewardId != null"));
         assertTrue(screen.contains("inputState.isCtrlPressed()"));
         assertTrue(screen.contains("inputState.isShiftPressed()"));
         assertTrue(screen.contains("new ReadOnlyTextScreen("));
@@ -40,11 +40,18 @@ public class RewardEditorBaniraScreenContractTest {
         assertTrue(screen.contains("collapsedRewardGroups"));
         assertTrue(screen.contains("toggleRewardGroup("));
         assertTrue(screen.contains("isRewardGroupCollapsed(key)"));
+        assertTrue(screen.contains("RewardGroupLayout"));
+        assertTrue(screen.contains("inputState.isCtrlPressed()"));
+        assertTrue(screen.contains("moveSelectedRewardsTo("));
+        assertTrue(screen.contains("renderDraggedReward("));
+        assertTrue(screen.contains("rewardContentHeight"));
         assertTrue(screen.contains("ShapeDrawArgs.ShapeType.RECT"));
         assertTrue(screen.contains(".setHoverTint(0)"));
         assertTrue(operationWidget.contains("extends BaseWidget"));
         assertTrue(operationWidget.contains("TooltipWidget.drawPopupMessage"));
         assertTrue(rewardWidget.contains("MouseDragEvent"));
+        assertTrue(rewardWidget.contains("onLongPress(MouseEvent event)"));
+        assertTrue(rewardWidget.contains("longPressDragHandler"));
         assertTrue(quickActions.contains(".previousScreen(context.currentScreen())"));
 
         assertFalse(screen.contains("KeyEventManager"));

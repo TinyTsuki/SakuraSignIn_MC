@@ -16,8 +16,10 @@ import xin.vanilla.banira.client.gui.widget.PopupOption;
 import xin.vanilla.sakura.text.SakuraComponent;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
+import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.gui.AbstractGui;
@@ -67,7 +69,6 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -101,6 +102,9 @@ public class RewardOptionScreen extends BaniraScreen {
     private final int itemIconSize = 16;
     private final int itemRightMargin = 4;
     private final int itemBottomMargin = 8;
+    private final int groupContentIndent = 8;
+    private final int groupContentPadding = 4;
+    private final int groupGap = 4;
     // 标题的大小
     private final int titleHeight = 20;
     // 屏幕边缘间距
@@ -114,10 +118,8 @@ public class RewardOptionScreen extends BaniraScreen {
     private int lineItemCount;
     // 矩阵栈
     private MatrixStack ms;
-    /**
-     * 奖励列表索引(用于计算渲染Y坐标)
-     */
-    AtomicInteger rewardListIndex = new AtomicInteger(0);
+    private double rewardLayoutY;
+    private double rewardContentHeight;
     // Y坐标偏移
     private double yOffset, yOffsetOld, yOffsetResetTime;
     // endregion 奖励列表相关参数
@@ -132,6 +134,11 @@ public class RewardOptionScreen extends BaniraScreen {
     private String currRewardButton;
     private final RewardSelectionModel rewardSelection = new RewardSelectionModel();
     private final Set<String> collapsedRewardGroups = new HashSet<>();
+    private final Map<String, RewardGroupLayout> rewardGroupLayouts = new LinkedHashMap<>();
+    private String draggingRewardId;
+    private String dragTargetGroupKey;
+    private double dragMouseX;
+    private double dragMouseY;
     /**
      * 弹出菜单会在回调前清空，因此由界面保存本次菜单的业务上下文。
      */
@@ -277,9 +284,14 @@ public class RewardOptionScreen extends BaniraScreen {
      * @param title      标题
      * @param key        奖励的键
      * @param titleIndex 标题的索引
-     * @param index      奖励列表的索引
      */
-    private void addRewardTitleButton(String title, String key, int titleIndex, int index) {
+    private void addRewardTitleButton(String title, String key, int titleIndex) {
+        if (!rewardGroupLayouts.isEmpty()) {
+            rewardLayoutY += groupGap;
+        }
+        RewardGroupLayout layout = new RewardGroupLayout(key, rewardLayoutY,
+                rewardLayoutY + titleHeight);
+        rewardGroupLayouts.put(key, layout);
         RewardListEntryWidget entry = new RewardListEntryWidget(this, titleIndex, context -> {
             RewardListEntryWidget widget = context.getEntry();
             boolean collapsed = isRewardGroupCollapsed(key);
@@ -288,21 +300,27 @@ public class RewardOptionScreen extends BaniraScreen {
             int width = (int) widget.realWidth();
             int height = (int) widget.realHeight();
             boolean hovered = widget.isMouseInside(inputState.mouseX(), inputState.mouseY());
-            int fillColor = hovered
+            int headerColor = hovered
                     ? getEffectiveTheme().buttonBgHover()
                     : getEffectiveTheme().panelBg();
-            BaseShapeWidget.drawShape(new ShapeDrawArgs()
-                    .stack(context.getStack())
-                    .type(ShapeDrawArgs.ShapeType.RECT)
-                    .color(getEffectiveTheme().buttonBorder())
-                    .rect(new ShapeDrawArgs.RectParams()
-                            .x(x).y(y).width(width).height(height).radius(3)));
-            BaseShapeWidget.drawShape(new ShapeDrawArgs()
-                    .stack(context.getStack())
-                    .type(ShapeDrawArgs.ShapeType.RECT)
-                    .color(fillColor)
-                    .rect(new ShapeDrawArgs.RectParams()
-                            .x(x + 1).y(y + 1).width(width - 2).height(height - 2).radius(2)));
+            int panelHeight = (int) Math.max(height, layout.bottomY() - layout.topY());
+            AbstractGui.fill(context.getStack(), x, y, x + width, y + height, headerColor);
+            AbstractGui.fill(context.getStack(), x, y, x + 1, y + panelHeight,
+                    getEffectiveTheme().buttonBorder());
+            String titleId = rewardGroupTitleId(key);
+            if (rewardSelection.isSelected(titleId)
+                    || key.equals(dragTargetGroupKey)) {
+                int color = key.equals(dragTargetGroupKey)
+                        ? getEffectiveTheme().accentFocused()
+                        : getEffectiveTheme().borderFocused();
+                BaseShapeWidget.drawShape(new ShapeDrawArgs()
+                        .stack(context.getStack())
+                        .type(ShapeDrawArgs.ShapeType.RECT)
+                        .color(color)
+                        .rect(new ShapeDrawArgs.RectParams()
+                                .x(x).y(y).width(width).height(panelHeight)
+                                .radius(0).border(1)));
+            }
             AbstractGuiUtils.drawString(context.getStack(), super.font,
                     collapsed ? "\u25B6" : "\u25BC",
                     x + 4, y + (height - super.font.lineHeight) / 2,
@@ -311,15 +329,16 @@ public class RewardOptionScreen extends BaniraScreen {
                     x + 16, y + (height - super.font.lineHeight) / 2,
                     width - 20, getEffectiveTheme().buttonText(), false);
         }).setBaseX(leftBarWidth)
+                .setDrawSelectionOutline(false)
                 .setTooltip(Text.trans(SakuraSignIn.MODID,
                         "word.sakura_sign_in.reward_group_header_hint"));
         entry.bounds()
                 .x(leftMargin)
-                .y(topMargin + (itemIconSize + itemBottomMargin)
-                        * Math.floor((double) index / lineItemCount))
+                .y(rewardLayoutY)
                 .width(super.width - leftBarWidth - leftMargin - rightMargin - rightBarWidth)
                 .height(titleHeight);
-        registerRewardEntry(String.format("标题,%s", key), entry);
+        registerRewardEntry(rewardGroupTitleId(key), entry);
+        rewardLayoutY += titleHeight;
     }
 
     /**
@@ -327,13 +346,20 @@ public class RewardOptionScreen extends BaniraScreen {
      *
      * @param rewardMap 奖励列表
      * @param key       奖励列表的key
-     * @param index     奖励列表的索引
      */
-    private void addRewardButton(Map<String, RewardList> rewardMap, String key, AtomicInteger index) {
+    private void addRewardButton(Map<String, RewardList> rewardMap, String key) {
+        RewardGroupLayout layout = rewardGroupLayouts.get(key);
         if (isRewardGroupCollapsed(key)) {
+            layout.bottomY(rewardLayoutY);
             return;
         }
-        for (int j = 0; j < rewardMap.get(key).size(); j++, index.incrementAndGet()) {
+        RewardList rewards = rewardMap.get(key);
+        if (rewards == null || rewards.isEmpty()) {
+            layout.bottomY(rewardLayoutY);
+            return;
+        }
+        rewardLayoutY += groupContentPadding;
+        for (int j = 0; j < rewards.size(); j++) {
             RewardListEntryWidget entry = new RewardListEntryWidget(this, j, context -> {
                 RewardListEntryWidget widget = context.getEntry();
                 Reward reward = rewardMap.get(key).get(widget.getOperation());
@@ -344,13 +370,17 @@ public class RewardOptionScreen extends BaniraScreen {
                     .setTooltip(Text.from(rewardMap.get(key).get(j)
                             .getName(SakuraUtils.getClientLanguage(), true)));
             entry.bounds()
-                    .x(leftMargin + (j % lineItemCount) * (itemIconSize + itemRightMargin))
-                    .y(topMargin + (itemIconSize + itemBottomMargin)
-                            * Math.floor((double) index.get() / lineItemCount))
+                    .x(leftMargin + groupContentIndent
+                            + (j % lineItemCount) * (itemIconSize + itemRightMargin))
+                    .y(rewardLayoutY + (itemIconSize + itemBottomMargin)
+                            * Math.floor((double) j / lineItemCount))
                     .width(itemIconSize)
                     .height(itemIconSize);
             registerRewardEntry(String.format("%s,%s", key, j), entry);
         }
+        int rowCount = (rewards.size() + lineItemCount - 1) / lineItemCount;
+        rewardLayoutY += rowCount * (itemIconSize + itemBottomMargin);
+        layout.bottomY(rewardLayoutY);
     }
 
     private boolean isRewardGroupCollapsed(String key) {
@@ -364,8 +394,19 @@ public class RewardOptionScreen extends BaniraScreen {
         }
     }
 
+    private String rewardGroupTitleId(String key) {
+        return "标题," + key;
+    }
+
     private void registerRewardEntry(String key, RewardListEntryWidget entry) {
         entry.setDragHandler(event -> setYOffset(yOffset + event.dragY()));
+        if (!key.startsWith("标题,")) {
+            entry.setLongPressHandler(event -> beginRewardDrag(key))
+                    .setLongPressDragHandler(event -> updateRewardDrag(
+                            event.mouseX(), event.mouseY()))
+                    .setLongPressReleaseHandler(event -> finishRewardDrag(
+                            event.mouseX(), event.mouseY()));
+        }
         entry.setReleaseHandler(event -> {
             AtomicBoolean updateLayout = new AtomicBoolean(false);
             AtomicBoolean handled = new AtomicBoolean(false);
@@ -377,6 +418,111 @@ public class RewardOptionScreen extends BaniraScreen {
         });
         REWARD_BUTTONS.put(key, entry);
         addWidget(entry);
+    }
+
+    private void beginRewardDrag(String rewardId) {
+        if (!rewardSelection.isSelected(rewardId)) {
+            return;
+        }
+        draggingRewardId = rewardId;
+        updateRewardDrag(inputState.mouseX(), inputState.mouseY());
+    }
+
+    private void updateRewardDrag(double mouseX, double mouseY) {
+        if (draggingRewardId == null) {
+            return;
+        }
+        dragMouseX = mouseX;
+        dragMouseY = mouseY;
+        dragTargetGroupKey = findRewardGroupAt(mouseX, mouseY);
+    }
+
+    private void finishRewardDrag(double mouseX, double mouseY) {
+        if (draggingRewardId == null) {
+            return;
+        }
+        updateRewardDrag(mouseX, mouseY);
+        String targetKey = dragTargetGroupKey;
+        draggingRewardId = null;
+        dragTargetGroupKey = null;
+        if (targetKey != null) {
+            moveSelectedRewardsTo(targetKey);
+        }
+    }
+
+    private String findRewardGroupAt(double mouseX, double mouseY) {
+        double x = leftBarWidth + leftMargin;
+        double width = this.width - leftBarWidth - leftMargin - rightMargin - rightBarWidth;
+        if (mouseX < x || mouseX >= x + width) {
+            return null;
+        }
+        for (RewardGroupLayout layout : rewardGroupLayouts.values()) {
+            double top = yOffset + layout.topY();
+            double bottom = yOffset + layout.bottomY();
+            if (mouseY >= top && mouseY < bottom) {
+                return layout.key();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 将当前选择中的奖励按原顺序追加到目标组，删除源项时按索引倒序处理。
+     */
+    private void moveSelectedRewardsTo(String targetKey) {
+        OperationButtonType button = OperationButtonType.valueOf(currOpButton);
+        if (button == null) {
+            return;
+        }
+        ERewardRule rule = ERewardRule.valueOf(button.toString());
+        Map<String, RewardList> rewardMap = RewardConfigManager.getRewardMap(rule);
+        if (!rewardMap.containsKey(targetKey)) {
+            return;
+        }
+        ClientPlayerEntity player = Minecraft.getInstance().player;
+        if (player == null
+                || !player.hasPermissions(CommonConfig.get().permission().permissionEditReward())) {
+            SakuraClientNotifications.warning(SakuraComponent.get().transClient(
+                    "word", "no_permission_to_edit_reward"), SakuraNotificationTypes.REWARD);
+            return;
+        }
+
+        List<DraggedReward> moving = new ArrayList<>();
+        for (String id : selectedRewardIds()) {
+            int separator = id.lastIndexOf(',');
+            if (separator <= 0) {
+                continue;
+            }
+            String sourceKey = id.substring(0, separator);
+            int sourceIndex = StringUtils.toInt(id.substring(separator + 1), -1);
+            RewardList source = rewardMap.get(sourceKey);
+            if (targetKey.equals(sourceKey) || source == null
+                    || sourceIndex < 0 || sourceIndex >= source.size()) {
+                continue;
+            }
+            moving.add(new DraggedReward(sourceKey, sourceIndex, source.get(sourceIndex)));
+        }
+        if (moving.isEmpty()) {
+            return;
+        }
+
+        Map<String, List<Integer>> removals = new LinkedHashMap<>();
+        for (DraggedReward reward : moving) {
+            removals.computeIfAbsent(reward.sourceKey(), ignored -> new ArrayList<>())
+                    .add(reward.sourceIndex());
+        }
+        removals.forEach((sourceKey, indexes) -> {
+            indexes.sort(Collections.reverseOrder());
+            for (int sourceIndex : indexes) {
+                RewardConfigManager.deleteReward(rule, sourceKey, sourceIndex);
+            }
+        });
+        for (DraggedReward reward : moving) {
+            RewardConfigManager.addReward(rule, targetKey, reward.reward());
+        }
+        RewardConfigManager.saveRewardOption();
+        rewardSelection.clear();
+        updateLayout();
     }
 
     private StringInputScreen getRuleKeyInputScreen(Screen callbackScreen, ERewardRule rule, String[] key) {
@@ -433,99 +579,80 @@ public class RewardOptionScreen extends BaniraScreen {
         RewardConfigManager.setRewardOptionDataChanged(false);
         REWARD_BUTTONS.values().forEach(this::removeWidget);
         REWARD_BUTTONS.clear();
-        if (OperationButtonType.valueOf(currOpButton) == null) return;
+        rewardGroupLayouts.clear();
+        rewardLayoutY = topMargin;
+        if (OperationButtonType.valueOf(currOpButton) == null) {
+            rewardContentHeight = super.height;
+            return;
+        }
         RewardConfig rewardConfig = RewardConfigManager.getRewardConfig();
         int titleIndex = -1;
-        rewardListIndex.set(0);
         switch (OperationButtonType.valueOf(currOpButton)) {
             case BASE_REWARD: {
-                this.addRewardTitleButton(SakuraComponent.get().transClient("word", "base_reward").toString(), "base", titleIndex, rewardListIndex.get());
-                rewardListIndex.addAndGet(lineItemCount);
-                this.addRewardButton(new HashMap<String, RewardList>() {{
-                    put("base", rewardConfig.getBaseRewards());
-                }}, "base", rewardListIndex);
+                this.addRewardTitleButton(SakuraComponent.get().transClient(
+                        "word", "base_reward").toString(), "base", titleIndex);
+                this.addRewardButton(Collections.singletonMap(
+                        "base", rewardConfig.getBaseRewards()), "base");
             }
             break;
             case CONTINUOUS_REWARD: {
                 for (String key : rewardConfig.getContinuousRewards().keySet()) {
-                    if (rewardListIndex.get() > 0) {
-                        rewardListIndex.set((int) ((Math.floor((double) rewardListIndex.get() / lineItemCount) + 1) * lineItemCount));
-                    }
-                    this.addRewardTitleButton(SakuraComponent.get().transClient("format", "day_s", key).toString(), key, titleIndex, rewardListIndex.get());
-                    rewardListIndex.addAndGet(lineItemCount);
-                    this.addRewardButton(rewardConfig.getContinuousRewards(), key, rewardListIndex);
+                    this.addRewardTitleButton(SakuraComponent.get().transClient(
+                            "format", "day_s", key).toString(), key, titleIndex);
+                    this.addRewardButton(rewardConfig.getContinuousRewards(), key);
                     titleIndex--;
                 }
             }
             break;
             case CYCLE_REWARD: {
                 for (String key : rewardConfig.getCycleRewards().keySet()) {
-                    if (rewardListIndex.get() > 0) {
-                        rewardListIndex.set((int) ((Math.floor((double) rewardListIndex.get() / lineItemCount) + 1) * lineItemCount));
-                    }
-                    this.addRewardTitleButton(SakuraComponent.get().transClient("format", "day_s", key).toString(), key, titleIndex, rewardListIndex.get());
-                    rewardListIndex.addAndGet(lineItemCount);
-                    this.addRewardButton(rewardConfig.getCycleRewards(), key, rewardListIndex);
+                    this.addRewardTitleButton(SakuraComponent.get().transClient(
+                            "format", "day_s", key).toString(), key, titleIndex);
+                    this.addRewardButton(rewardConfig.getCycleRewards(), key);
                     titleIndex--;
                 }
             }
             break;
             case YEAR_REWARD: {
                 for (String key : rewardConfig.getYearRewards().keySet()) {
-                    if (rewardListIndex.get() > 0) {
-                        rewardListIndex.set((int) ((Math.floor((double) rewardListIndex.get() / lineItemCount) + 1) * lineItemCount));
-                    }
-                    this.addRewardTitleButton(SakuraComponent.get().transClient("format", "year_day_s", key).toString(), key, titleIndex, rewardListIndex.get());
-                    rewardListIndex.addAndGet(lineItemCount);
-                    this.addRewardButton(rewardConfig.getYearRewards(), key, rewardListIndex);
+                    this.addRewardTitleButton(SakuraComponent.get().transClient(
+                            "format", "year_day_s", key).toString(), key, titleIndex);
+                    this.addRewardButton(rewardConfig.getYearRewards(), key);
                     titleIndex--;
                 }
             }
             break;
             case MONTH_REWARD: {
                 for (String key : rewardConfig.getMonthRewards().keySet()) {
-                    if (rewardListIndex.get() > 0) {
-                        rewardListIndex.set((int) ((Math.floor((double) rewardListIndex.get() / lineItemCount) + 1) * lineItemCount));
-                    }
-                    this.addRewardTitleButton(SakuraComponent.get().transClient("format", "month_day_s", key).toString(), key, titleIndex, rewardListIndex.get());
-                    rewardListIndex.addAndGet(lineItemCount);
-                    this.addRewardButton(rewardConfig.getMonthRewards(), key, rewardListIndex);
+                    this.addRewardTitleButton(SakuraComponent.get().transClient(
+                            "format", "month_day_s", key).toString(), key, titleIndex);
+                    this.addRewardButton(rewardConfig.getMonthRewards(), key);
                     titleIndex--;
                 }
             }
             break;
             case WEEK_REWARD: {
                 for (String key : rewardConfig.getWeekRewards().keySet()) {
-                    if (rewardListIndex.get() > 0) {
-                        rewardListIndex.set((int) ((Math.floor((double) rewardListIndex.get() / lineItemCount) + 1) * lineItemCount));
-                    }
-                    this.addRewardTitleButton(SakuraComponent.get().transClient("word", "week_" + key).toString(), key, titleIndex, rewardListIndex.get());
-                    rewardListIndex.addAndGet(lineItemCount);
-                    this.addRewardButton(rewardConfig.getWeekRewards(), key, rewardListIndex);
+                    this.addRewardTitleButton(SakuraComponent.get().transClient(
+                            "word", "week_" + key).toString(), key, titleIndex);
+                    this.addRewardButton(rewardConfig.getWeekRewards(), key);
                     titleIndex--;
                 }
             }
             break;
             case DATE_TIME_REWARD: {
                 for (String key : rewardConfig.getDateTimeRewards().keySet()) {
-                    if (rewardListIndex.get() > 0) {
-                        rewardListIndex.set((int) ((Math.floor((double) rewardListIndex.get() / lineItemCount) + 1) * lineItemCount));
-                    }
-                    this.addRewardTitleButton(String.format("%s", key), key, titleIndex, rewardListIndex.get());
-                    rewardListIndex.addAndGet(lineItemCount);
-                    this.addRewardButton(rewardConfig.getDateTimeRewards(), key, rewardListIndex);
+                    this.addRewardTitleButton(key, key, titleIndex);
+                    this.addRewardButton(rewardConfig.getDateTimeRewards(), key);
                     titleIndex--;
                 }
             }
             break;
             case CUMULATIVE_REWARD: {
                 for (String key : rewardConfig.getCumulativeRewards().keySet()) {
-                    if (rewardListIndex.get() > 0) {
-                        rewardListIndex.set((int) ((Math.floor((double) rewardListIndex.get() / lineItemCount) + 1) * lineItemCount));
-                    }
-                    this.addRewardTitleButton(SakuraComponent.get().transClient("format", "day_s", key).toString(), key, titleIndex, rewardListIndex.get());
-                    rewardListIndex.addAndGet(lineItemCount);
-                    this.addRewardButton(rewardConfig.getCumulativeRewards(), key, rewardListIndex);
+                    this.addRewardTitleButton(SakuraComponent.get().transClient(
+                            "format", "day_s", key).toString(), key, titleIndex);
+                    this.addRewardButton(rewardConfig.getCumulativeRewards(), key);
                     titleIndex--;
                 }
             }
@@ -534,14 +661,12 @@ public class RewardOptionScreen extends BaniraScreen {
                 Map<String, RewardList> randomRewards =
                         RewardConfigManager.getRewardMap(ERewardRule.RANDOM_REWARD);
                 for (String key : randomRewards.keySet()) {
-                    if (rewardListIndex.get() > 0) {
-                        rewardListIndex.set((int) ((Math.floor((double) rewardListIndex.get() / lineItemCount) + 1) * lineItemCount));
-                    }
                     String probability = RewardConfigManager.getDisplayKey(
                             ERewardRule.RANDOM_REWARD, key);
-                    this.addRewardTitleButton(String.format("%s%%", StringUtils.toFixedEx(new BigDecimal(probability).multiply(new BigDecimal(100)), 10)), key, titleIndex, rewardListIndex.get());
-                    rewardListIndex.addAndGet(lineItemCount);
-                    this.addRewardButton(randomRewards, key, rewardListIndex);
+                    this.addRewardTitleButton(String.format("%s%%",
+                            StringUtils.toFixedEx(new BigDecimal(probability)
+                                    .multiply(new BigDecimal(100)), 10)), key, titleIndex);
+                    this.addRewardButton(randomRewards, key);
                     titleIndex--;
                 }
             }
@@ -550,18 +675,19 @@ public class RewardOptionScreen extends BaniraScreen {
                 for (int i = 0; i < rewardConfig.getCdkRewards().size(); i++) {
                     KeyValue<KeyValue<String, String>, KeyValue<RewardList, AtomicInteger>> keyValue = rewardConfig.getCdkRewards().get(i);
                     String key = String.format("%s|%s|%d|%d", keyValue.getKey().getKey(), keyValue.getKey().getValue(), i, keyValue.getValue().getValue().get());
-                    if (rewardListIndex.get() > 0) {
-                        rewardListIndex.set((int) ((Math.floor((double) rewardListIndex.get() / lineItemCount) + 1) * lineItemCount));
-                    }
-                    this.addRewardTitleButton(SakuraComponent.get().transClient("format", "s_valid_until_s", keyValue.getKey().getKey(), keyValue.getKey().getValue(), keyValue.getValue().getValue()).toString(), key, titleIndex, rewardListIndex.get());
-                    rewardListIndex.addAndGet(lineItemCount);
-                    this.addRewardButton(new HashMap<String, RewardList>() {{
-                        put(key, keyValue.getValue().getKey());
-                    }}, key, rewardListIndex);
+                    this.addRewardTitleButton(SakuraComponent.get().transClient(
+                            "format", "s_valid_until_s", keyValue.getKey().getKey(),
+                            keyValue.getKey().getValue(), keyValue.getValue().getValue()
+                    ).toString(), key, titleIndex);
+                    this.addRewardButton(Collections.singletonMap(
+                            key, keyValue.getValue().getKey()), key);
+                    titleIndex--;
                 }
             }
             break;
         }
+        rewardContentHeight = rewardLayoutY + bottomMargin;
+        setYOffset(yOffset);
         rewardSelection.retainAll(REWARD_BUTTONS.keySet());
         currRewardButton = rewardSelection.primary();
     }
@@ -673,7 +799,7 @@ public class RewardOptionScreen extends BaniraScreen {
             List<Component> paragraphs = new ArrayList<>();
             for (int i = 1; i <= 10; i++) {
                 paragraphs.add(SakuraComponent.get().transClient(
-                        "tips", "reward_rule_description_" + i));
+                        "word", "reward_rule_description_" + i));
             }
             Minecraft.getInstance().setScreen(new ReadOnlyTextScreen(
                     new ReadOnlyTextScreen.Args()
@@ -749,9 +875,15 @@ public class RewardOptionScreen extends BaniraScreen {
 
         if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
             if (key.startsWith("标题")) {
-                toggleRewardGroup(key.substring("标题,".length()));
-                rewardSelection.clear();
-                updateLayout.set(true);
+                if (inputState.isCtrlPressed()) {
+                    rewardSelection.select(key, new ArrayList<>(REWARD_BUTTONS.keySet()),
+                            true, false);
+                    currRewardButton = rewardSelection.primary();
+                } else {
+                    toggleRewardGroup(key.substring("标题,".length()));
+                    rewardSelection.clear();
+                    updateLayout.set(true);
+                }
                 flag.set(true);
                 return;
             } else {
@@ -798,6 +930,35 @@ public class RewardOptionScreen extends BaniraScreen {
             this.popupOption.setBeforeRender(pasteConsumer);
             flag.set(true);
         }
+    }
+
+    private void renderDraggedReward(MatrixStack stack) {
+        if (draggingRewardId == null) {
+            return;
+        }
+        int separator = draggingRewardId.lastIndexOf(',');
+        OperationButtonType button = OperationButtonType.valueOf(currOpButton);
+        if (separator <= 0 || button == null) {
+            return;
+        }
+        String key = draggingRewardId.substring(0, separator);
+        int index = StringUtils.toInt(draggingRewardId.substring(separator + 1), -1);
+        RewardList rewards = RewardConfigManager.getRewardMap(
+                ERewardRule.valueOf(button.toString())).get(key);
+        if (rewards == null || index < 0 || index >= rewards.size()) {
+            return;
+        }
+        int x = (int) dragMouseX - itemIconSize / 2;
+        int y = (int) dragMouseY - itemIconSize / 2;
+        stack.pushPose();
+        stack.translate(0, 0, 500);
+        AbstractGui.fill(stack, x - 2, y - 2, x + itemIconSize + 2,
+                y + itemIconSize + 2, getEffectiveTheme().bgSurface());
+        AbstractGuiUtils.renderCustomReward(stack, itemRenderer, font,
+                SakuraClientState.getThemeTexture(),
+                SakuraClientState.getThemeTextureCoordinate(),
+                rewards.get(index), x, y, true);
+        stack.popPose();
     }
 
     private List<String> selectableRewardIds() {
@@ -1612,7 +1773,8 @@ public class RewardOptionScreen extends BaniraScreen {
     private void updateLayout() {
         this.leftBarWidth = SakuraClientState.isRewardOptionBarOpened() ? 100 : 20;
         this.lineItemCount = Math.max(1,
-                (super.width - leftBarWidth - leftMargin - rightMargin - rightBarWidth)
+                (super.width - leftBarWidth - leftMargin - rightMargin
+                        - rightBarWidth - groupContentIndent)
                         / (itemIconSize + itemRightMargin));
         // 重置奖励面板坐标
         OP_BUTTONS.get(OperationButtonType.REWARD_PANEL.getCode()).bounds(
@@ -1625,8 +1787,25 @@ public class RewardOptionScreen extends BaniraScreen {
     }
 
     private void setYOffset(double offset) {
-        // y坐标往上(-)不应该超过奖励高度+屏幕高度, 往下(+)不应该超过屏幕高度
-        this.yOffset = Math.min(Math.max(offset, -(this.topMargin + (double) this.rewardListIndex.get() / this.lineItemCount * (this.itemIconSize + this.itemBottomMargin) + super.height)), super.height);
+        double minOffset = Math.min(0, super.height - rewardContentHeight);
+        this.yOffset = Math.max(minOffset, Math.min(offset, 0));
+    }
+
+    @Data
+    @Accessors(fluent = true)
+    @AllArgsConstructor
+    private static class RewardGroupLayout {
+        private final String key;
+        private final double topY;
+        private double bottomY;
+    }
+
+    @Data
+    @Accessors(fluent = true)
+    private static class DraggedReward {
+        private final String sourceKey;
+        private final int sourceIndex;
+        private final Reward reward;
     }
 
     @Data
@@ -2104,9 +2283,10 @@ public class RewardOptionScreen extends BaniraScreen {
 
         updateOperationPresentation();
         renderWidgets(matrixStack, partialTicks);
+        renderDraggedReward(matrixStack);
         addDeferredTooltipRender(stack -> {
             // 弹出菜单是当前交互焦点，避免下层奖励或工具提示穿透到菜单上方。
-            if (!popupOption.isEmpty()) {
+            if (!popupOption.isEmpty() || draggingRewardId != null) {
                 return;
             }
             for (RewardListEntryWidget entry : REWARD_BUTTONS.values()) {
