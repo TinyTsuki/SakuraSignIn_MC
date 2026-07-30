@@ -245,7 +245,7 @@ public class ClientEventHandler {
     public static void openSignInScreen(Screen previousScreen) {
         if (SakuraSignIn.isEnabled()) {
             SakuraSignIn.setCalendarCurrentDate(RewardManager.getCompensateDate(DateUtils.getClientDate()));
-            Minecraft.getInstance().setScreen(new SignInScreen().setPreviousScreen(previousScreen));
+            Minecraft.getInstance().setScreen(new SignInScreen().previousScreen(previousScreen));
         } else {
             ClientPlayerEntity player = Minecraft.getInstance().player;
             if (player != null) {

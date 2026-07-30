@@ -1,31 +1,30 @@
 package xin.vanilla.sakura.screen;
 
-import xin.vanilla.banira.client.gui.component.Text;
-import xin.vanilla.banira.client.enums.EnumAlignment;
-import xin.vanilla.banira.client.gui.ConfirmDialogScreen;
-import xin.vanilla.banira.common.data.Component;
-import xin.vanilla.sakura.text.SakuraComponent;
-import xin.vanilla.sakura.config.CommonConfig;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.Getter;
-import lombok.Setter;
-import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.loading.FMLPaths;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.client.data.ScreenCoordinate;
+import xin.vanilla.banira.client.data.ShapeDrawArgs;
+import xin.vanilla.banira.client.enums.EnumAlignment;
+import xin.vanilla.banira.client.gui.BaniraScreen;
+import xin.vanilla.banira.client.gui.ConfirmDialogScreen;
+import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.client.gui.widget.BaseShapeWidget;
+import xin.vanilla.banira.client.gui.widget.ButtonWidget;
+import xin.vanilla.banira.client.gui.widget.PopupOption;
+import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.sakura.SakuraSignIn;
-import xin.vanilla.sakura.config.ClientConfig;
-import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.api.SakuraPlayerData;
+import xin.vanilla.sakura.client.gui.RewardOperationWidget;
+import xin.vanilla.sakura.config.ClientConfig;
+import xin.vanilla.sakura.config.CommonConfig;
+import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.enums.ESignInStatus;
 import xin.vanilla.sakura.enums.ESignInType;
 import xin.vanilla.sakura.event.ClientEventHandler;
@@ -35,94 +34,61 @@ import xin.vanilla.sakura.notification.SakuraClientNotifications;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
 import xin.vanilla.sakura.rewards.RewardList;
 import xin.vanilla.sakura.rewards.RewardManager;
-import xin.vanilla.sakura.screen.component.*;
+import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
-import xin.vanilla.sakura.util.*;
+import xin.vanilla.sakura.text.SakuraComponent;
+import xin.vanilla.sakura.util.AbstractGuiUtils;
+import xin.vanilla.sakura.util.CollectionUtils;
+import xin.vanilla.sakura.util.DateUtils;
+import xin.vanilla.sakura.util.GLFWKey;
+import xin.vanilla.sakura.util.GLFWKeyHelper;
+import xin.vanilla.sakura.util.StringUtils;
+import xin.vanilla.sakura.util.TextureUtils;
 
-import javax.annotation.ParametersAreNonnullByDefault;
 import java.io.File;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import static xin.vanilla.sakura.screen.SignInScreen.OperationButtonType.*;
+import static xin.vanilla.sakura.screen.SignInScreen.OperationButtonType.DOWN_ARROW;
+import static xin.vanilla.sakura.screen.SignInScreen.OperationButtonType.INFO;
+import static xin.vanilla.sakura.screen.SignInScreen.OperationButtonType.LEFT_ARROW;
+import static xin.vanilla.sakura.screen.SignInScreen.OperationButtonType.RIGHT_ARROW;
+import static xin.vanilla.sakura.screen.SignInScreen.OperationButtonType.THEME_CHAOS_BUTTON;
+import static xin.vanilla.sakura.screen.SignInScreen.OperationButtonType.THEME_CLOVER_BUTTON;
+import static xin.vanilla.sakura.screen.SignInScreen.OperationButtonType.THEME_MAPLE_BUTTON;
+import static xin.vanilla.sakura.screen.SignInScreen.OperationButtonType.THEME_ORIGINAL_BUTTON;
+import static xin.vanilla.sakura.screen.SignInScreen.OperationButtonType.THEME_SAKURA_BUTTON;
+import static xin.vanilla.sakura.screen.SignInScreen.OperationButtonType.UP_ARROW;
 
+/**
+ * 签到日历主界面。Sakura 只保留主题与签到业务，交互生命周期由 Banira 管理。
+ */
 @OnlyIn(Dist.CLIENT)
-public class SignInScreen extends Screen {
-    private static final Logger LOGGER = LogManager.getLogger();
-
-    // region 变量定义
-
-    /**
-     * 父级 Screen
-     */
-    @Getter
-    @Setter
-    @Accessors(chain = true)
-    private Screen previousScreen;
-
-    private final KeyEventManager keyManager = new KeyEventManager();
-
-    private boolean SIGN_IN_SCREEN_TIPS = Boolean.TRUE.equals(ClientConfig.get().display().showSignInScreenTips());
-
-    private Text tips;
-
-    /**
-     * 上月最后offset天
-     */
+public final class SignInScreen extends BaniraScreen {
     public static int lastOffset = 6;
-    /**
-     * 下月开始offset天
-     */
     public static int nextOffset = 6;
 
-    /**
-     * 日历单元格集合
-     */
+    private static final int COLUMNS = 7;
+    private static final int ROWS = 6;
+
     private final List<SignInCell> signInCells = new ArrayList<>();
+    private final Map<Integer, RewardOperationWidget> operationWidgets = new HashMap<>();
 
-    /**
-     * 日历表格列数
-     */
-    private static final int columns = 7;
-    /**
-     * 日历表格行数
-     */
-    private static final int rows = 6;
+    private boolean showOpeningTips = Boolean.TRUE.equals(
+            ClientConfig.get().display().showSignInScreenTips());
+    private Text tips = Text.empty();
+    private List<File> themeFileList = new ArrayList<>();
+    private double scale = 1;
+    private double aspectRatio;
+    private int bgHeight;
+    private int bgWidth;
+    private int bgX;
+    private int bgY;
 
-    /**
-     * UI缩放比例
-     */
-    private double scale = 1.0D;
-    /**
-     * 背景宽高比
-     */
-    private double aspectRatio = SakuraSignIn.getThemeTextureCoordinate().getBgUV().getUWidth() / SakuraSignIn.getThemeTextureCoordinate().getBgUV().getVHeight();
-
-    // 背景渲染坐标大小定义
-    private int bgH = Math.max(super.height - 20, 120);
-    private int bgW = (int) Math.max(bgH * aspectRatio, 100);
-    private int bgX = (super.width - bgW) / 2;
-    private int bgY = 0;
-
-    /**
-     * 操作按钮集合
-     */
-    private final Map<Integer, OperationButton> BUTTONS = new HashMap<>();
-
-    /**
-     * 弹出层选项
-     */
-    private PopupOption popupOption;
-    /**
-     * 主题文件列表
-     */
-    private List<File> themeFileList;
-
-    // endregion
-
-    /**
-     * 操作按钮类型
-     */
     @Getter
     enum OperationButtonType {
         LEFT_ARROW(1),
@@ -136,12 +102,11 @@ public class SignInScreen extends Screen {
         THEME_MAPLE_BUTTON(103, "textures/gui/sign_in_calendar_maple.png"),
         THEME_CHAOS_BUTTON(104, "textures/gui/sign_in_calendar_chaos.png");
 
-        final int code;
-        final String path;
+        private final int code;
+        private final String path;
 
         OperationButtonType(int code) {
-            this.code = code;
-            path = "";
+            this(code, "");
         }
 
         OperationButtonType(int code, String path) {
@@ -149,801 +114,673 @@ public class SignInScreen extends Screen {
             this.path = path;
         }
 
-        static OperationButtonType valueOf(int code) {
-            return Arrays.stream(values()).filter(v -> v.getCode() == code).findFirst().orElse(null);
+        static OperationButtonType fromCode(int code) {
+            return Arrays.stream(values())
+                    .filter(value -> value.code == code)
+                    .findFirst()
+                    .orElse(null);
         }
     }
 
     public SignInScreen() {
-        super(new TranslationTextComponent("screen.sakura_sign_in.sign_in_title"));
+        super(SakuraComponent.get().transClient("title", "sign_in_title"));
     }
 
     @Override
-    protected void init() {
-        super.init();
-        this.popupOption = PopupOption.init(super.font);
-        // 初始化材质及材质坐标信息
-        this.updateTextureAndCoordinate();
-
-        this.themeFileList = TextureUtils.getPngFilesInDirectory(TextureUtils.CUSTOM_THEME_DIR);
-
-        // 初始化布局信息
-        this.updateLayout();
-
-        tips = Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.sign_in_screen_tips");
-        Button submit = AbstractGuiUtils.newButton(0, 0, 0, 20,
-                SakuraComponent.get().transClient("option", "confirm"), button -> this.SIGN_IN_SCREEN_TIPS = false);
-        Button notAgain = AbstractGuiUtils.newButton(0, 0, 0, 20,
-                SakuraComponent.get().transClient("option", "no_remind"), button -> {
-                    this.SIGN_IN_SCREEN_TIPS = false;
-                    ClientConfig.get().display().showSignInScreenTips(false);
-                    ClientConfig.save();
-                });
-        super.addButton(submit);
-        super.addButton(notAgain);
-    }
-
-    /**
-     * 更新材质及材质坐标信息
-     */
-    private void updateTextureAndCoordinate() {
+    protected void onInit() {
+        if (SakuraSignIn.getCalendarCurrentDate() == null) {
+            SakuraSignIn.setCalendarCurrentDate(
+                    RewardManager.getCompensateDate(DateUtils.getClientDate()));
+        }
         ClientEventHandler.loadThemeTexture();
-        // 更新按钮信息
-        this.updateButtons();
+        themeFileList = TextureUtils.getPngFilesInDirectory(TextureUtils.CUSTOM_THEME_DIR);
+        tips = Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.sign_in_screen_tips");
+        updateLayoutMetrics();
     }
 
-    /**
-     * 更新按钮信息
-     */
-    private void updateButtons() {
-        ResourceLocation texture = SakuraSignIn.getThemeTexture();
-        TextureCoordinate textureCoordinate = SakuraSignIn.getThemeTextureCoordinate();
-        BUTTONS.put(LEFT_ARROW.getCode(), new OperationButton(LEFT_ARROW.getCode(), texture)
-                .setCoordinate(textureCoordinate.getLeftArrowCoordinate())
-                .setNormal(textureCoordinate.getArrowUV()).setHover(textureCoordinate.getArrowHoverUV()).setTap(textureCoordinate.getArrowTapUV())
-                .setTextureWidth(textureCoordinate.getTotalWidth())
-                .setTextureHeight(textureCoordinate.getTotalHeight())
+    @Override
+    protected void initWidgets() {
+        operationWidgets.clear();
+        signInCells.clear();
+        createOperationWidgets();
+        createCalendarCells(SakuraSignIn.getCalendarCurrentDate());
+        createOpeningTipButtons();
+    }
+
+    private void updateLayoutMetrics() {
+        TextureCoordinate texture = SakuraSignIn.getThemeTextureCoordinate();
+        aspectRatio = texture.getBgUV().getUWidth() / texture.getBgUV().getVHeight();
+        bgHeight = Math.max(height - 20, 120);
+        bgWidth = (int) Math.max(bgHeight * aspectRatio, 100);
+        bgX = (width - bgWidth) / 2;
+        bgY = 0;
+        scale = bgHeight / texture.getBgUV().getVHeight();
+    }
+
+    private void refreshLayout() {
+        updateLayoutMetrics();
+        refreshWidget();
+    }
+
+    private void refreshTextureAndLayout() {
+        ClientEventHandler.loadThemeTexture();
+        themeFileList = TextureUtils.getPngFilesInDirectory(TextureUtils.CUSTOM_THEME_DIR);
+        refreshLayout();
+    }
+
+    private void createOperationWidgets() {
+        TextureCoordinate texture = SakuraSignIn.getThemeTextureCoordinate();
+        registerOperation(createTextureOperation(LEFT_ARROW, texture.getLeftArrowCoordinate(),
+                texture.getArrowUV(), texture.getArrowHoverUV(), texture.getArrowTapUV())
                 .setFlipHorizontal(true)
-                .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.use_s_key", "←"))
-                .setKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_SHIFT)));
-        BUTTONS.put(RIGHT_ARROW.getCode(), new OperationButton(RIGHT_ARROW.getCode(), texture)
-                .setCoordinate(textureCoordinate.getRightArrowCoordinate())
-                .setNormal(textureCoordinate.getArrowUV()).setHover(textureCoordinate.getArrowHoverUV()).setTap(textureCoordinate.getArrowTapUV())
-                .setTextureWidth(textureCoordinate.getTotalWidth())
-                .setTextureHeight(textureCoordinate.getTotalHeight())
-                .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.use_s_key", "→"))
-                .setKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_SHIFT)));
-        BUTTONS.put(UP_ARROW.getCode(), new OperationButton(UP_ARROW.getCode(), texture)
-                .setCoordinate(textureCoordinate.getUpArrowCoordinate())
-                .setNormal(textureCoordinate.getArrowUV()).setHover(textureCoordinate.getArrowHoverUV()).setTap(textureCoordinate.getArrowTapUV())
-                .setTextureWidth(textureCoordinate.getTotalWidth())
-                .setTextureHeight(textureCoordinate.getTotalHeight())
+                .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.use_s_key", "←")));
+        registerOperation(createTextureOperation(RIGHT_ARROW, texture.getRightArrowCoordinate(),
+                texture.getArrowUV(), texture.getArrowHoverUV(), texture.getArrowTapUV())
+                .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.use_s_key", "→")));
+        registerOperation(createTextureOperation(UP_ARROW, texture.getUpArrowCoordinate(),
+                texture.getArrowUV(), texture.getArrowHoverUV(), texture.getArrowTapUV())
                 .setRotatedAngle(270)
-                .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.use_s_key", "↑"))
-                .setKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_SHIFT)));
-        BUTTONS.put(DOWN_ARROW.getCode(), new OperationButton(DOWN_ARROW.getCode(), texture)
-                .setCoordinate(textureCoordinate.getDownArrowCoordinate())
-                .setNormal(textureCoordinate.getArrowUV()).setHover(textureCoordinate.getArrowHoverUV()).setTap(textureCoordinate.getArrowTapUV())
-                .setTextureWidth(textureCoordinate.getTotalWidth())
-                .setTextureHeight(textureCoordinate.getTotalHeight())
-                .setRotatedAngle(90).setFlipVertical(true)
-                .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.use_s_key", "↓"))
-                .setKeyNames(GLFWKeyHelper.getKeyDisplayString(GLFWKey.GLFW_KEY_LEFT_SHIFT)));
-        BUTTONS.put(INFO.getCode(), new OperationButton(INFO.getCode(), texture)
-                .setCoordinate(textureCoordinate.getSignInInfoCoordinate())
-                .setNormal(textureCoordinate.getSignInInfoUV()).setHover(textureCoordinate.getSignInInfoUV()).setTap(textureCoordinate.getSignInInfoUV())
-                .setTextureWidth(textureCoordinate.getTotalWidth())
-                .setTextureHeight(textureCoordinate.getTotalHeight())
-                .setTransparentCheck(true));
+                .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.use_s_key", "↑")));
+        registerOperation(createTextureOperation(DOWN_ARROW, texture.getDownArrowCoordinate(),
+                texture.getArrowUV(), texture.getArrowHoverUV(), texture.getArrowTapUV())
+                .setRotatedAngle(90)
+                .setFlipVertical(true)
+                .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.use_s_key", "↓")));
+        registerOperation(createTextureOperation(INFO, texture.getSignInInfoCoordinate(),
+                texture.getSignInInfoUV(), texture.getSignInInfoUV(), texture.getSignInInfoUV()));
 
-        BUTTONS.put(THEME_ORIGINAL_BUTTON.getCode(), new OperationButton(THEME_ORIGINAL_BUTTON.getCode(), texture)
-                .setCoordinate(textureCoordinate.getThemeCoordinate())
-                .setNormal(textureCoordinate.getThemeUV()).setHover(textureCoordinate.getThemeHoverUV()).setTap(textureCoordinate.getThemeTapUV())
-                .setTextureWidth(textureCoordinate.getTotalWidth())
-                .setTextureHeight(textureCoordinate.getTotalHeight())
-                .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.click_to_change_theme")));
-        BUTTONS.put(THEME_SAKURA_BUTTON.getCode(), new OperationButton(THEME_SAKURA_BUTTON.getCode(), texture)
-                .setCoordinate(textureCoordinate.getThemeCoordinate())
-                .setNormal(textureCoordinate.getThemeUV()).setHover(textureCoordinate.getThemeHoverUV()).setTap(textureCoordinate.getThemeTapUV())
-                .setTextureWidth(textureCoordinate.getTotalWidth())
-                .setTextureHeight(textureCoordinate.getTotalHeight())
-                .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.click_to_change_theme")));
-        BUTTONS.put(THEME_CLOVER_BUTTON.getCode(), new OperationButton(THEME_CLOVER_BUTTON.getCode(), texture)
-                .setCoordinate(textureCoordinate.getThemeCoordinate())
-                .setNormal(textureCoordinate.getThemeUV()).setHover(textureCoordinate.getThemeHoverUV()).setTap(textureCoordinate.getThemeTapUV())
-                .setTextureWidth(textureCoordinate.getTotalWidth())
-                .setTextureHeight(textureCoordinate.getTotalHeight())
-                .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.click_to_change_theme")));
-        BUTTONS.put(THEME_MAPLE_BUTTON.getCode(), new OperationButton(THEME_MAPLE_BUTTON.getCode(), texture)
-                .setCoordinate(textureCoordinate.getThemeCoordinate())
-                .setNormal(textureCoordinate.getThemeUV()).setHover(textureCoordinate.getThemeHoverUV()).setTap(textureCoordinate.getThemeTapUV())
-                .setTextureWidth(textureCoordinate.getTotalWidth())
-                .setTextureHeight(textureCoordinate.getTotalHeight())
-                .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.click_to_change_theme")));
-        BUTTONS.put(THEME_CHAOS_BUTTON.getCode(), new OperationButton(THEME_CHAOS_BUTTON.getCode(), texture)
-                .setCoordinate(textureCoordinate.getThemeCoordinate())
-                .setNormal(textureCoordinate.getThemeUV()).setHover(textureCoordinate.getThemeHoverUV()).setTap(textureCoordinate.getThemeTapUV())
-                .setTextureWidth(textureCoordinate.getTotalWidth())
-                .setTextureHeight(textureCoordinate.getTotalHeight())
+        registerThemeOperation(THEME_ORIGINAL_BUTTON);
+        registerThemeOperation(THEME_SAKURA_BUTTON);
+        registerThemeOperation(THEME_CLOVER_BUTTON);
+        registerThemeOperation(THEME_MAPLE_BUTTON);
+        registerThemeOperation(THEME_CHAOS_BUTTON);
+        operationWidgets.get(THEME_CHAOS_BUTTON.code)
                 .setTremblingAmplitude(3.5)
-                .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.click_to_change_theme_or_select_external_theme").align(EnumAlignment.CENTER)));
+                .setTooltip(Text.trans(SakuraSignIn.MODID,
+                        "tips.sakura_sign_in.click_to_change_theme_or_select_external_theme")
+                        .align(EnumAlignment.CENTER));
+    }
+
+    private RewardOperationWidget createTextureOperation(OperationButtonType type, Coordinate bounds,
+                                                         Coordinate normal, Coordinate hover,
+                                                         Coordinate pressed) {
+        RewardOperationWidget widget = new RewardOperationWidget(this, type.code, SakuraSignIn.getThemeTexture())
+                .setNormal(copyCoordinate(normal))
+                .setHover(copyCoordinate(hover))
+                .setPressed(copyCoordinate(pressed))
+                .setTextureWidth(SakuraSignIn.getThemeTextureCoordinate().getTotalWidth())
+                .setTextureHeight(SakuraSignIn.getThemeTextureCoordinate().getTotalHeight())
+                .setTransparentCheck(true)
+                .setBounds(bounds, bgX, bgY, scale);
+        widget.setReleaseHandler(event -> handleOperation(widget, event.button()));
+        return widget;
+    }
+
+    private void registerThemeOperation(OperationButtonType type) {
+        TextureCoordinate texture = SakuraSignIn.getThemeTextureCoordinate();
+        RewardOperationWidget widget = createTextureOperation(type, texture.getThemeCoordinate(),
+                texture.getThemeUV(), texture.getThemeHoverUV(), texture.getThemeTapUV())
+                .setTooltip(Text.trans(SakuraSignIn.MODID,
+                        "tips.sakura_sign_in.click_to_change_theme"));
+        registerOperation(widget);
+    }
+
+    private void registerOperation(RewardOperationWidget widget) {
+        operationWidgets.put(widget.getOperation(), widget);
+        addWidget(widget);
+    }
+
+    private static Coordinate copyCoordinate(Coordinate source) {
+        return new Coordinate()
+                .setX(source.getX()).setY(source.getY())
+                .setWidth(source.getWidth()).setHeight(source.getHeight())
+                .setU0(source.getU0()).setV0(source.getV0())
+                .setUWidth(source.getUWidth()).setVHeight(source.getVHeight());
+    }
+
+    private static Coordinate offsetU(Coordinate source, double offset) {
+        return copyCoordinate(source).setU0(source.getU0() + offset);
+    }
+
+    private void createOpeningTipButtons() {
+        tips.font(font);
+        int textWidth = Math.max(120, AbstractGuiUtils.multilineTextWidth(tips));
+        int textHeight = AbstractGuiUtils.multilineTextHeight(tips);
+        int buttonWidth = Math.min(100, Math.max(50, textWidth / 2 - 5));
+        int x = (width - textWidth) / 2;
+        int y = (height - textHeight - 24) / 2;
+
+        ButtonWidget confirm = new ButtonWidget(this);
+        confirm.id("opening-tip-confirm");
+        confirm.bounds(new ScreenCoordinate(x, y + textHeight + 4, buttonWidth, 20));
+        confirm.text(SakuraComponent.get().transClient("option", "confirm"));
+        confirm.visible(showOpeningTips);
+        confirm.onClick(button -> dismissOpeningTips(false));
+        addWidget(confirm);
+
+        ButtonWidget noReminder = new ButtonWidget(this);
+        noReminder.id("opening-tip-no-reminder");
+        noReminder.bounds(new ScreenCoordinate(x + textWidth - buttonWidth,
+                y + textHeight + 4, buttonWidth, 20));
+        noReminder.text(SakuraComponent.get().transClient("option", "no_remind"));
+        noReminder.visible(showOpeningTips);
+        noReminder.onClick(button -> dismissOpeningTips(true));
+        addWidget(noReminder);
+    }
+
+    private void dismissOpeningTips(boolean persist) {
+        showOpeningTips = false;
+        if (persist) {
+            ClientConfig.get().display().showSignInScreenTips(false);
+            ClientConfig.save();
+        }
+        refreshWidget();
     }
 
     /**
-     * 计算并更新布局信息
-     */
-    private void updateLayout() {
-        // 更新背景宽高比
-        aspectRatio = SakuraSignIn.getThemeTextureCoordinate().getBgUV().getUWidth() / SakuraSignIn.getThemeTextureCoordinate().getBgUV().getVHeight();
-        // 限制背景高度大于120
-        bgH = Math.max(super.height - 20, 120);
-        // 限制背景宽度大于100
-        bgW = (int) Math.max(bgH * aspectRatio, 100);
-        // 使背景水平居中
-        bgX = (super.width - bgW) / 2;
-        // 更新缩放比例
-        this.scale = bgH * 1.0f / SakuraSignIn.getThemeTextureCoordinate().getBgUV().getVHeight();
-        // 创建或更新格子位置
-        this.createCalendarCells(SakuraSignIn.getCalendarCurrentDate());
-    }
-
-    /**
-     * 创建日历格子
-     * 此方法用于生成日历控件中的每日格子，包括当前月和上月的末尾几天
-     * 它根据当前日期计算出上月和本月的天数以及每周的起始天数，并据此创建相应数量的格子
+     * 根据当前月份重建格子，切换月份时无需维护额外的鼠标状态。
      */
     private void createCalendarCells(Date current) {
-        // 清除原有格子，避免重复添加
-        signInCells.clear();
-
-        double startX = bgX + SakuraSignIn.getThemeTextureCoordinate().getCellCoordinate().getX() * this.scale;
-        double startY = bgY + SakuraSignIn.getThemeTextureCoordinate().getCellCoordinate().getY() * this.scale;
-        // 今天的校准日期
+        double startX = bgX + SakuraSignIn.getThemeTextureCoordinate()
+                .getCellCoordinate().getX() * scale;
+        double startY = bgY + SakuraSignIn.getThemeTextureCoordinate()
+                .getCellCoordinate().getY() * scale;
         Date compensateDate = RewardManager.getCompensateDate(DateUtils.getClientDate());
         Date lastMonth = DateUtils.addMonth(current, -1);
         int daysOfLastMonth = DateUtils.getDaysOfMonth(lastMonth);
-        int dayOfWeekOfMonthStart = DateUtils.getDayOfWeekOfMonthStart(current);
+        int monthStartWeekDay = DateUtils.getDayOfWeekOfMonthStart(current);
         int daysOfCurrentMonth = DateUtils.getDaysOfMonth(current);
 
-        // 获取奖励列表
         ClientPlayerEntity player = Minecraft.getInstance().player;
-        if (player != null) {
-            IPlayerSignInData signInData = SakuraPlayerData.get(player);
-            Map<Integer, RewardList> monthRewardList;
-            if ((player.hasPermissions(CommonConfig.get().permission().permissionRewardDetail()))) {
-                monthRewardList = RewardManager.getMonthRewardList(current, signInData, lastOffset, nextOffset);
-            } else {
-                monthRewardList = new HashMap<>();
+        if (player == null) {
+            return;
+        }
+        IPlayerSignInData signInData = SakuraPlayerData.get(player);
+        Map<Integer, RewardList> monthRewards = player.hasPermissions(
+                CommonConfig.get().permission().permissionRewardDetail())
+                ? RewardManager.getMonthRewardList(current, signInData, lastOffset, nextOffset)
+                : new HashMap<>();
+        boolean allCurrentDaysDisplayed = false;
+        boolean showLastReward = ClientConfig.get().display().showLastReward();
+        boolean showNextReward = ClientConfig.get().display().showNextReward();
+
+        for (int row = 0; row < ROWS; row++) {
+            if (allCurrentDaysDisplayed && !showNextReward) {
+                break;
             }
-            boolean allCurrentDaysDisplayed = false;
-            boolean showLastReward = ClientConfig.get().display().showLastReward();
-            boolean showNextReward = ClientConfig.get().display().showNextReward();
-            for (int row = 0; row < rows; row++) {
-                if (allCurrentDaysDisplayed && !showNextReward) break;
-                for (int col = 0; col < columns; col++) {
-                    // 计算当前格子的索引
-                    int itemIndex = row * columns + col;
-                    // 检查是否已超过设置显示上限
-                    if (itemIndex >= 40) break;
-                    double x = startX + col * (SakuraSignIn.getThemeTextureCoordinate().getCellCoordinate().getWidth() + SakuraSignIn.getThemeTextureCoordinate().getCellHMargin()) * this.scale;
-                    double y = startY + row * (SakuraSignIn.getThemeTextureCoordinate().getCellCoordinate().getHeight() + SakuraSignIn.getThemeTextureCoordinate().getCellVMargin()) * this.scale;
-                    int year, month, day, status;
-                    boolean showIcon, showText, showHover;
-                    // 计算本月第一天是第几(0为第一个)个格子
-                    int curPoint = (dayOfWeekOfMonthStart - (SakuraSignIn.getThemeTextureCoordinate().getWeekStart() - 1) + 6) % 7;
-                    // 根据itemIndex确定日期和状态
-                    if (itemIndex >= curPoint + daysOfCurrentMonth) {
-                        // 属于下月的日期
-                        year = DateUtils.getYearPart(DateUtils.addMonth(current, 1));
-                        month = DateUtils.getMonthOfDate(DateUtils.addMonth(current, 1));
-                        day = itemIndex - curPoint - daysOfCurrentMonth + 1;
-                        status = ESignInStatus.NO_ACTION.getCode();
-                        showIcon = showNextReward && day < lastOffset;
-                        showText = true;
-                        showHover = showNextReward && day < lastOffset;
-                    } else if (itemIndex < curPoint) {
-                        // 属于上月的日期
-                        year = DateUtils.getYearPart(lastMonth);
-                        month = DateUtils.getMonthOfDate(lastMonth);
-                        day = daysOfLastMonth - curPoint + itemIndex + 1;
-                        status = ESignInStatus.NO_ACTION.getCode();
-                        showIcon = showLastReward && day > daysOfLastMonth - lastOffset;
-                        showText = true;
-                        showHover = showLastReward && day > daysOfLastMonth - lastOffset;
-                    } else {
-                        // 属于当前月的日期
-                        year = DateUtils.getYearPart(current);
-                        month = DateUtils.getMonthOfDate(current);
-                        day = itemIndex - curPoint + 1;
-                        status = ESignInStatus.NO_ACTION.getCode();
-                        // 如果是今天，则设置为未签到状态
-                        if (year == DateUtils.getYearPart(compensateDate) && day == DateUtils.getDayOfMonth(compensateDate) && month == DateUtils.getMonthOfDate(compensateDate)) {
-                            status = ESignInStatus.NOT_SIGNED_IN.getCode();
-                        }
-                        showIcon = true;
-                        showText = true;
-                        showHover = true;
-                        allCurrentDaysDisplayed = day == daysOfCurrentMonth;
-                    }
-                    int key = year * 10000 + month * 100 + day;
-                    // 当前格子日期
-                    Date curDate = DateUtils.getDate(key);
-
-                    RewardList rewards = monthRewardList.getOrDefault(key, new RewardList());
-                    // if (CollectionUtils.isNullOrEmpty(rewards)) continue;
-
-                    // 是否能补签
-                    if (CommonConfig.get().makeUp().signInCard()) {
-                        // 最早能补签的日期
-                        Date minDate = DateUtils.addDay(compensateDate, -CommonConfig.get().makeUp().reSignInDays());
-                        if (DateUtils.toDateInt(minDate) <= key && key <= DateUtils.toDateInt(compensateDate) && status != ESignInStatus.NOT_SIGNED_IN.getCode()) {
-                            status = ESignInStatus.CAN_REPAIR.getCode();
-                        }
-                    }
-                    // 判断是否已领奖
-                    if (RewardManager.isRewarded(signInData, curDate, false)) {
-                        status = ESignInStatus.REWARDED.getCode();
-                    }
-                    // 判断是否已签到
-                    else if (RewardManager.isSignedIn(signInData, curDate, false)) {
-                        status = ESignInStatus.SIGNED_IN.getCode();
-                    }
-
-                    // 创建物品格子
-                    SignInCell cell = new SignInCell(SakuraSignIn.getThemeTexture(), SakuraSignIn.getThemeTextureCoordinate(), x, y, SakuraSignIn.getThemeTextureCoordinate().getCellCoordinate().getWidth() * this.scale, SakuraSignIn.getThemeTextureCoordinate().getCellCoordinate().getHeight() * this.scale, this.scale, rewards, year, month, day, status);
-                    cell.setShowIcon(showIcon).setShowText(showText).setShowHover(showHover);
-                    // 添加到列表
-                    signInCells.add(cell);
+            for (int column = 0; column < COLUMNS; column++) {
+                int itemIndex = row * COLUMNS + column;
+                if (itemIndex >= 40) {
+                    break;
                 }
+                double x = startX + column * (SakuraSignIn.getThemeTextureCoordinate()
+                        .getCellCoordinate().getWidth()
+                        + SakuraSignIn.getThemeTextureCoordinate().getCellHMargin()) * scale;
+                double y = startY + row * (SakuraSignIn.getThemeTextureCoordinate()
+                        .getCellCoordinate().getHeight()
+                        + SakuraSignIn.getThemeTextureCoordinate().getCellVMargin()) * scale;
+                int currentPoint = (monthStartWeekDay
+                        - (SakuraSignIn.getThemeTextureCoordinate().getWeekStart() - 1) + 6) % 7;
+                CalendarCellData data = resolveCellData(itemIndex, currentPoint,
+                        daysOfCurrentMonth, daysOfLastMonth, current, lastMonth,
+                        compensateDate, showLastReward, showNextReward);
+                allCurrentDaysDisplayed |= data.lastCurrentDay;
+
+                int dateKey = data.year * 10000 + data.month * 100 + data.day;
+                Date cellDate = DateUtils.getDate(dateKey);
+                data.status = resolveCellStatus(signInData, compensateDate, cellDate,
+                        dateKey, data.status);
+
+                SignInCell cell = new SignInCell(this, SakuraSignIn.getThemeTexture(),
+                        SakuraSignIn.getThemeTextureCoordinate(), x, y,
+                        SakuraSignIn.getThemeTextureCoordinate().getCellCoordinate().getWidth() * scale,
+                        SakuraSignIn.getThemeTextureCoordinate().getCellCoordinate().getHeight() * scale,
+                        scale, monthRewards.getOrDefault(dateKey, new RewardList()),
+                        data.year, data.month, data.day, data.status)
+                        .setShowIcon(data.showIcon)
+                        .setShowText(data.showText)
+                        .setShowHover(data.showHover);
+                cell.setReleaseHandler(event -> handleSignIn(event.button(), cell, player));
+                cell.visible(!showOpeningTips);
+                signInCells.add(cell);
+                addWidget(cell);
             }
         }
     }
 
-    /**
-     * 绘制背景纹理
-     */
-    private void renderBackgroundTexture(MatrixStack matrixStack) {
-        // 开启 OpenGL 的混合模式，使得纹理的透明区域渲染生效
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        // 绘制背景纹理，使用缩放后的宽度和高度
-        Minecraft.getInstance().getTextureManager().bind(SakuraSignIn.getThemeTexture());
-        AbstractGuiUtils.blit(matrixStack, bgX, bgY, bgW, bgH, (float) SakuraSignIn.getThemeTextureCoordinate().getBgUV().getU0(), (float) SakuraSignIn.getThemeTextureCoordinate().getBgUV().getV0(), (int) SakuraSignIn.getThemeTextureCoordinate().getBgUV().getUWidth(), (int) SakuraSignIn.getThemeTextureCoordinate().getBgUV().getVHeight(), SakuraSignIn.getThemeTextureCoordinate().getTotalWidth(), SakuraSignIn.getThemeTextureCoordinate().getTotalHeight());
-        // 关闭 OpenGL 的混合模式
-        RenderSystem.disableBlend();
+    private CalendarCellData resolveCellData(int index, int currentPoint,
+                                             int daysOfCurrentMonth, int daysOfLastMonth,
+                                             Date current, Date lastMonth, Date compensateDate,
+                                             boolean showLastReward, boolean showNextReward) {
+        CalendarCellData data = new CalendarCellData();
+        data.showText = true;
+        data.status = ESignInStatus.NO_ACTION.getCode();
+        if (index >= currentPoint + daysOfCurrentMonth) {
+            Date nextMonth = DateUtils.addMonth(current, 1);
+            data.year = DateUtils.getYearPart(nextMonth);
+            data.month = DateUtils.getMonthOfDate(nextMonth);
+            data.day = index - currentPoint - daysOfCurrentMonth + 1;
+            data.showIcon = showNextReward && data.day < lastOffset;
+            data.showHover = data.showIcon;
+        } else if (index < currentPoint) {
+            data.year = DateUtils.getYearPart(lastMonth);
+            data.month = DateUtils.getMonthOfDate(lastMonth);
+            data.day = daysOfLastMonth - currentPoint + index + 1;
+            data.showIcon = showLastReward && data.day > daysOfLastMonth - lastOffset;
+            data.showHover = data.showIcon;
+        } else {
+            data.year = DateUtils.getYearPart(current);
+            data.month = DateUtils.getMonthOfDate(current);
+            data.day = index - currentPoint + 1;
+            if (data.year == DateUtils.getYearPart(compensateDate)
+                    && data.month == DateUtils.getMonthOfDate(compensateDate)
+                    && data.day == DateUtils.getDayOfMonth(compensateDate)) {
+                data.status = ESignInStatus.NOT_SIGNED_IN.getCode();
+            }
+            data.showIcon = true;
+            data.showHover = true;
+            data.lastCurrentDay = data.day == daysOfCurrentMonth;
+        }
+        return data;
     }
 
-    /**
-     * 处理操作按钮事件
-     *
-     * @param value         操作按钮
-     * @param updateLayout  是否更新布局
-     * @param updateTexture 是否更新纹理和坐标
-     * @param flag          是否处理过事件
-     */
-    private void handleOperation(OperationButton value, AtomicBoolean updateLayout, AtomicBoolean updateTexture, AtomicBoolean flag) {
-        if (this.SIGN_IN_SCREEN_TIPS) return;
-        // 上个月
-        if (value.getOperation() == LEFT_ARROW.getCode()) {
-            if (keyManager.onlyMouseLeftPressed()) {
-                SakuraSignIn.setCalendarCurrentDate(DateUtils.addMonth(SakuraSignIn.getCalendarCurrentDate(), -1));
-                SakuraNetwork.requestMonth(SakuraSignIn.getCalendarCurrentDate());
-                updateLayout.set(true);
-                flag.set(true);
+    private int resolveCellStatus(IPlayerSignInData signInData, Date compensateDate,
+                                  Date cellDate, int dateKey, int status) {
+        if (CommonConfig.get().makeUp().signInCard()) {
+            Date minDate = DateUtils.addDay(compensateDate,
+                    -CommonConfig.get().makeUp().reSignInDays());
+            if (DateUtils.toDateInt(minDate) <= dateKey
+                    && dateKey <= DateUtils.toDateInt(compensateDate)
+                    && status != ESignInStatus.NOT_SIGNED_IN.getCode()) {
+                status = ESignInStatus.CAN_REPAIR.getCode();
             }
         }
-        // 下个月
-        else if (value.getOperation() == RIGHT_ARROW.getCode()) {
-            if (keyManager.onlyMouseLeftPressed()) {
-                SakuraSignIn.setCalendarCurrentDate(DateUtils.addMonth(SakuraSignIn.getCalendarCurrentDate(), 1));
-                SakuraNetwork.requestMonth(SakuraSignIn.getCalendarCurrentDate());
-                updateLayout.set(true);
-                flag.set(true);
+        if (RewardManager.isRewarded(signInData, cellDate, false)) {
+            return ESignInStatus.REWARDED.getCode();
+        }
+        if (RewardManager.isSignedIn(signInData, cellDate, false)) {
+            return ESignInStatus.SIGNED_IN.getCode();
+        }
+        return status;
+    }
+
+    private void handleOperation(RewardOperationWidget widget, int mouseButton) {
+        if (showOpeningTips) {
+            return;
+        }
+        OperationButtonType type = OperationButtonType.fromCode(widget.getOperation());
+        if (type == null) {
+            return;
+        }
+        if (type == LEFT_ARROW && mouseButton == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
+            changeCalendar(DateUtils.addMonth(SakuraSignIn.getCalendarCurrentDate(), -1));
+        } else if (type == RIGHT_ARROW && mouseButton == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
+            changeCalendar(DateUtils.addMonth(SakuraSignIn.getCalendarCurrentDate(), 1));
+        } else if (type == UP_ARROW && mouseButton == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
+            changeCalendar(DateUtils.addYear(SakuraSignIn.getCalendarCurrentDate(), -1));
+        } else if (type == DOWN_ARROW && mouseButton == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
+            changeCalendar(DateUtils.addYear(SakuraSignIn.getCalendarCurrentDate(), 1));
+        } else if (type == THEME_CHAOS_BUTTON) {
+            if (mouseButton == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
+                selectBuiltInTheme(type, false);
+            } else if (mouseButton == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
+                showExternalThemeMenu(widget);
             }
+        } else if (type.code >= THEME_ORIGINAL_BUTTON.code
+                && type.code <= THEME_MAPLE_BUTTON.code
+                && (mouseButton == GLFWKey.GLFW_MOUSE_BUTTON_LEFT
+                || mouseButton == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT)) {
+            selectBuiltInTheme(type, mouseButton == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT);
         }
-        // 上一年
-        else if (value.getOperation() == UP_ARROW.getCode()) {
-            if (keyManager.onlyMouseLeftPressed()) {
-                SakuraSignIn.setCalendarCurrentDate(DateUtils.addYear(SakuraSignIn.getCalendarCurrentDate(), -1));
-                SakuraNetwork.requestMonth(SakuraSignIn.getCalendarCurrentDate());
-                updateLayout.set(true);
-                flag.set(true);
-            }
-        }
-        // 下一年
-        else if (value.getOperation() == DOWN_ARROW.getCode()) {
-            if (keyManager.onlyMouseLeftPressed()) {
-                SakuraSignIn.setCalendarCurrentDate(DateUtils.addYear(SakuraSignIn.getCalendarCurrentDate(), 1));
-                SakuraNetwork.requestMonth(SakuraSignIn.getCalendarCurrentDate());
-                updateLayout.set(true);
-                flag.set(true);
-            }
-        }
-        // 类原版主题
-        else if (value.getOperation() == THEME_ORIGINAL_BUTTON.getCode()) {
-            SakuraSignIn.setSpecialVersionTheme(keyManager.onlyMouseRightPressed());
-            ClientConfig.get().display().theme(THEME_ORIGINAL_BUTTON.getPath());
-            ClientConfig.get().display().specialTheme(SakuraSignIn.isSpecialVersionTheme());
-            ClientConfig.save();
-            updateLayout.set(true);
-            updateTexture.set(true);
-            flag.set(true);
-        }
-        // 樱花粉主题
-        else if (value.getOperation() == THEME_SAKURA_BUTTON.getCode()) {
-            SakuraSignIn.setSpecialVersionTheme(keyManager.onlyMouseRightPressed());
-            ClientConfig.get().display().theme(THEME_SAKURA_BUTTON.getPath());
-            ClientConfig.get().display().specialTheme(SakuraSignIn.isSpecialVersionTheme());
-            ClientConfig.save();
-            updateLayout.set(true);
-            updateTexture.set(true);
-            flag.set(true);
-        }
-        // 四叶草主题
-        else if (value.getOperation() == THEME_CLOVER_BUTTON.getCode()) {
-            SakuraSignIn.setSpecialVersionTheme(keyManager.onlyMouseRightPressed());
-            ClientConfig.get().display().theme(THEME_CLOVER_BUTTON.getPath());
-            ClientConfig.get().display().specialTheme(SakuraSignIn.isSpecialVersionTheme());
-            ClientConfig.save();
-            updateLayout.set(true);
-            updateTexture.set(true);
-            flag.set(true);
-        }
-        // 枫叶主题
-        else if (value.getOperation() == THEME_MAPLE_BUTTON.getCode()) {
-            SakuraSignIn.setSpecialVersionTheme(keyManager.onlyMouseRightPressed());
-            ClientConfig.get().display().theme(THEME_MAPLE_BUTTON.getPath());
-            ClientConfig.get().display().specialTheme(SakuraSignIn.isSpecialVersionTheme());
-            ClientConfig.save();
-            updateLayout.set(true);
-            updateTexture.set(true);
-            flag.set(true);
-        }
-        // 混沌主题
-        else if (value.getOperation() == THEME_CHAOS_BUTTON.getCode()) {
-            if (keyManager.onlyMouseLeftPressed()) {
-                ClientConfig.get().display().theme(THEME_CHAOS_BUTTON.getPath());
-                ClientConfig.save();
-                updateLayout.set(true);
-                updateTexture.set(true);
-                flag.set(true);
-            } else if (keyManager.onlyMouseRightPressed()) {
-                // 绘制弹出层选项
-                popupOption.clear();
-                // 若文件夹为空, 绘制提示, 并在点击时打开主题文件夹
-                if (CollectionUtils.isNullOrEmpty(themeFileList)) {
-                    Component component = SakuraComponent.get().transClient("title", "theme_selector_empty");
-                    popupOption.addOption(StringUtils.replaceLine(component.toString()).split("\n"));
-                } else {
-                    popupOption.addOption(themeFileList.stream().map(file -> {
-                        String name = file.getName();
-                        name = name.endsWith(".png") ? name.substring(0, name.length() - 4) : name;
-                        return name;
-                    }).toArray(String[]::new));
+    }
+
+    private void changeCalendar(Date date) {
+        SakuraSignIn.setCalendarCurrentDate(date);
+        SakuraNetwork.requestMonth(date);
+        refreshLayout();
+    }
+
+    private void selectBuiltInTheme(OperationButtonType type, boolean specialVersion) {
+        SakuraSignIn.setSpecialVersionTheme(specialVersion);
+        ClientConfig.get().display().theme(type.path);
+        ClientConfig.get().display().specialTheme(specialVersion);
+        ClientConfig.save();
+        refreshTextureAndLayout();
+    }
+
+    private void showExternalThemeMenu(RewardOperationWidget widget) {
+        popupOption.clear();
+        if (CollectionUtils.isNullOrEmpty(themeFileList)) {
+            popupOption.addOptionWithId("open-folder",
+                    Text.from(SakuraComponent.get().transClient("title", "theme_selector_empty")),
+                    null, event -> openThemeFolder());
+        } else {
+            for (File file : themeFileList) {
+                String name = file.getName();
+                if (name.endsWith(".png")) {
+                    name = name.substring(0, name.length() - 4);
                 }
-                popupOption.setMaxWidth(AbstractGuiUtils.multilineTextWidth(Text.trans(SakuraSignIn.MODID, "title.sakura_sign_in.theme_selector_empty")))
-                        .setMaxLines(5)
-                        .build(super.font, keyManager.getMouseX(), keyManager.getMouseY(), String.format("主题选择按钮:%s", value.getOperation()));
+                popupOption.addOptionWithId(file.getAbsolutePath(), name, null,
+                        event -> selectExternalTheme(event.id()));
             }
+        }
+        popupOption.setMaxWidth(AbstractGuiUtils.multilineTextWidth(
+                        Text.trans(SakuraSignIn.MODID, "title.sakura_sign_in.theme_selector_empty")))
+                .setMaxLines(5)
+                .showAt(widget.realX(), widget.realY() + widget.realHeight(),
+                        "theme-selector");
+    }
+
+    private void openThemeFolder() {
+        SakuraSignIn.openFileInFolder(new File(
+                FMLPaths.CONFIGDIR.get().resolve(SakuraSignIn.MODID).toFile(), "themes").toPath());
+    }
+
+    private void selectExternalTheme(String selectedFile) {
+        Component selected = SakuraComponent.get().transClient(
+                "message", "selected_theme_file_s", selectedFile);
+        SakuraClientNotifications.show(selected, SakuraNotificationTypes.COMMAND_FEEDBACK);
+        ResourceLocation resource = TextureUtils.loadCustomTexture(selectedFile);
+        if (TextureUtils.isTextureAvailable(resource)) {
+            ClientConfig.get().display().theme(selectedFile);
+            ClientConfig.save();
+            refreshTextureAndLayout();
         }
     }
 
     private void handleSignIn(int button, SignInCell cell, ClientPlayerEntity player) {
-        if (this.SIGN_IN_SCREEN_TIPS) return;
-        Date cellDate = DateUtils.getDate(cell.year, cell.month, cell.day);
-        // 签到
-        if (cell.status == ESignInStatus.NOT_SIGNED_IN.getCode()) {
-            if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
-                if (RewardManager.getCompensateDateInt() < DateUtils.toDateInt(RewardManager.getCompensateDate(DateUtils.getClientDate()))) {
-                    Component component = SakuraComponent.get().transClient("message", "next_day_cannot_operate");
-                    SakuraClientNotifications.warning(component, SakuraNotificationTypes.SIGN_IN);
-                } else {
-                    cell.status = ClientConfig.get().display().autoRewarded() ? ESignInStatus.REWARDED.getCode() : ESignInStatus.SIGNED_IN.getCode();
-                    SakuraNetwork.sendToServer(new SignInPacket(DateUtils.toDateTimeString(DateUtils.getClientDate()), ClientConfig.get().display().autoRewarded(), ESignInType.SIGN_IN));
-                }
-            }
+        if (showOpeningTips || cell == null || button != GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
+            return;
         }
-        // 领取奖励
-        else if (cell.status == ESignInStatus.SIGNED_IN.getCode()) {
-            if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
-                if (RewardManager.isRewarded(SakuraPlayerData.get(player), cellDate, false)) {
-                    Component component = SakuraComponent.get().transClient("message", "already_get_reward");
-                    SakuraClientNotifications.warning(component, SakuraNotificationTypes.SIGN_IN);
-                } else {
-                    cell.status = ESignInStatus.REWARDED.getCode();
-                    SakuraNetwork.sendToServer(new SignInPacket(DateUtils.toDateTimeString(cellDate), ClientConfig.get().display().autoRewarded(), ESignInType.REWARD));
-                }
-            }
-        }
-        // 补签
-        else if (cell.status == ESignInStatus.CAN_REPAIR.getCode()) {
-            if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
-                if (!CommonConfig.get().makeUp().signInCard()) {
-                    Component component = SakuraComponent.get().transClient("message", "server_not_enable_sign_in_card");
-                    SakuraClientNotifications.warning(component, SakuraNotificationTypes.SIGN_IN);
-                } else {
-                    if (SakuraPlayerData.get(player).getSignInCard() <= 0) {
-                        Component component = SakuraComponent.get().transClient("message", "not_enough_sign_in_card");
-                        SakuraClientNotifications.warning(component, SakuraNotificationTypes.SIGN_IN);
-                    } else {
-                        Minecraft.getInstance().setScreen(new ConfirmDialogScreen(
-                                new ConfirmDialogScreen.Args()
-                                        .parentScreen(this)
-                                        .title(SakuraComponent.get().transClient("title", "confirm_operation"))
-                                        .message(SakuraComponent.get().transClient("tips", "confirm_make_up_sign_in"))
-                                        .onConfirm(() -> {
-                                            cell.status = ClientConfig.get().display().autoRewarded()
-                                                    ? ESignInStatus.REWARDED.getCode()
-                                                    : ESignInStatus.SIGNED_IN.getCode();
-                                            SakuraNetwork.sendToServer(new SignInPacket(
-                                                    DateUtils.toDateTimeString(cellDate),
-                                                    ClientConfig.get().display().autoRewarded(),
-                                                    ESignInType.RE_SIGN_IN
-                                            ));
-                                        })
-                        ));
-                    }
-                }
-            }
-        } else if (cell.status == ESignInStatus.NO_ACTION.getCode()) {
-            if (cellDate.after(RewardManager.getCompensateDate(DateUtils.getClientDate()))) {
-                Component component = SakuraComponent.get().transClient("message", "next_day_cannot_operate");
-                SakuraClientNotifications.warning(component, SakuraNotificationTypes.SIGN_IN);
+        Date cellDate = DateUtils.getDate(cell.getYear(), cell.getMonth(), cell.getDay());
+        if (cell.getStatus() == ESignInStatus.NOT_SIGNED_IN.getCode()) {
+            if (RewardManager.getCompensateDateInt()
+                    < DateUtils.toDateInt(RewardManager.getCompensateDate(DateUtils.getClientDate()))) {
+                SakuraClientNotifications.warning(SakuraComponent.get().transClient(
+                        "message", "next_day_cannot_operate"), SakuraNotificationTypes.SIGN_IN);
             } else {
-                Component component = SakuraComponent.get().transClient("message", "past_day_cannot_operate");
-                SakuraClientNotifications.warning(component, SakuraNotificationTypes.SIGN_IN);
+                cell.setStatus(ClientConfig.get().display().autoRewarded()
+                        ? ESignInStatus.REWARDED.getCode()
+                        : ESignInStatus.SIGNED_IN.getCode());
+                SakuraNetwork.sendToServer(new SignInPacket(
+                        DateUtils.toDateTimeString(DateUtils.getClientDate()),
+                        ClientConfig.get().display().autoRewarded(), ESignInType.SIGN_IN));
             }
-        } else if (cell.status == ESignInStatus.REWARDED.getCode()) {
-            Component component = SakuraComponent.get().transClient("message", "already_get_reward");
-            SakuraClientNotifications.warning(component, SakuraNotificationTypes.SIGN_IN);
-        } else {
-            if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
-                Component component = SakuraComponent.get().literal(ESignInStatus.valueOf(cell.status).getDescription() + ": " + DateUtils.toString(cellDate));
-                SakuraClientNotifications.error(component, SakuraNotificationTypes.SIGN_IN);
-            }
-        }
-    }
-
-    @Override
-    @ParametersAreNonnullByDefault
-    public void render(MatrixStack matrixStack, int mouseX, int mouseY, float partialTicks) {
-        keyManager.refresh(mouseX, mouseY);
-        // 绘制背景
-        this.renderBackground(matrixStack);
-        // 绘制缩放背景纹理
-        this.renderBackgroundTexture(matrixStack);
-
-        // 渲染年份
-        double yearX = bgX + SakuraSignIn.getThemeTextureCoordinate().getYearCoordinate().getX() * this.scale;
-        double yearY = bgY + SakuraSignIn.getThemeTextureCoordinate().getYearCoordinate().getY() * this.scale;
-        String yearTitle = DateUtils.toLocalStringYear(SakuraSignIn.getCalendarCurrentDate(), Minecraft.getInstance().options.languageCode);
-        super.font.draw(matrixStack, yearTitle, (float) yearX, (float) yearY, SakuraSignIn.getThemeTextureCoordinate().getTextColorDate());
-
-        // 渲染月份
-        double monthX = bgX + SakuraSignIn.getThemeTextureCoordinate().getMonthCoordinate().getX() * this.scale;
-        double monthY = bgY + SakuraSignIn.getThemeTextureCoordinate().getMonthCoordinate().getY() * this.scale;
-        String monthTitle = DateUtils.toLocalStringMonth(SakuraSignIn.getCalendarCurrentDate(), Minecraft.getInstance().options.languageCode);
-        super.font.draw(matrixStack, monthTitle, (float) monthX, (float) monthY, SakuraSignIn.getThemeTextureCoordinate().getTextColorDate());
-
-        // 渲染操作按钮
-        for (Integer op : BUTTONS.keySet()) {
-            OperationButton button = BUTTONS.get(op);
-            TextureCoordinate textureCoordinate = SakuraSignIn.getThemeTextureCoordinate();
-            switch (OperationButtonType.valueOf(op)) {
-                case RIGHT_ARROW:
-                    // 如果宽度和高度与月份相同，则将大小设置为字体行高
-                    if (button.getWidth() == textureCoordinate.getMonthCoordinate().getWidth() && button.getHeight() == textureCoordinate.getMonthCoordinate().getHeight()) {
-                        button.setWidth(font.lineHeight / this.scale).setHeight(font.lineHeight / this.scale);
-                    }
-                    // 如果坐标与月份相同，则将坐标设置为月份右边的位置
-                    if (button.getX() == textureCoordinate.getMonthCoordinate().getX() && button.getY() == textureCoordinate.getMonthCoordinate().getY()) {
-                        String localStringMonth = DateUtils.toLocalStringMonth(DateUtils.format(String.format("%d-12-01", DateUtils.getYearPart(SakuraSignIn.getCalendarCurrentDate()))), Minecraft.getInstance().options.languageCode);
-                        button.setX((monthX - bgX + font.width(localStringMonth) + 1) / this.scale);
-                    }
-                    break;
-                case DOWN_ARROW:
-                    // 如果宽度和高度与年份相同，则将大小设置为字体行高
-                    if (button.getWidth() == textureCoordinate.getYearCoordinate().getWidth() && button.getHeight() == textureCoordinate.getYearCoordinate().getHeight()) {
-                        button.setWidth(font.lineHeight / this.scale).setHeight(font.lineHeight / this.scale);
-                    }
-                    // 如果坐标与年份相同，则将坐标设置为年份右边的位置
-                    if (button.getX() == textureCoordinate.getYearCoordinate().getX() && button.getY() == textureCoordinate.getYearCoordinate().getY()) {
-                        button.setX((yearX - bgX + font.width(yearTitle) + 1) / this.scale);
-                    }
-                    break;
-                case LEFT_ARROW:
-                    // 如果宽度和高度与月份相同，则将大小设置为字体行高
-                    if (button.getWidth() == textureCoordinate.getMonthCoordinate().getWidth() && button.getHeight() == textureCoordinate.getMonthCoordinate().getHeight()) {
-                        button.setWidth(font.lineHeight / this.scale).setHeight(font.lineHeight / this.scale);
-                    }
-                    // 如果坐标与月份相同，则将坐标设置为月份左边的位置
-                    if (button.getX() == textureCoordinate.getMonthCoordinate().getX() && button.getY() == textureCoordinate.getMonthCoordinate().getY()) {
-                        button.setX((monthX - bgX - 1) / this.scale - button.getWidth());
-                    }
-                    break;
-                case UP_ARROW:
-                    // 如果宽度和高度与年份相同，则将大小设置为字体行高
-                    if (button.getWidth() == textureCoordinate.getYearCoordinate().getWidth() && button.getHeight() == textureCoordinate.getYearCoordinate().getHeight()) {
-                        button.setWidth(font.lineHeight / this.scale).setHeight(font.lineHeight / this.scale);
-                    }
-                    // 如果坐标与年份相同，则将坐标设置为年份左边的位置
-                    if (button.getX() == textureCoordinate.getYearCoordinate().getX() && button.getY() == textureCoordinate.getYearCoordinate().getY()) {
-                        button.setX((yearX - bgX - 1) / this.scale - button.getWidth());
-                    }
-                    break;
-                case THEME_ORIGINAL_BUTTON:
-                case THEME_SAKURA_BUTTON:
-                case THEME_CLOVER_BUTTON:
-                case THEME_MAPLE_BUTTON:
-                case THEME_CHAOS_BUTTON:
-                    // 如选中主题为当前主题则设置为鼠标按下(选中)状态
-                    if (SakuraSignIn.getThemeTexture().getPath().equalsIgnoreCase(OperationButtonType.valueOf(op).getPath())) {
-                        button.setNormalV(button.getTapV());
-                        button.setHoverV(button.getTapV());
-                    } else {
-                        button.setNormalV(textureCoordinate.getThemeUV().getV0());
-                        button.setHoverV(textureCoordinate.getThemeHoverUV().getV0());
-                    }
-                    button.setNormalU((op - 100) * textureCoordinate.getThemeUV().getUWidth());
-                    button.setHoverU((op - 100) * textureCoordinate.getThemeHoverUV().getUWidth());
-                    button.setTapU((op - 100) * textureCoordinate.getThemeTapUV().getUWidth());
-                    button.setX((op - 100) * (textureCoordinate.getThemeCoordinate().getWidth() + textureCoordinate.getThemeHMargin()) + textureCoordinate.getThemeCoordinate().getX());
-                    break;
-                case INFO:
-                    button.setRotatedAngle(button.isHovered() ? 10 : 0);
-                    break;
-            }
-            button.setBaseX(bgX);
-            button.setBaseY(bgY);
-            button.setScale(this.scale);
-            button.render(matrixStack, keyManager);
-        }
-
-        // 渲染所有格子
-        for (SignInCell cell : signInCells) {
-            cell.render(matrixStack, super.font, keyManager);
-        }
-
-        if (!this.SIGN_IN_SCREEN_TIPS) {
-            boolean showRewardDetail = true;
-            if (Minecraft.getInstance().player != null) {
-                showRewardDetail = Minecraft.getInstance().player.hasPermissions(CommonConfig.get().permission().permissionRewardDetail());
-            }
-            if (showRewardDetail) {
-                // 渲染格子弹出层
-                for (SignInCell cell : signInCells) {
-                    if (cell.isShowHover() && cell.isMouseOver(keyManager)) {
-                        if (keyManager.onlyShiftPressed()) {
-                            AbstractGuiUtils.drawPopupMessage(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.how_to_sign_in").stack(matrixStack).font(this.font).align(EnumAlignment.CENTER), mouseX, mouseY, super.width, super.height);
-                        } else {
-                            cell.renderTooltip(matrixStack, super.font, this.itemRenderer, keyManager);
-                        }
-                    }
-                }
-            }
-
-            // 绘制弹出选项
-            popupOption.render(matrixStack, keyManager);
-
-            // 渲染操作按钮的弹出提示
-            for (Integer op : BUTTONS.keySet()) {
-                OperationButton button = BUTTONS.get(op);
-                if (op == INFO.getCode()) {
-                    if (Minecraft.getInstance().player != null) {
-                        IPlayerSignInData signInData = SakuraPlayerData.get(Minecraft.getInstance().player);
-                        button.setTooltip(
-                                Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.sign_in_info"
-                                                , signInData.getSignInCard()
-                                                , signInData.getContinuousSignInDays()
-                                                , signInData.getTotalSignInDays())
-                                        .stack(matrixStack)
-                                        .font(this.font)
-                        );
-                    }
-                }
-                button.renderPopup(matrixStack, keyManager);
-            }
-        }
-        // 显示开屏提示
-        else {
-            AbstractGuiUtils.fill(matrixStack, 4, 4, super.width - 8, super.height - 8, 0xDD000000, 15);
-            float x, y;
-            tips.stack(matrixStack).font(super.font);
-            int textHeight = AbstractGuiUtils.multilineTextHeight(tips);
-            int textWidth = AbstractGuiUtils.multilineTextWidth(tips);
-            int buttonWidth = Math.min(100, textWidth / 2 - 5);
-            x = (super.width - textWidth) / 2.0f;
-            y = (super.height - (textHeight + 4 + 20)) / 2.0f;
-            AbstractGuiUtils.drawString(tips, x, y);
-            super.buttons.stream().filter(button -> button instanceof Button
-                    && (button.getMessage().getString().equalsIgnoreCase(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.confirm").content()))
-                    || (button.getMessage().getString().equalsIgnoreCase(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.no_remind").content()))).forEach(button -> {
-                if (button.getMessage().getString().equalsIgnoreCase(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.confirm").content())) {
-                    button.x = (int) x;
-                } else {
-                    button.x = (int) x + textWidth - buttonWidth;
-                }
-                button.y = (int) y + textHeight + 4;
-                button.setWidth(buttonWidth);
-                button.setHeight(20);
-                button.render(matrixStack, mouseX, mouseY, partialTicks);
-            });
-        }
-    }
-
-    /**
-     * 检测鼠标点击事件
-     */
-    @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        keyManager.mouseClicked(button, mouseX, mouseY);
-        // 清空弹出选项
-        if (!popupOption.isHovered()) {
-            popupOption.clear();
-            BUTTONS.forEach((key, value) -> {
-                if (value.isHovered()) {
-                    value.setPressed(true);
-                }
-            });
-        }
-        return super.mouseClicked(mouseX, mouseY, button);
-    }
-
-    /**
-     * 检测鼠标松开事件
-     */
-    @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        keyManager.refresh(mouseX, mouseY);
-        AtomicBoolean updateLayout = new AtomicBoolean(false);
-        AtomicBoolean updateTextureAndCoordinate = new AtomicBoolean(false);
-        AtomicBoolean flag = new AtomicBoolean(false);
-        if (popupOption.isHovered()) {
-            LOGGER.debug("选择了弹出选项:\tIndex: {}\tContent: {}", popupOption.getSelectedIndex(), popupOption.getSelectedString());
-            if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT && CollectionUtils.isNotNullOrEmpty(themeFileList)) {
-                ClientPlayerEntity player = Minecraft.getInstance().player;
-                String selectedFile = themeFileList.get(popupOption.getSelectedIndex()).getPath();
-                if (player != null) {
-                    Component component = SakuraComponent.get().transClient("message", "selected_theme_file_s", selectedFile);
-                    SakuraClientNotifications.show(component, SakuraNotificationTypes.COMMAND_FEEDBACK);
-                    ResourceLocation resourceLocation = TextureUtils.loadCustomTexture(selectedFile);
-                    if (TextureUtils.isTextureAvailable(resourceLocation)) {
-                        ClientConfig.get().display().theme(selectedFile);
-                        ClientConfig.save();
-                        updateTextureAndCoordinate.set(true);
-                        updateLayout.set(true);
-                    }
-                }
+        } else if (cell.getStatus() == ESignInStatus.SIGNED_IN.getCode()) {
+            if (RewardManager.isRewarded(SakuraPlayerData.get(player), cellDate, false)) {
+                SakuraClientNotifications.warning(SakuraComponent.get().transClient(
+                        "message", "already_get_reward"), SakuraNotificationTypes.SIGN_IN);
             } else {
-                SakuraSignIn.openFileInFolder(new File(FMLPaths.CONFIGDIR.get().resolve(SakuraSignIn.MODID).toFile(), "themes").toPath());
+                cell.setStatus(ESignInStatus.REWARDED.getCode());
+                SakuraNetwork.sendToServer(new SignInPacket(DateUtils.toDateTimeString(cellDate),
+                        ClientConfig.get().display().autoRewarded(), ESignInType.REWARD));
             }
-            popupOption.clear();
+        } else if (cell.getStatus() == ESignInStatus.CAN_REPAIR.getCode()) {
+            requestMakeUpSignIn(cell, cellDate, player);
+        } else if (cell.getStatus() == ESignInStatus.NO_ACTION.getCode()) {
+            String key = cellDate.after(RewardManager.getCompensateDate(DateUtils.getClientDate()))
+                    ? "next_day_cannot_operate" : "past_day_cannot_operate";
+            SakuraClientNotifications.warning(SakuraComponent.get().transClient(
+                    "message", key), SakuraNotificationTypes.SIGN_IN);
+        } else if (cell.getStatus() == ESignInStatus.REWARDED.getCode()) {
+            SakuraClientNotifications.warning(SakuraComponent.get().transClient(
+                    "message", "already_get_reward"), SakuraNotificationTypes.SIGN_IN);
         } else {
+            Component component = SakuraComponent.get().literal(
+                    ESignInStatus.valueOf(cell.getStatus()).getDescription()
+                            + ": " + DateUtils.toString(cellDate));
+            SakuraClientNotifications.error(component, SakuraNotificationTypes.SIGN_IN);
+        }
+    }
+
+    private void requestMakeUpSignIn(SignInCell cell, Date cellDate, ClientPlayerEntity player) {
+        if (!CommonConfig.get().makeUp().signInCard()) {
+            SakuraClientNotifications.warning(SakuraComponent.get().transClient(
+                    "message", "server_not_enable_sign_in_card"), SakuraNotificationTypes.SIGN_IN);
+            return;
+        }
+        if (SakuraPlayerData.get(player).getSignInCard() <= 0) {
+            SakuraClientNotifications.warning(SakuraComponent.get().transClient(
+                    "message", "not_enough_sign_in_card"), SakuraNotificationTypes.SIGN_IN);
+            return;
+        }
+        Minecraft.getInstance().setScreen(new ConfirmDialogScreen(
+                new ConfirmDialogScreen.Args()
+                        .parentScreen(this)
+                        .title(SakuraComponent.get().transClient("title", "confirm_operation"))
+                        .message(SakuraComponent.get().transClient("tips", "confirm_make_up_sign_in"))
+                        .onConfirm(() -> {
+                            cell.setStatus(ClientConfig.get().display().autoRewarded()
+                                    ? ESignInStatus.REWARDED.getCode()
+                                    : ESignInStatus.SIGNED_IN.getCode());
+                            SakuraNetwork.sendToServer(new SignInPacket(
+                                    DateUtils.toDateTimeString(cellDate),
+                                    ClientConfig.get().display().autoRewarded(),
+                                    ESignInType.RE_SIGN_IN));
+                        })
+        ));
+    }
+
+    @Override
+    protected void onRender(MatrixStack stack, float partialTicks) {
+        renderBackground(stack);
+        renderBackgroundTexture(stack);
+        renderCalendarTitle(stack);
+        updateOperationPresentation();
+
+        if (showOpeningTips) {
+            renderOpeningTips(stack);
+        }
+        renderWidgets(stack, partialTicks);
+
+        if (!showOpeningTips) {
+            addDeferredTooltipRender(this::renderHoveredTooltips);
+        }
+    }
+
+    private void renderBackgroundTexture(MatrixStack stack) {
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        Minecraft.getInstance().getTextureManager().bind(SakuraSignIn.getThemeTexture());
+        Coordinate uv = SakuraSignIn.getThemeTextureCoordinate().getBgUV();
+        AbstractGuiUtils.blit(stack, bgX, bgY, bgWidth, bgHeight,
+                (float) uv.getU0(), (float) uv.getV0(),
+                (int) uv.getUWidth(), (int) uv.getVHeight(),
+                SakuraSignIn.getThemeTextureCoordinate().getTotalWidth(),
+                SakuraSignIn.getThemeTextureCoordinate().getTotalHeight());
+        RenderSystem.disableBlend();
+    }
+
+    private void renderCalendarTitle(MatrixStack stack) {
+        TextureCoordinate texture = SakuraSignIn.getThemeTextureCoordinate();
+        double yearX = bgX + texture.getYearCoordinate().getX() * scale;
+        double yearY = bgY + texture.getYearCoordinate().getY() * scale;
+        double monthX = bgX + texture.getMonthCoordinate().getX() * scale;
+        double monthY = bgY + texture.getMonthCoordinate().getY() * scale;
+        String language = Minecraft.getInstance().options.languageCode;
+        font.draw(stack, DateUtils.toLocalStringYear(SakuraSignIn.getCalendarCurrentDate(), language),
+                (float) yearX, (float) yearY, texture.getTextColorDate());
+        font.draw(stack, DateUtils.toLocalStringMonth(SakuraSignIn.getCalendarCurrentDate(), language),
+                (float) monthX, (float) monthY, texture.getTextColorDate());
+    }
+
+    private void updateOperationPresentation() {
+        TextureCoordinate texture = SakuraSignIn.getThemeTextureCoordinate();
+        String language = Minecraft.getInstance().options.languageCode;
+        String yearTitle = DateUtils.toLocalStringYear(SakuraSignIn.getCalendarCurrentDate(), language);
+        String monthTitle = DateUtils.toLocalStringMonth(SakuraSignIn.getCalendarCurrentDate(), language);
+        double yearX = bgX + texture.getYearCoordinate().getX() * scale;
+        double monthX = bgX + texture.getMonthCoordinate().getX() * scale;
+
+        updateArrowBounds(LEFT_ARROW, texture.getLeftArrowCoordinate(),
+                (monthX - bgX - 1) / scale - font.lineHeight / scale,
+                texture.getLeftArrowCoordinate().getY());
+        updateArrowBounds(RIGHT_ARROW, texture.getRightArrowCoordinate(),
+                (monthX - bgX + font.width(monthTitle) + 1) / scale,
+                texture.getRightArrowCoordinate().getY());
+        updateArrowBounds(UP_ARROW, texture.getUpArrowCoordinate(),
+                (yearX - bgX - 1) / scale - font.lineHeight / scale,
+                texture.getUpArrowCoordinate().getY());
+        updateArrowBounds(DOWN_ARROW, texture.getDownArrowCoordinate(),
+                (yearX - bgX + font.width(yearTitle) + 1) / scale,
+                texture.getDownArrowCoordinate().getY());
+
+        RewardOperationWidget info = operationWidgets.get(INFO.code);
+        if (info != null) {
+            info.setRotatedAngle(info.hovered() ? 10 : 0);
             ClientPlayerEntity player = Minecraft.getInstance().player;
-            // 控制按钮
-            BUTTONS.forEach((key, value) -> {
-                if (value.isHovered() && value.isPressed()) {
-                    this.handleOperation(value, updateLayout, updateTextureAndCoordinate, flag);
-                }
-                value.setPressed(false);
-            });
-            if (!flag.get()) {
-                // 日历格子
-                for (SignInCell cell : signInCells) {
-                    if (cell.isShowIcon() && cell.isMouseOver(keyManager)) {
-                        if (player != null) {
-                            this.handleSignIn(button, cell, player);
-                        }
-                        flag.set(true);
-                    }
-                }
-
+            if (player != null) {
+                IPlayerSignInData data = SakuraPlayerData.get(player);
+                info.setTooltip(Text.trans(SakuraSignIn.MODID,
+                        "tips.sakura_sign_in.sign_in_info",
+                        data.getSignInCard(), data.getContinuousSignInDays(), data.getTotalSignInDays()));
             }
         }
-        if (updateTextureAndCoordinate.get()) this.updateTextureAndCoordinate();
-        if (updateLayout.get()) this.updateLayout();
-        keyManager.mouseReleased(button, mouseX, mouseY);
-        return flag.get() ? flag.get() : super.mouseReleased(mouseX, mouseY, button);
+
+        for (OperationButtonType type : OperationButtonType.values()) {
+            RewardOperationWidget widget = operationWidgets.get(type.code);
+            if (widget == null) {
+                continue;
+            }
+            widget.visible(!showOpeningTips);
+            if (type.code < THEME_ORIGINAL_BUTTON.code) {
+                continue;
+            }
+            int index = type.code - THEME_ORIGINAL_BUTTON.code;
+            double uOffset = index * texture.getThemeUV().getUWidth();
+            boolean selected = SakuraSignIn.getThemeTexture().getPath().equalsIgnoreCase(type.path);
+            Coordinate normal = selected ? texture.getThemeTapUV() : texture.getThemeUV();
+            Coordinate hover = selected ? texture.getThemeTapUV() : texture.getThemeHoverUV();
+            widget.setNormal(offsetU(normal, uOffset))
+                    .setHover(offsetU(hover, uOffset))
+                    .setPressed(offsetU(texture.getThemeTapUV(), uOffset))
+                    .setBounds(new Coordinate()
+                                    .setX(index * (texture.getThemeCoordinate().getWidth()
+                                            + texture.getThemeHMargin()) + texture.getThemeCoordinate().getX())
+                                    .setY(texture.getThemeCoordinate().getY())
+                                    .setWidth(texture.getThemeCoordinate().getWidth())
+                                    .setHeight(texture.getThemeCoordinate().getHeight()),
+                            bgX, bgY, scale);
+        }
     }
 
-    @Override
-    public void mouseMoved(double mouseX, double mouseY) {
-        keyManager.mouseMoved(mouseX, mouseY);
-        BUTTONS.forEach((key, value) -> value.setHovered(value.isMouseOverEx(mouseX, mouseY)));
-        super.mouseMoved(mouseX, mouseY);
+    private void updateArrowBounds(OperationButtonType type, Coordinate source, double x, double y) {
+        RewardOperationWidget widget = operationWidgets.get(type.code);
+        if (widget == null) {
+            return;
+        }
+        Coordinate titleCoordinate = type == LEFT_ARROW || type == RIGHT_ARROW
+                ? SakuraSignIn.getThemeTextureCoordinate().getMonthCoordinate()
+                : SakuraSignIn.getThemeTextureCoordinate().getYearCoordinate();
+        if (source.getX() != titleCoordinate.getX() || source.getY() != titleCoordinate.getY()) {
+            x = source.getX();
+            y = source.getY();
+        }
+        double width = source.getWidth();
+        double height = source.getHeight();
+        if ((type == LEFT_ARROW || type == RIGHT_ARROW)
+                && width == SakuraSignIn.getThemeTextureCoordinate().getMonthCoordinate().getWidth()
+                && height == SakuraSignIn.getThemeTextureCoordinate().getMonthCoordinate().getHeight()) {
+            width = font.lineHeight / scale;
+            height = font.lineHeight / scale;
+        } else if ((type == UP_ARROW || type == DOWN_ARROW)
+                && width == SakuraSignIn.getThemeTextureCoordinate().getYearCoordinate().getWidth()
+                && height == SakuraSignIn.getThemeTextureCoordinate().getYearCoordinate().getHeight()) {
+            width = font.lineHeight / scale;
+            height = font.lineHeight / scale;
+        }
+        widget.setBounds(new Coordinate().setX(x).setY(y).setWidth(width).setHeight(height),
+                bgX, bgY, scale);
     }
 
-    @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
-        keyManager.mouseScrolled(delta, mouseX, mouseY);
-        if (!popupOption.addScrollOffset(delta)) {
-            // 奖励悬浮层
+    private void renderOpeningTips(MatrixStack stack) {
+        ShapeDrawArgs.RectParams rect = new ShapeDrawArgs.RectParams()
+                .x(4).y(4).width(width - 8).height(height - 8).radius(15);
+        BaseShapeWidget.drawShape(new ShapeDrawArgs()
+                .stack(stack)
+                .type(ShapeDrawArgs.ShapeType.RECT)
+                .color(0xDD000000)
+                .rect(rect));
+        tips.stack(stack).font(font);
+        int textWidth = Math.max(120, AbstractGuiUtils.multilineTextWidth(tips));
+        int textHeight = AbstractGuiUtils.multilineTextHeight(tips);
+        AbstractGuiUtils.drawString(tips,
+                (width - textWidth) / 2.0f,
+                (height - textHeight - 24) / 2.0f);
+    }
+
+    private void renderHoveredTooltips(MatrixStack stack) {
+        if (!popupOption.isEmpty()) {
+            return;
+        }
+        boolean showRewardDetail = Minecraft.getInstance().player == null
+                || Minecraft.getInstance().player.hasPermissions(
+                CommonConfig.get().permission().permissionRewardDetail());
+        if (showRewardDetail) {
             for (SignInCell cell : signInCells) {
-                if (cell.isShowIcon() && cell.isShowHover() && cell.isMouseOver(keyManager)) {
-                    if (delta > 0) {
-                        cell.setTooltipScrollOffset(Math.max(cell.getTooltipScrollOffset() - 1, 0));
-                    } else if (delta < 0) {
-                        cell.setTooltipScrollOffset(Math.min(cell.getTooltipScrollOffset() + 1, cell.getRewardList().size() - SignInCell.TOOLTIP_MAX_VISIBLE_ITEMS));
-                    }
+                if (!cell.isShowHover() || !cell.isMouseInside(inputState.mouseX(), inputState.mouseY())) {
+                    continue;
                 }
+                if (inputState.onlyShiftPressed()) {
+                    AbstractGuiUtils.drawPopupMessage(
+                            Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.how_to_sign_in")
+                                    .stack(stack).font(font).align(EnumAlignment.CENTER),
+                            (int) inputState.mouseX(), (int) inputState.mouseY(), width, height);
+                } else {
+                    cell.renderTooltip(stack, font, itemRenderer);
+                }
+                break;
             }
         }
-        return true;
-    }
-
-    /**
-     * 重写keyPressed方法，处理键盘按键事件
-     *
-     * @param keyCode   按键的键码
-     * @param scanCode  按键的扫描码
-     * @param modifiers 按键时按下的修饰键（如Shift、Ctrl等）
-     * @return boolean 表示是否消耗了该按键事件
-     * <p>
-     * 此方法主要监听特定的按键事件，当按下SIGN_IN_SCREEN_KEY或E键时，触发onClose方法，执行一些关闭操作
-     * 对于其他按键，则交由父类处理
-     */
-    @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        keyManager.keyPressed(keyCode);
-        boolean consumed = false;
-        // 当按键等于SIGN_IN_SCREEN_KEY键的值或Inventory键时，调用onClose方法，并返回true，表示该按键事件已被消耗
-        if (keyCode == GLFWKey.GLFW_KEY_ESCAPE || keyCode == ClientEventHandler.SIGN_IN_SCREEN_KEY.getKey().getValue() || keyCode == Minecraft.getInstance().options.keyInventory.getKey().getValue()) {
-            if (this.SIGN_IN_SCREEN_TIPS) this.SIGN_IN_SCREEN_TIPS = false;
-            else if (this.previousScreen != null) Minecraft.getInstance().setScreen(this.previousScreen);
-            else this.onClose();
-            consumed = true;
+        for (RewardOperationWidget widget : operationWidgets.values()) {
+            widget.renderTooltip(stack, inputState.mouseX(), inputState.mouseY());
         }
-        return consumed || super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override
-    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
-        boolean consumed = false;
-        if (ClientConfig.get().signKeys().lastMonth().stream().anyMatch(keyManager::isKeyPressed)) {
-            SakuraSignIn.setCalendarCurrentDate(DateUtils.addMonth(SakuraSignIn.getCalendarCurrentDate(), -1));
-            SakuraNetwork.requestMonth(SakuraSignIn.getCalendarCurrentDate());
-            updateLayout();
-            consumed = true;
-        } else if (ClientConfig.get().signKeys().nextMonth().stream().anyMatch(keyManager::isKeyPressed)) {
-            SakuraSignIn.setCalendarCurrentDate(DateUtils.addMonth(SakuraSignIn.getCalendarCurrentDate(), 1));
-            SakuraNetwork.requestMonth(SakuraSignIn.getCalendarCurrentDate());
-            updateLayout();
-            consumed = true;
-        } else if (ClientConfig.get().signKeys().lastYear().stream().anyMatch(keyManager::isKeyPressed)) {
-            SakuraSignIn.setCalendarCurrentDate(DateUtils.addYear(SakuraSignIn.getCalendarCurrentDate(), -1));
-            SakuraNetwork.requestMonth(SakuraSignIn.getCalendarCurrentDate());
-            updateLayout();
-            consumed = true;
-        } else if (ClientConfig.get().signKeys().nextYear().stream().anyMatch(keyManager::isKeyPressed)) {
-            SakuraSignIn.setCalendarCurrentDate(DateUtils.addYear(SakuraSignIn.getCalendarCurrentDate(), 1));
-            SakuraNetwork.requestMonth(SakuraSignIn.getCalendarCurrentDate());
-            updateLayout();
-            consumed = true;
+    protected void onKeyPressed(KeyPressedHandleArgs eventArgs) {
+        int keyCode = eventArgs.keyCode();
+        if (keyCode == GLFWKey.GLFW_KEY_ESCAPE
+                || keyCode == ClientEventHandler.SIGN_IN_SCREEN_KEY.getKey().getValue()
+                || keyCode == Minecraft.getInstance().options.keyInventory.getKey().getValue()) {
+            if (showOpeningTips) {
+                dismissOpeningTips(false);
+            } else {
+                onClose();
+            }
+            eventArgs.consumed(true);
         }
-        keyManager.keyReleased(keyCode);
-        // 对于其他按键，交由父类处理，并返回父类的处理结果
-        return consumed || super.keyReleased(keyCode, scanCode, modifiers);
     }
 
-    // /**
-    //  * 窗口缩放时重新计算布局
-    //  */
-    // @Override
-    // @ParametersAreNonnullByDefault
-    // public void resize(Minecraft mc, int width, int height) {
-    //     super.resize(mc, width, height);
-    //     super.width = width;
-    //     super.height = height;
-    //     // 在窗口大小变化时更新布局
-    //     updateLayout();
-    //     LOGGER.debug("{},{}", super.width, super.height);
-    // }
-
-    /**
-     * 窗口打开时是否暂停游戏
-     */
     @Override
-    public boolean isPauseScreen() {
-        return false;
+    protected void onKeyReleased(KeyReleasedHandleArgs eventArgs) {
+        int keyCode = eventArgs.keyCode();
+        if (matchesKey(ClientConfig.get().signKeys().lastMonth(), keyCode)) {
+            changeCalendar(DateUtils.addMonth(SakuraSignIn.getCalendarCurrentDate(), -1));
+        } else if (matchesKey(ClientConfig.get().signKeys().nextMonth(), keyCode)) {
+            changeCalendar(DateUtils.addMonth(SakuraSignIn.getCalendarCurrentDate(), 1));
+        } else if (matchesKey(ClientConfig.get().signKeys().lastYear(), keyCode)) {
+            changeCalendar(DateUtils.addYear(SakuraSignIn.getCalendarCurrentDate(), -1));
+        } else if (matchesKey(ClientConfig.get().signKeys().nextYear(), keyCode)) {
+            changeCalendar(DateUtils.addYear(SakuraSignIn.getCalendarCurrentDate(), 1));
+        } else {
+            return;
+        }
+        eventArgs.consumed(true);
+    }
+
+    private boolean matchesKey(List<String> bindings, int keyCode) {
+        return bindings.stream().anyMatch(binding -> GLFWKeyHelper.matchKey(binding, keyCode));
+    }
+
+    private static final class CalendarCellData {
+        private int year;
+        private int month;
+        private int day;
+        private int status;
+        private boolean showIcon;
+        private boolean showText;
+        private boolean showHover;
+        private boolean lastCurrentDay;
     }
 }
