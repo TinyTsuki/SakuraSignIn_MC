@@ -33,7 +33,10 @@ public class RewardEditorBaniraScreenContractTest {
         assertTrue(screen.contains("new ConfirmDialogScreen("));
         assertTrue(screen.contains("requestDeleteConfirmation()"));
         assertTrue(screen.contains("if (!popupOption.isEmpty())"));
-        assertTrue(screen.contains("inputState.onlyShiftPressed()"));
+        assertTrue(screen.contains("inputState.isCtrlPressed()"));
+        assertTrue(screen.contains("inputState.isShiftPressed()"));
+        assertTrue(screen.contains("new ReadOnlyTextScreen("));
+        assertTrue(screen.contains("deleteSelectedRewards()"));
         assertTrue(operationWidget.contains("extends BaseWidget"));
         assertTrue(operationWidget.contains("TooltipWidget.drawPopupMessage"));
         assertTrue(rewardWidget.contains("MouseDragEvent"));
@@ -46,7 +49,6 @@ public class RewardEditorBaniraScreenContractTest {
         assertFalse(screen.contains("OperationButton.RenderContext"));
         assertFalse(screen.contains("screen.component.PopupOption"));
         assertFalse(screen.contains("isKeyAndMousePressed"));
-        assertFalse(screen.contains("onlyCtrlPressed()"));
         assertFalse(screen.contains("void mouseClicked("));
         assertFalse(screen.contains("void mouseReleased("));
         assertFalse(screen.contains("void mouseMoved("));
@@ -63,12 +65,9 @@ public class RewardEditorBaniraScreenContractTest {
     public void itemCountIsRenderedAfterTheItemModel() {
         String gui = read(MAIN.resolve("util/AbstractGuiUtils.java"));
 
-        int item = gui.indexOf("ItemWidget.renderItem(itemRenderer, fontRenderer, itemStack, x, y, false)");
-        int foreground = gui.indexOf("setDepth(matrixStack, EDepth.FOREGROUND)", item);
-        int count = gui.indexOf("fontRenderer.drawShadow(matrixStack, count", foreground);
-        assertTrue(item >= 0);
-        assertTrue(foreground > item);
-        assertTrue(count > foreground);
+        assertTrue(gui.contains(
+                "ItemWidget.renderItem(itemRenderer, fontRenderer, itemStack, x, y, showText)"));
+        assertFalse(gui.contains("fontRenderer.drawShadow(matrixStack, count"));
     }
 
     private static String read(Path path) {

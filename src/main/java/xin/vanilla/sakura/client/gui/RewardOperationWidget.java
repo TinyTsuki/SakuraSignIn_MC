@@ -60,6 +60,8 @@ public final class RewardOperationWidget extends BaseWidget {
     @Setter
     private Text tooltip = Text.empty();
     @Setter
+    private ScreenCoordinate visualBounds;
+    @Setter
     private Consumer<MouseEvent> pressHandler;
     @Setter
     private Consumer<MouseEvent> releaseHandler;
@@ -98,19 +100,19 @@ public final class RewardOperationWidget extends BaseWidget {
     }
 
     public double realX() {
-        return absoluteX();
+        return visualBounds != null ? visualBounds.x() : absoluteX();
     }
 
     public double realY() {
-        return absoluteY();
+        return visualBounds != null ? visualBounds.y() : absoluteY();
     }
 
     public double realWidth() {
-        return bounds().width();
+        return visualBounds != null ? visualBounds.width() : bounds().width();
     }
 
     public double realHeight() {
-        return bounds().height();
+        return visualBounds != null ? visualBounds.height() : bounds().height();
     }
 
     @Override
@@ -156,7 +158,7 @@ public final class RewardOperationWidget extends BaseWidget {
         }
         TooltipWidget.drawPopupMessage(stack, FontDrawArgs.ofPopo(
                 tooltip.clone().stack(stack).font(Minecraft.getInstance().font)
-        ).x(mouseX).y(mouseY));
+        ).x(mouseX).y(mouseY), screen.getEffectiveTheme(), screen.season());
     }
 
     @Override

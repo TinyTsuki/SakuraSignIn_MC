@@ -232,10 +232,13 @@ public class CommonConfig implements ConfigData {
     @Setter
     @Accessors(chain = true, fluent = true)
     public static class CoolingCategory {
+        @ConfigEntry.Gui.Tooltip(zh_cn = "签到冷却的计算方式", en_us = "How the sign-in cooldown is calculated")
         private ETimeCoolingMethod timeCoolingMethod = ETimeCoolingMethod.FIXED_TIME;
         @ConfigEntry.BoundedDouble(min = -23.59, max = 23.59)
+        @ConfigEntry.Gui.Tooltip(zh_cn = "固定时间模式下每日刷新签到的时间", en_us = "Daily sign-in reset time in fixed-time mode")
         private double timeCoolingTime = 0.0;
         @ConfigEntry.BoundedDouble(min = 0.0, max = 23.59)
+        @ConfigEntry.Gui.Tooltip(zh_cn = "间隔模式下两次签到之间的小时数", en_us = "Hours required between sign-ins in interval mode")
         private double timeCoolingInterval = 12.34;
     }
 
@@ -243,7 +246,9 @@ public class CommonConfig implements ConfigData {
     @Setter
     @Accessors(chain = true, fluent = true)
     public static class DateTimeCategory {
+        @ConfigEntry.Gui.Tooltip(zh_cn = "服务端时间基准\n通常不需要手动修改", en_us = "Server time baseline\nNormally does not need manual changes")
         private String serverTime = "1970-01-01 00:00:00";
+        @ConfigEntry.Gui.Tooltip(zh_cn = "用于修正服务端时间的校准值", en_us = "Calibration value used to adjust server time")
         private String serverCalibrationTime = "1970-01-01 00:00:00";
     }
 
@@ -251,8 +256,11 @@ public class CommonConfig implements ConfigData {
     @Setter
     @Accessors(chain = true, fluent = true)
     public static class RewardCategory {
+        @ConfigEntry.Gui.Tooltip(zh_cn = "奖励概率是否受玩家幸运值影响", en_us = "Whether player luck affects reward probability")
         private boolean rewardAffectedByLuck = true;
+        @ConfigEntry.Gui.Tooltip(zh_cn = "达到更高连续天数后是否仍可获得较低档奖励", en_us = "Allow lower-tier continuous rewards after reaching higher thresholds")
         private boolean continuousRewardsRepeatable = false;
+        @ConfigEntry.Gui.Tooltip(zh_cn = "周期奖励超过最大天数后是否重新循环", en_us = "Restart cycle rewards after the maximum day")
         private boolean cycleRewardsRepeatable = false;
     }
 
@@ -260,7 +268,9 @@ public class CommonConfig implements ConfigData {
     @Setter
     @Accessors(chain = true, fluent = true)
     public static class ServerCategory {
+        @ConfigEntry.Gui.Tooltip(zh_cn = "玩家进入服务器后是否自动尝试签到", en_us = "Automatically attempt sign-in when a player joins")
         private boolean autoSignIn = true;
+        @ConfigEntry.Gui.Tooltip(zh_cn = "无法确定玩家语言时使用的默认语言", en_us = "Default language when a player's language is unavailable")
         private String defaultLanguage = "en_us";
     }
 
@@ -283,12 +293,19 @@ public class CommonConfig implements ConfigData {
     @Setter
     @Accessors(chain = true, fluent = true)
     public static class CommandCategory {
+        @ConfigEntry.Gui.Tooltip(zh_cn = "樱花签根指令名称", en_us = "Root command name for Sakura Sign-In")
         private String commandPrefix = "sakura";
+        @ConfigEntry.Gui.Tooltip(zh_cn = "签到子指令名称", en_us = "Sign-in subcommand name")
         private String commandSignIn = "sign";
+        @ConfigEntry.Gui.Tooltip(zh_cn = "签到并领取奖励子指令名称", en_us = "Sign-in and claim subcommand name")
         private String commandSignInEx = "signex";
+        @ConfigEntry.Gui.Tooltip(zh_cn = "领取奖励子指令名称", en_us = "Reward claim subcommand name")
         private String commandReward = "reward";
+        @ConfigEntry.Gui.Tooltip(zh_cn = "兑换码子指令名称", en_us = "Redemption-code subcommand name")
         private String commandCdk = "cdk";
+        @ConfigEntry.Gui.Tooltip(zh_cn = "补签卡管理子指令名称", en_us = "Make-up card management subcommand name")
         private String commandCard = "card";
+        @ConfigEntry.Gui.Tooltip(zh_cn = "语言设置子指令名称", en_us = "Language settings subcommand name")
         private String commandLanguage = "language";
     }
 
@@ -296,11 +313,17 @@ public class CommonConfig implements ConfigData {
     @Setter
     @Accessors(chain = true, fluent = true)
     public static class ConciseCategory {
+        @ConfigEntry.Gui.Tooltip(zh_cn = "注册无根指令前缀的签到指令", en_us = "Register the sign-in command without the root prefix")
         private boolean conciseSignIn = true;
+        @ConfigEntry.Gui.Tooltip(zh_cn = "注册无根指令前缀的签到并领奖指令", en_us = "Register the sign-and-claim command without the root prefix")
         private boolean conciseSignInEx = true;
+        @ConfigEntry.Gui.Tooltip(zh_cn = "注册无根指令前缀的领奖指令", en_us = "Register the reward command without the root prefix")
         private boolean conciseReward = true;
+        @ConfigEntry.Gui.Tooltip(zh_cn = "注册无根指令前缀的兑换码指令", en_us = "Register the redemption-code command without the root prefix")
         private boolean conciseCdk = true;
+        @ConfigEntry.Gui.Tooltip(zh_cn = "注册无根指令前缀的补签卡指令", en_us = "Register the card command without the root prefix")
         private boolean conciseCard = false;
+        @ConfigEntry.Gui.Tooltip(zh_cn = "注册无根指令前缀的语言指令", en_us = "Register the language command without the root prefix")
         private boolean conciseLanguage = false;
     }
 
@@ -308,22 +331,56 @@ public class CommonConfig implements ConfigData {
     @Setter
     @Accessors(chain = true, fluent = true)
     public static class PermissionCategory {
-        @ConfigEntry.BoundedDiscrete(min = 0, max = 4) private int permissionEditReward = 3;
-        @ConfigEntry.BoundedDiscrete(min = 0, max = 4) private int permissionBaseReward = 0;
-        @ConfigEntry.BoundedDiscrete(min = 0, max = 4) private int permissionContinuousReward = 0;
-        @ConfigEntry.BoundedDiscrete(min = 0, max = 4) private int permissionCycleReward = 0;
-        @ConfigEntry.BoundedDiscrete(min = 0, max = 4) private int permissionYearReward = 0;
-        @ConfigEntry.BoundedDiscrete(min = 0, max = 4) private int permissionMonthReward = 0;
-        @ConfigEntry.BoundedDiscrete(min = 0, max = 4) private int permissionWeekReward = 0;
-        @ConfigEntry.BoundedDiscrete(min = 0, max = 4) private int permissionDateTimeReward = 0;
-        @ConfigEntry.BoundedDiscrete(min = 0, max = 4) private int permissionCumulativeReward = 0;
-        @ConfigEntry.BoundedDiscrete(min = 0, max = 4) private int permissionRandomReward = 0;
-        @ConfigEntry.BoundedDiscrete(min = 0, max = 4) private int permissionCdkReward = 3;
-        @ConfigEntry.BoundedDiscrete(min = 0, max = 4) private int permissionRewardProbability = 0;
-        @ConfigEntry.BoundedDiscrete(min = 0, max = 4) private int permissionRewardDetail = 0;
-        @ConfigEntry.BoundedDiscrete(min = 0, max = 4) private int permissionRewardFailedTips = 0;
-        @ConfigEntry.BoundedDiscrete(min = 0, max = 4) private int permissionCommandReward = 2;
-        @ConfigEntry.BoundedDiscrete(min = 0, max = 4) private int permissionServerConfigGet = 0;
-        @ConfigEntry.BoundedDiscrete(min = 0, max = 4) private int permissionServerConfigSet = 3;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 4)
+        @ConfigEntry.Gui.Tooltip(zh_cn = "编辑服务端奖励配置所需权限等级", en_us = "Permission level required to edit server reward configuration")
+        private int permissionEditReward = 3;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 4)
+        @ConfigEntry.Gui.Tooltip(zh_cn = "查看基础奖励所需权限等级", en_us = "Permission level required to view base rewards")
+        private int permissionBaseReward = 0;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 4)
+        @ConfigEntry.Gui.Tooltip(zh_cn = "查看连续签到奖励所需权限等级", en_us = "Permission level required to view continuous rewards")
+        private int permissionContinuousReward = 0;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 4)
+        @ConfigEntry.Gui.Tooltip(zh_cn = "查看周期奖励所需权限等级", en_us = "Permission level required to view cycle rewards")
+        private int permissionCycleReward = 0;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 4)
+        @ConfigEntry.Gui.Tooltip(zh_cn = "查看年度奖励所需权限等级", en_us = "Permission level required to view annual rewards")
+        private int permissionYearReward = 0;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 4)
+        @ConfigEntry.Gui.Tooltip(zh_cn = "查看月度奖励所需权限等级", en_us = "Permission level required to view monthly rewards")
+        private int permissionMonthReward = 0;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 4)
+        @ConfigEntry.Gui.Tooltip(zh_cn = "查看周度奖励所需权限等级", en_us = "Permission level required to view weekly rewards")
+        private int permissionWeekReward = 0;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 4)
+        @ConfigEntry.Gui.Tooltip(zh_cn = "查看具体时间奖励所需权限等级", en_us = "Permission level required to view date-time rewards")
+        private int permissionDateTimeReward = 0;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 4)
+        @ConfigEntry.Gui.Tooltip(zh_cn = "查看累计奖励所需权限等级", en_us = "Permission level required to view cumulative rewards")
+        private int permissionCumulativeReward = 0;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 4)
+        @ConfigEntry.Gui.Tooltip(zh_cn = "查看随机奖励池所需权限等级", en_us = "Permission level required to view random reward pools")
+        private int permissionRandomReward = 0;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 4)
+        @ConfigEntry.Gui.Tooltip(zh_cn = "查看兑换码奖励所需权限等级", en_us = "Permission level required to view redemption-code rewards")
+        private int permissionCdkReward = 3;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 4)
+        @ConfigEntry.Gui.Tooltip(zh_cn = "查看奖励概率所需权限等级", en_us = "Permission level required to view reward probabilities")
+        private int permissionRewardProbability = 0;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 4)
+        @ConfigEntry.Gui.Tooltip(zh_cn = "查看奖励详情所需权限等级", en_us = "Permission level required to view reward details")
+        private int permissionRewardDetail = 0;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 4)
+        @ConfigEntry.Gui.Tooltip(zh_cn = "查看奖励失败原因所需权限等级", en_us = "Permission level required to view reward failure details")
+        private int permissionRewardFailedTips = 0;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 4)
+        @ConfigEntry.Gui.Tooltip(zh_cn = "使用指令领取奖励所需权限等级", en_us = "Permission level required to claim rewards by command")
+        private int permissionCommandReward = 2;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 4)
+        @ConfigEntry.Gui.Tooltip(zh_cn = "查看服务端配置所需权限等级", en_us = "Permission level required to view server configuration")
+        private int permissionServerConfigGet = 0;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 4)
+        @ConfigEntry.Gui.Tooltip(zh_cn = "修改服务端配置所需权限等级", en_us = "Permission level required to change server configuration")
+        private int permissionServerConfigSet = 3;
     }
 }
