@@ -39,6 +39,7 @@ public class SakuraNotificationTypesContractTest {
 
         assertTrue(facade.contains("BaniraNotifications.show"));
         assertTrue(facade.contains("NotificationData.of"));
+        assertTrue(facade.contains(".themed(true)"));
         assertFalse(events.contains("NotificationManager"));
         assertFalse(Files.exists(MAIN.resolve("screen/component/NotificationManager.java")));
     }

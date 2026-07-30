@@ -66,7 +66,8 @@ public final class SakuraUiSmokeRunner {
         boolean inWorldWithoutScreen = !inputForm && minecraft.player != null
                 && minecraft.level != null
                 && parent == null;
-        boolean atMainMenu = (reward || inputForm) && parent instanceof MainMenuScreen;
+        // 奖励配置依赖服务端下发的数据，只有输入表单可在主菜单独立验证。
+        boolean atMainMenu = inputForm && parent instanceof MainMenuScreen;
         if (!inWorldWithoutScreen && !atMainMenu) {
             return;
         }

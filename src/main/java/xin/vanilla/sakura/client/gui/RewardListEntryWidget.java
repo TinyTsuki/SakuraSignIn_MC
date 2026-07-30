@@ -37,12 +37,23 @@ public final class RewardListEntryWidget extends BaseWidget {
     @Setter
     private int selectedColor = 0xCCFFFFFF;
     @Setter
+    private boolean drawSelectionOutline = true;
+    @Setter
     private Text tooltip = Text.empty();
     @Setter
     private Consumer<MouseEvent> releaseHandler;
     @Setter
     private Consumer<MouseDragEvent> dragHandler;
+    @Setter
+    private Consumer<MouseEvent> longPressHandler;
+    @Setter
+    private Consumer<MouseDragEvent> longPressDragHandler;
+    @Setter
+    private Consumer<MouseEvent> longPressReleaseHandler;
     private boolean dragged;
+    private boolean longPressDragging;
+    private double pressX;
+    private double pressY;
 
     public RewardListEntryWidget(BaniraScreen screen, int operation, Consumer<RenderContext> renderer) {
         super(screen, new ScreenCoordinate());
@@ -85,7 +96,7 @@ public final class RewardListEntryWidget extends BaseWidget {
         if (!visible() || !visibleInViewport()) {
             return;
         }
-        if (selected) {
+        if (selected && drawSelectionOutline) {
             ShapeDrawArgs.RectParams rect = new ShapeDrawArgs.RectParams()
                     .x((float) realX() - 1)
                     .y((float) realY() - 1)
@@ -116,11 +127,22 @@ public final class RewardListEntryWidget extends BaseWidget {
     @Override
     protected boolean onMouseClick(MouseEvent event) {
         dragged = false;
+        longPressDragging = false;
+        pressX = event.mouseX();
+        pressY = event.mouseY();
         return true;
     }
 
     @Override
     protected boolean onMouseRelease(MouseEvent event, boolean inside) {
+        if (longPressDragging) {
+            if (longPressReleaseHandler != null) {
+                longPressReleaseHandler.accept(event);
+            }
+            longPressDragging = false;
+            dragged = false;
+            return true;
+        }
         boolean activate = inside && !dragged;
         dragged = false;
         if (activate && releaseHandler != null) {
@@ -131,14 +153,32 @@ public final class RewardListEntryWidget extends BaseWidget {
 
     @Override
     protected boolean onMouseDrag(MouseDragEvent event) {
-        if (Math.abs(event.dragX()) > 0.01 || Math.abs(event.dragY()) > 0.01) {
+        if (longPressDragging) {
+            if (longPressDragHandler != null) {
+                longPressDragHandler.accept(event);
+            }
+            return true;
+        }
+        double distance = Math.hypot(event.mouseX() - pressX, event.mouseY() - pressY);
+        if (distance > 4.0) {
             dragged = true;
         }
-        if (dragHandler != null) {
+        if (dragged && dragHandler != null) {
             dragHandler.accept(event);
             return true;
         }
-        return false;
+        return true;
+    }
+
+    @Override
+    protected void onLongPress(MouseEvent event) {
+        if (!dragged && selected && event.button() == 0) {
+            longPressDragging = true;
+            dragged = true;
+            if (longPressHandler != null) {
+                longPressHandler.accept(event);
+            }
+        }
     }
 
     @Getter
