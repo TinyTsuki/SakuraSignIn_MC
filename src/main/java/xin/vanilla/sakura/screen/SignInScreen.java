@@ -5,8 +5,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.enums.EnumAlignment;
@@ -17,6 +15,8 @@ import xin.vanilla.banira.client.gui.widget.BaseShapeWidget;
 import xin.vanilla.banira.client.gui.widget.ButtonWidget;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.sakura.SakuraSignIn;
+import xin.vanilla.sakura.client.SakuraClientBootstrap;
+import xin.vanilla.sakura.client.SakuraClientState;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.client.gui.RewardOperationWidget;
 import xin.vanilla.sakura.config.ClientConfig;
@@ -61,7 +61,6 @@ import static xin.vanilla.sakura.screen.SignInScreen.OperationButtonType.UP_ARRO
 /**
  * 签到日历主界面。Sakura 只保留主题与签到业务，交互生命周期由 Banira 管理。
  */
-@OnlyIn(Dist.CLIENT)
 public final class SignInScreen extends BaniraScreen {
     public static int lastOffset = 6;
     public static int nextOffset = 6;
@@ -121,8 +120,8 @@ public final class SignInScreen extends BaniraScreen {
 
     @Override
     protected void onInit() {
-        if (SakuraSignIn.getCalendarCurrentDate() == null) {
-            SakuraSignIn.setCalendarCurrentDate(
+        if (SakuraClientState.getCalendarCurrentDate() == null) {
+            SakuraClientState.setCalendarCurrentDate(
                     RewardManager.getCompensateDate(DateUtils.getClientDate()));
         }
         ClientEventHandler.loadThemeTexture();
@@ -135,12 +134,12 @@ public final class SignInScreen extends BaniraScreen {
         operationWidgets.clear();
         signInCells.clear();
         createOperationWidgets();
-        createCalendarCells(SakuraSignIn.getCalendarCurrentDate());
+        createCalendarCells(SakuraClientState.getCalendarCurrentDate());
         createOpeningTipButtons();
     }
 
     private void updateLayoutMetrics() {
-        TextureCoordinate texture = SakuraSignIn.getThemeTextureCoordinate();
+        TextureCoordinate texture = SakuraClientState.getThemeTextureCoordinate();
         aspectRatio = texture.getBgUV().getUWidth() / texture.getBgUV().getVHeight();
         bgHeight = Math.max(height - 20, 120);
         bgWidth = (int) Math.max(bgHeight * aspectRatio, 100);
@@ -160,7 +159,7 @@ public final class SignInScreen extends BaniraScreen {
     }
 
     private void createOperationWidgets() {
-        TextureCoordinate texture = SakuraSignIn.getThemeTextureCoordinate();
+        TextureCoordinate texture = SakuraClientState.getThemeTextureCoordinate();
         registerOperation(createTextureOperation(LEFT_ARROW, texture.getLeftArrowCoordinate(),
                 texture.getArrowUV(), texture.getArrowHoverUV(), texture.getArrowTapUV())
                 .setFlipHorizontal(true)
@@ -195,12 +194,12 @@ public final class SignInScreen extends BaniraScreen {
     private RewardOperationWidget createTextureOperation(OperationButtonType type, Coordinate bounds,
                                                          Coordinate normal, Coordinate hover,
                                                          Coordinate pressed) {
-        RewardOperationWidget widget = new RewardOperationWidget(this, type.code, SakuraSignIn.getThemeTexture())
+        RewardOperationWidget widget = new RewardOperationWidget(this, type.code, SakuraClientState.getThemeTexture())
                 .setNormal(copyCoordinate(normal))
                 .setHover(copyCoordinate(hover))
                 .setPressed(copyCoordinate(pressed))
-                .setTextureWidth(SakuraSignIn.getThemeTextureCoordinate().getTotalWidth())
-                .setTextureHeight(SakuraSignIn.getThemeTextureCoordinate().getTotalHeight())
+                .setTextureWidth(SakuraClientState.getThemeTextureCoordinate().getTotalWidth())
+                .setTextureHeight(SakuraClientState.getThemeTextureCoordinate().getTotalHeight())
                 .setTransparentCheck(true)
                 .setBounds(bounds, bgX, bgY, scale);
         widget.setReleaseHandler(event -> handleOperation(widget, event.button()));
@@ -208,7 +207,7 @@ public final class SignInScreen extends BaniraScreen {
     }
 
     private void registerThemeOperation(OperationButtonType type) {
-        TextureCoordinate texture = SakuraSignIn.getThemeTextureCoordinate();
+        TextureCoordinate texture = SakuraClientState.getThemeTextureCoordinate();
         RewardOperationWidget widget = createTextureOperation(type, texture.getThemeCoordinate(),
                 texture.getThemeUV(), texture.getThemeHoverUV(), texture.getThemeTapUV())
                 .setTooltip(Text.trans(SakuraSignIn.MODID,
@@ -272,9 +271,9 @@ public final class SignInScreen extends BaniraScreen {
      * 根据当前月份重建格子，切换月份时无需维护额外的鼠标状态。
      */
     private void createCalendarCells(Date current) {
-        double startX = bgX + SakuraSignIn.getThemeTextureCoordinate()
+        double startX = bgX + SakuraClientState.getThemeTextureCoordinate()
                 .getCellCoordinate().getX() * scale;
-        double startY = bgY + SakuraSignIn.getThemeTextureCoordinate()
+        double startY = bgY + SakuraClientState.getThemeTextureCoordinate()
                 .getCellCoordinate().getY() * scale;
         Date compensateDate = RewardManager.getCompensateDate(DateUtils.getClientDate());
         Date lastMonth = DateUtils.addMonth(current, -1);
@@ -304,14 +303,14 @@ public final class SignInScreen extends BaniraScreen {
                 if (itemIndex >= 40) {
                     break;
                 }
-                double x = startX + column * (SakuraSignIn.getThemeTextureCoordinate()
+                double x = startX + column * (SakuraClientState.getThemeTextureCoordinate()
                         .getCellCoordinate().getWidth()
-                        + SakuraSignIn.getThemeTextureCoordinate().getCellHMargin()) * scale;
-                double y = startY + row * (SakuraSignIn.getThemeTextureCoordinate()
+                        + SakuraClientState.getThemeTextureCoordinate().getCellHMargin()) * scale;
+                double y = startY + row * (SakuraClientState.getThemeTextureCoordinate()
                         .getCellCoordinate().getHeight()
-                        + SakuraSignIn.getThemeTextureCoordinate().getCellVMargin()) * scale;
+                        + SakuraClientState.getThemeTextureCoordinate().getCellVMargin()) * scale;
                 int currentPoint = (monthStartWeekDay
-                        - (SakuraSignIn.getThemeTextureCoordinate().getWeekStart() - 1) + 6) % 7;
+                        - (SakuraClientState.getThemeTextureCoordinate().getWeekStart() - 1) + 6) % 7;
                 CalendarCellData data = resolveCellData(itemIndex, currentPoint,
                         daysOfCurrentMonth, daysOfLastMonth, current, lastMonth,
                         compensateDate, showLastReward, showNextReward);
@@ -322,10 +321,10 @@ public final class SignInScreen extends BaniraScreen {
                 data.status = resolveCellStatus(signInData, compensateDate, cellDate,
                         dateKey, data.status);
 
-                SignInCell cell = new SignInCell(this, SakuraSignIn.getThemeTexture(),
-                        SakuraSignIn.getThemeTextureCoordinate(), x, y,
-                        SakuraSignIn.getThemeTextureCoordinate().getCellCoordinate().getWidth() * scale,
-                        SakuraSignIn.getThemeTextureCoordinate().getCellCoordinate().getHeight() * scale,
+                SignInCell cell = new SignInCell(this, SakuraClientState.getThemeTexture(),
+                        SakuraClientState.getThemeTextureCoordinate(), x, y,
+                        SakuraClientState.getThemeTextureCoordinate().getCellCoordinate().getWidth() * scale,
+                        SakuraClientState.getThemeTextureCoordinate().getCellCoordinate().getHeight() * scale,
                         scale, monthRewards.getOrDefault(dateKey, new RewardList()),
                         data.year, data.month, data.day, data.status)
                         .setShowIcon(data.showIcon)
@@ -404,13 +403,13 @@ public final class SignInScreen extends BaniraScreen {
             return;
         }
         if (type == LEFT_ARROW && mouseButton == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
-            changeCalendar(DateUtils.addMonth(SakuraSignIn.getCalendarCurrentDate(), -1));
+            changeCalendar(DateUtils.addMonth(SakuraClientState.getCalendarCurrentDate(), -1));
         } else if (type == RIGHT_ARROW && mouseButton == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
-            changeCalendar(DateUtils.addMonth(SakuraSignIn.getCalendarCurrentDate(), 1));
+            changeCalendar(DateUtils.addMonth(SakuraClientState.getCalendarCurrentDate(), 1));
         } else if (type == UP_ARROW && mouseButton == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
-            changeCalendar(DateUtils.addYear(SakuraSignIn.getCalendarCurrentDate(), -1));
+            changeCalendar(DateUtils.addYear(SakuraClientState.getCalendarCurrentDate(), -1));
         } else if (type == DOWN_ARROW && mouseButton == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
-            changeCalendar(DateUtils.addYear(SakuraSignIn.getCalendarCurrentDate(), 1));
+            changeCalendar(DateUtils.addYear(SakuraClientState.getCalendarCurrentDate(), 1));
         } else if (type.code >= THEME_ORIGINAL_BUTTON.code
                 && type.code <= THEME_CHAOS_BUTTON.code
                 && (mouseButton == GLFWKey.GLFW_MOUSE_BUTTON_LEFT
@@ -420,7 +419,7 @@ public final class SignInScreen extends BaniraScreen {
     }
 
     private void changeCalendar(Date date) {
-        SakuraSignIn.setCalendarCurrentDate(date);
+        SakuraClientState.setCalendarCurrentDate(date);
         SakuraNetwork.requestMonth(date);
         refreshLayout();
     }
@@ -525,34 +524,34 @@ public final class SignInScreen extends BaniraScreen {
     private void renderBackgroundTexture(MatrixStack stack) {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        Minecraft.getInstance().getTextureManager().bind(SakuraSignIn.getThemeTexture());
-        Coordinate uv = SakuraSignIn.getThemeTextureCoordinate().getBgUV();
+        Minecraft.getInstance().getTextureManager().bind(SakuraClientState.getThemeTexture());
+        Coordinate uv = SakuraClientState.getThemeTextureCoordinate().getBgUV();
         AbstractGuiUtils.blit(stack, bgX, bgY, bgWidth, bgHeight,
                 (float) uv.getU0(), (float) uv.getV0(),
                 (int) uv.getUWidth(), (int) uv.getVHeight(),
-                SakuraSignIn.getThemeTextureCoordinate().getTotalWidth(),
-                SakuraSignIn.getThemeTextureCoordinate().getTotalHeight());
+                SakuraClientState.getThemeTextureCoordinate().getTotalWidth(),
+                SakuraClientState.getThemeTextureCoordinate().getTotalHeight());
         RenderSystem.disableBlend();
     }
 
     private void renderCalendarTitle(MatrixStack stack) {
-        TextureCoordinate texture = SakuraSignIn.getThemeTextureCoordinate();
+        TextureCoordinate texture = SakuraClientState.getThemeTextureCoordinate();
         double yearX = bgX + texture.getYearCoordinate().getX() * scale;
         double yearY = bgY + texture.getYearCoordinate().getY() * scale;
         double monthX = bgX + texture.getMonthCoordinate().getX() * scale;
         double monthY = bgY + texture.getMonthCoordinate().getY() * scale;
         String language = Minecraft.getInstance().options.languageCode;
-        font.draw(stack, DateUtils.toLocalStringYear(SakuraSignIn.getCalendarCurrentDate(), language),
+        font.draw(stack, DateUtils.toLocalStringYear(SakuraClientState.getCalendarCurrentDate(), language),
                 (float) yearX, (float) yearY, texture.getTextColorDate());
-        font.draw(stack, DateUtils.toLocalStringMonth(SakuraSignIn.getCalendarCurrentDate(), language),
+        font.draw(stack, DateUtils.toLocalStringMonth(SakuraClientState.getCalendarCurrentDate(), language),
                 (float) monthX, (float) monthY, texture.getTextColorDate());
     }
 
     private void updateOperationPresentation() {
-        TextureCoordinate texture = SakuraSignIn.getThemeTextureCoordinate();
+        TextureCoordinate texture = SakuraClientState.getThemeTextureCoordinate();
         String language = Minecraft.getInstance().options.languageCode;
-        String yearTitle = DateUtils.toLocalStringYear(SakuraSignIn.getCalendarCurrentDate(), language);
-        String monthTitle = DateUtils.toLocalStringMonth(SakuraSignIn.getCalendarCurrentDate(), language);
+        String yearTitle = DateUtils.toLocalStringYear(SakuraClientState.getCalendarCurrentDate(), language);
+        String monthTitle = DateUtils.toLocalStringMonth(SakuraClientState.getCalendarCurrentDate(), language);
         double yearX = bgX + texture.getYearCoordinate().getX() * scale;
         double monthX = bgX + texture.getMonthCoordinate().getX() * scale;
 
@@ -592,7 +591,7 @@ public final class SignInScreen extends BaniraScreen {
             }
             int index = type.code - THEME_ORIGINAL_BUTTON.code;
             double uOffset = index * texture.getThemeUV().getUWidth();
-            boolean selected = SakuraSignIn.getActiveThemeId().equals(type.themeId);
+            boolean selected = SakuraClientState.getActiveThemeId().equals(type.themeId);
             Coordinate normal = selected ? texture.getThemeTapUV() : texture.getThemeUV();
             Coordinate hover = selected ? texture.getThemeTapUV() : texture.getThemeHoverUV();
             widget.setNormal(offsetU(normal, uOffset))
@@ -614,8 +613,8 @@ public final class SignInScreen extends BaniraScreen {
             return;
         }
         Coordinate titleCoordinate = type == LEFT_ARROW || type == RIGHT_ARROW
-                ? SakuraSignIn.getThemeTextureCoordinate().getMonthCoordinate()
-                : SakuraSignIn.getThemeTextureCoordinate().getYearCoordinate();
+                ? SakuraClientState.getThemeTextureCoordinate().getMonthCoordinate()
+                : SakuraClientState.getThemeTextureCoordinate().getYearCoordinate();
         if (source.getX() != titleCoordinate.getX() || source.getY() != titleCoordinate.getY()) {
             x = source.getX();
             y = source.getY();
@@ -623,13 +622,13 @@ public final class SignInScreen extends BaniraScreen {
         double width = source.getWidth();
         double height = source.getHeight();
         if ((type == LEFT_ARROW || type == RIGHT_ARROW)
-                && width == SakuraSignIn.getThemeTextureCoordinate().getMonthCoordinate().getWidth()
-                && height == SakuraSignIn.getThemeTextureCoordinate().getMonthCoordinate().getHeight()) {
+                && width == SakuraClientState.getThemeTextureCoordinate().getMonthCoordinate().getWidth()
+                && height == SakuraClientState.getThemeTextureCoordinate().getMonthCoordinate().getHeight()) {
             width = font.lineHeight / scale;
             height = font.lineHeight / scale;
         } else if ((type == UP_ARROW || type == DOWN_ARROW)
-                && width == SakuraSignIn.getThemeTextureCoordinate().getYearCoordinate().getWidth()
-                && height == SakuraSignIn.getThemeTextureCoordinate().getYearCoordinate().getHeight()) {
+                && width == SakuraClientState.getThemeTextureCoordinate().getYearCoordinate().getWidth()
+                && height == SakuraClientState.getThemeTextureCoordinate().getYearCoordinate().getHeight()) {
             width = font.lineHeight / scale;
             height = font.lineHeight / scale;
         }
@@ -685,7 +684,7 @@ public final class SignInScreen extends BaniraScreen {
     protected void onKeyPressed(KeyPressedHandleArgs eventArgs) {
         int keyCode = eventArgs.keyCode();
         if (keyCode == GLFWKey.GLFW_KEY_ESCAPE
-                || keyCode == ClientEventHandler.SIGN_IN_SCREEN_KEY.getKey().getValue()
+                || keyCode == SakuraClientBootstrap.getSignInKey().currentKey()
                 || keyCode == Minecraft.getInstance().options.keyInventory.getKey().getValue()) {
             if (showOpeningTips) {
                 dismissOpeningTips(false);
@@ -700,13 +699,13 @@ public final class SignInScreen extends BaniraScreen {
     protected void onKeyReleased(KeyReleasedHandleArgs eventArgs) {
         int keyCode = eventArgs.keyCode();
         if (matchesKey(ClientConfig.get().signKeys().lastMonth(), keyCode)) {
-            changeCalendar(DateUtils.addMonth(SakuraSignIn.getCalendarCurrentDate(), -1));
+            changeCalendar(DateUtils.addMonth(SakuraClientState.getCalendarCurrentDate(), -1));
         } else if (matchesKey(ClientConfig.get().signKeys().nextMonth(), keyCode)) {
-            changeCalendar(DateUtils.addMonth(SakuraSignIn.getCalendarCurrentDate(), 1));
+            changeCalendar(DateUtils.addMonth(SakuraClientState.getCalendarCurrentDate(), 1));
         } else if (matchesKey(ClientConfig.get().signKeys().lastYear(), keyCode)) {
-            changeCalendar(DateUtils.addYear(SakuraSignIn.getCalendarCurrentDate(), -1));
+            changeCalendar(DateUtils.addYear(SakuraClientState.getCalendarCurrentDate(), -1));
         } else if (matchesKey(ClientConfig.get().signKeys().nextYear(), keyCode)) {
-            changeCalendar(DateUtils.addYear(SakuraSignIn.getCalendarCurrentDate(), 1));
+            changeCalendar(DateUtils.addYear(SakuraClientState.getCalendarCurrentDate(), 1));
         } else {
             return;
         }

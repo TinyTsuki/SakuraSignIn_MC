@@ -4,11 +4,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.MainMenuScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.inventory.InventoryScreen;
-import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.api.BaniraEnvironment;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.sakura.SakuraSignIn;
+import xin.vanilla.sakura.client.SakuraClientState;
 import xin.vanilla.sakura.client.theme.BuiltInThemeCatalog;
 import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.config.StringList;
@@ -35,7 +36,7 @@ public final class SakuraUiSmokeRunner {
     }
 
     public static void tick() {
-        if (FMLEnvironment.production) {
+        if (BaniraEnvironment.isProduction()) {
             return;
         }
 
@@ -94,8 +95,8 @@ public final class SakuraUiSmokeRunner {
                 return;
             }
             opened = true;
-            previousThemeId = SakuraSignIn.getActiveThemeId();
-            previousSpecialVariant = SakuraSignIn.isSpecialThemeVariant();
+            previousThemeId = SakuraClientState.getActiveThemeId();
+            previousSpecialVariant = SakuraClientState.isSpecialThemeVariant();
             themeIndex = 0;
             applyTheme(minecraft, BuiltInThemeCatalog.themeIds().get(themeIndex));
             return;
@@ -128,7 +129,7 @@ public final class SakuraUiSmokeRunner {
         ClientEventHandler.loadThemeTexture();
         minecraft.setScreen(new SignInScreen());
         LOGGER.info("Sakura theme smoke loaded: id={}, texture={}",
-                SakuraSignIn.getActiveThemeId(), SakuraSignIn.getThemeTexture());
+                SakuraClientState.getActiveThemeId(), SakuraClientState.getThemeTexture());
     }
 
     private static Screen inputForm(Screen parent) {

@@ -5,13 +5,12 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import lombok.NonNull;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.TagParser;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.JsonToNBT;
+import xin.vanilla.banira.common.util.ItemUtils;
 import xin.vanilla.sakura.rewards.RewardParser;
 import xin.vanilla.banira.common.data.Component;
 
@@ -29,7 +28,7 @@ public class ItemRewardParser implements RewardParser<ItemStack> {
             }
             int count = json.get("count").getAsInt();
             count = Math.max(count, 1);
-            Item item = ForgeRegistries.ITEMS.getValue(new ResourceLocation(itemId));
+            Item item = ItemUtils.getItemFromRegistry(itemId);
             if (item == null) {
                 throw new JsonParseException("Unknown item ID: " + itemId);
             }
@@ -38,7 +37,7 @@ public class ItemRewardParser implements RewardParser<ItemStack> {
             // 如果存在NBT数据，则解析
             if (json.has("nbt")) {
                 try {
-                    CompoundTag nbt = TagParser.parseTag(json.get("nbt").getAsString());
+                    CompoundNBT nbt = JsonToNBT.parseTag(json.get("nbt").getAsString());
                     itemStack.setTag(nbt);
                 } catch (Exception e) {
                     LOGGER.debug("Failed to parse NBT data", e);
@@ -103,9 +102,7 @@ public class ItemRewardParser implements RewardParser<ItemStack> {
     }
 
     public static String getId(Item item) {
-        ResourceLocation resource = item.getRegistryName();
-        if (resource == null) return "minecraft:air";
-        else return resource.toString();
+        return ItemUtils.getItemRegistryString(item);
     }
 
     public static String getId(ItemStack itemStack) {
@@ -115,7 +112,7 @@ public class ItemRewardParser implements RewardParser<ItemStack> {
     public static Item getItem(String id) {
         String resourceId = id;
         if (id.contains("{") && id.endsWith("}")) resourceId = resourceId.substring(0, id.indexOf("{"));
-        return ForgeRegistries.ITEMS.getValue(new ResourceLocation(resourceId));
+        return ItemUtils.getItemFromRegistry(resourceId);
     }
 
     public static ItemStack getItemStack(String id) {
@@ -136,7 +133,7 @@ public class ItemRewardParser implements RewardParser<ItemStack> {
         if (id.contains("{") && id.endsWith("}") && !id.endsWith("{}")) {
             try {
                 String nbtString = id.substring(id.indexOf("{"));
-                CompoundTag nbt = TagParser.parseTag(nbtString);
+                CompoundNBT nbt = JsonToNBT.parseTag(nbtString);
                 itemStack.setTag(nbt);
             } catch (Exception e) {
                 if (throwException) throw e;

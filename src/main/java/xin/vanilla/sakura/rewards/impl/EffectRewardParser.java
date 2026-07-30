@@ -5,41 +5,41 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import lombok.NonNull;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.effect.MobEffect;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.potion.Effect;
+import net.minecraft.potion.EffectInstance;
+import net.minecraft.potion.Effects;
+import net.minecraft.util.ResourceLocation;
+import xin.vanilla.banira.common.util.EffectUtils;
 import xin.vanilla.sakura.enums.ERewardType;
 import xin.vanilla.sakura.rewards.RewardParser;
 import xin.vanilla.banira.common.data.Component;
 
-public class EffectRewardParser implements RewardParser<MobEffectInstance> {
+public class EffectRewardParser implements RewardParser<EffectInstance> {
 
     @Override
-    public @NonNull MobEffectInstance deserialize(JsonObject json) {
-        MobEffectInstance MobEffectInstance;
+    public @NonNull EffectInstance deserialize(JsonObject json) {
+        EffectInstance effectInstance;
         try {
             String effectId = json.get("effect").getAsString();
             int duration = json.get("duration").getAsInt();
             int amplifier = json.get("amplifier").getAsInt();
 
-            MobEffect effect = ForgeRegistries.MOB_EFFECTS.getValue(new ResourceLocation(effectId));
+            Effect effect = EffectUtils.getEffectFromRegistry(effectId);
             if (effect == null) {
                 throw new JsonParseException("Unknown potion effect ID: " + effectId);
             }
-            MobEffectInstance = new MobEffectInstance(effect, duration, amplifier);
+            effectInstance = new EffectInstance(effect, duration, amplifier);
         } catch (Exception e) {
             LOGGER.error("Failed to parse effect reward", e);
-            MobEffectInstance = new MobEffectInstance(MobEffects.LUCK, 0, 0);
+            effectInstance = new EffectInstance(Effects.LUCK, 0, 0);
         }
-        return MobEffectInstance;
+        return effectInstance;
     }
 
     @Override
-    public JsonObject serialize(MobEffectInstance reward) {
+    public JsonObject serialize(EffectInstance reward) {
         JsonObject json = new JsonObject();
-        json.addProperty("effect", reward.getEffect().getRegistryName().toString());
+        json.addProperty("effect", getId(reward.getEffect()));
         json.addProperty("duration", reward.getDuration());
         json.addProperty("amplifier", reward.getAmplifier());
         return json;
@@ -57,46 +57,44 @@ public class EffectRewardParser implements RewardParser<MobEffectInstance> {
                 .append(SakuraComponent.get().object(this.deserialize(json).getEffect().getDisplayName()));
     }
 
-    public static @NonNull String getDisplayName(MobEffectInstance instance) {
+    public static @NonNull String getDisplayName(EffectInstance instance) {
         return getDisplayName(instance.getEffect());
     }
 
-    public static @NonNull String getDisplayName(MobEffect effect) {
+    public static @NonNull String getDisplayName(Effect effect) {
         return effect.getDisplayName().getString().replaceAll("\\[(.*)]", "$1");
     }
 
-    public static String getId(MobEffectInstance instance) {
+    public static String getId(EffectInstance instance) {
         return getId(instance.getEffect()) + " " + instance.getDuration() + " " + instance.getAmplifier();
     }
 
-    public static String getId(MobEffect effect) {
-        ResourceLocation resource = effect.getRegistryName();
-        if (resource == null) return "minecraft:luck";
-        else return resource.toString();
+    public static String getId(Effect effect) {
+        return EffectUtils.getEffectRegistryString(effect);
     }
 
-    public static MobEffect getEffect(String id) {
+    public static Effect getEffect(String id) {
         String resourceId = id;
         if (id.contains(" ") && id.split(" ").length == 3) resourceId = resourceId.substring(0, id.indexOf(" "));
-        return ForgeRegistries.MOB_EFFECTS.getValue(new ResourceLocation(resourceId));
+        return EffectUtils.getEffectFromRegistry(resourceId);
     }
 
-    public static MobEffectInstance getMobEffectInstance(String id, int duration, int amplifier) {
+    public static EffectInstance getEffectInstance(String id, int duration, int amplifier) {
         id = id.split(" ")[0] + " " + duration + " " + amplifier;
-        return getMobEffectInstance(id);
+        return getEffectInstance(id);
     }
 
-    public static MobEffectInstance getMobEffectInstance(String id) {
-        MobEffectInstance result = new MobEffectInstance(MobEffects.LUCK);
+    public static EffectInstance getEffectInstance(String id) {
+        EffectInstance result = new EffectInstance(Effects.LUCK);
         try {
-            result = getMobEffectInstance(id, false);
+            result = getEffectInstance(id, false);
         } catch (CommandSyntaxException ignored) {
         }
         return result;
     }
 
-    public static MobEffectInstance getMobEffectInstance(String id, boolean throwException) throws CommandSyntaxException {
-        MobEffect effect = getEffect(id);
+    public static EffectInstance getEffectInstance(String id, boolean throwException) throws CommandSyntaxException {
+        Effect effect = getEffect(id);
         if (effect == null) {
             throw new RuntimeException("Unknown effect ID: " + id);
         }
@@ -112,6 +110,6 @@ public class EffectRewardParser implements RewardParser<MobEffectInstance> {
                 LOGGER.error("Failed to parse Effect data", e);
             }
         }
-        return new MobEffectInstance(effect, duration, amplifier);
+        return new EffectInstance(effect, duration, amplifier);
     }
 }
