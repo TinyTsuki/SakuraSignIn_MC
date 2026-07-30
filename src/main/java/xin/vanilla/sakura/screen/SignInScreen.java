@@ -477,7 +477,7 @@ public final class SignInScreen extends BaniraScreen {
             String key = cellDate.after(RewardManager.getCompensateDate(DateUtils.getClientDate()))
                     ? "next_day_cannot_operate" : "past_day_cannot_operate";
             SakuraClientNotifications.warning(SakuraComponent.get().transClient(
-                    "message", key), SakuraNotificationTypes.SIGN_IN);
+                    "word", key), SakuraNotificationTypes.SIGN_IN);
         } else if (cell.getStatus() == ESignInStatus.REWARDED.getCode()) {
             SakuraClientNotifications.warning(SakuraComponent.get().transClient(
                     "word", "already_get_reward"), SakuraNotificationTypes.SIGN_IN);

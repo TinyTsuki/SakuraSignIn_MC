@@ -29,6 +29,8 @@ public class RewardListWidgetContractTest {
         assertTrue(screen.contains("registerRewardEntry("));
         assertTrue(screen.contains("entry.setReleaseHandler("));
         assertTrue(screen.contains("entry.setDragHandler("));
+        assertTrue(screen.contains("entry.setLongPressHandler("));
+        assertTrue(screen.contains(".setLongPressReleaseHandler("));
         assertTrue(screen.contains("addWidget(entry)"));
         assertTrue(screen.contains("getTextColorCanRepair()"));
         assertFalse(screen.contains(".handleMouseClick("));
