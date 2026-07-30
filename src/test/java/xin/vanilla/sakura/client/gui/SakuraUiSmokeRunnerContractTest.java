@@ -32,6 +32,8 @@ public class SakuraUiSmokeRunnerContractTest {
         assertTrue(runner.contains("parent instanceof MainMenuScreen"));
         assertTrue(runner.contains("inWorldWithoutScreen"));
         assertTrue(runner.contains("new RewardOptionScreen()"));
+        assertTrue(runner.contains("seedRewardSmokeData()"));
+        assertTrue(runner.contains("new ItemStack(Items.APPLE, 5)"));
         assertTrue(runner.contains("new SignInScreen()"));
         assertTrue(runner.contains("new InventoryScreen(minecraft.player)"));
         assertTrue(runner.contains("new StringInputScreen("));

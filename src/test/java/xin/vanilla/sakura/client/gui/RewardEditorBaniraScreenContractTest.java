@@ -37,6 +37,11 @@ public class RewardEditorBaniraScreenContractTest {
         assertTrue(screen.contains("inputState.isShiftPressed()"));
         assertTrue(screen.contains("new ReadOnlyTextScreen("));
         assertTrue(screen.contains("deleteSelectedRewards()"));
+        assertTrue(screen.contains("collapsedRewardGroups"));
+        assertTrue(screen.contains("toggleRewardGroup("));
+        assertTrue(screen.contains("isRewardGroupCollapsed(key)"));
+        assertTrue(screen.contains("ShapeDrawArgs.ShapeType.RECT"));
+        assertTrue(screen.contains(".setHoverTint(0)"));
         assertTrue(operationWidget.contains("extends BaseWidget"));
         assertTrue(operationWidget.contains("TooltipWidget.drawPopupMessage"));
         assertTrue(rewardWidget.contains("MouseDragEvent"));

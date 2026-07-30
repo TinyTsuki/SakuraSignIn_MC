@@ -76,9 +76,9 @@ public final class CardCommand {
                 ? "has_sign_in_card_d"
                 : "server_not_enable_sign_in_card";
         Component message = CommonConfig.get().makeUp().signInCard()
-                ? SakuraComponent.get().trans(player, "message", key, SakuraPlayerData.get(player).getSignInCard()
+                ? SakuraComponent.get().trans(player, "format", key, SakuraPlayerData.get(player).getSignInCard()
                 )
-                : SakuraComponent.get().trans(player, "message", key);
+                : SakuraComponent.get().trans(player, "word", key);
         SakuraMessages.send(player, message);
         return 1;
     }
@@ -87,7 +87,7 @@ public final class CardCommand {
         for (ServerPlayerEntity player : players) {
             IPlayerSignInData data = SakuraPlayerData.get(player);
             data.setSignInCard(data.getSignInCard() + amount);
-            SakuraMessages.send(player, SakuraComponent.get().trans(player, "message", "get_sign_in_card_d", amount
+            SakuraMessages.send(player, SakuraComponent.get().trans(player, "format", "get_sign_in_card_d", amount
             ));
             SakuraPlayerData.saveAndSync(player);
         }
@@ -97,7 +97,7 @@ public final class CardCommand {
     private static int set(Collection<ServerPlayerEntity> players, int amount) {
         for (ServerPlayerEntity player : players) {
             SakuraPlayerData.get(player).setSignInCard(amount);
-            SakuraMessages.send(player, SakuraComponent.get().trans(player, "message", "set_sign_in_card_d", amount
+            SakuraMessages.send(player, SakuraComponent.get().trans(player, "format", "set_sign_in_card_d", amount
             ));
             SakuraPlayerData.saveAndSync(player);
         }
@@ -107,8 +107,7 @@ public final class CardCommand {
     private static int showTarget(ServerPlayerEntity source, ServerPlayerEntity target) {
         SakuraMessages.send(source, SakuraComponent.get().trans(
                 source,
-                "message",
-                "set_player_s_sign_in_card_d",
+                "format", "set_player_s_sign_in_card_d",
                 target.getDisplayName().getString(),
                 SakuraPlayerData.get(target).getSignInCard()
         ));
