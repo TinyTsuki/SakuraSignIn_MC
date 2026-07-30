@@ -17,17 +17,19 @@ public class SakuraUiSmokeRunnerContractTest {
     private static final Path MAIN = Paths.get("src/main/java/xin/vanilla/sakura");
 
     @Test
-    public void rewardScreenCanBeOpenedOnlyByExplicitDevelopmentSmoke() {
+    public void uiScreensCanBeOpenedOnlyByExplicitDevelopmentSmoke() {
         String runner = read(MAIN.resolve("internal/client/dev/SakuraUiSmokeRunner.java"));
         String events = read(MAIN.resolve("event/ClientEventHandler.java"));
 
         assertTrue(runner.contains("SAKURA_UI_SMOKE"));
         assertTrue(runner.contains("FMLEnvironment.production"));
         assertTrue(runner.contains("\"reward\".equalsIgnoreCase(target)"));
+        assertTrue(runner.contains("\"sign-in\".equalsIgnoreCase(target)"));
         assertTrue(runner.contains("parent instanceof MainMenuScreen"));
         assertTrue(runner.contains("inWorldWithoutScreen"));
         assertTrue(runner.contains("new RewardOptionScreen()"));
-        assertTrue(runner.contains("Sakura UI smoke opened target: reward"));
+        assertTrue(runner.contains("new SignInScreen()"));
+        assertTrue(runner.contains("Sakura UI smoke opened target: {}"));
         assertTrue(events.contains("SakuraUiSmokeRunner.tick()"));
     }
 
