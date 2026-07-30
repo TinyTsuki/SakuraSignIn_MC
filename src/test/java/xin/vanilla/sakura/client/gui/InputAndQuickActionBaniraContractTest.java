@@ -37,12 +37,32 @@ public class InputAndQuickActionBaniraContractTest {
 
         assertTrue(actions.contains("QuickActionRegistry.get()"));
         assertTrue(actions.contains("QuickIcon.resource(texture)"));
+        assertTrue(actions.contains("new QuickActionContextMenuItem("));
+        assertTrue(actions.contains("openConfig(ClientConfig.get().holder()"));
+        assertTrue(actions.contains("openConfig(CommonConfig.get().holder()"));
+        assertTrue(actions.contains("new RewardOptionScreen().previousScreen("));
+        assertFalse(actions.contains("static final String REWARD_OPTION_ID"));
+        assertFalse(actions.contains("getRewardOptionBtnUV()"));
         assertTrue(events.contains("SakuraQuickActions.register()"));
         assertFalse(events.contains("GuiScreenEvent"));
         assertFalse(config.contains("inventorySignInButtonCoordinate"));
         assertFalse(config.contains("inventoryRewardOptionButtonCoordinate"));
         assertFalse(Files.exists(MAIN.resolve(
                 "xin/vanilla/sakura/screen/component/InventoryButton.java")));
+    }
+
+    @Test
+    public void sakuraRegistersAnIndependentSpringThemePreference() throws Exception {
+        String config = source("xin/vanilla/sakura/config/ClientConfig.java");
+        String bootstrap = source("xin/vanilla/sakura/client/SakuraClientBootstrap.java");
+        String signIn = source("xin/vanilla/sakura/screen/SignInScreen.java");
+        String rewards = source("xin/vanilla/sakura/screen/RewardOptionScreen.java");
+
+        assertTrue(config.contains(
+                "private BaniraThemeMode interfaceThemeMode = BaniraThemeMode.SPRING"));
+        assertTrue(bootstrap.contains("BaniraThemes.register(SakuraSignIn.MODID"));
+        assertTrue(signIn.contains("season(BaniraThemes.seasonFor(SakuraSignIn.MODID))"));
+        assertTrue(rewards.contains("season(BaniraThemes.seasonFor(SakuraSignIn.MODID))"));
     }
 
     private static String source(String relative) throws Exception {
