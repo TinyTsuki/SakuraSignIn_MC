@@ -11,6 +11,7 @@ import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.config.RewardConfigManager;
+import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.network.packet.*;
 
 import java.time.YearMonth;
@@ -73,9 +74,17 @@ public final class SakuraNetwork {
     }
 
     public static void requestMonth(Date date) {
-        String month = YearMonth.from(date.toInstant()
-                .atZone(ZoneId.systemDefault())).toString();
-        sendToServer(new PlayerMonthRequestPacket(month));
+        sendToServer(new PlayerMonthRequestPacket(monthOf(date)));
+    }
+
+    /**
+     * 签到后同步实际操作月份，保证跨月补签也能立即刷新。
+     */
+    public static void syncMonth(ServerPlayerEntity player, Date date) {
+        IPlayerSignInData data = SakuraPlayerData.get(player);
+        sendToPlayer(new PlayerMonthSyncPacket(
+                player.getUUID(), monthOf(date), data.getSignInRecords()
+        ), player);
     }
 
     public static <T extends SplitPacket & INetworkPacket> void sendSplitToServer(T packet) {
@@ -104,5 +113,10 @@ public final class SakuraNetwork {
         sendSplitToPlayer(new AdvancementPacket(
                 player.server.getAdvancements().getAllAdvancements()
         ), player);
+    }
+
+    private static String monthOf(Date date) {
+        return YearMonth.from(date.toInstant()
+                .atZone(ZoneId.systemDefault())).toString();
     }
 }

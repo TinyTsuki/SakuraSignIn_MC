@@ -67,7 +67,7 @@ public final class ClientEventHandler {
         ClientPlayerEntity player = Minecraft.getInstance().player;
         if (player != null) {
             Component component = SakuraComponent.get().transClient(
-                    "message", "sakura_is_offline");
+                    "word", "sakura_is_offline");
             SakuraClientNotifications.error(component, SakuraNotificationTypes.SIGN_IN);
         }
     }

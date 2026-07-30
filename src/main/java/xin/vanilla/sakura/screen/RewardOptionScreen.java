@@ -4,12 +4,14 @@ import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.client.gui.component.TextList;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
+import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.api.client.theme.BaniraThemes;
 import xin.vanilla.banira.client.gui.ConfirmDialogScreen;
 import xin.vanilla.banira.client.gui.ReadOnlyTextScreen;
 import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.client.util.SystemUtils;
+import xin.vanilla.banira.client.gui.widget.BaseShapeWidget;
 import xin.vanilla.banira.client.gui.widget.PopupOption;
 import xin.vanilla.sakura.text.SakuraComponent;
 import com.mojang.blaze3d.matrix.MatrixStack;
@@ -66,9 +68,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -98,7 +102,7 @@ public class RewardOptionScreen extends BaniraScreen {
     private final int itemRightMargin = 4;
     private final int itemBottomMargin = 8;
     // 标题的大小
-    private final int titleHeight = 16;
+    private final int titleHeight = 20;
     // 屏幕边缘间距
     private final int leftMargin = 4;
     private final int rightMargin = 4;
@@ -127,6 +131,7 @@ public class RewardOptionScreen extends BaniraScreen {
      */
     private String currRewardButton;
     private final RewardSelectionModel rewardSelection = new RewardSelectionModel();
+    private final Set<String> collapsedRewardGroups = new HashSet<>();
     /**
      * 弹出菜单会在回调前清空，因此由界面保存本次菜单的业务上下文。
      */
@@ -277,17 +282,37 @@ public class RewardOptionScreen extends BaniraScreen {
     private void addRewardTitleButton(String title, String key, int titleIndex, int index) {
         RewardListEntryWidget entry = new RewardListEntryWidget(this, titleIndex, context -> {
             RewardListEntryWidget widget = context.getEntry();
-            AbstractGui.fill(context.getStack(), (int) widget.realX(), (int) widget.realY(),
-                    (int) (widget.realX() + widget.realWidth()), (int) widget.realY() + 1, 0xAC000000);
+            boolean collapsed = isRewardGroupCollapsed(key);
+            int x = (int) widget.realX();
+            int y = (int) widget.realY();
+            int width = (int) widget.realWidth();
+            int height = (int) widget.realHeight();
+            boolean hovered = widget.isMouseInside(inputState.mouseX(), inputState.mouseY());
+            int fillColor = hovered
+                    ? getEffectiveTheme().buttonBgHover()
+                    : getEffectiveTheme().panelBg();
+            BaseShapeWidget.drawShape(new ShapeDrawArgs()
+                    .stack(context.getStack())
+                    .type(ShapeDrawArgs.ShapeType.RECT)
+                    .color(getEffectiveTheme().buttonBorder())
+                    .rect(new ShapeDrawArgs.RectParams()
+                            .x(x).y(y).width(width).height(height).radius(3)));
+            BaseShapeWidget.drawShape(new ShapeDrawArgs()
+                    .stack(context.getStack())
+                    .type(ShapeDrawArgs.ShapeType.RECT)
+                    .color(fillColor)
+                    .rect(new ShapeDrawArgs.RectParams()
+                            .x(x + 1).y(y + 1).width(width - 2).height(height - 2).radius(2)));
+            AbstractGuiUtils.drawString(context.getStack(), super.font,
+                    collapsed ? "\u25B6" : "\u25BC",
+                    x + 4, y + (height - super.font.lineHeight) / 2,
+                    getEffectiveTheme().buttonText());
             AbstractGuiUtils.drawLimitedText(context.getStack(), super.font, title,
-                    (int) widget.realX(),
-                    (int) (widget.realY() + (widget.realHeight() - super.font.lineHeight) / 2),
-                    (int) widget.realWidth(), 0xAC000000, false);
-            AbstractGui.fill(context.getStack(), (int) widget.realX(),
-                    (int) (widget.realY() + widget.realHeight()),
-                    (int) (widget.realX() + super.font.width(title)),
-                    (int) (widget.realY() + widget.realHeight() - 1), 0xAC000000);
-        }).setBaseX(leftBarWidth);
+                    x + 16, y + (height - super.font.lineHeight) / 2,
+                    width - 20, getEffectiveTheme().buttonText(), false);
+        }).setBaseX(leftBarWidth)
+                .setTooltip(Text.trans(SakuraSignIn.MODID,
+                        "word.sakura_sign_in.reward_group_header_hint"));
         entry.bounds()
                 .x(leftMargin)
                 .y(topMargin + (itemIconSize + itemBottomMargin)
@@ -305,6 +330,9 @@ public class RewardOptionScreen extends BaniraScreen {
      * @param index     奖励列表的索引
      */
     private void addRewardButton(Map<String, RewardList> rewardMap, String key, AtomicInteger index) {
+        if (isRewardGroupCollapsed(key)) {
+            return;
+        }
         for (int j = 0; j < rewardMap.get(key).size(); j++, index.incrementAndGet()) {
             RewardListEntryWidget entry = new RewardListEntryWidget(this, j, context -> {
                 RewardListEntryWidget widget = context.getEntry();
@@ -325,6 +353,17 @@ public class RewardOptionScreen extends BaniraScreen {
         }
     }
 
+    private boolean isRewardGroupCollapsed(String key) {
+        return collapsedRewardGroups.contains(currOpButton + ":" + key);
+    }
+
+    private void toggleRewardGroup(String key) {
+        String groupId = currOpButton + ":" + key;
+        if (!collapsedRewardGroups.remove(groupId)) {
+            collapsedRewardGroups.add(groupId);
+        }
+    }
+
     private void registerRewardEntry(String key, RewardListEntryWidget entry) {
         entry.setDragHandler(event -> setYOffset(yOffset + event.dragY()));
         entry.setReleaseHandler(event -> {
@@ -342,13 +381,13 @@ public class RewardOptionScreen extends BaniraScreen {
 
     private StringInputScreen getRuleKeyInputScreen(Screen callbackScreen, ERewardRule rule, String[] key) {
         String validator = rule == ERewardRule.RANDOM_REWARD ? "(0?1(\\.0{0,10})?|0(\\.\\d{0,10})?)?" : "[\\d +~/:.T-]*";
-        return new StringInputScreen(callbackScreen, Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_rule_key_" + rule.getCode()).shadow(true), Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"), validator, "", input -> {
+        return new StringInputScreen(callbackScreen, Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_rule_key_" + rule.getCode()).shadow(true), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"), validator, "", input -> {
             StringList result = new StringList();
             if (CollectionUtils.isNotNullOrEmpty(input)) {
                 if (RewardConfigManager.validateKeyName(rule, input.get(0))) {
                     key[0] = input.get(0);
                 } else {
-                    result.add(SakuraComponent.get().transClient("tips", "reward_rule_s_error", input.get(0)).toString());
+                    result.add(SakuraComponent.get().transClient("format", "reward_rule_s_error", input.get(0)).toString());
                 }
             }
             return result;
@@ -357,26 +396,26 @@ public class RewardOptionScreen extends BaniraScreen {
 
     private StringInputScreen getCdkRuleKeyInputScreen(Screen callbackScreen, ERewardRule rule, String[] key) {
         return new StringInputScreen(callbackScreen
-                , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_rule_key_" + rule.getCode()).shadow(true)
-                , Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_valid_until").shadow(true)
-                , Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_num").shadow(true))
-                , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"))
+                , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_rule_key_" + rule.getCode()).shadow(true)
+                , Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_valid_until").shadow(true)
+                , Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_num").shadow(true))
+                , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
                 , new StringList("\\w*", "", "\\d*")
                 , new StringList("", DateUtils.toString(DateUtils.addMonth(DateUtils.getClientDate(), 1)), "1")
                 , input -> {
             StringList result = new StringList("", "", "");
             if (CollectionUtils.isNotNullOrEmpty(input)) {
                 if (!RewardConfigManager.validateKeyName(rule, input.get(0))) {
-                    result.set(0, SakuraComponent.get().transClient("tips", "reward_rule_s_error", input.get(0)).toString());
+                    result.set(0, SakuraComponent.get().transClient("format", "reward_rule_s_error", input.get(0)).toString());
                 }
                 if (StringUtils.isNotNullOrEmpty(input.get(1))) {
                     if (DateUtils.format(input.get(1)) == null) {
-                        result.set(1, SakuraComponent.get().transClient("tips", "valid_until_s_error", input.get(1)).toString());
+                        result.set(1, SakuraComponent.get().transClient("format", "valid_until_s_error", input.get(1)).toString());
                     }
                 }
                 if (StringUtils.isNotNullOrEmpty(input.get(2))) {
                     if (StringUtils.toInt(input.get(2)) == 0) {
-                        result.set(2, SakuraComponent.get().transClient("tips", "num_s_error", input.get(2)).toString());
+                        result.set(2, SakuraComponent.get().transClient("format", "num_s_error", input.get(2)).toString());
                     }
                 }
                 if (result.stream().allMatch(StringUtils::isNullOrEmptyEx)) {
@@ -400,7 +439,7 @@ public class RewardOptionScreen extends BaniraScreen {
         rewardListIndex.set(0);
         switch (OperationButtonType.valueOf(currOpButton)) {
             case BASE_REWARD: {
-                this.addRewardTitleButton(SakuraComponent.get().transClient("title", "base_reward").toString(), "base", titleIndex, rewardListIndex.get());
+                this.addRewardTitleButton(SakuraComponent.get().transClient("word", "base_reward").toString(), "base", titleIndex, rewardListIndex.get());
                 rewardListIndex.addAndGet(lineItemCount);
                 this.addRewardButton(new HashMap<String, RewardList>() {{
                     put("base", rewardConfig.getBaseRewards());
@@ -412,7 +451,7 @@ public class RewardOptionScreen extends BaniraScreen {
                     if (rewardListIndex.get() > 0) {
                         rewardListIndex.set((int) ((Math.floor((double) rewardListIndex.get() / lineItemCount) + 1) * lineItemCount));
                     }
-                    this.addRewardTitleButton(SakuraComponent.get().transClient("title", "day_s", key).toString(), key, titleIndex, rewardListIndex.get());
+                    this.addRewardTitleButton(SakuraComponent.get().transClient("format", "day_s", key).toString(), key, titleIndex, rewardListIndex.get());
                     rewardListIndex.addAndGet(lineItemCount);
                     this.addRewardButton(rewardConfig.getContinuousRewards(), key, rewardListIndex);
                     titleIndex--;
@@ -424,7 +463,7 @@ public class RewardOptionScreen extends BaniraScreen {
                     if (rewardListIndex.get() > 0) {
                         rewardListIndex.set((int) ((Math.floor((double) rewardListIndex.get() / lineItemCount) + 1) * lineItemCount));
                     }
-                    this.addRewardTitleButton(SakuraComponent.get().transClient("title", "day_s", key).toString(), key, titleIndex, rewardListIndex.get());
+                    this.addRewardTitleButton(SakuraComponent.get().transClient("format", "day_s", key).toString(), key, titleIndex, rewardListIndex.get());
                     rewardListIndex.addAndGet(lineItemCount);
                     this.addRewardButton(rewardConfig.getCycleRewards(), key, rewardListIndex);
                     titleIndex--;
@@ -436,7 +475,7 @@ public class RewardOptionScreen extends BaniraScreen {
                     if (rewardListIndex.get() > 0) {
                         rewardListIndex.set((int) ((Math.floor((double) rewardListIndex.get() / lineItemCount) + 1) * lineItemCount));
                     }
-                    this.addRewardTitleButton(SakuraComponent.get().transClient("title", "year_day_s", key).toString(), key, titleIndex, rewardListIndex.get());
+                    this.addRewardTitleButton(SakuraComponent.get().transClient("format", "year_day_s", key).toString(), key, titleIndex, rewardListIndex.get());
                     rewardListIndex.addAndGet(lineItemCount);
                     this.addRewardButton(rewardConfig.getYearRewards(), key, rewardListIndex);
                     titleIndex--;
@@ -448,7 +487,7 @@ public class RewardOptionScreen extends BaniraScreen {
                     if (rewardListIndex.get() > 0) {
                         rewardListIndex.set((int) ((Math.floor((double) rewardListIndex.get() / lineItemCount) + 1) * lineItemCount));
                     }
-                    this.addRewardTitleButton(SakuraComponent.get().transClient("title", "month_day_s", key).toString(), key, titleIndex, rewardListIndex.get());
+                    this.addRewardTitleButton(SakuraComponent.get().transClient("format", "month_day_s", key).toString(), key, titleIndex, rewardListIndex.get());
                     rewardListIndex.addAndGet(lineItemCount);
                     this.addRewardButton(rewardConfig.getMonthRewards(), key, rewardListIndex);
                     titleIndex--;
@@ -460,7 +499,7 @@ public class RewardOptionScreen extends BaniraScreen {
                     if (rewardListIndex.get() > 0) {
                         rewardListIndex.set((int) ((Math.floor((double) rewardListIndex.get() / lineItemCount) + 1) * lineItemCount));
                     }
-                    this.addRewardTitleButton(SakuraComponent.get().transClient("title", "week_" + key).toString(), key, titleIndex, rewardListIndex.get());
+                    this.addRewardTitleButton(SakuraComponent.get().transClient("word", "week_" + key).toString(), key, titleIndex, rewardListIndex.get());
                     rewardListIndex.addAndGet(lineItemCount);
                     this.addRewardButton(rewardConfig.getWeekRewards(), key, rewardListIndex);
                     titleIndex--;
@@ -484,7 +523,7 @@ public class RewardOptionScreen extends BaniraScreen {
                     if (rewardListIndex.get() > 0) {
                         rewardListIndex.set((int) ((Math.floor((double) rewardListIndex.get() / lineItemCount) + 1) * lineItemCount));
                     }
-                    this.addRewardTitleButton(SakuraComponent.get().transClient("title", "day_s", key).toString(), key, titleIndex, rewardListIndex.get());
+                    this.addRewardTitleButton(SakuraComponent.get().transClient("format", "day_s", key).toString(), key, titleIndex, rewardListIndex.get());
                     rewardListIndex.addAndGet(lineItemCount);
                     this.addRewardButton(rewardConfig.getCumulativeRewards(), key, rewardListIndex);
                     titleIndex--;
@@ -514,7 +553,7 @@ public class RewardOptionScreen extends BaniraScreen {
                     if (rewardListIndex.get() > 0) {
                         rewardListIndex.set((int) ((Math.floor((double) rewardListIndex.get() / lineItemCount) + 1) * lineItemCount));
                     }
-                    this.addRewardTitleButton(SakuraComponent.get().transClient("title", "s_valid_until_s", keyValue.getKey().getKey(), keyValue.getKey().getValue(), keyValue.getValue().getValue()).toString(), key, titleIndex, rewardListIndex.get());
+                    this.addRewardTitleButton(SakuraComponent.get().transClient("format", "s_valid_until_s", keyValue.getKey().getKey(), keyValue.getKey().getValue(), keyValue.getValue().getValue()).toString(), key, titleIndex, rewardListIndex.get());
                     rewardListIndex.addAndGet(lineItemCount);
                     this.addRewardButton(new HashMap<String, RewardList>() {{
                         put(key, keyValue.getValue().getKey());
@@ -544,7 +583,7 @@ public class RewardOptionScreen extends BaniraScreen {
     }
 
     private final Consumer<PopupOption> pasteConsumer = option -> {
-        String paste = SakuraComponent.get().transClient("option", "paste").toString();
+        String paste = SakuraComponent.get().transClient("word", "paste").toString();
         if (paste.equalsIgnoreCase(option.getSelectedString())) {
             option.getRenderList().stream()
                     .filter(item -> paste.equalsIgnoreCase(item.content()))
@@ -590,11 +629,11 @@ public class RewardOptionScreen extends BaniraScreen {
                     assert player != null;
                     ERewardRule rewardRule = ERewardRule.valueOf(OperationButtonType.valueOf(value.getOperation()).name());
                     if (!player.hasPermissions(SakuraUtils.getRewardPermissionLevel(rewardRule))) {
-                        Component component = SakuraComponent.get().transClient("message", "no_permission_to_view_reward", SakuraComponent.get().transClient("word", SakuraUtils.getRewardRuleI18nKeyName(rewardRule)));
+                        Component component = SakuraComponent.get().transClient("format", "no_permission_to_view_reward", SakuraComponent.get().transClient("word", SakuraUtils.getRewardRuleI18nKeyName(rewardRule)));
                         SakuraClientNotifications.error(component, SakuraNotificationTypes.REWARD);
                     }
                     if (!player.hasPermissions(CommonConfig.get().permission().permissionEditReward())) {
-                        Component component = SakuraComponent.get().transClient("message", "no_permission_to_edit_reward");
+                        Component component = SakuraComponent.get().transClient("word", "no_permission_to_edit_reward");
                         SakuraClientNotifications.warning(component, SakuraNotificationTypes.REWARD);
                     }
                 } catch (Exception ignored) {
@@ -603,7 +642,7 @@ public class RewardOptionScreen extends BaniraScreen {
                 // 绘制弹出层选项
                 this.popupOption.clear()
                         .addOptionWithId("clear",
-                                Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.clear").color(0xFFFF0000));
+                                Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.clear").color(0xFFFF0000));
                 this.showPopup(mouseX, mouseY, String.format("奖励规则类型按钮:%s", value.getOperation()));
                 flag.set(true);
             }
@@ -619,7 +658,7 @@ public class RewardOptionScreen extends BaniraScreen {
             if (button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
                 if (this.currOpButton > 200 && this.currOpButton <= 299) {
                     this.popupOption.clear();
-                    this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.paste"));
+                    this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.paste"));
                     for (ERewardType rewardType : ERewardType.values()) {
                         this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.reward_type_" + rewardType.getCode()));
                     }
@@ -641,7 +680,7 @@ public class RewardOptionScreen extends BaniraScreen {
                             .parentScreen(this)
                             .season(season())
                             .title(SakuraComponent.get().transClient(
-                                    "title", "reward_rule_help"))
+                                    "word", "reward_rule_help"))
                             .paragraphs(paragraphs)
             ));
             flag.set(true);
@@ -658,7 +697,7 @@ public class RewardOptionScreen extends BaniraScreen {
                     }
                 }
             } else {
-                Component component = SakuraComponent.get().trans("message", "local_server_not_support_this_operation");
+                Component component = SakuraComponent.get().trans("word", "local_server_not_support_this_operation");
                 SakuraClientNotifications.warning(component, SakuraNotificationTypes.REWARD);
             }
         }
@@ -672,7 +711,7 @@ public class RewardOptionScreen extends BaniraScreen {
                     SakuraNetwork.sendToServer(new DownloadRewardOptionNotice());
                     flag.set(true);
                 } else {
-                    Component component = SakuraComponent.get().trans("message", "local_server_not_support_this_operation");
+                    Component component = SakuraComponent.get().trans("word", "local_server_not_support_this_operation");
                     SakuraClientNotifications.warning(component, SakuraNotificationTypes.REWARD);
                 }
             }
@@ -710,7 +749,11 @@ public class RewardOptionScreen extends BaniraScreen {
 
         if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
             if (key.startsWith("标题")) {
-                rewardSelection.selectOnly(key);
+                toggleRewardGroup(key.substring("标题,".length()));
+                rewardSelection.clear();
+                updateLayout.set(true);
+                flag.set(true);
+                return;
             } else {
                 rewardSelection.select(key, selectableRewardIds(),
                         inputState.isCtrlPressed(), inputState.isShiftPressed());
@@ -725,31 +768,31 @@ public class RewardOptionScreen extends BaniraScreen {
             if (key.startsWith("标题")) {
                 this.popupOption.clear();
                 if (!"标题,base".equalsIgnoreCase(key)) {
-                    this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.edit"));
+                    this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.edit"));
                 }
-                this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.copy"));
+                this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.copy"));
                 if (!"标题,base".equalsIgnoreCase(key)) {
-                    this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.cut"));
+                    this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.cut"));
                 }
-                this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.paste"));
+                this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.paste"));
                 for (ERewardType rewardType : ERewardType.values()) {
                     this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.reward_type_" + rewardType.getCode()));
                 }
                 this.popupOption.addOptionWithId("clear",
-                        Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.clear").color(0xFFFF0000));
+                        Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.clear").color(0xFFFF0000));
                 if (!"标题,base".equalsIgnoreCase(key)) {
                     this.popupOption.addOptionWithId("delete",
-                            Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.delete").color(0xFFFF0000));
+                            Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.delete").color(0xFFFF0000));
                 }
                 this.showPopup(mouseX, mouseY, String.format("奖励按钮:%s", key));
             } else {
                 this.popupOption.clear();
-                this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.edit"))
-                        .addOption(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.copy"))
-                        .addOption(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.cut"))
-                        .addOption(Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.paste"))
+                this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.edit"))
+                        .addOption(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.copy"))
+                        .addOption(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.cut"))
+                        .addOption(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.paste"))
                         .addOptionWithId("delete",
-                                Text.trans(SakuraSignIn.MODID, "option.sakura_sign_in.delete").color(0xFFFF0000));
+                                Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.delete").color(0xFFFF0000));
                 this.showPopup(mouseX, mouseY, String.format("奖励按钮:%s", key));
             }
             this.popupOption.setBeforeRender(pasteConsumer);
@@ -817,7 +860,7 @@ public class RewardOptionScreen extends BaniraScreen {
             }
         } else if (popupId.startsWith("奖励面板按钮:")) {
             String[] key = new String[]{""};
-            if (SakuraComponent.get().transClient("option", "paste").toString().equalsIgnoreCase(selectedString)) {
+            if (SakuraComponent.get().transClient("word", "paste").toString().equalsIgnoreCase(selectedString)) {
                 editHandler.handlePaste();
             }
             // 物品
@@ -867,8 +910,8 @@ public class RewardOptionScreen extends BaniraScreen {
             // 经验点
             else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.EXP_POINT.getCode()).equalsIgnoreCase(selectedString)) {
                 StringInputScreen callbackScreen = new StringInputScreen(this
-                        , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_exp_point").shadow(true), Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_probability").shadow(true))
-                        , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"))
+                        , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_exp_point").shadow(true), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_probability").shadow(true))
+                        , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
                         , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                         , new StringList("1")
                         , input -> {
@@ -882,7 +925,7 @@ public class RewardOptionScreen extends BaniraScreen {
                             RewardConfigManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(count, ERewardType.EXP_POINT), ERewardType.EXP_POINT, p));
                             RewardConfigManager.saveRewardOption();
                         } else {
-                            result.add(SakuraComponent.get().transClient("tips", "enter_value_s_error", input.get(0)).toString());
+                            result.add(SakuraComponent.get().transClient("format", "enter_value_s_error", input.get(0)).toString());
                         }
                     }
                     return result;
@@ -899,8 +942,8 @@ public class RewardOptionScreen extends BaniraScreen {
             // 经验等级
             else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.EXP_LEVEL.getCode()).equalsIgnoreCase(selectedString)) {
                 StringInputScreen callbackScreen = new StringInputScreen(this
-                        , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_exp_level").shadow(true), Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_probability").shadow(true))
-                        , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"))
+                        , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_exp_level").shadow(true), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_probability").shadow(true))
+                        , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
                         , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                         , new StringList("1")
                         , input -> {
@@ -914,7 +957,7 @@ public class RewardOptionScreen extends BaniraScreen {
                             RewardConfigManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(count, ERewardType.EXP_LEVEL), ERewardType.EXP_LEVEL, p));
                             RewardConfigManager.saveRewardOption();
                         } else {
-                            result.add(SakuraComponent.get().transClient("tips", "enter_value_s_error", input.get(0)).toString());
+                            result.add(SakuraComponent.get().transClient("format", "enter_value_s_error", input.get(0)).toString());
                         }
                     }
                     return result;
@@ -931,8 +974,8 @@ public class RewardOptionScreen extends BaniraScreen {
             // 补签卡
             else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.SIGN_IN_CARD.getCode()).equalsIgnoreCase(selectedString)) {
                 StringInputScreen callbackScreen = new StringInputScreen(this
-                        , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_sign_in_card").shadow(true), Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_probability").shadow(true))
-                        , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"))
+                        , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_sign_in_card").shadow(true), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_probability").shadow(true))
+                        , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
                         , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                         , new StringList("1")
                         , input -> {
@@ -946,7 +989,7 @@ public class RewardOptionScreen extends BaniraScreen {
                             RewardConfigManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(count, ERewardType.SIGN_IN_CARD), ERewardType.SIGN_IN_CARD, p));
                             RewardConfigManager.saveRewardOption();
                         } else {
-                            result.add(SakuraComponent.get().transClient("tips", "enter_value_s_error", input.get(0)).toString());
+                            result.add(SakuraComponent.get().transClient("format", "enter_value_s_error", input.get(0)).toString());
                         }
                     }
                     return result;
@@ -985,8 +1028,8 @@ public class RewardOptionScreen extends BaniraScreen {
             // 消息
             else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.MESSAGE.getCode()).equalsIgnoreCase(selectedString)) {
                 StringInputScreen callbackScreen = new StringInputScreen(this
-                        , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_message").shadow(true), Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_probability").shadow(true))
-                        , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"))
+                        , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_message").shadow(true), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_probability").shadow(true))
+                        , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
                         , new StringList("", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                         , new StringList("", "1")
                         , input -> {
@@ -1011,8 +1054,8 @@ public class RewardOptionScreen extends BaniraScreen {
             // 指令
             else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.COMMAND.getCode()).equalsIgnoreCase(selectedString)) {
                 StringInputScreen callbackScreen = new StringInputScreen(this
-                        , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_command").shadow(true), Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_probability").shadow(true))
-                        , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"))
+                        , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_command").shadow(true), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_probability").shadow(true))
+                        , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
                         , new StringList("", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                         , new StringList("", "1")
                         , input -> {
@@ -1024,7 +1067,7 @@ public class RewardOptionScreen extends BaniraScreen {
                         RewardConfigManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(input.get(0), ERewardType.COMMAND), ERewardType.COMMAND, p));
                         RewardConfigManager.saveRewardOption();
                     } else {
-                        result.add(SakuraComponent.get().transClient("tips", "enter_value_s_error", input.get(0)).toString());
+                        result.add(SakuraComponent.get().transClient("format", "enter_value_s_error", input.get(0)).toString());
                     }
                     return result;
                 }, () -> StringUtils.isNullOrEmpty(key[0]));
@@ -1042,33 +1085,33 @@ public class RewardOptionScreen extends BaniraScreen {
             String id = popupId.replace("奖励按钮:", "");
             if (id.startsWith("标题")) {
                 String key = id.substring(3);
-                if (SakuraComponent.get().transClient("option", "edit").toString().equalsIgnoreCase(selectedString)) {
+                if (SakuraComponent.get().transClient("word", "edit").toString().equalsIgnoreCase(selectedString)) {
                     if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                         if (rule == ERewardRule.CDK_REWARD) {
                             String[] split = key.split("\\|");
                             if (split.length != 4 && split.length != 3 && split.length != 2)
                                 split = new String[]{"", DateUtils.toString(DateUtils.addMonth(DateUtils.getClientDate(), 1)), "-1", "1"};
                             Minecraft.getInstance().setScreen(new StringInputScreen(this
-                                    , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_rule_key_" + rule.getCode()).shadow(true)
-                                    , Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_valid_until").shadow(true)
-                                    , Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_num").shadow(true))
-                                    , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"))
+                                    , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_rule_key_" + rule.getCode()).shadow(true)
+                                    , Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_valid_until").shadow(true)
+                                    , Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_num").shadow(true))
+                                    , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
                                     , new StringList("\\w*", "", "\\d*")
                                     , new StringList(split[0], split[1], split[3])
                                     , input -> {
                                 StringList result = new StringList("", "", "");
                                 if (CollectionUtils.isNotNullOrEmpty(input)) {
                                     if (!RewardConfigManager.validateKeyName(rule, input.get(0))) {
-                                        result.set(0, SakuraComponent.get().transClient("tips", "reward_rule_s_error", input.get(0)).toString());
+                                        result.set(0, SakuraComponent.get().transClient("format", "reward_rule_s_error", input.get(0)).toString());
                                     }
                                     if (StringUtils.isNotNullOrEmpty(input.get(1))) {
                                         if (DateUtils.format(input.get(1)) == null) {
-                                            result.set(1, SakuraComponent.get().transClient("tips", "valid_until_s_error", input.get(1)).toString());
+                                            result.set(1, SakuraComponent.get().transClient("format", "valid_until_s_error", input.get(1)).toString());
                                         }
                                     }
                                     if (StringUtils.isNotNullOrEmpty(input.get(2))) {
                                         if (StringUtils.toInt(input.get(2)) == 0) {
-                                            result.set(2, SakuraComponent.get().transClient("tips", "num_s_error", input.get(2)).toString());
+                                            result.set(2, SakuraComponent.get().transClient("format", "num_s_error", input.get(2)).toString());
                                         }
                                     }
                                     if (result.stream().allMatch(StringUtils::isNullOrEmptyEx)) {
@@ -1082,7 +1125,7 @@ public class RewardOptionScreen extends BaniraScreen {
                             }));
                         } else {
                             String validator = rule == ERewardRule.RANDOM_REWARD ? "(0?1(\\.0{0,10})?|0(\\.\\d{0,10})?)?" : "[\\d +~/:.T-]*";
-                            Minecraft.getInstance().setScreen(new StringInputScreen(this, Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_rule_key_" + rule.getCode()).shadow(true), Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"), validator, key, input -> {
+                            Minecraft.getInstance().setScreen(new StringInputScreen(this, Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_rule_key_" + rule.getCode()).shadow(true), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"), validator, key, input -> {
                                 StringList result = new StringList();
                                 if (CollectionUtils.isNotNullOrEmpty(input)) {
                                     if (RewardConfigManager.validateKeyName(rule, input.get(0))) {
@@ -1091,26 +1134,26 @@ public class RewardOptionScreen extends BaniraScreen {
                                         RewardConfigManager.updateKeyName(rule, key, input.get(0));
                                         RewardConfigManager.saveRewardOption();
                                     } else {
-                                        result.add(SakuraComponent.get().transClient("tips", "reward_rule_s_error", input.get(0)).toString());
+                                        result.add(SakuraComponent.get().transClient("format", "reward_rule_s_error", input.get(0)).toString());
                                     }
                                 }
                                 return result;
                             }));
                         }
                     }
-                } else if (SakuraComponent.get().transClient("option", "copy").toString().equalsIgnoreCase(selectedString)) {
+                } else if (SakuraComponent.get().transClient("word", "copy").toString().equalsIgnoreCase(selectedString)) {
                     if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                         editHandler.handleCopy();
                     }
-                } else if (SakuraComponent.get().transClient("option", "cut").toString().equalsIgnoreCase(selectedString)) {
+                } else if (SakuraComponent.get().transClient("word", "cut").toString().equalsIgnoreCase(selectedString)) {
                     if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                         editHandler.handleCut();
                     }
-                } else if (SakuraComponent.get().transClient("option", "paste").toString().equalsIgnoreCase(selectedString)) {
+                } else if (SakuraComponent.get().transClient("word", "paste").toString().equalsIgnoreCase(selectedString)) {
                     if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                         editHandler.handlePaste();
                     }
-                } else if (SakuraComponent.get().transClient("option", "clear").toString().equalsIgnoreCase(selectedString)) {
+                } else if (SakuraComponent.get().transClient("word", "clear").toString().equalsIgnoreCase(selectedString)) {
                     requestConfirmation("confirm_clear_reward_group", () -> {
                         RewardConfigManager.addUndoRewardOption(rule);
                         RewardConfigManager.clearRedoList();
@@ -1118,7 +1161,7 @@ public class RewardOptionScreen extends BaniraScreen {
                         RewardConfigManager.saveRewardOption();
                         updateLayout();
                     });
-                } else if (SakuraComponent.get().transClient("option", "delete").toString().equalsIgnoreCase(selectedString)) {
+                } else if (SakuraComponent.get().transClient("word", "delete").toString().equalsIgnoreCase(selectedString)) {
                     requestDeleteConfirmation();
                 }
                 // 添加物品
@@ -1152,8 +1195,8 @@ public class RewardOptionScreen extends BaniraScreen {
                 // 经验点
                 else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.EXP_POINT.getCode()).equalsIgnoreCase(selectedString)) {
                     Minecraft.getInstance().setScreen(new StringInputScreen(this
-                            , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_exp_point").shadow(true), Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_probability").shadow(true))
-                            , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"))
+                            , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_exp_point").shadow(true), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_probability").shadow(true))
+                            , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
                             , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                             , new StringList("1")
                             , input -> {
@@ -1167,7 +1210,7 @@ public class RewardOptionScreen extends BaniraScreen {
                                 RewardConfigManager.addReward(rule, key, new Reward(RewardManager.serializeReward(count, ERewardType.EXP_POINT), ERewardType.EXP_POINT, p));
                                 RewardConfigManager.saveRewardOption();
                             } else {
-                                result.add(SakuraComponent.get().transClient("tips", "enter_value_s_error", input.get(0)).toString());
+                                result.add(SakuraComponent.get().transClient("format", "enter_value_s_error", input.get(0)).toString());
                             }
                         }
                         return result;
@@ -1176,8 +1219,8 @@ public class RewardOptionScreen extends BaniraScreen {
                 // 经验等级
                 else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.EXP_LEVEL.getCode()).equalsIgnoreCase(selectedString)) {
                     Minecraft.getInstance().setScreen(new StringInputScreen(this
-                            , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_exp_level").shadow(true), Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_probability").shadow(true))
-                            , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"))
+                            , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_exp_level").shadow(true), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_probability").shadow(true))
+                            , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
                             , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                             , new StringList("1")
                             , input -> {
@@ -1191,7 +1234,7 @@ public class RewardOptionScreen extends BaniraScreen {
                                 RewardConfigManager.addReward(rule, key, new Reward(RewardManager.serializeReward(count, ERewardType.EXP_LEVEL), ERewardType.EXP_LEVEL, p));
                                 RewardConfigManager.saveRewardOption();
                             } else {
-                                result.add(SakuraComponent.get().transClient("tips", "enter_value_s_error", input.get(0)).toString());
+                                result.add(SakuraComponent.get().transClient("format", "enter_value_s_error", input.get(0)).toString());
                             }
                         }
                         return result;
@@ -1200,8 +1243,8 @@ public class RewardOptionScreen extends BaniraScreen {
                 // 补签卡
                 else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.SIGN_IN_CARD.getCode()).equalsIgnoreCase(selectedString)) {
                     Minecraft.getInstance().setScreen(new StringInputScreen(this
-                            , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_sign_in_card").shadow(true), Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_probability").shadow(true))
-                            , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"))
+                            , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_sign_in_card").shadow(true), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_probability").shadow(true))
+                            , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
                             , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                             , new StringList("1")
                             , input -> {
@@ -1215,7 +1258,7 @@ public class RewardOptionScreen extends BaniraScreen {
                                 RewardConfigManager.addReward(rule, key, new Reward(RewardManager.serializeReward(count, ERewardType.SIGN_IN_CARD), ERewardType.SIGN_IN_CARD, p));
                                 RewardConfigManager.saveRewardOption();
                             } else {
-                                result.add(SakuraComponent.get().transClient("tips", "enter_value_s_error", input.get(0)).toString());
+                                result.add(SakuraComponent.get().transClient("format", "enter_value_s_error", input.get(0)).toString());
                             }
                         }
                         return result;
@@ -1239,8 +1282,8 @@ public class RewardOptionScreen extends BaniraScreen {
                 // 消息
                 else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.MESSAGE.getCode()).equalsIgnoreCase(selectedString)) {
                     Minecraft.getInstance().setScreen(new StringInputScreen(this
-                            , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_message").shadow(true), Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_probability").shadow(true))
-                            , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"))
+                            , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_message").shadow(true), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_probability").shadow(true))
+                            , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
                             , new StringList("", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                             , new StringList("", "1")
                             , input -> {
@@ -1257,8 +1300,8 @@ public class RewardOptionScreen extends BaniraScreen {
                 // 指令
                 else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.COMMAND.getCode()).equalsIgnoreCase(selectedString)) {
                     Minecraft.getInstance().setScreen(new StringInputScreen(this
-                            , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_command").shadow(true), Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_probability").shadow(true))
-                            , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"))
+                            , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_command").shadow(true), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_probability").shadow(true))
+                            , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
                             , new StringList("", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                             , new StringList("", "1")
                             , input -> {
@@ -1270,7 +1313,7 @@ public class RewardOptionScreen extends BaniraScreen {
                             RewardConfigManager.addReward(rule, key, new Reward(RewardManager.serializeReward(input.get(0), ERewardType.COMMAND), ERewardType.COMMAND, p));
                             RewardConfigManager.saveRewardOption();
                         } else {
-                            result.add(SakuraComponent.get().transClient("tips", "enter_value_s_error", input.get(0)).toString());
+                            result.add(SakuraComponent.get().transClient("format", "enter_value_s_error", input.get(0)).toString());
                         }
                         return result;
                     }));
@@ -1284,7 +1327,7 @@ public class RewardOptionScreen extends BaniraScreen {
                 }
                 String key = split[0];
                 String index = split[1];
-                if (SakuraComponent.get().transClient("option", "edit").toString().equalsIgnoreCase(selectedString)) {
+                if (SakuraComponent.get().transClient("word", "edit").toString().equalsIgnoreCase(selectedString)) {
                     if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                         Reward reward = RewardConfigManager.getReward(rule, key, Integer.parseInt(index)).clone();
                         if (reward.getType() == ERewardType.ITEM) {
@@ -1317,8 +1360,8 @@ public class RewardOptionScreen extends BaniraScreen {
                         // 经验点
                         else if (reward.getType() == ERewardType.EXP_POINT) {
                             Minecraft.getInstance().setScreen(new StringInputScreen(this
-                                    , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_exp_point").shadow(true), Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_probability").shadow(true))
-                                    , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"))
+                                    , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_exp_point").shadow(true), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_probability").shadow(true))
+                                    , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
                                     , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                                     , new StringList(String.valueOf((Integer) RewardManager.deserializeReward(reward)), StringUtils.toFixedEx(reward.getProbability(), 5))
                                     , input -> {
@@ -1332,7 +1375,7 @@ public class RewardOptionScreen extends BaniraScreen {
                                         RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(count, ERewardType.EXP_POINT), ERewardType.EXP_POINT, p));
                                         RewardConfigManager.saveRewardOption();
                                     } else {
-                                        result.add(SakuraComponent.get().transClient("tips", "enter_value_s_error", input.get(0)).toString());
+                                        result.add(SakuraComponent.get().transClient("format", "enter_value_s_error", input.get(0)).toString());
                                     }
                                 }
                                 return result;
@@ -1342,8 +1385,8 @@ public class RewardOptionScreen extends BaniraScreen {
                         // 经验等级
                         else if (reward.getType() == ERewardType.EXP_LEVEL) {
                             Minecraft.getInstance().setScreen(new StringInputScreen(this
-                                    , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_exp_level").shadow(true), Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_probability").shadow(true))
-                                    , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"))
+                                    , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_exp_level").shadow(true), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_probability").shadow(true))
+                                    , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
                                     , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                                     , new StringList(String.valueOf((Integer) RewardManager.deserializeReward(reward)), StringUtils.toFixedEx(reward.getProbability(), 5))
                                     , input -> {
@@ -1357,7 +1400,7 @@ public class RewardOptionScreen extends BaniraScreen {
                                         RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(count, ERewardType.EXP_LEVEL), ERewardType.EXP_LEVEL, p));
                                         RewardConfigManager.saveRewardOption();
                                     } else {
-                                        result.add(SakuraComponent.get().transClient("tips", "enter_value_s_error", input.get(0)).toString());
+                                        result.add(SakuraComponent.get().transClient("format", "enter_value_s_error", input.get(0)).toString());
                                     }
                                 }
                                 return result;
@@ -1367,8 +1410,8 @@ public class RewardOptionScreen extends BaniraScreen {
                         // 补签卡
                         else if (reward.getType() == ERewardType.SIGN_IN_CARD) {
                             Minecraft.getInstance().setScreen(new StringInputScreen(this
-                                    , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_sign_in_card").shadow(true), Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_probability").shadow(true))
-                                    , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"))
+                                    , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_sign_in_card").shadow(true), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_probability").shadow(true))
+                                    , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
                                     , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                                     , new StringList(String.valueOf((Integer) RewardManager.deserializeReward(reward)), StringUtils.toFixedEx(reward.getProbability(), 5))
                                     , input -> {
@@ -1382,7 +1425,7 @@ public class RewardOptionScreen extends BaniraScreen {
                                         RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(count, ERewardType.SIGN_IN_CARD), ERewardType.SIGN_IN_CARD, p));
                                         RewardConfigManager.saveRewardOption();
                                     } else {
-                                        result.add(SakuraComponent.get().transClient("tips", "enter_value_s_error", input.get(0)).toString());
+                                        result.add(SakuraComponent.get().transClient("format", "enter_value_s_error", input.get(0)).toString());
                                     }
                                 }
                                 return result;
@@ -1406,8 +1449,8 @@ public class RewardOptionScreen extends BaniraScreen {
                         // 消息
                         else if (reward.getType() == ERewardType.MESSAGE) {
                             Minecraft.getInstance().setScreen(new StringInputScreen(this
-                                    , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_message").shadow(true), Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_probability").shadow(true))
-                                    , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"))
+                                    , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_message").shadow(true), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_probability").shadow(true))
+                                    , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
                                     , new StringList("", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                                     , new StringList(RewardManager.deserializeReward(reward).toString(), StringUtils.toFixedEx(reward.getProbability(), 5))
                                     , input -> {
@@ -1425,8 +1468,8 @@ public class RewardOptionScreen extends BaniraScreen {
                         // 指令
                         else if (reward.getType() == ERewardType.COMMAND) {
                             Minecraft.getInstance().setScreen(new StringInputScreen(this
-                                    , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_command").shadow(true), Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_probability").shadow(true))
-                                    , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"))
+                                    , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_command").shadow(true), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_probability").shadow(true))
+                                    , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
                                     , new StringList("", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
                                     , new StringList(RewardManager.deserializeReward(reward), StringUtils.toFixedEx(reward.getProbability(), 5))
                                     , input -> {
@@ -1438,26 +1481,26 @@ public class RewardOptionScreen extends BaniraScreen {
                                     RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(input.get(0), ERewardType.COMMAND), ERewardType.COMMAND, p));
                                     RewardConfigManager.saveRewardOption();
                                 } else {
-                                    result.add(SakuraComponent.get().transClient("tips", "enter_value_s_error", input.get(0)).toString());
+                                    result.add(SakuraComponent.get().transClient("format", "enter_value_s_error", input.get(0)).toString());
                                 }
                                 return result;
                             }
                             ));
                         }
                     }
-                } else if (SakuraComponent.get().transClient("option", "copy").toString().equalsIgnoreCase(selectedString)) {
+                } else if (SakuraComponent.get().transClient("word", "copy").toString().equalsIgnoreCase(selectedString)) {
                     if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                         editHandler.handleCopy();
                     }
-                } else if (SakuraComponent.get().transClient("option", "cut").toString().equalsIgnoreCase(selectedString)) {
+                } else if (SakuraComponent.get().transClient("word", "cut").toString().equalsIgnoreCase(selectedString)) {
                     if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                         editHandler.handleCut();
                     }
-                } else if (SakuraComponent.get().transClient("option", "paste").toString().equalsIgnoreCase(selectedString)) {
+                } else if (SakuraComponent.get().transClient("word", "paste").toString().equalsIgnoreCase(selectedString)) {
                     if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
                         editHandler.handlePaste();
                     }
-                } else if (SakuraComponent.get().transClient("option", "delete").toString().equalsIgnoreCase(selectedString)) {
+                } else if (SakuraComponent.get().transClient("word", "delete").toString().equalsIgnoreCase(selectedString)) {
                     requestDeleteConfirmation();
                 }
             }
@@ -1473,8 +1516,8 @@ public class RewardOptionScreen extends BaniraScreen {
         Minecraft.getInstance().setScreen(new ConfirmDialogScreen(
                 new ConfirmDialogScreen.Args()
                         .parentScreen(this)
-                        .title(SakuraComponent.get().transClient("title", "confirm_operation"))
-                        .message(SakuraComponent.get().transClient("tips", messageKey))
+                        .title(SakuraComponent.get().transClient("word", "confirm_operation"))
+                        .message(SakuraComponent.get().transClient("word", messageKey))
                         .onConfirm(action)
         ));
     }
@@ -1703,10 +1746,10 @@ public class RewardOptionScreen extends BaniraScreen {
                 if (currRewardButton.equalsIgnoreCase("panel")) {
                     if (rule == ERewardRule.CDK_REWARD) {
                         Minecraft.getInstance().setScreen(new StringInputScreen(screen
-                                , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_rule_key_" + rule.getCode()).shadow(true)
-                                , Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_valid_until").shadow(true)
-                                , Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_num").shadow(true))
-                                , new TextList(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something"))
+                                , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_rule_key_" + rule.getCode()).shadow(true)
+                                , Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_valid_until").shadow(true)
+                                , Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_num").shadow(true))
+                                , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
                                 , new StringList("\\w*"
                                 , ""
                                 , "\\d*")
@@ -1717,16 +1760,16 @@ public class RewardOptionScreen extends BaniraScreen {
                             StringList result = new StringList("", "", "");
                             if (CollectionUtils.isNotNullOrEmpty(input)) {
                                 if (!RewardConfigManager.validateKeyName(rule, input.get(0))) {
-                                    result.set(0, SakuraComponent.get().transClient("tips", "reward_rule_s_error", input.get(0)).toString());
+                                    result.set(0, SakuraComponent.get().transClient("format", "reward_rule_s_error", input.get(0)).toString());
                                 }
                                 if (StringUtils.isNotNullOrEmpty(input.get(1))) {
                                     if (DateUtils.format(input.get(1)) == null) {
-                                        result.set(1, SakuraComponent.get().transClient("tips", "valid_until_s_error", input.get(1)).toString());
+                                        result.set(1, SakuraComponent.get().transClient("format", "valid_until_s_error", input.get(1)).toString());
                                     }
                                 }
                                 if (StringUtils.isNotNullOrEmpty(input.get(2))) {
                                     if (StringUtils.toInt(input.get(2)) == 0) {
-                                        result.set(2, SakuraComponent.get().transClient("tips", "num_s_error", input.get(2)).toString());
+                                        result.set(2, SakuraComponent.get().transClient("format", "num_s_error", input.get(2)).toString());
                                     }
                                 }
                                 if (result.stream().allMatch(StringUtils::isNullOrEmptyEx)) {
@@ -1742,8 +1785,8 @@ public class RewardOptionScreen extends BaniraScreen {
                     } else if (rule != ERewardRule.BASE_REWARD) {
                         String validator = rule == ERewardRule.RANDOM_REWARD ? "(0?1(\\.0{0,10})?|0(\\.\\d{0,10})?)?" : "[\\d +~/:.T-]*";
                         Minecraft.getInstance().setScreen(new StringInputScreen(screen
-                                , Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_reward_rule_key_" + rule.getCode()).shadow(true)
-                                , Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.enter_something")
+                                , Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_rule_key_" + rule.getCode()).shadow(true)
+                                , Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something")
                                 , validator
                                 , RewardClipboardManager.deSerializeRewardList().getKey()
                                 , input -> {
@@ -1756,7 +1799,7 @@ public class RewardOptionScreen extends BaniraScreen {
                                     RewardConfigManager.addKeyName(rule, input.get(0), rewardList);
                                     RewardConfigManager.saveRewardOption();
                                 } else {
-                                    result.add(SakuraComponent.get().transClient("tips", "reward_rule_s_error", input.get(0)).toString());
+                                    result.add(SakuraComponent.get().transClient("format", "reward_rule_s_error", input.get(0)).toString());
                                 }
                             }
                             return result;
@@ -1889,7 +1932,7 @@ public class RewardOptionScreen extends BaniraScreen {
     }
 
     public RewardOptionScreen() {
-        super(SakuraComponent.get().transClient("title", "reward_option_title"));
+        super(SakuraComponent.get().transClient("word", "reward_option_title"));
         season(BaniraThemes.seasonFor(SakuraSignIn.MODID));
     }
 
@@ -1897,7 +1940,7 @@ public class RewardOptionScreen extends BaniraScreen {
     protected void onInit() {
         this.leftBarTitleHeight = 5 * 2 + super.font.lineHeight;
         ClientEventHandler.loadThemeTexture();
-        tips = Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.reward_option_screen_tips");
+        tips = Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.reward_option_screen_tips");
     }
 
     @Override
@@ -1921,15 +1964,17 @@ public class RewardOptionScreen extends BaniraScreen {
                         SakuraClientState.getThemeTextureCoordinate().getArrowUV(),
                         SakuraClientState.getThemeTextureCoordinate().getArrowHoverUV(),
                         SakuraClientState.getThemeTextureCoordinate().getArrowTapUV())
+                        .setHoverTint(0)
                         .setVisualBounds(new ScreenCoordinate(4, (height - 16) / 2.0, 16, 16))
-                        .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.open_sidebar")),
+                        .setTooltip(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.open_sidebar")),
                 new ScreenCoordinate(0, 0, 20, height));
         registerOperation(createThemeIcon(OperationButtonType.CLOSE,
                         SakuraClientState.getThemeTextureCoordinate().getArrowUV(),
                         SakuraClientState.getThemeTextureCoordinate().getArrowHoverUV(),
                         SakuraClientState.getThemeTextureCoordinate().getArrowTapUV())
                         .setFlipHorizontal(true)
-                        .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.close_sidebar")),
+                        .setHoverTint(0)
+                        .setTooltip(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.close_sidebar")),
                 new ScreenCoordinate(80, (leftBarTitleHeight - 16) / 2.0, 16, 16));
 
         ERewardRule[] rules = {
@@ -1960,18 +2005,18 @@ public class RewardOptionScreen extends BaniraScreen {
                 new ScreenCoordinate(width - rightBarWidth + 1, 2, 18, 18));
         registerOperation(createThemeIcon(OperationButtonType.DOWNLOAD,
                         SakuraClientState.getThemeTextureCoordinate().getDownloadUV())
-                        .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.download_reward_config")),
+                        .setTooltip(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.download_reward_config")),
                 new ScreenCoordinate(width - rightBarWidth + 1, 22, 18, 18));
         registerOperation(createThemeIcon(OperationButtonType.UPLOAD,
                         SakuraClientState.getThemeTextureCoordinate().getUploadUV()),
                 new ScreenCoordinate(width - rightBarWidth + 1, 42, 18, 18));
         registerOperation(createThemeIcon(OperationButtonType.FOLDER,
                         SakuraClientState.getThemeTextureCoordinate().getFolderUV())
-                        .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.open_config_folder")),
+                        .setTooltip(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.open_config_folder")),
                 new ScreenCoordinate(width - rightBarWidth + 1, 62, 18, 18));
         registerOperation(createThemeIcon(OperationButtonType.SORT,
                         SakuraClientState.getThemeTextureCoordinate().getSortUV())
-                        .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.reward_rule_sort")),
+                        .setTooltip(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.reward_rule_sort")),
                 new ScreenCoordinate(width - rightBarWidth + 1, 82, 18, 18));
         updateLayout();
     }
@@ -2050,7 +2095,7 @@ public class RewardOptionScreen extends BaniraScreen {
         AbstractGuiUtils.fillOutLine(matrixStack, 0, 0, leftBarWidth, super.height, 1, 0xFF000000);
         // 绘制左侧边栏列表标题
         if (SakuraClientState.isRewardOptionBarOpened()) {
-            AbstractGui.drawString(matrixStack, super.font, SakuraComponent.get().transClient("title", "reward_rule_type").toString(), 4, 5, 0xFFACACAC);
+            AbstractGui.drawString(matrixStack, super.font, SakuraComponent.get().transClient("word", "reward_rule_type").toString(), 4, 5, 0xFFACACAC);
             AbstractGui.fill(matrixStack, 0, leftBarTitleHeight, leftBarWidth, leftBarTitleHeight - 1, 0xAA000000);
         }
         // 绘制右侧边栏列表背景
@@ -2082,20 +2127,20 @@ public class RewardOptionScreen extends BaniraScreen {
         });
 
         OP_BUTTONS.get(OperationButtonType.OFFSET_Y.getCode()).setTooltip(
-                Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.y_offset",
+                Text.trans(SakuraSignIn.MODID, "format.sakura_sign_in.y_offset",
                         StringUtils.toFixedEx(yOffset, 1)));
         OP_BUTTONS.get(OperationButtonType.HELP.getCode()).setTooltip(
-                Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.help_button"));
+                Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.help_button"));
 
         ClientPlayerEntity player = Minecraft.getInstance().player;
         RewardOperationWidget upload = OP_BUTTONS.get(OperationButtonType.UPLOAD.getCode());
         if (player != null && player.hasPermissions(CommonConfig.get().permission().permissionEditReward())) {
             upload.setTooltip(Text.trans(SakuraSignIn.MODID,
-                            "tips.sakura_sign_in.upload_reward_config"))
+                            "word.sakura_sign_in.upload_reward_config"))
                     .setPressedTint(0xAAA0A0A0);
         } else {
             upload.setTooltip(Text.trans(SakuraSignIn.MODID,
-                            "tips.sakura_sign_in.upload_reward_config_no_permission").color(0xFFFF0000))
+                            "word.sakura_sign_in.upload_reward_config_no_permission").color(0xFFFF0000))
                     .setPressedTint(0xAA808080);
         }
     }

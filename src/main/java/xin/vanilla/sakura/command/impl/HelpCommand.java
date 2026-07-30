@@ -83,7 +83,7 @@ public final class HelpCommand {
         for (int index = start; index < end; index++) {
             KeyValue<String, String> entry = ENTRIES.get(index);
             Component description = SakuraComponent.get()
-                    .trans(player, "command", entry.getValue())
+                    .trans(player, "word", entry.getValue())
                     .color(Color.GRAY.getRGB());
             help.append(entry.getKey())
                     .append(SakuraComponent.get().literal(" -> ").color(Color.YELLOW.getRGB()))

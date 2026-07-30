@@ -47,20 +47,20 @@ public final class SakuraQuickActions {
                 SakuraComponent.get().transClient("key", "categories"),
                 context -> ClientEventHandler.openSignInScreen(context.currentScreen()),
                 new QuickActionContextMenuItem(
-                        SakuraComponent.get().transClient("key", "edit_reward_config"),
+                        SakuraComponent.get().transClient("word", "edit_reward_config"),
                         context -> Minecraft.getInstance().setScreen(
                                 new RewardOptionScreen().previousScreen(context.currentScreen()))
                 ),
                 new QuickActionContextMenuItem(
-                        SakuraComponent.get().transClient("key", "edit_player_config"),
+                        SakuraComponent.get().transClient("word", "edit_player_config"),
                         context -> openPlayerConfig(context.currentScreen())
                 ),
                 new QuickActionContextMenuItem(
-                        SakuraComponent.get().transClient("key", "edit_client_config"),
+                        SakuraComponent.get().transClient("word", "edit_client_config"),
                         context -> openConfig(ClientConfig.get().holder(), context.currentScreen())
                 ),
                 new QuickActionContextMenuItem(
-                        SakuraComponent.get().transClient("key", "edit_server_config"),
+                        SakuraComponent.get().transClient("word", "edit_server_config"),
                         context -> openConfig(CommonConfig.get().holder(), context.currentScreen())
                 )
         );
@@ -105,9 +105,9 @@ public final class SakuraQuickActions {
         String signIn = coordinates != null ? String.valueOf(coordinates.getSignInBtnUV()) : "";
         return texture + "|" + signIn
                 + "|" + SakuraComponent.get().translateClient("key", "categories")
-                + "|" + SakuraComponent.get().translateClient("key", "edit_reward_config")
-                + "|" + SakuraComponent.get().translateClient("key", "edit_player_config")
-                + "|" + SakuraComponent.get().translateClient("key", "edit_client_config")
-                + "|" + SakuraComponent.get().translateClient("key", "edit_server_config");
+                + "|" + SakuraComponent.get().translateClient("word", "edit_reward_config")
+                + "|" + SakuraComponent.get().translateClient("word", "edit_player_config")
+                + "|" + SakuraComponent.get().translateClient("word", "edit_client_config")
+                + "|" + SakuraComponent.get().translateClient("word", "edit_server_config");
     }
 }
