@@ -7,12 +7,12 @@ import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.JsonOps;
 import lombok.NonNull;
-import net.minecraft.core.component.DataComponentMap;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.JsonToNBT;
+import xin.vanilla.banira.common.util.ItemUtils;
 import xin.vanilla.sakura.rewards.RewardParser;
 import xin.vanilla.banira.common.data.Component;
 
@@ -36,7 +36,7 @@ public class ItemRewardParser implements RewardParser<ItemStack> {
                 if (jsonObject.has("count")) {
                     count = Math.max(jsonObject.get("count").getAsInt(), 1);
                 }
-                Item item = BuiltInRegistries.ITEM.get(ResourceLocation.parse(itemId));
+                Item item = ForgeRegistries.ITEMS.getValue(ResourceLocation.parse(itemId));
                 if (item == null) {
                     item = Items.AIR;
                 }
@@ -61,13 +61,36 @@ public class ItemRewardParser implements RewardParser<ItemStack> {
 
     @Override
     public @NonNull ItemStack deserialize(JsonObject json) {
-        JsonObject jsonObject = json.deepCopy();
-        return getItemStack(jsonObject);
-    }
+        ItemStack itemStack;
+        try {
+            String itemId;
+            if (json.has("id")) {
+                itemId = json.get("id").getAsString();
+            } else {
+                itemId = json.get("item").getAsString();
+            }
+            int count = json.get("count").getAsInt();
+            count = Math.max(count, 1);
+            Item item = ItemUtils.getItemFromRegistry(itemId);
+            if (item == null) {
+                throw new JsonParseException("Unknown item ID: " + itemId);
+            }
+            itemStack = new ItemStack(item, count);
 
-    public static ItemStack deserializeFromString(String json) {
-        JsonObject jsonObject = GSON.fromJson(json, JsonObject.class);
-        return getItemStack(jsonObject);
+            // 如果存在NBT数据，则解析
+            if (json.has("nbt")) {
+                try {
+                    CompoundNBT nbt = JsonToNBT.parseTag(json.get("nbt").getAsString());
+                    itemStack.setTag(nbt);
+                } catch (Exception e) {
+                    LOGGER.debug("Failed to parse NBT data", e);
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.error("Failed to deserialize item reward", e);
+            itemStack = new ItemStack(Items.AIR);
+        }
+        return itemStack;
     }
 
     @Override
@@ -120,9 +143,7 @@ public class ItemRewardParser implements RewardParser<ItemStack> {
     }
 
     public static String getId(Item item) {
-        ResourceLocation resource = BuiltInRegistries.ITEM.getKey(item);
-        if (resource == null) return "minecraft:air";
-        else return resource.toString();
+        return ItemUtils.getItemRegistryString(item);
     }
 
     public static String getId(ItemStack itemStack) {
@@ -132,7 +153,7 @@ public class ItemRewardParser implements RewardParser<ItemStack> {
     public static Item getItem(String id) {
         String resourceId = id;
         if (id.contains("{") && id.endsWith("}")) resourceId = resourceId.substring(0, id.indexOf("{"));
-        return BuiltInRegistries.ITEM.get(ResourceLocation.parse(resourceId));
+        return ItemUtils.getItemFromRegistry(resourceId);
     }
 
     public static ItemStack getItemStack(String id) {
@@ -153,9 +174,8 @@ public class ItemRewardParser implements RewardParser<ItemStack> {
         if (id.contains("{") && id.endsWith("}") && !id.endsWith("{}")) {
             try {
                 String nbtString = id.substring(id.indexOf("{"));
-                DataComponentMap components = DataComponentMap.CODEC.decode(JsonOps.INSTANCE, GSON.fromJson(nbtString, JsonObject.class))
-                        .result().orElse(new Pair<>(DataComponentMap.EMPTY, null)).getFirst();
-                itemStack.applyComponents(components);
+                CompoundNBT nbt = JsonToNBT.parseTag(nbtString);
+                itemStack.setTag(nbt);
             } catch (Exception e) {
                 if (throwException) throw e;
                 LOGGER.error("Failed to parse NBT data", e);

@@ -6,11 +6,10 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.BaniraDataPaths;
+import xin.vanilla.banira.api.BaniraEnvironment;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.enums.ERewardRule;
 import xin.vanilla.sakura.enums.ERewardType;
@@ -1317,7 +1316,7 @@ public class RewardConfigManager {
                     // 如果当前为服务器环境，且玩家发送的数据为空则使用原数据，不进行覆盖
                     boolean redacted = dataList.stream()
                             .anyMatch(data -> data.getKind() == RewardOptionSyncKind.REDACTED_RULE);
-                    if (redacted && FMLEnvironment.dist == Dist.DEDICATED_SERVER) {
+                    if (redacted && BaniraEnvironment.isDedicatedServer()) {
                         rewardMap = RewardConfigManager.getRewardMap(rule);
                     }
                     if (redacted) {

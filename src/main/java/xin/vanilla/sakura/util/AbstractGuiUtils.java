@@ -16,10 +16,8 @@ import net.minecraft.item.Items;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.vector.Vector3f;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import org.joml.Quaternionf;
 import xin.vanilla.sakura.SakuraSignIn;
+import xin.vanilla.sakura.client.SakuraClientState;
 import xin.vanilla.sakura.enums.ERewardType;
 import xin.vanilla.sakura.network.data.AdvancementData;
 import xin.vanilla.sakura.rewards.Reward;
@@ -36,8 +34,6 @@ import java.util.stream.Collectors;
 /**
  * AbstractGui工具类
  */
-@SuppressWarnings("unused")
-@OnlyIn(Dist.CLIENT)
 public class AbstractGuiUtils {
 
     public final static int ITEM_ICON_SIZE = 16;
@@ -642,7 +638,7 @@ public class AbstractGuiUtils {
      * @param showText       是否显示效果等级和持续时间
      */
     public static void drawEffectIcon(MatrixStack matrixStack, FontRenderer font, EffectInstance effectInstance, int x, int y, int width, int height, boolean showText) {
-        AbstractGuiUtils.drawEffectIcon(matrixStack, font, effectInstance, SakuraSignIn.getThemeTexture(), SakuraSignIn.getThemeTextureCoordinate(), x, y, width, height, showText);
+        AbstractGuiUtils.drawEffectIcon(matrixStack, font, effectInstance, SakuraClientState.getThemeTexture(), SakuraClientState.getThemeTextureCoordinate(), x, y, width, height, showText);
     }
 
     /**
@@ -656,7 +652,7 @@ public class AbstractGuiUtils {
      * @param showText       是否显示效果等级和持续时间
      */
     public static void drawEffectIcon(MatrixStack matrixStack, FontRenderer font, EffectInstance effectInstance, int x, int y, boolean showText) {
-        AbstractGuiUtils.drawEffectIcon(matrixStack, font, effectInstance, SakuraSignIn.getThemeTexture(), SakuraSignIn.getThemeTextureCoordinate(), x, y, ITEM_ICON_SIZE, ITEM_ICON_SIZE, showText);
+        AbstractGuiUtils.drawEffectIcon(matrixStack, font, effectInstance, SakuraClientState.getThemeTexture(), SakuraClientState.getThemeTextureCoordinate(), x, y, ITEM_ICON_SIZE, ITEM_ICON_SIZE, showText);
     }
 
     /**
@@ -761,7 +757,7 @@ public class AbstractGuiUtils {
         // 进度
         else if (reward.getType().equals(ERewardType.ADVANCEMENT)) {
             ResourceLocation resourceLocation = RewardManager.deserializeReward(reward);
-            AdvancementData advancementData = SakuraSignIn.getAdvancementData().stream()
+            AdvancementData advancementData = SakuraClientState.getAdvancementData().stream()
                     .filter(data -> data.getId().toString().equalsIgnoreCase(resourceLocation.toString()))
                     .findFirst().orElse(new AdvancementData(resourceLocation, null));
             itemRenderer.renderGuiItem(advancementData.getDisplayInfo().getIcon(), x, y);

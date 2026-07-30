@@ -7,6 +7,7 @@ import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.util.ResourceLocation;
 import xin.vanilla.sakura.SakuraSignIn;
+import xin.vanilla.sakura.client.SakuraClientState;
 import xin.vanilla.sakura.enums.ERewardType;
 import xin.vanilla.sakura.network.data.AdvancementData;
 import xin.vanilla.sakura.rewards.RewardParser;
@@ -34,7 +35,7 @@ public class AdvancementRewardParser implements RewardParser<ResourceLocation> {
     }
 
     public static AdvancementData getAdvancementData(String id) {
-        return SakuraSignIn.getAdvancementData().stream()
+        return SakuraClientState.getAdvancementData().stream()
                 .filter(data -> data.getId().toString().equalsIgnoreCase(id))
                 .findFirst().orElse(new AdvancementData(new ResourceLocation(id), null));
     }
@@ -81,7 +82,7 @@ public class AdvancementRewardParser implements RewardParser<ResourceLocation> {
         ResourceLocation deserialize = deserialize(json);
         return SakuraComponent.get().transLang(languageCode, "word", "reward_type_" + ERewardType.ADVANCEMENT.getCode())
                 .append(": ")
-                .append(SakuraComponent.get().object(SakuraSignIn.getAdvancementData().stream()
+                .append(SakuraComponent.get().object(SakuraClientState.getAdvancementData().stream()
                         .filter(data -> data.getId().equals(deserialize))
                         .findFirst().orElse(new AdvancementData(deserialize, null))
                         .getDisplayInfo().getTitle()));
