@@ -7,6 +7,7 @@ import net.minecraft.item.Items;
 import xin.vanilla.banira.api.client.theme.BaniraThemes;
 import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.client.gui.ConfigEditorScreen;
+import xin.vanilla.banira.client.gui.CustomPlayerConfigEditScreen;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionContextMenuItem;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionRegistry;
 import xin.vanilla.banira.client.gui.quickaction.QuickIcon;
@@ -43,19 +44,23 @@ public final class SakuraQuickActions {
         registry.registerIcon(
                 SIGN_IN_ID,
                 icon(coordinates != null ? coordinates.getSignInBtnUV() : null, Items.CLOCK),
-                SakuraComponent.get().transClient("key", "sign_in"),
+                SakuraComponent.get().transClient("key", "categories"),
                 context -> ClientEventHandler.openSignInScreen(context.currentScreen()),
                 new QuickActionContextMenuItem(
-                        SakuraComponent.get().transClient("key", "reward_option"),
+                        SakuraComponent.get().transClient("key", "edit_reward_config"),
                         context -> Minecraft.getInstance().setScreen(
                                 new RewardOptionScreen().previousScreen(context.currentScreen()))
                 ),
                 new QuickActionContextMenuItem(
-                        SakuraComponent.get().transClient("key", "client_config"),
+                        SakuraComponent.get().transClient("key", "edit_player_config"),
+                        context -> openPlayerConfig(context.currentScreen())
+                ),
+                new QuickActionContextMenuItem(
+                        SakuraComponent.get().transClient("key", "edit_client_config"),
                         context -> openConfig(ClientConfig.get().holder(), context.currentScreen())
                 ),
                 new QuickActionContextMenuItem(
-                        SakuraComponent.get().transClient("key", "common_config"),
+                        SakuraComponent.get().transClient("key", "edit_server_config"),
                         context -> openConfig(CommonConfig.get().holder(), context.currentScreen())
                 )
         );
@@ -66,6 +71,14 @@ public final class SakuraQuickActions {
         Minecraft.getInstance().setScreen(new ConfigEditorScreen(
                 holder,
                 new ConfigEditorScreen.Args()
+                        .parentScreen(parent)
+                        .season(BaniraThemes.seasonFor(SakuraSignIn.MODID))
+        ));
+    }
+
+    private static void openPlayerConfig(Screen parent) {
+        Minecraft.getInstance().setScreen(new CustomPlayerConfigEditScreen(
+                new CustomPlayerConfigEditScreen.Args()
                         .parentScreen(parent)
                         .season(BaniraThemes.seasonFor(SakuraSignIn.MODID))
         ));
@@ -91,9 +104,10 @@ public final class SakuraQuickActions {
         String texture = String.valueOf(SakuraClientState.getThemeTexture());
         String signIn = coordinates != null ? String.valueOf(coordinates.getSignInBtnUV()) : "";
         return texture + "|" + signIn
-                + "|" + SakuraComponent.get().translateClient("key", "sign_in")
-                + "|" + SakuraComponent.get().translateClient("key", "reward_option")
-                + "|" + SakuraComponent.get().translateClient("key", "client_config")
-                + "|" + SakuraComponent.get().translateClient("key", "common_config");
+                + "|" + SakuraComponent.get().translateClient("key", "categories")
+                + "|" + SakuraComponent.get().translateClient("key", "edit_reward_config")
+                + "|" + SakuraComponent.get().translateClient("key", "edit_player_config")
+                + "|" + SakuraComponent.get().translateClient("key", "edit_client_config")
+                + "|" + SakuraComponent.get().translateClient("key", "edit_server_config");
     }
 }

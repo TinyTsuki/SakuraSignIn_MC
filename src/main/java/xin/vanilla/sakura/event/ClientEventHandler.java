@@ -29,7 +29,8 @@ public final class ClientEventHandler {
 
     public static void loadThemeTexture() {
         BuiltInThemeDescriptor theme = BuiltInThemeCatalog.load(
-                ClientConfig.get().display().themeId());
+                ClientConfig.get().display().themeId(),
+                Minecraft.getInstance().getResourceManager());
         TextureCoordinate coordinates = theme.getCoordinates();
         boolean specialVariant = ClientConfig.get().display().specialVariant()
                 && coordinates.isSpecial();
