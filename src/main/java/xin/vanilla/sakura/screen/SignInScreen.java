@@ -5,10 +5,8 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
-import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.fml.loading.FMLPaths;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.enums.EnumAlignment;
@@ -17,7 +15,6 @@ import xin.vanilla.banira.client.gui.ConfirmDialogScreen;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.widget.BaseShapeWidget;
 import xin.vanilla.banira.client.gui.widget.ButtonWidget;
-import xin.vanilla.banira.client.gui.widget.PopupOption;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.api.SakuraPlayerData;
@@ -38,14 +35,11 @@ import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
 import xin.vanilla.sakura.text.SakuraComponent;
 import xin.vanilla.sakura.util.AbstractGuiUtils;
-import xin.vanilla.sakura.util.CollectionUtils;
 import xin.vanilla.sakura.util.DateUtils;
 import xin.vanilla.sakura.util.GLFWKey;
 import xin.vanilla.sakura.util.GLFWKeyHelper;
 import xin.vanilla.sakura.util.StringUtils;
-import xin.vanilla.sakura.util.TextureUtils;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -81,7 +75,6 @@ public final class SignInScreen extends BaniraScreen {
     private boolean showOpeningTips = Boolean.TRUE.equals(
             ClientConfig.get().display().showSignInScreenTips());
     private Text tips = Text.empty();
-    private List<File> themeFileList = new ArrayList<>();
     private double scale = 1;
     private double aspectRatio;
     private int bgHeight;
@@ -96,22 +89,22 @@ public final class SignInScreen extends BaniraScreen {
         UP_ARROW(3),
         DOWN_ARROW(4),
         INFO(5),
-        THEME_ORIGINAL_BUTTON(100, "textures/gui/sign_in_calendar_original.png"),
-        THEME_SAKURA_BUTTON(101, "textures/gui/sign_in_calendar_sakura.png"),
-        THEME_CLOVER_BUTTON(102, "textures/gui/sign_in_calendar_clover.png"),
-        THEME_MAPLE_BUTTON(103, "textures/gui/sign_in_calendar_maple.png"),
-        THEME_CHAOS_BUTTON(104, "textures/gui/sign_in_calendar_chaos.png");
+        THEME_ORIGINAL_BUTTON(100, "original"),
+        THEME_SAKURA_BUTTON(101, "sakura"),
+        THEME_CLOVER_BUTTON(102, "clover"),
+        THEME_MAPLE_BUTTON(103, "maple"),
+        THEME_CHAOS_BUTTON(104, "chaos");
 
         private final int code;
-        private final String path;
+        private final String themeId;
 
         OperationButtonType(int code) {
             this(code, "");
         }
 
-        OperationButtonType(int code, String path) {
+        OperationButtonType(int code, String themeId) {
             this.code = code;
-            this.path = path;
+            this.themeId = themeId;
         }
 
         static OperationButtonType fromCode(int code) {
@@ -133,7 +126,6 @@ public final class SignInScreen extends BaniraScreen {
                     RewardManager.getCompensateDate(DateUtils.getClientDate()));
         }
         ClientEventHandler.loadThemeTexture();
-        themeFileList = TextureUtils.getPngFilesInDirectory(TextureUtils.CUSTOM_THEME_DIR);
         tips = Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.sign_in_screen_tips");
         updateLayoutMetrics();
     }
@@ -164,7 +156,6 @@ public final class SignInScreen extends BaniraScreen {
 
     private void refreshTextureAndLayout() {
         ClientEventHandler.loadThemeTexture();
-        themeFileList = TextureUtils.getPngFilesInDirectory(TextureUtils.CUSTOM_THEME_DIR);
         refreshLayout();
     }
 
@@ -197,7 +188,7 @@ public final class SignInScreen extends BaniraScreen {
         operationWidgets.get(THEME_CHAOS_BUTTON.code)
                 .setTremblingAmplitude(3.5)
                 .setTooltip(Text.trans(SakuraSignIn.MODID,
-                        "tips.sakura_sign_in.click_to_change_theme_or_select_external_theme")
+                        "tips.sakura_sign_in.click_to_change_theme")
                         .align(EnumAlignment.CENTER));
     }
 
@@ -420,14 +411,8 @@ public final class SignInScreen extends BaniraScreen {
             changeCalendar(DateUtils.addYear(SakuraSignIn.getCalendarCurrentDate(), -1));
         } else if (type == DOWN_ARROW && mouseButton == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
             changeCalendar(DateUtils.addYear(SakuraSignIn.getCalendarCurrentDate(), 1));
-        } else if (type == THEME_CHAOS_BUTTON) {
-            if (mouseButton == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
-                selectBuiltInTheme(type, false);
-            } else if (mouseButton == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
-                showExternalThemeMenu(widget);
-            }
         } else if (type.code >= THEME_ORIGINAL_BUTTON.code
-                && type.code <= THEME_MAPLE_BUTTON.code
+                && type.code <= THEME_CHAOS_BUTTON.code
                 && (mouseButton == GLFWKey.GLFW_MOUSE_BUTTON_LEFT
                 || mouseButton == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT)) {
             selectBuiltInTheme(type, mouseButton == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT);
@@ -441,51 +426,10 @@ public final class SignInScreen extends BaniraScreen {
     }
 
     private void selectBuiltInTheme(OperationButtonType type, boolean specialVersion) {
-        SakuraSignIn.setSpecialVersionTheme(specialVersion);
-        ClientConfig.get().display().theme(type.path);
-        ClientConfig.get().display().specialTheme(specialVersion);
+        ClientConfig.get().display().themeId(type.themeId);
+        ClientConfig.get().display().specialVariant(specialVersion);
         ClientConfig.save();
         refreshTextureAndLayout();
-    }
-
-    private void showExternalThemeMenu(RewardOperationWidget widget) {
-        popupOption.clear();
-        if (CollectionUtils.isNullOrEmpty(themeFileList)) {
-            popupOption.addOptionWithId("open-folder",
-                    Text.from(SakuraComponent.get().transClient("title", "theme_selector_empty")),
-                    null, event -> openThemeFolder());
-        } else {
-            for (File file : themeFileList) {
-                String name = file.getName();
-                if (name.endsWith(".png")) {
-                    name = name.substring(0, name.length() - 4);
-                }
-                popupOption.addOptionWithId(file.getAbsolutePath(), name, null,
-                        event -> selectExternalTheme(event.id()));
-            }
-        }
-        popupOption.setMaxWidth(AbstractGuiUtils.multilineTextWidth(
-                        Text.trans(SakuraSignIn.MODID, "title.sakura_sign_in.theme_selector_empty")))
-                .setMaxLines(5)
-                .showAt(widget.realX(), widget.realY() + widget.realHeight(),
-                        "theme-selector");
-    }
-
-    private void openThemeFolder() {
-        SakuraSignIn.openFileInFolder(new File(
-                FMLPaths.CONFIGDIR.get().resolve(SakuraSignIn.MODID).toFile(), "themes").toPath());
-    }
-
-    private void selectExternalTheme(String selectedFile) {
-        Component selected = SakuraComponent.get().transClient(
-                "message", "selected_theme_file_s", selectedFile);
-        SakuraClientNotifications.show(selected, SakuraNotificationTypes.COMMAND_FEEDBACK);
-        ResourceLocation resource = TextureUtils.loadCustomTexture(selectedFile);
-        if (TextureUtils.isTextureAvailable(resource)) {
-            ClientConfig.get().display().theme(selectedFile);
-            ClientConfig.save();
-            refreshTextureAndLayout();
-        }
     }
 
     private void handleSignIn(int button, SignInCell cell, ClientPlayerEntity player) {
@@ -648,7 +592,7 @@ public final class SignInScreen extends BaniraScreen {
             }
             int index = type.code - THEME_ORIGINAL_BUTTON.code;
             double uOffset = index * texture.getThemeUV().getUWidth();
-            boolean selected = SakuraSignIn.getThemeTexture().getPath().equalsIgnoreCase(type.path);
+            boolean selected = SakuraSignIn.getActiveThemeId().equals(type.themeId);
             Coordinate normal = selected ? texture.getThemeTapUV() : texture.getThemeUV();
             Coordinate hover = selected ? texture.getThemeTapUV() : texture.getThemeHoverUV();
             widget.setNormal(offsetU(normal, uOffset))
