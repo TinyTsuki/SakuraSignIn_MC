@@ -5,6 +5,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
+import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
 import xin.vanilla.banira.client.enums.EnumAlignment;
@@ -14,6 +15,7 @@ import xin.vanilla.banira.client.gui.ConfirmDialogScreen;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.widget.BaseShapeWidget;
 import xin.vanilla.banira.client.gui.widget.ButtonWidget;
+import xin.vanilla.banira.client.gui.widget.TooltipWidget;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.client.SakuraClientBootstrap;
@@ -116,7 +118,7 @@ public final class SignInScreen extends BaniraScreen {
     }
 
     public SignInScreen() {
-        super(SakuraComponent.get().transClient("title", "sign_in_title"));
+        super(SakuraComponent.get().transClient("word", "sign_in_title"));
         season(BaniraThemes.seasonFor(SakuraSignIn.MODID));
     }
 
@@ -127,7 +129,7 @@ public final class SignInScreen extends BaniraScreen {
                     RewardManager.getCompensateDate(DateUtils.getClientDate()));
         }
         ClientEventHandler.loadThemeTexture();
-        tips = Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.sign_in_screen_tips");
+        tips = Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.sign_in_screen_tips");
         updateLayoutMetrics();
     }
 
@@ -160,24 +162,33 @@ public final class SignInScreen extends BaniraScreen {
         refreshLayout();
     }
 
+    /**
+     * 玩家摘要或月份记录同步完成后，按最新数据重建当前日历。
+     */
+    public void refreshPlayerData() {
+        if (Minecraft.getInstance().screen == this) {
+            refreshLayout();
+        }
+    }
+
     private void createOperationWidgets() {
         TextureCoordinate texture = SakuraClientState.getThemeTextureCoordinate();
         registerOperation(createTextureOperation(LEFT_ARROW, texture.getLeftArrowCoordinate(),
                 texture.getArrowUV(), texture.getArrowHoverUV(), texture.getArrowTapUV())
                 .setFlipHorizontal(true)
-                .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.use_s_key", "←")));
+                .setTooltip(Text.trans(SakuraSignIn.MODID, "format.sakura_sign_in.use_s_key", "←")));
         registerOperation(createTextureOperation(RIGHT_ARROW, texture.getRightArrowCoordinate(),
                 texture.getArrowUV(), texture.getArrowHoverUV(), texture.getArrowTapUV())
-                .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.use_s_key", "→")));
+                .setTooltip(Text.trans(SakuraSignIn.MODID, "format.sakura_sign_in.use_s_key", "→")));
         registerOperation(createTextureOperation(UP_ARROW, texture.getUpArrowCoordinate(),
                 texture.getArrowUV(), texture.getArrowHoverUV(), texture.getArrowTapUV())
                 .setRotatedAngle(270)
-                .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.use_s_key", "↑")));
+                .setTooltip(Text.trans(SakuraSignIn.MODID, "format.sakura_sign_in.use_s_key", "↑")));
         registerOperation(createTextureOperation(DOWN_ARROW, texture.getDownArrowCoordinate(),
                 texture.getArrowUV(), texture.getArrowHoverUV(), texture.getArrowTapUV())
                 .setRotatedAngle(90)
                 .setFlipVertical(true)
-                .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.use_s_key", "↓")));
+                .setTooltip(Text.trans(SakuraSignIn.MODID, "format.sakura_sign_in.use_s_key", "↓")));
         registerOperation(createTextureOperation(INFO, texture.getSignInInfoCoordinate(),
                 texture.getSignInInfoUV(), texture.getSignInInfoUV(), texture.getSignInInfoUV()));
 
@@ -189,7 +200,7 @@ public final class SignInScreen extends BaniraScreen {
         operationWidgets.get(THEME_CHAOS_BUTTON.code)
                 .setTremblingAmplitude(3.5)
                 .setTooltip(Text.trans(SakuraSignIn.MODID,
-                        "tips.sakura_sign_in.click_to_change_theme")
+                        "word.sakura_sign_in.click_to_change_theme")
                         .align(EnumAlignment.CENTER));
     }
 
@@ -213,7 +224,7 @@ public final class SignInScreen extends BaniraScreen {
         RewardOperationWidget widget = createTextureOperation(type, texture.getThemeCoordinate(),
                 texture.getThemeUV(), texture.getThemeHoverUV(), texture.getThemeTapUV())
                 .setTooltip(Text.trans(SakuraSignIn.MODID,
-                        "tips.sakura_sign_in.click_to_change_theme"));
+                        "word.sakura_sign_in.click_to_change_theme"));
         registerOperation(widget);
     }
 
@@ -245,7 +256,7 @@ public final class SignInScreen extends BaniraScreen {
         ButtonWidget confirm = new ButtonWidget(this);
         confirm.id("opening-tip-confirm");
         confirm.bounds(new ScreenCoordinate(x, y + textHeight + 4, buttonWidth, 20));
-        confirm.text(SakuraComponent.get().transClient("option", "confirm"));
+        confirm.text(SakuraComponent.get().transClient("word", "confirm"));
         confirm.visible(showOpeningTips);
         confirm.onClick(button -> dismissOpeningTips(false));
         addWidget(confirm);
@@ -254,7 +265,7 @@ public final class SignInScreen extends BaniraScreen {
         noReminder.id("opening-tip-no-reminder");
         noReminder.bounds(new ScreenCoordinate(x + textWidth - buttonWidth,
                 y + textHeight + 4, buttonWidth, 20));
-        noReminder.text(SakuraComponent.get().transClient("option", "no_remind"));
+        noReminder.text(SakuraComponent.get().transClient("word", "no_remind"));
         noReminder.visible(showOpeningTips);
         noReminder.onClick(button -> dismissOpeningTips(true));
         addWidget(noReminder);
@@ -442,7 +453,7 @@ public final class SignInScreen extends BaniraScreen {
             if (RewardManager.getCompensateDateInt()
                     < DateUtils.toDateInt(RewardManager.getCompensateDate(DateUtils.getClientDate()))) {
                 SakuraClientNotifications.warning(SakuraComponent.get().transClient(
-                        "message", "next_day_cannot_operate"), SakuraNotificationTypes.SIGN_IN);
+                        "word", "next_day_cannot_operate"), SakuraNotificationTypes.SIGN_IN);
             } else {
                 cell.setStatus(ClientConfig.get().display().autoRewarded()
                         ? ESignInStatus.REWARDED.getCode()
@@ -454,7 +465,7 @@ public final class SignInScreen extends BaniraScreen {
         } else if (cell.getStatus() == ESignInStatus.SIGNED_IN.getCode()) {
             if (RewardManager.isRewarded(SakuraPlayerData.get(player), cellDate, false)) {
                 SakuraClientNotifications.warning(SakuraComponent.get().transClient(
-                        "message", "already_get_reward"), SakuraNotificationTypes.SIGN_IN);
+                        "word", "already_get_reward"), SakuraNotificationTypes.SIGN_IN);
             } else {
                 cell.setStatus(ESignInStatus.REWARDED.getCode());
                 SakuraNetwork.sendToServer(new SignInPacket(DateUtils.toDateTimeString(cellDate),
@@ -469,7 +480,7 @@ public final class SignInScreen extends BaniraScreen {
                     "message", key), SakuraNotificationTypes.SIGN_IN);
         } else if (cell.getStatus() == ESignInStatus.REWARDED.getCode()) {
             SakuraClientNotifications.warning(SakuraComponent.get().transClient(
-                    "message", "already_get_reward"), SakuraNotificationTypes.SIGN_IN);
+                    "word", "already_get_reward"), SakuraNotificationTypes.SIGN_IN);
         } else {
             Component component = SakuraComponent.get().literal(
                     ESignInStatus.valueOf(cell.getStatus()).getDescription()
@@ -481,19 +492,19 @@ public final class SignInScreen extends BaniraScreen {
     private void requestMakeUpSignIn(SignInCell cell, Date cellDate, ClientPlayerEntity player) {
         if (!CommonConfig.get().makeUp().signInCard()) {
             SakuraClientNotifications.warning(SakuraComponent.get().transClient(
-                    "message", "server_not_enable_sign_in_card"), SakuraNotificationTypes.SIGN_IN);
+                    "word", "server_not_enable_sign_in_card"), SakuraNotificationTypes.SIGN_IN);
             return;
         }
         if (SakuraPlayerData.get(player).getSignInCard() <= 0) {
             SakuraClientNotifications.warning(SakuraComponent.get().transClient(
-                    "message", "not_enough_sign_in_card"), SakuraNotificationTypes.SIGN_IN);
+                    "word", "not_enough_sign_in_card"), SakuraNotificationTypes.SIGN_IN);
             return;
         }
         Minecraft.getInstance().setScreen(new ConfirmDialogScreen(
                 new ConfirmDialogScreen.Args()
                         .parentScreen(this)
-                        .title(SakuraComponent.get().transClient("title", "confirm_operation"))
-                        .message(SakuraComponent.get().transClient("tips", "confirm_make_up_sign_in",
+                        .title(SakuraComponent.get().transClient("word", "confirm_operation"))
+                        .message(SakuraComponent.get().transClient("format", "confirm_make_up_sign_in",
                                 DateUtils.toString(cellDate)))
                         .onConfirm(() -> {
                             cell.setStatus(ClientConfig.get().display().autoRewarded()
@@ -578,7 +589,7 @@ public final class SignInScreen extends BaniraScreen {
             if (player != null) {
                 IPlayerSignInData data = SakuraPlayerData.get(player);
                 info.setTooltip(Text.trans(SakuraSignIn.MODID,
-                        "tips.sakura_sign_in.sign_in_info",
+                        "format.sakura_sign_in.sign_in_info",
                         data.getSignInCard(), data.getContinuousSignInDays(), data.getTotalSignInDays()));
             }
         }
@@ -668,10 +679,11 @@ public final class SignInScreen extends BaniraScreen {
                     continue;
                 }
                 if (inputState.onlyShiftPressed()) {
-                    AbstractGuiUtils.drawPopupMessage(
-                            Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.how_to_sign_in")
-                                    .stack(stack).font(font).align(EnumAlignment.CENTER),
-                            (int) inputState.mouseX(), (int) inputState.mouseY(), width, height);
+                    TooltipWidget.drawPopupMessage(stack, FontDrawArgs.ofPopo(
+                            Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.how_to_sign_in")
+                                    .stack(stack).font(font).align(EnumAlignment.CENTER)
+                    ).x(inputState.mouseX()).y(inputState.mouseY()),
+                            getEffectiveTheme(), season());
                 } else {
                     cell.renderTooltip(stack, font, itemRenderer);
                 }

@@ -4,6 +4,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.MainMenuScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.inventory.InventoryScreen;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.BaniraEnvironment;
@@ -12,8 +14,11 @@ import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.client.SakuraClientState;
 import xin.vanilla.sakura.client.theme.BuiltInThemeCatalog;
 import xin.vanilla.sakura.config.ClientConfig;
+import xin.vanilla.sakura.config.RewardConfigManager;
 import xin.vanilla.sakura.config.StringList;
+import xin.vanilla.sakura.enums.ERewardType;
 import xin.vanilla.sakura.event.ClientEventHandler;
+import xin.vanilla.sakura.rewards.Reward;
 import xin.vanilla.sakura.screen.RewardOptionScreen;
 import xin.vanilla.sakura.screen.SignInScreen;
 import xin.vanilla.sakura.screen.StringInputScreen;
@@ -67,6 +72,9 @@ public final class SakuraUiSmokeRunner {
         }
 
         opened = true;
+        if (reward) {
+            seedRewardSmokeData();
+        }
         Screen screen = quickAction
                 ? new InventoryScreen(minecraft.player)
                 : signIn ? new SignInScreen()
@@ -80,6 +88,16 @@ public final class SakuraUiSmokeRunner {
         minecraft.setScreen(screen);
         LOGGER.info("Sakura UI smoke opened target: {}",
                 quickAction ? "quick-action" : signIn ? "sign-in" : inputForm ? "input-form" : "reward");
+    }
+
+    /**
+     * 显式奖励烟测在内存中补一个带数量的物品，不写入玩家配置。
+     */
+    private static void seedRewardSmokeData() {
+        if (RewardConfigManager.getRewardConfig().getBaseRewards().isEmpty()) {
+            RewardConfigManager.getRewardConfig().getBaseRewards()
+                    .add(new Reward(new ItemStack(Items.APPLE, 5), ERewardType.ITEM));
+        }
     }
 
     /**

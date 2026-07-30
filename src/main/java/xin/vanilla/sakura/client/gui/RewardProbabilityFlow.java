@@ -53,6 +53,7 @@ final class RewardProbabilityFlow {
     }
 
     private static String translation(String key, Object... args) {
-        return COMPONENTS.transClient("tips." + SakuraSignIn.MODID + "." + key, args).toString();
+        String type = args.length == 0 ? "word" : "format";
+        return COMPONENTS.transClient(type + "." + SakuraSignIn.MODID + "." + key, args).toString();
     }
 }
