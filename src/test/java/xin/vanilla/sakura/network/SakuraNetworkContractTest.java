@@ -42,9 +42,15 @@ public class SakuraNetworkContractTest {
     @Test
     public void playerSynchronizationIsSummaryPlusRequestedMonth() {
         String summary = read(MAIN.resolve("network/packet/PlayerDataSyncPacket.java"));
+        String network = read(MAIN.resolve("network/SakuraNetwork.java"));
+        String signIn = read(MAIN.resolve("network/packet/SignInPacket.java"));
+
         assertFalse(summary.contains("signInRecords"));
         assertTrue(Files.exists(MAIN.resolve("network/packet/PlayerMonthRequestPacket.java")));
         assertTrue(Files.exists(MAIN.resolve("network/packet/PlayerMonthSyncPacket.java")));
+        assertTrue(network.contains("public static void syncMonth(ServerPlayerEntity player, Date date)"));
+        assertTrue(network.contains("monthOf(date)"));
+        assertTrue(signIn.contains("SakuraNetwork.syncMonth(player, signInDate)"));
     }
 
     @Test

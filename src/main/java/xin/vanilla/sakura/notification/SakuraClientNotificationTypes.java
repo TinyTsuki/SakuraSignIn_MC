@@ -28,6 +28,6 @@ public final class SakuraClientNotificationTypes {
     }
 
     private static Component translated(String key) {
-        return SakuraComponent.get().transClient("tips", key);
+        return SakuraComponent.get().transClient("word", key);
     }
 }

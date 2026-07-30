@@ -17,7 +17,7 @@ final class ConfigCommandMessages {
     }
 
     static Component translated(ServerPlayerEntity player, String key, Object... args) {
-        return SakuraComponent.get().trans(player, "message", key, args);
+        return SakuraComponent.get().trans(player, args.length == 0 ? "word" : "format", key, args);
     }
 
     static Component enabled(ServerPlayerEntity player, boolean value) {

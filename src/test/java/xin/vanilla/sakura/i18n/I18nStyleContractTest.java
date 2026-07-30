@@ -16,6 +16,7 @@ import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * 两种语言必须使用相同键集合，说明文本不保留多余句尾标点。
@@ -31,6 +32,18 @@ public class I18nStyleContractTest {
         assertEquals(keys(english), keys(chinese));
         assertNoTerminalPunctuation(english);
         assertNoTerminalPunctuation(chinese);
+        assertUsesUnifiedKeyTypes(english);
+        assertUsesUnifiedKeyTypes(chinese);
+        assertEquals("樱花签", chinese.get("key.sakura_sign_in.categories").getAsString());
+    }
+
+    private static void assertUsesUnifiedKeyTypes(JsonObject translations) {
+        for (String key : keys(translations)) {
+            assertTrue("Unsupported i18n key type: " + key,
+                    key.startsWith("key.sakura_sign_in.")
+                            || key.startsWith("word.sakura_sign_in.")
+                            || key.startsWith("format.sakura_sign_in."));
+        }
     }
 
     private static void assertNoTerminalPunctuation(JsonObject translations) {

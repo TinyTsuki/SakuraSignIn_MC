@@ -6,7 +6,11 @@ import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.sakura.enums.ESignInType;
+import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.rewards.RewardManager;
+import xin.vanilla.sakura.util.DateUtils;
+
+import java.util.Date;
 
 @Getter
 public class SignInPacket implements INetworkPacket {
@@ -37,6 +41,10 @@ public class SignInPacket implements INetworkPacket {
             ServerPlayerEntity player = ctx.senderAs(ServerPlayerEntity.class);
             if (player != null) {
                 RewardManager.signIn(player, packet);
+                Date signInDate = DateUtils.format(packet.getSignInTime());
+                if (signInDate != null) {
+                    SakuraNetwork.syncMonth(player, signInDate);
+                }
             }
         });
         ctx.markHandled();
