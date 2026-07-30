@@ -43,6 +43,6 @@ public final class SakuraClientNotifications {
                 DEFAULT_DURATION_MS,
                 style,
                 typeId
-        ));
+        ).themed(true));
     }
 }
