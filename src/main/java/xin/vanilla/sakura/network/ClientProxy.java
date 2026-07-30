@@ -6,6 +6,7 @@ import net.minecraft.client.entity.player.ClientPlayerEntity;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
+import xin.vanilla.sakura.client.SakuraClientState;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.data.SignInRecord;
@@ -40,12 +41,12 @@ public class ClientProxy {
             } catch (Exception ignored) {
                 LOGGER.debug("Client: Player data received failed.");
             }
-            SakuraSignIn.setEnabled(true);
+            SakuraClientState.setEnabled(true);
         }
     }
 
     public static void handleAdvancement(AdvancementPacket packet) {
-        SakuraSignIn.setAdvancementData(packet.getAdvancements());
+        SakuraClientState.setAdvancementData(packet.getAdvancements());
     }
 
     public static void handleMonthData(PlayerMonthSyncPacket packet) {

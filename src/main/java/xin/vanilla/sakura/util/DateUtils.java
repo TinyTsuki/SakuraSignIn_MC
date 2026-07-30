@@ -4,6 +4,7 @@ import xin.vanilla.sakura.config.CommonConfig;
 import lombok.Getter;
 import lombok.NonNull;
 import xin.vanilla.sakura.SakuraSignIn;
+import xin.vanilla.sakura.client.SakuraClientState;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -645,8 +646,8 @@ public class DateUtils {
     }
 
     public static Date getClientValidDate(Date date) {
-        Date originalTime = DateUtils.format(SakuraSignIn.getClientServerTime().getKey());
-        Date actualTime = DateUtils.format(SakuraSignIn.getClientServerTime().getValue());
+        Date originalTime = DateUtils.format(SakuraClientState.getClientServerTime().getKey());
+        Date actualTime = DateUtils.format(SakuraClientState.getClientServerTime().getValue());
         if (originalTime.compareTo(actualTime) != 0) {
             date = DateUtils.addDate(date, DateUtils.dateOfTwo(originalTime, actualTime));
         }

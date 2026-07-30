@@ -7,6 +7,7 @@ import net.minecraft.util.ResourceLocation;
 import org.junit.Test;
 import xin.vanilla.sakura.enums.ERewardType;
 import xin.vanilla.sakura.rewards.Reward;
+import xin.vanilla.sakura.test.BaniraTestPlatform;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -22,9 +23,12 @@ public class EffectRewardSelectionFlowTest {
         ResourceLocation effectId = new ResourceLocation("sakura_sign_in", "test_effect");
         Effect effect = new Effect(EffectType.BENEFICIAL, 0x7FB8FF) {
         };
-        Field registryName = effect.getClass().getSuperclass().getSuperclass().getDeclaredField("registryName");
+        Field registryName = effect.getClass().getSuperclass().getSuperclass()
+                .getDeclaredField("registryName");
         registryName.setAccessible(true);
         registryName.set(effect, effectId);
+        BaniraTestPlatform.install();
+        BaniraTestPlatform.register(effectId.toString(), effect);
         EffectInstance selected = new EffectInstance(effect, 7200, 3);
 
         Reward reward = EffectRewardSelectionFlow.toReward(selected, new BigDecimal("0.625"));

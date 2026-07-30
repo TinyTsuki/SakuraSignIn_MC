@@ -7,6 +7,7 @@ import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.ConfirmDialogScreen;
 import xin.vanilla.banira.client.util.InputStateManager;
+import xin.vanilla.banira.client.util.SystemUtils;
 import xin.vanilla.banira.client.gui.widget.PopupOption;
 import xin.vanilla.sakura.text.SakuraComponent;
 import com.mojang.blaze3d.matrix.MatrixStack;
@@ -25,12 +26,11 @@ import net.minecraft.item.Items;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.potion.Effects;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL11;
 import xin.vanilla.sakura.SakuraSignIn;
+import xin.vanilla.sakura.client.SakuraClientState;
 import xin.vanilla.sakura.client.gui.AdvancementRewardSelectionFlow;
 import xin.vanilla.sakura.client.gui.EffectRewardSelectionFlow;
 import xin.vanilla.sakura.client.gui.ItemRewardSelectionFlow;
@@ -67,9 +67,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-
-
-@OnlyIn(Dist.CLIENT)
 public class RewardOptionScreen extends BaniraScreen {
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -183,21 +180,21 @@ public class RewardOptionScreen extends BaniraScreen {
         RenderSystem.defaultBlendFunc();
 
         // 绑定背景纹理
-        Minecraft.getInstance().getTextureManager().bind(SakuraSignIn.getThemeTexture());
+        Minecraft.getInstance().getTextureManager().bind(SakuraClientState.getThemeTexture());
 
         // 获取屏幕宽高
         int screenWidth = super.width;
         int screenHeight = super.height;
 
         // 获取纹理指定区域的坐标和大小
-        float u0 = (float) SakuraSignIn.getThemeTextureCoordinate().getOptionBgUV().getU0();
-        float v0 = (float) SakuraSignIn.getThemeTextureCoordinate().getOptionBgUV().getV0();
-        float regionWidth = (float) SakuraSignIn.getThemeTextureCoordinate().getOptionBgUV().getUWidth();
-        float regionHeight = (float) SakuraSignIn.getThemeTextureCoordinate().getOptionBgUV().getVHeight();
+        float u0 = (float) SakuraClientState.getThemeTextureCoordinate().getOptionBgUV().getU0();
+        float v0 = (float) SakuraClientState.getThemeTextureCoordinate().getOptionBgUV().getV0();
+        float regionWidth = (float) SakuraClientState.getThemeTextureCoordinate().getOptionBgUV().getUWidth();
+        float regionHeight = (float) SakuraClientState.getThemeTextureCoordinate().getOptionBgUV().getVHeight();
         if (regionWidth == 0) regionWidth = screenWidth;
         if (regionHeight == 0) regionHeight = screenHeight;
-        int textureTotalWidth = SakuraSignIn.getThemeTextureCoordinate().getTotalWidth();
-        int textureTotalHeight = SakuraSignIn.getThemeTextureCoordinate().getTotalHeight();
+        int textureTotalWidth = SakuraClientState.getThemeTextureCoordinate().getTotalWidth();
+        int textureTotalHeight = SakuraClientState.getThemeTextureCoordinate().getTotalHeight();
 
         // 计算UV比例
         float uMin = u0 / textureTotalWidth;
@@ -307,7 +304,7 @@ public class RewardOptionScreen extends BaniraScreen {
                 RewardListEntryWidget widget = context.getEntry();
                 Reward reward = rewardMap.get(key).get(widget.getOperation());
                 AbstractGuiUtils.renderCustomReward(context.getStack(), this.itemRenderer, super.font,
-                        SakuraSignIn.getThemeTexture(), SakuraSignIn.getThemeTextureCoordinate(),
+                        SakuraClientState.getThemeTexture(), SakuraClientState.getThemeTextureCoordinate(),
                         reward, (int) widget.realX(), (int) widget.realY(), true);
             }).setBaseX(leftBarWidth)
                     .setTooltip(Text.from(rewardMap.get(key).get(j)
@@ -528,7 +525,7 @@ public class RewardOptionScreen extends BaniraScreen {
     private void prepareRewardList() {
         if (REWARD_BUTTONS.isEmpty()) return;
 
-        int selectedColor = SakuraSignIn.getThemeTextureCoordinate().getTextColorCanRepair();
+        int selectedColor = SakuraClientState.getThemeTextureCoordinate().getTextColorCanRepair();
         for (Map.Entry<String, RewardListEntryWidget> item : REWARD_BUTTONS.entrySet()) {
             item.getValue()
                     .setBaseY(yOffset)
@@ -561,7 +558,7 @@ public class RewardOptionScreen extends BaniraScreen {
         // 展开左侧边栏
         if (value.getOperation() == OperationButtonType.OPEN.getCode()) {
             if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
-                SakuraSignIn.setRewardOptionBarOpened(true);
+                SakuraClientState.setRewardOptionBarOpened(true);
                 updateLayout.set(true);
                 flag.set(true);
             }
@@ -569,7 +566,7 @@ public class RewardOptionScreen extends BaniraScreen {
         // 关闭左侧边栏
         else if (value.getOperation() == OperationButtonType.CLOSE.getCode()) {
             if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
-                SakuraSignIn.setRewardOptionBarOpened(false);
+                SakuraClientState.setRewardOptionBarOpened(false);
                 updateLayout.set(true);
                 flag.set(true);
             }
@@ -681,7 +678,7 @@ public class RewardOptionScreen extends BaniraScreen {
         }
         // 打开配置文件夹
         else if (value.getOperation() == OperationButtonType.FOLDER.getCode()) {
-            SakuraSignIn.openFileInFolder(
+            SystemUtils.openFileInFolder(
                     RewardConfigManager.getConfigDirectory()
                             .resolve(RewardConfigManager.FILE_NAME));
             flag.set(true);
@@ -1532,7 +1529,7 @@ public class RewardOptionScreen extends BaniraScreen {
     }
 
     private void updateLayout() {
-        this.leftBarWidth = SakuraSignIn.isRewardOptionBarOpened() ? 100 : 20;
+        this.leftBarWidth = SakuraClientState.isRewardOptionBarOpened() ? 100 : 20;
         this.lineItemCount = Math.max(1,
                 (super.width - leftBarWidth - leftMargin - rightMargin - rightBarWidth)
                         / (itemIconSize + itemRightMargin));
@@ -1821,15 +1818,15 @@ public class RewardOptionScreen extends BaniraScreen {
                 .setDragHandler(event -> setYOffset(yOffset + event.dragY()));
 
         registerOperation(createThemeIcon(OperationButtonType.OPEN,
-                        SakuraSignIn.getThemeTextureCoordinate().getArrowUV(),
-                        SakuraSignIn.getThemeTextureCoordinate().getArrowHoverUV(),
-                        SakuraSignIn.getThemeTextureCoordinate().getArrowTapUV())
+                        SakuraClientState.getThemeTextureCoordinate().getArrowUV(),
+                        SakuraClientState.getThemeTextureCoordinate().getArrowHoverUV(),
+                        SakuraClientState.getThemeTextureCoordinate().getArrowTapUV())
                         .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.open_sidebar")),
                 new ScreenCoordinate(4, (height - 16) / 2.0, 16, 16));
         registerOperation(createThemeIcon(OperationButtonType.CLOSE,
-                        SakuraSignIn.getThemeTextureCoordinate().getArrowUV(),
-                        SakuraSignIn.getThemeTextureCoordinate().getArrowHoverUV(),
-                        SakuraSignIn.getThemeTextureCoordinate().getArrowTapUV())
+                        SakuraClientState.getThemeTextureCoordinate().getArrowUV(),
+                        SakuraClientState.getThemeTextureCoordinate().getArrowHoverUV(),
+                        SakuraClientState.getThemeTextureCoordinate().getArrowTapUV())
                         .setFlipHorizontal(true)
                         .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.close_sidebar")),
                 new ScreenCoordinate(80, (leftBarTitleHeight - 16) / 2.0, 16, 16));
@@ -1858,21 +1855,21 @@ public class RewardOptionScreen extends BaniraScreen {
                 rightBarWidth, font.lineHeight * 2 + 2));
 
         registerOperation(createThemeIcon(OperationButtonType.HELP,
-                        SakuraSignIn.getThemeTextureCoordinate().getHelpUV()),
+                        SakuraClientState.getThemeTextureCoordinate().getHelpUV()),
                 new ScreenCoordinate(width - rightBarWidth + 1, 2, 18, 18));
         registerOperation(createThemeIcon(OperationButtonType.DOWNLOAD,
-                        SakuraSignIn.getThemeTextureCoordinate().getDownloadUV())
+                        SakuraClientState.getThemeTextureCoordinate().getDownloadUV())
                         .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.download_reward_config")),
                 new ScreenCoordinate(width - rightBarWidth + 1, 22, 18, 18));
         registerOperation(createThemeIcon(OperationButtonType.UPLOAD,
-                        SakuraSignIn.getThemeTextureCoordinate().getUploadUV()),
+                        SakuraClientState.getThemeTextureCoordinate().getUploadUV()),
                 new ScreenCoordinate(width - rightBarWidth + 1, 42, 18, 18));
         registerOperation(createThemeIcon(OperationButtonType.FOLDER,
-                        SakuraSignIn.getThemeTextureCoordinate().getFolderUV())
+                        SakuraClientState.getThemeTextureCoordinate().getFolderUV())
                         .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.open_config_folder")),
                 new ScreenCoordinate(width - rightBarWidth + 1, 62, 18, 18));
         registerOperation(createThemeIcon(OperationButtonType.SORT,
-                        SakuraSignIn.getThemeTextureCoordinate().getSortUV())
+                        SakuraClientState.getThemeTextureCoordinate().getSortUV())
                         .setTooltip(Text.trans(SakuraSignIn.MODID, "tips.sakura_sign_in.reward_rule_sort")),
                 new ScreenCoordinate(width - rightBarWidth + 1, 82, 18, 18));
         updateLayout();
@@ -1884,12 +1881,12 @@ public class RewardOptionScreen extends BaniraScreen {
 
     private RewardOperationWidget createThemeIcon(OperationButtonType type, Coordinate normal,
                                                    Coordinate hover, Coordinate pressed) {
-        return new RewardOperationWidget(this, type.getCode(), SakuraSignIn.getThemeTexture())
+        return new RewardOperationWidget(this, type.getCode(), SakuraClientState.getThemeTexture())
                 .setNormal(normal)
                 .setHover(hover)
                 .setPressed(pressed)
-                .setTextureWidth(SakuraSignIn.getThemeTextureCoordinate().getTotalWidth())
-                .setTextureHeight(SakuraSignIn.getThemeTextureCoordinate().getTotalHeight())
+                .setTextureWidth(SakuraClientState.getThemeTextureCoordinate().getTotalWidth())
+                .setTextureHeight(SakuraClientState.getThemeTextureCoordinate().getTotalHeight())
                 .setHoverTint(0xAA808080)
                 .setPressedTint(0xAAA0A0A0);
     }
@@ -1950,7 +1947,7 @@ public class RewardOptionScreen extends BaniraScreen {
         AbstractGui.fill(matrixStack, 0, 0, leftBarWidth, super.height, 0xAA000000);
         AbstractGuiUtils.fillOutLine(matrixStack, 0, 0, leftBarWidth, super.height, 1, 0xFF000000);
         // 绘制左侧边栏列表标题
-        if (SakuraSignIn.isRewardOptionBarOpened()) {
+        if (SakuraClientState.isRewardOptionBarOpened()) {
             AbstractGui.drawString(matrixStack, super.font, SakuraComponent.get().transClient("title", "reward_rule_type").toString(), 4, 5, 0xFFACACAC);
             AbstractGui.fill(matrixStack, 0, leftBarTitleHeight, leftBarWidth, leftBarTitleHeight - 1, 0xAA000000);
         }
@@ -1975,7 +1972,7 @@ public class RewardOptionScreen extends BaniraScreen {
     }
 
     private void updateOperationPresentation() {
-        boolean opened = SakuraSignIn.isRewardOptionBarOpened();
+        boolean opened = SakuraClientState.isRewardOptionBarOpened();
         OP_BUTTONS.forEach((operation, widget) -> {
             boolean rule = operation > 200 && operation <= 299;
             widget.visible(operation == OperationButtonType.OPEN.getCode() ? !opened
