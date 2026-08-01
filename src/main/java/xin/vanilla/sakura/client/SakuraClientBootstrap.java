@@ -12,6 +12,8 @@ import xin.vanilla.sakura.event.ClientEventHandler;
 import xin.vanilla.sakura.network.ClientProxy;
 import xin.vanilla.sakura.network.SakuraClientPacketHandlers;
 import xin.vanilla.sakura.notification.SakuraClientNotificationTypes;
+import xin.vanilla.sakura.api.reward.client.SakuraRewardClient;
+import xin.vanilla.sakura.client.reward.builtin.BuiltInRewardClientTypes;
 import xin.vanilla.banira.client.data.GLFWKey;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -21,6 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public final class SakuraClientBootstrap {
     private static final AtomicBoolean INITIALIZED = new AtomicBoolean();
+    private static final AtomicBoolean REWARD_TYPES_FROZEN = new AtomicBoolean();
     @Getter
     private static BaniraKeyHandle signInKey;
 
@@ -34,6 +37,7 @@ public final class SakuraClientBootstrap {
 
         BaniraThemes.register(SakuraSignIn.MODID,
                 () -> ClientConfig.get().display().interfaceThemeMode());
+        BuiltInRewardClientTypes.register();
         signInKey = BaniraInput.registerKey(
                 SakuraSignIn.MODID, "sign_in", GLFWKey.GLFW_KEY_H);
         BaniraKeyHandle rewardOptionKey = BaniraInput.registerKey(
@@ -50,8 +54,12 @@ public final class SakuraClientBootstrap {
             SakuraClientNotificationTypes.register();
             ClientEventHandler.loadThemeTexture();
         });
-        BaniraClientEvents.Client.onClientTick(event ->
-                ClientEventHandler.onClientTick(signInKey, rewardOptionKey));
+        BaniraClientEvents.Client.onClientTick(event -> {
+            if (REWARD_TYPES_FROZEN.compareAndSet(false, true)) {
+                SakuraRewardClient.freeze();
+            }
+            ClientEventHandler.onClientTick(signInKey, rewardOptionKey);
+        });
         BaniraClientEvents.Player.onClientLoggedOut(event -> {
             SakuraClientState.clearSession();
             SakuraPlayerData.clearClient();
