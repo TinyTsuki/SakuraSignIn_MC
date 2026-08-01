@@ -30,7 +30,9 @@ public class SakuraUiSmokeRunnerContractTest {
         assertTrue(runner.contains("Sakura theme smoke PASS"));
         assertTrue(runner.contains("\"quick-action\".equalsIgnoreCase(target)"));
         assertTrue(runner.contains("\"input-form\".equalsIgnoreCase(target)"));
-        assertTrue(runner.contains("(inputForm || rewardExtension) && parent instanceof MainMenuScreen"));
+        assertTrue(runner.contains("\"personal-date\".equalsIgnoreCase(target)"));
+        assertTrue(runner.contains("(inputForm || rewardExtension || personalDate)"));
+        assertTrue(runner.contains("&& parent instanceof MainMenuScreen"));
         assertTrue(runner.contains("inWorldWithoutScreen"));
         assertTrue(runner.contains("new RewardOptionScreen()"));
         assertTrue(runner.contains("seedRewardExtensionSmokeData()"));
@@ -50,6 +52,8 @@ public class SakuraUiSmokeRunnerContractTest {
         assertTrue(runner.contains("new SignInScreen()"));
         assertTrue(runner.contains("new InventoryScreen(minecraft.player)"));
         assertTrue(runner.contains("new StringInputScreen("));
+        assertTrue(runner.contains("new PersonalDateConfigScreen(parent)"));
+        assertTrue(runner.contains("Sakura personal date UI smoke PASS"));
         assertTrue(runner.contains("Sakura UI smoke opened target: {}"));
         assertTrue(events.contains("SakuraUiSmokeRunner.tick()"));
     }

@@ -3,8 +3,7 @@ package xin.vanilla.sakura.network.packet;
 import com.google.gson.JsonObject;
 import org.junit.Test;
 import xin.vanilla.sakura.api.reward.SakuraRewardTypes;
-import xin.vanilla.sakura.data.personaldate.PersonalDateCalendar;
-import xin.vanilla.sakura.data.personaldate.PersonalDateCalendarPolicy;
+import xin.vanilla.sakura.data.calendar.CalendarIds;
 import xin.vanilla.sakura.data.personaldate.PersonalDateDeliveryMode;
 import xin.vanilla.sakura.data.personaldate.PersonalDatePreset;
 import xin.vanilla.sakura.data.personaldate.PersonalDateRecurrence;
@@ -25,7 +24,7 @@ public class PersonalDatePacketTest {
         content.addProperty("text", "reward");
         PersonalDatePreset preset = new PersonalDatePreset(
                 "server_day", "Server Day", PersonalDateRecurrence.YEARLY,
-                PersonalDateCalendarPolicy.PLAYER_CHOICE, 2,
+                java.util.Arrays.asList(CalendarIds.GREGORIAN, CalendarIds.CHINESE_LUNAR), 2,
                 PersonalDateDeliveryMode.ONLINE, 3, 7,
                 new RewardList(Collections.singletonList(
                         new Reward(content, SakuraRewardTypes.MESSAGE, BigDecimal.ONE)))
@@ -41,7 +40,7 @@ public class PersonalDatePacketTest {
     @Test
     public void slotUpdatePacketNeverCarriesClaimCursor() {
         PlayerPersonalDateSlot slot = new PlayerPersonalDateSlot(
-                "server_day", 1, PersonalDateCalendar.LUNAR, 8, 15, "YEARLY:2026");
+                "server_day", 1, CalendarIds.CHINESE_LUNAR, 8, 15, "YEARLY:2026");
         TestBaniraPacketBuffer buffer = new TestBaniraPacketBuffer();
 
         new PersonalDateSlotUpdatePacket(Collections.singletonList(slot)).toBytes(buffer);

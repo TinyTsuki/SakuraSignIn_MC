@@ -8,7 +8,6 @@ import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.config.reward.RewardConfigManager;
 import xin.vanilla.sakura.data.IPlayerSignInData;
-import xin.vanilla.sakura.data.personaldate.PersonalDateCalendar;
 import xin.vanilla.sakura.data.personaldate.PersonalDateSelectionResult;
 import xin.vanilla.sakura.data.personaldate.PersonalDateSelectionService;
 import xin.vanilla.sakura.data.personaldate.PlayerPersonalDateSlot;
@@ -38,7 +37,7 @@ public final class PersonalDateSlotUpdatePacket implements INetworkPacket {
         for (int i = 0; i < count; i++) {
             slots.add(new PlayerPersonalDateSlot(
                     buffer.readUtf(), buffer.readVarInt(),
-                    buffer.readEnum(PersonalDateCalendar.class),
+                    buffer.readUtf(),
                     buffer.readVarInt(), buffer.readVarInt(), ""));
         }
     }
@@ -48,7 +47,7 @@ public final class PersonalDateSlotUpdatePacket implements INetworkPacket {
         for (PlayerPersonalDateSlot slot : slots) {
             buffer.writeUtf(slot.getPresetId());
             buffer.writeVarInt(slot.getSlotIndex());
-            buffer.writeEnum(slot.getCalendar());
+            buffer.writeUtf(slot.getCalendarId());
             buffer.writeVarInt(slot.getMonth());
             buffer.writeVarInt(slot.getDay());
         }
@@ -80,7 +79,7 @@ public final class PersonalDateSlotUpdatePacket implements INetworkPacket {
         if (source != null) {
             source.stream().filter(slot -> slot != null).forEach(slot ->
                     result.add(new PlayerPersonalDateSlot(
-                            slot.getPresetId(), slot.getSlotIndex(), slot.getCalendar(),
+                            slot.getPresetId(), slot.getSlotIndex(), slot.getCalendarId(),
                             slot.getMonth(), slot.getDay(), "")));
         }
         return result;

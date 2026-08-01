@@ -11,7 +11,7 @@ import net.minecraft.nbt.CompoundNBT;
 public class PlayerPersonalDateSlot {
     private String presetId;
     private int slotIndex;
-    private PersonalDateCalendar calendar;
+    private String calendarId;
     private int month;
     private int day;
     private String lastClaimedOccurrenceKey = "";
@@ -20,7 +20,7 @@ public class PlayerPersonalDateSlot {
         CompoundNBT tag = new CompoundNBT();
         tag.putString("presetId", presetId == null ? "" : presetId);
         tag.putInt("slotIndex", slotIndex);
-        tag.putString("calendar", calendar == null ? "" : calendar.name());
+        tag.putString("calendarId", calendarId == null ? "" : calendarId);
         tag.putInt("month", month);
         tag.putInt("day", day);
         tag.putString("lastClaimedOccurrenceKey",
@@ -32,18 +32,11 @@ public class PlayerPersonalDateSlot {
         PlayerPersonalDateSlot slot = new PlayerPersonalDateSlot();
         slot.presetId = tag.getString("presetId");
         slot.slotIndex = tag.getInt("slotIndex");
-        slot.calendar = parseCalendar(tag.getString("calendar"));
+        slot.calendarId = tag.getString("calendarId");
         slot.month = tag.getInt("month");
         slot.day = tag.getInt("day");
         slot.lastClaimedOccurrenceKey = tag.getString("lastClaimedOccurrenceKey");
         return slot;
     }
 
-    private static PersonalDateCalendar parseCalendar(String value) {
-        try {
-            return PersonalDateCalendar.valueOf(value);
-        } catch (IllegalArgumentException ignored) {
-            return null;
-        }
-    }
 }

@@ -42,6 +42,11 @@ public final class RewardRuleAddPermissionChecker {
     }
 
     private static int groupCount(RewardConfig config, ERewardRule rule) {
-        return config == null ? 0 : RewardConfigManager.getRewardMap(config, rule).size();
+        if (config == null) {
+            return 0;
+        }
+        return rule == ERewardRule.PERSONAL_DATE_REWARD
+                ? config.getPersonalDatePresets().size()
+                : RewardConfigManager.getRewardMap(config, rule).size();
     }
 }

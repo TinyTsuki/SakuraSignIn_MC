@@ -13,7 +13,7 @@ import xin.vanilla.sakura.network.packet.RewardOptionSyncPacket;
 import xin.vanilla.sakura.reward.Reward;
 import xin.vanilla.sakura.reward.RewardList;
 import xin.vanilla.sakura.config.reward.RewardConfigManager;
-import xin.vanilla.sakura.data.personaldate.PersonalDateCalendarPolicy;
+import xin.vanilla.sakura.data.calendar.CalendarIds;
 import xin.vanilla.sakura.data.personaldate.PersonalDateDeliveryMode;
 import xin.vanilla.sakura.data.personaldate.PersonalDatePreset;
 import xin.vanilla.sakura.data.personaldate.PersonalDateRecurrence;
@@ -44,7 +44,7 @@ public class RewardConfigMigrationTest {
         RewardConfig source = new RewardConfig();
         PersonalDatePreset preset = new PersonalDatePreset(
                 "server_day", "Server Day", PersonalDateRecurrence.YEARLY,
-                PersonalDateCalendarPolicy.PLAYER_CHOICE, 2,
+                java.util.Arrays.asList(CalendarIds.GREGORIAN, CalendarIds.CHINESE_LUNAR), 2,
                 PersonalDateDeliveryMode.ONLINE, 3, 7,
                 new RewardList(Collections.singletonList(messageReward("personal")))
         );
@@ -60,7 +60,7 @@ public class RewardConfigMigrationTest {
         RewardConfig source = new RewardConfig();
         PersonalDatePreset preset = new PersonalDatePreset(
                 "server_day", "Server Day", PersonalDateRecurrence.MONTHLY,
-                PersonalDateCalendarPolicy.SOLAR_ONLY, 1,
+                Collections.singletonList(CalendarIds.GREGORIAN), 1,
                 PersonalDateDeliveryMode.SIGN_IN, 0, 0, new RewardList()
         );
         source.setPersonalDatePresets(Arrays.asList(preset, preset));

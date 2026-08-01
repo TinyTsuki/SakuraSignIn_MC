@@ -30,6 +30,8 @@ public final class LegacyPlayerDataParser {
         summary.setAutoRewarded(legacy.getBoolean("autoRewarded"));
         summary.setLanguage(legacy.contains("language", 8) ? legacy.getString("language") : "client");
         summary.setCdkRecords(copyList(legacy.getList("cdkRecords", 10)));
+        summary.setOnlineTimeBaselineDate(legacy.getString("onlineTimeBaselineDate"));
+        summary.setOnlineTimeBaselineTicks(Math.max(0, legacy.getInt("onlineTimeBaselineTicks")));
         ListNBT indexes = legacy.getList("monthIndexes", 10);
         for (int i = 0; i < indexes.size(); i++) {
             MonthSignInIndex index = MonthSignInIndex.deserializeNBT(indexes.getCompound(i));
