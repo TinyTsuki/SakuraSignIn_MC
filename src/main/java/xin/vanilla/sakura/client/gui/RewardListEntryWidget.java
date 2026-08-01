@@ -53,7 +53,7 @@ public final class RewardListEntryWidget extends BaseWidget {
     private boolean dragged;
     private boolean pendingDrag;
     private boolean longPressDragging;
-    private final double dragActivationDistance = 12.0;
+    private final double dragActivationDistance = 4.0;
     private double pressX;
     private double pressY;
 
@@ -169,7 +169,7 @@ public final class RewardListEntryWidget extends BaseWidget {
             if (distance <= dragActivationDistance) {
                 return true;
             }
-            if (selected) {
+            if (canDragReward()) {
                 startLongPressDrag(MouseEvent.of(
                         event.mouseX(), event.mouseY(), event.button()));
                 if (longPressDragHandler != null) {
@@ -189,13 +189,17 @@ public final class RewardListEntryWidget extends BaseWidget {
 
     @Override
     protected void onLongPress(MouseEvent event) {
-        if (pendingDrag && !dragged && event.button() == 0) {
+        if (pendingDrag && !dragged && event.button() == 0 && canDragReward()) {
             startLongPressDrag(event);
         }
     }
 
+    private boolean canDragReward() {
+        return longPressHandler != null;
+    }
+
     /**
-     * 已选条目可直接拖动，静止按住仍沿用 Banira 的长按触发。
+     * 奖励条目移动超过阈值即开始拖动，静止按住仍沿用长按触发。
      */
     private void startLongPressDrag(MouseEvent event) {
         pendingDrag = false;
