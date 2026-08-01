@@ -1,12 +1,12 @@
 package xin.vanilla.sakura.client.data;
 
 import com.google.gson.JsonObject;
-import com.google.gson.reflect.TypeToken;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import xin.vanilla.sakura.reward.Reward;
+import xin.vanilla.sakura.reward.RewardJsonCodec;
 
 import static xin.vanilla.sakura.config.reward.RewardConfigManager.GSON;
 
@@ -28,18 +28,27 @@ public class RewardClipboard extends Reward {
     }
 
     public JsonObject toJsonObject() {
-        JsonObject json = new JsonObject();
-        if (this.isRewarded()) {
-            json.addProperty("rewarded", true);
-        }
-        if (this.isDisabled()) {
-            json.addProperty("disabled", true);
-        }
-        json.addProperty("type", this.getType().name());
-        json.addProperty("probability", this.getProbability());
-        json.add("content", this.getContent());
+        JsonObject json = RewardJsonCodec.encode(this);
         json.addProperty("key", this.getKey());
         return json;
+    }
+
+    public static RewardClipboard fromJson(JsonObject json) {
+        Reward reward = RewardJsonCodec.decode(json);
+        RewardClipboard clipboard = fromReward(reward, json.has("key")
+                ? json.get("key").getAsString() : "");
+        return clipboard;
+    }
+
+    public static RewardClipboard fromReward(Reward reward, String key) {
+        RewardClipboard clipboard = new RewardClipboard();
+        clipboard.setRewarded(reward.isRewarded());
+        clipboard.setDisabled(reward.isDisabled());
+        clipboard.setTypeId(reward.getTypeId());
+        clipboard.setProbability(reward.getProbability());
+        clipboard.setContent(GSON.fromJson(reward.getContent(), JsonObject.class));
+        clipboard.setKey(key);
+        return clipboard;
     }
 
     @NonNull
@@ -48,7 +57,6 @@ public class RewardClipboard extends Reward {
     }
 
     public Reward toReward() {
-        return GSON.fromJson(this.toJsonObject(), new TypeToken<Reward>() {
-        }.getType());
+        return RewardJsonCodec.decode(this.toJsonObject());
     }
 }
