@@ -40,6 +40,7 @@ public class SakuraBootstrapBoundaryTest {
         assertTrue(client.contains("AtomicBoolean"));
         assertTrue(forge.contains("AtomicBoolean"));
         assertTrue(common.contains("BuiltInRewardTypes.register()"));
+        assertTrue(common.contains("BuiltInRewardRulePermissions.registerVirtualPermissions()"));
         assertTrue(common.contains("event.enqueueWork(SakuraRewards::freeze)"));
         assertTrue(common.indexOf("BuiltInRewardTypes.register()")
                 < common.indexOf("BaniraConfig.register"));
