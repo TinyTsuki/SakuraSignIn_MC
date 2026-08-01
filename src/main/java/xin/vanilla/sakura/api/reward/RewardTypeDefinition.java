@@ -14,6 +14,7 @@ public final class RewardTypeDefinition<T> {
     private final RewardCodec<T> codec;
     private final RewardValidator<T> validator;
     private final RewardExecutor<T> executor;
+    private final RewardDescriber<T> describer;
     @Nullable
     private final RewardMerger<T> merger;
     private final RewardAddPermission addPermission;
@@ -23,6 +24,7 @@ public final class RewardTypeDefinition<T> {
         this.codec = builder.codec;
         this.validator = Objects.requireNonNull(builder.validator, "validator");
         this.executor = builder.executor;
+        this.describer = Objects.requireNonNull(builder.describer, "describer");
         this.merger = builder.merger;
         this.addPermission = Objects.requireNonNull(builder.addPermission, "addPermission");
     }
@@ -37,6 +39,7 @@ public final class RewardTypeDefinition<T> {
         private final RewardCodec<T> codec;
         private final RewardExecutor<T> executor;
         private RewardValidator<T> validator;
+        private RewardDescriber<T> describer;
         private RewardMerger<T> merger;
         private RewardAddPermission addPermission;
 
@@ -48,6 +51,11 @@ public final class RewardTypeDefinition<T> {
 
         public Builder<T> validator(RewardValidator<T> value) {
             this.validator = Objects.requireNonNull(value, "validator");
+            return this;
+        }
+
+        public Builder<T> describer(RewardDescriber<T> value) {
+            this.describer = Objects.requireNonNull(value, "describer");
             return this;
         }
 
