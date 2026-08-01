@@ -37,33 +37,26 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.potion.EffectInstance;
-import net.minecraft.potion.Effects;
-import net.minecraft.util.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL11;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.client.SakuraClientState;
-import xin.vanilla.sakura.client.gui.AdvancementRewardSelectionFlow;
-import xin.vanilla.sakura.client.gui.EffectRewardSelectionFlow;
-import xin.vanilla.sakura.client.gui.ItemRewardSelectionFlow;
 import xin.vanilla.sakura.client.gui.RewardListEntryWidget;
-import xin.vanilla.sakura.client.gui.RewardEditTargets;
+import xin.vanilla.sakura.client.gui.RewardSelectionIds;
 import xin.vanilla.sakura.client.gui.RewardKeyboardNavigator;
 import xin.vanilla.sakura.client.gui.RewardOperationWidget;
-import xin.vanilla.sakura.client.gui.RewardProbabilityFlow;
 import xin.vanilla.sakura.client.gui.RewardSelectionModel;
 import xin.vanilla.sakura.client.gui.RewardSemanticMatcher;
 import xin.vanilla.sakura.client.gui.RewardRenderer;
+import xin.vanilla.sakura.client.reward.RewardEditorCoordinator;
+import xin.vanilla.sakura.api.reward.RewardTypeId;
+import xin.vanilla.sakura.api.reward.client.SakuraRewardClient;
 import xin.vanilla.sakura.config.*;
 import xin.vanilla.sakura.config.reward.RewardConfig;
 import xin.vanilla.sakura.config.reward.RewardConfigManager;
 import xin.vanilla.sakura.data.collection.StringList;
 import xin.vanilla.sakura.enums.ERewardRule;
-import xin.vanilla.sakura.enums.ERewardType;
 import xin.vanilla.sakura.event.ClientEventHandler;
 import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.network.packet.DownloadRewardOptionNotice;
@@ -73,7 +66,6 @@ import xin.vanilla.sakura.notification.SakuraNotificationTypes;
 import xin.vanilla.sakura.reward.Reward;
 import xin.vanilla.sakura.client.data.RewardClipboardManager;
 import xin.vanilla.sakura.reward.RewardList;
-import xin.vanilla.sakura.reward.RewardManager;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.banira.common.util.CollectionUtils;
 import xin.vanilla.banira.common.util.DateUtils;
@@ -96,6 +88,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 public class RewardOptionScreen extends BaniraScreen {
     private static final Logger LOGGER = LogManager.getLogger();
+    private static final String REWARD_TYPE_OPTION_PREFIX = "reward-type:";
 
     private final EditCommandHandler editHandler = new EditCommandHandler(this);
 
@@ -480,7 +473,7 @@ public class RewardOptionScreen extends BaniraScreen {
 
     private List<String> rewardIdsForGroup(String groupKey) {
         ERewardRule rule = currentRewardRule();
-        return rule == null ? new ArrayList<>() : RewardEditTargets.rewardIdsForGroup(
+        return rule == null ? new ArrayList<>() : RewardSelectionIds.rewardIdsForGroup(
                 RewardConfigManager.getRewardMap(rule), groupKey);
     }
 
@@ -506,7 +499,7 @@ public class RewardOptionScreen extends BaniraScreen {
         }
         List<String> matches = new ArrayList<>();
         Map<String, RewardList> rewardMap = RewardConfigManager.getRewardMap(rule);
-        for (String id : RewardEditTargets.rewardIds(rewardMap)) {
+        for (String id : RewardSelectionIds.rewardIds(rewardMap)) {
             if (RewardSemanticMatcher.matches(selected, rewardForId(rule, id))) {
                 matches.add(id);
             }
@@ -829,7 +822,7 @@ public class RewardOptionScreen extends BaniraScreen {
         ERewardRule rule = currentRewardRule();
         Map<String, RewardList> rewardMap = rule == null
                 ? Collections.emptyMap() : RewardConfigManager.getRewardMap(rule);
-        rewardSelection.retainAll(RewardEditTargets.selectionIds(rewardMap, "标题,"));
+        rewardSelection.retainAll(RewardSelectionIds.selectionIds(rewardMap, "标题,"));
         currRewardButton = rewardSelection.primary();
     }
 
@@ -851,7 +844,7 @@ public class RewardOptionScreen extends BaniraScreen {
 
     private final Consumer<PopupOption> pasteConsumer = option -> {
         String paste = SakuraComponent.get().transClient("word", "paste").toString();
-        if (paste.equalsIgnoreCase(option.getSelectedString())) {
+        if ("paste".equals(option.getSelectedId())) {
             option.getRenderList().stream()
                     .filter(item -> paste.equalsIgnoreCase(item.content()))
                     .forEach(item -> item.color(RewardClipboardManager.isClipboardValid() ? 0xFFFFFFFF : 0xFF999999));
@@ -935,11 +928,10 @@ public class RewardOptionScreen extends BaniraScreen {
                 showRewardGroupPopup(mouseX, mouseY, groupKey);
             } else if (button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
                 if (this.currOpButton > 200 && this.currOpButton <= 299) {
-                    this.popupOption.clear();
-                    this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.paste"));
-                    for (ERewardType rewardType : ERewardType.values()) {
-                        this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.reward_type_" + rewardType.getCode()));
-                    }
+                    this.popupOption.clear()
+                            .addOptionWithId("paste", Text.trans(
+                                    SakuraSignIn.MODID, "word.sakura_sign_in.paste"));
+                    addRewardTypeOptions();
                     this.popupOption.setBeforeRender(pasteConsumer);
                     this.showPopup(mouseX, mouseY, String.format("奖励面板按钮:%s", this.currOpButton));
                     flag.set(true);
@@ -1080,16 +1072,20 @@ public class RewardOptionScreen extends BaniraScreen {
                 showRewardGroupPopup(mouseX, mouseY, groupKey);
             } else {
                 this.popupOption.clear();
-                this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.edit"));
                 Reward clickedReward = rewardAt(key);
-                if (clickedReward != null
-                        && RewardEditTargets.hasSeparateProbabilityEditor(clickedReward.getType())) {
-                    this.popupOption.addOption(Text.trans(
+                if (clickedReward != null && SakuraRewardClient.find(clickedReward.getTypeId())
+                        .map(registration -> registration.getExtension().getEditor() != null)
+                        .orElse(false)) {
+                    this.popupOption.addOptionWithId("edit", Text.trans(
+                            SakuraSignIn.MODID, "word.sakura_sign_in.edit"));
+                }
+                if (clickedReward != null) {
+                    this.popupOption.addOptionWithId("probability", Text.trans(
                             SakuraSignIn.MODID, "word.sakura_sign_in.edit_probability"));
                 }
-                this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.copy"))
-                        .addOption(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.cut"))
-                        .addOption(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.paste"))
+                this.popupOption.addOptionWithId("copy", Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.copy"))
+                        .addOptionWithId("cut", Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.cut"))
+                        .addOptionWithId("paste", Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.paste"))
                         .addOptionWithId("delete",
                                 Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.delete").color(0xFFFF0000));
                 this.showPopup(mouseX, mouseY, String.format("奖励按钮:%s", key));
@@ -1173,7 +1169,7 @@ public class RewardOptionScreen extends BaniraScreen {
     }
 
     private List<String> selectedGroupKeys() {
-        return RewardEditTargets.groupKeys(rewardSelection.selectedIds(), "标题,");
+        return RewardSelectionIds.groupKeys(rewardSelection.selectedIds(), "标题,");
     }
 
     private void showPopup(double mouseX, double mouseY, String contextId) {
@@ -1185,17 +1181,14 @@ public class RewardOptionScreen extends BaniraScreen {
         String groupId = rewardGroupTitleId(groupKey);
         this.popupOption.clear();
         if (!"标题,base".equalsIgnoreCase(groupId)) {
-            this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.edit"));
+            this.popupOption.addOptionWithId("edit", Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.edit"));
         }
-        this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.copy"));
+        this.popupOption.addOptionWithId("copy", Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.copy"));
         if (!"标题,base".equalsIgnoreCase(groupId)) {
-            this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.cut"));
+            this.popupOption.addOptionWithId("cut", Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.cut"));
         }
-        this.popupOption.addOption(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.paste"));
-        for (ERewardType rewardType : ERewardType.values()) {
-            this.popupOption.addOption(Text.trans(SakuraSignIn.MODID,
-                    "word.sakura_sign_in.reward_type_" + rewardType.getCode()));
-        }
+        this.popupOption.addOptionWithId("paste", Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.paste"));
+        addRewardTypeOptions();
         this.popupOption.addOptionWithId("clear",
                 Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.clear").color(0xFFFF0000));
         if (!"标题,base".equalsIgnoreCase(groupId)) {
@@ -1210,711 +1203,257 @@ public class RewardOptionScreen extends BaniraScreen {
         if (event.button() != GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
             return;
         }
-        AtomicBoolean updateLayout = new AtomicBoolean(false);
         AtomicBoolean handled = new AtomicBoolean(false);
-        this.handlePopupOption(event.button(), popupContextId, event.index(), event.text(), updateLayout, handled);
-        if (updateLayout.get()) {
-            this.updateLayout();
+        this.handlePopupOption(event.button(), popupContextId, event.id(), handled);
+    }
+
+    private void addRewardTypeOptions() {
+        for (SakuraRewardClient.Registration<?> registration : SakuraRewardClient.all()) {
+            if (registration.getExtension().getEditor() == null) {
+                continue;
+            }
+            Component label = registration.getExtension().getTypeName() == null
+                    ? SakuraComponent.get().literal(registration.getTypeId().toString())
+                    : registration.getExtension().getTypeName().get();
+            this.popupOption.addOptionWithId(
+                    REWARD_TYPE_OPTION_PREFIX + registration.getTypeId(),
+                    Text.literal(label.toString()));
         }
     }
 
-    /**
-     * 处理弹出层选项
-     *
-     * @param button       鼠标按键
-     * @param updateLayout 是否更新布局
-     * @param flag         是否处理过事件
-     */
-    private void handlePopupOption(int button, String popupId, int selectedIndex, String selectedString,
-                                   AtomicBoolean updateLayout, AtomicBoolean flag) {
-        LOGGER.debug("选择了弹出选项:\tButton: {}\tId: {}\tIndex: {}\tContent: {}",
-                button, popupId, selectedIndex, selectedString);
+    private void handlePopupOption(int button, String popupId, String optionId,
+                                   AtomicBoolean flag) {
+        LOGGER.debug("选择了弹出选项:\tButton: {}\tId: {}\tOption: {}",
+                button, popupId, optionId);
         OperationButtonType buttonType = OperationButtonType.valueOf(currOpButton);
-        if (buttonType == null) return;
+        if (buttonType == null) {
+            return;
+        }
         ERewardRule rule = ERewardRule.valueOf(buttonType.toString());
+        RewardTypeId rewardType = rewardTypeOption(optionId);
+
         if (popupId.startsWith("奖励规则类型按钮:")) {
             int opCode = NumberUtils.toInt(popupId.replace("奖励规则类型按钮:", ""));
-            if (selectedIndex == 0 && opCode > 200 && opCode <= 299) {
+            if ("clear".equals(optionId) && opCode > 200 && opCode <= 299) {
                 requestConfirmation("confirm_clear_reward_rule",
                         () -> clearRewardRule(opCode, rule));
                 flag.set(true);
             }
-        } else if (popupId.startsWith("奖励面板按钮:")) {
-            String[] key = new String[]{""};
-            if (SakuraComponent.get().transClient("word", "paste").toString().equalsIgnoreCase(selectedString)) {
-                editHandler.handlePaste();
-            }
-            // 物品
-            else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.ITEM.getCode()).equalsIgnoreCase(selectedString)) {
-                Screen callbackScreen = ItemRewardSelectionFlow.create(this,
-                        new Reward(new ItemStack(Items.AIR), ERewardType.ITEM),
-                        () -> StringUtils.isNullOrEmpty(key[0]),
-                        input -> {
-                    if (input != null && ((ItemStack) RewardManager.deserializeReward(input)).getItem() != Items.AIR && StringUtils.isNotNullOrEmpty(key[0])) {
-                        RewardConfigManager.addUndoRewardOption(rule);
-                        RewardConfigManager.clearRedoList();
-                        RewardConfigManager.addReward(rule, key[0], input);
-                        RewardConfigManager.saveRewardOption();
-                    }
-                });
-                if (rule == ERewardRule.CDK_REWARD) {
-                    Minecraft.getInstance().setScreen(this.getCdkRuleKeyInputScreen(callbackScreen, rule, key));
-                } else if (rule != ERewardRule.BASE_REWARD) {
-                    Minecraft.getInstance().setScreen(this.getRuleKeyInputScreen(callbackScreen, rule, key));
-                } else {
-                    key[0] = "base";
-                    Minecraft.getInstance().setScreen(callbackScreen);
-                }
-            }
-            // 药水效果
-            else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.EFFECT.getCode()).equalsIgnoreCase(selectedString)) {
-                Screen callbackScreen = EffectRewardSelectionFlow.create(this,
-                        new Reward(new EffectInstance(Effects.LUCK), ERewardType.EFFECT),
-                        () -> StringUtils.isNullOrEmpty(key[0]),
-                        input -> {
-                    if (input != null && ((EffectInstance) RewardManager.deserializeReward(input)).getDuration() > 0 && StringUtils.isNotNullOrEmpty(key[0])) {
-                        RewardConfigManager.addUndoRewardOption(rule);
-                        RewardConfigManager.clearRedoList();
-                        RewardConfigManager.addReward(rule, key[0], input);
-                        RewardConfigManager.saveRewardOption();
-                    }
-                });
-                if (rule == ERewardRule.CDK_REWARD) {
-                    Minecraft.getInstance().setScreen(this.getCdkRuleKeyInputScreen(callbackScreen, rule, key));
-                } else if (rule != ERewardRule.BASE_REWARD) {
-                    Minecraft.getInstance().setScreen(this.getRuleKeyInputScreen(callbackScreen, rule, key));
-                } else {
-                    key[0] = "base";
-                    Minecraft.getInstance().setScreen(callbackScreen);
-                }
-            }
-            // 经验点
-            else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.EXP_POINT.getCode()).equalsIgnoreCase(selectedString)) {
-                StringInputScreen callbackScreen = new StringInputScreen(this
-                        , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_exp_point"), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_probability"))
-                        , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
-                        , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
-                        , new StringList("1")
-                        , input -> {
-                    StringList result = new StringList();
-                    if (CollectionUtils.isNotNullOrEmpty(input) && StringUtils.isNotNullOrEmpty(key[0])) {
-                        int count = NumberUtils.toInt(input.get(0));
-                        BigDecimal p = NumberUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
-                        if (count != 0) {
-                            RewardConfigManager.addUndoRewardOption(rule);
-                            RewardConfigManager.clearRedoList();
-                            RewardConfigManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(count, ERewardType.EXP_POINT), ERewardType.EXP_POINT, p));
-                            RewardConfigManager.saveRewardOption();
-                        } else {
-                            result.add(SakuraComponent.get().transClient("format", "enter_value_s_error", input.get(0)).toString());
-                        }
-                    }
-                    return result;
-                }, () -> StringUtils.isNullOrEmpty(key[0]));
-                if (rule == ERewardRule.CDK_REWARD) {
-                    Minecraft.getInstance().setScreen(this.getCdkRuleKeyInputScreen(callbackScreen, rule, key));
-                } else if (rule != ERewardRule.BASE_REWARD) {
-                    Minecraft.getInstance().setScreen(this.getRuleKeyInputScreen(callbackScreen, rule, key));
-                } else {
-                    key[0] = "base";
-                    Minecraft.getInstance().setScreen(callbackScreen);
-                }
-            }
-            // 经验等级
-            else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.EXP_LEVEL.getCode()).equalsIgnoreCase(selectedString)) {
-                StringInputScreen callbackScreen = new StringInputScreen(this
-                        , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_exp_level"), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_probability"))
-                        , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
-                        , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
-                        , new StringList("1")
-                        , input -> {
-                    StringList result = new StringList();
-                    if (CollectionUtils.isNotNullOrEmpty(input) && StringUtils.isNotNullOrEmpty(key[0])) {
-                        int count = NumberUtils.toInt(input.get(0));
-                        BigDecimal p = NumberUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
-                        if (count != 0) {
-                            RewardConfigManager.addUndoRewardOption(rule);
-                            RewardConfigManager.clearRedoList();
-                            RewardConfigManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(count, ERewardType.EXP_LEVEL), ERewardType.EXP_LEVEL, p));
-                            RewardConfigManager.saveRewardOption();
-                        } else {
-                            result.add(SakuraComponent.get().transClient("format", "enter_value_s_error", input.get(0)).toString());
-                        }
-                    }
-                    return result;
-                }, () -> StringUtils.isNullOrEmpty(key[0]));
-                if (rule == ERewardRule.CDK_REWARD) {
-                    Minecraft.getInstance().setScreen(this.getCdkRuleKeyInputScreen(callbackScreen, rule, key));
-                } else if (rule != ERewardRule.BASE_REWARD) {
-                    Minecraft.getInstance().setScreen(this.getRuleKeyInputScreen(callbackScreen, rule, key));
-                } else {
-                    key[0] = "base";
-                    Minecraft.getInstance().setScreen(callbackScreen);
-                }
-            }
-            // 补签卡
-            else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.SIGN_IN_CARD.getCode()).equalsIgnoreCase(selectedString)) {
-                StringInputScreen callbackScreen = new StringInputScreen(this
-                        , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_sign_in_card"), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_probability"))
-                        , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
-                        , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
-                        , new StringList("1")
-                        , input -> {
-                    StringList result = new StringList();
-                    if (CollectionUtils.isNotNullOrEmpty(input) && StringUtils.isNotNullOrEmpty(key[0])) {
-                        int count = NumberUtils.toInt(input.get(0));
-                        BigDecimal p = NumberUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
-                        if (count != 0) {
-                            RewardConfigManager.addUndoRewardOption(rule);
-                            RewardConfigManager.clearRedoList();
-                            RewardConfigManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(count, ERewardType.SIGN_IN_CARD), ERewardType.SIGN_IN_CARD, p));
-                            RewardConfigManager.saveRewardOption();
-                        } else {
-                            result.add(SakuraComponent.get().transClient("format", "enter_value_s_error", input.get(0)).toString());
-                        }
-                    }
-                    return result;
-                }, () -> StringUtils.isNullOrEmpty(key[0]));
-                if (rule == ERewardRule.CDK_REWARD) {
-                    Minecraft.getInstance().setScreen(this.getCdkRuleKeyInputScreen(callbackScreen, rule, key));
-                } else if (rule != ERewardRule.BASE_REWARD) {
-                    Minecraft.getInstance().setScreen(this.getRuleKeyInputScreen(callbackScreen, rule, key));
-                } else {
-                    key[0] = "base";
-                    Minecraft.getInstance().setScreen(callbackScreen);
-                }
-            }
-            // 进度
-            else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.ADVANCEMENT.getCode()).equalsIgnoreCase(selectedString)) {
-                Screen callbackScreen = AdvancementRewardSelectionFlow.create(this,
-                        new Reward(new ResourceLocation(""), ERewardType.ADVANCEMENT),
-                        () -> StringUtils.isNullOrEmpty(key[0]),
-                        input -> {
-                    if (input != null && StringUtils.isNotNullOrEmpty(input.toString()) && StringUtils.isNotNullOrEmpty(key[0])) {
-                        RewardConfigManager.addUndoRewardOption(rule);
-                        RewardConfigManager.clearRedoList();
-                        RewardConfigManager.addReward(rule, key[0], input);
-                        RewardConfigManager.saveRewardOption();
-                    }
-                });
-                if (rule == ERewardRule.CDK_REWARD) {
-                    Minecraft.getInstance().setScreen(this.getCdkRuleKeyInputScreen(callbackScreen, rule, key));
-                } else if (rule != ERewardRule.BASE_REWARD) {
-                    Minecraft.getInstance().setScreen(this.getRuleKeyInputScreen(callbackScreen, rule, key));
-                } else {
-                    key[0] = "base";
-                    Minecraft.getInstance().setScreen(callbackScreen);
-                }
-            }
-            // 消息
-            else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.MESSAGE.getCode()).equalsIgnoreCase(selectedString)) {
-                StringInputScreen callbackScreen = new StringInputScreen(this
-                        , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_message"), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_probability"))
-                        , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
-                        , new StringList("", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
-                        , new StringList("", "1")
-                        , input -> {
-                    if (CollectionUtils.isNotNullOrEmpty(input) && StringUtils.isNotNullOrEmpty(key[0])) {
-                        RewardConfigManager.addUndoRewardOption(rule);
-                        RewardConfigManager.clearRedoList();
-                        Component component = SakuraComponent.get().literal(input.get(0));
-                        BigDecimal p = NumberUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
-                        RewardConfigManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(component, ERewardType.MESSAGE), ERewardType.MESSAGE, p));
-                        RewardConfigManager.saveRewardOption();
-                    }
-                }, () -> StringUtils.isNullOrEmpty(key[0]));
-                if (rule == ERewardRule.CDK_REWARD) {
-                    Minecraft.getInstance().setScreen(this.getCdkRuleKeyInputScreen(callbackScreen, rule, key));
-                } else if (rule != ERewardRule.BASE_REWARD) {
-                    Minecraft.getInstance().setScreen(this.getRuleKeyInputScreen(callbackScreen, rule, key));
-                } else {
-                    key[0] = "base";
-                    Minecraft.getInstance().setScreen(callbackScreen);
-                }
-            }
-            // 指令
-            else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.COMMAND.getCode()).equalsIgnoreCase(selectedString)) {
-                StringInputScreen callbackScreen = new StringInputScreen(this
-                        , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_command"), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_probability"))
-                        , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
-                        , new StringList("", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
-                        , new StringList("", "1")
-                        , input -> {
-                    StringList result = new StringList();
-                    if (CollectionUtils.isNotNullOrEmpty(input) && input.get(0).startsWith("/") && StringUtils.isNotNullOrEmpty(key[0])) {
-                        RewardConfigManager.addUndoRewardOption(rule);
-                        RewardConfigManager.clearRedoList();
-                        BigDecimal p = NumberUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
-                        RewardConfigManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(input.get(0), ERewardType.COMMAND), ERewardType.COMMAND, p));
-                        RewardConfigManager.saveRewardOption();
-                    } else {
-                        result.add(SakuraComponent.get().transClient("format", "enter_value_s_error", input.get(0)).toString());
-                    }
-                    return result;
-                }, () -> StringUtils.isNullOrEmpty(key[0]));
-                if (rule == ERewardRule.CDK_REWARD) {
-                    Minecraft.getInstance().setScreen(this.getCdkRuleKeyInputScreen(callbackScreen, rule, key));
-                } else if (rule != ERewardRule.BASE_REWARD) {
-                    Minecraft.getInstance().setScreen(this.getRuleKeyInputScreen(callbackScreen, rule, key));
-                } else {
-                    key[0] = "base";
-                    Minecraft.getInstance().setScreen(callbackScreen);
-                }
-            }
-            // 实现其他奖励类型
-        } else if (popupId.startsWith("奖励按钮:")) {
-            boolean actionOwnsLayout = false;
-            String id = popupId.replace("奖励按钮:", "");
-            if (id.startsWith("标题")) {
-                String key = id.substring(3);
-                if (SakuraComponent.get().transClient("word", "edit").toString().equalsIgnoreCase(selectedString)) {
-                    if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
-                        if (rule == ERewardRule.CDK_REWARD) {
-                            String[] split = key.split("\\|");
-                            if (split.length != 4 && split.length != 3 && split.length != 2)
-                                split = new String[]{"", DateUtils.toString(DateUtils.addMonth(SakuraClock.clientNow(), 1)), "-1", "1"};
-                            Minecraft.getInstance().setScreen(new StringInputScreen(this
-                                    , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_rule_key_" + rule.getCode())
-                                    , Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_valid_until")
-                                    , Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_num"))
-                                    , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
-                                    , new StringList("\\w*", "", "\\d*")
-                                    , new StringList(split[0], split[1], split[3])
-                                    , input -> {
-                                StringList result = new StringList("", "", "");
-                                if (CollectionUtils.isNotNullOrEmpty(input)) {
-                                    if (!RewardConfigManager.validateKeyName(rule, input.get(0))) {
-                                        result.set(0, SakuraComponent.get().transClient("format", "reward_rule_s_error", input.get(0)).toString());
-                                    }
-                                    if (StringUtils.isNotNullOrEmpty(input.get(1))) {
-                                        if (DateUtils.format(input.get(1)) == null) {
-                                            result.set(1, SakuraComponent.get().transClient("format", "valid_until_s_error", input.get(1)).toString());
-                                        }
-                                    }
-                                    if (StringUtils.isNotNullOrEmpty(input.get(2))) {
-                                        if (NumberUtils.toInt(input.get(2)) == 0) {
-                                            result.set(2, SakuraComponent.get().transClient("format", "num_s_error", input.get(2)).toString());
-                                        }
-                                    }
-                                    if (result.stream().allMatch(StringUtils::isNullOrEmptyEx)) {
-                                        RewardConfigManager.addUndoRewardOption(rule);
-                                        RewardConfigManager.clearRedoList();
-                                        RewardConfigManager.updateKeyName(rule, key, String.format("%s|%s|-1|%d", input.get(0), input.get(1), NumberUtils.toInt(input.get(2), 1)));
-                                        RewardConfigManager.saveRewardOption();
-                                    }
-                                }
-                                return result;
-                            }));
-                        } else {
-                            String validator = rule == ERewardRule.RANDOM_REWARD ? "(0?1(\\.0{0,10})?|0(\\.\\d{0,10})?)?" : "[\\d +~/:.T-]*";
-                            Minecraft.getInstance().setScreen(new StringInputScreen(this, Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_rule_key_" + rule.getCode()), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"), validator, key, input -> {
-                                StringList result = new StringList();
-                                if (CollectionUtils.isNotNullOrEmpty(input)) {
-                                    if (RewardConfigManager.validateKeyName(rule, input.get(0))) {
-                                        RewardConfigManager.addUndoRewardOption(rule);
-                                        RewardConfigManager.clearRedoList();
-                                        RewardConfigManager.updateKeyName(rule, key, input.get(0));
-                                        RewardConfigManager.saveRewardOption();
-                                    } else {
-                                        result.add(SakuraComponent.get().transClient("format", "reward_rule_s_error", input.get(0)).toString());
-                                    }
-                                }
-                                return result;
-                            }));
-                        }
-                    }
-                } else if (SakuraComponent.get().transClient("word", "copy").toString().equalsIgnoreCase(selectedString)) {
-                    if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
-                        actionOwnsLayout = editHandler.handleCopy();
-                    }
-                } else if (SakuraComponent.get().transClient("word", "cut").toString().equalsIgnoreCase(selectedString)) {
-                    if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
-                        actionOwnsLayout = editHandler.handleCut();
-                    }
-                } else if (SakuraComponent.get().transClient("word", "paste").toString().equalsIgnoreCase(selectedString)) {
-                    if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
-                        actionOwnsLayout = editHandler.handlePaste();
-                    }
-                } else if (SakuraComponent.get().transClient("word", "clear").toString().equalsIgnoreCase(selectedString)) {
-                    requestGroupConfirmation("confirm_clear_reward_group", key, () -> {
-                        RewardConfigManager.addUndoRewardOption(rule);
-                        RewardConfigManager.clearRedoList();
-                        RewardConfigManager.clearKey(rule, key);
-                        RewardConfigManager.saveRewardOption();
-                        updateLayout();
-                    });
-                } else if (SakuraComponent.get().transClient("word", "delete").toString().equalsIgnoreCase(selectedString)) {
-                    requestDeleteConfirmation();
-                }
-                // 添加物品
-                else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.ITEM.getCode()).equalsIgnoreCase(selectedString)) {
-                    Minecraft.getInstance().setScreen(ItemRewardSelectionFlow.create(
-                            this,
-                            new Reward(new ItemStack(Items.AIR), ERewardType.ITEM),
-                            input -> {
-                        if (input != null && ((ItemStack) RewardManager.deserializeReward(input)).getItem() != Items.AIR) {
-                            RewardConfigManager.addUndoRewardOption(rule);
-                            RewardConfigManager.clearRedoList();
-                            RewardConfigManager.addReward(rule, key, input);
-                            RewardConfigManager.saveRewardOption();
-                        }
-                    }));
-                }
-                // 药水效果
-                else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.EFFECT.getCode()).equalsIgnoreCase(selectedString)) {
-                    Minecraft.getInstance().setScreen(EffectRewardSelectionFlow.create(
-                            this,
-                            new Reward(new EffectInstance(Effects.LUCK), ERewardType.EFFECT),
-                            input -> {
-                        if (input != null && ((EffectInstance) RewardManager.deserializeReward(input)).getDuration() > 0) {
-                            RewardConfigManager.addUndoRewardOption(rule);
-                            RewardConfigManager.clearRedoList();
-                            RewardConfigManager.addReward(rule, key, input);
-                            RewardConfigManager.saveRewardOption();
-                        }
-                    }));
-                }
-                // 经验点
-                else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.EXP_POINT.getCode()).equalsIgnoreCase(selectedString)) {
-                    Minecraft.getInstance().setScreen(new StringInputScreen(this
-                            , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_exp_point"), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_probability"))
-                            , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
-                            , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
-                            , new StringList("1")
-                            , input -> {
-                        StringList result = new StringList();
-                        if (CollectionUtils.isNotNullOrEmpty(input)) {
-                            int count = NumberUtils.toInt(input.get(0));
-                            BigDecimal p = NumberUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
-                            if (count != 0) {
-                                RewardConfigManager.addUndoRewardOption(rule);
-                                RewardConfigManager.clearRedoList();
-                                RewardConfigManager.addReward(rule, key, new Reward(RewardManager.serializeReward(count, ERewardType.EXP_POINT), ERewardType.EXP_POINT, p));
-                                RewardConfigManager.saveRewardOption();
-                            } else {
-                                result.add(SakuraComponent.get().transClient("format", "enter_value_s_error", input.get(0)).toString());
-                            }
-                        }
-                        return result;
-                    }));
-                }
-                // 经验等级
-                else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.EXP_LEVEL.getCode()).equalsIgnoreCase(selectedString)) {
-                    Minecraft.getInstance().setScreen(new StringInputScreen(this
-                            , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_exp_level"), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_probability"))
-                            , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
-                            , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
-                            , new StringList("1")
-                            , input -> {
-                        StringList result = new StringList();
-                        if (CollectionUtils.isNotNullOrEmpty(input)) {
-                            int count = NumberUtils.toInt(input.get(0));
-                            BigDecimal p = NumberUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
-                            if (count != 0) {
-                                RewardConfigManager.addUndoRewardOption(rule);
-                                RewardConfigManager.clearRedoList();
-                                RewardConfigManager.addReward(rule, key, new Reward(RewardManager.serializeReward(count, ERewardType.EXP_LEVEL), ERewardType.EXP_LEVEL, p));
-                                RewardConfigManager.saveRewardOption();
-                            } else {
-                                result.add(SakuraComponent.get().transClient("format", "enter_value_s_error", input.get(0)).toString());
-                            }
-                        }
-                        return result;
-                    }));
-                }
-                // 补签卡
-                else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.SIGN_IN_CARD.getCode()).equalsIgnoreCase(selectedString)) {
-                    Minecraft.getInstance().setScreen(new StringInputScreen(this
-                            , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_sign_in_card"), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_probability"))
-                            , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
-                            , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
-                            , new StringList("1")
-                            , input -> {
-                        StringList result = new StringList();
-                        if (CollectionUtils.isNotNullOrEmpty(input)) {
-                            int count = NumberUtils.toInt(input.get(0));
-                            BigDecimal p = NumberUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
-                            if (count != 0) {
-                                RewardConfigManager.addUndoRewardOption(rule);
-                                RewardConfigManager.clearRedoList();
-                                RewardConfigManager.addReward(rule, key, new Reward(RewardManager.serializeReward(count, ERewardType.SIGN_IN_CARD), ERewardType.SIGN_IN_CARD, p));
-                                RewardConfigManager.saveRewardOption();
-                            } else {
-                                result.add(SakuraComponent.get().transClient("format", "enter_value_s_error", input.get(0)).toString());
-                            }
-                        }
-                        return result;
-                    }));
-                }
-                // 进度
-                else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.ADVANCEMENT.getCode()).equalsIgnoreCase(selectedString)) {
-                    Minecraft.getInstance().setScreen(AdvancementRewardSelectionFlow.create(
-                            this,
-                            new Reward(new ResourceLocation(""), ERewardType.ADVANCEMENT),
-                            input -> {
-                        if (input != null && StringUtils.isNotNullOrEmpty(((ResourceLocation) RewardManager.deserializeReward(input)).toString())) {
-                            RewardConfigManager.addUndoRewardOption(rule);
-                            RewardConfigManager.clearRedoList();
-                            RewardConfigManager.addReward(rule, key, input);
-                            RewardConfigManager.saveRewardOption();
-                        }
-                    }));
+            return;
+        }
 
-                }
-                // 消息
-                else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.MESSAGE.getCode()).equalsIgnoreCase(selectedString)) {
-                    Minecraft.getInstance().setScreen(new StringInputScreen(this
-                            , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_message"), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_probability"))
-                            , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
-                            , new StringList("", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
-                            , new StringList("", "1")
-                            , input -> {
-                        if (CollectionUtils.isNotNullOrEmpty(input)) {
-                            RewardConfigManager.addUndoRewardOption(rule);
-                            RewardConfigManager.clearRedoList();
-                            Component component = SakuraComponent.get().literal(input.get(0));
-                            BigDecimal p = NumberUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
-                            RewardConfigManager.addReward(rule, key, new Reward(RewardManager.serializeReward(component, ERewardType.MESSAGE), ERewardType.MESSAGE, p));
-                            RewardConfigManager.saveRewardOption();
-                        }
-                    }));
-                }
-                // 指令
-                else if (SakuraComponent.get().translateClient("word", "reward_type_" + ERewardType.COMMAND.getCode()).equalsIgnoreCase(selectedString)) {
-                    Minecraft.getInstance().setScreen(new StringInputScreen(this
-                            , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_command"), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_probability"))
-                            , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
-                            , new StringList("", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
-                            , new StringList("", "1")
-                            , input -> {
-                        StringList result = new StringList();
-                        if (CollectionUtils.isNotNullOrEmpty(input) && input.get(0).startsWith("/")) {
-                            RewardConfigManager.addUndoRewardOption(rule);
-                            RewardConfigManager.clearRedoList();
-                            BigDecimal p = NumberUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
-                            RewardConfigManager.addReward(rule, key, new Reward(RewardManager.serializeReward(input.get(0), ERewardType.COMMAND), ERewardType.COMMAND, p));
-                            RewardConfigManager.saveRewardOption();
-                        } else {
-                            result.add(SakuraComponent.get().transClient("format", "enter_value_s_error", input.get(0)).toString());
-                        }
-                        return result;
-                    }));
-                }
-                // 实现其他奖励类型
-            } else {
-                String[] split = id.split(",");
-                if (split.length != 2) {
-                    LOGGER.error("Invalid popup option id: {}", id);
-                    return;
-                }
-                String key = split[0];
-                String index = split[1];
-                if (SakuraComponent.get().transClient("word", "edit").toString().equalsIgnoreCase(selectedString)) {
-                    if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
-                        Reward reward = RewardConfigManager.getReward(rule, key, Integer.parseInt(index)).clone();
-                        if (reward.getType() == ERewardType.ITEM) {
-                            Minecraft.getInstance().setScreen(ItemRewardSelectionFlow.create(
-                                    this,
-                                    reward,
-                                    input -> {
-                                if (input != null && ((ItemStack) RewardManager.deserializeReward(input)).getItem() != Items.AIR) {
-                                    RewardConfigManager.addUndoRewardOption(rule);
-                                    RewardConfigManager.clearRedoList();
-                                    RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), input);
-                                    RewardConfigManager.saveRewardOption();
-                                }
-                            }));
-                        }
-                        // 药水效果
-                        else if (reward.getType() == ERewardType.EFFECT) {
-                            Minecraft.getInstance().setScreen(EffectRewardSelectionFlow.create(
-                                    this,
-                                    reward,
-                                    input -> {
-                                if (input != null && ((EffectInstance) RewardManager.deserializeReward(input)).getDuration() > 0) {
-                                    RewardConfigManager.addUndoRewardOption(rule);
-                                    RewardConfigManager.clearRedoList();
-                                    RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), input);
-                                    RewardConfigManager.saveRewardOption();
-                                }
-                            }));
-                        }
-                        // 经验点
-                        else if (reward.getType() == ERewardType.EXP_POINT) {
-                            Minecraft.getInstance().setScreen(new StringInputScreen(this
-                                    , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_exp_point"), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_probability"))
-                                    , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
-                                    , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
-                                    , new StringList(String.valueOf((Integer) RewardManager.deserializeReward(reward)), NumberUtils.toFixedEx(reward.getProbability(), 5))
-                                    , input -> {
-                                StringList result = new StringList();
-                                if (CollectionUtils.isNotNullOrEmpty(input)) {
-                                    int count = NumberUtils.toInt(input.get(0));
-                                    BigDecimal p = NumberUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
-                                    if (count != 0) {
-                                        RewardConfigManager.addUndoRewardOption(rule);
-                                        RewardConfigManager.clearRedoList();
-                                        RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(count, ERewardType.EXP_POINT), ERewardType.EXP_POINT, p));
-                                        RewardConfigManager.saveRewardOption();
-                                    } else {
-                                        result.add(SakuraComponent.get().transClient("format", "enter_value_s_error", input.get(0)).toString());
-                                    }
-                                }
-                                return result;
-                            }
-                            ));
-                        }
-                        // 经验等级
-                        else if (reward.getType() == ERewardType.EXP_LEVEL) {
-                            Minecraft.getInstance().setScreen(new StringInputScreen(this
-                                    , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_exp_level"), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_probability"))
-                                    , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
-                                    , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
-                                    , new StringList(String.valueOf((Integer) RewardManager.deserializeReward(reward)), NumberUtils.toFixedEx(reward.getProbability(), 5))
-                                    , input -> {
-                                StringList result = new StringList();
-                                if (CollectionUtils.isNotNullOrEmpty(input)) {
-                                    int count = NumberUtils.toInt(input.get(0));
-                                    BigDecimal p = NumberUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
-                                    if (count != 0) {
-                                        RewardConfigManager.addUndoRewardOption(rule);
-                                        RewardConfigManager.clearRedoList();
-                                        RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(count, ERewardType.EXP_LEVEL), ERewardType.EXP_LEVEL, p));
-                                        RewardConfigManager.saveRewardOption();
-                                    } else {
-                                        result.add(SakuraComponent.get().transClient("format", "enter_value_s_error", input.get(0)).toString());
-                                    }
-                                }
-                                return result;
-                            }
-                            ));
-                        }
-                        // 补签卡
-                        else if (reward.getType() == ERewardType.SIGN_IN_CARD) {
-                            Minecraft.getInstance().setScreen(new StringInputScreen(this
-                                    , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_sign_in_card"), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_probability"))
-                                    , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
-                                    , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
-                                    , new StringList(String.valueOf((Integer) RewardManager.deserializeReward(reward)), NumberUtils.toFixedEx(reward.getProbability(), 5))
-                                    , input -> {
-                                StringList result = new StringList();
-                                if (CollectionUtils.isNotNullOrEmpty(input)) {
-                                    int count = NumberUtils.toInt(input.get(0));
-                                    BigDecimal p = NumberUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
-                                    if (count != 0) {
-                                        RewardConfigManager.addUndoRewardOption(rule);
-                                        RewardConfigManager.clearRedoList();
-                                        RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(count, ERewardType.SIGN_IN_CARD), ERewardType.SIGN_IN_CARD, p));
-                                        RewardConfigManager.saveRewardOption();
-                                    } else {
-                                        result.add(SakuraComponent.get().transClient("format", "enter_value_s_error", input.get(0)).toString());
-                                    }
-                                }
-                                return result;
-                            }
-                            ));
-                        }
-                        // 进度
-                        else if (reward.getType() == ERewardType.ADVANCEMENT) {
-                            Minecraft.getInstance().setScreen(AdvancementRewardSelectionFlow.create(
-                                    this,
-                                    reward,
-                                    input -> {
-                                if (input != null && StringUtils.isNotNullOrEmpty(((ResourceLocation) RewardManager.deserializeReward(input)).toString()) && StringUtils.isNotNullOrEmpty(key)) {
-                                    RewardConfigManager.addUndoRewardOption(rule);
-                                    RewardConfigManager.clearRedoList();
-                                    RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), input);
-                                    RewardConfigManager.saveRewardOption();
-                                }
-                            }));
-                        }
-                        // 消息
-                        else if (reward.getType() == ERewardType.MESSAGE) {
-                            Minecraft.getInstance().setScreen(new StringInputScreen(this
-                                    , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_message"), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_probability"))
-                                    , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
-                                    , new StringList("", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
-                                    , new StringList(RewardManager.deserializeReward(reward).toString(), NumberUtils.toFixedEx(reward.getProbability(), 5))
-                                    , input -> {
-                                if (CollectionUtils.isNotNullOrEmpty(input)) {
-                                    RewardConfigManager.addUndoRewardOption(rule);
-                                    RewardConfigManager.clearRedoList();
-                                    Component textToComponent = SakuraComponent.get().literal(input.get(0));
-                                    BigDecimal p = NumberUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
-                                    RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(textToComponent, ERewardType.MESSAGE), ERewardType.MESSAGE, p));
-                                    RewardConfigManager.saveRewardOption();
-                                }
-                            }
-                            ));
-                        }
-                        // 指令
-                        else if (reward.getType() == ERewardType.COMMAND) {
-                            Minecraft.getInstance().setScreen(new StringInputScreen(this
-                                    , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_command"), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_probability"))
-                                    , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
-                                    , new StringList("", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
-                                    , new StringList(RewardManager.deserializeReward(reward), NumberUtils.toFixedEx(reward.getProbability(), 5))
-                                    , input -> {
-                                StringList result = new StringList();
-                                if (CollectionUtils.isNotNullOrEmpty(input) && input.get(0).startsWith("/")) {
-                                    RewardConfigManager.addUndoRewardOption(rule);
-                                    RewardConfigManager.clearRedoList();
-                                    BigDecimal p = NumberUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
-                                    RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(input.get(0), ERewardType.COMMAND), ERewardType.COMMAND, p));
-                                    RewardConfigManager.saveRewardOption();
-                                } else {
-                                    result.add(SakuraComponent.get().transClient("format", "enter_value_s_error", input.get(0)).toString());
-                                }
-                                return result;
-                            }
-                            ));
-                        }
-                    }
-                } else if (SakuraComponent.get().transClient(
-                        "word", "edit_probability").toString().equalsIgnoreCase(selectedString)) {
-                    actionOwnsLayout = editRewardProbability(
-                            rule, key, Integer.parseInt(index));
-                } else if (SakuraComponent.get().transClient("word", "copy").toString().equalsIgnoreCase(selectedString)) {
-                    if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
-                        actionOwnsLayout = editHandler.handleCopy();
-                    }
-                } else if (SakuraComponent.get().transClient("word", "cut").toString().equalsIgnoreCase(selectedString)) {
-                    if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
-                        actionOwnsLayout = editHandler.handleCut();
-                    }
-                } else if (SakuraComponent.get().transClient("word", "paste").toString().equalsIgnoreCase(selectedString)) {
-                    if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
-                        actionOwnsLayout = editHandler.handlePaste();
-                    }
-                } else if (SakuraComponent.get().transClient("word", "delete").toString().equalsIgnoreCase(selectedString)) {
-                    actionOwnsLayout = requestDeleteConfirmation();
-                }
+        if (popupId.startsWith("奖励面板按钮:")) {
+            if ("paste".equals(optionId)) {
+                editHandler.handlePaste();
+                flag.set(true);
+            } else if (rewardType != null) {
+                flag.set(openCreateReward(rule, null, rewardType));
             }
-            if (!actionOwnsLayout) {
-                updateLayout.set(true);
+            return;
+        }
+
+        if (!popupId.startsWith("奖励按钮:")) {
+            return;
+        }
+
+        String id = popupId.substring("奖励按钮:".length());
+        if (id.startsWith("标题,")) {
+            String key = id.substring("标题,".length());
+            if ("edit".equals(optionId)) {
+                editRewardGroup(rule, key);
+            } else if ("copy".equals(optionId)) {
+                editHandler.handleCopy();
+            } else if ("cut".equals(optionId)) {
+                editHandler.handleCut();
+            } else if ("paste".equals(optionId)) {
+                editHandler.handlePaste();
+            } else if ("clear".equals(optionId)) {
+                requestGroupConfirmation("confirm_clear_reward_group", key, () -> {
+                    RewardConfigManager.addUndoRewardOption(rule);
+                    RewardConfigManager.clearRedoList();
+                    RewardConfigManager.clearKey(rule, key);
+                    RewardConfigManager.saveRewardOption();
+                    updateLayout();
+                });
+            } else if ("delete".equals(optionId)) {
+                requestDeleteConfirmation();
+            } else if (rewardType != null) {
+                openCreateReward(rule, key, rewardType);
+            } else {
+                return;
             }
             flag.set(true);
+            return;
         }
+
+        int separator = id.lastIndexOf(',');
+        if (separator <= 0 || separator >= id.length() - 1) {
+            LOGGER.error("Invalid reward popup id: {}", id);
+            return;
+        }
+        String key = id.substring(0, separator);
+        int index = NumberUtils.toInt(id.substring(separator + 1), -1);
+        if (index < 0) {
+            return;
+        }
+
+        if ("edit".equals(optionId)) {
+            editReward(rule, key, index);
+        } else if ("probability".equals(optionId)) {
+            editRewardProbability(rule, key, index);
+        } else if ("copy".equals(optionId)) {
+            editHandler.handleCopy();
+        } else if ("cut".equals(optionId)) {
+            editHandler.handleCut();
+        } else if ("paste".equals(optionId)) {
+            editHandler.handlePaste();
+        } else if ("delete".equals(optionId)) {
+            requestDeleteConfirmation();
+        } else {
+            return;
+        }
+        flag.set(true);
+    }
+
+    private RewardTypeId rewardTypeOption(String optionId) {
+        if (optionId == null || !optionId.startsWith(REWARD_TYPE_OPTION_PREFIX)) {
+            return null;
+        }
+        try {
+            return RewardTypeId.parse(optionId.substring(REWARD_TYPE_OPTION_PREFIX.length()));
+        } catch (IllegalArgumentException exception) {
+            LOGGER.warn("Invalid reward type option: {}", optionId);
+            return null;
+        }
+    }
+
+    private boolean openCreateReward(ERewardRule rule, String groupKey,
+                                     RewardTypeId rewardType) {
+        Consumer<Reward> save = reward -> {
+            RewardConfigManager.addUndoRewardOption(rule);
+            RewardConfigManager.clearRedoList();
+            RewardConfigManager.addReward(rule, groupKeyForSave(rule, groupKey), reward);
+            RewardConfigManager.saveRewardOption();
+            updateLayout();
+        };
+        if (groupKey != null || rule == ERewardRule.BASE_REWARD) {
+            return RewardEditorCoordinator.openCreate(this, rewardType, save);
+        }
+
+        String[] createdKey = new String[]{""};
+        Screen transition = RewardEditorCoordinator.deferred(
+                this,
+                () -> RewardEditorCoordinator.openCreate(this, rewardType, reward -> {
+                    RewardConfigManager.addUndoRewardOption(rule);
+                    RewardConfigManager.clearRedoList();
+                    RewardConfigManager.addReward(rule, createdKey[0], reward);
+                    RewardConfigManager.saveRewardOption();
+                    updateLayout();
+                }),
+                () -> StringUtils.isNotNullOrEmpty(createdKey[0])
+        );
+        Screen keyScreen = rule == ERewardRule.CDK_REWARD
+                ? getCdkRuleKeyInputScreen(transition, rule, createdKey)
+                : getRuleKeyInputScreen(transition, rule, createdKey);
+        Minecraft.getInstance().setScreen(keyScreen);
+        return true;
+    }
+
+    private String groupKeyForSave(ERewardRule rule, String groupKey) {
+        return groupKey == null && rule == ERewardRule.BASE_REWARD ? "base" : groupKey;
+    }
+
+    private boolean editReward(ERewardRule rule, String key, int index) {
+        Reward reward = RewardConfigManager.getReward(rule, key, index);
+        return RewardEditorCoordinator.openEdit(this, reward, updated -> {
+            RewardConfigManager.addUndoRewardOption(rule);
+            RewardConfigManager.clearRedoList();
+            RewardConfigManager.updateReward(rule, key, index, updated);
+            RewardConfigManager.saveRewardOption();
+            updateLayout();
+        });
+    }
+
+    private void editRewardGroup(ERewardRule rule, String key) {
+        if (rule == ERewardRule.CDK_REWARD) {
+            String[] split = key.split("\\|");
+            if (split.length != 4 && split.length != 3 && split.length != 2) {
+                split = new String[]{"", DateUtils.toString(
+                        DateUtils.addMonth(SakuraClock.clientNow(), 1)), "-1", "1"};
+            }
+            Minecraft.getInstance().setScreen(new StringInputScreen(this,
+                    new TextList(
+                            Text.trans(SakuraSignIn.MODID,
+                                    "word.sakura_sign_in.enter_reward_rule_key_" + rule.getCode()),
+                            Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_valid_until"),
+                            Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_num")),
+                    new TextList(Text.trans(SakuraSignIn.MODID,
+                            "word.sakura_sign_in.enter_something")),
+                    new StringList("\\w*", "", "\\d*"),
+                    new StringList(split[0], split[1], split[3]),
+                    input -> {
+                        StringList result = new StringList("", "", "");
+                        if (!RewardConfigManager.validateKeyName(rule, input.get(0))) {
+                            result.set(0, SakuraComponent.get().transClient(
+                                    "format", "reward_rule_s_error", input.get(0)).toString());
+                        }
+                        if (StringUtils.isNotNullOrEmpty(input.get(1))
+                                && DateUtils.format(input.get(1)) == null) {
+                            result.set(1, SakuraComponent.get().transClient(
+                                    "format", "valid_until_s_error", input.get(1)).toString());
+                        }
+                        if (StringUtils.isNotNullOrEmpty(input.get(2))
+                                && NumberUtils.toInt(input.get(2)) == 0) {
+                            result.set(2, SakuraComponent.get().transClient(
+                                    "format", "num_s_error", input.get(2)).toString());
+                        }
+                        if (result.stream().allMatch(StringUtils::isNullOrEmptyEx)) {
+                            RewardConfigManager.addUndoRewardOption(rule);
+                            RewardConfigManager.clearRedoList();
+                            RewardConfigManager.updateKeyName(rule, key,
+                                    String.format("%s|%s|-1|%d", input.get(0), input.get(1),
+                                            NumberUtils.toInt(input.get(2), 1)));
+                            RewardConfigManager.saveRewardOption();
+                        }
+                        return result;
+                    }));
+            return;
+        }
+
+        String validator = rule == ERewardRule.RANDOM_REWARD
+                ? "(0?1(\\.0{0,10})?|0(\\.\\d{0,10})?)?"
+                : "[\\d +~/:.T-]*";
+        Minecraft.getInstance().setScreen(new StringInputScreen(
+                this,
+                Text.trans(SakuraSignIn.MODID,
+                        "word.sakura_sign_in.enter_reward_rule_key_" + rule.getCode()),
+                Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"),
+                validator,
+                key,
+                input -> {
+                    StringList result = new StringList();
+                    if (RewardConfigManager.validateKeyName(rule, input.get(0))) {
+                        RewardConfigManager.addUndoRewardOption(rule);
+                        RewardConfigManager.clearRedoList();
+                        RewardConfigManager.updateKeyName(rule, key, input.get(0));
+                        RewardConfigManager.saveRewardOption();
+                    } else {
+                        result.add(SakuraComponent.get().transClient(
+                                "format", "reward_rule_s_error", input.get(0)).toString());
+                    }
+                    return result;
+                }));
     }
 
     private boolean editRewardProbability(ERewardRule rule, String key, int index) {
         Reward reward = RewardConfigManager.getReward(rule, key, index).clone();
-        if (!RewardEditTargets.hasSeparateProbabilityEditor(reward.getType())) {
-            return false;
-        }
-        Minecraft.getInstance().setScreen(RewardProbabilityFlow.create(
-                this,
-                reward.getProbability(),
-                probability -> reward.clone().setProbability(probability),
-                updated -> {
-                    RewardConfigManager.addUndoRewardOption(rule);
-                    RewardConfigManager.clearRedoList();
-                    RewardConfigManager.updateReward(rule, key, index, updated);
-                    RewardConfigManager.saveRewardOption();
-                    updateLayout();
-                }
-        ));
-        return true;
+        return RewardEditorCoordinator.openProbability(this, reward, updated -> {
+            RewardConfigManager.addUndoRewardOption(rule);
+            RewardConfigManager.clearRedoList();
+            RewardConfigManager.updateReward(rule, key, index, updated);
+            RewardConfigManager.saveRewardOption();
+            updateLayout();
+        });
     }
 
     /** 奖励组与整个规则的破坏性操作使用可见确认页。 */
