@@ -53,6 +53,9 @@ public final class RewardListEntryWidget extends BaseWidget {
     private boolean dragged;
     private boolean pendingDrag;
     private boolean longPressDragging;
+    private int pressClickCount = 1;
+    private boolean pressDoubleClick;
+    private boolean pressClickTracked;
     private final double dragActivationDistance = 4.0;
     private double pressX;
     private double pressY;
@@ -133,11 +136,17 @@ public final class RewardListEntryWidget extends BaseWidget {
         longPressDragging = false;
         pressX = event.mouseX();
         pressY = event.mouseY();
+        pressClickCount = event.clickCount();
+        pressDoubleClick = event.doubleClick();
+        pressClickTracked = event.clickTracked();
         return true;
     }
 
     @Override
     protected boolean onMouseRelease(MouseEvent event, boolean inside) {
+        event.clickCount(pressClickCount)
+                .doubleClick(pressDoubleClick)
+                .clickTracked(pressClickTracked);
         if (longPressDragging) {
             if (longPressReleaseHandler != null) {
                 longPressReleaseHandler.accept(event);
