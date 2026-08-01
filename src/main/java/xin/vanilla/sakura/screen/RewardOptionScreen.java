@@ -114,6 +114,7 @@ public class RewardOptionScreen extends BaniraScreen {
     private final int itemIconSize = 16;
     private final int itemRightMargin = 4;
     private final int itemBottomMargin = 8;
+    private final int rewardWheelStep = itemIconSize + itemBottomMargin;
     private final int groupContentIndent = 8;
     private final int groupContentPadding = 4;
     private final int groupGap = 4;
@@ -1875,8 +1876,8 @@ public class RewardOptionScreen extends BaniraScreen {
     }
 
     private void setYOffset(double offset) {
-        double minOffset = Math.min(0, super.height - rewardContentHeight);
-        this.yOffset = Math.max(minOffset, Math.min(offset, 0));
+        this.yOffset = RewardPanelViewport.clampOffset(
+                offset, rewardContentHeight, super.height);
     }
 
     private void scrollRewardPanel(double amount) {
@@ -2431,7 +2432,7 @@ public class RewardOptionScreen extends BaniraScreen {
     protected void onMouseScrolled(MouseScrolledHandleArgs eventArgs) {
         RewardOperationWidget panel = OP_BUTTONS.get(OperationButtonType.REWARD_PANEL.getCode());
         if (panel != null && panel.isMouseInside(eventArgs.mouseX(), eventArgs.mouseY())) {
-            scrollRewardPanel(eventArgs.delta());
+            scrollRewardPanel(eventArgs.delta() * rewardWheelStep);
             eventArgs.consumed(true);
         }
     }
