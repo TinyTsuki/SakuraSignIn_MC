@@ -26,6 +26,7 @@ import xin.vanilla.sakura.enums.ESignInType;
 import xin.vanilla.sakura.enums.ETimeCoolingMethod;
 import xin.vanilla.sakura.network.packet.SignInPacket;
 import xin.vanilla.sakura.util.*;
+import xin.vanilla.sakura.reward.personaldate.PersonalDateRewardDispatcher;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.util.CollectionUtils;
 import xin.vanilla.banira.common.util.DateUtils;
@@ -517,6 +518,7 @@ public class RewardManager {
             signInData.markSigned(signCompensateDate, packet.isAutoRewarded());
             signInData.plusTotalSignInDays();
             signInData.setContinuousSignInDays(signInData.calculateContinuousDays(serverCompensateDate));
+            PersonalDateRewardDispatcher.deliverSignIn(player, serverCompensateDate);
             SakuraMessages.send(player, SakuraComponent.get().trans(player, "format", "sign_in_success_s", DateUtils.toString(signInRecord.getCompensateTime()), signInData.calculateContinuousDays(), getTotalSignInDays(signInData)), notificationType);
         }
         // 持久化后再同步，客户端不会参与服务端存储。
@@ -524,6 +526,11 @@ public class RewardManager {
     }
 
     public static boolean giveRewardToPlayer(ServerPlayerEntity player, IPlayerSignInData signInData, Reward reward) {
+        return giveRewardToPlayer(player, signInData, reward, new Date(), "sign_in");
+    }
+
+    public static boolean giveRewardToPlayer(ServerPlayerEntity player, IPlayerSignInData signInData,
+                                             Reward reward, Date sourceDate, String sourceId) {
         reward.setRewarded(true);
         // 判断是否启用
         if (CommonConfig.get().reward().rewardAffectedByLuck()) {
@@ -552,12 +559,12 @@ public class RewardManager {
 
             @Override
             public Date signInDate() {
-                return new Date();
+                return sourceDate;
             }
 
             @Override
             public String sourceId() {
-                return "sign_in";
+                return sourceId;
             }
 
             @Override
