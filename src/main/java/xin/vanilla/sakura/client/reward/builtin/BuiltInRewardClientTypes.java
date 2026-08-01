@@ -24,22 +24,22 @@ public final class BuiltInRewardClientTypes {
     }
 
     public static void register() {
-        register(SakuraRewardTypes.ITEM, 10, new BasePresentation<ItemStack>() {
+        register(SakuraRewardTypes.ITEM, 10, 1, new BasePresentation<ItemStack>() {
             @Override
             public void renderIcon(RewardRenderContext context, ItemStack value) {
                 context.drawItem(value);
             }
-        });
-        register(SakuraRewardTypes.EFFECT, 20, new BasePresentation<EffectInstance>() {
+        }, BuiltInRewardEditors.item());
+        register(SakuraRewardTypes.EFFECT, 20, 2, new BasePresentation<EffectInstance>() {
             @Override
             public void renderIcon(RewardRenderContext context, EffectInstance value) {
                 context.drawEffect(value);
             }
-        });
-        registerNumeric(SakuraRewardTypes.EXPERIENCE_POINT, 30, "point");
-        registerNumeric(SakuraRewardTypes.EXPERIENCE_LEVEL, 40, "level");
-        registerNumeric(SakuraRewardTypes.SIGN_IN_CARD, 50, "card");
-        register(SakuraRewardTypes.ADVANCEMENT, 60, new BasePresentation<ResourceLocation>() {
+        }, BuiltInRewardEditors.effect());
+        registerNumeric(SakuraRewardTypes.EXPERIENCE_POINT, 30, "point", "enter_exp_point");
+        registerNumeric(SakuraRewardTypes.EXPERIENCE_LEVEL, 40, "level", "enter_exp_level");
+        registerNumeric(SakuraRewardTypes.SIGN_IN_CARD, 50, "card", "enter_sign_in_card");
+        register(SakuraRewardTypes.ADVANCEMENT, 60, 6, new BasePresentation<ResourceLocation>() {
             @Override
             public void renderIcon(RewardRenderContext context, ResourceLocation value) {
                 AdvancementData data = SakuraClientState.getAdvancementData().stream()
@@ -51,23 +51,26 @@ public final class BuiltInRewardClientTypes {
                 }
                 context.drawItem(data.getDisplayInfo().getIcon());
             }
-        });
-        register(SakuraRewardTypes.MESSAGE, 70, new BasePresentation<Component>() {
+        }, BuiltInRewardEditors.advancement());
+        register(SakuraRewardTypes.MESSAGE, 70, 7, new BasePresentation<Component>() {
             @Override
             public void renderIcon(RewardRenderContext context, Component value) {
                 context.drawBuiltInIcon("message");
             }
-        });
-        register(SakuraRewardTypes.COMMAND, 80, new BasePresentation<String>() {
+        }, BuiltInRewardEditors.message());
+        register(SakuraRewardTypes.COMMAND, 80, 8, new BasePresentation<String>() {
             @Override
             public void renderIcon(RewardRenderContext context, String value) {
                 context.drawItem(new ItemStack(Items.REPEATING_COMMAND_BLOCK));
             }
-        });
+        }, BuiltInRewardEditors.command());
     }
 
-    private static void registerNumeric(RewardTypeId typeId, int sortOrder, String icon) {
-        register(typeId, sortOrder, new BasePresentation<Integer>() {
+    private static void registerNumeric(RewardTypeId typeId, int sortOrder, String icon,
+                                        String titleKey) {
+        int translationCode = SakuraRewardTypes.EXPERIENCE_POINT.equals(typeId) ? 3
+                : SakuraRewardTypes.EXPERIENCE_LEVEL.equals(typeId) ? 4 : 5;
+        register(typeId, sortOrder, translationCode, new BasePresentation<Integer>() {
             @Override
             public void renderIcon(RewardRenderContext context, Integer value) {
                 context.drawBuiltInIcon(icon);
@@ -75,12 +78,16 @@ public final class BuiltInRewardClientTypes {
                     context.drawAmount(String.valueOf(value));
                 }
             }
-        });
+        }, BuiltInRewardEditors.positiveInteger(titleKey));
     }
 
-    private static <T> void register(RewardTypeId typeId, int sortOrder,
-                                     RewardPresentation<T> presentation) {
+    private static <T> void register(RewardTypeId typeId, int sortOrder, int translationCode,
+                                     RewardPresentation<T> presentation,
+                                     xin.vanilla.sakura.api.reward.client.RewardEditorProvider<T> editor) {
         SakuraRewardClient.register(typeId, RewardClientExtension.builder(presentation)
+                .editor(editor)
+                .typeName(() -> xin.vanilla.sakura.SakuraComponent.get()
+                        .transClient("word", "reward_type_" + translationCode))
                 .sortOrder(sortOrder)
                 .build());
     }
