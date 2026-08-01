@@ -24,6 +24,7 @@ import xin.vanilla.sakura.config.reward.RewardConfigRepository;
 import xin.vanilla.sakura.config.reward.RewardGroup;
 import xin.vanilla.sakura.reward.Reward;
 import xin.vanilla.sakura.reward.RewardList;
+import xin.vanilla.sakura.data.personaldate.PersonalDatePreset;
 import xin.vanilla.sakura.util.SakuraUtils;
 import xin.vanilla.banira.common.util.StringUtils;
 
@@ -42,6 +43,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.function.Predicate;
 
 public class RewardConfigManager {
     public static final Gson GSON = new GsonBuilder().enableComplexMapKeySerialization().create();
@@ -51,8 +53,26 @@ public class RewardConfigManager {
     private static final RewardConfigCodec REWARD_CONFIG_CODEC = new RewardConfigCodec();
     private static final LegacyRewardConfigReader LEGACY_REWARD_CONFIG_READER =
             new LegacyRewardConfigReader();
+    private static volatile Set<ERewardRule> redactedRules =
+            Collections.unmodifiableSet(EnumSet.noneOf(ERewardRule.class));
 
     private static final Logger LOGGER = LogManager.getLogger();
+
+    public static void updateRedactedRules(RewardOptionSyncPacket packet) {
+        EnumSet<ERewardRule> rules = EnumSet.noneOf(ERewardRule.class);
+        if (packet != null) {
+            packet.getRewardOptionData().stream()
+                    .filter(data -> data.getKind() == RewardOptionSyncKind.REDACTED_RULE)
+                    .map(RewardOptionSyncData::getRule)
+                    .filter(Objects::nonNull)
+                    .forEach(rules::add);
+        }
+        redactedRules = Collections.unmodifiableSet(rules);
+    }
+
+    public static boolean isRuleRedacted(ERewardRule rule) {
+        return rule != null && redactedRules.contains(rule);
+    }
 
     @Getter
     @Setter
@@ -512,6 +532,10 @@ public class RewardConfigManager {
                     result = rewardConfig.getCdkRewards().get(key).value().key();
                 }
                 break;
+            case PERSONAL_DATE_REWARD:
+                PersonalDatePreset personalPreset = personalDatePreset(keyName);
+                result = personalPreset == null ? null : personalPreset.getRewards();
+                break;
             default:
                 throw new IllegalArgumentException("Unknown rule: " + rule);
         }
@@ -568,6 +592,12 @@ public class RewardConfigManager {
                     rewardConfig.addCdkReward(new KeyValue<>(new KeyValue<>(getCdkRewardKey(keyName), date), new KeyValue<>(rewardList, new AtomicInteger(getCdkRewardNum(keyName)))));
                 } else {
                     rewardConfig.getCdkRewards().get(index).value().key().addAll(rewardList);
+                }
+                break;
+            case PERSONAL_DATE_REWARD:
+                PersonalDatePreset personalPreset = personalDatePreset(keyName);
+                if (personalPreset != null) {
+                    personalPreset.getRewards().addAll(rewardList);
                 }
                 break;
             default:
@@ -697,6 +727,12 @@ public class RewardConfigManager {
                     rewardConfig.getCdkRewards().get(index).value().key().clear();
                 }
                 break;
+            case PERSONAL_DATE_REWARD:
+                PersonalDatePreset personalPreset = personalDatePreset(keyName);
+                if (personalPreset != null) {
+                    personalPreset.getRewards().clear();
+                }
+                break;
             default:
                 throw new IllegalArgumentException("Unknown rule: " + rule);
         }
@@ -748,6 +784,10 @@ public class RewardConfigManager {
                 if (rewardConfig.getCdkRewards().size() > index) {
                     rewardConfig.getCdkRewards().remove(index);
                 }
+                break;
+            case PERSONAL_DATE_REWARD:
+                rewardConfig.getPersonalDatePresets().removeIf(
+                        preset -> keyName.equals(preset.getId()));
                 break;
             default:
                 throw new IllegalArgumentException("Unknown rule: " + rule);
@@ -805,6 +845,10 @@ public class RewardConfigManager {
                     } else {
                         result = rewardConfig.getCdkRewards().get(key).value().key().get(index);
                     }
+                    break;
+                case PERSONAL_DATE_REWARD:
+                    PersonalDatePreset personalPreset = personalDatePreset(keyName);
+                    result = personalPreset == null ? null : personalPreset.getRewards().get(index);
                     break;
                 default:
                     throw new IllegalArgumentException("Unknown rule: " + rule);
@@ -898,6 +942,12 @@ public class RewardConfigManager {
                     }}, new AtomicInteger(num))));
                 } else {
                     rewardConfig.getCdkRewards().get(key).value().key().add(reward);
+                }
+                break;
+            case PERSONAL_DATE_REWARD:
+                PersonalDatePreset personalPreset = personalDatePreset(keyName);
+                if (personalPreset != null) {
+                    personalPreset.getRewards().add(reward);
                 }
                 break;
             default:
@@ -1003,6 +1053,12 @@ public class RewardConfigManager {
                         rewardConfig.getCdkRewards().get(key).value().key().set(index, reward);
                     }
                     break;
+                case PERSONAL_DATE_REWARD:
+                    PersonalDatePreset personalPreset = personalDatePreset(keyName);
+                    if (personalPreset != null) {
+                        personalPreset.getRewards().set(index, reward);
+                    }
+                    break;
                 default:
                     throw new IllegalArgumentException("Unknown rule: " + rule);
             }
@@ -1060,6 +1116,12 @@ public class RewardConfigManager {
                         rewardConfig.getCdkRewards().add(new KeyValue<>(new KeyValue<>(split[0], split[1]), new KeyValue<>(new RewardList(), new AtomicInteger(1))));
                     } else {
                         rewardConfig.getCdkRewards().get(key).value().key().remove(index);
+                    }
+                    break;
+                case PERSONAL_DATE_REWARD:
+                    PersonalDatePreset personalPreset = personalDatePreset(keyName);
+                    if (personalPreset != null) {
+                        personalPreset.getRewards().remove(index);
                     }
                     break;
                 default:
@@ -1121,6 +1183,10 @@ public class RewardConfigManager {
                     break;
                 case CDK_REWARD:
                     rewardConfig.getCdkRewards().sort(Comparator.comparing(keyVal -> keyVal.key().key()));
+                    break;
+                case PERSONAL_DATE_REWARD:
+                    rewardConfig.getPersonalDatePresets().sort(
+                            Comparator.comparing(PersonalDatePreset::getId));
                     break;
             }
         }
@@ -1199,6 +1265,11 @@ public class RewardConfigManager {
                     result.put(String.format("%s|%s|%d|%d", keyValue.key().key(), keyValue.key().value(), i, keyValue.value().value().get()), keyValue.value().key());
                 }
                 break;
+            case PERSONAL_DATE_REWARD:
+                for (PersonalDatePreset preset : data.getPersonalDatePresets()) {
+                    result.put(preset.getId(), preset.getRewards());
+                }
+                break;
         }
         return result;
     }
@@ -1246,6 +1317,15 @@ public class RewardConfigManager {
                             cdkRewards.add(new KeyValue<>(new KeyValue<>(split[0], split[1]), new KeyValue<>(map.get(key), new AtomicInteger(NumberUtils.toInt(split[3], 1)))));
                         });
                 data.setCdkRewards(cdkRewards);
+                break;
+            case PERSONAL_DATE_REWARD:
+                data.getPersonalDatePresets().forEach(preset -> {
+                    RewardList rewards = map.get(preset.getId());
+                    if (rewards != null) {
+                        preset.setRewards(rewards);
+                    }
+                });
+                break;
         }
     }
 
@@ -1255,13 +1335,21 @@ public class RewardConfigManager {
      * @param player 玩家，用于判断是否有权限
      */
     public static RewardOptionSyncPacket toSyncPacket(PlayerEntity player) {
+        return toSyncPacket(rewardConfig,
+                rule -> player.hasPermissions(SakuraUtils.getRewardPermissionLevel(rule)));
+    }
+
+    static RewardOptionSyncPacket toSyncPacket(RewardConfig config,
+                                                Predicate<ERewardRule> canView) {
         List<RewardOptionSyncData> dataList = new ArrayList<>();
         for (ERewardRule rule : ERewardRule.values()) {
             // 如果对应查看权限不足则将数据置为空，并在服务端解析时不进行该数据的覆盖
-            if (!player.hasPermissions(SakuraUtils.getRewardPermissionLevel(rule))) {
+            if (!canView.test(rule)) {
                 dataList.add(RewardOptionSyncData.redactedRule(rule));
+            } else if (rule == ERewardRule.PERSONAL_DATE_REWARD) {
+                dataList.add(RewardOptionSyncData.emptyGroup(rule, ""));
             } else {
-                dataList.addAll(toSyncData(rewardConfig, rule));
+                dataList.addAll(toSyncData(config, rule));
             }
         }
         return new RewardOptionSyncPacket(dataList);
@@ -1288,6 +1376,9 @@ public class RewardConfigManager {
         packetList.stream().flatMap(packet -> packet.getRewardOptionData().stream())
                 .collect(Collectors.groupingBy(RewardOptionSyncData::getRule))
                 .forEach((rule, dataList) -> {
+                    if (rule == ERewardRule.PERSONAL_DATE_REWARD) {
+                        return;
+                    }
                     Map<String, RewardList> rewardMap = new LinkedHashMap<>();
                     for (RewardOptionSyncData data : dataList) {
                         RewardList rewardList = rewardMap.computeIfAbsent(data.getKey(), key -> new RewardList());
@@ -1307,6 +1398,12 @@ public class RewardConfigManager {
                     RewardConfigManager.setRewardMap(result, rule, rewardMap);
                 });
         return result;
+    }
+
+    private static PersonalDatePreset personalDatePreset(String id) {
+        return rewardConfig.getPersonalDatePresets().stream()
+                .filter(preset -> preset != null && Objects.equals(id, preset.getId()))
+                .findFirst().orElse(null);
     }
 
     @NonNull

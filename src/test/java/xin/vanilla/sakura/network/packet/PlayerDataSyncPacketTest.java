@@ -6,7 +6,7 @@ import xin.vanilla.sakura.data.PlayerSignInData;
 import xin.vanilla.sakura.data.SignInRecord;
 import xin.vanilla.sakura.network.TestBaniraPacketBuffer;
 import xin.vanilla.sakura.reward.RewardList;
-import xin.vanilla.sakura.data.personaldate.PersonalDateCalendar;
+import xin.vanilla.sakura.data.calendar.CalendarIds;
 import xin.vanilla.sakura.data.personaldate.PlayerPersonalDateSlot;
 import xin.vanilla.banira.common.util.DateUtils;
 
@@ -31,7 +31,7 @@ public class PlayerDataSyncPacketTest {
         source.markSigned(signedDay, true);
         source.setSignInRecords(Arrays.asList(record("2024-01-08 12:00:00")));
         source.setPersonalDateSlots(Collections.singletonList(
-                new PlayerPersonalDateSlot("server_day", 1, PersonalDateCalendar.LUNAR,
+                new PlayerPersonalDateSlot("server_day", 1, CalendarIds.CHINESE_LUNAR,
                         8, 15, "YEARLY:2024")
         ));
 

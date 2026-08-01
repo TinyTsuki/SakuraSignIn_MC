@@ -5,6 +5,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import xin.vanilla.sakura.reward.RewardList;
 
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -12,7 +14,7 @@ public class PersonalDatePreset {
     private String id;
     private String displayName;
     private PersonalDateRecurrence recurrence;
-    private PersonalDateCalendarPolicy calendarPolicy;
+    private List<String> calendarIds;
     private int maxDateSlots;
     private PersonalDateDeliveryMode deliveryMode;
     private int validBeforeDays;

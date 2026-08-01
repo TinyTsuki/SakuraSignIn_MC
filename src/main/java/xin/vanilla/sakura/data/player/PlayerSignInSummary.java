@@ -29,6 +29,8 @@ public class PlayerSignInSummary {
     private ListNBT cdkRecords = new ListNBT();
     private Map<String, MonthSignInIndex> monthIndexes = new TreeMap<>();
     private List<PlayerPersonalDateSlot> personalDateSlots = new ArrayList<>();
+    private String onlineTimeBaselineDate = "";
+    private int onlineTimeBaselineTicks;
     private boolean legacyCapabilityMigrated;
     private String legacyCapabilityBackup = "";
 
@@ -51,6 +53,8 @@ public class PlayerSignInSummary {
         personalDateSlots.stream().filter(java.util.Objects::nonNull)
                 .forEach(slot -> slots.add(slot.serializeNBT()));
         tag.put("personalDateSlots", slots);
+        tag.putString("onlineTimeBaselineDate", onlineTimeBaselineDate);
+        tag.putInt("onlineTimeBaselineTicks", onlineTimeBaselineTicks);
 
         CompoundNBT migration = new CompoundNBT();
         migration.putBoolean("legacyCapabilityMigrated", legacyCapabilityMigrated);
@@ -80,6 +84,8 @@ public class PlayerSignInSummary {
             summary.personalDateSlots.add(
                     PlayerPersonalDateSlot.deserializeNBT(slots.getCompound(i)));
         }
+        summary.onlineTimeBaselineDate = tag.getString("onlineTimeBaselineDate");
+        summary.onlineTimeBaselineTicks = Math.max(0, tag.getInt("onlineTimeBaselineTicks"));
 
         CompoundNBT migration = tag.getCompound("migration");
         summary.legacyCapabilityMigrated = migration.getBoolean("legacyCapabilityMigrated");
