@@ -77,6 +77,7 @@ public class ClientProxy {
 
     public static void handleRewardOptionSync(RewardOptionSyncPacket packet) {
         try {
+            RewardConfigManager.updateRedactedRules(packet);
             RewardConfigManager.backupRewardOption();
             xin.vanilla.sakura.config.reward.RewardConfig candidate =
                     RewardConfigManager.fromSyncPacketList(Collections.singletonList(packet));
@@ -109,6 +110,10 @@ public class ClientProxy {
     }
 
     public static void handlePersonalDatePresetSync(PersonalDatePresetSyncPacket packet) {
+        java.util.Map<String, String> calendarNames = new java.util.LinkedHashMap<>();
+        packet.getCalendars().forEach(calendar -> calendarNames.put(
+                calendar.getId(), calendar.getDisplayNameKey()));
+        SakuraClientState.setCalendarNames(calendarNames);
         RewardConfigManager.getRewardConfig().setPersonalDatePresets(
                 PersonalDatePresets.copy(packet.getPresets()));
         RewardConfigManager.setRewardOptionDataChanged(true);

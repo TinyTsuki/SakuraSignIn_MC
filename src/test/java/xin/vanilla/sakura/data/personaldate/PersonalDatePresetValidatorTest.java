@@ -2,6 +2,9 @@ package xin.vanilla.sakura.data.personaldate;
 
 import org.junit.Test;
 import xin.vanilla.sakura.reward.RewardList;
+import xin.vanilla.sakura.data.calendar.CalendarIds;
+
+import java.util.Arrays;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -26,7 +29,7 @@ public class PersonalDatePresetValidatorTest {
                 id,
                 "Server Day",
                 PersonalDateRecurrence.YEARLY,
-                PersonalDateCalendarPolicy.PLAYER_CHOICE,
+                Arrays.asList(CalendarIds.GREGORIAN, CalendarIds.CHINESE_LUNAR),
                 slots,
                 PersonalDateDeliveryMode.ONLINE,
                 before,

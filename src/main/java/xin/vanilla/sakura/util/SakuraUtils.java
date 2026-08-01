@@ -181,6 +181,9 @@ public class SakuraUtils {
             case CDK_REWARD:
                 result = CommonConfig.get().permission().permissionCdkReward();
                 break;
+            case PERSONAL_DATE_REWARD:
+                result = CommonConfig.get().permission().permissionPersonalDateReward();
+                break;
         }
         return result;
     }
@@ -346,6 +349,9 @@ public class SakuraUtils {
                 break;
             case CDK_REWARD:
                 result = "reward_cdk";
+                break;
+            case PERSONAL_DATE_REWARD:
+                result = "reward_personal_date";
                 break;
         }
         return result;

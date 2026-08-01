@@ -1,6 +1,10 @@
 package xin.vanilla.sakura.screen;
 
 import xin.vanilla.sakura.data.time.SakuraClock;
+import xin.vanilla.sakura.data.personaldate.PersonalDatePreset;
+import xin.vanilla.sakura.data.personaldate.PersonalDateRecurrence;
+import xin.vanilla.sakura.data.personaldate.PersonalDateDeliveryMode;
+import xin.vanilla.sakura.data.personaldate.PersonalDatePresetValidator;
 
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.common.data.Component;
@@ -60,6 +64,7 @@ import xin.vanilla.sakura.enums.ERewardRule;
 import xin.vanilla.sakura.event.ClientEventHandler;
 import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.network.packet.DownloadRewardOptionNotice;
+import xin.vanilla.sakura.network.packet.PersonalDatePresetSyncPacket;
 import xin.vanilla.sakura.network.packet.RewardOptionSyncPacket;
 import xin.vanilla.sakura.notification.SakuraClientNotifications;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
@@ -84,6 +89,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 public class RewardOptionScreen extends BaniraScreen {
@@ -94,7 +100,8 @@ public class RewardOptionScreen extends BaniraScreen {
             ERewardRule.CYCLE_REWARD, ERewardRule.YEAR_REWARD,
             ERewardRule.MONTH_REWARD, ERewardRule.WEEK_REWARD,
             ERewardRule.DATE_TIME_REWARD, ERewardRule.CUMULATIVE_REWARD,
-            ERewardRule.RANDOM_REWARD, ERewardRule.CDK_REWARD
+            ERewardRule.RANDOM_REWARD, ERewardRule.CDK_REWARD,
+            ERewardRule.PERSONAL_DATE_REWARD
     };
 
     private final EditCommandHandler editHandler = new EditCommandHandler(this);
@@ -192,6 +199,7 @@ public class RewardOptionScreen extends BaniraScreen {
         CUMULATIVE_REWARD(208),
         RANDOM_REWARD(209),
         CDK_REWARD(210),
+        PERSONAL_DATE_REWARD(211),
         OFFSET_Y(301),
         HELP(302),
         DOWNLOAD(303),
@@ -826,6 +834,16 @@ public class RewardOptionScreen extends BaniraScreen {
                 }
             }
             break;
+            case PERSONAL_DATE_REWARD: {
+                Map<String, RewardList> personalRewards = RewardConfigManager.getRewardMap(
+                        ERewardRule.PERSONAL_DATE_REWARD);
+                for (PersonalDatePreset preset : rewardConfig.getPersonalDatePresets()) {
+                    this.addRewardTitleButton(preset.getDisplayName(), preset.getId(), titleIndex);
+                    this.addRewardButton(personalRewards, preset.getId());
+                    titleIndex--;
+                }
+            }
+            break;
         }
         rewardContentHeight = rewardLayoutY + bottomMargin;
         setYOffset(yOffset);
@@ -874,6 +892,11 @@ public class RewardOptionScreen extends BaniraScreen {
         double mouseX = event.mouseX();
         double mouseY = event.mouseY();
         int button = event.button();
+        if (value.getOperation() == OperationButtonType.REWARD_PANEL.getCode()
+                && isCurrentRuleRedacted()) {
+            flag.set(true);
+            return;
+        }
         // 展开左侧边栏
         if (value.getOperation() == OperationButtonType.OPEN.getCode()) {
             if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
@@ -896,21 +919,13 @@ public class RewardOptionScreen extends BaniraScreen {
                 this.currOpButton = value.getOperation();
                 updateLayout.set(true);
                 flag.set(true);
-                try {
-                    ClientPlayerEntity player = Minecraft.getInstance().player;
-                    assert player != null;
-                    ERewardRule rewardRule = ERewardRule.valueOf(OperationButtonType.valueOf(value.getOperation()).name());
-                    if (!player.hasPermissions(SakuraUtils.getRewardPermissionLevel(rewardRule))) {
-                        Component component = SakuraComponent.get().transClient("format", "no_permission_to_view_reward", SakuraComponent.get().transClient("word", SakuraUtils.getRewardRuleI18nKeyName(rewardRule)));
-                        SakuraClientNotifications.error(component, SakuraNotificationTypes.REWARD);
-                    }
-                    if (!player.hasPermissions(CommonConfig.get().permission().permissionEditReward())) {
-                        Component component = SakuraComponent.get().transClient("word", "no_permission_to_edit_reward");
-                        SakuraClientNotifications.warning(component, SakuraNotificationTypes.REWARD);
-                    }
-                } catch (Exception ignored) {
-                }
             } else if (button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT) {
+                ERewardRule rewardRule = ERewardRule.valueOf(
+                        OperationButtonType.valueOf(value.getOperation()).name());
+                if (RewardConfigManager.isRuleRedacted(rewardRule)) {
+                    flag.set(true);
+                    return;
+                }
                 // 绘制弹出层选项
                 this.popupOption.clear()
                         .addOptionWithId("clear",
@@ -951,7 +966,7 @@ public class RewardOptionScreen extends BaniraScreen {
         // 帮助按钮
         else if (value.getOperation() == OperationButtonType.HELP.getCode()) {
             List<Component> paragraphs = new ArrayList<>();
-            for (int i = 1; i <= 10; i++) {
+            for (int i = 1; i <= ERewardRule.values().length; i++) {
                 paragraphs.add(SakuraComponent.get().transClient(
                         "word", "reward_rule_description_" + i));
             }
@@ -973,6 +988,12 @@ public class RewardOptionScreen extends BaniraScreen {
                 if (player != null) {
                     if (player.hasPermissions(CommonConfig.get().permission().permissionEditReward())) {
                         SakuraNetwork.sendSplitToServer(RewardConfigManager.toSyncPacket(player));
+                        if (!RewardConfigManager.isRuleRedacted(
+                                ERewardRule.PERSONAL_DATE_REWARD)) {
+                            SakuraNetwork.sendSplitToServer(new PersonalDatePresetSyncPacket(
+                                    RewardConfigManager.getRewardConfig()
+                                            .getPersonalDatePresets()));
+                        }
                         flag.set(true);
                     }
                 }
@@ -1364,6 +1385,8 @@ public class RewardOptionScreen extends BaniraScreen {
         );
         Screen keyScreen = rule == ERewardRule.CDK_REWARD
                 ? getCdkRuleKeyInputScreen(transition, rule, createdKey)
+                : rule == ERewardRule.PERSONAL_DATE_REWARD
+                ? getPersonalDatePresetInputScreen(transition, null, createdKey)
                 : getRuleKeyInputScreen(transition, rule, createdKey);
         Minecraft.getInstance().setScreen(keyScreen);
         return true;
@@ -1385,6 +1408,16 @@ public class RewardOptionScreen extends BaniraScreen {
     }
 
     private void editRewardGroup(ERewardRule rule, String key) {
+        if (rule == ERewardRule.PERSONAL_DATE_REWARD) {
+            PersonalDatePreset preset = RewardConfigManager.getRewardConfig()
+                    .getPersonalDatePresets().stream()
+                    .filter(value -> key.equals(value.getId())).findFirst().orElse(null);
+            if (preset != null) {
+                Minecraft.getInstance().setScreen(
+                        getPersonalDatePresetInputScreen(this, preset, new String[]{key}));
+            }
+            return;
+        }
         if (rule == ERewardRule.CDK_REWARD) {
             String[] split = key.split("\\|");
             if (split.length != 4 && split.length != 3 && split.length != 2) {
@@ -1453,6 +1486,91 @@ public class RewardOptionScreen extends BaniraScreen {
                     }
                     return result;
                 }));
+    }
+
+    private StringInputScreen getPersonalDatePresetInputScreen(
+            Screen callbackScreen, PersonalDatePreset existing, String[] createdKey) {
+        StringList defaults = existing == null
+                ? new StringList("", "", "YEARLY", "minecraft:gregorian", "1",
+                "SIGN_IN", "0", "0")
+                : new StringList(existing.getId(), existing.getDisplayName(),
+                existing.getRecurrence().name(), String.join(",", existing.getCalendarIds()),
+                String.valueOf(existing.getMaxDateSlots()), existing.getDeliveryMode().name(),
+                String.valueOf(existing.getValidBeforeDays()),
+                String.valueOf(existing.getValidAfterDays()));
+        return new StringInputScreen(callbackScreen,
+                new TextList(
+                        Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.personal_date_preset_id"),
+                        Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.personal_date_preset_name"),
+                        Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.personal_date_recurrence"),
+                        Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.personal_date_calendars"),
+                        Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.personal_date_slots"),
+                        Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.personal_date_delivery"),
+                        Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.personal_date_before"),
+                        Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.personal_date_after")),
+                new TextList(Text.trans(SakuraSignIn.MODID,
+                        "word.sakura_sign_in.personal_date_preset_hint")),
+                new StringList("[a-z0-9_.-]{1,64}", ".{1,64}", "YEARLY|MONTHLY",
+                        "[a-z0-9_.:/,-]+", "[0-9]{1,2}", "SIGN_IN|ONLINE",
+                        "[0-9]{1,3}", "[0-9]{1,3}"), defaults, values -> {
+                    StringList errors = new StringList("", "", "", "", "", "", "", "");
+                    List<String> calendarIds = Arrays.stream(values.get(3).split(","))
+                            .map(String::trim).filter(StringUtils::isNotNullOrEmpty)
+                            .distinct().collect(Collectors.toList());
+                    RewardList rewards = existing == null
+                            ? new RewardList() : existing.getRewards();
+                    PersonalDatePreset candidate;
+                    try {
+                        candidate = new PersonalDatePreset(values.get(0), values.get(1),
+                                PersonalDateRecurrence.valueOf(values.get(2)), calendarIds,
+                                NumberUtils.toInt(values.get(4)),
+                                PersonalDateDeliveryMode.valueOf(values.get(5)),
+                                NumberUtils.toInt(values.get(6)), NumberUtils.toInt(values.get(7)),
+                                rewards);
+                    } catch (RuntimeException invalid) {
+                        errors.set(0, SakuraComponent.get().transClient(
+                                "word", "personal_date_preset_invalid").toString());
+                        return errors;
+                    }
+                    List<String> validation = PersonalDatePresetValidator.validate(candidate);
+                    if (calendarIds.stream().anyMatch(id ->
+                            !SakuraClientState.getCalendarNames().containsKey(id))) {
+                        validation = new ArrayList<>(validation);
+                        validation.add("calendarIds");
+                    }
+                    if (!validation.isEmpty()) {
+                        errors.set(0, SakuraComponent.get().transClient(
+                                "word", "personal_date_preset_invalid").toString());
+                        return errors;
+                    }
+                    if (existing != null && !existing.getId().equals(candidate.getId())) {
+                        errors.set(0, SakuraComponent.get().transClient(
+                                "word", "personal_date_preset_id_locked").toString());
+                        return errors;
+                    }
+                    boolean duplicate = RewardConfigManager.getRewardConfig()
+                            .getPersonalDatePresets().stream()
+                            .anyMatch(value -> value != existing
+                                    && candidate.getId().equals(value.getId()));
+                    if (duplicate) {
+                        errors.set(0, SakuraComponent.get().transClient(
+                                "word", "personal_date_preset_duplicate").toString());
+                        return errors;
+                    }
+                    RewardConfigManager.addUndoRewardOption(ERewardRule.PERSONAL_DATE_REWARD);
+                    if (existing == null) {
+                        RewardConfigManager.getRewardConfig().getPersonalDatePresets().add(candidate);
+                    } else {
+                        int index = RewardConfigManager.getRewardConfig()
+                                .getPersonalDatePresets().indexOf(existing);
+                        RewardConfigManager.getRewardConfig().getPersonalDatePresets()
+                                .set(index, candidate);
+                    }
+                    createdKey[0] = candidate.getId();
+                    RewardConfigManager.saveRewardOption();
+                    updateLayout();
+                    return errors;
+                });
     }
 
     private boolean editRewardProbability(ERewardRule rule, String key, int index) {
@@ -1550,7 +1668,8 @@ public class RewardOptionScreen extends BaniraScreen {
      *
      * @param content 按钮内容
      */
-    private Consumer<RewardOperationWidget.RenderContext> generateCustomRenderFunction(String content) {
+    private Consumer<RewardOperationWidget.RenderContext> generateCustomRenderFunction(
+            String content, ERewardRule rule) {
         return context -> {
             RewardOperationWidget widget = context.getWidget();
             MatrixStack stack = context.getStack();
@@ -1560,16 +1679,17 @@ public class RewardOptionScreen extends BaniraScreen {
             double realHeight = widget.realHeight();
             int realX2 = (int) (widget.realX() + realWidth);
             int realY2 = (int) (widget.realY() + realHeight);
+            boolean redacted = RewardConfigManager.isRuleRedacted(rule);
             if (this.currOpButton == widget.getOperation()) {
                 AbstractGui.fill(stack, realX + 1, realY, realX2 - 1, realY2, 0x44ACACAC);
             }
-            if (widget.hovered()) {
+            if (widget.hovered() && !redacted) {
                 AbstractGui.fill(stack, realX, realY, realX2, realY2, 0x99ACACAC);
             }
             drawLimitedText(stack,
                     SakuraComponent.get().transClient("word", content).toString(),
                     realX + 4, (int) (realY + (realHeight - super.font.lineHeight) / 2),
-                    (int) (realWidth - 22), 0xFFEBD4B1, false);
+                    (int) (realWidth - 22), redacted ? 0xFF777777 : 0xFFEBD4B1, false);
         };
     }
 
@@ -2070,7 +2190,7 @@ public class RewardOptionScreen extends BaniraScreen {
             OperationButtonType type = OperationButtonType.valueOf(REWARD_RULES[i].name());
             RewardOperationWidget widget = new RewardOperationWidget(this, type.getCode(),
                     generateCustomRenderFunction(
-                            SakuraUtils.getRewardRuleI18nKeyName(REWARD_RULES[i])))
+                            SakuraUtils.getRewardRuleI18nKeyName(REWARD_RULES[i]), REWARD_RULES[i]))
                     .setDragHandler(event -> scrollRuleList(event.dragY()));
             registerOperation(widget,
                     new ScreenCoordinate(0, leftBarTitleHeight + (leftBarTitleHeight - 1) * i,
@@ -2164,7 +2284,9 @@ public class RewardOptionScreen extends BaniraScreen {
         if (RewardConfigManager.isRewardOptionDataChanged()) this.updateLayout();
 
         // 绘制操作提示
-        if (OperationButtonType.valueOf(currOpButton) == null) {
+        if (isCurrentRuleRedacted()) {
+            renderPermissionDenied(matrixStack);
+        } else if (OperationButtonType.valueOf(currOpButton) == null) {
             BaseShapeWidget.drawShape(new ShapeDrawArgs()
                     .stack(matrixStack)
                     .type(ShapeDrawArgs.ShapeType.RECT)
@@ -2233,6 +2355,27 @@ public class RewardOptionScreen extends BaniraScreen {
                             "word.sakura_sign_in.upload_reward_config_no_permission").color(0xFFFF0000))
                     .setPressedTint(0xAA808080);
         }
+    }
+
+    private boolean isCurrentRuleRedacted() {
+        return RewardConfigManager.isRuleRedacted(currentRewardRule());
+    }
+
+    /** 无权限规则只展示占位页，客户端不持有其服务端奖励内容。 */
+    private void renderPermissionDenied(MatrixStack stack) {
+        String message = SakuraComponent.get().transClient(
+                "word", "reward_rule_permission_denied_page").toString();
+        float scale = 1.5F;
+        float centerX = leftBarWidth
+                + (width - leftBarWidth - rightBarWidth) / 2.0F;
+        float centerY = height / 2.0F;
+        stack.pushPose();
+        stack.scale(scale, scale, 1.0F);
+        font.draw(stack, message,
+                centerX / scale - font.width(message) / 2.0F,
+                centerY / scale - font.lineHeight / 2.0F,
+                getEffectiveTheme().buttonText());
+        stack.popPose();
     }
 
     @Override
@@ -2334,6 +2477,9 @@ public class RewardOptionScreen extends BaniraScreen {
 
     @Override
     protected void onKeyReleased(KeyReleasedHandleArgs eventArgs) {
+        if (isCurrentRuleRedacted()) {
+            return;
+        }
         boolean consumed = false;
         int keyCode = eventArgs.keyCode();
         if (matchesShortcut(ClientConfig.get().rewardKeys().copy(), keyCode)) {

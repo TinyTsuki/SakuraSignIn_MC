@@ -7,7 +7,6 @@ import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.data.PlayerSignInData;
 import xin.vanilla.sakura.data.player.MonthSignInIndex;
-import xin.vanilla.sakura.data.personaldate.PersonalDateCalendar;
 import xin.vanilla.sakura.data.personaldate.PlayerPersonalDateSlot;
 import xin.vanilla.sakura.network.SakuraClientPacketHandlers;
 import xin.vanilla.banira.common.util.DateUtils;
@@ -65,7 +64,7 @@ public class PlayerDataSyncPacket implements INetworkPacket {
             personalDateSlots.add(new PlayerPersonalDateSlot(
                     buffer.readUtf(),
                     buffer.readVarInt(),
-                    buffer.readEnum(PersonalDateCalendar.class),
+                    buffer.readUtf(),
                     buffer.readVarInt(),
                     buffer.readVarInt(),
                     buffer.readUtf()
@@ -90,7 +89,7 @@ public class PlayerDataSyncPacket implements INetworkPacket {
         for (PlayerPersonalDateSlot slot : personalDateSlots) {
             buffer.writeUtf(slot.getPresetId());
             buffer.writeVarInt(slot.getSlotIndex());
-            buffer.writeEnum(slot.getCalendar());
+            buffer.writeUtf(slot.getCalendarId());
             buffer.writeVarInt(slot.getMonth());
             buffer.writeVarInt(slot.getDay());
             buffer.writeUtf(slot.getLastClaimedOccurrenceKey());

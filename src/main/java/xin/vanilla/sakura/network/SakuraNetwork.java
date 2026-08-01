@@ -13,6 +13,9 @@ import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.config.reward.RewardConfigManager;
 import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.network.packet.*;
+import xin.vanilla.sakura.data.calendar.SakuraCalendars;
+import xin.vanilla.sakura.enums.ERewardRule;
+import xin.vanilla.sakura.util.SakuraUtils;
 
 import java.time.YearMonth;
 import java.time.ZoneId;
@@ -118,8 +121,7 @@ public final class SakuraNetwork {
         SakuraPlayerData.sync(player);
         sendToPlayer(new ServerTimeSyncPacket(), player);
         sendSplitToPlayer(RewardConfigManager.toSyncPacket(player), player);
-        sendSplitToPlayer(new PersonalDatePresetSyncPacket(
-                RewardConfigManager.getRewardConfig().getPersonalDatePresets()), player);
+        sendSplitToPlayer(personalDatePacket(player), player);
         sendSplitToPlayer(new AdvancementPacket(
                 player.server.getAdvancements().getAllAdvancements()
         ), player);
@@ -128,5 +130,14 @@ public final class SakuraNetwork {
     private static String monthOf(Date date) {
         return YearMonth.from(date.toInstant()
                 .atZone(ZoneId.systemDefault())).toString();
+    }
+
+    public static PersonalDatePresetSyncPacket personalDatePacket(ServerPlayerEntity player) {
+        boolean visible = player.hasPermissions(
+                SakuraUtils.getRewardPermissionLevel(ERewardRule.PERSONAL_DATE_REWARD));
+        return new PersonalDatePresetSyncPacket(
+                visible ? RewardConfigManager.getRewardConfig().getPersonalDatePresets()
+                        : java.util.Collections.emptyList(),
+                SakuraCalendars.get().descriptors());
     }
 }

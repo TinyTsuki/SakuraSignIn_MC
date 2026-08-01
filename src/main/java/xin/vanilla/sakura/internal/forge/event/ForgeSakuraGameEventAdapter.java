@@ -25,6 +25,8 @@ import xin.vanilla.sakura.reward.RewardManager;
 import xin.vanilla.sakura.reward.personaldate.PersonalDateDeliveryResult;
 import xin.vanilla.sakura.reward.personaldate.PersonalDateOnlineCheckSchedule;
 import xin.vanilla.sakura.reward.personaldate.PersonalDateRewardDispatcher;
+import xin.vanilla.sakura.data.time.SakuraOnlineTime;
+import xin.vanilla.sakura.data.time.OnlineTimeRequirementResult;
 import xin.vanilla.banira.common.util.DateUtils;
 import xin.vanilla.sakura.util.SakuraUtils;
 
@@ -110,6 +112,7 @@ public final class ForgeSakuraGameEventAdapter {
                     player.getUUID(), migrationFailure);
             return;
         }
+        normalizeOnlineTime(player, RewardManager.getCompensateDate(SakuraClock.serverNow()));
         deliverOnlineRewards(player);
         waitForClientSettings(player, 0);
     }
@@ -143,14 +146,25 @@ public final class ForgeSakuraGameEventAdapter {
             return;
         }
         IPlayerSignInData data = SakuraPlayerData.get(player);
-        if (CommonConfig.get().server().autoSignIn()
-                && !RewardManager.isSignedIn(data, SakuraClock.serverNow(), true)) {
-            RewardManager.signIn(player, new SignInPacket(
-                    DateUtils.toDateTimeString(SakuraClock.serverNow()),
-                    data.isAutoRewarded(),
-                    ESignInType.SIGN_IN
-            ));
+        if (!CommonConfig.get().server().autoSignIn()
+                || RewardManager.isSignedIn(data, SakuraClock.serverNow(), true)) {
+            return;
         }
+        java.util.Date now = RewardManager.getCompensateDate(SakuraClock.serverNow());
+        java.time.LocalDate day = now.toInstant().atZone(
+                java.time.ZoneId.systemDefault()).toLocalDate();
+        OnlineTimeRequirementResult onlineTime = SakuraOnlineTime.evaluate(player, data, day);
+        if (!onlineTime.isAllowed()) {
+            long missingSeconds = Math.max(onlineTime.getMissingTotalSeconds(),
+                    onlineTime.getMissingTodaySeconds());
+            long retrySeconds = Math.max(1L, Math.min(3600L, missingSeconds));
+            BaniraScheduler.scheduleAfterMillis(server, retrySeconds * 1000L,
+                    () -> runAutomaticSignIn(server, player));
+            return;
+        }
+        RewardManager.signIn(player, new SignInPacket(
+                DateUtils.toDateTimeString(SakuraClock.serverNow()),
+                data.isAutoRewarded(), ESignInType.SIGN_IN));
     }
 
     private static void onServerTick(TickEvent.ServerTickEvent event) {
@@ -167,8 +181,10 @@ public final class ForgeSakuraGameEventAdapter {
         if (!ONLINE_REWARD_CHECK.shouldCheck(server.getTickCount(), day)) {
             return;
         }
-        server.getPlayerList().getPlayers().forEach(
-                ForgeSakuraGameEventAdapter::deliverOnlineRewards);
+        server.getPlayerList().getPlayers().forEach(player -> {
+            normalizeOnlineTime(player, now);
+            deliverOnlineRewards(player);
+        });
     }
 
     private static void deliverOnlineRewards(ServerPlayerEntity player) {
@@ -181,6 +197,15 @@ public final class ForgeSakuraGameEventAdapter {
         } catch (RuntimeException failure) {
             LOGGER.error("Unable to deliver personal date rewards for {}",
                     player.getUUID(), failure);
+        }
+    }
+
+    private static void normalizeOnlineTime(ServerPlayerEntity player, java.util.Date date) {
+        IPlayerSignInData data = SakuraPlayerData.get(player);
+        java.time.LocalDate day = date.toInstant().atZone(
+                java.time.ZoneId.systemDefault()).toLocalDate();
+        if (SakuraOnlineTime.evaluate(player, data, day).isBaselineChanged()) {
+            SakuraPlayerData.saveAndSync(player);
         }
     }
 

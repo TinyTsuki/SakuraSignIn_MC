@@ -6,6 +6,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Supplier;
+import xin.vanilla.sakura.data.calendar.CalendarDate;
+import xin.vanilla.sakura.data.calendar.CalendarRegistry;
+import xin.vanilla.sakura.data.calendar.DateCalendar;
+import xin.vanilla.sakura.data.calendar.SakuraCalendars;
 
 /**
  * 只计算当前有效的目标日期；奖励发放与游标持久化由服务端服务完成。
@@ -13,17 +18,25 @@ import java.util.List;
 public final class PersonalDateEvaluator {
     private static final DateTimeFormatter MONTH_KEY = DateTimeFormatter.ofPattern("yyyy-MM");
 
-    private final LunarCalendar lunarCalendar;
+    private final Supplier<CalendarRegistry> calendars;
 
-    public PersonalDateEvaluator(LunarCalendar lunarCalendar) {
-        this.lunarCalendar = lunarCalendar;
+    public PersonalDateEvaluator() {
+        this(SakuraCalendars::get);
+    }
+
+    public PersonalDateEvaluator(CalendarRegistry calendars) {
+        this(() -> calendars);
+    }
+
+    private PersonalDateEvaluator(Supplier<CalendarRegistry> calendars) {
+        this.calendars = calendars;
     }
 
     public List<PersonalDateOccurrence> findActiveOccurrences(PersonalDatePreset preset,
                                                               PlayerPersonalDateSlot slot,
                                                               LocalDate currentDate) {
         if (!PersonalDatePresetValidator.validate(preset).isEmpty()
-                || !PersonalDateSlotValidator.isValid(preset, slot)
+                || !PersonalDateSlotValidator.isValid(preset, slot, calendars.get())
                 || currentDate == null) {
             return Collections.emptyList();
         }
@@ -44,21 +57,18 @@ public final class PersonalDateEvaluator {
     }
 
     private boolean matches(PersonalDatePreset preset, PlayerPersonalDateSlot slot, LocalDate target) {
-        if (slot.getCalendar() == PersonalDateCalendar.SOLAR) {
-            return target.getDayOfMonth() == slot.getDay()
-                    && (preset.getRecurrence() == PersonalDateRecurrence.MONTHLY
-                    || target.getMonthValue() == slot.getMonth());
-        }
-        LunarDate lunar;
+        DateCalendar calendar;
+        CalendarDate calendarDate;
         try {
-            lunar = lunarCalendar.toLunar(target);
+            calendar = calendars.get().require(slot.getCalendarId());
+            calendarDate = calendar.toCalendarDate(target);
         } catch (IllegalArgumentException ignored) {
             return false;
         }
-        // 闰月不形成第二个同周期目标日期。
-        return !lunar.isLeapMonth() && lunar.getDay() == slot.getDay()
+        // 重复月不形成第二个同周期目标日期。
+        return !calendarDate.isIntercalary() && calendarDate.getDay() == slot.getDay()
                 && (preset.getRecurrence() == PersonalDateRecurrence.MONTHLY
-                || lunar.getMonth() == slot.getMonth());
+                || calendarDate.getMonth() == slot.getMonth());
     }
 
     private static String occurrenceKey(PersonalDateRecurrence recurrence, LocalDate target) {

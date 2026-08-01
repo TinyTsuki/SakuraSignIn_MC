@@ -53,6 +53,8 @@ public final class PlayerSignInDataRepository {
         ListNBT slots = new ListNBT();
         summary.getPersonalDateSlots().forEach(slot -> slots.add(slot.serializeNBT()));
         legacyShape.put("personalDateSlots", slots);
+        legacyShape.putString("onlineTimeBaselineDate", summary.getOnlineTimeBaselineDate());
+        legacyShape.putInt("onlineTimeBaselineTicks", summary.getOnlineTimeBaselineTicks());
 
         ListNBT records = new ListNBT();
         historyRepository.loadAll(playerUuid).forEach(record -> records.add(record.writeToNBT()));

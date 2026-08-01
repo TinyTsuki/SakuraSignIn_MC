@@ -13,6 +13,7 @@ import xin.vanilla.sakura.client.SakuraClientBootstrap;
 import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.config.reward.RewardConfigManager;
+import xin.vanilla.sakura.data.calendar.SakuraCalendars;
 import xin.vanilla.sakura.internal.forge.ForgeSakuraEntrypoint;
 import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
@@ -51,6 +52,7 @@ public final class SakuraSignIn {
         SakuraNetwork.initialize();
 
         BaniraEvents.Server.onStarting(event -> {
+            SakuraCalendars.reload();
             RewardConfigManager.loadRewardOption();
             LOGGER.debug("Sign-in reward data loaded");
         });
