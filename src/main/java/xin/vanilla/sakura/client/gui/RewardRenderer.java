@@ -1,30 +1,34 @@
 package xin.vanilla.sakura.client.gui;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.ItemRenderer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.util.ResourceLocation;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.client.gui.widget.EffectIconWidget;
 import xin.vanilla.banira.client.gui.widget.ItemWidget;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.sakura.SakuraComponent;
-import xin.vanilla.sakura.client.SakuraClientState;
-import xin.vanilla.sakura.enums.ERewardType;
-import xin.vanilla.sakura.network.data.AdvancementData;
+import xin.vanilla.sakura.api.reward.client.RewardRenderContext;
+import xin.vanilla.sakura.api.reward.client.SakuraRewardClient;
 import xin.vanilla.sakura.reward.Reward;
-import xin.vanilla.sakura.reward.RewardManager;
+import xin.vanilla.sakura.reward.RewardOperations;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 /**
- * Sakura 奖励图标渲染器，只保留与奖励类型和主题纹理有关的逻辑。
+ * 奖励图标由客户端类型注册表分派，单个扩展失败时只回退该图标。
  */
 public final class RewardRenderer {
+    private static final Logger LOGGER = LogManager.getLogger();
     private static final int ICON_SIZE = 16;
 
     private RewardRenderer() {
@@ -43,30 +47,14 @@ public final class RewardRenderer {
                                           TextureCoordinate coordinates, Reward reward,
                                           int x, int y, boolean showText,
                                           boolean showQuality) {
-        if (reward.getType() == ERewardType.ITEM) {
-            ItemWidget.renderItem(itemRenderer, font,
-                    RewardManager.deserializeReward(reward), x, y, showText);
-        } else if (reward.getType() == ERewardType.EFFECT) {
-            EffectIconWidget.drawEffectIcon(stack, font,
-                    RewardManager.deserializeReward(reward), x, y,
-                    ICON_SIZE, ICON_SIZE, showText);
-        } else if (reward.getType() == ERewardType.EXP_POINT) {
-            drawNumericIcon(stack, font, texture, coordinates.getPointUV(),
-                    coordinates, reward, x, y, showText);
-        } else if (reward.getType() == ERewardType.EXP_LEVEL) {
-            drawNumericIcon(stack, font, texture, coordinates.getLevelUV(),
-                    coordinates, reward, x, y, showText);
-        } else if (reward.getType() == ERewardType.SIGN_IN_CARD) {
-            drawNumericIcon(stack, font, texture, coordinates.getCardUV(),
-                    coordinates, reward, x, y, showText);
-        } else if (reward.getType() == ERewardType.MESSAGE) {
-            drawNumericIcon(stack, font, texture, coordinates.getMessageUV(),
-                    coordinates, reward, x, y, false);
-        } else if (reward.getType() == ERewardType.ADVANCEMENT) {
-            renderAdvancement(itemRenderer, reward, x, y);
-        } else if (reward.getType() == ERewardType.COMMAND) {
-            ItemWidget.renderItem(itemRenderer, font,
-                    new ItemStack(Items.REPEATING_COMMAND_BLOCK), x, y, false);
+        NativeRenderContext context = new NativeRenderContext(stack, itemRenderer, font,
+                texture, coordinates, reward, x, y, showText);
+        Optional<SakuraRewardClient.Registration<?>> registration =
+                SakuraRewardClient.find(reward.getTypeId());
+        if (registration.isPresent()) {
+            renderResolved(registration.get(), context, reward);
+        } else {
+            context.drawPlaceholder(reward.getTypeId().toString());
         }
 
         if (showText && showQuality
@@ -80,30 +68,15 @@ public final class RewardRenderer {
         }
     }
 
-    private static void drawNumericIcon(MatrixStack stack, FontRenderer font,
-                                        ResourceLocation texture, Coordinate uv,
-                                        TextureCoordinate coordinates, Reward reward,
-                                        int x, int y, boolean showText) {
-        AbstractGuiUtils.blit(stack, texture, x, y, ICON_SIZE, ICON_SIZE,
-                uv.getU0(), uv.getV0(), (int) uv.getUWidth(), (int) uv.getVHeight(),
-                coordinates.getTotalWidth(), coordinates.getTotalHeight());
-        if (!showText) {
-            return;
-        }
-        String count = String.valueOf((Integer) RewardManager.deserializeReward(reward));
-        int width = font.width(count);
-        font.drawShadow(stack, count, x + ICON_SIZE - width / 2.0F - 2,
-                y + ICON_SIZE - font.lineHeight + 2, 0xFFFFFFFF);
-    }
-
-    private static void renderAdvancement(ItemRenderer itemRenderer, Reward reward,
-                                          int x, int y) {
-        ResourceLocation id = RewardManager.deserializeReward(reward);
-        AdvancementData data = SakuraClientState.getAdvancementData().stream()
-                .filter(value -> value.getId().equals(id))
-                .findFirst().orElse(null);
-        if (data != null && data.getDisplayInfo() != null) {
-            itemRenderer.renderGuiItem(data.getDisplayInfo().getIcon(), x, y);
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private static void renderResolved(SakuraRewardClient.Registration registration,
+                                       NativeRenderContext context, Reward reward) {
+        try {
+            Object value = RewardOperations.decode(reward);
+            registration.getExtension().getPresentation().renderIcon(context, value);
+        } catch (Throwable exception) {
+            LOGGER.warn("Reward presentation failed for {}", reward.getTypeId(), exception);
+            context.drawPlaceholder(reward.getTypeId().toString());
         }
     }
 
@@ -119,5 +92,90 @@ public final class RewardRenderer {
         if (probability >= 0.2) return 0xEFA020F0;
         if (probability >= 0.1) return 0xEFFFD700;
         return probability > 0 ? 0xEFFF4500 : 0xFF000000;
+    }
+
+    private static final class NativeRenderContext implements RewardRenderContext {
+        private final MatrixStack stack;
+        private final ItemRenderer itemRenderer;
+        private final FontRenderer font;
+        private final ResourceLocation texture;
+        private final TextureCoordinate coordinates;
+        private final Reward reward;
+        private final int x;
+        private final int y;
+        private final boolean showAmount;
+
+        private NativeRenderContext(MatrixStack stack, ItemRenderer itemRenderer,
+                                    FontRenderer font, ResourceLocation texture,
+                                    TextureCoordinate coordinates, Reward reward,
+                                    int x, int y, boolean showAmount) {
+            this.stack = stack;
+            this.itemRenderer = itemRenderer;
+            this.font = font;
+            this.texture = texture;
+            this.coordinates = coordinates;
+            this.reward = reward;
+            this.x = x;
+            this.y = y;
+            this.showAmount = showAmount;
+        }
+
+        @Override public Reward reward() { return reward; }
+        @Override public String languageCode() { return Minecraft.getInstance().options.languageCode; }
+        @Override public boolean withAmount() { return showAmount; }
+        @Override public int x() { return x; }
+        @Override public int y() { return y; }
+        @Override public int size() { return ICON_SIZE; }
+
+        @Override
+        public void drawItem(Object itemStack) {
+            if (itemStack instanceof ItemStack) {
+                ItemWidget.renderItem(itemRenderer, font, (ItemStack) itemStack,
+                        x, y, showAmount);
+            } else {
+                drawPlaceholder(reward.getTypeId().toString());
+            }
+        }
+
+        @Override
+        public void drawEffect(Object effectInstance) {
+            if (effectInstance instanceof EffectInstance) {
+                EffectIconWidget.drawEffectIcon(stack, font, (EffectInstance) effectInstance,
+                        x, y, ICON_SIZE, ICON_SIZE, showAmount);
+            } else {
+                drawPlaceholder(reward.getTypeId().toString());
+            }
+        }
+
+        @Override
+        public void drawBuiltInIcon(String iconId) {
+            Coordinate uv;
+            switch (iconId) {
+                case "point": uv = coordinates.getPointUV(); break;
+                case "level": uv = coordinates.getLevelUV(); break;
+                case "card": uv = coordinates.getCardUV(); break;
+                case "message": uv = coordinates.getMessageUV(); break;
+                default:
+                    drawPlaceholder(reward.getTypeId().toString());
+                    return;
+            }
+            AbstractGuiUtils.blit(stack, texture, x, y, ICON_SIZE, ICON_SIZE,
+                    uv.getU0(), uv.getV0(), (int) uv.getUWidth(), (int) uv.getVHeight(),
+                    coordinates.getTotalWidth(), coordinates.getTotalHeight());
+        }
+
+        @Override
+        public void drawAmount(String text) {
+            if (!showAmount || text == null) return;
+            int width = font.width(text);
+            font.drawShadow(stack, text, x + ICON_SIZE - width / 2.0F - 2,
+                    y + ICON_SIZE - font.lineHeight + 2, 0xFFFFFFFF);
+        }
+
+        @Override
+        public void drawPlaceholder(String typeId) {
+            ItemWidget.renderItem(itemRenderer, font, new ItemStack(Items.BARRIER),
+                    x, y, false);
+        }
     }
 }
