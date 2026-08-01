@@ -4,6 +4,8 @@ import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.internal.forge.event.ForgeSakuraGameEventAdapter;
 import xin.vanilla.sakura.internal.forge.dev.SakuraServerSmokeRunner;
 import xin.vanilla.sakura.internal.forge.player.ForgePlayerSignInDataService;
+import xin.vanilla.sakura.internal.forge.player.ForgePlayerOnlineTime;
+import xin.vanilla.sakura.data.time.SakuraOnlineTime;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -21,6 +23,7 @@ public final class ForgeSakuraEntrypoint {
             return;
         }
         SakuraPlayerData.install(ForgePlayerSignInDataService.INSTANCE);
+        SakuraOnlineTime.install(ForgePlayerOnlineTime::playTicks);
         ForgeSakuraGameEventAdapter.register();
         SakuraServerSmokeRunner.register();
     }

@@ -11,6 +11,8 @@ import xin.vanilla.banira.common.util.DateUtils;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.LinkedHashMap;
 
 /**
  * 客户端会话与主题状态，不再污染加载器入口类。
@@ -44,6 +46,9 @@ public final class SakuraClientState {
     @Setter
     private static int permissionLevel;
     @Getter
+    @Setter
+    private static Map<String, String> calendarNames = Collections.emptyMap();
+    @Getter
     private static final KeyValue<String, String> clientServerTime = new KeyValue<>(
             DateUtils.toDateTimeString(new Date(0)),
             DateUtils.toString(new Date(0))
@@ -57,5 +62,6 @@ public final class SakuraClientState {
         calendarCurrentDate = null;
         advancementData = Collections.emptyList();
         permissionLevel = 0;
+        calendarNames = Collections.emptyMap();
     }
 }

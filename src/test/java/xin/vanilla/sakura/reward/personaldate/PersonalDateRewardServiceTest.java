@@ -4,8 +4,7 @@ import com.google.gson.JsonObject;
 import org.junit.Test;
 import xin.vanilla.sakura.api.reward.SakuraRewardTypes;
 import xin.vanilla.sakura.data.PlayerSignInData;
-import xin.vanilla.sakura.data.personaldate.PersonalDateCalendar;
-import xin.vanilla.sakura.data.personaldate.PersonalDateCalendarPolicy;
+import xin.vanilla.sakura.data.calendar.CalendarIds;
 import xin.vanilla.sakura.data.personaldate.PersonalDateDeliveryMode;
 import xin.vanilla.sakura.data.personaldate.PersonalDatePreset;
 import xin.vanilla.sakura.data.personaldate.PersonalDateRecurrence;
@@ -86,7 +85,7 @@ public class PersonalDateRewardServiceTest {
     private static PlayerSignInData playerData() {
         PlayerSignInData data = new PlayerSignInData();
         data.setPersonalDateSlots(Collections.singletonList(
-                new PlayerPersonalDateSlot("server_day", 0, PersonalDateCalendar.SOLAR,
+                new PlayerPersonalDateSlot("server_day", 0, CalendarIds.GREGORIAN,
                         8, 15, "")
         ));
         return data;
@@ -98,7 +97,7 @@ public class PersonalDateRewardServiceTest {
         Reward reward = new Reward(content, SakuraRewardTypes.MESSAGE, BigDecimal.ONE);
         return new PersonalDatePreset(
                 "server_day", "Server Day", PersonalDateRecurrence.YEARLY,
-                PersonalDateCalendarPolicy.SOLAR_ONLY, 1, mode,
+                Collections.singletonList(CalendarIds.GREGORIAN), 1, mode,
                 0, 0, new RewardList(Collections.singletonList(reward))
         );
     }

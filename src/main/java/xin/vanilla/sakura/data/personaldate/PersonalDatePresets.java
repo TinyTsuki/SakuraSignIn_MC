@@ -4,6 +4,7 @@ import xin.vanilla.sakura.reward.RewardList;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.ArrayList;
 
 public final class PersonalDatePresets {
     private PersonalDatePresets() {
@@ -19,7 +20,7 @@ public final class PersonalDatePresets {
             preset.getRewards().forEach(reward -> rewards.add(reward.clone()));
             result.add(new PersonalDatePreset(
                     preset.getId(), preset.getDisplayName(), preset.getRecurrence(),
-                    preset.getCalendarPolicy(), preset.getMaxDateSlots(),
+                    new ArrayList<>(preset.getCalendarIds()), preset.getMaxDateSlots(),
                     preset.getDeliveryMode(), preset.getValidBeforeDays(),
                     preset.getValidAfterDays(), rewards));
         });

@@ -8,7 +8,7 @@ import org.junit.rules.TemporaryFolder;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.sakura.data.migration.PlayerSummaryStore;
 import xin.vanilla.sakura.data.player.PlayerSignInSummary;
-import xin.vanilla.sakura.data.personaldate.PersonalDateCalendar;
+import xin.vanilla.sakura.data.calendar.CalendarIds;
 import xin.vanilla.sakura.data.personaldate.PlayerPersonalDateSlot;
 import xin.vanilla.sakura.internal.forge.migration.MonthlySignInHistoryRepository;
 import xin.vanilla.sakura.reward.RewardList;
@@ -51,7 +51,7 @@ public class PlayerSignInDataRepositoryTest {
                 new KeyValue<>("WELCOME", new KeyValue<>(new Date(1717848794000L), true))
         ));
         source.setPersonalDateSlots(Collections.singletonList(
-                new PlayerPersonalDateSlot("server_day", 0, PersonalDateCalendar.SOLAR,
+                new PlayerPersonalDateSlot("server_day", 0, CalendarIds.GREGORIAN,
                         6, 8, "YEARLY:2024")
         ));
         SignInRecord record = new SignInRecord();

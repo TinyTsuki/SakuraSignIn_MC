@@ -26,8 +26,13 @@ public final class PersonalDatePresetValidator {
         if (preset.getRecurrence() == null) {
             errors.add("recurrence");
         }
-        if (preset.getCalendarPolicy() == null) {
-            errors.add("calendarPolicy");
+        if (preset.getCalendarIds() == null || preset.getCalendarIds().isEmpty()
+                || preset.getCalendarIds().size() > 32
+                || preset.getCalendarIds().stream().anyMatch(id -> id == null
+                || !id.matches("[a-z0-9_.-]+:[a-z0-9_./-]+"))
+                || preset.getCalendarIds().stream().distinct().count()
+                != preset.getCalendarIds().size()) {
+            errors.add("calendarIds");
         }
         if (preset.getDeliveryMode() == null) {
             errors.add("deliveryMode");
