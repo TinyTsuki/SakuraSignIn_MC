@@ -41,4 +41,42 @@ public class RewardSelectionModelTest {
         assertEquals(Arrays.asList("base,1", "base,2", "base,3", "base,0"),
                 model.selectedIds());
     }
+
+    @Test
+    public void middleClickCyclesRewardGroupAndClearWithoutTouchingOtherGroups() {
+        RewardSelectionModel model = new RewardSelectionModel();
+        model.selectOnly("标题,other");
+
+        model.cycleMiddleReward("base,1", "标题,base", IDS);
+        assertEquals(Arrays.asList("标题,other", "base,1"), model.selectedIds());
+
+        model.cycleMiddleReward("base,1", "标题,base", IDS);
+        assertEquals(Arrays.asList("标题,other", "标题,base"), model.selectedIds());
+
+        model.cycleMiddleReward("base,1", "标题,base", IDS);
+        assertEquals(Arrays.asList("标题,other"), model.selectedIds());
+    }
+
+    @Test
+    public void middleClickGroupTogglesItAndReplacesMembersFromThatGroup() {
+        RewardSelectionModel model = new RewardSelectionModel();
+        model.selectOnly("base,2");
+
+        model.toggleGroup("标题,base", IDS);
+        assertEquals(Arrays.asList("标题,base"), model.selectedIds());
+
+        model.toggleGroup("标题,base", IDS);
+        assertTrue(model.selectedIds().isEmpty());
+    }
+
+    @Test
+    public void tripleClickReplacesSelectionWithEveryRewardInTheGroup() {
+        RewardSelectionModel model = new RewardSelectionModel();
+        model.selectOnly("标题,other");
+
+        model.selectOnly(IDS);
+
+        assertEquals(IDS, model.selectedIds());
+        assertEquals("base,3", model.primary());
+    }
 }
