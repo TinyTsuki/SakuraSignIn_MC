@@ -9,6 +9,8 @@ import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.fml.server.ServerLifecycleHooks;
 import xin.vanilla.banira.common.util.BaniraScheduler;
 import xin.vanilla.banira.common.util.ReflectionUtils;
 import xin.vanilla.banira.common.util.StringUtils;
@@ -20,6 +22,9 @@ import xin.vanilla.sakura.data.migration.LegacyMigrationResult;
 import xin.vanilla.sakura.enums.ESignInType;
 import xin.vanilla.sakura.network.packet.SignInPacket;
 import xin.vanilla.sakura.reward.RewardManager;
+import xin.vanilla.sakura.reward.personaldate.PersonalDateDeliveryResult;
+import xin.vanilla.sakura.reward.personaldate.PersonalDateOnlineCheckSchedule;
+import xin.vanilla.sakura.reward.personaldate.PersonalDateRewardDispatcher;
 import xin.vanilla.banira.common.util.DateUtils;
 import xin.vanilla.sakura.util.SakuraUtils;
 
@@ -32,6 +37,8 @@ public final class ForgeSakuraGameEventAdapter {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final AtomicBoolean REGISTERED = new AtomicBoolean();
     private static final int MAX_CLIENT_SETTINGS_ATTEMPTS = 120;
+    private static final PersonalDateOnlineCheckSchedule ONLINE_REWARD_CHECK =
+            new PersonalDateOnlineCheckSchedule(20L * 60L * 5L);
     private static String languageFieldName;
 
     private ForgeSakuraGameEventAdapter() {
@@ -45,6 +52,7 @@ public final class ForgeSakuraGameEventAdapter {
         MinecraftForge.EVENT_BUS.addListener(ForgeSakuraGameEventAdapter::onPlayerCloned);
         MinecraftForge.EVENT_BUS.addListener(ForgeSakuraGameEventAdapter::onPlayerLoggedIn);
         MinecraftForge.EVENT_BUS.addListener(ForgeSakuraGameEventAdapter::onPlayerLoggedOut);
+        MinecraftForge.EVENT_BUS.addListener(ForgeSakuraGameEventAdapter::onServerTick);
     }
 
     private static void onRegisterCommands(RegisterCommandsEvent event) {
@@ -102,6 +110,7 @@ public final class ForgeSakuraGameEventAdapter {
                     player.getUUID(), migrationFailure);
             return;
         }
+        deliverOnlineRewards(player);
         waitForClientSettings(player, 0);
     }
 
@@ -141,6 +150,37 @@ public final class ForgeSakuraGameEventAdapter {
                     data.isAutoRewarded(),
                     ESignInType.SIGN_IN
             ));
+        }
+    }
+
+    private static void onServerTick(TickEvent.ServerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) {
+            return;
+        }
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        if (server == null) {
+            return;
+        }
+        java.util.Date now = RewardManager.getCompensateDate(SakuraClock.serverNow());
+        java.time.LocalDate day = now.toInstant().atZone(
+                java.time.ZoneId.systemDefault()).toLocalDate();
+        if (!ONLINE_REWARD_CHECK.shouldCheck(server.getTickCount(), day)) {
+            return;
+        }
+        server.getPlayerList().getPlayers().forEach(
+                ForgeSakuraGameEventAdapter::deliverOnlineRewards);
+    }
+
+    private static void deliverOnlineRewards(ServerPlayerEntity player) {
+        try {
+            PersonalDateDeliveryResult result = PersonalDateRewardDispatcher.deliverOnline(
+                    player, RewardManager.getCompensateDate(SakuraClock.serverNow()));
+            if (result.changed()) {
+                SakuraPlayerData.saveAndSync(player);
+            }
+        } catch (RuntimeException failure) {
+            LOGGER.error("Unable to deliver personal date rewards for {}",
+                    player.getUUID(), failure);
         }
     }
 
