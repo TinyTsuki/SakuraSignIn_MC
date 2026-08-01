@@ -3,7 +3,10 @@ package xin.vanilla.sakura.data;
 import lombok.Data;
 import lombok.NonNull;
 import net.minecraft.nbt.CompoundNBT;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.reward.RewardList;
+import xin.vanilla.sakura.reward.RewardListJsonCodec;
 import xin.vanilla.banira.common.util.CollectionUtils;
 import xin.vanilla.banira.common.util.DateUtils;
 
@@ -17,6 +20,7 @@ import static xin.vanilla.sakura.config.reward.RewardConfigManager.GSON;
  */
 @Data
 public class SignInRecord implements Serializable, Cloneable {
+    private static final Logger LOGGER = LogManager.getLogger();
     /**
      * 补偿后时间(签到时间+签到冷却刷新时间)
      */
@@ -65,7 +69,7 @@ public class SignInRecord implements Serializable, Cloneable {
         tag.putString("signInTime", DateUtils.toDateTimeString(signInTime));
         tag.putString("signInUUID", signInUUID);
         tag.putBoolean("rewarded", rewarded);
-        tag.putString("rewardList", GSON.toJson(rewardList.toJsonArray()));
+        tag.putString("rewardList", GSON.toJson(RewardListJsonCodec.encode(rewardList)));
         return tag;
     }
 
@@ -80,7 +84,9 @@ public class SignInRecord implements Serializable, Cloneable {
 
         // 反序列化奖励列表
         String rewardListString = tag.getString("rewardList");
-        record.rewardList = GSON.fromJson(rewardListString, RewardList.class);
+        record.rewardList = RewardListJsonCodec.decodeLenient(rewardListString,
+                exception -> LOGGER.warn("Skipping malformed sign-in reward entry for {}",
+                        record.signInTime, exception));
         return record;
     }
 
