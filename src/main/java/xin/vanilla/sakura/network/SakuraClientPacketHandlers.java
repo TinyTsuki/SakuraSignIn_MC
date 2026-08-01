@@ -4,6 +4,7 @@ import xin.vanilla.sakura.network.packet.AdvancementPacket;
 import xin.vanilla.sakura.network.packet.PlayerDataSyncPacket;
 import xin.vanilla.sakura.network.packet.PlayerMonthSyncPacket;
 import xin.vanilla.sakura.network.packet.RewardOptionSyncPacket;
+import xin.vanilla.sakura.network.packet.PersonalDatePresetSyncPacket;
 
 import java.util.function.Consumer;
 
@@ -19,6 +20,8 @@ public final class SakuraClientPacketHandlers {
     };
     private static Consumer<RewardOptionSyncPacket> rewardOptions = packet -> {
     };
+    private static Consumer<PersonalDatePresetSyncPacket> personalDatePresets = packet -> {
+    };
     private static Consumer<Boolean> rewardUploadResult = success -> {
     };
 
@@ -29,11 +32,13 @@ public final class SakuraClientPacketHandlers {
                                 Consumer<PlayerMonthSyncPacket> playerMonthHandler,
                                 Consumer<AdvancementPacket> advancementHandler,
                                 Consumer<RewardOptionSyncPacket> rewardOptionsHandler,
+                                Consumer<PersonalDatePresetSyncPacket> personalDatePresetsHandler,
                                 Consumer<Boolean> rewardUploadResultHandler) {
         playerSummary = playerSummaryHandler;
         playerMonth = playerMonthHandler;
         advancements = advancementHandler;
         rewardOptions = rewardOptionsHandler;
+        personalDatePresets = personalDatePresetsHandler;
         rewardUploadResult = rewardUploadResultHandler;
     }
 
@@ -51,6 +56,10 @@ public final class SakuraClientPacketHandlers {
 
     public static void handle(RewardOptionSyncPacket packet) {
         rewardOptions.accept(packet);
+    }
+
+    public static void handle(PersonalDatePresetSyncPacket packet) {
+        personalDatePresets.accept(packet);
     }
 
     public static void handleRewardUploadResult(boolean success) {

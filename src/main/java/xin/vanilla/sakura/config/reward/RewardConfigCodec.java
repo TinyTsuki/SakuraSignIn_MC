@@ -219,6 +219,9 @@ public final class RewardConfigCodec {
             validate(group);
         }
         Set<String> presetIds = new HashSet<>();
+        if (document.getPersonalDatePresets().size() > 128) {
+            throw new IOException("Too many personal date presets");
+        }
         for (PersonalDatePreset preset : document.getPersonalDatePresets()) {
             List<String> errors = PersonalDatePresetValidator.validate(preset);
             if (!errors.isEmpty()) {
@@ -227,6 +230,10 @@ public final class RewardConfigCodec {
             }
             if (!presetIds.add(preset.getId())) {
                 throw new IOException("Duplicate personal date preset id: " + preset.getId());
+            }
+            if (preset.getRewards().size() > 256) {
+                throw new IOException("Too many rewards in personal date preset: "
+                        + preset.getId());
             }
             for (Reward reward : preset.getRewards()) {
                 validateReward(reward, preset.getId());

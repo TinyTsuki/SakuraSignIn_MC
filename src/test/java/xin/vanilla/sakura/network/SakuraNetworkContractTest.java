@@ -77,6 +77,21 @@ public class SakuraNetworkContractTest {
     }
 
     @Test
+    public void personalDateSyncSeparatesServerPresetsFromPlayerSelections() {
+        String network = read(MAIN.resolve("network/SakuraNetwork.java"));
+        String presets = read(MAIN.resolve(
+                "network/packet/PersonalDatePresetSyncPacket.java"));
+        String selections = read(MAIN.resolve(
+                "network/packet/PersonalDateSlotUpdatePacket.java"));
+
+        assertTrue(network.contains("registerSplit(PersonalDatePresetSyncPacket.class"));
+        assertTrue(network.contains("register(PersonalDateSlotUpdatePacket.class"));
+        assertTrue(presets.contains("ctx.isClientSide()"));
+        assertFalse(selections.contains("writeUtf(slot.getLastClaimedOccurrenceKey())"));
+        assertTrue(selections.contains("PersonalDateSelectionService"));
+    }
+
+    @Test
     public void initialHandshakeDoesNotCreateAPlayerDataFeedbackLoop() {
         String client = read(MAIN.resolve("network/ClientProxy.java"));
         String clientConfig = read(MAIN.resolve("network/packet/ClientConfigSyncPacket.java"));
