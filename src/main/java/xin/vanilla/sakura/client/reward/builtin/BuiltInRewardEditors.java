@@ -38,7 +38,8 @@ final class BuiltInRewardEditors {
         return StandardRewardEditors.custom(context -> Minecraft.getInstance().setScreen(
                 EffectRewardSelectionFlow.create(parent(context),
                         context.getInitialValue() == null
-                                ? new EffectInstance(Effects.LUCK) : context.getInitialValue(),
+                                ? new EffectInstance(Effects.LUCK, 600, 0)
+                                : context.getInitialValue(),
                         context.getSubmit())));
     }
 
