@@ -159,6 +159,21 @@ public class RewardEditorBaniraScreenContractTest {
     }
 
     @Test
+    public void f5RefreshesTheRewardEditorAndRestoresTheYOffset() {
+        String screen = read(MAIN.resolve("screen/RewardOptionScreen.java"));
+        int methodStart = screen.indexOf("private void refreshRewardScreen()");
+        int methodEnd = screen.indexOf("private boolean moveRewardSelection", methodStart);
+
+        assertTrue(screen.contains("eventArgs.keyCode() == GLFWKey.GLFW_KEY_F5"));
+        assertTrue(methodStart >= 0 && methodEnd > methodStart);
+        String method = screen.substring(methodStart, methodEnd);
+        assertTrue(method.contains("yOffsetResetTime = 0"));
+        assertTrue(method.contains("yOffsetOld = 0"));
+        assertTrue(method.contains("setYOffset(0)"));
+        assertTrue(method.contains("updateLayout()"));
+    }
+
+    @Test
     public void multiGroupPasteUsesOneHistoryAndRefreshTransaction() {
         String screen = read(MAIN.resolve("screen/RewardOptionScreen.java"));
         int start = screen.indexOf("private boolean pasteToSelectedGroups(");
