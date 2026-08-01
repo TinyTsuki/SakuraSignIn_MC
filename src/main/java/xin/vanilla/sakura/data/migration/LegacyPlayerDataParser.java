@@ -5,6 +5,7 @@ import net.minecraft.nbt.INBT;
 import net.minecraft.nbt.ListNBT;
 import xin.vanilla.sakura.data.player.MonthSignInIndex;
 import xin.vanilla.sakura.data.player.PlayerSignInSummary;
+import xin.vanilla.sakura.data.personaldate.PlayerPersonalDateSlot;
 import xin.vanilla.banira.common.util.DateUtils;
 
 import java.time.LocalDate;
@@ -33,6 +34,11 @@ public final class LegacyPlayerDataParser {
         for (int i = 0; i < indexes.size(); i++) {
             MonthSignInIndex index = MonthSignInIndex.deserializeNBT(indexes.getCompound(i));
             summary.getMonthIndexes().put(index.getMonth(), index);
+        }
+        ListNBT slots = legacy.getList("personalDateSlots", 10);
+        for (int i = 0; i < slots.size(); i++) {
+            summary.getPersonalDateSlots().add(
+                    PlayerPersonalDateSlot.deserializeNBT(slots.getCompound(i)));
         }
 
         Map<String, List<CompoundNBT>> recordsByMonth = new LinkedHashMap<>();

@@ -6,6 +6,7 @@ import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.sakura.data.player.MonthSignInIndex;
+import xin.vanilla.sakura.data.personaldate.PlayerPersonalDateSlot;
 import xin.vanilla.banira.common.util.DateUtils;
 import xin.vanilla.sakura.util.SakuraUtils;
 
@@ -34,6 +35,7 @@ public class PlayerSignInData implements IPlayerSignInData {
     private Map<String, MonthSignInIndex> monthIndexes;
     // 兑换码:输入日期:是否有效
     private List<KeyValue<String, KeyValue<Date, Boolean>>> cdkRecords;
+    private List<PlayerPersonalDateSlot> personalDateSlots;
     private String language = "client";
 
     @Override
@@ -204,6 +206,25 @@ public class PlayerSignInData implements IPlayerSignInData {
     }
 
     @Override
+    public @NonNull List<PlayerPersonalDateSlot> getPersonalDateSlots() {
+        if (personalDateSlots == null) {
+            personalDateSlots = new ArrayList<>();
+        }
+        personalDateSlots.removeIf(Objects::isNull);
+        return personalDateSlots;
+    }
+
+    @Override
+    public void setPersonalDateSlots(List<PlayerPersonalDateSlot> slots) {
+        personalDateSlots = new ArrayList<>();
+        if (slots != null) {
+            slots.stream().filter(Objects::nonNull)
+                    .map(slot -> PlayerPersonalDateSlot.deserializeNBT(slot.serializeNBT()))
+                    .forEach(personalDateSlots::add);
+        }
+    }
+
+    @Override
     public String getLanguage() {
         return this.language;
     }
@@ -229,6 +250,7 @@ public class PlayerSignInData implements IPlayerSignInData {
         this.setMonthIndexes(capability.getMonthIndexes());
         this.setSignInRecords(capability.getSignInRecords());
         this.setCdkRecords(capability.getCdkRecords());
+        this.setPersonalDateSlots(capability.getPersonalDateSlots());
     }
 
     @Override
@@ -262,6 +284,10 @@ public class PlayerSignInData implements IPlayerSignInData {
             cdkRecordsNBT.add(cdkRecordNBT);
         }
         tag.put("cdkRecords", cdkRecordsNBT);
+
+        ListNBT personalDateSlotsNBT = new ListNBT();
+        getPersonalDateSlots().forEach(slot -> personalDateSlotsNBT.add(slot.serializeNBT()));
+        tag.put("personalDateSlots", personalDateSlotsNBT);
         return tag;
     }
 
@@ -297,6 +323,13 @@ public class PlayerSignInData implements IPlayerSignInData {
             cdkRecords.add(new KeyValue<>(cdkRecordNBT.getString("key"), new KeyValue<>(DateUtils.format(cdkRecordNBT.getString("date")), cdkRecordNBT.getBoolean("value"))));
         }
         this.setCdkRecords(cdkRecords);
+
+        List<PlayerPersonalDateSlot> slots = new ArrayList<>();
+        ListNBT slotsNBT = nbt.getList("personalDateSlots", 10);
+        for (int i = 0; i < slotsNBT.size(); i++) {
+            slots.add(PlayerPersonalDateSlot.deserializeNBT(slotsNBT.getCompound(i)));
+        }
+        this.setPersonalDateSlots(slots);
     }
 
     public int calculateContinuousDays() {
