@@ -13,6 +13,7 @@ import xin.vanilla.sakura.api.reward.SakuraRewardTypes;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.reward.Reward;
 import xin.vanilla.sakura.reward.RewardList;
+import xin.vanilla.sakura.data.personaldate.PersonalDatePreset;
 import xin.vanilla.sakura.config.reward.RewardGroup;
 import xin.vanilla.banira.common.util.CollectionUtils;
 import xin.vanilla.banira.common.util.DateUtils;
@@ -155,6 +156,10 @@ public class RewardConfig implements Serializable {
      */
     private List<KeyValue<KeyValue<String, String>, KeyValue<RewardList, AtomicInteger>>> cdkRewards;
 
+    /** 由服务端命名并配置的个性化周期日期奖励。 */
+    @NonNull
+    private List<PersonalDatePreset> personalDatePresets;
+
     public RewardConfig() {
         this.baseRewards = new RewardList();
         this.continuousRewards = new LinkedHashMap<>();
@@ -169,6 +174,7 @@ public class RewardConfig implements Serializable {
         this.cumulativeRewards = new LinkedHashMap<>();
         this.randomRewardGroups = new ArrayList<>();
         this.cdkRewards = new ArrayList<>();
+        this.personalDatePresets = new ArrayList<>();
     }
 
     /**
