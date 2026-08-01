@@ -3,8 +3,20 @@ package xin.vanilla.sakura;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.common.Mod;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.api.event.BaniraEvents;
+import xin.vanilla.banira.common.config.BaniraConfig;
+import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.client.SakuraClientBootstrap;
+import xin.vanilla.sakura.config.ClientConfig;
+import xin.vanilla.sakura.config.CommonConfig;
+import xin.vanilla.sakura.config.reward.RewardConfigManager;
 import xin.vanilla.sakura.internal.forge.ForgeSakuraEntrypoint;
+import xin.vanilla.sakura.network.SakuraNetwork;
+import xin.vanilla.sakura.notification.SakuraNotificationTypes;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Forge 模组入口，只负责选择公共、加载器与客户端启动器。
@@ -13,10 +25,29 @@ import xin.vanilla.sakura.internal.forge.ForgeSakuraEntrypoint;
 public final class SakuraSignIn {
     public static final String DEFAULT_COMMAND_PREFIX = "sakura";
     public static final String MODID = "sakura_sign_in";
+    private static final Logger LOGGER = LogManager.getLogger();
+    private static final AtomicBoolean COMMON_INITIALIZED = new AtomicBoolean();
 
     public SakuraSignIn() {
-        SakuraCommonBootstrap.init();
+        initializeCommon();
         ForgeSakuraEntrypoint.init();
         DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> SakuraClientBootstrap::init);
+    }
+
+    private static void initializeCommon() {
+        if (!COMMON_INITIALIZED.compareAndSet(false, true)) {
+            return;
+        }
+        // 包处理器会读取配置快照，因此配置必须先于网络初始化。
+        BaniraConfig.register(CommonConfig.class, MODID);
+        BaniraConfig.register(ClientConfig.class, MODID);
+        SakuraNotificationTypes.registerServerTypes();
+        SakuraNetwork.initialize();
+
+        BaniraEvents.Server.onStarting(event -> {
+            RewardConfigManager.loadRewardOption();
+            LOGGER.debug("Sign-in reward data loaded");
+        });
+        BaniraEvents.Server.onStopping(event -> SakuraPlayerData.saveAllAndClear());
     }
 }

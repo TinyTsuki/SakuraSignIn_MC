@@ -3,10 +3,10 @@ package xin.vanilla.sakura.client;
 import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.util.ResourceLocation;
-import xin.vanilla.sakura.config.KeyValue;
+import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.sakura.network.data.AdvancementData;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
-import xin.vanilla.sakura.util.DateUtils;
+import xin.vanilla.banira.common.util.DateUtils;
 
 import java.util.Collections;
 import java.util.Date;

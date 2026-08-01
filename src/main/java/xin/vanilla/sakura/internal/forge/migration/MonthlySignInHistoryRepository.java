@@ -7,8 +7,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.data.migration.SignInHistoryStore;
 import xin.vanilla.sakura.data.SignInRecord;
-import xin.vanilla.sakura.domain.player.LegacyPlayerData;
-import xin.vanilla.sakura.domain.player.HistoryRetentionPolicy;
+import xin.vanilla.sakura.data.migration.LegacyPlayerData;
+import xin.vanilla.sakura.data.player.HistoryRetentionPolicy;
 import xin.vanilla.sakura.internal.forge.storage.AtomicNbtFiles;
 
 import java.io.IOException;

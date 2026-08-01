@@ -1,6 +1,10 @@
 package xin.vanilla.sakura.enums;
 
 import lombok.Getter;
+import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.enums.IEnumDescribable;
+import xin.vanilla.banira.common.util.EnumDescriptionHelper;
+import xin.vanilla.sakura.SakuraComponent;
 
 import java.util.Arrays;
 
@@ -8,7 +12,7 @@ import java.util.Arrays;
  * 奖励规则
  */
 @Getter
-public enum ERewardRule {
+public enum ERewardRule implements IEnumDescribable {
     BASE_REWARD(1),
     CONTINUOUS_REWARD(2),
     CYCLE_REWARD(3),
@@ -24,6 +28,11 @@ public enum ERewardRule {
 
     ERewardRule(int code) {
         this.code = code;
+    }
+
+    @Override
+    public Component enumDescription() {
+        return EnumDescriptionHelper.describeEnum(SakuraComponent.get(), this);
     }
 
     public static ERewardRule valueOf(int code) {

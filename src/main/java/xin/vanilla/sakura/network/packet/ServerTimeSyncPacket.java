@@ -1,12 +1,14 @@
 package xin.vanilla.sakura.network.packet;
 
+import xin.vanilla.sakura.data.time.SakuraClock;
+
 import lombok.Getter;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.client.SakuraClientState;
-import xin.vanilla.sakura.util.DateUtils;
+import xin.vanilla.banira.common.util.DateUtils;
 
 import java.util.Date;
 
@@ -18,7 +20,7 @@ public class ServerTimeSyncPacket implements INetworkPacket {
     private final String serverTime;
 
     public ServerTimeSyncPacket() {
-        this.serverTime = DateUtils.toDateTimeString(DateUtils.getServerDate());
+        this.serverTime = DateUtils.toDateTimeString(SakuraClock.serverNow());
     }
 
     public ServerTimeSyncPacket(BaniraPacketBuffer buf) {
@@ -31,7 +33,7 @@ public class ServerTimeSyncPacket implements INetworkPacket {
 
     public static void handle(ServerTimeSyncPacket packet, BaniraNetworkContext ctx) {
         ctx.enqueueWork(() -> SakuraClientState.getClientServerTime()
-                .setKey(DateUtils.toDateTimeString(new Date())).setValue(packet.serverTime));
+                .key(DateUtils.toDateTimeString(new Date())).value(packet.serverTime));
         ctx.markHandled();
     }
 }

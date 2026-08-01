@@ -6,7 +6,7 @@ import xin.vanilla.banira.common.util.Translator;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.message.SakuraMessages;
-import xin.vanilla.sakura.text.SakuraComponent;
+import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.util.SakuraUtils;
 
 /**

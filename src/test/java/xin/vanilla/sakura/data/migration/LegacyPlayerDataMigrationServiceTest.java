@@ -2,9 +2,9 @@ package xin.vanilla.sakura.data.migration;
 
 import net.minecraft.nbt.CompoundNBT;
 import org.junit.Test;
-import xin.vanilla.sakura.domain.player.LegacyPlayerData;
-import xin.vanilla.sakura.domain.player.LegacyPlayerDataParser;
-import xin.vanilla.sakura.domain.player.PlayerSignInSummary;
+import xin.vanilla.sakura.data.migration.LegacyPlayerData;
+import xin.vanilla.sakura.data.migration.LegacyPlayerDataParser;
+import xin.vanilla.sakura.data.player.PlayerSignInSummary;
 
 import java.io.IOException;
 import java.util.ArrayList;

@@ -9,19 +9,19 @@ import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.SplitPacket;
 import xin.vanilla.sakura.config.CommonConfig;
-import xin.vanilla.sakura.config.RewardConfigManager;
+import xin.vanilla.sakura.config.reward.RewardConfigManager;
 import xin.vanilla.sakura.enums.ERewardRule;
 import xin.vanilla.sakura.network.SakuraClientPacketHandlers;
 import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.network.data.RewardOptionSyncData;
 import xin.vanilla.sakura.network.data.RewardOptionSyncKind;
-import xin.vanilla.sakura.rewards.Reward;
+import xin.vanilla.sakura.reward.Reward;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static xin.vanilla.sakura.config.RewardConfigManager.GSON;
+import static xin.vanilla.sakura.config.reward.RewardConfigManager.GSON;
 
 /**
  * 有序奖励配置分包；组顺序和重复概率组均保持不变。

@@ -1,6 +1,9 @@
 package xin.vanilla.sakura.command;
 
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.enums.IEnumDescribable;
+import xin.vanilla.sakura.SakuraComponent;
 
 import java.time.LocalDateTime;
 
@@ -8,7 +11,7 @@ import java.time.LocalDateTime;
  * 解析指令中的绝对或相对日期时间片段。
  */
 public final class CommandDateTimeParser {
-    public enum Kind {
+    public enum Kind implements IEnumDescribable {
         DATE(new String[]{"year", "month", "day"}),
         TIME(new String[]{"hour", "minute", "second"}),
         DATE_TIME(new String[]{"year", "month", "day", "hour", "minute", "second"});
@@ -17,6 +20,11 @@ public final class CommandDateTimeParser {
 
         Kind(String[] units) {
             this.units = units;
+        }
+
+        @Override
+        public Component enumDescription() {
+            return SakuraComponent.get().literal(name());
         }
     }
 

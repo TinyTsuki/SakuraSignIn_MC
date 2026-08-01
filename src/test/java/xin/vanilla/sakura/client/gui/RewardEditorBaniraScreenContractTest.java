@@ -44,6 +44,11 @@ public class RewardEditorBaniraScreenContractTest {
         assertTrue(screen.contains("inputState.isCtrlPressed()"));
         assertTrue(screen.contains("moveSelectedRewardsTo("));
         assertTrue(screen.contains("renderDraggedReward("));
+        assertTrue(screen.contains("for (String rewardId : selectedRewardIds())"));
+        assertFalse(screen.contains("getEffectiveTheme().bgSurface()"));
+        assertTrue(screen.contains("groupSelectionColor()"));
+        assertTrue(screen.contains("drawRewardGroupBorder("));
+        assertTrue(screen.contains("RewardConfigManager.clearKey(rule, key)"));
         assertTrue(screen.contains("rewardContentHeight"));
         assertTrue(screen.contains("ShapeDrawArgs.ShapeType.RECT"));
         assertTrue(screen.contains(".setHoverTint(0)"));
@@ -75,10 +80,10 @@ public class RewardEditorBaniraScreenContractTest {
 
     @Test
     public void itemCountIsRenderedAfterTheItemModel() {
-        String gui = read(MAIN.resolve("util/AbstractGuiUtils.java"));
+        String gui = read(MAIN.resolve("client/gui/RewardRenderer.java"));
 
-        assertTrue(gui.contains(
-                "ItemWidget.renderItem(itemRenderer, fontRenderer, itemStack, x, y, showText)"));
+        assertTrue(gui.contains("ItemWidget.renderItem(itemRenderer, font,"));
+        assertTrue(gui.contains("RewardManager.deserializeReward(reward), x, y, showText)"));
         assertFalse(gui.contains("fontRenderer.drawShadow(matrixStack, count"));
     }
 

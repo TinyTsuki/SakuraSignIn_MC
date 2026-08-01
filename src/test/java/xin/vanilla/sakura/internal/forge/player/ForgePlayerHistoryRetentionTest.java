@@ -3,7 +3,7 @@ package xin.vanilla.sakura.internal.forge.player;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import xin.vanilla.sakura.domain.player.HistoryRetentionPolicy;
+import xin.vanilla.sakura.data.player.HistoryRetentionPolicy;
 import xin.vanilla.sakura.internal.forge.migration.MonthlySignInHistoryRepository;
 
 import java.nio.charset.StandardCharsets;

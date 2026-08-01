@@ -3,7 +3,7 @@ package xin.vanilla.sakura.notification;
 import xin.vanilla.banira.api.client.notification.BaniraClientNotificationTypes;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.sakura.SakuraSignIn;
-import xin.vanilla.sakura.text.SakuraComponent;
+import xin.vanilla.sakura.SakuraComponent;
 
 /**
  * 客户端通知元数据只在 client setup 阶段注册。
