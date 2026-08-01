@@ -1,6 +1,6 @@
 package xin.vanilla.sakura.network;
 
-import xin.vanilla.sakura.text.SakuraComponent;
+import xin.vanilla.sakura.SakuraComponent;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import org.apache.logging.log4j.LogManager;
@@ -15,7 +15,7 @@ import xin.vanilla.sakura.network.packet.ClientConfigSyncPacket;
 import xin.vanilla.sakura.network.packet.PlayerDataSyncPacket;
 import xin.vanilla.sakura.network.packet.PlayerMonthSyncPacket;
 import xin.vanilla.sakura.network.packet.RewardOptionSyncPacket;
-import xin.vanilla.sakura.config.RewardConfigManager;
+import xin.vanilla.sakura.config.reward.RewardConfigManager;
 import xin.vanilla.sakura.notification.SakuraClientNotifications;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
 import xin.vanilla.sakura.screen.SignInScreen;

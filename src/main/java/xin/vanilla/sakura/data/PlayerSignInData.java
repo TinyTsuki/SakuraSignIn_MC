@@ -4,9 +4,9 @@ import lombok.NonNull;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
-import xin.vanilla.sakura.config.KeyValue;
-import xin.vanilla.sakura.domain.player.MonthSignInIndex;
-import xin.vanilla.sakura.util.DateUtils;
+import xin.vanilla.banira.common.data.KeyValue;
+import xin.vanilla.sakura.data.player.MonthSignInIndex;
+import xin.vanilla.banira.common.util.DateUtils;
 import xin.vanilla.sakura.util.SakuraUtils;
 
 import javax.annotation.Nullable;
@@ -255,9 +255,9 @@ public class PlayerSignInData implements IPlayerSignInData {
         ListNBT cdkRecordsNBT = new ListNBT();
         for (KeyValue<String, KeyValue<Date, Boolean>> record : this.getCdkRecords()) {
             CompoundNBT cdkRecordNBT = new CompoundNBT();
-            cdkRecordNBT.putString("key", record.getKey());
-            cdkRecordNBT.putString("date", DateUtils.toDateTimeString(record.getValue().getKey()));
-            cdkRecordNBT.putBoolean("value", record.getValue().getValue());
+            cdkRecordNBT.putString("key", record.key());
+            cdkRecordNBT.putString("date", DateUtils.toDateTimeString(record.value().key()));
+            cdkRecordNBT.putBoolean("value", record.value().value());
             cdkRecordsNBT.add(cdkRecordNBT);
         }
         tag.put("cdkRecords", cdkRecordsNBT);

@@ -17,9 +17,9 @@ import xin.vanilla.banira.client.gui.widget.BaseWidget;
 import xin.vanilla.banira.client.gui.widget.TooltipWidget;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
-import xin.vanilla.sakura.util.AbstractGuiUtils;
-import xin.vanilla.sakura.util.GLFWKey;
-import xin.vanilla.sakura.util.TextureUtils;
+import xin.vanilla.banira.client.util.AbstractGuiUtils;
+import xin.vanilla.banira.client.data.GLFWKey;
+import xin.vanilla.banira.client.util.TextureUtils;
 
 import java.util.function.Consumer;
 
@@ -138,11 +138,11 @@ public final class RewardOperationWidget extends BaseWidget {
                 .setTotalWidth(textureWidth)
                 .setTotalHeight(textureHeight);
         if (mouseInside && tremblingAmplitude > 0) {
-            AbstractGuiUtils.renderTremblingTexture(stack, texture, textureCoordinate, coordinate,
-                    0, 0, 1, true, tremblingAmplitude);
+            TextureAnimationRenderer.drawTrembling(stack, texture, textureCoordinate,
+                    coordinate, tremblingAmplitude);
         } else {
-            AbstractGuiUtils.renderRotatedTexture(stack, texture, textureCoordinate, coordinate,
-                    0, 0, 1, rotatedAngle, flipHorizontal, flipVertical);
+            TextureAnimationRenderer.drawRotated(stack, texture, textureCoordinate,
+                    coordinate, rotatedAngle, flipHorizontal, flipVertical);
         }
 
         int tint = mousePressed ? pressedTint : mouseInside ? hoverTint : 0;

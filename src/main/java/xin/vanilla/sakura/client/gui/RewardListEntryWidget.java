@@ -51,7 +51,9 @@ public final class RewardListEntryWidget extends BaseWidget {
     @Setter
     private Consumer<MouseEvent> longPressReleaseHandler;
     private boolean dragged;
+    private boolean pendingDrag;
     private boolean longPressDragging;
+    private final double dragActivationDistance = 12.0;
     private double pressX;
     private double pressY;
 
@@ -127,6 +129,7 @@ public final class RewardListEntryWidget extends BaseWidget {
     @Override
     protected boolean onMouseClick(MouseEvent event) {
         dragged = false;
+        pendingDrag = event.button() == 0;
         longPressDragging = false;
         pressX = event.mouseX();
         pressY = event.mouseY();
@@ -141,10 +144,12 @@ public final class RewardListEntryWidget extends BaseWidget {
             }
             longPressDragging = false;
             dragged = false;
+            pendingDrag = false;
             return true;
         }
         boolean activate = inside && !dragged;
         dragged = false;
+        pendingDrag = false;
         if (activate && releaseHandler != null) {
             releaseHandler.accept(event);
         }
@@ -160,10 +165,22 @@ public final class RewardListEntryWidget extends BaseWidget {
             return true;
         }
         double distance = Math.hypot(event.mouseX() - pressX, event.mouseY() - pressY);
-        if (distance > 4.0) {
-            dragged = true;
+        if (pendingDrag) {
+            if (distance <= dragActivationDistance) {
+                return true;
+            }
+            if (selected) {
+                startLongPressDrag(MouseEvent.of(
+                        event.mouseX(), event.mouseY(), event.button()));
+                if (longPressDragHandler != null) {
+                    longPressDragHandler.accept(event);
+                }
+                return true;
+            }
+            pendingDrag = false;
         }
-        if (dragged && dragHandler != null) {
+        dragged = true;
+        if (dragHandler != null) {
             dragHandler.accept(event);
             return true;
         }
@@ -172,13 +189,26 @@ public final class RewardListEntryWidget extends BaseWidget {
 
     @Override
     protected void onLongPress(MouseEvent event) {
-        if (!dragged && selected && event.button() == 0) {
-            longPressDragging = true;
-            dragged = true;
-            if (longPressHandler != null) {
-                longPressHandler.accept(event);
-            }
+        if (pendingDrag && !dragged && event.button() == 0) {
+            startLongPressDrag(event);
         }
+    }
+
+    /**
+     * 已选条目可直接拖动，静止按住仍沿用 Banira 的长按触发。
+     */
+    private void startLongPressDrag(MouseEvent event) {
+        pendingDrag = false;
+        longPressDragging = true;
+        dragged = true;
+        if (longPressHandler != null) {
+            longPressHandler.accept(event);
+        }
+    }
+
+    @Override
+    protected long genericLongPressThresholdMs() {
+        return 250L;
     }
 
     @Getter

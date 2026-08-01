@@ -9,12 +9,12 @@ import xin.vanilla.sakura.data.PlayerSignInData;
 import xin.vanilla.sakura.data.PlayerSignInDataRepository;
 import xin.vanilla.sakura.data.SignInRecord;
 import xin.vanilla.sakura.data.migration.PlayerSummaryStore;
-import xin.vanilla.sakura.config.KeyValue;
-import xin.vanilla.sakura.domain.player.HistoryRetentionPolicy;
-import xin.vanilla.sakura.domain.player.PlayerSignInSummary;
+import xin.vanilla.banira.common.data.KeyValue;
+import xin.vanilla.sakura.data.player.HistoryRetentionPolicy;
+import xin.vanilla.sakura.data.player.PlayerSignInSummary;
 import xin.vanilla.sakura.internal.forge.storage.AtomicNbtFiles;
-import xin.vanilla.sakura.rewards.RewardList;
-import xin.vanilla.sakura.util.DateUtils;
+import xin.vanilla.sakura.reward.RewardList;
+import xin.vanilla.banira.common.util.DateUtils;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -113,7 +113,7 @@ public class MonthlySignInHistoryRetentionTest {
         assertEquals(5, restored.getSignInCard());
         assertEquals("zh_cn", restored.getLanguage());
         assertTrue(restored.isAutoRewarded());
-        assertEquals("WELCOME", restored.getCdkRecords().get(0).getKey());
+        assertEquals("WELCOME", restored.getCdkRecords().get(0).key());
         assertTrue(restored.isSignedOn(DateUtils.format("2024-01-08 12:00:00")));
         assertTrue(restored.isRewardedOn(DateUtils.format("2024-01-08 12:00:00")));
 

@@ -2,6 +2,8 @@ package xin.vanilla.sakura.util;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.client.data.GLFWKey;
+import xin.vanilla.banira.common.util.StringUtils;
 
 import java.lang.reflect.Field;
 import java.util.*;

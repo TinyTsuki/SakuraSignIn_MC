@@ -21,7 +21,7 @@ public class SakuraBootstrapBoundaryTest {
     @Test
     public void entryOnlySelectsCommonAndLoaderBootstraps() {
         String entry = source(MAIN.resolve("SakuraSignIn.java"));
-        assertTrue(entry.contains("SakuraCommonBootstrap.init()"));
+        assertTrue(entry.contains("initializeCommon()"));
         assertTrue(entry.contains("ForgeSakuraEntrypoint.init()"));
         assertTrue(entry.contains("SakuraClientBootstrap::init"));
         assertFalse(entry.contains("MinecraftForge"));
@@ -32,7 +32,7 @@ public class SakuraBootstrapBoundaryTest {
 
     @Test
     public void bootstrapsAreIdempotentAndKeepConfigBeforeNetwork() {
-        String common = source(MAIN.resolve("SakuraCommonBootstrap.java"));
+        String common = source(MAIN.resolve("SakuraSignIn.java"));
         String client = source(MAIN.resolve("client/SakuraClientBootstrap.java"));
         String forge = source(MAIN.resolve("internal/forge/ForgeSakuraEntrypoint.java"));
 
@@ -44,6 +44,11 @@ public class SakuraBootstrapBoundaryTest {
         assertTrue(client.contains("BaniraClientEvents.Client.onClientTick"));
         assertTrue(client.contains("BaniraClientEvents.Player.onClientLoggedOut"));
         assertTrue(client.contains("BaniraInput.registerKey"));
+    }
+
+    @Test
+    public void commonBootstrapIsNotWrappedInAOneShotClass() {
+        assertFalse(Files.exists(MAIN.resolve("SakuraCommonBootstrap.java")));
     }
 
     @Test
