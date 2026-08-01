@@ -1,7 +1,6 @@
 package xin.vanilla.sakura.reward.personaldate;
 
 import xin.vanilla.sakura.data.IPlayerSignInData;
-import xin.vanilla.sakura.data.personaldate.LunarCalendar;
 import xin.vanilla.sakura.data.personaldate.PersonalDateDeliveryMode;
 import xin.vanilla.sakura.data.personaldate.PersonalDateEvaluator;
 import xin.vanilla.sakura.data.personaldate.PersonalDateOccurrence;
@@ -25,7 +24,7 @@ public final class PersonalDateRewardService {
     private final PersonalDateEvaluator evaluator;
 
     public PersonalDateRewardService() {
-        this(new PersonalDateEvaluator(new LunarCalendar()));
+        this(new PersonalDateEvaluator());
     }
 
     PersonalDateRewardService(PersonalDateEvaluator evaluator) {

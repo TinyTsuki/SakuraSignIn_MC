@@ -26,6 +26,7 @@ public class DownloadRewardOptionNotice implements INetworkPacket {
             ServerPlayerEntity player = ctx.senderAs(ServerPlayerEntity.class);
             if (player != null) {
                 SakuraNetwork.sendSplitToPlayer(RewardConfigManager.toSyncPacket(player), player);
+                SakuraNetwork.sendSplitToPlayer(SakuraNetwork.personalDatePacket(player), player);
             }
         });
         ctx.markHandled();

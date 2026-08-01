@@ -30,13 +30,15 @@ public class InputAndQuickActionBaniraContractTest {
     @Test
     public void inventoryEntriesUseBaniraQuickActions() throws Exception {
         String actions = source("xin/vanilla/sakura/client/gui/SakuraQuickActions.java");
+        String personalDates = source("xin/vanilla/sakura/screen/PersonalDateConfigScreen.java");
         String events = source("xin/vanilla/sakura/event/ClientEventHandler.java");
         String config = source("xin/vanilla/sakura/config/ClientConfig.java");
 
         assertTrue(actions.contains("QuickActionRegistry.get()"));
         assertTrue(actions.contains("QuickIcon.resource(texture)"));
         assertTrue(actions.contains("new QuickActionContextMenuItem("));
-        assertTrue(actions.contains("new CustomPlayerConfigEditScreen("));
+        assertTrue(actions.contains("new PersonalDateConfigScreen("));
+        assertTrue(personalDates.contains("new CustomPlayerConfigEditScreen("));
         assertTrue(actions.contains("openConfig(ClientConfig.get().holder()"));
         assertTrue(actions.contains("openConfig(CommonConfig.get().holder()"));
         assertTrue(actions.contains("new RewardOptionScreen().previousScreen("));

@@ -2,21 +2,24 @@ package xin.vanilla.sakura.data.personaldate;
 
 import org.junit.Test;
 import xin.vanilla.sakura.reward.RewardList;
+import xin.vanilla.sakura.data.calendar.CalendarIds;
+import xin.vanilla.sakura.data.calendar.CalendarRegistry;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class PersonalDateEvaluatorTest {
-    private final PersonalDateEvaluator evaluator = new PersonalDateEvaluator(new LunarCalendar());
+    private final PersonalDateEvaluator evaluator = new PersonalDateEvaluator(CalendarRegistry.builtIns());
 
     @Test
     public void yearlySolarWindowIsInclusiveAndClaimCursorSuppressesDuplicate() {
         PersonalDatePreset preset = preset(PersonalDateRecurrence.YEARLY,
-                PersonalDateCalendarPolicy.SOLAR_ONLY, 1, 1);
-        PlayerPersonalDateSlot slot = slot(PersonalDateCalendar.SOLAR, 8, 15);
+                CalendarIds.GREGORIAN, 1, 1);
+        PlayerPersonalDateSlot slot = slot(CalendarIds.GREGORIAN, 8, 15);
 
         List<PersonalDateOccurrence> before = evaluator.findActiveOccurrences(
                 preset, slot, LocalDate.of(2026, 8, 14));
@@ -34,8 +37,8 @@ public class PersonalDateEvaluatorTest {
     @Test
     public void monthlyWindowsReturnOverlappingOccurrencesChronologically() {
         PersonalDatePreset preset = preset(PersonalDateRecurrence.MONTHLY,
-                PersonalDateCalendarPolicy.SOLAR_ONLY, 20, 20);
-        PlayerPersonalDateSlot slot = slot(PersonalDateCalendar.SOLAR, 0, 15);
+                CalendarIds.GREGORIAN, 20, 20);
+        PlayerPersonalDateSlot slot = slot(CalendarIds.GREGORIAN, 0, 15);
 
         List<PersonalDateOccurrence> occurrences = evaluator.findActiveOccurrences(
                 preset, slot, LocalDate.of(2026, 2, 1));
@@ -49,8 +52,8 @@ public class PersonalDateEvaluatorTest {
     @Test
     public void yearlyLunarRuleUsesFirstMonthOccurrence() {
         PersonalDatePreset preset = preset(PersonalDateRecurrence.YEARLY,
-                PersonalDateCalendarPolicy.LUNAR_ONLY, 0, 40);
-        PlayerPersonalDateSlot slot = slot(PersonalDateCalendar.LUNAR, 6, 1);
+                CalendarIds.CHINESE_LUNAR, 0, 40);
+        PlayerPersonalDateSlot slot = slot(CalendarIds.CHINESE_LUNAR, 6, 1);
 
         List<PersonalDateOccurrence> occurrences = evaluator.findActiveOccurrences(
                 preset, slot, LocalDate.of(2025, 7, 25));
@@ -61,13 +64,13 @@ public class PersonalDateEvaluatorTest {
     }
 
     private static PersonalDatePreset preset(PersonalDateRecurrence recurrence,
-                                             PersonalDateCalendarPolicy policy,
+                                             String calendarId,
                                              int before, int after) {
         return new PersonalDatePreset(
                 "server_day",
                 "Server Day",
                 recurrence,
-                policy,
+                Collections.singletonList(calendarId),
                 2,
                 PersonalDateDeliveryMode.SIGN_IN,
                 before,
@@ -76,7 +79,7 @@ public class PersonalDateEvaluatorTest {
         );
     }
 
-    private static PlayerPersonalDateSlot slot(PersonalDateCalendar calendar, int month, int day) {
-        return new PlayerPersonalDateSlot("server_day", 0, calendar, month, day, "");
+    private static PlayerPersonalDateSlot slot(String calendarId, int month, int day) {
+        return new PlayerPersonalDateSlot("server_day", 0, calendarId, month, day, "");
     }
 }

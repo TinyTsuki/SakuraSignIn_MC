@@ -2,6 +2,7 @@ package xin.vanilla.sakura.data.personaldate;
 
 import org.junit.Test;
 import xin.vanilla.sakura.reward.RewardList;
+import xin.vanilla.sakura.data.calendar.CalendarIds;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -65,7 +66,7 @@ public class PersonalDateSelectionServiceTest {
     private static PersonalDatePreset preset(String id, int slots) {
         return new PersonalDatePreset(
                 id, "Server Day", PersonalDateRecurrence.YEARLY,
-                PersonalDateCalendarPolicy.SOLAR_ONLY, slots,
+                Collections.singletonList(CalendarIds.GREGORIAN), slots,
                 PersonalDateDeliveryMode.ONLINE, 0, 0, new RewardList()
         );
     }
@@ -73,6 +74,6 @@ public class PersonalDateSelectionServiceTest {
     private static PlayerPersonalDateSlot slot(String id, int index, int month, int day,
                                                String cursor) {
         return new PlayerPersonalDateSlot(
-                id, index, PersonalDateCalendar.SOLAR, month, day, cursor);
+                id, index, CalendarIds.GREGORIAN, month, day, cursor);
     }
 }

@@ -149,6 +149,14 @@ public interface IPlayerSignInData {
 
     void setPersonalDateSlots(List<PlayerPersonalDateSlot> slots);
 
+    String getOnlineTimeBaselineDate();
+
+    void setOnlineTimeBaselineDate(String date);
+
+    int getOnlineTimeBaselineTicks();
+
+    void setOnlineTimeBaselineTicks(int ticks);
+
     /**
      * 获取语言
      */
