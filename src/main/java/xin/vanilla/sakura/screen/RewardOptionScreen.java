@@ -89,6 +89,13 @@ import java.util.function.Consumer;
 public class RewardOptionScreen extends BaniraScreen {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final String REWARD_TYPE_OPTION_PREFIX = "reward-type:";
+    private static final ERewardRule[] REWARD_RULES = {
+            ERewardRule.BASE_REWARD, ERewardRule.CONTINUOUS_REWARD,
+            ERewardRule.CYCLE_REWARD, ERewardRule.YEAR_REWARD,
+            ERewardRule.MONTH_REWARD, ERewardRule.WEEK_REWARD,
+            ERewardRule.DATE_TIME_REWARD, ERewardRule.CUMULATIVE_REWARD,
+            ERewardRule.RANDOM_REWARD, ERewardRule.CDK_REWARD
+    };
 
     private final EditCommandHandler editHandler = new EditCommandHandler(this);
 
@@ -102,6 +109,9 @@ public class RewardOptionScreen extends BaniraScreen {
      * 左侧边栏宽度
      */
     private int leftBarWidth;
+    private double ruleListOffset;
+    private double ruleListContentHeight;
+    private double ruleListViewportHeight;
     /**
      * 右侧边栏宽度
      */
@@ -1573,6 +1583,7 @@ public class RewardOptionScreen extends BaniraScreen {
         OP_BUTTONS.get(OperationButtonType.REWARD_PANEL.getCode()).bounds(
                 new ScreenCoordinate(leftBarWidth, 0,
                         super.width - leftBarWidth - rightBarWidth, super.height));
+        updateRuleListLayout();
         // 清空弹出层选项
         popupOption.clear();
         // 更新奖励面板列表内容
@@ -1582,6 +1593,34 @@ public class RewardOptionScreen extends BaniraScreen {
     private void setYOffset(double offset) {
         this.yOffset = RewardPanelViewport.clampOffset(
                 offset, rewardContentHeight, super.height);
+    }
+
+    private void updateRuleListLayout() {
+        int rowStep = Math.max(1, leftBarTitleHeight - 1);
+        int rowHeight = Math.max(1, leftBarTitleHeight - 2);
+        ruleListContentHeight = REWARD_RULES.length * rowStep;
+        ruleListViewportHeight = Math.max(0, height - leftBarTitleHeight);
+        ruleListOffset = RewardRuleListViewport.clampOffset(ruleListOffset,
+                ruleListContentHeight, ruleListViewportHeight);
+        ScreenCoordinate clip = new ScreenCoordinate(0, leftBarTitleHeight,
+                Math.max(1, leftBarWidth), Math.max(1, ruleListViewportHeight));
+        for (int i = 0; i < REWARD_RULES.length; i++) {
+            OperationButtonType type = OperationButtonType.valueOf(REWARD_RULES[i].name());
+            RewardOperationWidget widget = OP_BUTTONS.get(type.getCode());
+            if (widget != null) {
+                widget.bounds(new ScreenCoordinate(0,
+                        leftBarTitleHeight + ruleListOffset + rowStep * i,
+                        100, rowHeight));
+                widget.setClipBounds(clip);
+            }
+        }
+    }
+
+    private void scrollRuleList(double amount) {
+        ruleListOffset = RewardRuleListViewport.clampOffset(
+                ruleListOffset + amount, ruleListContentHeight,
+                ruleListViewportHeight);
+        updateRuleListLayout();
     }
 
     private void scrollRewardPanel(double amount) {
@@ -2027,16 +2066,13 @@ public class RewardOptionScreen extends BaniraScreen {
                         .setTooltip(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.close_sidebar")),
                 new ScreenCoordinate(80, (leftBarTitleHeight - 16) / 2.0, 16, 16));
 
-        ERewardRule[] rules = {
-                ERewardRule.BASE_REWARD, ERewardRule.CONTINUOUS_REWARD, ERewardRule.CYCLE_REWARD,
-                ERewardRule.YEAR_REWARD, ERewardRule.MONTH_REWARD, ERewardRule.WEEK_REWARD,
-                ERewardRule.DATE_TIME_REWARD, ERewardRule.CUMULATIVE_REWARD,
-                ERewardRule.RANDOM_REWARD, ERewardRule.CDK_REWARD
-        };
-        for (int i = 0; i < rules.length; i++) {
-            OperationButtonType type = OperationButtonType.valueOf(rules[i].name());
-            registerOperation(new RewardOperationWidget(this, type.getCode(),
-                            generateCustomRenderFunction(SakuraUtils.getRewardRuleI18nKeyName(rules[i]))),
+        for (int i = 0; i < REWARD_RULES.length; i++) {
+            OperationButtonType type = OperationButtonType.valueOf(REWARD_RULES[i].name());
+            RewardOperationWidget widget = new RewardOperationWidget(this, type.getCode(),
+                    generateCustomRenderFunction(
+                            SakuraUtils.getRewardRuleI18nKeyName(REWARD_RULES[i])))
+                    .setDragHandler(event -> scrollRuleList(event.dragY()));
+            registerOperation(widget,
                     new ScreenCoordinate(0, leftBarTitleHeight + (leftBarTitleHeight - 1) * i,
                             100, leftBarTitleHeight - 2));
         }
@@ -2201,6 +2237,13 @@ public class RewardOptionScreen extends BaniraScreen {
 
     @Override
     protected void onMouseScrolled(MouseScrolledHandleArgs eventArgs) {
+        if (SakuraClientState.isRewardOptionBarOpened()
+                && eventArgs.mouseX() >= 0 && eventArgs.mouseX() < leftBarWidth
+                && eventArgs.mouseY() >= leftBarTitleHeight) {
+            scrollRuleList(eventArgs.delta() * Math.max(1, leftBarTitleHeight - 1));
+            eventArgs.consumed(true);
+            return;
+        }
         RewardOperationWidget panel = OP_BUTTONS.get(OperationButtonType.REWARD_PANEL.getCode());
         if (panel != null && panel.isMouseInside(eventArgs.mouseX(), eventArgs.mouseY())) {
             scrollRewardPanel(eventArgs.delta() * rewardWheelStep);
