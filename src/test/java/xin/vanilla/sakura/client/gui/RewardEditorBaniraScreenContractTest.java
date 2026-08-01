@@ -16,6 +16,8 @@ import static org.junit.Assert.assertTrue;
  */
 public class RewardEditorBaniraScreenContractTest {
     private static final Path MAIN = Paths.get("src/main/java/xin/vanilla/sakura");
+    private static final Path RESOURCES = Paths.get(
+            "src/main/resources/assets/sakura_sign_in/lang");
 
     @Test
     public void screenUsesBaniraLifecycleAndWidgets() {
@@ -24,6 +26,7 @@ public class RewardEditorBaniraScreenContractTest {
         String rewardWidget = read(MAIN.resolve("client/gui/RewardListEntryWidget.java"));
         String clientEvents = read(MAIN.resolve("event/ClientEventHandler.java"));
         String quickActions = read(MAIN.resolve("client/gui/SakuraQuickActions.java"));
+        String zhCn = read(RESOURCES.resolve("zh_cn.json"));
 
         assertTrue(screen.contains("extends BaniraScreen"));
         assertTrue(screen.contains("Map<Integer, RewardOperationWidget>"));
@@ -32,6 +35,8 @@ public class RewardEditorBaniraScreenContractTest {
         assertTrue(screen.contains("popupOption.onSelect(this::handlePopupSelection)"));
         assertTrue(screen.contains("new ConfirmDialogScreen("));
         assertTrue(screen.contains("requestDeleteConfirmation()"));
+        assertTrue(screen.contains("requestConfirmation(\"confirm_clear_reward_rule\""));
+        assertTrue(screen.contains("return editHandler.handleDelete();"));
         assertTrue(screen.contains("!popupOption.isEmpty() || draggingRewardId != null"));
         assertTrue(screen.contains("inputState.isCtrlPressed()"));
         assertTrue(screen.contains("inputState.isShiftPressed()"));
@@ -47,9 +52,23 @@ public class RewardEditorBaniraScreenContractTest {
         assertTrue(screen.contains("for (String rewardId : selectedRewardIds())"));
         assertFalse(screen.contains("getEffectiveTheme().bgSurface()"));
         assertTrue(screen.contains("groupSelectionColor()"));
+        assertTrue(screen.contains("groupBorderColor()"));
+        assertTrue(screen.contains("getEffectiveTheme().buttonBorderHover()"));
         assertTrue(screen.contains("drawRewardGroupBorder("));
+        assertTrue(screen.contains("groupHeaderHeight()"));
+        assertTrue(screen.contains("font.lineHeight + groupHeaderVerticalPadding * 2"));
+        assertTrue(screen.contains("drawWelcomeTips(matrixStack)"));
+        assertFalse(screen.contains("drawLimitedText(matrixStack, tips.content()"));
+        assertTrue(screen.contains("requestGroupConfirmation("));
+        assertTrue(screen.contains("rewardGroupDisplayName("));
+        assertTrue(screen.contains("requestGroupConfirmation(\"confirm_clear_reward_group\""));
+        assertTrue(screen.contains("requestGroupConfirmation(\"confirm_delete_reward_group\""));
+        assertTrue(zhCn.contains("\"format.sakura_sign_in.confirm_clear_reward_group\""));
+        assertTrue(zhCn.contains("\"format.sakura_sign_in.confirm_delete_reward_group\""));
+        assertFalse(screen.contains("confirm_delete_reward\""));
         assertTrue(screen.contains("RewardConfigManager.clearKey(rule, key)"));
         assertTrue(screen.contains("rewardContentHeight"));
+        assertTrue(screen.contains("updateRewardDrag(inputState.mouseX(), inputState.mouseY())"));
         assertTrue(screen.contains("ShapeDrawArgs.ShapeType.RECT"));
         assertTrue(screen.contains(".setHoverTint(0)"));
         assertTrue(operationWidget.contains("extends BaseWidget"));
