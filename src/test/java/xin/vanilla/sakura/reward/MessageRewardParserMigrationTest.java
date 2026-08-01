@@ -5,7 +5,7 @@ import com.google.gson.JsonObject;
 import org.junit.Test;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumI18nType;
-import xin.vanilla.sakura.reward.impl.MessageRewardParser;
+import xin.vanilla.sakura.reward.builtin.MessageRewardCodec;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -16,7 +16,7 @@ import static org.junit.Assert.assertTrue;
 public class MessageRewardParserMigrationTest {
 
     @Test
-    public void legacyCategorizedComponentIsConvertedRecursively() {
+    public void legacyCategorizedComponentIsConvertedRecursively() throws Exception {
         JsonObject legacy = legacyComponent("legacy_notice", "MESSAGE");
         legacy.addProperty("languageCode", "zh_cn");
         legacy.addProperty("color", 0xFF336699);
@@ -30,7 +30,7 @@ public class MessageRewardParserMigrationTest {
         children.add(legacyComponent(" tail", "PLAIN"));
         legacy.add("children", children);
 
-        Object decoded = new MessageRewardParser().deserialize(legacy);
+        Object decoded = new MessageRewardCodec().decode(legacy);
 
         assertTrue(decoded instanceof Component);
         Component component = (Component) decoded;
