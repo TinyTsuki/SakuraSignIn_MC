@@ -64,6 +64,18 @@ public class SakuraNetworkContractTest {
     }
 
     @Test
+    public void rewardSyncUsesNamespacedJsonAndServerAddPermissionChecks() {
+        String packet = read(MAIN.resolve("network/packet/RewardOptionSyncPacket.java"));
+
+        assertTrue(packet.contains("RewardJsonCodec.decode"));
+        assertTrue(packet.contains("RewardJsonCodec.encode"));
+        assertTrue(packet.contains("RewardAddPermissionChecker.canApply"));
+        assertFalse(packet.contains("TypeToken<Reward>"));
+        assertFalse(packet.contains("reward.getType().ordinal"));
+        assertFalse(packet.contains("ERewardType.valueOf(buf"));
+    }
+
+    @Test
     public void initialHandshakeDoesNotCreateAPlayerDataFeedbackLoop() {
         String client = read(MAIN.resolve("network/ClientProxy.java"));
         String clientConfig = read(MAIN.resolve("network/packet/ClientConfigSyncPacket.java"));
