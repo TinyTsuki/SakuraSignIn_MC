@@ -3,10 +3,10 @@ package xin.vanilla.sakura.reward;
 import com.google.gson.JsonObject;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import xin.vanilla.sakura.enums.ERewardType;
 import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.sakura.api.reward.RewardTypeId;
+import xin.vanilla.sakura.api.reward.SakuraRewardTypes;
+import xin.vanilla.sakura.enums.ERewardType;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -31,7 +31,7 @@ public class Reward implements Cloneable, Serializable {
     /**
      * 奖励类型
      */
-    private ERewardType type;
+    private RewardTypeId typeId;
     /**
      * 奖励概率
      */
@@ -48,26 +48,62 @@ public class Reward implements Cloneable, Serializable {
         return probability.compareTo(BigDecimal.ONE) <= 0 || probability.compareTo(BigDecimal.ZERO) > 0 ? probability : BigDecimal.ONE;
     }
 
+    public <T> Reward(T content, RewardTypeId typeId) {
+        this.content = RewardOperations.encode(typeId, content);
+        this.typeId = typeId;
+    }
+
+    /**
+     * 迁移期仅供尚未切换到注册表 ID 的内部调用使用，最终删除旧枚举时一并移除。
+     */
     public <T> Reward(T content, ERewardType type) {
-        this.content = RewardManager.serializeReward(content, type);
-        this.type = type;
+        this(content, legacyTypeId(type));
+    }
+
+    public Reward(JsonObject content, RewardTypeId typeId) {
+        this.content = content;
+        this.typeId = typeId;
     }
 
     public Reward(JsonObject content, ERewardType type) {
+        this(content, legacyTypeId(type));
+    }
+
+    public Reward(JsonObject content, RewardTypeId typeId, BigDecimal probability) {
         this.content = content;
-        this.type = type;
+        this.typeId = typeId;
+        this.probability = probability;
     }
 
     public Reward(JsonObject content, ERewardType type, BigDecimal probability) {
-        this.content = content;
-        this.type = type;
+        this(content, legacyTypeId(type), probability);
+    }
+
+    public <T> Reward(T content, RewardTypeId typeId, BigDecimal probability) {
+        this.content = RewardOperations.encode(typeId, content);
+        this.typeId = typeId;
         this.probability = probability;
     }
 
     public <T> Reward(T content, ERewardType type, BigDecimal probability) {
-        this.content = RewardManager.serializeReward(content, type);
-        this.type = type;
-        this.probability = probability;
+        this(content, legacyTypeId(type), probability);
+    }
+
+    public ERewardType getType() {
+        if (SakuraRewardTypes.ITEM.equals(typeId)) return ERewardType.ITEM;
+        if (SakuraRewardTypes.EFFECT.equals(typeId)) return ERewardType.EFFECT;
+        if (SakuraRewardTypes.EXPERIENCE_POINT.equals(typeId)) return ERewardType.EXP_POINT;
+        if (SakuraRewardTypes.EXPERIENCE_LEVEL.equals(typeId)) return ERewardType.EXP_LEVEL;
+        if (SakuraRewardTypes.SIGN_IN_CARD.equals(typeId)) return ERewardType.SIGN_IN_CARD;
+        if (SakuraRewardTypes.ADVANCEMENT.equals(typeId)) return ERewardType.ADVANCEMENT;
+        if (SakuraRewardTypes.MESSAGE.equals(typeId)) return ERewardType.MESSAGE;
+        if (SakuraRewardTypes.COMMAND.equals(typeId)) return ERewardType.COMMAND;
+        return null;
+    }
+
+    public Reward setType(ERewardType type) {
+        this.typeId = legacyTypeId(type);
+        return this;
     }
 
     @Override
@@ -82,11 +118,14 @@ public class Reward implements Cloneable, Serializable {
     }
 
     public Component getName(String languageCode, boolean withNum) {
-        return RewardManager.getRewardName(languageCode, this, withNum);
+        return RewardOperations.describe(languageCode, this, withNum);
     }
 
     public static Reward getDefault() {
-        return new Reward(RewardManager.serializeReward(new ItemStack(Items.AIR), ERewardType.ITEM), ERewardType.ITEM);
+        JsonObject content = new JsonObject();
+        content.addProperty("item", "minecraft:air");
+        content.addProperty("count", 0);
+        return new Reward(content, SakuraRewardTypes.ITEM);
     }
 
     public JsonObject toJsonObject() {
@@ -97,9 +136,13 @@ public class Reward implements Cloneable, Serializable {
         if (this.disabled) {
             json.addProperty("disabled", this.disabled);
         }
-        json.addProperty("type", this.type.name());
+        json.addProperty("type", this.typeId.toString());
         json.addProperty("probability", this.probability);
         json.add("content", this.content);
         return json;
+    }
+
+    private static RewardTypeId legacyTypeId(ERewardType type) {
+        return type.rewardTypeId();
     }
 }

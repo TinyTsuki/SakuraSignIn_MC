@@ -39,6 +39,10 @@ public class SakuraBootstrapBoundaryTest {
         assertTrue(common.contains("AtomicBoolean"));
         assertTrue(client.contains("AtomicBoolean"));
         assertTrue(forge.contains("AtomicBoolean"));
+        assertTrue(common.contains("BuiltInRewardTypes.register()"));
+        assertTrue(common.contains("event.enqueueWork(SakuraRewards::freeze)"));
+        assertTrue(common.indexOf("BuiltInRewardTypes.register()")
+                < common.indexOf("BaniraConfig.register"));
         assertTrue(common.indexOf("BaniraConfig.register") < common.indexOf("SakuraNetwork.initialize"));
         assertTrue(client.contains("BaniraClientEvents.ModLifecycle.onClientSetup"));
         assertTrue(client.contains("BaniraClientEvents.Client.onClientTick"));
