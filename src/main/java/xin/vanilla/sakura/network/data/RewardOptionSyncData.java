@@ -2,7 +2,7 @@ package xin.vanilla.sakura.network.data;
 
 import lombok.Data;
 import xin.vanilla.sakura.enums.ERewardRule;
-import xin.vanilla.sakura.rewards.Reward;
+import xin.vanilla.sakura.reward.Reward;
 
 @Data
 public class RewardOptionSyncData {

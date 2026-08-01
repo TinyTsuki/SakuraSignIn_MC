@@ -1,5 +1,7 @@
 package xin.vanilla.sakura.internal.forge.player;
 
+import xin.vanilla.sakura.data.time.SakuraClock;
+
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import org.apache.logging.log4j.LogManager;
@@ -11,8 +13,8 @@ import xin.vanilla.sakura.data.PlayerSignInDataRepository;
 import xin.vanilla.sakura.data.migration.LegacyMigrationResult;
 import xin.vanilla.sakura.data.migration.LegacyPlayerDataMigrationService;
 import xin.vanilla.sakura.config.CommonConfig;
-import xin.vanilla.sakura.domain.player.HistoryRetentionPolicy;
-import xin.vanilla.sakura.domain.player.LegacyPlayerDataParser;
+import xin.vanilla.sakura.data.player.HistoryRetentionPolicy;
+import xin.vanilla.sakura.data.migration.LegacyPlayerDataParser;
 import xin.vanilla.sakura.internal.forge.migration.BaniraPlayerSummaryRepository;
 import xin.vanilla.sakura.internal.forge.migration.LegacyForgeCapabilityStore;
 import xin.vanilla.sakura.internal.forge.migration.MonthlySignInHistoryRepository;
@@ -20,8 +22,8 @@ import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.network.packet.PlayerDataSyncPacket;
 import xin.vanilla.sakura.network.packet.PlayerMonthSyncPacket;
 import xin.vanilla.sakura.platform.SakuraPlayerDataService;
-import xin.vanilla.sakura.rewards.RewardManager;
-import xin.vanilla.sakura.util.DateUtils;
+import xin.vanilla.sakura.reward.RewardManager;
+import xin.vanilla.banira.common.util.DateUtils;
 
 import java.io.IOException;
 import java.time.YearMonth;
@@ -100,7 +102,7 @@ public final class ForgePlayerSignInDataService implements SakuraPlayerDataServi
         ServerPlayerEntity player = requireServerPlayer(playerObject);
         IPlayerSignInData data = get(player);
         String currentMonth = YearMonth.from(
-                RewardManager.getCompensateDate(DateUtils.getServerDate())
+                RewardManager.getCompensateDate(SakuraClock.serverNow())
                         .toInstant()
                         .atZone(ZoneId.systemDefault())
         ).toString();
@@ -181,7 +183,7 @@ public final class ForgePlayerSignInDataService implements SakuraPlayerDataServi
     ) {
         CommonConfig.HistoryView config = CommonConfig.get().history();
         YearMonth currentMonth = YearMonth.from(
-                RewardManager.getCompensateDate(DateUtils.getServerDate())
+                RewardManager.getCompensateDate(SakuraClock.serverNow())
                         .toInstant()
                         .atZone(ZoneId.systemDefault())
         );

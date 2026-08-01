@@ -13,7 +13,7 @@ import xin.vanilla.banira.common.config.annotation.ConfigEntry;
 import xin.vanilla.banira.api.client.theme.BaniraThemeMode;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.access.ClientConfigAccess;
-import xin.vanilla.sakura.util.GLFWKey;
+import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.sakura.util.GLFWKeyHelper;
 
 import java.util.Arrays;

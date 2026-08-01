@@ -1,5 +1,7 @@
 package xin.vanilla.sakura.command.impl;
 
+import xin.vanilla.sakura.data.time.SakuraClock;
+
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.Commands;
@@ -7,7 +9,7 @@ import net.minecraft.entity.player.ServerPlayerEntity;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.message.SakuraMessages;
-import xin.vanilla.sakura.util.DateUtils;
+import xin.vanilla.banira.common.util.DateUtils;
 
 import java.util.function.Function;
 
@@ -54,7 +56,7 @@ final class ConfigQueryCommand {
                 )))
                 .then(query("date", player -> ConfigCommandMessages.translated(
                         player, "server_current_time_s",
-                        DateUtils.toDateTimeString(DateUtils.getServerDate())
+                        DateUtils.toDateTimeString(SakuraClock.serverNow())
                 )))
                 .then(query("rewardAffectedByLuck", player -> ConfigCommandMessages.translated(
                         player, "server_enabled_or_not_reward_affected_by_luck",

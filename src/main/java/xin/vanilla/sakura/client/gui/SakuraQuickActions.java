@@ -20,7 +20,7 @@ import xin.vanilla.sakura.event.ClientEventHandler;
 import xin.vanilla.sakura.screen.RewardOptionScreen;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
-import xin.vanilla.sakura.text.SakuraComponent;
+import xin.vanilla.sakura.SakuraComponent;
 
 /**
  * 将 Sakura 的背包快捷入口注册到 Banira 通用快捷操作托盘。

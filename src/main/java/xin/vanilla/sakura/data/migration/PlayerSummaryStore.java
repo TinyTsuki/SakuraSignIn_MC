@@ -1,6 +1,6 @@
 package xin.vanilla.sakura.data.migration;
 
-import xin.vanilla.sakura.domain.player.PlayerSignInSummary;
+import xin.vanilla.sakura.data.player.PlayerSignInSummary;
 
 import java.io.IOException;
 import java.util.Optional;

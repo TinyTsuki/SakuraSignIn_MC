@@ -1,5 +1,7 @@
 package xin.vanilla.sakura.screen;
 
+import xin.vanilla.sakura.data.time.SakuraClock;
+
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.Getter;
@@ -15,8 +17,11 @@ import xin.vanilla.banira.client.gui.ConfirmDialogScreen;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.widget.BaseShapeWidget;
 import xin.vanilla.banira.client.gui.widget.ButtonWidget;
+import xin.vanilla.banira.client.gui.widget.LabelWidget;
 import xin.vanilla.banira.client.gui.widget.TooltipWidget;
+import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.enums.IEnumDescribable;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.client.SakuraClientBootstrap;
 import xin.vanilla.sakura.client.SakuraClientState;
@@ -32,16 +37,15 @@ import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.network.packet.SignInPacket;
 import xin.vanilla.sakura.notification.SakuraClientNotifications;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
-import xin.vanilla.sakura.rewards.RewardList;
-import xin.vanilla.sakura.rewards.RewardManager;
+import xin.vanilla.sakura.reward.RewardList;
+import xin.vanilla.sakura.reward.RewardManager;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
-import xin.vanilla.sakura.text.SakuraComponent;
-import xin.vanilla.sakura.util.AbstractGuiUtils;
-import xin.vanilla.sakura.util.DateUtils;
-import xin.vanilla.sakura.util.GLFWKey;
+import xin.vanilla.sakura.SakuraComponent;
+import xin.vanilla.banira.common.util.DateUtils;
+import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.sakura.util.GLFWKeyHelper;
-import xin.vanilla.sakura.util.StringUtils;
+import xin.vanilla.banira.common.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -85,7 +89,7 @@ public final class SignInScreen extends BaniraScreen {
     private int bgY;
 
     @Getter
-    enum OperationButtonType {
+    enum OperationButtonType implements IEnumDescribable {
         LEFT_ARROW(1),
         RIGHT_ARROW(2),
         UP_ARROW(3),
@@ -109,6 +113,11 @@ public final class SignInScreen extends BaniraScreen {
             this.themeId = themeId;
         }
 
+        @Override
+        public Component enumDescription() {
+            return SakuraComponent.get().literal(name());
+        }
+
         static OperationButtonType fromCode(int code) {
             return Arrays.stream(values())
                     .filter(value -> value.code == code)
@@ -126,7 +135,7 @@ public final class SignInScreen extends BaniraScreen {
     protected void onInit() {
         if (SakuraClientState.getCalendarCurrentDate() == null) {
             SakuraClientState.setCalendarCurrentDate(
-                    RewardManager.getCompensateDate(DateUtils.getClientDate()));
+                    RewardManager.getCompensateDate(SakuraClock.clientNow()));
         }
         ClientEventHandler.loadThemeTexture();
         tips = Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.sign_in_screen_tips");
@@ -247,8 +256,8 @@ public final class SignInScreen extends BaniraScreen {
 
     private void createOpeningTipButtons() {
         tips.font(font);
-        int textWidth = Math.max(120, AbstractGuiUtils.multilineTextWidth(tips));
-        int textHeight = AbstractGuiUtils.multilineTextHeight(tips);
+        int textWidth = Math.max(120, multilineTextWidth(tips));
+        int textHeight = multilineTextHeight(tips);
         int buttonWidth = Math.min(100, Math.max(50, textWidth / 2 - 5));
         int x = (width - textWidth) / 2;
         int y = (height - textHeight - 24) / 2;
@@ -288,7 +297,7 @@ public final class SignInScreen extends BaniraScreen {
                 .getCellCoordinate().getX() * scale;
         double startY = bgY + SakuraClientState.getThemeTextureCoordinate()
                 .getCellCoordinate().getY() * scale;
-        Date compensateDate = RewardManager.getCompensateDate(DateUtils.getClientDate());
+        Date compensateDate = RewardManager.getCompensateDate(SakuraClock.clientNow());
         Date lastMonth = DateUtils.addMonth(current, -1);
         int daysOfLastMonth = DateUtils.getDaysOfMonth(lastMonth);
         int monthStartWeekDay = DateUtils.getDayOfWeekOfMonthStart(current);
@@ -451,7 +460,7 @@ public final class SignInScreen extends BaniraScreen {
         Date cellDate = DateUtils.getDate(cell.getYear(), cell.getMonth(), cell.getDay());
         if (cell.getStatus() == ESignInStatus.NOT_SIGNED_IN.getCode()) {
             if (RewardManager.getCompensateDateInt()
-                    < DateUtils.toDateInt(RewardManager.getCompensateDate(DateUtils.getClientDate()))) {
+                    < DateUtils.toDateInt(RewardManager.getCompensateDate(SakuraClock.clientNow()))) {
                 SakuraClientNotifications.warning(SakuraComponent.get().transClient(
                         "word", "next_day_cannot_operate"), SakuraNotificationTypes.SIGN_IN);
             } else {
@@ -459,7 +468,7 @@ public final class SignInScreen extends BaniraScreen {
                         ? ESignInStatus.REWARDED.getCode()
                         : ESignInStatus.SIGNED_IN.getCode());
                 SakuraNetwork.sendToServer(new SignInPacket(
-                        DateUtils.toDateTimeString(DateUtils.getClientDate()),
+                        DateUtils.toDateTimeString(SakuraClock.clientNow()),
                         ClientConfig.get().display().autoRewarded(), ESignInType.SIGN_IN));
             }
         } else if (cell.getStatus() == ESignInStatus.SIGNED_IN.getCode()) {
@@ -474,7 +483,7 @@ public final class SignInScreen extends BaniraScreen {
         } else if (cell.getStatus() == ESignInStatus.CAN_REPAIR.getCode()) {
             requestMakeUpSignIn(cell, cellDate, player);
         } else if (cell.getStatus() == ESignInStatus.NO_ACTION.getCode()) {
-            String key = cellDate.after(RewardManager.getCompensateDate(DateUtils.getClientDate()))
+            String key = cellDate.after(RewardManager.getCompensateDate(SakuraClock.clientNow()))
                     ? "next_day_cannot_operate" : "past_day_cannot_operate";
             SakuraClientNotifications.warning(SakuraComponent.get().transClient(
                     "word", key), SakuraNotificationTypes.SIGN_IN);
@@ -540,7 +549,8 @@ public final class SignInScreen extends BaniraScreen {
         RenderSystem.defaultBlendFunc();
         Minecraft.getInstance().getTextureManager().bind(SakuraClientState.getThemeTexture());
         Coordinate uv = SakuraClientState.getThemeTextureCoordinate().getBgUV();
-        AbstractGuiUtils.blit(stack, bgX, bgY, bgWidth, bgHeight,
+        AbstractGuiUtils.blit(stack, SakuraClientState.getThemeTexture(),
+                bgX, bgY, bgWidth, bgHeight,
                 (float) uv.getU0(), (float) uv.getV0(),
                 (int) uv.getUWidth(), (int) uv.getVHeight(),
                 SakuraClientState.getThemeTextureCoordinate().getTotalWidth(),
@@ -659,11 +669,22 @@ public final class SignInScreen extends BaniraScreen {
                 .color(0xDD000000)
                 .rect(rect));
         tips.stack(stack).font(font);
-        int textWidth = Math.max(120, AbstractGuiUtils.multilineTextWidth(tips));
-        int textHeight = AbstractGuiUtils.multilineTextHeight(tips);
-        AbstractGuiUtils.drawString(tips,
-                (width - textWidth) / 2.0f,
-                (height - textHeight - 24) / 2.0f);
+        int textWidth = Math.max(120, multilineTextWidth(tips));
+        int textHeight = multilineTextHeight(tips);
+        LabelWidget.drawLimitedText(FontDrawArgs.of(tips)
+                .x((width - textWidth) / 2.0)
+                .y((height - textHeight - 24) / 2.0)
+                .maxWidth(textWidth).maxLine(0).wrap(false)
+                .inScreen(false).padding(0).margin(0));
+    }
+
+    private int multilineTextWidth(Text text) {
+        return Arrays.stream(text.content().split("\\n", -1))
+                .mapToInt(font::width).max().orElse(0);
+    }
+
+    private int multilineTextHeight(Text text) {
+        return text.content().split("\\n", -1).length * font.lineHeight;
     }
 
     private void renderHoveredTooltips(MatrixStack stack) {

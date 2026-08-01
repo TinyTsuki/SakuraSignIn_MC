@@ -1,10 +1,14 @@
 package xin.vanilla.sakura.enums;
 
 import lombok.Getter;
+import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.enums.IEnumDescribable;
+import xin.vanilla.banira.common.util.EnumDescriptionHelper;
+import xin.vanilla.sakura.SakuraComponent;
 
 @Getter
 @SuppressWarnings("unused")
-public enum ESignInStatus {
+public enum ESignInStatus implements IEnumDescribable {
     NO_ACTION(-2, "不可操作"),
     CAN_REPAIR(-1, "可补签"),
     NOT_SIGNED_IN(0, "未签到"),
@@ -17,6 +21,11 @@ public enum ESignInStatus {
     ESignInStatus(int code, String description) {
         this.code = code;
         this.description = description;
+    }
+
+    @Override
+    public Component enumDescription() {
+        return EnumDescriptionHelper.describeEnum(SakuraComponent.get(), this);
     }
 
     public static ESignInStatus valueOf(int code) {

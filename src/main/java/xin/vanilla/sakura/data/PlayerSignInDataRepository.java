@@ -3,9 +3,9 @@ package xin.vanilla.sakura.data;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.INBT;
 import net.minecraft.nbt.ListNBT;
-import xin.vanilla.sakura.domain.player.LegacyPlayerData;
-import xin.vanilla.sakura.domain.player.LegacyPlayerDataParser;
-import xin.vanilla.sakura.domain.player.PlayerSignInSummary;
+import xin.vanilla.sakura.data.migration.LegacyPlayerData;
+import xin.vanilla.sakura.data.migration.LegacyPlayerDataParser;
+import xin.vanilla.sakura.data.player.PlayerSignInSummary;
 import xin.vanilla.sakura.internal.forge.migration.MonthlySignInHistoryRepository;
 import xin.vanilla.sakura.data.migration.PlayerSummaryStore;
 
@@ -66,7 +66,7 @@ public final class PlayerSignInDataRepository {
         if (previous.isPresent()) {
             previous.get().getMonthIndexes().forEach((month, previousIndex) ->
                     parsed.getSummary().getMonthIndexes()
-                            .computeIfAbsent(month, xin.vanilla.sakura.domain.player.MonthSignInIndex::new)
+                            .computeIfAbsent(month, xin.vanilla.sakura.data.player.MonthSignInIndex::new)
                             .merge(previousIndex));
             parsed.getSummary().setLegacyCapabilityMigrated(
                     previous.get().isLegacyCapabilityMigrated()

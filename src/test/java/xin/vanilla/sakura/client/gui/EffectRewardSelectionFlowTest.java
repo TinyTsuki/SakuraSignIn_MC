@@ -6,7 +6,7 @@ import net.minecraft.potion.EffectType;
 import net.minecraft.util.ResourceLocation;
 import org.junit.Test;
 import xin.vanilla.sakura.enums.ERewardType;
-import xin.vanilla.sakura.rewards.Reward;
+import xin.vanilla.sakura.reward.Reward;
 import xin.vanilla.sakura.test.BaniraTestPlatform;
 
 import java.lang.reflect.Field;

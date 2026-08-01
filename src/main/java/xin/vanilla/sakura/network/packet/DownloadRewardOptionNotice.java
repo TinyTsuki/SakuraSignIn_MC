@@ -4,7 +4,7 @@ import net.minecraft.entity.player.ServerPlayerEntity;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
-import xin.vanilla.sakura.config.RewardConfigManager;
+import xin.vanilla.sakura.config.reward.RewardConfigManager;
 import xin.vanilla.sakura.network.SakuraNetwork;
 
 /**

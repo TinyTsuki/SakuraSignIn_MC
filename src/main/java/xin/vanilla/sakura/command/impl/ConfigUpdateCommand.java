@@ -1,5 +1,7 @@
 package xin.vanilla.sakura.command.impl;
 
+import xin.vanilla.sakura.data.time.SakuraClock;
+
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
@@ -13,10 +15,10 @@ import xin.vanilla.banira.common.util.Translator;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.command.CommandDateTimeParser;
 import xin.vanilla.sakura.config.CommonConfig;
-import xin.vanilla.sakura.config.RewardConfigManager;
+import xin.vanilla.sakura.config.reward.RewardConfigManager;
 import xin.vanilla.sakura.enums.ETimeCoolingMethod;
 import xin.vanilla.sakura.message.SakuraMessages;
-import xin.vanilla.sakura.util.DateUtils;
+import xin.vanilla.banira.common.util.DateUtils;
 
 import java.time.LocalDateTime;
 import java.util.Date;
@@ -111,7 +113,7 @@ final class ConfigUpdateCommand {
         return Commands.literal("date")
                 .then(Commands.argument("value", StringArgumentType.greedyString())
                         .suggests((context, builder) -> {
-                            LocalDateTime now = DateUtils.getLocalDateTime(DateUtils.getServerDate());
+                            LocalDateTime now = DateUtils.getLocalDateTime(SakuraClock.serverNow());
                             builder.suggest(String.format(
                                     "%d %d %d %d %d %d",
                                     now.getYear(), now.getMonthValue(), now.getDayOfMonth(),
@@ -124,7 +126,7 @@ final class ConfigUpdateCommand {
                             long value = CommandDateTimeParser.parse(
                                     StringArgumentType.getString(context, "value"),
                                     CommandDateTimeParser.Kind.DATE_TIME,
-                                    DateUtils.getLocalDateTime(DateUtils.getServerDate())
+                                    DateUtils.getLocalDateTime(SakuraClock.serverNow())
                             );
                             Date date = DateUtils.getDate(value);
                             CommonConfig.get().dateTime().serverTime(

@@ -5,8 +5,8 @@ import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.data.PlayerSignInData;
 import xin.vanilla.sakura.data.SignInRecord;
 import xin.vanilla.sakura.network.TestBaniraPacketBuffer;
-import xin.vanilla.sakura.rewards.RewardList;
-import xin.vanilla.sakura.util.DateUtils;
+import xin.vanilla.sakura.reward.RewardList;
+import xin.vanilla.banira.common.util.DateUtils;
 
 import java.util.Arrays;
 import java.util.Date;
