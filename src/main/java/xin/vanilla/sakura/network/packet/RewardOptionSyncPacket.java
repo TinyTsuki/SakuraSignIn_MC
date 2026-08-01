@@ -1,6 +1,5 @@
 package xin.vanilla.sakura.network.packet;
 
-import com.google.gson.reflect.TypeToken;
 import lombok.Getter;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import xin.vanilla.banira.api.BaniraNetwork;
@@ -16,12 +15,12 @@ import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.network.data.RewardOptionSyncData;
 import xin.vanilla.sakura.network.data.RewardOptionSyncKind;
 import xin.vanilla.sakura.reward.Reward;
+import xin.vanilla.sakura.reward.RewardAddPermissionChecker;
+import xin.vanilla.sakura.reward.RewardJsonCodec;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import static xin.vanilla.sakura.config.reward.RewardConfigManager.GSON;
 
 /**
  * 有序奖励配置分包；组顺序和重复概率组均保持不变。
@@ -47,8 +46,7 @@ public class RewardOptionSyncPacket extends SplitPacket implements INetworkPacke
             ERewardRule rule = ERewardRule.valueOf(buf.readInt());
             String key = buf.readUtf();
             Reward reward = kind == RewardOptionSyncKind.REWARD
-                    ? GSON.fromJson(buf.readUtf(), new TypeToken<Reward>() {
-                    }.getType())
+                    ? RewardJsonCodec.decode(new com.google.gson.JsonParser().parse(buf.readUtf()))
                     : null;
             rewardOptionData.add(new RewardOptionSyncData(kind, rule, key, reward));
         }
@@ -62,7 +60,7 @@ public class RewardOptionSyncPacket extends SplitPacket implements INetworkPacke
             buf.writeInt(data.getRule().getCode());
             buf.writeUtf(data.getKey());
             if (data.getKind() == RewardOptionSyncKind.REWARD) {
-                buf.writeUtf(GSON.toJson(data.getReward().toJsonObject()));
+                buf.writeUtf(RewardJsonCodec.encode(data.getReward()).toString());
             }
         }
     }
@@ -78,18 +76,25 @@ public class RewardOptionSyncPacket extends SplitPacket implements INetworkPacke
                 return;
             }
             try {
-                if (sender.hasPermissions(CommonConfig.get().permission().permissionEditReward())) {
-                    RewardConfigManager.backupRewardOption(false);
-                    RewardConfigManager.setRewardConfig(RewardConfigManager.fromSyncPacketList(
-                            Collections.singletonList(packet)
-                    ));
-                    RewardConfigManager.saveRewardOption();
-                    for (ServerPlayerEntity player : sender.server.getPlayerList().getPlayers()) {
-                        if (!player.getUUID().equals(sender.getUUID())) {
-                            SakuraNetwork.sendSplitToPlayer(
-                                    RewardConfigManager.toSyncPacket(player), player
-                            );
-                        }
+                if (!sender.hasPermissions(CommonConfig.get().permission().permissionEditReward())) {
+                    BaniraNetwork.sendToPlayer(new RewardOptionDataReceivedNotice(false), sender);
+                    return;
+                }
+                xin.vanilla.sakura.config.reward.RewardConfig candidate =
+                        RewardConfigManager.fromSyncPacketList(Collections.singletonList(packet));
+                if (!RewardAddPermissionChecker.canApply(sender,
+                        RewardConfigManager.getRewardConfig(), candidate)) {
+                    BaniraNetwork.sendToPlayer(new RewardOptionDataReceivedNotice(false), sender);
+                    return;
+                }
+                RewardConfigManager.backupRewardOption(false);
+                RewardConfigManager.setRewardConfig(candidate);
+                RewardConfigManager.saveRewardOption();
+                for (ServerPlayerEntity player : sender.server.getPlayerList().getPlayers()) {
+                    if (!player.getUUID().equals(sender.getUUID())) {
+                        SakuraNetwork.sendSplitToPlayer(
+                                RewardConfigManager.toSyncPacket(player), player
+                        );
                     }
                 }
                 BaniraNetwork.sendToPlayer(new RewardOptionDataReceivedNotice(true), sender);
