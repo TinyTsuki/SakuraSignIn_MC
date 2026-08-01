@@ -5,6 +5,7 @@ import org.junit.Before;
 import org.junit.Test;
 import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.api.reward.RewardTypeId;
+import xin.vanilla.sakura.client.reward.builtin.BuiltInRewardClientTypes;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
@@ -57,6 +58,15 @@ public class SakuraRewardClientTest {
     @Test
     public void missingClientExtensionStaysExplicitlyUnresolved() {
         assertFalse(SakuraRewardClient.find(RewardTypeId.parse("missing:coin")).isPresent());
+    }
+
+    @Test
+    public void everyBuiltInTypeProvidesAnEditor() {
+        BuiltInRewardClientTypes.register();
+
+        assertEquals(8, SakuraRewardClient.all().size());
+        assertTrue(SakuraRewardClient.all().stream()
+                .allMatch(registration -> registration.getExtension().getEditor() != null));
     }
 
     private static RewardClientExtension<Integer> extension(int sortOrder) {

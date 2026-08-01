@@ -1,7 +1,5 @@
 package xin.vanilla.sakura.client.gui;
 
-import xin.vanilla.sakura.enums.ERewardType;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -9,16 +7,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 将混合选择转换为稳定、有序的编辑目标。
+ * 将混合选择转换为稳定、有序的组与奖励 ID。
  */
-public final class RewardEditTargets {
-    private RewardEditTargets() {
-    }
-
-    public static boolean hasSeparateProbabilityEditor(ERewardType type) {
-        return type == ERewardType.ITEM
-                || type == ERewardType.EFFECT
-                || type == ERewardType.ADVANCEMENT;
+public final class RewardSelectionIds {
+    private RewardSelectionIds() {
     }
 
     public static List<String> groupKeys(Collection<String> selectedIds, String groupPrefix) {
@@ -33,9 +25,7 @@ public final class RewardEditTargets {
         return new ArrayList<>(keys);
     }
 
-    /**
-     * 从完整规则数据生成奖励 ID，折叠状态不会影响结果。
-     */
+    /** 折叠状态不影响完整规则中的奖励 ID。 */
     public static List<String> rewardIds(Map<String, ? extends List<?>> groups) {
         List<String> ids = new ArrayList<>();
         if (groups != null) {
