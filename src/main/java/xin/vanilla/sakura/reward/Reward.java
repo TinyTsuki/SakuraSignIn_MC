@@ -129,17 +129,7 @@ public class Reward implements Cloneable, Serializable {
     }
 
     public JsonObject toJsonObject() {
-        JsonObject json = new JsonObject();
-        if (this.rewarded) {
-            json.addProperty("rewarded", this.rewarded);
-        }
-        if (this.disabled) {
-            json.addProperty("disabled", this.disabled);
-        }
-        json.addProperty("type", this.typeId.toString());
-        json.addProperty("probability", this.probability);
-        json.add("content", this.content);
-        return json;
+        return RewardJsonCodec.encode(this);
     }
 
     private static RewardTypeId legacyTypeId(ERewardType type) {

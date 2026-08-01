@@ -3,14 +3,16 @@ package xin.vanilla.sakura.config.reward;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
-import com.google.gson.reflect.TypeToken;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.stream.JsonReader;
 import xin.vanilla.sakura.enums.ERewardRule;
+import xin.vanilla.sakura.enums.ERewardType;
+import xin.vanilla.sakura.reward.Reward;
 import xin.vanilla.sakura.reward.RewardList;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
@@ -18,9 +20,6 @@ import java.math.RoundingMode;
  * 逐项读取旧 JSON 对象，避免 Gson 将同名概率键覆盖。
  */
 public final class LegacyRewardConfigReader {
-    private static final Type REWARD_LIST_TYPE = new TypeToken<RewardList>() {
-    }.getType();
-
     private final Gson gson = new Gson();
 
     public RewardConfigDocument read(String json) throws IOException {
@@ -68,7 +67,7 @@ public final class LegacyRewardConfigReader {
             }
             reader.endObject();
             return document;
-        } catch (JsonParseException | IllegalStateException e) {
+        } catch (JsonParseException | IllegalStateException | IllegalArgumentException e) {
             throw new IOException("Invalid legacy reward configuration", e);
         }
     }
@@ -102,7 +101,7 @@ public final class LegacyRewardConfigReader {
             String date = stringValue(object, "date");
             int limit = object.has("num") ? object.get("num").getAsInt() : 1;
             RewardList rewards = object.has("value")
-                    ? gson.fromJson(object.get("value"), REWARD_LIST_TYPE)
+                    ? readRewards(object.getAsJsonArray("value"))
                     : new RewardList();
             document.getGroups().add(RewardGroup.cdk(key, date, limit, rewards));
         }
@@ -110,8 +109,30 @@ public final class LegacyRewardConfigReader {
     }
 
     private RewardList readRewards(JsonReader reader) {
-        RewardList rewards = gson.fromJson(reader, REWARD_LIST_TYPE);
-        return rewards == null ? new RewardList() : rewards;
+        JsonArray array = gson.fromJson(reader, JsonArray.class);
+        return readRewards(array);
+    }
+
+    private RewardList readRewards(JsonArray array) {
+        RewardList rewards = new RewardList();
+        if (array == null) {
+            return rewards;
+        }
+        for (JsonElement element : array) {
+            JsonObject json = element.getAsJsonObject();
+            ERewardType legacyType = ERewardType.valueOf(stringValue(json, "type"));
+            JsonObject content = json.has("content")
+                    ? gson.fromJson(json.getAsJsonObject("content"), JsonObject.class)
+                    : new JsonObject();
+            BigDecimal probability = json.has("probability")
+                    ? json.get("probability").getAsBigDecimal()
+                    : BigDecimal.ONE;
+            Reward reward = new Reward(content, legacyType.rewardTypeId(), probability)
+                    .setRewarded(json.has("rewarded") && json.get("rewarded").getAsBoolean())
+                    .setDisabled(json.has("disabled") && json.get("disabled").getAsBoolean());
+            rewards.add(reward);
+        }
+        return rewards;
     }
 
     private static String stringValue(JsonObject object, String name) {

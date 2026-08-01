@@ -8,6 +8,7 @@ import org.junit.rules.TemporaryFolder;
 import xin.vanilla.sakura.config.reward.RewardConfig;
 import xin.vanilla.sakura.enums.ERewardRule;
 import xin.vanilla.sakura.enums.ERewardType;
+import xin.vanilla.sakura.api.reward.SakuraRewardTypes;
 import xin.vanilla.sakura.network.data.RewardOptionSyncData;
 import xin.vanilla.sakura.network.packet.RewardOptionSyncPacket;
 import xin.vanilla.sakura.reward.Reward;
@@ -47,6 +48,23 @@ public class RewardConfigMigrationTest {
         assertEquals("first", groups.get(0).getRewards().get(0).getContent().get("text").getAsString());
         assertEquals("0.5", groups.get(1).getKey());
         assertEquals("second", groups.get(1).getRewards().get(0).getContent().get("text").getAsString());
+        assertEquals(SakuraRewardTypes.MESSAGE,
+                groups.get(0).getRewards().get(0).getTypeId());
+    }
+
+    @Test
+    public void legacyEnumNamesBecomeNamespacedTypeIds() throws Exception {
+        RewardConfigDocument document = new LegacyRewardConfigReader().read("{"
+                + "\"baseRewards\":[{\"type\":\"ITEM\",\"probability\":1,"
+                + "\"content\":{\"item\":\"minecraft:apple\",\"count\":1}}],"
+                + "\"continuousRewards\":{},\"cycleRewards\":{},\"yearRewards\":{},"
+                + "\"monthRewards\":{},\"weekRewards\":{},\"dateTimeRewards\":{},"
+                + "\"cumulativeRewards\":{},\"randomRewards\":{},\"cdkRewards\":[]}" );
+
+        Reward reward = document.getGroups().get(0).getRewards().get(0);
+        assertEquals(SakuraRewardTypes.ITEM, reward.getTypeId());
+        String encoded = new RewardConfigCodec().encodeDocument(document);
+        assertTrue(encoded.contains("\"type\": \"sakura_sign_in:item\""));
     }
 
     @Test
