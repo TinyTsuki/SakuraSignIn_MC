@@ -5,16 +5,12 @@ import xin.vanilla.sakura.data.time.SakuraClock;
 import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.config.CommonConfig;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
 import lombok.NonNull;
-import net.minecraft.advancements.AdvancementHolder;
-import net.minecraft.advancements.AdvancementProgress;
 import net.minecraft.entity.item.ItemEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.potion.Effects;
-import net.minecraft.util.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.config.reward.RewardConfig;
@@ -25,11 +21,13 @@ import xin.vanilla.sakura.data.SignInRecord;
 import xin.vanilla.sakura.message.SakuraMessages;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
 import xin.vanilla.sakura.enums.ERewardType;
+import xin.vanilla.sakura.api.reward.RewardGrantContext;
+import xin.vanilla.sakura.api.reward.RewardGrantResult;
+import xin.vanilla.sakura.api.reward.RewardTypeId;
 import xin.vanilla.sakura.config.reward.RewardGroup;
 import xin.vanilla.sakura.enums.ESignInType;
 import xin.vanilla.sakura.enums.ETimeCoolingMethod;
 import xin.vanilla.sakura.network.packet.SignInPacket;
-import xin.vanilla.sakura.reward.impl.*;
 import xin.vanilla.sakura.util.*;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.util.CollectionUtils;
@@ -49,52 +47,26 @@ import java.util.stream.Collectors;
  */
 public class RewardManager {
     private static final Logger LOGGER = LogManager.getLogger();
-    private static final Map<ERewardType, RewardParser<?>> rewardParsers = new HashMap<>();
-
-    // 注册不同类型的奖励解析器
-    static {
-        rewardParsers.put(ERewardType.ITEM, new ItemRewardParser());
-        rewardParsers.put(ERewardType.EFFECT, new EffectRewardParser());
-        rewardParsers.put(ERewardType.EXP_POINT, new ExpPointRewardParser());
-        rewardParsers.put(ERewardType.EXP_LEVEL, new ExpLevelRewardParser());
-        rewardParsers.put(ERewardType.SIGN_IN_CARD, new SignInCardRewardParser());
-        rewardParsers.put(ERewardType.ADVANCEMENT, new AdvancementRewardParser());
-        rewardParsers.put(ERewardType.MESSAGE, new MessageRewardParser());
-        rewardParsers.put(ERewardType.COMMAND, new CommandRewardParser());
-        // MORE ...
-    }
-
     /**
      * 反序列化奖励
      */
-    @SuppressWarnings("unchecked")
     public static <T> T deserializeReward(Reward reward) {
-        RewardParser<T> parser = (RewardParser<T>) rewardParsers.get(reward.getType());
-        if (parser == null) {
-            throw new JsonParseException("Unknown reward type: " + reward.getType());
-        }
-        return parser.deserialize(reward.getContent());
+        return RewardOperations.decode(reward);
     }
 
     /**
      * 序列化奖励
      */
-    @SuppressWarnings("unchecked")
-    public static <T> JsonObject serializeReward(T reward, ERewardType type) {
-        RewardParser<T> parser = (RewardParser<T>) rewardParsers.get(type);
-        if (parser == null) {
-            throw new JsonParseException("Unknown reward type: " + type);
-        }
-        return parser.serialize(reward);
+    public static <T> JsonObject serializeReward(T reward, RewardTypeId type) {
+        return RewardOperations.encode(type, reward);
     }
 
-    @SuppressWarnings("unchecked")
-    public static <T> Component getRewardName(String languageCode, Reward reward, boolean withNum) {
-        RewardParser<T> parser = (RewardParser<T>) rewardParsers.get(reward.getType());
-        if (parser == null) {
-            throw new JsonParseException("Unknown reward type: " + reward.getType());
-        }
-        return parser.getDisplayName(languageCode, reward.getContent(), withNum);
+    public static <T> JsonObject serializeReward(T reward, ERewardType type) {
+        return serializeReward(reward, type.rewardTypeId());
+    }
+
+    public static Component getRewardName(String languageCode, Reward reward, boolean withNum) {
+        return RewardOperations.describe(languageCode, reward, withNum);
     }
 
     /**
@@ -394,70 +366,25 @@ public class RewardManager {
      * 合并重复类型的奖励
      */
     public static RewardList mergeRewards(RewardList rewardList) {
-        // return rewardList;
-        List<Reward> rewards = rewardList.stream()
-                .collect(Collectors.groupingBy(reward -> {
-                            ERewardType type = reward.getType();
-                            String key = type.name();
-                            // 分组时基于type和内容字段进行分组键
-                            switch (type) {
-                                case ITEM:
-                                    ItemStack itemStack = RewardManager.deserializeReward(reward);
-                                    key = itemStack.getItem().getRegistryName().toString();
-                                    if (itemStack.hasTag()) {
-                                        key += itemStack.getTag().toString();
-                                    }
-                                    break;
-                                case EFFECT:
-                                    EffectInstance effectInstance = RewardManager.deserializeReward(reward);
-                                    key = effectInstance.getEffect().getRegistryName().toString() + " " + effectInstance.getAmplifier();
-                                    break;
-                                case EXP_POINT:
-                                    break;
-                                case EXP_LEVEL:
-                                    break;
-                                case SIGN_IN_CARD:
-                                    break;
-                                case ADVANCEMENT:
-                                case MESSAGE:
-                                default:
-                                    key = reward.getContent().toString();
-                                    break;
-                            }
-                            return key + reward.getProbability();
-                        },
-                        Collectors.reducing(null, (reward1, reward2) -> {
-                            if (reward1 == null) return reward2;
-                            if (reward2 == null) return reward1;
-
-                            ERewardType type = reward1.getType();
-                            Object content1 = RewardManager.deserializeReward(reward1);
-                            Object content2 = RewardManager.deserializeReward(reward2);
-                            switch (type) {
-                                case ITEM:
-                                    content1 = new ItemStack(((ItemStack) content1).getItem(), ((ItemStack) content1).getCount() + ((ItemStack) content2).getCount());
-                                    // TODO 设置NBT
-                                    // ((ItemStack) content1).setTag(((ItemStack) content2).getTag());
-                                    break;
-                                case EFFECT:
-                                    content1 = new EffectInstance(((EffectInstance) content1).getEffect(), ((EffectInstance) content1).getDuration() + ((EffectInstance) content2).getDuration(), ((EffectInstance) content1).getAmplifier());
-                                    break;
-                                case EXP_POINT:
-                                case SIGN_IN_CARD:
-                                case EXP_LEVEL:
-                                    content1 = ((Integer) content1) + ((Integer) content2);
-                                    break;
-                                case ADVANCEMENT:
-                                case MESSAGE:
-                                default:
-                                    break;
-                            }
-                            return new Reward().setRewarded(reward1.isRewarded()).setType(type).setDisabled(reward1.isDisabled()).setContent(RewardManager.serializeReward(content1, type));
-                        })))
-                .values().stream()
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-        return new RewardList(rewards);
+        RewardList result = new RewardList();
+        if (rewardList == null) {
+            return result;
+        }
+        for (Reward candidate : rewardList) {
+            boolean merged = false;
+            for (int index = 0; index < result.size(); index++) {
+                Optional<Reward> value = RewardOperations.merge(result.get(index), candidate);
+                if (value.isPresent()) {
+                    result.set(index, value.get());
+                    merged = true;
+                    break;
+                }
+            }
+            if (!merged) {
+                result.add(candidate);
+            }
+        }
+        return result;
     }
 
     public static List<String> getDateStringList(Date date) {
@@ -619,7 +546,6 @@ public class RewardManager {
 
     public static boolean giveRewardToPlayer(ServerPlayerEntity player, IPlayerSignInData signInData, Reward reward) {
         reward.setRewarded(true);
-        Object object = RewardManager.deserializeReward(reward);
         // 判断是否启用
         if (CommonConfig.get().reward().rewardAffectedByLuck()) {
             int offset = player.getActiveEffects().stream()
@@ -634,42 +560,37 @@ public class RewardManager {
             if (new Random().nextDouble() > reward.getProbability().add(BigDecimal.valueOf(offset * 0.075)).doubleValue())
                 return false;
         }
-        switch (reward.getType()) {
-            case ITEM:
-                RewardManager.giveItemStack(player, (ItemStack) object, true);
-                break;
-            case SIGN_IN_CARD:
-                signInData.plusSignInCard((Integer) object);
-                break;
-            case EFFECT:
-                player.addEffect((EffectInstance) object);
-                break;
-            case EXP_LEVEL:
-                player.giveExperienceLevels((Integer) object);
-                break;
-            case EXP_POINT:
-                player.giveExperiencePoints((Integer) object);
-                break;
-            case ADVANCEMENT:
-                AdvancementHolder advancement = player.server.getAdvancements().get((ResourceLocation) object);
-                if (advancement != null) {
-                    AdvancementProgress progress = player.getAdvancements().getOrStartProgress(advancement);
-                    progress.getRemainingCriteria().forEach(criterion -> player.getAdvancements().award(advancement, criterion));
-                }
-                break;
-            case MESSAGE:
-                SakuraMessages.send(player, (Component) object);
-                break;
-            case COMMAND:
-                String command = (String) object;
-                command = command.replaceAll("@s", player.getName().getString());
-                if (StringUtils.isNotNullOrEmpty(command)) {
-                    player.server.getCommands().performCommand(player.createCommandSourceStack().withSuppressedOutput().withPermission(CommonConfig.get().permission().permissionCommandReward()), command);
-                }
-                break;
-            default:
+        RewardGrantResult result = RewardOperations.grant(new RewardGrantContext() {
+            @Override
+            public ServerPlayerEntity player() {
+                return player;
+            }
+
+            @Override
+            public UUID playerId() {
+                return player.getUUID();
+            }
+
+            @Override
+            public Date signInDate() {
+                return new Date();
+            }
+
+            @Override
+            public String sourceId() {
+                return "sign_in";
+            }
+
+            @Override
+            public void addSignInCards(int amount) {
+                signInData.plusSignInCard(amount);
+            }
+        }, reward);
+        if (!result.isSuccess()) {
+            LOGGER.warn("Skipped reward type {}: {} ({})", reward.getTypeId(),
+                    result.getStatus(), result.getDetail());
         }
-        return true;
+        return result.isSuccess();
     }
 
     /**
