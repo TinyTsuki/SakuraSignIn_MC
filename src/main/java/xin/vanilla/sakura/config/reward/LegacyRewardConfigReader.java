@@ -11,6 +11,7 @@ import xin.vanilla.sakura.api.reward.RewardTypeId;
 import xin.vanilla.sakura.api.reward.SakuraRewardTypes;
 import xin.vanilla.sakura.reward.Reward;
 import xin.vanilla.sakura.reward.RewardList;
+import xin.vanilla.sakura.reward.LegacyRewardTypeIds;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -152,7 +153,7 @@ public final class LegacyRewardConfigReader {
         }
         for (JsonElement element : array) {
             JsonObject json = element.getAsJsonObject();
-            RewardTypeId typeId = legacyTypeId(stringValue(json, "type"));
+            RewardTypeId typeId = LegacyRewardTypeIds.resolve(stringValue(json, "type"));
             JsonObject content = json.has("content")
                     ? gson.fromJson(json.getAsJsonObject("content"), JsonObject.class)
                     : new JsonObject();
@@ -165,33 +166,6 @@ public final class LegacyRewardConfigReader {
             rewards.add(reward);
         }
         return rewards;
-    }
-
-    private static RewardTypeId legacyTypeId(String value) {
-        String normalized = value == null ? "" : value.trim();
-        if (normalized.indexOf(':') > 0) {
-            return RewardTypeId.parse(normalized);
-        }
-        switch (normalized.toUpperCase(java.util.Locale.ROOT)) {
-            case "ITEM":
-                return SakuraRewardTypes.ITEM;
-            case "EFFECT":
-                return SakuraRewardTypes.EFFECT;
-            case "EXP_POINT":
-                return SakuraRewardTypes.EXPERIENCE_POINT;
-            case "EXP_LEVEL":
-                return SakuraRewardTypes.EXPERIENCE_LEVEL;
-            case "SIGN_IN_CARD":
-                return SakuraRewardTypes.SIGN_IN_CARD;
-            case "ADVANCEMENT":
-                return SakuraRewardTypes.ADVANCEMENT;
-            case "MESSAGE":
-                return SakuraRewardTypes.MESSAGE;
-            case "COMMAND":
-                return SakuraRewardTypes.COMMAND;
-            default:
-                throw new JsonParseException("Unknown legacy reward type: " + value);
-        }
     }
 
     private static String stringValue(JsonObject object, String name) {

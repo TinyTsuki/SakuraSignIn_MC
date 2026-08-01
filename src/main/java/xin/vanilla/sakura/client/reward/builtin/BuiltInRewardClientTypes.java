@@ -12,8 +12,6 @@ import xin.vanilla.sakura.api.reward.client.RewardDisplayContext;
 import xin.vanilla.sakura.api.reward.client.RewardPresentation;
 import xin.vanilla.sakura.api.reward.client.RewardRenderContext;
 import xin.vanilla.sakura.api.reward.client.SakuraRewardClient;
-import xin.vanilla.sakura.client.SakuraClientState;
-import xin.vanilla.sakura.network.data.AdvancementData;
 import xin.vanilla.sakura.reward.RewardOperations;
 
 /**
@@ -42,14 +40,13 @@ public final class BuiltInRewardClientTypes {
         register(SakuraRewardTypes.ADVANCEMENT, 60, 6, new BasePresentation<ResourceLocation>() {
             @Override
             public void renderIcon(RewardRenderContext context, ResourceLocation value) {
-                AdvancementData data = SakuraClientState.getAdvancementData().stream()
-                        .filter(candidate -> candidate.getId().equals(value))
-                        .findFirst().orElse(null);
-                if (data == null || data.getDisplayInfo() == null) {
-                    context.drawPlaceholder(context.reward().getTypeId().toString());
-                    return;
-                }
-                context.drawItem(data.getDisplayInfo().getIcon());
+                context.drawItem(AdvancementPresentationResolver.resolve(value).getIcon());
+            }
+
+            @Override
+            public xin.vanilla.banira.common.data.Component displayName(
+                    RewardDisplayContext context, ResourceLocation value) {
+                return AdvancementPresentationResolver.resolve(value).getName();
             }
         }, BuiltInRewardEditors.advancement());
         register(SakuraRewardTypes.MESSAGE, 70, 7, new BasePresentation<Component>() {
