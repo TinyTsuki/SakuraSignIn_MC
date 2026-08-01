@@ -12,7 +12,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 public class RewardConfigDocument {
-    public static final int CURRENT_SCHEMA_VERSION = 2;
+    public static final int CURRENT_SCHEMA_VERSION = 3;
 
     private int schemaVersion = CURRENT_SCHEMA_VERSION;
     private List<RewardGroup> groups = new ArrayList<>();

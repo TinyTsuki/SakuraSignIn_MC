@@ -9,11 +9,10 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.potion.Effects;
-import xin.vanilla.sakura.enums.ERewardType;
+import xin.vanilla.sakura.api.reward.SakuraRewardTypes;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.reward.Reward;
 import xin.vanilla.sakura.reward.RewardList;
-import xin.vanilla.sakura.reward.impl.*;
 import xin.vanilla.sakura.config.reward.RewardGroup;
 import xin.vanilla.banira.common.util.CollectionUtils;
 import xin.vanilla.banira.common.util.DateUtils;
@@ -492,88 +491,55 @@ public class RewardConfig implements Serializable {
     public static RewardConfig getDefault() {
         return new RewardConfig() {{
             setBaseRewards(new RewardList() {{
-                add(new Reward() {{
-                    setContent(new ItemRewardParser().serialize(new ItemStack(Items.APPLE, 1)));
-                    setType(ERewardType.ITEM);
-                }});
+                add(new Reward(new ItemStack(Items.APPLE, 1), SakuraRewardTypes.ITEM));
             }});
             setContinuousRewards(new LinkedHashMap<String, RewardList>() {{
                 put("1", new RewardList() {{
-                    add(new Reward() {{
-                        setContent(new ExpPointRewardParser().serialize(5));
-                        setType(ERewardType.EXP_POINT);
-                    }});
+                    add(new Reward(5, SakuraRewardTypes.EXPERIENCE_POINT));
                 }});
                 put("4", new RewardList() {{
-                    add(new Reward() {{
-                        setContent(new ItemRewardParser().serialize(new ItemStack(Items.CAKE, 1)));
-                        setType(ERewardType.ITEM);
-                    }});
+                    add(new Reward(new ItemStack(Items.CAKE, 1), SakuraRewardTypes.ITEM));
                 }});
                 put("8", new RewardList() {{
-                    add(new Reward() {{
-                        setContent(new SignInCardRewardParser().serialize(1));
-                        setType(ERewardType.SIGN_IN_CARD);
-                    }});
+                    add(new Reward(1, SakuraRewardTypes.SIGN_IN_CARD));
                 }});
             }});
             setCycleRewards(new LinkedHashMap<String, RewardList>() {{
                 put("2", new RewardList() {{
-                    add(new Reward() {{
-                        setContent(new ExpPointRewardParser().serialize(3));
-                        setType(ERewardType.EXP_POINT);
-                    }});
+                    add(new Reward(3, SakuraRewardTypes.EXPERIENCE_POINT));
                 }});
                 put("5", new RewardList() {{
-                    add(new Reward() {{
-                        setContent(new ExpLevelRewardParser().serialize(1));
-                        setType(ERewardType.EXP_LEVEL);
-                    }});
+                    add(new Reward(1, SakuraRewardTypes.EXPERIENCE_LEVEL));
                 }});
             }});
             setYearRewards(new LinkedHashMap<>());
             setMonthRewards(new LinkedHashMap<>());
             setWeekRewards(new LinkedHashMap<String, RewardList>() {{
                 put("6", new RewardList() {{
-                    add(new Reward() {{
-                        setContent(new EffectRewardParser().serialize(new EffectInstance(Effects.LUCK, 6000, 1)));
-                        setType(ERewardType.EFFECT);
-                    }});
+                    add(new Reward(new EffectInstance(Effects.LUCK, 6000, 1),
+                            SakuraRewardTypes.EFFECT));
                 }});
                 put("7", new RewardList() {{
-                    add(new Reward() {{
-                        // 急促
-                        setContent(new EffectRewardParser().serialize(new EffectInstance(Effects.HEAL, 6000, 0)));
-                        setType(ERewardType.EFFECT);
-                    }});
-                    add(new Reward() {{
-                        setContent(new EffectRewardParser().serialize(new EffectInstance(Effects.JUMP, 6000, 0)));
-                        setType(ERewardType.EFFECT);
-                    }});
-                    add(new Reward() {{
-                        setContent(new ItemRewardParser().serialize(new ItemStack(Items.ENCHANTED_GOLDEN_APPLE, 1)));
-                        setType(ERewardType.ITEM);
-                    }});
+                    add(new Reward(new EffectInstance(Effects.HEAL, 6000, 0),
+                            SakuraRewardTypes.EFFECT));
+                    add(new Reward(new EffectInstance(Effects.JUMP, 6000, 0),
+                            SakuraRewardTypes.EFFECT));
+                    add(new Reward(new ItemStack(Items.ENCHANTED_GOLDEN_APPLE, 1),
+                            SakuraRewardTypes.ITEM));
                 }});
             }});
             setDateTimeRewards(new LinkedHashMap<String, RewardList>() {{
                 put("0000-10-06~1", new RewardList() {{
-                    add(new Reward() {{
-                        setContent(new ItemRewardParser().serialize(new ItemStack(Items.EXPERIENCE_BOTTLE, 1)));
-                        setType(ERewardType.ITEM);
-                    }});
-                    add(new Reward() {{
-                        setContent(new EffectRewardParser().serialize(new EffectInstance(Effects.DAMAGE_RESISTANCE, 300, 1)));
-                        setType(ERewardType.EFFECT);
-                    }});
+                    add(new Reward(new ItemStack(Items.EXPERIENCE_BOTTLE, 1),
+                            SakuraRewardTypes.ITEM));
+                    add(new Reward(new EffectInstance(Effects.DAMAGE_RESISTANCE, 300, 1),
+                            SakuraRewardTypes.EFFECT));
                 }});
             }});
             setCumulativeRewards(new LinkedHashMap<String, RewardList>() {{
                 put("100", new RewardList() {{
-                    add(new Reward() {{
-                        setContent(new EffectRewardParser().serialize(new EffectInstance(Effects.LUCK, 99999, 2)));
-                        setType(ERewardType.EFFECT);
-                    }});
+                    add(new Reward(new EffectInstance(Effects.LUCK, 99999, 2),
+                            SakuraRewardTypes.EFFECT));
                 }});
             }});
         }};
