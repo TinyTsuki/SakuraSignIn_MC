@@ -13,7 +13,6 @@ import xin.vanilla.sakura.enums.ERewardRule;
 import xin.vanilla.sakura.reward.Reward;
 import xin.vanilla.sakura.reward.RewardJsonCodec;
 import xin.vanilla.sakura.reward.RewardList;
-import xin.vanilla.sakura.data.personaldate.PersonalDateCalendarPolicy;
 import xin.vanilla.sakura.data.personaldate.PersonalDateDeliveryMode;
 import xin.vanilla.sakura.data.personaldate.PersonalDatePreset;
 import xin.vanilla.sakura.data.personaldate.PersonalDatePresetValidator;
@@ -65,7 +64,9 @@ public final class RewardConfigCodec {
             object.addProperty("id", preset.getId());
             object.addProperty("displayName", preset.getDisplayName());
             object.addProperty("recurrence", preset.getRecurrence().name());
-            object.addProperty("calendarPolicy", preset.getCalendarPolicy().name());
+            JsonArray calendarIds = new JsonArray();
+            preset.getCalendarIds().forEach(calendarIds::add);
+            object.add("calendarIds", calendarIds);
             object.addProperty("maxDateSlots", preset.getMaxDateSlots());
             object.addProperty("deliveryMode", preset.getDeliveryMode().name());
             object.addProperty("validBeforeDays", preset.getValidBeforeDays());
@@ -395,11 +396,16 @@ public final class RewardConfigCodec {
         for (JsonElement reward : rewardArray) {
             rewards.add(RewardJsonCodec.decode(reward));
         }
+        List<String> calendarIds = new ArrayList<>();
+        JsonArray calendarArray = object.getAsJsonArray("calendarIds");
+        if (calendarArray != null) {
+            calendarArray.forEach(element -> calendarIds.add(element.getAsString()));
+        }
         return new PersonalDatePreset(
                 requiredString(object, "id"),
                 requiredString(object, "displayName"),
                 PersonalDateRecurrence.valueOf(requiredString(object, "recurrence")),
-                PersonalDateCalendarPolicy.valueOf(requiredString(object, "calendarPolicy")),
+                calendarIds,
                 object.get("maxDateSlots").getAsInt(),
                 PersonalDateDeliveryMode.valueOf(requiredString(object, "deliveryMode")),
                 object.get("validBeforeDays").getAsInt(),
@@ -411,7 +417,7 @@ public final class RewardConfigCodec {
     private static PersonalDatePreset copy(PersonalDatePreset preset) {
         return new PersonalDatePreset(
                 preset.getId(), preset.getDisplayName(), preset.getRecurrence(),
-                preset.getCalendarPolicy(), preset.getMaxDateSlots(), preset.getDeliveryMode(),
+                new ArrayList<>(preset.getCalendarIds()), preset.getMaxDateSlots(), preset.getDeliveryMode(),
                 preset.getValidBeforeDays(), preset.getValidAfterDays(), copy(preset.getRewards())
         );
     }

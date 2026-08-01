@@ -164,6 +164,10 @@ public class CommonConfig implements ConfigData {
     public interface ServerView {
         boolean autoSignIn();
         ServerView autoSignIn(boolean value);
+        int requiredTotalOnlineSeconds();
+        ServerView requiredTotalOnlineSeconds(int value);
+        int requiredTodayOnlineSeconds();
+        ServerView requiredTodayOnlineSeconds(int value);
         String defaultLanguage();
         ServerView defaultLanguage(String value);
     }
@@ -207,6 +211,7 @@ public class CommonConfig implements ConfigData {
         int permissionCumulativeReward();
         int permissionRandomReward();
         int permissionCdkReward();
+        int permissionPersonalDateReward();
         int permissionRewardProbability();
         int permissionRewardDetail();
         int permissionRewardFailedTips();
@@ -270,6 +275,16 @@ public class CommonConfig implements ConfigData {
     public static class ServerCategory {
         @ConfigEntry.Gui.Tooltip(zh_cn = "玩家进入服务器后是否自动尝试签到", en_us = "Automatically attempt sign-in when a player joins")
         private boolean autoSignIn = true;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 31536000)
+        @ConfigEntry.Gui.Tooltip(
+                zh_cn = "累计在线达到指定秒数后才能签到\n0 表示不限制",
+                en_us = "Lifetime online seconds required before sign-in\n0 disables this requirement")
+        private int requiredTotalOnlineSeconds = 0;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 86400)
+        @ConfigEntry.Gui.Tooltip(
+                zh_cn = "今日在线达到指定秒数后才能签到\n跨日后重新计算，0 表示不限制",
+                en_us = "Online seconds required today before sign-in\nResets each day; 0 disables this requirement")
+        private int requiredTodayOnlineSeconds = 0;
         @ConfigEntry.Gui.Tooltip(zh_cn = "无法确定玩家语言时使用的默认语言", en_us = "Default language when a player's language is unavailable")
         private String defaultLanguage = "en_us";
     }
@@ -364,6 +379,9 @@ public class CommonConfig implements ConfigData {
         @ConfigEntry.BoundedDiscrete(min = 0, max = 4)
         @ConfigEntry.Gui.Tooltip(zh_cn = "查看兑换码奖励所需权限等级", en_us = "Permission level required to view redemption-code rewards")
         private int permissionCdkReward = 3;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 4)
+        @ConfigEntry.Gui.Tooltip(zh_cn = "查看个性化日期奖励所需权限等级", en_us = "Permission level required to view personal date rewards")
+        private int permissionPersonalDateReward = 0;
         @ConfigEntry.BoundedDiscrete(min = 0, max = 4)
         @ConfigEntry.Gui.Tooltip(zh_cn = "查看奖励概率所需权限等级", en_us = "Permission level required to view reward probabilities")
         private int permissionRewardProbability = 0;

@@ -22,11 +22,16 @@ import xin.vanilla.sakura.client.theme.BuiltInThemeCatalog;
 import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.config.reward.RewardConfigManager;
 import xin.vanilla.sakura.data.collection.StringList;
+import xin.vanilla.sakura.data.calendar.CalendarIds;
+import xin.vanilla.sakura.data.personaldate.PersonalDateDeliveryMode;
+import xin.vanilla.sakura.data.personaldate.PersonalDatePreset;
+import xin.vanilla.sakura.data.personaldate.PersonalDateRecurrence;
 import xin.vanilla.sakura.api.reward.SakuraRewardTypes;
 import xin.vanilla.sakura.event.ClientEventHandler;
 import xin.vanilla.sakura.reward.Reward;
 import xin.vanilla.sakura.reward.RewardOperations;
 import xin.vanilla.sakura.screen.RewardOptionScreen;
+import xin.vanilla.sakura.screen.PersonalDateConfigScreen;
 import xin.vanilla.sakura.screen.SignInScreen;
 import xin.vanilla.sakura.screen.StringInputScreen;
 
@@ -48,6 +53,7 @@ public final class SakuraUiSmokeRunner {
     private static boolean previousSpecialVariant;
     private static boolean themeSmokeFinished;
     private static int rewardExtensionTicks;
+    private static int personalDateTicks;
 
     private SakuraUiSmokeRunner() {
     }
@@ -65,6 +71,8 @@ public final class SakuraUiSmokeRunner {
         if (opened) {
             if ("reward-extension".equalsIgnoreCase(target)) {
                 tickRewardExtensionExit();
+            } else if ("personal-date".equalsIgnoreCase(target)) {
+                tickPersonalDateExit();
             }
             return;
         }
@@ -73,7 +81,8 @@ public final class SakuraUiSmokeRunner {
         boolean signIn = "sign-in".equalsIgnoreCase(target);
         boolean quickAction = "quick-action".equalsIgnoreCase(target);
         boolean inputForm = "input-form".equalsIgnoreCase(target);
-        if (!reward && !signIn && !quickAction && !inputForm) {
+        boolean personalDate = "personal-date".equalsIgnoreCase(target);
+        if (!reward && !signIn && !quickAction && !inputForm && !personalDate) {
             return;
         }
 
@@ -83,7 +92,8 @@ public final class SakuraUiSmokeRunner {
                 && minecraft.level != null
                 && parent == null;
         // 奖励配置依赖服务端下发的数据，只有输入表单可在主菜单独立验证。
-        boolean atMainMenu = (inputForm || rewardExtension) && parent instanceof MainMenuScreen;
+        boolean atMainMenu = (inputForm || rewardExtension || personalDate)
+                && parent instanceof MainMenuScreen;
         if (!inWorldWithoutScreen && !atMainMenu) {
             return;
         }
@@ -91,10 +101,13 @@ public final class SakuraUiSmokeRunner {
         opened = true;
         if (reward) {
             seedRewardExtensionSmokeData();
+        } else if (personalDate) {
+            seedPersonalDateSmokeData();
         }
         Screen screen = quickAction
                 ? new InventoryScreen(minecraft.player)
                 : signIn ? new SignInScreen()
+                : personalDate ? new PersonalDateConfigScreen(parent)
                 : inputForm ? inputForm(parent)
                 : new RewardOptionScreen();
         if (screen instanceof SignInScreen) {
@@ -105,6 +118,7 @@ public final class SakuraUiSmokeRunner {
         minecraft.setScreen(screen);
         LOGGER.info("Sakura UI smoke opened target: {}",
                 quickAction ? "quick-action" : signIn ? "sign-in" : inputForm ? "input-form"
+                        : personalDate ? "personal-date"
                         : rewardExtension ? "reward-extension" : "reward");
     }
 
@@ -115,6 +129,31 @@ public final class SakuraUiSmokeRunner {
         }
         LOGGER.info("Sakura reward extension UI smoke PASS");
         minecraft.stop();
+    }
+
+    private static void tickPersonalDateExit() {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (!(minecraft.screen instanceof PersonalDateConfigScreen)
+                || ++personalDateTicks < 100) {
+            return;
+        }
+        LOGGER.info("Sakura personal date UI smoke PASS");
+        minecraft.stop();
+    }
+
+    private static void seedPersonalDateSmokeData() {
+        java.util.Map<String, String> calendars = new java.util.LinkedHashMap<>();
+        calendars.put(CalendarIds.GREGORIAN,
+                "word.sakura_sign_in.calendar_gregorian");
+        calendars.put(CalendarIds.CHINESE_LUNAR,
+                "word.sakura_sign_in.calendar_chinese_lunar");
+        SakuraClientState.setCalendarNames(calendars);
+        RewardConfigManager.getRewardConfig().setPersonalDatePresets(
+                java.util.Collections.singletonList(new PersonalDatePreset(
+                        "annual", "Annual", PersonalDateRecurrence.YEARLY,
+                        Arrays.asList(CalendarIds.GREGORIAN, CalendarIds.CHINESE_LUNAR),
+                        3, PersonalDateDeliveryMode.SIGN_IN, 0, 1,
+                        new xin.vanilla.sakura.reward.RewardList())));
     }
 
     /** 显式烟测只替换内存中的基础奖励，不触发配置保存。 */

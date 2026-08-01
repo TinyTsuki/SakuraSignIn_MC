@@ -1,6 +1,13 @@
 package xin.vanilla.sakura.data.personaldate;
 
+import xin.vanilla.sakura.data.calendar.CalendarIds;
+import xin.vanilla.sakura.data.calendar.CalendarMonthRule;
+import xin.vanilla.sakura.data.calendar.CalendarRuleDefinition;
+import xin.vanilla.sakura.data.calendar.CalendarYearRule;
+
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 1900 至 2100 年农历换算。主体年份的月长与闰月已对照香港天文台年度表校验。
@@ -34,6 +41,25 @@ public final class LunarCalendar {
             0x0e968, 0x0d520, 0x0daa0, 0x16aa6, 0x056d0, 0x04ae0, 0x0a9d4, 0x0a2d0, 0x0d150, 0x0f252,
             0x0d520
     };
+
+    /** Builds the editable table written to calendar-rules.json on first startup. */
+    public static CalendarRuleDefinition ruleDefinition() {
+        List<CalendarYearRule> years = new ArrayList<>();
+        for (int year = FIRST_YEAR; year <= LAST_YEAR; year++) {
+            List<CalendarMonthRule> months = new ArrayList<>();
+            int leap = leapMonth(year);
+            for (int month = 1; month <= 12; month++) {
+                months.add(new CalendarMonthRule(month, daysInMonth(year, month), false));
+                if (leap == month) {
+                    months.add(new CalendarMonthRule(month, daysInLeapMonth(year), true));
+                }
+            }
+            years.add(new CalendarYearRule(year, months));
+        }
+        return new CalendarRuleDefinition(CalendarIds.CHINESE_LUNAR,
+                "word.sakura_sign_in.calendar_chinese_lunar",
+                BASE_DATE.toString(), FIRST_YEAR, years);
+    }
 
     public LunarDate toLunar(LocalDate solarDate) {
         requireSupportedSolarDate(solarDate);

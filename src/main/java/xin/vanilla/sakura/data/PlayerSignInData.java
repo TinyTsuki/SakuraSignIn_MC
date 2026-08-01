@@ -35,6 +35,8 @@ public class PlayerSignInData implements IPlayerSignInData {
     // 兑换码:输入日期:是否有效
     private List<KeyValue<String, KeyValue<Date, Boolean>>> cdkRecords;
     private List<PlayerPersonalDateSlot> personalDateSlots;
+    private String onlineTimeBaselineDate = "";
+    private int onlineTimeBaselineTicks;
     private String language = "client";
 
     @Override
@@ -224,6 +226,26 @@ public class PlayerSignInData implements IPlayerSignInData {
     }
 
     @Override
+    public String getOnlineTimeBaselineDate() {
+        return onlineTimeBaselineDate;
+    }
+
+    @Override
+    public void setOnlineTimeBaselineDate(String date) {
+        onlineTimeBaselineDate = date == null ? "" : date;
+    }
+
+    @Override
+    public int getOnlineTimeBaselineTicks() {
+        return onlineTimeBaselineTicks;
+    }
+
+    @Override
+    public void setOnlineTimeBaselineTicks(int ticks) {
+        onlineTimeBaselineTicks = Math.max(0, ticks);
+    }
+
+    @Override
     public String getLanguage() {
         return this.language;
     }
@@ -250,6 +272,8 @@ public class PlayerSignInData implements IPlayerSignInData {
         this.setSignInRecords(capability.getSignInRecords());
         this.setCdkRecords(capability.getCdkRecords());
         this.setPersonalDateSlots(capability.getPersonalDateSlots());
+        this.setOnlineTimeBaselineDate(capability.getOnlineTimeBaselineDate());
+        this.setOnlineTimeBaselineTicks(capability.getOnlineTimeBaselineTicks());
     }
 
     @Override
@@ -287,6 +311,8 @@ public class PlayerSignInData implements IPlayerSignInData {
         ListNBT personalDateSlotsNBT = new ListNBT();
         getPersonalDateSlots().forEach(slot -> personalDateSlotsNBT.add(slot.serializeNBT()));
         tag.put("personalDateSlots", personalDateSlotsNBT);
+        tag.putString("onlineTimeBaselineDate", getOnlineTimeBaselineDate());
+        tag.putInt("onlineTimeBaselineTicks", getOnlineTimeBaselineTicks());
         return tag;
     }
 
@@ -337,6 +363,8 @@ public class PlayerSignInData implements IPlayerSignInData {
             slots.add(PlayerPersonalDateSlot.deserializeNBT(slotsNBT.getCompound(i)));
         }
         this.setPersonalDateSlots(slots);
+        this.setOnlineTimeBaselineDate(nbt.getString("onlineTimeBaselineDate"));
+        this.setOnlineTimeBaselineTicks(nbt.getInt("onlineTimeBaselineTicks"));
     }
 
     public int calculateContinuousDays() {

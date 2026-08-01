@@ -27,6 +27,8 @@ import xin.vanilla.sakura.enums.ETimeCoolingMethod;
 import xin.vanilla.sakura.network.packet.SignInPacket;
 import xin.vanilla.sakura.util.*;
 import xin.vanilla.sakura.reward.personaldate.PersonalDateRewardDispatcher;
+import xin.vanilla.sakura.data.time.OnlineTimeRequirementResult;
+import xin.vanilla.sakura.data.time.SakuraOnlineTime;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.util.CollectionUtils;
 import xin.vanilla.banira.common.util.DateUtils;
@@ -35,6 +37,8 @@ import xin.vanilla.banira.common.util.StringUtils;
 import java.awt.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -418,6 +422,20 @@ public class RewardManager {
             SakuraMessages.send(player, SakuraComponent.get().trans(player, "word", "compensate_date_not_early_server_current_date_fail"), notificationType);
             SakuraPlayerData.saveAndSync(player);
             return;
+        }
+        if (ESignInType.SIGN_IN.equals(packet.getSignInType())) {
+            LocalDate signInDay = signCompensateDate.toInstant()
+                    .atZone(ZoneId.systemDefault()).toLocalDate();
+            OnlineTimeRequirementResult onlineTime = SakuraOnlineTime.evaluate(
+                    player, signInData, signInDay);
+            if (!onlineTime.isAllowed()) {
+                SakuraMessages.send(player, SakuraComponent.get().trans(player, "format",
+                        "sign_in_online_time_required_ss",
+                        onlineTime.getMissingTotalSeconds(), onlineTime.getMissingTodaySeconds()),
+                        notificationType);
+                SakuraPlayerData.saveAndSync(player);
+                return;
+            }
         }
         // 判断签到CD
         if (ESignInType.SIGN_IN.equals(packet.getSignInType()) && coolingMethod.getCode() >= ETimeCoolingMethod.FIXED_INTERVAL.getCode()) {

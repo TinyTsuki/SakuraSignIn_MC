@@ -22,7 +22,8 @@ public enum ERewardRule implements IEnumDescribable {
     DATE_TIME_REWARD(7),
     CUMULATIVE_REWARD(8),
     RANDOM_REWARD(9),
-    CDK_REWARD(10);
+    CDK_REWARD(10),
+    PERSONAL_DATE_REWARD(11);
 
     private final int code;
 

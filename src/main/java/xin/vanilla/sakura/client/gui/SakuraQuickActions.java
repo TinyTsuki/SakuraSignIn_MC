@@ -18,6 +18,7 @@ import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.event.ClientEventHandler;
 import xin.vanilla.sakura.screen.RewardOptionScreen;
+import xin.vanilla.sakura.screen.PersonalDateConfigScreen;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
 import xin.vanilla.sakura.SakuraComponent;
@@ -77,11 +78,7 @@ public final class SakuraQuickActions {
     }
 
     private static void openPlayerConfig(Screen parent) {
-        Minecraft.getInstance().setScreen(new CustomPlayerConfigEditScreen(
-                new CustomPlayerConfigEditScreen.Args()
-                        .parentScreen(parent)
-                        .season(BaniraThemes.seasonFor(SakuraSignIn.MODID))
-        ));
+        Minecraft.getInstance().setScreen(new PersonalDateConfigScreen(parent));
     }
 
     private static QuickIcon icon(Coordinate coordinate, Item fallback) {
