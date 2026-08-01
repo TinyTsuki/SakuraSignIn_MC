@@ -7,15 +7,14 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
-import com.google.gson.reflect.TypeToken;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.sakura.config.reward.RewardConfig;
 import xin.vanilla.sakura.enums.ERewardRule;
 import xin.vanilla.sakura.reward.Reward;
+import xin.vanilla.sakura.reward.RewardJsonCodec;
 import xin.vanilla.sakura.reward.RewardList;
 
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -28,9 +27,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * 在版本化 JSON 文档与运行时奖励模型之间转换。
  */
 public final class RewardConfigCodec {
-    private static final Type REWARD_LIST_TYPE = new TypeToken<RewardList>() {
-    }.getType();
-
     private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
     public String encode(RewardConfig config) throws IOException {
@@ -50,7 +46,9 @@ public final class RewardConfigCodec {
                 object.addProperty("expirationDate", group.getExpirationDate());
                 object.addProperty("redemptionLimit", group.getRedemptionLimit());
             }
-            object.add("rewards", group.getRewards().toJsonArray());
+            JsonArray rewards = new JsonArray();
+            group.getRewards().forEach(reward -> rewards.add(RewardJsonCodec.encode(reward)));
+            object.add("rewards", rewards);
             groups.add(object);
         }
         root.add("groups", groups);
@@ -76,7 +74,14 @@ public final class RewardConfigCodec {
             for (JsonElement element : array) {
                 JsonObject object = element.getAsJsonObject();
                 ERewardRule rule = ERewardRule.valueOf(requiredString(object, "rule"));
-                RewardList rewards = gson.fromJson(object.get("rewards"), REWARD_LIST_TYPE);
+                JsonArray rewardArray = object.getAsJsonArray("rewards");
+                if (rewardArray == null) {
+                    throw new IOException("Reward group rewards are missing");
+                }
+                RewardList rewards = new RewardList();
+                for (JsonElement reward : rewardArray) {
+                    rewards.add(RewardJsonCodec.decode(reward));
+                }
                 RewardGroup group = new RewardGroup(rule, requiredString(object, "key"), rewards);
                 if (rule == ERewardRule.CDK_REWARD) {
                     group.setExpirationDate(requiredString(object, "expirationDate"));
@@ -231,7 +236,7 @@ public final class RewardConfigCodec {
                 throw new IOException("Unsupported reward rule: " + group.getRule());
         }
         for (Reward reward : group.getRewards()) {
-            if (reward == null || reward.getType() == null || reward.getContent() == null
+            if (reward == null || reward.getTypeId() == null || reward.getContent() == null
                     || reward.getProbability() == null) {
                 throw new IOException("Incomplete reward in group: " + key);
             }
