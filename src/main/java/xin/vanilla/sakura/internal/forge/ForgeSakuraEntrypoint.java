@@ -2,6 +2,7 @@ package xin.vanilla.sakura.internal.forge;
 
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.internal.forge.event.ForgeSakuraGameEventAdapter;
+import xin.vanilla.sakura.internal.forge.dev.SakuraServerSmokeRunner;
 import xin.vanilla.sakura.internal.forge.player.ForgePlayerSignInDataService;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -21,5 +22,6 @@ public final class ForgeSakuraEntrypoint {
         }
         SakuraPlayerData.install(ForgePlayerSignInDataService.INSTANCE);
         ForgeSakuraGameEventAdapter.register();
+        SakuraServerSmokeRunner.register();
     }
 }

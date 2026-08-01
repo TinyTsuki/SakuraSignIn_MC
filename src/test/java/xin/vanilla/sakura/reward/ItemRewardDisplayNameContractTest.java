@@ -16,10 +16,10 @@ public class ItemRewardDisplayNameContractTest {
     @Test
     public void displayNameCopiesTheVanillaTextBeforeAppendingCount() throws Exception {
         String source = new String(Files.readAllBytes(Paths.get(
-                "src/main/java/xin/vanilla/sakura/reward/impl/ItemRewardParser.java")),
+                "src/main/java/xin/vanilla/sakura/reward/builtin/BuiltInRewardTypes.java")),
                 StandardCharsets.UTF_8);
 
-        assertTrue(source.contains("literal(itemStack.getHoverName().getString())"));
-        assertFalse(source.contains("object(itemStack.getHoverName())"));
+        assertTrue(source.contains("literal(value.getHoverName().getString())"));
+        assertFalse(source.contains("object(value.getHoverName())"));
     }
 }

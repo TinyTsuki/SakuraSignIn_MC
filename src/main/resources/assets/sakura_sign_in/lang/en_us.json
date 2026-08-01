@@ -217,5 +217,11 @@
   "word.sakura_sign_in.enum_e_sign_in_status_signed_in": "The date has been signed in",
   "word.sakura_sign_in.enum_e_sign_in_status_rewarded": "The reward for the date has been claimed",
   "word.sakura_sign_in.enum_history_retention_policy_strip_reward_details": "Keeps sign-in summaries and removes expired reward details",
-  "word.sakura_sign_in.enum_history_retention_policy_delete_month_file": "Deletes the entire expired monthly detail file"
+  "word.sakura_sign_in.enum_history_retention_policy_delete_month_file": "Deletes the entire expired monthly detail file",
+  "word.sakura_sign_in.reward_type_unavailable": "This reward type is unavailable on the client",
+  "word.sakura_sign_in.reward_payload_invalid": "The reward data is invalid",
+  "word.sakura_sign_in.reward_editor_unavailable": "This reward type has no content editor",
+  "format.sakura_sign_in.reward_add_permission_denied": "You cannot add reward type %s",
+  "format.sakura_sign_in.reward_required_op_level": "Requires permission level %d",
+  "format.sakura_sign_in.reward_virtual_permission_key": "Virtual permission: %s"
 }
