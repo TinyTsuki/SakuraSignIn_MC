@@ -65,6 +65,8 @@ public class SakuraRewardsTest {
                 .validator(value -> value > 0
                         ? Collections.emptyList()
                         : Collections.singletonList(new RewardViolation("value", "positive")))
+                .describer((languageCode, value, withAmount) ->
+                        xin.vanilla.sakura.SakuraComponent.get().literal(String.valueOf(value)))
                 .addPermission(RewardAddPermission.of(2, permissionKey))
                 .build();
     }
