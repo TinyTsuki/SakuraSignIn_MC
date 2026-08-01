@@ -117,8 +117,7 @@ public class RewardOptionScreen extends BaniraScreen {
     private final int groupContentIndent = 8;
     private final int groupContentPadding = 4;
     private final int groupGap = 4;
-    // 标题的大小
-    private final int titleHeight = 16;
+    private final int groupHeaderVerticalPadding = 2;
     // 屏幕边缘间距
     private final int leftMargin = 4;
     private final int rightMargin = 4;
@@ -147,6 +146,7 @@ public class RewardOptionScreen extends BaniraScreen {
     private final RewardSelectionModel rewardSelection = new RewardSelectionModel();
     private final Set<String> collapsedRewardGroups = new HashSet<>();
     private final Map<String, RewardGroupLayout> rewardGroupLayouts = new LinkedHashMap<>();
+    private final Map<String, String> rewardGroupTitles = new LinkedHashMap<>();
     private String draggingRewardId;
     private String dragTargetGroupKey;
     private double dragMouseX;
@@ -306,9 +306,11 @@ public class RewardOptionScreen extends BaniraScreen {
         if (!rewardGroupLayouts.isEmpty()) {
             rewardLayoutY += groupGap;
         }
+        int headerHeight = groupHeaderHeight();
         RewardGroupLayout layout = new RewardGroupLayout(key, rewardLayoutY,
-                rewardLayoutY + titleHeight);
+                rewardLayoutY + headerHeight);
         rewardGroupLayouts.put(key, layout);
+        rewardGroupTitles.put(key, title);
         RewardListEntryWidget entry = new RewardListEntryWidget(this, titleIndex, context -> {
             RewardListEntryWidget widget = context.getEntry();
             boolean collapsed = isRewardGroupCollapsed(key);
@@ -327,7 +329,7 @@ public class RewardOptionScreen extends BaniraScreen {
                     ? groupSelectionColor()
                     : key.equals(dragTargetGroupKey)
                     ? getEffectiveTheme().accentFocused()
-                    : getEffectiveTheme().buttonBorder();
+                    : groupBorderColor();
             drawRewardGroupBorder(context.getStack(), x, y, width, panelHeight, borderColor);
             super.font.draw(context.getStack(), collapsed ? "\u25B6" : "\u25BC",
                     x + 4, y + (height - super.font.lineHeight) / 2.0F,
@@ -343,9 +345,9 @@ public class RewardOptionScreen extends BaniraScreen {
                 .x(leftMargin)
                 .y(rewardLayoutY)
                 .width(super.width - leftBarWidth - leftMargin - rightMargin - rightBarWidth)
-                .height(titleHeight);
+                .height(headerHeight);
         registerRewardEntry(rewardGroupTitleId(key), entry);
-        rewardLayoutY += titleHeight;
+        rewardLayoutY += headerHeight;
     }
 
     /**
@@ -398,6 +400,14 @@ public class RewardOptionScreen extends BaniraScreen {
         return 0xFFFFD54F;
     }
 
+    private int groupBorderColor() {
+        return (getEffectiveTheme().buttonBorderHover() & 0x00FFFFFF) | 0xE0000000;
+    }
+
+    private int groupHeaderHeight() {
+        return font.lineHeight + groupHeaderVerticalPadding * 2;
+    }
+
     private void drawRewardGroupBorder(MatrixStack stack, int x, int y,
                                        int width, int height, int color) {
         BaseShapeWidget.drawShape(new ShapeDrawArgs()
@@ -427,6 +437,21 @@ public class RewardOptionScreen extends BaniraScreen {
         return text.content().split("\\n", -1).length * font.lineHeight;
     }
 
+    private void drawWelcomeTips(MatrixStack stack) {
+        int availableWidth = Math.max(1,
+                width - leftBarWidth - rightBarWidth - 16);
+        int textWidth = Math.min(multilineTextWidth(tips), availableWidth);
+        int textHeight = multilineTextHeight(tips);
+        int x = leftBarWidth
+                + (width - leftBarWidth - rightBarWidth - textWidth) / 2;
+        int y = (height - textHeight) / 2;
+        LabelWidget.drawLimitedText(FontDrawArgs.of(tips.clone()
+                        .stack(stack).font(font))
+                .x(x).y(y).maxWidth(textWidth).maxLine(0).wrap(false)
+                .position(EnumEllipsisPosition.END).inScreen(false)
+                .padding(0).margin(0));
+    }
+
     private void toggleRewardGroup(String key) {
         String groupId = currOpButton + ":" + key;
         if (!collapsedRewardGroups.remove(groupId)) {
@@ -438,8 +463,12 @@ public class RewardOptionScreen extends BaniraScreen {
         return "标题," + key;
     }
 
+    private String rewardGroupDisplayName(String key) {
+        return rewardGroupTitles.getOrDefault(key, key);
+    }
+
     private void registerRewardEntry(String key, RewardListEntryWidget entry) {
-        entry.setDragHandler(event -> setYOffset(yOffset + event.dragY()));
+        entry.setDragHandler(event -> scrollRewardPanel(event.dragY()));
         if (!key.startsWith("标题,")) {
             entry.setLongPressHandler(event -> beginRewardDrag(key))
                     .setLongPressDragHandler(event -> updateRewardDrag(
@@ -621,6 +650,7 @@ public class RewardOptionScreen extends BaniraScreen {
         REWARD_BUTTONS.values().forEach(this::removeWidget);
         REWARD_BUTTONS.clear();
         rewardGroupLayouts.clear();
+        rewardGroupTitles.clear();
         rewardLayoutY = topMargin;
         if (OperationButtonType.valueOf(currOpButton) == null) {
             rewardContentHeight = super.height;
@@ -1366,7 +1396,7 @@ public class RewardOptionScreen extends BaniraScreen {
                         editHandler.handlePaste();
                     }
                 } else if (SakuraComponent.get().transClient("word", "clear").toString().equalsIgnoreCase(selectedString)) {
-                    requestConfirmation("confirm_clear_reward_group", () -> {
+                    requestGroupConfirmation("confirm_clear_reward_group", key, () -> {
                         RewardConfigManager.addUndoRewardOption(rule);
                         RewardConfigManager.clearRedoList();
                         RewardConfigManager.clearKey(rule, key);
@@ -1721,17 +1751,24 @@ public class RewardOptionScreen extends BaniraScreen {
         }
     }
 
-    /**
-     * 危险操作统一通过可见确认页执行，不再依赖组合键或特殊鼠标键。
-     */
+    /** 奖励组与整个规则的破坏性操作使用可见确认页。 */
     private void requestConfirmation(String messageKey, Runnable action) {
+        requestConfirmation(SakuraComponent.get().transClient("word", messageKey), action);
+    }
+
+    private void requestConfirmation(Component message, Runnable action) {
         Minecraft.getInstance().setScreen(new ConfirmDialogScreen(
                 new ConfirmDialogScreen.Args()
                         .parentScreen(this)
                         .title(SakuraComponent.get().transClient("word", "confirm_operation"))
-                        .message(SakuraComponent.get().transClient("word", messageKey))
+                        .message(message)
                         .onConfirm(action)
         ));
+    }
+
+    private void requestGroupConfirmation(String messageKey, String key, Runnable action) {
+        requestConfirmation(SakuraComponent.get().transClient(
+                "format", messageKey, rewardGroupDisplayName(key)), action);
     }
 
     private boolean requestDeleteConfirmation() {
@@ -1739,12 +1776,12 @@ public class RewardOptionScreen extends BaniraScreen {
                 || currRewardButton.equalsIgnoreCase("panel")) {
             return false;
         }
-        requestConfirmation(
-                currRewardButton.startsWith("标题")
-                        ? "confirm_delete_reward_group"
-                        : "confirm_delete_reward",
-                editHandler::handleDelete
-        );
+        if (!currRewardButton.startsWith("标题")) {
+            return editHandler.handleDelete();
+        }
+        String key = currRewardButton.substring("标题,".length());
+        requestGroupConfirmation("confirm_delete_reward_group", key,
+                editHandler::handleDelete);
         return true;
     }
 
@@ -1840,6 +1877,13 @@ public class RewardOptionScreen extends BaniraScreen {
     private void setYOffset(double offset) {
         double minOffset = Math.min(0, super.height - rewardContentHeight);
         this.yOffset = Math.max(minOffset, Math.min(offset, 0));
+    }
+
+    private void scrollRewardPanel(double amount) {
+        setYOffset(yOffset + amount);
+        if (draggingRewardId != null) {
+            updateRewardDrag(inputState.mouseX(), inputState.mouseY());
+        }
     }
 
     @Data
@@ -2192,7 +2236,7 @@ public class RewardOptionScreen extends BaniraScreen {
             }
         }), new ScreenCoordinate(20, 0, width - 40, height));
         OP_BUTTONS.get(OperationButtonType.REWARD_PANEL.getCode())
-                .setDragHandler(event -> setYOffset(yOffset + event.dragY()));
+                .setDragHandler(event -> scrollRewardPanel(event.dragY()));
 
         registerOperation(createThemeIcon(OperationButtonType.OPEN,
                         SakuraClientState.getThemeTextureCoordinate().getArrowUV(),
@@ -2322,14 +2366,8 @@ public class RewardOptionScreen extends BaniraScreen {
                             .width(super.width - this.leftBarWidth
                                     - this.rightBarWidth - 8)
                             .height(super.height - 8).radius(15).border(0)));
-            float x, y;
             tips.stack(matrixStack).font(super.font);
-            int textHeight = multilineTextHeight(tips);
-            int textWidth = multilineTextWidth(tips);
-            x = this.leftBarWidth + ((super.width - this.leftBarWidth - this.rightBarWidth) - textWidth) / 2.0f;
-            y = (super.height - (textHeight + 4)) / 2.0f;
-            drawLimitedText(matrixStack, tips.content(), (int) x, (int) y,
-                    textWidth, tips.colorArgb(), tips.shadow());
+            drawWelcomeTips(matrixStack);
         }
         else this.prepareRewardList();
 
@@ -2393,7 +2431,7 @@ public class RewardOptionScreen extends BaniraScreen {
     protected void onMouseScrolled(MouseScrolledHandleArgs eventArgs) {
         RewardOperationWidget panel = OP_BUTTONS.get(OperationButtonType.REWARD_PANEL.getCode());
         if (panel != null && panel.isMouseInside(eventArgs.mouseX(), eventArgs.mouseY())) {
-            setYOffset(yOffset + eventArgs.delta());
+            scrollRewardPanel(eventArgs.delta());
             eventArgs.consumed(true);
         }
     }
