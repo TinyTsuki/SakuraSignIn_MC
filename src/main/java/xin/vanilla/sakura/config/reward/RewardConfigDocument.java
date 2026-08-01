@@ -5,6 +5,7 @@ import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
+import xin.vanilla.sakura.data.personaldate.PersonalDatePreset;
 
 /**
  * 奖励配置的持久化文档，版本升级只在编解码层处理。
@@ -16,6 +17,7 @@ public class RewardConfigDocument {
 
     private int schemaVersion = CURRENT_SCHEMA_VERSION;
     private List<RewardGroup> groups = new ArrayList<>();
+    private List<PersonalDatePreset> personalDatePresets = new ArrayList<>();
 
     public RewardConfigDocument(List<RewardGroup> groups) {
         this.groups = groups == null ? new ArrayList<>() : groups;

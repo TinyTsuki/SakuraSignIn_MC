@@ -12,6 +12,9 @@ import xin.vanilla.sakura.data.migration.PlayerSummaryStore;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import xin.vanilla.sakura.data.personaldate.PlayerPersonalDateSlot;
 
 /**
  * 运行时数据仍使用现有领域对象，持久化已拆分为摘要和月度详情。
@@ -47,6 +50,9 @@ public final class PlayerSignInDataRepository {
         ListNBT indexes = new ListNBT();
         summary.getMonthIndexes().values().forEach(index -> indexes.add(index.serializeNBT()));
         legacyShape.put("monthIndexes", indexes);
+        ListNBT slots = new ListNBT();
+        summary.getPersonalDateSlots().forEach(slot -> slots.add(slot.serializeNBT()));
+        legacyShape.put("personalDateSlots", slots);
 
         ListNBT records = new ListNBT();
         historyRepository.loadAll(playerUuid).forEach(record -> records.add(record.writeToNBT()));
@@ -74,6 +80,7 @@ public final class PlayerSignInDataRepository {
             parsed.getSummary().setLegacyCapabilityBackup(
                     previous.get().getLegacyCapabilityBackup()
             );
+            mergePersonalDateSlots(parsed.getSummary(), previous.get());
         }
         data.setMonthIndexes(parsed.getSummary().getMonthIndexes());
         historyRepository.saveAndVerify(playerUuid, parsed);
@@ -86,5 +93,28 @@ public final class PlayerSignInDataRepository {
             copy.add(element.copy());
         }
         return copy;
+    }
+
+    private static void mergePersonalDateSlots(PlayerSignInSummary candidate,
+                                               PlayerSignInSummary previous) {
+        Map<String, PlayerPersonalDateSlot> merged = new LinkedHashMap<>();
+        previous.getPersonalDateSlots().forEach(slot -> merged.put(slotKey(slot), copySlot(slot)));
+        candidate.getPersonalDateSlots().forEach(slot -> {
+            PlayerPersonalDateSlot old = merged.get(slotKey(slot));
+            if (old != null && (slot.getLastClaimedOccurrenceKey() == null
+                    || slot.getLastClaimedOccurrenceKey().isEmpty())) {
+                slot.setLastClaimedOccurrenceKey(old.getLastClaimedOccurrenceKey());
+            }
+            merged.put(slotKey(slot), copySlot(slot));
+        });
+        candidate.setPersonalDateSlots(new java.util.ArrayList<>(merged.values()));
+    }
+
+    private static String slotKey(PlayerPersonalDateSlot slot) {
+        return slot.getPresetId() + "#" + slot.getSlotIndex();
+    }
+
+    private static PlayerPersonalDateSlot copySlot(PlayerPersonalDateSlot slot) {
+        return PlayerPersonalDateSlot.deserializeNBT(slot.serializeNBT());
     }
 }

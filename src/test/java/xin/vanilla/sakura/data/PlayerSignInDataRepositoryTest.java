@@ -8,6 +8,8 @@ import org.junit.rules.TemporaryFolder;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.sakura.data.migration.PlayerSummaryStore;
 import xin.vanilla.sakura.data.player.PlayerSignInSummary;
+import xin.vanilla.sakura.data.personaldate.PersonalDateCalendar;
+import xin.vanilla.sakura.data.personaldate.PlayerPersonalDateSlot;
 import xin.vanilla.sakura.internal.forge.migration.MonthlySignInHistoryRepository;
 import xin.vanilla.sakura.reward.RewardList;
 import xin.vanilla.banira.common.util.DateUtils;
@@ -48,6 +50,10 @@ public class PlayerSignInDataRepositoryTest {
         source.setCdkRecords(Collections.singletonList(
                 new KeyValue<>("WELCOME", new KeyValue<>(new Date(1717848794000L), true))
         ));
+        source.setPersonalDateSlots(Collections.singletonList(
+                new PlayerPersonalDateSlot("server_day", 0, PersonalDateCalendar.SOLAR,
+                        6, 8, "YEARLY:2024")
+        ));
         SignInRecord record = new SignInRecord();
         record.setCompensateTime(DateUtils.format("2024-06-08 12:13:14"));
         record.setSignInTime(DateUtils.format("2024-06-08 12:13:14"));
@@ -66,6 +72,7 @@ public class PlayerSignInDataRepositoryTest {
         assertEquals("zh_cn", restored.getLanguage());
         assertEquals(1, restored.getCdkRecords().size());
         assertEquals("WELCOME", restored.getCdkRecords().get(0).key());
+        assertEquals(source.getPersonalDateSlots(), restored.getPersonalDateSlots());
         assertEquals(1, restored.getSignInRecords().size());
         assertTrue(restored.getSignInRecords().get(0).isRewarded());
     }

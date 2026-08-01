@@ -13,6 +13,11 @@ import xin.vanilla.sakura.enums.ERewardRule;
 import xin.vanilla.sakura.reward.Reward;
 import xin.vanilla.sakura.reward.RewardJsonCodec;
 import xin.vanilla.sakura.reward.RewardList;
+import xin.vanilla.sakura.data.personaldate.PersonalDateCalendarPolicy;
+import xin.vanilla.sakura.data.personaldate.PersonalDateDeliveryMode;
+import xin.vanilla.sakura.data.personaldate.PersonalDatePreset;
+import xin.vanilla.sakura.data.personaldate.PersonalDatePresetValidator;
+import xin.vanilla.sakura.data.personaldate.PersonalDateRecurrence;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -21,6 +26,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -52,6 +59,23 @@ public final class RewardConfigCodec {
             groups.add(object);
         }
         root.add("groups", groups);
+        JsonArray presets = new JsonArray();
+        for (PersonalDatePreset preset : document.getPersonalDatePresets()) {
+            JsonObject object = new JsonObject();
+            object.addProperty("id", preset.getId());
+            object.addProperty("displayName", preset.getDisplayName());
+            object.addProperty("recurrence", preset.getRecurrence().name());
+            object.addProperty("calendarPolicy", preset.getCalendarPolicy().name());
+            object.addProperty("maxDateSlots", preset.getMaxDateSlots());
+            object.addProperty("deliveryMode", preset.getDeliveryMode().name());
+            object.addProperty("validBeforeDays", preset.getValidBeforeDays());
+            object.addProperty("validAfterDays", preset.getValidAfterDays());
+            JsonArray rewards = new JsonArray();
+            preset.getRewards().forEach(reward -> rewards.add(RewardJsonCodec.encode(reward)));
+            object.add("rewards", rewards);
+            presets.add(object);
+        }
+        root.add("personalDatePresets", presets);
         return gson.toJson(root);
     }
 
@@ -91,6 +115,13 @@ public final class RewardConfigCodec {
                 }
                 document.getGroups().add(group);
             }
+            JsonArray presetArray = root.getAsJsonArray("personalDatePresets");
+            if (presetArray != null) {
+                for (JsonElement element : presetArray) {
+                    document.getPersonalDatePresets().add(decodePersonalDatePreset(
+                            element.getAsJsonObject()));
+                }
+            }
             validate(document);
             return document;
         } catch (JsonParseException | IllegalStateException | IllegalArgumentException e) {
@@ -119,6 +150,8 @@ public final class RewardConfigCodec {
                     cdk.value().value().get(),
                     copy(cdk.value().key())));
         }
+        config.getPersonalDatePresets().forEach(preset ->
+                document.getPersonalDatePresets().add(copy(preset)));
         return document;
     }
 
@@ -164,6 +197,8 @@ public final class RewardConfigCodec {
                     throw new IOException("Unsupported reward rule: " + group.getRule());
             }
         }
+        document.getPersonalDatePresets().forEach(preset ->
+                config.getPersonalDatePresets().add(copy(preset)));
         return config;
     }
 
@@ -177,11 +212,25 @@ public final class RewardConfigCodec {
 
     private void validate(RewardConfigDocument document) throws IOException {
         if (document == null || document.getSchemaVersion() != RewardConfigDocument.CURRENT_SCHEMA_VERSION
-                || document.getGroups() == null) {
+                || document.getGroups() == null || document.getPersonalDatePresets() == null) {
             throw new IOException("Invalid reward configuration document");
         }
         for (RewardGroup group : document.getGroups()) {
             validate(group);
+        }
+        Set<String> presetIds = new HashSet<>();
+        for (PersonalDatePreset preset : document.getPersonalDatePresets()) {
+            List<String> errors = PersonalDatePresetValidator.validate(preset);
+            if (!errors.isEmpty()) {
+                throw new IOException("Invalid personal date preset "
+                        + (preset == null ? "" : preset.getId()) + ": " + errors);
+            }
+            if (!presetIds.add(preset.getId())) {
+                throw new IOException("Duplicate personal date preset id: " + preset.getId());
+            }
+            for (Reward reward : preset.getRewards()) {
+                validateReward(reward, preset.getId());
+            }
         }
     }
 
@@ -236,10 +285,14 @@ public final class RewardConfigCodec {
                 throw new IOException("Unsupported reward rule: " + group.getRule());
         }
         for (Reward reward : group.getRewards()) {
-            if (reward == null || reward.getTypeId() == null || reward.getContent() == null
-                    || reward.getProbability() == null) {
-                throw new IOException("Incomplete reward in group: " + key);
-            }
+            validateReward(reward, key);
+        }
+    }
+
+    private static void validateReward(Reward reward, String owner) throws IOException {
+        if (reward == null || reward.getTypeId() == null || reward.getContent() == null
+                || reward.getProbability() == null) {
+            throw new IOException("Incomplete reward in group: " + owner);
         }
     }
 
@@ -321,7 +374,39 @@ public final class RewardConfigCodec {
         List<RewardGroup> groups = new ArrayList<>(source.getGroups());
         groups.sort(Comparator.comparingInt(group -> group.getRule().ordinal()));
         result.setGroups(groups);
+        result.setPersonalDatePresets(new ArrayList<>(source.getPersonalDatePresets()));
         return result;
+    }
+
+    private static PersonalDatePreset decodePersonalDatePreset(JsonObject object)
+            throws IOException {
+        JsonArray rewardArray = object.getAsJsonArray("rewards");
+        if (rewardArray == null) {
+            throw new IOException("Personal date preset rewards are missing");
+        }
+        RewardList rewards = new RewardList();
+        for (JsonElement reward : rewardArray) {
+            rewards.add(RewardJsonCodec.decode(reward));
+        }
+        return new PersonalDatePreset(
+                requiredString(object, "id"),
+                requiredString(object, "displayName"),
+                PersonalDateRecurrence.valueOf(requiredString(object, "recurrence")),
+                PersonalDateCalendarPolicy.valueOf(requiredString(object, "calendarPolicy")),
+                object.get("maxDateSlots").getAsInt(),
+                PersonalDateDeliveryMode.valueOf(requiredString(object, "deliveryMode")),
+                object.get("validBeforeDays").getAsInt(),
+                object.get("validAfterDays").getAsInt(),
+                rewards
+        );
+    }
+
+    private static PersonalDatePreset copy(PersonalDatePreset preset) {
+        return new PersonalDatePreset(
+                preset.getId(), preset.getDisplayName(), preset.getRecurrence(),
+                preset.getCalendarPolicy(), preset.getMaxDateSlots(), preset.getDeliveryMode(),
+                preset.getValidBeforeDays(), preset.getValidAfterDays(), copy(preset.getRewards())
+        );
     }
 
     private static RewardList copy(List<Reward> rewards) {
