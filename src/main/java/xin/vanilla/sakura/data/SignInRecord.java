@@ -2,15 +2,15 @@ package xin.vanilla.sakura.data;
 
 import lombok.Data;
 import lombok.NonNull;
-import net.minecraft.nbt.CompoundTag;
-import xin.vanilla.sakura.rewards.RewardList;
-import xin.vanilla.sakura.util.CollectionUtils;
-import xin.vanilla.sakura.util.DateUtils;
+import net.minecraft.nbt.CompoundNBT;
+import xin.vanilla.sakura.reward.RewardList;
+import xin.vanilla.banira.common.util.CollectionUtils;
+import xin.vanilla.banira.common.util.DateUtils;
 
 import java.io.Serializable;
 import java.util.Date;
 
-import static xin.vanilla.sakura.config.RewardConfigManager.GSON;
+import static xin.vanilla.sakura.config.reward.RewardConfigManager.GSON;
 
 /**
  * 签到记录
@@ -59,8 +59,8 @@ public class SignInRecord implements Serializable, Cloneable {
     }
 
     // 序列化到 NBT
-    public CompoundTag writeToNBT() {
-        CompoundTag tag = new CompoundTag();
+    public CompoundNBT writeToNBT() {
+        CompoundNBT tag = new CompoundNBT();
         tag.putString("compensateTime", DateUtils.toDateTimeString(compensateTime));
         tag.putString("signInTime", DateUtils.toDateTimeString(signInTime));
         tag.putString("signInUUID", signInUUID);
@@ -70,7 +70,7 @@ public class SignInRecord implements Serializable, Cloneable {
     }
 
     // 反序列化方法
-    public static SignInRecord readFromNBT(CompoundTag tag) {
+    public static SignInRecord readFromNBT(CompoundNBT tag) {
         SignInRecord record = new SignInRecord();
         // 读取简单字段
         record.compensateTime = DateUtils.format(tag.getString("compensateTime"));

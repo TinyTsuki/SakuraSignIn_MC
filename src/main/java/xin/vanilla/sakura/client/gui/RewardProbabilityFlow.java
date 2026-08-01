@@ -2,11 +2,12 @@ package xin.vanilla.sakura.client.gui;
 
 import net.minecraft.client.gui.screen.Screen;
 import xin.vanilla.banira.client.gui.InputFormScreen;
+import xin.vanilla.banira.common.util.NumberUtils;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.common.data.ScopedComponent;
 import xin.vanilla.sakura.SakuraSignIn;
-import xin.vanilla.sakura.rewards.Reward;
-import xin.vanilla.sakura.util.StringUtils;
+import xin.vanilla.sakura.reward.Reward;
+import xin.vanilla.banira.common.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.util.function.Consumer;
@@ -31,9 +32,9 @@ final class RewardProbabilityFlow {
         InputFormScreen.Widget probability = new InputFormScreen.Widget()
                 .title(Text.literal(translation("enter_reward_probability")))
                 .regex(PROBABILITY_REGEX)
-                .defaultValue(StringUtils.toFixedEx(defaultProbability, 5))
+                .defaultValue(NumberUtils.toFixedEx(defaultProbability, 5))
                 .validator(result -> {
-                    BigDecimal value = StringUtils.toBigDecimal(result.value());
+                    BigDecimal value = NumberUtils.toBigDecimal(result.value());
                     if (isProbability(value)) {
                         return null;
                     }
@@ -43,7 +44,7 @@ final class RewardProbabilityFlow {
                 .setParentScreen(parent)
                 .addWidget(probability)
                 .setCallback(result -> onSelected.accept(
-                        rewardFactory.apply(StringUtils.toBigDecimal(result.firstValue()))
+                        rewardFactory.apply(NumberUtils.toBigDecimal(result.firstValue()))
                 ));
         return new InputFormScreen(args);
     }

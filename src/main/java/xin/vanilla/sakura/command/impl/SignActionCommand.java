@@ -1,5 +1,7 @@
 package xin.vanilla.sakura.command.impl;
 
+import xin.vanilla.sakura.data.time.SakuraClock;
+
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -12,12 +14,12 @@ import net.minecraft.entity.player.ServerPlayerEntity;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.command.CommandDateTimeParser;
 import xin.vanilla.sakura.config.CommonConfig;
-import xin.vanilla.sakura.config.KeyValue;
+import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.enums.ESignInType;
 import xin.vanilla.sakura.network.packet.SignInPacket;
-import xin.vanilla.sakura.rewards.RewardManager;
-import xin.vanilla.sakura.util.DateUtils;
+import xin.vanilla.sakura.reward.RewardManager;
+import xin.vanilla.banira.common.util.DateUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -65,7 +67,7 @@ public final class SignActionCommand {
         IPlayerSignInData data = SakuraPlayerData.get(player);
         for (KeyValue<Date, ESignInType> entry : signDates(context, data)) {
             RewardManager.signIn(player, new SignInPacket(
-                    DateUtils.toDateTimeString(entry.getKey()), reward, entry.getValue()
+                    DateUtils.toDateTimeString(entry.key()), reward, entry.value()
             ));
         }
         return 1;
@@ -85,7 +87,7 @@ public final class SignActionCommand {
                 dates.add(DateUtils.getDate(parseDate(input)));
             }
         } catch (IllegalArgumentException ignored) {
-            dates.add(DateUtils.getServerDate());
+            dates.add(SakuraClock.serverNow());
         }
         for (Date date : dates) {
             RewardManager.signIn(player, new SignInPacket(
@@ -108,7 +110,7 @@ public final class SignActionCommand {
                      offset <= CommonConfig.get().makeUp().reSignInDays()
                              && added < data.getSignInCard();
                      offset++) {
-                    Date date = DateUtils.addDay(DateUtils.getServerDate(), -offset);
+                    Date date = DateUtils.addDay(SakuraClock.serverNow(), -offset);
                     if (!RewardManager.isSignedIn(data, date, false)) {
                         dates.add(new KeyValue<>(date, ESignInType.RE_SIGN_IN));
                         added++;
@@ -122,7 +124,7 @@ public final class SignActionCommand {
                 dates.add(new KeyValue<>(date, type));
             }
         } catch (IllegalArgumentException ignored) {
-            dates.add(new KeyValue<>(DateUtils.getServerDate(), ESignInType.SIGN_IN));
+            dates.add(new KeyValue<>(SakuraClock.serverNow(), ESignInType.SIGN_IN));
         }
         return dates;
     }
@@ -131,13 +133,13 @@ public final class SignActionCommand {
         return CommandDateTimeParser.parse(
                 input,
                 CommandDateTimeParser.Kind.DATE,
-                DateUtils.getLocalDateTime(DateUtils.getServerDate())
+                DateUtils.getLocalDateTime(SakuraClock.serverNow())
         );
     }
 
     private static SuggestionProvider<CommandSource> dateSuggestions() {
         return (context, builder) -> {
-            LocalDateTime now = DateUtils.getLocalDateTime(DateUtils.getServerDate());
+            LocalDateTime now = DateUtils.getLocalDateTime(SakuraClock.serverNow());
             builder.suggest(now.getYear() + " " + now.getMonthValue() + " " + now.getDayOfMonth());
             builder.suggest("~ ~ ~");
             builder.suggest("~ ~ ~-1");
