@@ -1,5 +1,7 @@
 package xin.vanilla.sakura.internal.forge.event;
 
+import xin.vanilla.sakura.data.time.SakuraClock;
+
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.common.MinecraftForge;
@@ -8,6 +10,8 @@ import net.minecraftforge.event.entity.player.PlayerEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.common.util.BaniraScheduler;
+import xin.vanilla.banira.common.util.ReflectionUtils;
+import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.command.SignInCommand;
 import xin.vanilla.sakura.config.CommonConfig;
@@ -15,8 +19,8 @@ import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.data.migration.LegacyMigrationResult;
 import xin.vanilla.sakura.enums.ESignInType;
 import xin.vanilla.sakura.network.packet.SignInPacket;
-import xin.vanilla.sakura.rewards.RewardManager;
-import xin.vanilla.sakura.util.DateUtils;
+import xin.vanilla.sakura.reward.RewardManager;
+import xin.vanilla.banira.common.util.DateUtils;
 import xin.vanilla.sakura.util.SakuraUtils;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -28,6 +32,7 @@ public final class ForgeSakuraGameEventAdapter {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final AtomicBoolean REGISTERED = new AtomicBoolean();
     private static final int MAX_CLIENT_SETTINGS_ATTEMPTS = 120;
+    private static String languageFieldName;
 
     private ForgeSakuraGameEventAdapter() {
     }
@@ -56,8 +61,27 @@ public final class ForgeSakuraGameEventAdapter {
         }
         ServerPlayerEntity original = (ServerPlayerEntity) event.getOriginal();
         ServerPlayerEntity replacement = (ServerPlayerEntity) event.getPlayer();
-        SakuraUtils.cloneServerPlayerLanguage(original, replacement);
+        copyPlayerLanguage(original, replacement);
         SakuraPlayerData.sync(replacement);
+    }
+
+    private static void copyPlayerLanguage(ServerPlayerEntity original,
+                                           ServerPlayerEntity replacement) {
+        if (StringUtils.isNullOrEmpty(languageFieldName)) {
+            for (String field : ReflectionUtils.getPrivateFieldNames(
+                    ServerPlayerEntity.class, String.class)) {
+                Object value = ReflectionUtils.getPrivateFieldValue(
+                        ServerPlayerEntity.class, original, field);
+                if (original.getLanguage().equals(value)) {
+                    languageFieldName = field;
+                    break;
+                }
+            }
+        }
+        if (StringUtils.isNotNullOrEmpty(languageFieldName)) {
+            ReflectionUtils.setPrivateFieldValue(ServerPlayerEntity.class,
+                    replacement, languageFieldName, original.getLanguage());
+        }
     }
 
     /**
@@ -111,9 +135,9 @@ public final class ForgeSakuraGameEventAdapter {
         }
         IPlayerSignInData data = SakuraPlayerData.get(player);
         if (CommonConfig.get().server().autoSignIn()
-                && !RewardManager.isSignedIn(data, DateUtils.getServerDate(), true)) {
+                && !RewardManager.isSignedIn(data, SakuraClock.serverNow(), true)) {
             RewardManager.signIn(player, new SignInPacket(
-                    DateUtils.toDateTimeString(DateUtils.getServerDate()),
+                    DateUtils.toDateTimeString(SakuraClock.serverNow()),
                     data.isAutoRewarded(),
                     ESignInType.SIGN_IN
             ));

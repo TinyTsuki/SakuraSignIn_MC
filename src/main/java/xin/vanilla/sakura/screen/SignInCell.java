@@ -1,5 +1,7 @@
 package xin.vanilla.sakura.screen;
 
+import xin.vanilla.sakura.data.time.SakuraClock;
+
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.Getter;
@@ -20,14 +22,15 @@ import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.enums.ESignInStatus;
-import xin.vanilla.sakura.rewards.Reward;
-import xin.vanilla.sakura.rewards.RewardList;
+import xin.vanilla.sakura.reward.Reward;
+import xin.vanilla.sakura.reward.RewardList;
+import xin.vanilla.sakura.client.gui.RewardRenderer;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
-import xin.vanilla.sakura.text.SakuraComponent;
-import xin.vanilla.sakura.util.AbstractGuiUtils;
-import xin.vanilla.sakura.util.DateUtils;
-import xin.vanilla.sakura.util.GLFWKey;
+import xin.vanilla.sakura.SakuraComponent;
+import xin.vanilla.banira.client.util.AbstractGuiUtils;
+import xin.vanilla.banira.common.util.DateUtils;
+import xin.vanilla.banira.client.data.GLFWKey;
 
 import java.util.Date;
 import java.util.function.Consumer;
@@ -97,7 +100,7 @@ public final class SignInCell extends BaseWidget {
     private void renderStatusIcon(MatrixStack stack, double x, double y, double width, double height) {
         if (status == ESignInStatus.REWARDED.getCode()) {
             Coordinate uv = textureCoordinate.getRewardedUV();
-            AbstractGuiUtils.blit(stack, (int) x, (int) y, (int) width, (int) height,
+            AbstractGuiUtils.blit(stack, backgroundTexture, (int) x, (int) y, (int) width, (int) height,
                     (float) uv.getU0(), (float) uv.getV0(),
                     (int) uv.getUWidth(), (int) uv.getVHeight(),
                     textureCoordinate.getTotalWidth(), textureCoordinate.getTotalHeight());
@@ -112,7 +115,7 @@ public final class SignInCell extends BaseWidget {
         float u0 = (float) (uv.getU0() + uv.getX());
         float v0 = (float) (uv.getV0() + uv.getY());
         int hoverPadding = mouseInside ? 2 : 0;
-        AbstractGuiUtils.blit(stack,
+        AbstractGuiUtils.blit(stack, backgroundTexture,
                 (int) iconX - hoverPadding, (int) iconY - hoverPadding,
                 (int) width + hoverPadding * 2, (int) height + hoverPadding * 2,
                 u0, v0, (int) uv.getUWidth(), (int) uv.getVHeight(),
@@ -120,7 +123,7 @@ public final class SignInCell extends BaseWidget {
     }
 
     private void updateAprilFoolsPosition(double x, double y, double width, double height) {
-        Date clientDate = DateUtils.getClientDate();
+        Date clientDate = SakuraClock.clientNow();
         if (DateUtils.getHourOfDay(clientDate) >= 12
                 || DateUtils.getDayOfMonth(clientDate) != 1
                 || DateUtils.getMonthOfDate(clientDate) != 4) {
@@ -138,7 +141,7 @@ public final class SignInCell extends BaseWidget {
     }
 
     private void renderDay(MatrixStack stack, FontRenderer font, double x, double y, double width) {
-        Date date = DateUtils.getClientDate();
+        Date date = SakuraClock.clientNow();
         int color = textureCoordinate.getTextColorDefault();
         Component dayComponent = SakuraComponent.get().literal(String.valueOf(day));
         if (year == DateUtils.getYearPart(date) && month == DateUtils.getMonthOfDate(date)) {
@@ -179,7 +182,7 @@ public final class SignInCell extends BaseWidget {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         Minecraft.getInstance().getTextureManager().bind(backgroundTexture);
-        AbstractGuiUtils.blit(stack, (int) tooltipX, (int) tooltipY,
+        AbstractGuiUtils.blit(stack, backgroundTexture, (int) tooltipX, (int) tooltipY,
                 (int) tooltipWidth, (int) tooltipHeight,
                 (float) tooltipUV.getU0(), (float) tooltipUV.getV0(),
                 (int) tooltipUV.getUWidth(), (int) tooltipUV.getVHeight(),
@@ -229,7 +232,7 @@ public final class SignInCell extends BaseWidget {
             double itemX = tooltipX + cellCoordinate.getX() * tooltipScale
                     + i * (itemIconSize + margin);
             double itemY = tooltipY + cellCoordinate.getY() * tooltipScale;
-            AbstractGuiUtils.renderCustomReward(stack, itemRenderer, font,
+            RewardRenderer.renderCustomReward(stack, itemRenderer, font,
                     backgroundTexture, textureCoordinate, reward,
                     (int) itemX, (int) itemY, true, showProbability);
         }

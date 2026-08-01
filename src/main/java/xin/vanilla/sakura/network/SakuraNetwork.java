@@ -10,7 +10,7 @@ import xin.vanilla.banira.common.network.SplitPacket;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.config.CommonConfig;
-import xin.vanilla.sakura.config.RewardConfigManager;
+import xin.vanilla.sakura.config.reward.RewardConfigManager;
 import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.network.packet.*;
 

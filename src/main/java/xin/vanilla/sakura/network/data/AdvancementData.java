@@ -1,6 +1,6 @@
 package xin.vanilla.sakura.network.data;
 
-import xin.vanilla.sakura.text.SakuraComponent;
+import xin.vanilla.sakura.SakuraComponent;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.experimental.Accessors;

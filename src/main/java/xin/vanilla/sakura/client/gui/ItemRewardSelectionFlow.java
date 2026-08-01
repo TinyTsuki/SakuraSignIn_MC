@@ -5,8 +5,8 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.item.ItemStack;
 import xin.vanilla.banira.client.gui.ItemSelectScreen;
 import xin.vanilla.sakura.enums.ERewardType;
-import xin.vanilla.sakura.rewards.Reward;
-import xin.vanilla.sakura.rewards.RewardManager;
+import xin.vanilla.sakura.reward.Reward;
+import xin.vanilla.sakura.reward.RewardManager;
 
 import javax.annotation.Nullable;
 import java.math.BigDecimal;

@@ -1,5 +1,7 @@
 package xin.vanilla.sakura.event;
 
+import xin.vanilla.sakura.data.time.SakuraClock;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.gui.screen.Screen;
@@ -13,12 +15,12 @@ import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.internal.client.dev.SakuraUiSmokeRunner;
 import xin.vanilla.sakura.notification.SakuraClientNotifications;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
-import xin.vanilla.sakura.rewards.RewardManager;
+import xin.vanilla.sakura.reward.RewardManager;
 import xin.vanilla.sakura.screen.RewardOptionScreen;
 import xin.vanilla.sakura.screen.SignInScreen;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
-import xin.vanilla.sakura.text.SakuraComponent;
-import xin.vanilla.sakura.util.DateUtils;
+import xin.vanilla.sakura.SakuraComponent;
+import xin.vanilla.banira.common.util.DateUtils;
 
 /**
  * 客户端业务事件处理器，不接触具体加载器事件类型。
@@ -60,7 +62,7 @@ public final class ClientEventHandler {
     public static void openSignInScreen(Screen previousScreen) {
         if (SakuraClientState.isEnabled()) {
             SakuraClientState.setCalendarCurrentDate(
-                    RewardManager.getCompensateDate(DateUtils.getClientDate()));
+                    RewardManager.getCompensateDate(SakuraClock.clientNow()));
             Minecraft.getInstance().setScreen(new SignInScreen().previousScreen(previousScreen));
             return;
         }

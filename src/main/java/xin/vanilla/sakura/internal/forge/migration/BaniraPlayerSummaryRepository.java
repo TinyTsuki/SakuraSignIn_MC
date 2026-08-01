@@ -5,7 +5,7 @@ import xin.vanilla.banira.api.BaniraDataPaths;
 import xin.vanilla.banira.api.BaniraPlayerData;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.data.migration.PlayerSummaryStore;
-import xin.vanilla.sakura.domain.player.PlayerSignInSummary;
+import xin.vanilla.sakura.data.player.PlayerSignInSummary;
 import xin.vanilla.sakura.internal.forge.storage.AtomicNbtFiles;
 
 import java.io.IOException;

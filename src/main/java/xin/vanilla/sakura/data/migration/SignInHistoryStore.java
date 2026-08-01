@@ -1,6 +1,6 @@
 package xin.vanilla.sakura.data.migration;
 
-import xin.vanilla.sakura.domain.player.LegacyPlayerData;
+import xin.vanilla.sakura.data.migration.LegacyPlayerData;
 
 import java.io.IOException;
 import java.util.UUID;
