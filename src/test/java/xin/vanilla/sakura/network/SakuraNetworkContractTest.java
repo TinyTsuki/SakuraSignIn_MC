@@ -70,6 +70,7 @@ public class SakuraNetworkContractTest {
         assertTrue(packet.contains("RewardJsonCodec.decode"));
         assertTrue(packet.contains("RewardJsonCodec.encode"));
         assertTrue(packet.contains("RewardAddPermissionChecker.canApply"));
+        assertTrue(packet.contains("RewardRuleAddPermissionChecker.canApply"));
         assertFalse(packet.contains("TypeToken<Reward>"));
         assertFalse(packet.contains("reward.getType().ordinal"));
         assertFalse(packet.contains("ERewardType.valueOf(buf"));
