@@ -1,6 +1,6 @@
 package xin.vanilla.sakura.command.impl;
 
-import xin.vanilla.sakura.text.SakuraComponent;
+import xin.vanilla.sakura.SakuraComponent;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -9,7 +9,7 @@ import net.minecraft.command.Commands;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import xin.vanilla.banira.api.BaniraCommonSettings;
 import xin.vanilla.sakura.command.SignInCommand;
-import xin.vanilla.sakura.config.KeyValue;
+import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.sakura.message.SakuraMessages;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
 import xin.vanilla.banira.common.data.Component;
@@ -83,9 +83,9 @@ public final class HelpCommand {
         for (int index = start; index < end; index++) {
             KeyValue<String, String> entry = ENTRIES.get(index);
             Component description = SakuraComponent.get()
-                    .trans(player, "word", entry.getValue())
+                    .trans(player, "word", entry.value())
                     .color(Color.GRAY.getRGB());
-            help.append(entry.getKey())
+            help.append(entry.key())
                     .append(SakuraComponent.get().literal(" -> ").color(Color.YELLOW.getRGB()))
                     .append(description);
             if (index + 1 < end) {

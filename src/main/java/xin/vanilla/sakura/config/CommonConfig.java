@@ -16,7 +16,7 @@ import xin.vanilla.banira.common.network.packet.ConfigSyncToServer;
 import xin.vanilla.banira.api.BaniraNetwork;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.access.CommonConfigAccess;
-import xin.vanilla.sakura.domain.player.HistoryRetentionPolicy;
+import xin.vanilla.sakura.data.player.HistoryRetentionPolicy;
 import xin.vanilla.sakura.enums.ETimeCoolingMethod;
 
 import java.util.LinkedHashMap;

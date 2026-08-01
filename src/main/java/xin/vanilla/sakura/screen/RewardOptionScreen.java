@@ -1,5 +1,7 @@
 package xin.vanilla.sakura.screen;
 
+import xin.vanilla.sakura.data.time.SakuraClock;
+
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.client.gui.component.TextList;
@@ -12,8 +14,15 @@ import xin.vanilla.banira.client.gui.ReadOnlyTextScreen;
 import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.client.util.SystemUtils;
 import xin.vanilla.banira.client.gui.widget.BaseShapeWidget;
+import xin.vanilla.banira.client.gui.widget.LabelWidget;
 import xin.vanilla.banira.client.gui.widget.PopupOption;
-import xin.vanilla.sakura.text.SakuraComponent;
+import xin.vanilla.banira.client.data.FontDrawArgs;
+import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
+import xin.vanilla.banira.client.util.AbstractGuiUtils;
+import xin.vanilla.banira.common.data.KeyValue;
+import xin.vanilla.banira.common.enums.IEnumDescribable;
+import xin.vanilla.banira.common.util.NumberUtils;
+import xin.vanilla.sakura.SakuraComponent;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.AllArgsConstructor;
@@ -43,7 +52,11 @@ import xin.vanilla.sakura.client.gui.ItemRewardSelectionFlow;
 import xin.vanilla.sakura.client.gui.RewardListEntryWidget;
 import xin.vanilla.sakura.client.gui.RewardOperationWidget;
 import xin.vanilla.sakura.client.gui.RewardSelectionModel;
+import xin.vanilla.sakura.client.gui.RewardRenderer;
 import xin.vanilla.sakura.config.*;
+import xin.vanilla.sakura.config.reward.RewardConfig;
+import xin.vanilla.sakura.config.reward.RewardConfigManager;
+import xin.vanilla.sakura.data.collection.StringList;
 import xin.vanilla.sakura.enums.ERewardRule;
 import xin.vanilla.sakura.enums.ERewardType;
 import xin.vanilla.sakura.event.ClientEventHandler;
@@ -52,18 +65,17 @@ import xin.vanilla.sakura.network.packet.DownloadRewardOptionNotice;
 import xin.vanilla.sakura.network.packet.RewardOptionSyncPacket;
 import xin.vanilla.sakura.notification.SakuraClientNotifications;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
-import xin.vanilla.sakura.rewards.Reward;
-import xin.vanilla.sakura.rewards.RewardClipboardManager;
-import xin.vanilla.sakura.rewards.RewardList;
-import xin.vanilla.sakura.rewards.RewardManager;
+import xin.vanilla.sakura.reward.Reward;
+import xin.vanilla.sakura.client.data.RewardClipboardManager;
+import xin.vanilla.sakura.reward.RewardList;
+import xin.vanilla.sakura.reward.RewardManager;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
-import xin.vanilla.sakura.util.AbstractGuiUtils;
-import xin.vanilla.sakura.util.CollectionUtils;
-import xin.vanilla.sakura.util.DateUtils;
-import xin.vanilla.sakura.util.GLFWKey;
+import xin.vanilla.banira.common.util.CollectionUtils;
+import xin.vanilla.banira.common.util.DateUtils;
+import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.sakura.util.GLFWKeyHelper;
 import xin.vanilla.sakura.util.SakuraUtils;
-import xin.vanilla.sakura.util.StringUtils;
+import xin.vanilla.banira.common.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -106,7 +118,7 @@ public class RewardOptionScreen extends BaniraScreen {
     private final int groupContentPadding = 4;
     private final int groupGap = 4;
     // 标题的大小
-    private final int titleHeight = 20;
+    private final int titleHeight = 16;
     // 屏幕边缘间距
     private final int leftMargin = 4;
     private final int rightMargin = 4;
@@ -157,7 +169,7 @@ public class RewardOptionScreen extends BaniraScreen {
      * 操作按钮类型
      */
     @Getter
-    enum OperationButtonType {
+    enum OperationButtonType implements IEnumDescribable {
         REWARD_PANEL(-1),
         OPEN(1),
         CLOSE(2),
@@ -182,6 +194,11 @@ public class RewardOptionScreen extends BaniraScreen {
 
         OperationButtonType(int code) {
             this.code = code;
+        }
+
+        @Override
+        public Component enumDescription() {
+            return SakuraComponent.get().literal(name());
         }
 
         static OperationButtonType valueOf(int code) {
@@ -305,27 +322,17 @@ public class RewardOptionScreen extends BaniraScreen {
                     : getEffectiveTheme().panelBg();
             int panelHeight = (int) Math.max(height, layout.bottomY() - layout.topY());
             AbstractGui.fill(context.getStack(), x, y, x + width, y + height, headerColor);
-            AbstractGui.fill(context.getStack(), x, y, x + 1, y + panelHeight,
-                    getEffectiveTheme().buttonBorder());
             String titleId = rewardGroupTitleId(key);
-            if (rewardSelection.isSelected(titleId)
-                    || key.equals(dragTargetGroupKey)) {
-                int color = key.equals(dragTargetGroupKey)
-                        ? getEffectiveTheme().accentFocused()
-                        : getEffectiveTheme().borderFocused();
-                BaseShapeWidget.drawShape(new ShapeDrawArgs()
-                        .stack(context.getStack())
-                        .type(ShapeDrawArgs.ShapeType.RECT)
-                        .color(color)
-                        .rect(new ShapeDrawArgs.RectParams()
-                                .x(x).y(y).width(width).height(panelHeight)
-                                .radius(0).border(1)));
-            }
-            AbstractGuiUtils.drawString(context.getStack(), super.font,
-                    collapsed ? "\u25B6" : "\u25BC",
-                    x + 4, y + (height - super.font.lineHeight) / 2,
+            int borderColor = rewardSelection.isSelected(titleId)
+                    ? groupSelectionColor()
+                    : key.equals(dragTargetGroupKey)
+                    ? getEffectiveTheme().accentFocused()
+                    : getEffectiveTheme().buttonBorder();
+            drawRewardGroupBorder(context.getStack(), x, y, width, panelHeight, borderColor);
+            super.font.draw(context.getStack(), collapsed ? "\u25B6" : "\u25BC",
+                    x + 4, y + (height - super.font.lineHeight) / 2.0F,
                     getEffectiveTheme().buttonText());
-            AbstractGuiUtils.drawLimitedText(context.getStack(), super.font, title,
+            drawLimitedText(context.getStack(), title,
                     x + 16, y + (height - super.font.lineHeight) / 2,
                     width - 20, getEffectiveTheme().buttonText(), false);
         }).setBaseX(leftBarWidth)
@@ -363,7 +370,7 @@ public class RewardOptionScreen extends BaniraScreen {
             RewardListEntryWidget entry = new RewardListEntryWidget(this, j, context -> {
                 RewardListEntryWidget widget = context.getEntry();
                 Reward reward = rewardMap.get(key).get(widget.getOperation());
-                AbstractGuiUtils.renderCustomReward(context.getStack(), this.itemRenderer, super.font,
+                RewardRenderer.renderCustomReward(context.getStack(), this.itemRenderer, super.font,
                         SakuraClientState.getThemeTexture(), SakuraClientState.getThemeTextureCoordinate(),
                         reward, (int) widget.realX(), (int) widget.realY(), true);
             }).setBaseX(leftBarWidth)
@@ -385,6 +392,39 @@ public class RewardOptionScreen extends BaniraScreen {
 
     private boolean isRewardGroupCollapsed(String key) {
         return collapsedRewardGroups.contains(currOpButton + ":" + key);
+    }
+
+    private int groupSelectionColor() {
+        return 0xFFFFD54F;
+    }
+
+    private void drawRewardGroupBorder(MatrixStack stack, int x, int y,
+                                       int width, int height, int color) {
+        BaseShapeWidget.drawShape(new ShapeDrawArgs()
+                .stack(stack)
+                .type(ShapeDrawArgs.ShapeType.RECT)
+                .color(color)
+                .rect(new ShapeDrawArgs.RectParams()
+                        .x(x).y(y).width(width).height(height)
+                        .radius(0).border(1)));
+    }
+
+    private void drawLimitedText(MatrixStack stack, String content, int x, int y,
+                                 int maxWidth, int color, boolean shadow) {
+        LabelWidget.drawLimitedText(FontDrawArgs.of(Text.literal(content)
+                        .stack(stack).font(font).color(color).shadow(shadow))
+                .x(x).y(y).maxWidth(maxWidth).maxLine(1).wrap(false)
+                .position(EnumEllipsisPosition.END).inScreen(false)
+                .padding(0).margin(0));
+    }
+
+    private int multilineTextWidth(Text text) {
+        return Arrays.stream(text.content().split("\\n", -1))
+                .mapToInt(font::width).max().orElse(0);
+    }
+
+    private int multilineTextHeight(Text text) {
+        return text.content().split("\\n", -1).length * font.lineHeight;
     }
 
     private void toggleRewardGroup(String key) {
@@ -422,7 +462,8 @@ public class RewardOptionScreen extends BaniraScreen {
 
     private void beginRewardDrag(String rewardId) {
         if (!rewardSelection.isSelected(rewardId)) {
-            return;
+            rewardSelection.selectOnly(rewardId);
+            currRewardButton = rewardId;
         }
         draggingRewardId = rewardId;
         updateRewardDrag(inputState.mouseX(), inputState.mouseY());
@@ -494,7 +535,7 @@ public class RewardOptionScreen extends BaniraScreen {
                 continue;
             }
             String sourceKey = id.substring(0, separator);
-            int sourceIndex = StringUtils.toInt(id.substring(separator + 1), -1);
+            int sourceIndex = NumberUtils.toInt(id.substring(separator + 1), -1);
             RewardList source = rewardMap.get(sourceKey);
             if (targetKey.equals(sourceKey) || source == null
                     || sourceIndex < 0 || sourceIndex >= source.size()) {
@@ -547,7 +588,7 @@ public class RewardOptionScreen extends BaniraScreen {
                 , Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_num").shadow(true))
                 , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
                 , new StringList("\\w*", "", "\\d*")
-                , new StringList("", DateUtils.toString(DateUtils.addMonth(DateUtils.getClientDate(), 1)), "1")
+                , new StringList("", DateUtils.toString(DateUtils.addMonth(SakuraClock.clientNow(), 1)), "1")
                 , input -> {
             StringList result = new StringList("", "", "");
             if (CollectionUtils.isNotNullOrEmpty(input)) {
@@ -560,12 +601,12 @@ public class RewardOptionScreen extends BaniraScreen {
                     }
                 }
                 if (StringUtils.isNotNullOrEmpty(input.get(2))) {
-                    if (StringUtils.toInt(input.get(2)) == 0) {
+                    if (NumberUtils.toInt(input.get(2)) == 0) {
                         result.set(2, SakuraComponent.get().transClient("format", "num_s_error", input.get(2)).toString());
                     }
                 }
                 if (result.stream().allMatch(StringUtils::isNullOrEmptyEx)) {
-                    key[0] = String.format("%s|%s|-1|%d", input.get(0), input.get(1), StringUtils.toInt(input.get(2), 1));
+                    key[0] = String.format("%s|%s|-1|%d", input.get(0), input.get(1), NumberUtils.toInt(input.get(2), 1));
                 }
             }
             return result;
@@ -664,7 +705,7 @@ public class RewardOptionScreen extends BaniraScreen {
                     String probability = RewardConfigManager.getDisplayKey(
                             ERewardRule.RANDOM_REWARD, key);
                     this.addRewardTitleButton(String.format("%s%%",
-                            StringUtils.toFixedEx(new BigDecimal(probability)
+                            NumberUtils.toFixedEx(new BigDecimal(probability)
                                     .multiply(new BigDecimal(100)), 10)), key, titleIndex);
                     this.addRewardButton(randomRewards, key);
                     titleIndex--;
@@ -674,13 +715,13 @@ public class RewardOptionScreen extends BaniraScreen {
             case CDK_REWARD: {
                 for (int i = 0; i < rewardConfig.getCdkRewards().size(); i++) {
                     KeyValue<KeyValue<String, String>, KeyValue<RewardList, AtomicInteger>> keyValue = rewardConfig.getCdkRewards().get(i);
-                    String key = String.format("%s|%s|%d|%d", keyValue.getKey().getKey(), keyValue.getKey().getValue(), i, keyValue.getValue().getValue().get());
+                    String key = String.format("%s|%s|%d|%d", keyValue.key().key(), keyValue.key().value(), i, keyValue.value().value().get());
                     this.addRewardTitleButton(SakuraComponent.get().transClient(
-                            "format", "s_valid_until_s", keyValue.getKey().getKey(),
-                            keyValue.getKey().getValue(), keyValue.getValue().getValue()
+                            "format", "s_valid_until_s", keyValue.key().key(),
+                            keyValue.key().value(), keyValue.value().value()
                     ).toString(), key, titleIndex);
                     this.addRewardButton(Collections.singletonMap(
-                            key, keyValue.getValue().getKey()), key);
+                            key, keyValue.value().key()), key);
                     titleIndex--;
                 }
             }
@@ -936,28 +977,38 @@ public class RewardOptionScreen extends BaniraScreen {
         if (draggingRewardId == null) {
             return;
         }
-        int separator = draggingRewardId.lastIndexOf(',');
         OperationButtonType button = OperationButtonType.valueOf(currOpButton);
-        if (separator <= 0 || button == null) {
+        if (button == null) {
             return;
         }
-        String key = draggingRewardId.substring(0, separator);
-        int index = StringUtils.toInt(draggingRewardId.substring(separator + 1), -1);
-        RewardList rewards = RewardConfigManager.getRewardMap(
-                ERewardRule.valueOf(button.toString())).get(key);
-        if (rewards == null || index < 0 || index >= rewards.size()) {
-            return;
-        }
-        int x = (int) dragMouseX - itemIconSize / 2;
-        int y = (int) dragMouseY - itemIconSize / 2;
+        List<String> draggingIds = selectedRewardIds();
+        int columns = Math.min(5, Math.max(1, draggingIds.size()));
+        int spacing = itemIconSize + 2;
+        int startX = (int) dragMouseX - columns * spacing / 2;
+        int startY = (int) dragMouseY - itemIconSize / 2;
         stack.pushPose();
         stack.translate(0, 0, 500);
-        AbstractGui.fill(stack, x - 2, y - 2, x + itemIconSize + 2,
-                y + itemIconSize + 2, getEffectiveTheme().bgSurface());
-        AbstractGuiUtils.renderCustomReward(stack, itemRenderer, font,
-                SakuraClientState.getThemeTexture(),
-                SakuraClientState.getThemeTextureCoordinate(),
-                rewards.get(index), x, y, true);
+        int visualIndex = 0;
+        for (String rewardId : selectedRewardIds()) {
+            int separator = rewardId.lastIndexOf(',');
+            if (separator <= 0) {
+                continue;
+            }
+            String key = rewardId.substring(0, separator);
+            int index = NumberUtils.toInt(rewardId.substring(separator + 1), -1);
+            RewardList rewards = RewardConfigManager.getRewardMap(
+                    ERewardRule.valueOf(button.toString())).get(key);
+            if (rewards == null || index < 0 || index >= rewards.size()) {
+                continue;
+            }
+            int x = startX + visualIndex % columns * spacing;
+            int y = startY + visualIndex / columns * spacing;
+            RewardRenderer.renderCustomReward(stack, itemRenderer, font,
+                    SakuraClientState.getThemeTexture(),
+                    SakuraClientState.getThemeTextureCoordinate(),
+                    rewards.get(index), x, y, true);
+            visualIndex++;
+        }
         stack.popPose();
     }
 
@@ -1013,7 +1064,7 @@ public class RewardOptionScreen extends BaniraScreen {
         if (buttonType == null) return;
         ERewardRule rule = ERewardRule.valueOf(buttonType.toString());
         if (popupId.startsWith("奖励规则类型按钮:")) {
-            int opCode = StringUtils.toInt(popupId.replace("奖励规则类型按钮:", ""));
+            int opCode = NumberUtils.toInt(popupId.replace("奖励规则类型按钮:", ""));
             if (selectedIndex == 0 && opCode > 200 && opCode <= 299) {
                 requestConfirmation("confirm_clear_reward_rule",
                         () -> clearRewardRule(opCode, rule));
@@ -1078,8 +1129,8 @@ public class RewardOptionScreen extends BaniraScreen {
                         , input -> {
                     StringList result = new StringList();
                     if (CollectionUtils.isNotNullOrEmpty(input) && StringUtils.isNotNullOrEmpty(key[0])) {
-                        int count = StringUtils.toInt(input.get(0));
-                        BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
+                        int count = NumberUtils.toInt(input.get(0));
+                        BigDecimal p = NumberUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                         if (count != 0) {
                             RewardConfigManager.addUndoRewardOption(rule);
                             RewardConfigManager.clearRedoList();
@@ -1110,8 +1161,8 @@ public class RewardOptionScreen extends BaniraScreen {
                         , input -> {
                     StringList result = new StringList();
                     if (CollectionUtils.isNotNullOrEmpty(input) && StringUtils.isNotNullOrEmpty(key[0])) {
-                        int count = StringUtils.toInt(input.get(0));
-                        BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
+                        int count = NumberUtils.toInt(input.get(0));
+                        BigDecimal p = NumberUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                         if (count != 0) {
                             RewardConfigManager.addUndoRewardOption(rule);
                             RewardConfigManager.clearRedoList();
@@ -1142,8 +1193,8 @@ public class RewardOptionScreen extends BaniraScreen {
                         , input -> {
                     StringList result = new StringList();
                     if (CollectionUtils.isNotNullOrEmpty(input) && StringUtils.isNotNullOrEmpty(key[0])) {
-                        int count = StringUtils.toInt(input.get(0));
-                        BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
+                        int count = NumberUtils.toInt(input.get(0));
+                        BigDecimal p = NumberUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                         if (count != 0) {
                             RewardConfigManager.addUndoRewardOption(rule);
                             RewardConfigManager.clearRedoList();
@@ -1198,7 +1249,7 @@ public class RewardOptionScreen extends BaniraScreen {
                         RewardConfigManager.addUndoRewardOption(rule);
                         RewardConfigManager.clearRedoList();
                         Component component = SakuraComponent.get().literal(input.get(0));
-                        BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
+                        BigDecimal p = NumberUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                         RewardConfigManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(component, ERewardType.MESSAGE), ERewardType.MESSAGE, p));
                         RewardConfigManager.saveRewardOption();
                     }
@@ -1224,7 +1275,7 @@ public class RewardOptionScreen extends BaniraScreen {
                     if (CollectionUtils.isNotNullOrEmpty(input) && input.get(0).startsWith("/") && StringUtils.isNotNullOrEmpty(key[0])) {
                         RewardConfigManager.addUndoRewardOption(rule);
                         RewardConfigManager.clearRedoList();
-                        BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
+                        BigDecimal p = NumberUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                         RewardConfigManager.addReward(rule, key[0], new Reward(RewardManager.serializeReward(input.get(0), ERewardType.COMMAND), ERewardType.COMMAND, p));
                         RewardConfigManager.saveRewardOption();
                     } else {
@@ -1251,7 +1302,7 @@ public class RewardOptionScreen extends BaniraScreen {
                         if (rule == ERewardRule.CDK_REWARD) {
                             String[] split = key.split("\\|");
                             if (split.length != 4 && split.length != 3 && split.length != 2)
-                                split = new String[]{"", DateUtils.toString(DateUtils.addMonth(DateUtils.getClientDate(), 1)), "-1", "1"};
+                                split = new String[]{"", DateUtils.toString(DateUtils.addMonth(SakuraClock.clientNow(), 1)), "-1", "1"};
                             Minecraft.getInstance().setScreen(new StringInputScreen(this
                                     , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_rule_key_" + rule.getCode()).shadow(true)
                                     , Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_valid_until").shadow(true)
@@ -1271,14 +1322,14 @@ public class RewardOptionScreen extends BaniraScreen {
                                         }
                                     }
                                     if (StringUtils.isNotNullOrEmpty(input.get(2))) {
-                                        if (StringUtils.toInt(input.get(2)) == 0) {
+                                        if (NumberUtils.toInt(input.get(2)) == 0) {
                                             result.set(2, SakuraComponent.get().transClient("format", "num_s_error", input.get(2)).toString());
                                         }
                                     }
                                     if (result.stream().allMatch(StringUtils::isNullOrEmptyEx)) {
                                         RewardConfigManager.addUndoRewardOption(rule);
                                         RewardConfigManager.clearRedoList();
-                                        RewardConfigManager.updateKeyName(rule, key, String.format("%s|%s|-1|%d", input.get(0), input.get(1), StringUtils.toInt(input.get(2), 1)));
+                                        RewardConfigManager.updateKeyName(rule, key, String.format("%s|%s|-1|%d", input.get(0), input.get(1), NumberUtils.toInt(input.get(2), 1)));
                                         RewardConfigManager.saveRewardOption();
                                     }
                                 }
@@ -1363,8 +1414,8 @@ public class RewardOptionScreen extends BaniraScreen {
                             , input -> {
                         StringList result = new StringList();
                         if (CollectionUtils.isNotNullOrEmpty(input)) {
-                            int count = StringUtils.toInt(input.get(0));
-                            BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
+                            int count = NumberUtils.toInt(input.get(0));
+                            BigDecimal p = NumberUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                             if (count != 0) {
                                 RewardConfigManager.addUndoRewardOption(rule);
                                 RewardConfigManager.clearRedoList();
@@ -1387,8 +1438,8 @@ public class RewardOptionScreen extends BaniraScreen {
                             , input -> {
                         StringList result = new StringList();
                         if (CollectionUtils.isNotNullOrEmpty(input)) {
-                            int count = StringUtils.toInt(input.get(0));
-                            BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
+                            int count = NumberUtils.toInt(input.get(0));
+                            BigDecimal p = NumberUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                             if (count != 0) {
                                 RewardConfigManager.addUndoRewardOption(rule);
                                 RewardConfigManager.clearRedoList();
@@ -1411,8 +1462,8 @@ public class RewardOptionScreen extends BaniraScreen {
                             , input -> {
                         StringList result = new StringList();
                         if (CollectionUtils.isNotNullOrEmpty(input)) {
-                            int count = StringUtils.toInt(input.get(0));
-                            BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
+                            int count = NumberUtils.toInt(input.get(0));
+                            BigDecimal p = NumberUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                             if (count != 0) {
                                 RewardConfigManager.addUndoRewardOption(rule);
                                 RewardConfigManager.clearRedoList();
@@ -1452,7 +1503,7 @@ public class RewardOptionScreen extends BaniraScreen {
                             RewardConfigManager.addUndoRewardOption(rule);
                             RewardConfigManager.clearRedoList();
                             Component component = SakuraComponent.get().literal(input.get(0));
-                            BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
+                            BigDecimal p = NumberUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                             RewardConfigManager.addReward(rule, key, new Reward(RewardManager.serializeReward(component, ERewardType.MESSAGE), ERewardType.MESSAGE, p));
                             RewardConfigManager.saveRewardOption();
                         }
@@ -1470,7 +1521,7 @@ public class RewardOptionScreen extends BaniraScreen {
                         if (CollectionUtils.isNotNullOrEmpty(input) && input.get(0).startsWith("/")) {
                             RewardConfigManager.addUndoRewardOption(rule);
                             RewardConfigManager.clearRedoList();
-                            BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
+                            BigDecimal p = NumberUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                             RewardConfigManager.addReward(rule, key, new Reward(RewardManager.serializeReward(input.get(0), ERewardType.COMMAND), ERewardType.COMMAND, p));
                             RewardConfigManager.saveRewardOption();
                         } else {
@@ -1524,12 +1575,12 @@ public class RewardOptionScreen extends BaniraScreen {
                                     , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_exp_point").shadow(true), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_probability").shadow(true))
                                     , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
                                     , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
-                                    , new StringList(String.valueOf((Integer) RewardManager.deserializeReward(reward)), StringUtils.toFixedEx(reward.getProbability(), 5))
+                                    , new StringList(String.valueOf((Integer) RewardManager.deserializeReward(reward)), NumberUtils.toFixedEx(reward.getProbability(), 5))
                                     , input -> {
                                 StringList result = new StringList();
                                 if (CollectionUtils.isNotNullOrEmpty(input)) {
-                                    int count = StringUtils.toInt(input.get(0));
-                                    BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
+                                    int count = NumberUtils.toInt(input.get(0));
+                                    BigDecimal p = NumberUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                                     if (count != 0) {
                                         RewardConfigManager.addUndoRewardOption(rule);
                                         RewardConfigManager.clearRedoList();
@@ -1549,12 +1600,12 @@ public class RewardOptionScreen extends BaniraScreen {
                                     , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_exp_level").shadow(true), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_probability").shadow(true))
                                     , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
                                     , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
-                                    , new StringList(String.valueOf((Integer) RewardManager.deserializeReward(reward)), StringUtils.toFixedEx(reward.getProbability(), 5))
+                                    , new StringList(String.valueOf((Integer) RewardManager.deserializeReward(reward)), NumberUtils.toFixedEx(reward.getProbability(), 5))
                                     , input -> {
                                 StringList result = new StringList();
                                 if (CollectionUtils.isNotNullOrEmpty(input)) {
-                                    int count = StringUtils.toInt(input.get(0));
-                                    BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
+                                    int count = NumberUtils.toInt(input.get(0));
+                                    BigDecimal p = NumberUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                                     if (count != 0) {
                                         RewardConfigManager.addUndoRewardOption(rule);
                                         RewardConfigManager.clearRedoList();
@@ -1574,12 +1625,12 @@ public class RewardOptionScreen extends BaniraScreen {
                                     , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_sign_in_card").shadow(true), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_probability").shadow(true))
                                     , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
                                     , new StringList("-?\\d*", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
-                                    , new StringList(String.valueOf((Integer) RewardManager.deserializeReward(reward)), StringUtils.toFixedEx(reward.getProbability(), 5))
+                                    , new StringList(String.valueOf((Integer) RewardManager.deserializeReward(reward)), NumberUtils.toFixedEx(reward.getProbability(), 5))
                                     , input -> {
                                 StringList result = new StringList();
                                 if (CollectionUtils.isNotNullOrEmpty(input)) {
-                                    int count = StringUtils.toInt(input.get(0));
-                                    BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
+                                    int count = NumberUtils.toInt(input.get(0));
+                                    BigDecimal p = NumberUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                                     if (count != 0) {
                                         RewardConfigManager.addUndoRewardOption(rule);
                                         RewardConfigManager.clearRedoList();
@@ -1613,13 +1664,13 @@ public class RewardOptionScreen extends BaniraScreen {
                                     , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_message").shadow(true), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_probability").shadow(true))
                                     , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
                                     , new StringList("", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
-                                    , new StringList(RewardManager.deserializeReward(reward).toString(), StringUtils.toFixedEx(reward.getProbability(), 5))
+                                    , new StringList(RewardManager.deserializeReward(reward).toString(), NumberUtils.toFixedEx(reward.getProbability(), 5))
                                     , input -> {
                                 if (CollectionUtils.isNotNullOrEmpty(input)) {
                                     RewardConfigManager.addUndoRewardOption(rule);
                                     RewardConfigManager.clearRedoList();
                                     Component textToComponent = SakuraComponent.get().literal(input.get(0));
-                                    BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
+                                    BigDecimal p = NumberUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                                     RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(textToComponent, ERewardType.MESSAGE), ERewardType.MESSAGE, p));
                                     RewardConfigManager.saveRewardOption();
                                 }
@@ -1632,13 +1683,13 @@ public class RewardOptionScreen extends BaniraScreen {
                                     , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_command").shadow(true), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_probability").shadow(true))
                                     , new TextList(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"))
                                     , new StringList("", "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?")
-                                    , new StringList(RewardManager.deserializeReward(reward), StringUtils.toFixedEx(reward.getProbability(), 5))
+                                    , new StringList(RewardManager.deserializeReward(reward), NumberUtils.toFixedEx(reward.getProbability(), 5))
                                     , input -> {
                                 StringList result = new StringList();
                                 if (CollectionUtils.isNotNullOrEmpty(input) && input.get(0).startsWith("/")) {
                                     RewardConfigManager.addUndoRewardOption(rule);
                                     RewardConfigManager.clearRedoList();
-                                    BigDecimal p = StringUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
+                                    BigDecimal p = NumberUtils.toBigDecimal(input.get(1), BigDecimal.ONE);
                                     RewardConfigManager.updateReward(rule, key, Integer.parseInt(index), new Reward(RewardManager.serializeReward(input.get(0), ERewardType.COMMAND), ERewardType.COMMAND, p));
                                     RewardConfigManager.saveRewardOption();
                                 } else {
@@ -1763,10 +1814,10 @@ public class RewardOptionScreen extends BaniraScreen {
             if (widget.hovered()) {
                 AbstractGui.fill(stack, realX, realY, realX2, realY2, 0x99ACACAC);
             }
-            AbstractGuiUtils.drawLimitedText(stack, super.font,
+            drawLimitedText(stack,
                     SakuraComponent.get().transClient("word", content).toString(),
                     realX + 4, (int) (realY + (realHeight - super.font.lineHeight) / 2),
-                    (int) (realWidth - 22), 0xFFEBD4B1);
+                    (int) (realWidth - 22), 0xFFEBD4B1, false);
         };
     }
 
@@ -1933,7 +1984,7 @@ public class RewardOptionScreen extends BaniraScreen {
                                 , ""
                                 , "\\d*")
                                 , new StringList(RewardConfigManager.getCdkRewardKey(RewardClipboardManager.deSerializeRewardList().getKey())
-                                , DateUtils.toString(DateUtils.addMonth(DateUtils.getClientDate(), 1))
+                                , DateUtils.toString(DateUtils.addMonth(SakuraClock.clientNow(), 1))
                                 , RewardConfigManager.getCdkRewardNum(RewardClipboardManager.deSerializeRewardList().getKey()) + "")
                                 , input -> {
                             StringList result = new StringList("", "", "");
@@ -1947,7 +1998,7 @@ public class RewardOptionScreen extends BaniraScreen {
                                     }
                                 }
                                 if (StringUtils.isNotNullOrEmpty(input.get(2))) {
-                                    if (StringUtils.toInt(input.get(2)) == 0) {
+                                    if (NumberUtils.toInt(input.get(2)) == 0) {
                                         result.set(2, SakuraComponent.get().transClient("format", "num_s_error", input.get(2)).toString());
                                     }
                                 }
@@ -1955,7 +2006,7 @@ public class RewardOptionScreen extends BaniraScreen {
                                     RewardConfigManager.addUndoRewardOption(rule);
                                     RewardConfigManager.clearRedoList();
                                     RewardList rewardList = RewardClipboardManager.deSerializeRewardList().toRewardList();
-                                    RewardConfigManager.addKeyName(rule, String.format("%s|%s|-1|%d", input.get(0), input.get(1), StringUtils.toInt(input.get(2), 1)), rewardList);
+                                    RewardConfigManager.addKeyName(rule, String.format("%s|%s|-1|%d", input.get(0), input.get(1), NumberUtils.toInt(input.get(2), 1)), rewardList);
                                     RewardConfigManager.saveRewardOption();
                                 }
                             }
@@ -2030,7 +2081,11 @@ public class RewardOptionScreen extends BaniraScreen {
             else if (currRewardButton.startsWith("标题")) {
                 RewardConfigManager.addUndoRewardOption(rule);
                 RewardConfigManager.clearRedoList();
-                RewardConfigManager.deleteKey(rule, key);
+                if (rule == ERewardRule.BASE_REWARD) {
+                    RewardConfigManager.clearKey(rule, key);
+                } else {
+                    RewardConfigManager.deleteKey(rule, key);
+                }
                 RewardConfigManager.saveRewardOption();
             }
             // 普通按钮
@@ -2171,11 +2226,11 @@ public class RewardOptionScreen extends BaniraScreen {
         }
 
         registerOperation(new RewardOperationWidget(this, OperationButtonType.OFFSET_Y.getCode(), context -> {
-            AbstractGuiUtils.drawString(context.getStack(), font, "OY:",
-                    width - rightBarWidth + 1, height - font.lineHeight * 2 - 2, 0xFFACACAC);
-            AbstractGuiUtils.drawLimitedText(context.getStack(), font, String.valueOf((int) yOffset),
+            font.draw(context.getStack(), "OY:", width - rightBarWidth + 1,
+                    height - font.lineHeight * 2 - 2, 0xFFACACAC);
+            drawLimitedText(context.getStack(), String.valueOf((int) yOffset),
                     width - rightBarWidth + 1, height - font.lineHeight - 2,
-                    rightBarWidth, 0xFFACACAC);
+                    rightBarWidth, 0xFFACACAC, false);
         }), new ScreenCoordinate(width - rightBarWidth, height - font.lineHeight * 2 - 2,
                 rightBarWidth, font.lineHeight * 2 + 2));
 
@@ -2258,14 +2313,23 @@ public class RewardOptionScreen extends BaniraScreen {
 
         // 绘制操作提示
         if (OperationButtonType.valueOf(currOpButton) == null) {
-            AbstractGuiUtils.fill(matrixStack, this.leftBarWidth + 4, 4, super.width - this.leftBarWidth - this.rightBarWidth - 8, super.height - 8, 0x88000000, 15);
+            BaseShapeWidget.drawShape(new ShapeDrawArgs()
+                    .stack(matrixStack)
+                    .type(ShapeDrawArgs.ShapeType.RECT)
+                    .color(0x88000000)
+                    .rect(new ShapeDrawArgs.RectParams()
+                            .x(this.leftBarWidth + 4).y(4)
+                            .width(super.width - this.leftBarWidth
+                                    - this.rightBarWidth - 8)
+                            .height(super.height - 8).radius(15).border(0)));
             float x, y;
             tips.stack(matrixStack).font(super.font);
-            int textHeight = AbstractGuiUtils.multilineTextHeight(tips);
-            int textWidth = AbstractGuiUtils.multilineTextWidth(tips);
+            int textHeight = multilineTextHeight(tips);
+            int textWidth = multilineTextWidth(tips);
             x = this.leftBarWidth + ((super.width - this.leftBarWidth - this.rightBarWidth) - textWidth) / 2.0f;
             y = (super.height - (textHeight + 4)) / 2.0f;
-            AbstractGuiUtils.drawString(tips, x, y);
+            drawLimitedText(matrixStack, tips.content(), (int) x, (int) y,
+                    textWidth, tips.colorArgb(), tips.shadow());
         }
         else this.prepareRewardList();
 
@@ -2308,7 +2372,7 @@ public class RewardOptionScreen extends BaniraScreen {
 
         OP_BUTTONS.get(OperationButtonType.OFFSET_Y.getCode()).setTooltip(
                 Text.trans(SakuraSignIn.MODID, "format.sakura_sign_in.y_offset",
-                        StringUtils.toFixedEx(yOffset, 1)));
+                        NumberUtils.toFixedEx(yOffset, 1)));
         OP_BUTTONS.get(OperationButtonType.HELP.getCode()).setTooltip(
                 Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.help_button"));
 

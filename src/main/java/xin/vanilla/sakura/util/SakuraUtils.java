@@ -11,6 +11,7 @@ import net.minecraft.world.World;
 import xin.vanilla.banira.api.BaniraEnvironment;
 import xin.vanilla.banira.api.BaniraServer;
 import xin.vanilla.banira.common.util.Translator;
+import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.api.SakuraPlayerData;
@@ -210,16 +211,6 @@ public class SakuraUtils {
 
     public static String getServerPlayerLanguage(ServerPlayerEntity player) {
         return player.getLanguage();
-    }
-
-    /**
-     * 复制玩家语言设置
-     *
-     * @param originalPlayer 原始玩家
-     * @param targetPlayer   目标玩家
-     */
-    public static void cloneServerPlayerLanguage(ServerPlayerEntity originalPlayer, ServerPlayerEntity targetPlayer) {
-        FieldUtils.setPrivateFieldValue(ServerPlayerEntity.class, targetPlayer, FieldUtils.getPlayerLanguageFieldName(originalPlayer), getServerPlayerLanguage(originalPlayer));
     }
 
     public static String getClientLanguage() {

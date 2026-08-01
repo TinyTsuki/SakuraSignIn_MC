@@ -19,14 +19,12 @@ public class InputAndQuickActionBaniraContractTest {
     @Test
     public void stringInputDelegatesLayoutAndInteractionToBanira() throws Exception {
         String input = source("xin/vanilla/sakura/screen/StringInputScreen.java");
-        String guiUtils = source("xin/vanilla/sakura/util/AbstractGuiUtils.java");
 
         assertTrue(input.contains("extends InputFormScreen"));
         assertTrue(input.contains("new InputFormScreen.Widget()"));
         assertFalse(input.contains("TextFieldWidget"));
         assertFalse(input.contains("extends Screen"));
-        assertFalse(guiUtils.contains("newTextFieldWidget("));
-        assertFalse(guiUtils.contains("newButton("));
+        assertFalse(Files.exists(MAIN.resolve("xin/vanilla/sakura/util/AbstractGuiUtils.java")));
     }
 
     @Test

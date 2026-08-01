@@ -1,6 +1,10 @@
 package xin.vanilla.sakura.enums;
 
 import lombok.Getter;
+import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.enums.IEnumDescribable;
+import xin.vanilla.banira.common.util.EnumDescriptionHelper;
+import xin.vanilla.sakura.SakuraComponent;
 
 import java.io.Serializable;
 
@@ -8,7 +12,7 @@ import java.io.Serializable;
  * 奖励类型
  */
 @Getter
-public enum ERewardType implements Serializable {
+public enum ERewardType implements Serializable, IEnumDescribable {
     ITEM(1),
     EFFECT(2),
     EXP_POINT(3),
@@ -22,6 +26,11 @@ public enum ERewardType implements Serializable {
 
     ERewardType(int code) {
         this.code = code;
+    }
+
+    @Override
+    public Component enumDescription() {
+        return EnumDescriptionHelper.describeEnum(SakuraComponent.get(), this);
     }
 
     public static ERewardType valueOf(int code) {

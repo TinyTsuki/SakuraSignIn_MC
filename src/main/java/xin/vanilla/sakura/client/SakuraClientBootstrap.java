@@ -12,7 +12,7 @@ import xin.vanilla.sakura.event.ClientEventHandler;
 import xin.vanilla.sakura.network.ClientProxy;
 import xin.vanilla.sakura.network.SakuraClientPacketHandlers;
 import xin.vanilla.sakura.notification.SakuraClientNotificationTypes;
-import xin.vanilla.sakura.util.GLFWKey;
+import xin.vanilla.banira.client.data.GLFWKey;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 

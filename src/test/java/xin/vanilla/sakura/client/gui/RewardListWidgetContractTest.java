@@ -31,6 +31,11 @@ public class RewardListWidgetContractTest {
         assertTrue(screen.contains("entry.setDragHandler("));
         assertTrue(screen.contains("entry.setLongPressHandler("));
         assertTrue(screen.contains(".setLongPressReleaseHandler("));
+        assertTrue(widget.contains("dragActivationDistance"));
+        assertTrue(widget.contains("pendingDrag"));
+        assertTrue(widget.contains("if (selected)"));
+        assertTrue(widget.contains("startLongPressDrag("));
+        assertFalse(widget.contains("if (!dragged && selected"));
         assertTrue(screen.contains("addWidget(entry)"));
         assertTrue(screen.contains("getTextColorCanRepair()"));
         assertFalse(screen.contains(".handleMouseClick("));
@@ -40,8 +45,8 @@ public class RewardListWidgetContractTest {
 
     @Test
     public void itemRewardsUseBaniraItemRenderer() {
-        String guiUtils = read(MAIN.resolve("util/AbstractGuiUtils.java"));
-        assertTrue(guiUtils.contains("ItemWidget.renderItem("));
+        String renderer = read(MAIN.resolve("client/gui/RewardRenderer.java"));
+        assertTrue(renderer.contains("ItemWidget.renderItem("));
     }
 
     private static String read(Path path) {

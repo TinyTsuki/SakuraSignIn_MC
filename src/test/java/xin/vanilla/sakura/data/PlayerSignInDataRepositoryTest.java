@@ -5,12 +5,12 @@ import net.minecraft.nbt.ListNBT;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import xin.vanilla.sakura.config.KeyValue;
+import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.sakura.data.migration.PlayerSummaryStore;
-import xin.vanilla.sakura.domain.player.PlayerSignInSummary;
+import xin.vanilla.sakura.data.player.PlayerSignInSummary;
 import xin.vanilla.sakura.internal.forge.migration.MonthlySignInHistoryRepository;
-import xin.vanilla.sakura.rewards.RewardList;
-import xin.vanilla.sakura.util.DateUtils;
+import xin.vanilla.sakura.reward.RewardList;
+import xin.vanilla.banira.common.util.DateUtils;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -65,7 +65,7 @@ public class PlayerSignInDataRepositoryTest {
         assertTrue(restored.isAutoRewarded());
         assertEquals("zh_cn", restored.getLanguage());
         assertEquals(1, restored.getCdkRecords().size());
-        assertEquals("WELCOME", restored.getCdkRecords().get(0).getKey());
+        assertEquals("WELCOME", restored.getCdkRecords().get(0).key());
         assertEquals(1, restored.getSignInRecords().size());
         assertTrue(restored.getSignInRecords().get(0).isRewarded());
     }

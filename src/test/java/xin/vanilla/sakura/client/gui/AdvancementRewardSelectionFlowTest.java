@@ -3,7 +3,7 @@ package xin.vanilla.sakura.client.gui;
 import net.minecraft.util.ResourceLocation;
 import org.junit.Test;
 import xin.vanilla.sakura.enums.ERewardType;
-import xin.vanilla.sakura.rewards.Reward;
+import xin.vanilla.sakura.reward.Reward;
 
 import java.math.BigDecimal;
 
