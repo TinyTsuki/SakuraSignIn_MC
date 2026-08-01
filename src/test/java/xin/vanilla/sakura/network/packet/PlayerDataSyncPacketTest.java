@@ -6,9 +6,12 @@ import xin.vanilla.sakura.data.PlayerSignInData;
 import xin.vanilla.sakura.data.SignInRecord;
 import xin.vanilla.sakura.network.TestBaniraPacketBuffer;
 import xin.vanilla.sakura.reward.RewardList;
+import xin.vanilla.sakura.data.personaldate.PersonalDateCalendar;
+import xin.vanilla.sakura.data.personaldate.PlayerPersonalDateSlot;
 import xin.vanilla.banira.common.util.DateUtils;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.UUID;
 
@@ -27,6 +30,10 @@ public class PlayerDataSyncPacketTest {
         PlayerSignInData source = new PlayerSignInData();
         source.markSigned(signedDay, true);
         source.setSignInRecords(Arrays.asList(record("2024-01-08 12:00:00")));
+        source.setPersonalDateSlots(Collections.singletonList(
+                new PlayerPersonalDateSlot("server_day", 1, PersonalDateCalendar.LUNAR,
+                        8, 15, "YEARLY:2024")
+        ));
 
         TestBaniraPacketBuffer buffer = new TestBaniraPacketBuffer();
         new PlayerDataSyncPacket(uuid, source).toBytes(buffer);
@@ -35,6 +42,7 @@ public class PlayerDataSyncPacketTest {
         assertTrue(restored.isSignedOn(signedDay));
         assertTrue(restored.isRewardedOn(signedDay));
         assertTrue(restored.getSignInRecords().isEmpty());
+        assertEquals(source.getPersonalDateSlots(), restored.getPersonalDateSlots());
     }
 
     @Test

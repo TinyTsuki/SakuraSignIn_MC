@@ -5,6 +5,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.sakura.data.player.MonthSignInIndex;
+import xin.vanilla.sakura.data.personaldate.PlayerPersonalDateSlot;
 
 import javax.annotation.Nullable;
 import java.util.Date;
@@ -139,6 +140,14 @@ public interface IPlayerSignInData {
      * 设置CDK输入记录
      */
     void setCdkRecords(List<KeyValue<String, KeyValue<Date, Boolean>>> records);
+
+    /**
+     * 获取服务器定义个性化日期的稳定槽位与领取游标。
+     */
+    @NonNull
+    List<PlayerPersonalDateSlot> getPersonalDateSlots();
+
+    void setPersonalDateSlots(List<PlayerPersonalDateSlot> slots);
 
     /**
      * 获取语言

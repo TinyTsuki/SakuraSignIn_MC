@@ -8,6 +8,9 @@ import net.minecraft.nbt.ListNBT;
 
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.ArrayList;
+import java.util.List;
+import xin.vanilla.sakura.data.personaldate.PlayerPersonalDateSlot;
 
 /**
  * 永久摘要不依赖可清理的月度详情，签到判定与累计统计始终可用。
@@ -25,6 +28,7 @@ public class PlayerSignInSummary {
     private String language = "client";
     private ListNBT cdkRecords = new ListNBT();
     private Map<String, MonthSignInIndex> monthIndexes = new TreeMap<>();
+    private List<PlayerPersonalDateSlot> personalDateSlots = new ArrayList<>();
     private boolean legacyCapabilityMigrated;
     private String legacyCapabilityBackup = "";
 
@@ -42,6 +46,11 @@ public class PlayerSignInSummary {
         ListNBT indexes = new ListNBT();
         monthIndexes.values().forEach(index -> indexes.add(index.serializeNBT()));
         tag.put("monthIndexes", indexes);
+
+        ListNBT slots = new ListNBT();
+        personalDateSlots.stream().filter(java.util.Objects::nonNull)
+                .forEach(slot -> slots.add(slot.serializeNBT()));
+        tag.put("personalDateSlots", slots);
 
         CompoundNBT migration = new CompoundNBT();
         migration.putBoolean("legacyCapabilityMigrated", legacyCapabilityMigrated);
@@ -64,6 +73,12 @@ public class PlayerSignInSummary {
         for (int i = 0; i < indexes.size(); i++) {
             MonthSignInIndex index = MonthSignInIndex.deserializeNBT(indexes.getCompound(i));
             summary.monthIndexes.put(index.getMonth(), index);
+        }
+
+        ListNBT slots = tag.getList("personalDateSlots", 10);
+        for (int i = 0; i < slots.size(); i++) {
+            summary.personalDateSlots.add(
+                    PlayerPersonalDateSlot.deserializeNBT(slots.getCompound(i)));
         }
 
         CompoundNBT migration = tag.getCompound("migration");
