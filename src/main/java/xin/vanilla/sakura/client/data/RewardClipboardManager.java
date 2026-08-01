@@ -1,33 +1,31 @@
 package xin.vanilla.sakura.client.data;
 
-import com.google.gson.reflect.TypeToken;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import lombok.NonNull;
 import net.minecraft.client.Minecraft;
 import xin.vanilla.sakura.reward.Reward;
 import xin.vanilla.sakura.reward.RewardList;
-import xin.vanilla.banira.common.util.CollectionUtils;
 import xin.vanilla.banira.common.util.StringUtils;
 
-import static xin.vanilla.sakura.config.reward.RewardConfigManager.GSON;
 public class RewardClipboardManager {
 
     private static String lastClipboard = "";
     private static RewardClipboardList lastClipboardList = new RewardClipboardList();
 
     public static RewardClipboardList toClipboardList(RewardList rewardList, String key) {
-        RewardClipboardList clipboardList = GSON.fromJson(rewardList.toJsonArray(), new TypeToken<RewardClipboardList>() {
-        }.getType());
-        if (CollectionUtils.isNotNullOrEmpty(clipboardList)) {
-            clipboardList.forEach(reward -> reward.setKey(key));
+        RewardClipboardList clipboardList = new RewardClipboardList();
+        if (rewardList != null) {
+            rewardList.stream().filter(java.util.Objects::nonNull)
+                    .map(reward -> RewardClipboard.fromReward(reward, key))
+                    .forEach(clipboardList::add);
         }
         return clipboardList;
     }
 
     public static RewardClipboard toClipboard(Reward reward, String key) {
-        RewardClipboard clipboard = GSON.fromJson(reward.toJsonObject(), new TypeToken<RewardClipboard>() {
-        }.getType());
-        clipboard.setKey(key);
-        return clipboard;
+        return RewardClipboard.fromReward(reward, key);
     }
 
     /**
@@ -45,17 +43,24 @@ public class RewardClipboardManager {
     public static RewardClipboardList deSerializeRewardList(String jsonString) {
         RewardClipboardList rewardList = new RewardClipboardList();
         if (StringUtils.isNotNullOrEmpty(jsonString)) {
-            if (jsonString.startsWith("[")) {
-                RewardClipboardList list = GSON.fromJson(jsonString, new TypeToken<RewardClipboardList>() {
-                }.getType());
-                rewardList.addAll(list);
-            } else if (jsonString.startsWith("{")) {
-                RewardClipboard reward = GSON.fromJson(jsonString, new TypeToken<RewardClipboard>() {
-                }.getType());
-                rewardList.add(reward);
+            try {
+                JsonElement parsed = new JsonParser().parse(jsonString);
+                if (parsed.isJsonArray()) {
+                    JsonArray array = parsed.getAsJsonArray();
+                    for (JsonElement element : array) {
+                        if (element != null && element.isJsonObject()) {
+                            rewardList.add(RewardClipboard.fromJson(element.getAsJsonObject()));
+                        }
+                    }
+                } else if (parsed.isJsonObject()) {
+                    rewardList.add(RewardClipboard.fromJson(parsed.getAsJsonObject()));
+                }
+            } catch (RuntimeException ignored) {
+                rewardList.clear();
             }
         }
-        rewardList.removeIf(reward -> reward == null || reward.getContent() == null || reward.getType() == null);
+        rewardList.removeIf(reward -> reward == null || reward.getContent() == null
+                || reward.getTypeId() == null);
         return rewardList;
     }
 
@@ -64,7 +69,7 @@ public class RewardClipboardManager {
      */
     @NonNull
     public static String serialize(RewardClipboardList rewardList) {
-        return GSON.toJson(rewardList.toJsonArray());
+        return rewardList.toJsonArray().toString();
     }
 
     /**
@@ -72,7 +77,7 @@ public class RewardClipboardManager {
      */
     @NonNull
     public static String serialize(RewardClipboard reward) {
-        return GSON.toJson(reward.toJsonObject());
+        return reward.toJsonObject().toString();
     }
 
     /**

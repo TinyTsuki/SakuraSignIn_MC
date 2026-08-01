@@ -24,6 +24,20 @@ public class RewardEditorRegistryContractTest {
         assertFalse(renderer.contains("reward.getType() =="));
     }
 
+    @Test
+    public void rewardOptionScreenDispatchesStableIdsThroughTheRegistry() {
+        String screen = read(MAIN.resolve("screen/RewardOptionScreen.java"));
+
+        assertTrue(screen.contains("event.id()"));
+        assertTrue(screen.contains("SakuraRewardClient.all()"));
+        assertTrue(screen.contains("RewardEditorCoordinator.openCreate"));
+        assertTrue(screen.contains("RewardEditorCoordinator.openEdit"));
+        assertFalse(screen.contains("ERewardType.values()"));
+        assertFalse(screen.contains("reward.getType() =="));
+        assertFalse(screen.contains("RewardEditTargets"));
+        assertFalse(screen.contains("equalsIgnoreCase(selectedString)"));
+    }
+
     private static String read(Path path) {
         try {
             return new String(Files.readAllBytes(path), StandardCharsets.UTF_8);

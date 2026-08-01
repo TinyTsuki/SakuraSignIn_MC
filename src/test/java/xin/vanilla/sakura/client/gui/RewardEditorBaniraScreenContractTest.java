@@ -59,14 +59,14 @@ public class RewardEditorBaniraScreenContractTest {
         assertTrue(screen.contains("!rewardSelection.isSelected(rewardGroupTitleId(groupKey))"));
         assertTrue(screen.contains("currRewardButton = rewardGroupTitleId(groupKey)"));
         assertTrue(screen.contains("this.currRewardButton = key"));
-        assertTrue(screen.contains("RewardEditTargets.rewardIds(rewardMap)"));
-        assertTrue(screen.contains("RewardEditTargets.selectionIds(rewardMap, \"\u6807\u9898,\")"));
+        assertTrue(screen.contains("RewardSelectionIds.rewardIds(rewardMap)"));
+        assertTrue(screen.contains("RewardSelectionIds.selectionIds(rewardMap, \"\u6807\u9898,\")"));
         assertTrue(screen.contains("pasteToSelectedGroups("));
-        assertTrue(screen.contains("RewardEditTargets.groupKeys("));
+        assertTrue(screen.contains("RewardSelectionIds.groupKeys("));
         assertTrue(screen.contains("private boolean updateRule()"));
         assertTrue(screen.contains("public boolean handleUndo() {\n            if (updateRule()) return false;"));
         assertTrue(screen.contains("public boolean handleRedo() {\n            if (updateRule()) return false;"));
-        assertTrue(screen.contains("actionOwnsLayout = editHandler.handlePaste()"));
+        assertTrue(screen.contains("editHandler.handlePaste();"));
         assertTrue(screen.contains("renderDraggedReward("));
         assertTrue(screen.contains("for (String rewardId : selectedRewardIds())"));
         assertFalse(screen.contains("getEffectiveTheme().bgSurface()"));
@@ -121,7 +121,7 @@ public class RewardEditorBaniraScreenContractTest {
         String gui = read(MAIN.resolve("client/gui/RewardRenderer.java"));
 
         assertTrue(gui.contains("ItemWidget.renderItem(itemRenderer, font,"));
-        assertTrue(gui.contains("RewardManager.deserializeReward(reward), x, y, showText)"));
+        assertTrue(gui.contains("SakuraRewardClient.find(reward.getTypeId())"));
         assertFalse(gui.contains("fontRenderer.drawShadow(matrixStack, count"));
     }
 
@@ -149,11 +149,12 @@ public class RewardEditorBaniraScreenContractTest {
     public void keyboardNavigationPasteAndProbabilityEditingHaveExplicitRoutes() {
         String screen = read(MAIN.resolve("screen/RewardOptionScreen.java"));
         String flow = read(MAIN.resolve("client/gui/RewardProbabilityFlow.java"));
+        String coordinator = read(MAIN.resolve("client/reward/RewardEditorCoordinator.java"));
 
         assertTrue(screen.contains("RewardKeyboardNavigator.findNext("));
         assertTrue(screen.contains("pasteWithoutSelection("));
-        assertTrue(screen.contains("RewardEditTargets.hasSeparateProbabilityEditor("));
-        assertTrue(screen.contains("RewardProbabilityFlow.create("));
+        assertTrue(screen.contains("RewardEditorCoordinator.openProbability("));
+        assertTrue(coordinator.contains("RewardProbabilityFlow.create("));
         assertTrue(flow.contains("public final class RewardProbabilityFlow"));
         assertFalse(screen.contains(".shadow(true)"));
     }

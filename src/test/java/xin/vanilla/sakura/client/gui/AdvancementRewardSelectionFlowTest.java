@@ -2,26 +2,19 @@ package xin.vanilla.sakura.client.gui;
 
 import net.minecraft.util.ResourceLocation;
 import org.junit.Test;
-import xin.vanilla.sakura.enums.ERewardType;
-import xin.vanilla.sakura.reward.Reward;
-
-import java.math.BigDecimal;
-
 import static org.junit.Assert.assertEquals;
 
 /**
- * 锁定 Banira 选择结果转换为 Sakura 进度奖励时的标识与概率。
+ * 锁定 Banira 进度选择结果作为领域值交给注册表编辑器。
  */
 public class AdvancementRewardSelectionFlowTest {
     @Test
     public void preservesAdvancementAndProbability() {
         ResourceLocation selected = new ResourceLocation("minecraft", "story/mine_stone");
 
-        Reward reward = AdvancementRewardSelectionFlow.toReward(selected, new BigDecimal("0.45"));
+        ResourceLocation reward = AdvancementRewardSelectionFlow.copyValue(selected);
 
-        assertEquals(ERewardType.ADVANCEMENT, reward.getType());
-        assertEquals(new BigDecimal("0.45"), reward.getProbability());
-        assertEquals("minecraft:story/mine_stone", reward.getContent().get("advancement").getAsString());
+        assertEquals(selected, reward);
     }
 
     @Test(expected = ClassNotFoundException.class)

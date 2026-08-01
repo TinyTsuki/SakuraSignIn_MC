@@ -1,7 +1,6 @@
 package xin.vanilla.sakura.client.data;
 
 import com.google.gson.JsonArray;
-import com.google.gson.reflect.TypeToken;
 import lombok.NonNull;
 import lombok.Setter;
 import xin.vanilla.sakura.reward.RewardList;
@@ -10,8 +9,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
-
-import static xin.vanilla.sakura.config.reward.RewardConfigManager.GSON;
 
 @Setter
 public class RewardClipboardList extends ArrayList<RewardClipboard> implements Serializable, Cloneable {
@@ -55,8 +52,13 @@ public class RewardClipboardList extends ArrayList<RewardClipboard> implements S
     }
 
     public RewardList toRewardList() {
-        return GSON.fromJson(this.toJsonArray(), new TypeToken<RewardList>() {
-        }.getType());
+        RewardList rewards = new RewardList();
+        for (RewardClipboard reward : this) {
+            if (reward != null) {
+                rewards.add(reward.toReward());
+            }
+        }
+        return rewards;
     }
 
 }
