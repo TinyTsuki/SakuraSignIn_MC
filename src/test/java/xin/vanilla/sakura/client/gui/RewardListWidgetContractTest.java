@@ -36,6 +36,9 @@ public class RewardListWidgetContractTest {
         assertTrue(widget.contains("canDragReward()"));
         assertFalse(widget.contains("if (selected)"));
         assertTrue(widget.contains("startLongPressDrag("));
+        assertTrue(widget.contains("pressClickCount = event.clickCount()"));
+        assertTrue(widget.contains("event.clickCount(pressClickCount)"));
+        assertTrue(widget.contains(".doubleClick(pressDoubleClick)"));
         assertFalse(widget.contains("if (!dragged && selected"));
         assertTrue(screen.contains("entry.setDragHandler(event -> scrollRewardPanel(event.dragY()))"));
         assertTrue(screen.contains("scrollRewardPanel(eventArgs.delta() * rewardWheelStep)"));

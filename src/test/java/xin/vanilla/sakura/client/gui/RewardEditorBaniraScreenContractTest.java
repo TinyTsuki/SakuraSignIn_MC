@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -48,6 +49,24 @@ public class RewardEditorBaniraScreenContractTest {
         assertTrue(screen.contains("RewardGroupLayout"));
         assertTrue(screen.contains("inputState.isCtrlPressed()"));
         assertTrue(screen.contains("moveSelectedRewardsTo("));
+        assertTrue(screen.contains("event.clickCount() == 3"));
+        assertTrue(screen.contains("selectSemanticRewards("));
+        assertTrue(screen.contains("RewardSemanticMatcher.matches("));
+        assertTrue(screen.contains("rewardSelection.cycleMiddleReward("));
+        assertTrue(screen.contains("toggleRewardGroupSelection("));
+        assertTrue(screen.contains("showRewardGroupPopup("));
+        assertTrue(screen.contains("findRewardGroupAt(event.mouseX(), event.mouseY())"));
+        assertTrue(screen.contains("!rewardSelection.isSelected(rewardGroupTitleId(groupKey))"));
+        assertTrue(screen.contains("currRewardButton = rewardGroupTitleId(groupKey)"));
+        assertTrue(screen.contains("this.currRewardButton = key"));
+        assertTrue(screen.contains("RewardEditTargets.rewardIds(rewardMap)"));
+        assertTrue(screen.contains("RewardEditTargets.selectionIds(rewardMap, \"\u6807\u9898,\")"));
+        assertTrue(screen.contains("pasteToSelectedGroups("));
+        assertTrue(screen.contains("RewardEditTargets.groupKeys("));
+        assertTrue(screen.contains("private boolean updateRule()"));
+        assertTrue(screen.contains("public boolean handleUndo() {\n            if (updateRule()) return false;"));
+        assertTrue(screen.contains("public boolean handleRedo() {\n            if (updateRule()) return false;"));
+        assertTrue(screen.contains("actionOwnsLayout = editHandler.handlePaste()"));
         assertTrue(screen.contains("renderDraggedReward("));
         assertTrue(screen.contains("for (String rewardId : selectedRewardIds())"));
         assertFalse(screen.contains("getEffectiveTheme().bgSurface()"));
@@ -104,6 +123,63 @@ public class RewardEditorBaniraScreenContractTest {
         assertTrue(gui.contains("ItemWidget.renderItem(itemRenderer, font,"));
         assertTrue(gui.contains("RewardManager.deserializeReward(reward), x, y, showText)"));
         assertFalse(gui.contains("fontRenderer.drawShadow(matrixStack, count"));
+    }
+
+    @Test
+    public void rewardTooltipsStayFocusedAndEditorHelpOwnsInteractionGuidance() {
+        String screen = read(MAIN.resolve("screen/RewardOptionScreen.java"));
+        String zhCn = read(RESOURCES.resolve("zh_cn.json"));
+        String enUs = read(RESOURCES.resolve("en_us.json"));
+
+        assertTrue(screen.contains("rewardItemTooltip("));
+        int methodStart = screen.indexOf("private Text rewardItemTooltip(");
+        int methodEnd = screen.indexOf("private boolean isRewardGroupCollapsed", methodStart);
+        assertTrue(methodStart >= 0 && methodEnd > methodStart);
+        assertFalse(screen.substring(methodStart, methodEnd).contains("append("));
+        assertFalse(screen.contains("reward_item_selection_hint"));
+        assertTrue(zhCn.contains("\"word.sakura_sign_in.reward_group_header_hint\": \"\u5de6\u952e\u6298\u53e0\u6216\u5c55\u5f00\\n"));
+        assertTrue(enUs.contains("\"word.sakura_sign_in.reward_group_header_hint\": \"Left-click to collapse or expand\\n"));
+        assertTrue(zhCn.contains("\u65b9\u5411\u952e\u6216 WASD"));
+        assertTrue(enUs.contains("arrow keys or WASD"));
+        assertFalse(zhCn.contains("Ctrl+\u5de6\u952e\u9009\u62e9\u5956\u52b1\u7ec4"));
+        assertFalse(enUs.contains("Ctrl+left-click to select"));
+    }
+
+    @Test
+    public void keyboardNavigationPasteAndProbabilityEditingHaveExplicitRoutes() {
+        String screen = read(MAIN.resolve("screen/RewardOptionScreen.java"));
+        String flow = read(MAIN.resolve("client/gui/RewardProbabilityFlow.java"));
+
+        assertTrue(screen.contains("RewardKeyboardNavigator.findNext("));
+        assertTrue(screen.contains("pasteWithoutSelection("));
+        assertTrue(screen.contains("RewardEditTargets.hasSeparateProbabilityEditor("));
+        assertTrue(screen.contains("RewardProbabilityFlow.create("));
+        assertTrue(flow.contains("public final class RewardProbabilityFlow"));
+        assertFalse(screen.contains(".shadow(true)"));
+    }
+
+    @Test
+    public void multiGroupPasteUsesOneHistoryAndRefreshTransaction() {
+        String screen = read(MAIN.resolve("screen/RewardOptionScreen.java"));
+        int start = screen.indexOf("private boolean pasteToSelectedGroups(");
+        int end = screen.indexOf("public boolean handleDelete()", start);
+        assertTrue(start >= 0 && end > start);
+        String method = screen.substring(start, end);
+
+        assertEquals(1, count(method, "RewardConfigManager.addUndoRewardOption(rule)"));
+        assertEquals(1, count(method, "RewardConfigManager.clearRedoList()"));
+        assertEquals(1, count(method, "RewardConfigManager.saveRewardOption()"));
+        assertEquals(1, count(method, "updateLayout()"));
+    }
+
+    private static int count(String source, String fragment) {
+        int count = 0;
+        int index = 0;
+        while ((index = source.indexOf(fragment, index)) >= 0) {
+            count++;
+            index += fragment.length();
+        }
+        return count;
     }
 
     private static String read(Path path) {
