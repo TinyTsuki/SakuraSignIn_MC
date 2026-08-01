@@ -15,6 +15,8 @@ import xin.vanilla.sakura.network.packet.ClientConfigSyncPacket;
 import xin.vanilla.sakura.network.packet.PlayerDataSyncPacket;
 import xin.vanilla.sakura.network.packet.PlayerMonthSyncPacket;
 import xin.vanilla.sakura.network.packet.RewardOptionSyncPacket;
+import xin.vanilla.sakura.network.packet.PersonalDatePresetSyncPacket;
+import xin.vanilla.sakura.data.personaldate.PersonalDatePresets;
 import xin.vanilla.sakura.config.reward.RewardConfigManager;
 import xin.vanilla.sakura.notification.SakuraClientNotifications;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
@@ -76,9 +78,11 @@ public class ClientProxy {
     public static void handleRewardOptionSync(RewardOptionSyncPacket packet) {
         try {
             RewardConfigManager.backupRewardOption();
-            RewardConfigManager.setRewardConfig(RewardConfigManager.fromSyncPacketList(
-                    Collections.singletonList(packet)
-            ));
+            xin.vanilla.sakura.config.reward.RewardConfig candidate =
+                    RewardConfigManager.fromSyncPacketList(Collections.singletonList(packet));
+            candidate.setPersonalDatePresets(PersonalDatePresets.copy(
+                    RewardConfigManager.getRewardConfig().getPersonalDatePresets()));
+            RewardConfigManager.setRewardConfig(candidate);
             RewardConfigManager.setRewardOptionDataChanged(true);
             RewardConfigManager.saveRewardOption();
             SakuraClientNotifications.success(
@@ -102,5 +106,12 @@ public class ClientProxy {
         } else {
             SakuraClientNotifications.error(message, SakuraNotificationTypes.REWARD);
         }
+    }
+
+    public static void handlePersonalDatePresetSync(PersonalDatePresetSyncPacket packet) {
+        RewardConfigManager.getRewardConfig().setPersonalDatePresets(
+                PersonalDatePresets.copy(packet.getPresets()));
+        RewardConfigManager.setRewardOptionDataChanged(true);
+        RewardConfigManager.saveRewardOption();
     }
 }

@@ -61,6 +61,14 @@ public final class SakuraNetwork {
                 RewardOptionDataReceivedNotice::toBytes,
                 RewardOptionDataReceivedNotice::new,
                 RewardOptionDataReceivedNotice::handle);
+        HANDLER.registerSplit(PersonalDatePresetSyncPacket.class,
+                PersonalDatePresetSyncPacket::toBytes,
+                PersonalDatePresetSyncPacket::new,
+                PersonalDatePresetSyncPacket::handle);
+        HANDLER.register(PersonalDateSlotUpdatePacket.class,
+                PersonalDateSlotUpdatePacket::toBytes,
+                PersonalDateSlotUpdatePacket::new,
+                PersonalDateSlotUpdatePacket::handle);
         BaniraModPresence.register(SakuraSignIn.MODID, SakuraNetwork::syncInitialData);
         initialized = true;
     }
@@ -110,6 +118,8 @@ public final class SakuraNetwork {
         SakuraPlayerData.sync(player);
         sendToPlayer(new ServerTimeSyncPacket(), player);
         sendSplitToPlayer(RewardConfigManager.toSyncPacket(player), player);
+        sendSplitToPlayer(new PersonalDatePresetSyncPacket(
+                RewardConfigManager.getRewardConfig().getPersonalDatePresets()), player);
         sendSplitToPlayer(new AdvancementPacket(
                 player.server.getAdvancements().getAllAdvancements()
         ), player);
