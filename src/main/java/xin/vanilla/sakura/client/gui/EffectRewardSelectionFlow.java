@@ -11,6 +11,7 @@ import java.util.function.Consumer;
  * 将 Banira 效果选择器适配为奖励领域值编辑器。
  */
 public final class EffectRewardSelectionFlow {
+    private static final int DEFAULT_DURATION_TICKS = 600;
     private EffectRewardSelectionFlow() {
     }
 
@@ -32,6 +33,9 @@ public final class EffectRewardSelectionFlow {
     }
 
     static EffectInstance copyValue(EffectInstance effect) {
-        return new EffectInstance(effect);
+        int duration = effect.getDuration() > 0
+                ? effect.getDuration() : DEFAULT_DURATION_TICKS;
+        return new EffectInstance(effect.getEffect(), duration, effect.getAmplifier(),
+                effect.isAmbient(), effect.isVisible(), effect.showIcon());
     }
 }
