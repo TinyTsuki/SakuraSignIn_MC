@@ -12,7 +12,8 @@ public class UnknownRewardRoundTripTest {
 
     @Test
     public void keepsUnknownTypeAndPayloadWithoutResolvingItsExtension() throws Exception {
-        String source = "{\"schemaVersion\":2,\"groups\":[{"
+        String source = "{\"schemaVersion\":" + RewardConfigDocument.CURRENT_SCHEMA_VERSION
+                + ",\"groups\":[{"
                 + "\"rule\":\"BASE_REWARD\",\"key\":\"base\",\"rewards\":[{"
                 + "\"type\":\"example_currency:coin\",\"probability\":\"0.75\","
                 + "\"content\":{\"amount\":12,\"account\":{\"kind\":\"wallet\"},"
@@ -35,7 +36,8 @@ public class UnknownRewardRoundTripTest {
 
     @Test
     public void keepsMalformedPayloadForARegisteredType() throws Exception {
-        String source = "{\"schemaVersion\":2,\"groups\":[{"
+        String source = "{\"schemaVersion\":" + RewardConfigDocument.CURRENT_SCHEMA_VERSION
+                + ",\"groups\":[{"
                 + "\"rule\":\"BASE_REWARD\",\"key\":\"base\",\"rewards\":[{"
                 + "\"type\":\"sakura_sign_in:item\",\"probability\":1,"
                 + "\"content\":{\"broken\":true}}]}]}";

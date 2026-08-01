@@ -7,7 +7,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import xin.vanilla.sakura.config.reward.RewardConfig;
 import xin.vanilla.sakura.enums.ERewardRule;
-import xin.vanilla.sakura.enums.ERewardType;
 import xin.vanilla.sakura.api.reward.SakuraRewardTypes;
 import xin.vanilla.sakura.network.data.RewardOptionSyncData;
 import xin.vanilla.sakura.network.packet.RewardOptionSyncPacket;
@@ -112,6 +111,34 @@ public class RewardConfigMigrationTest {
         repository.loadOrCreate(new RewardConfig());
 
         assertEquals(backupsAfterMigration, backupFiles(configDirectory));
+    }
+
+    @Test
+    public void repositoryMigratesVersionedEnumTypesToNamespacedIds() throws Exception {
+        Path configDirectory = temporaryFolder.newFolder("versioned-enum").toPath();
+        Path rewardFile = configDirectory.resolve(RewardConfigRepository.REWARD_FILE_NAME);
+        byte[] legacy = ("{\"schemaVersion\":2,\"groups\":[{"
+                + "\"rule\":\"BASE_REWARD\",\"key\":\"base\",\"rewards\":[{"
+                + "\"type\":\"ITEM\",\"probability\":1,"
+                + "\"content\":{\"item\":\"minecraft:apple\",\"count\":1}}]}]}")
+                .getBytes(StandardCharsets.UTF_8);
+        Files.write(rewardFile, legacy);
+
+        RewardConfig migrated = new RewardConfigRepository(configDirectory)
+                .loadOrCreate(new RewardConfig());
+
+        assertEquals(SakuraRewardTypes.ITEM,
+                migrated.getBaseRewards().get(0).getTypeId());
+        JsonObject rewritten = new JsonParser().parse(new String(
+                Files.readAllBytes(rewardFile), StandardCharsets.UTF_8)).getAsJsonObject();
+        assertEquals(RewardConfigDocument.CURRENT_SCHEMA_VERSION,
+                rewritten.get("schemaVersion").getAsInt());
+        assertEquals("sakura_sign_in:item", rewritten.getAsJsonArray("groups")
+                .get(0).getAsJsonObject().getAsJsonArray("rewards")
+                .get(0).getAsJsonObject().get("type").getAsString());
+        List<Path> backups = backupFiles(configDirectory);
+        assertEquals(1, backups.size());
+        assertArrayEquals(legacy, Files.readAllBytes(backups.get(0)));
     }
 
     @Test
@@ -234,7 +261,7 @@ public class RewardConfigMigrationTest {
     private static Reward messageReward(String text) {
         JsonObject content = new JsonObject();
         content.addProperty("text", text);
-        return new Reward(content, ERewardType.MESSAGE, BigDecimal.ONE);
+        return new Reward(content, SakuraRewardTypes.MESSAGE, BigDecimal.ONE);
     }
 
     private static List<String> keys(RewardConfigDocument document, ERewardRule rule) {

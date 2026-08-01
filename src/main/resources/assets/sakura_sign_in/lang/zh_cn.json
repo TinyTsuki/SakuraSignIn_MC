@@ -217,5 +217,11 @@
   "word.sakura_sign_in.enum_e_sign_in_status_signed_in": "当前日期已签到",
   "word.sakura_sign_in.enum_e_sign_in_status_rewarded": "当前日期的奖励已领取",
   "word.sakura_sign_in.enum_history_retention_policy_strip_reward_details": "保留签到摘要并移除过期奖励详情",
-  "word.sakura_sign_in.enum_history_retention_policy_delete_month_file": "删除整个过期月份的详情文件"
+  "word.sakura_sign_in.enum_history_retention_policy_delete_month_file": "删除整个过期月份的详情文件",
+  "word.sakura_sign_in.reward_type_unavailable": "当前客户端未安装此奖励类型",
+  "word.sakura_sign_in.reward_payload_invalid": "奖励数据无效",
+  "word.sakura_sign_in.reward_editor_unavailable": "此奖励类型未提供内容编辑器",
+  "format.sakura_sign_in.reward_add_permission_denied": "没有添加奖励类型 %s 的权限",
+  "format.sakura_sign_in.reward_required_op_level": "需要权限等级 %d",
+  "format.sakura_sign_in.reward_virtual_permission_key": "虚拟权限：%s"
 }
