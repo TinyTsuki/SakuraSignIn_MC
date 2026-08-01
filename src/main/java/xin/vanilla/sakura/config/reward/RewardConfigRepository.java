@@ -49,14 +49,20 @@ public final class RewardConfigRepository {
 
         byte[] source = Files.readAllBytes(rewardFile);
         String json = new String(source, StandardCharsets.UTF_8);
-        if (isVersioned(json)) {
+        int schemaVersion = schemaVersion(json);
+        if (schemaVersion == RewardConfigDocument.CURRENT_SCHEMA_VERSION) {
             return codec.decode(json);
         }
+        if (schemaVersion > 0 && schemaVersion != 2) {
+            throw new IOException("Unsupported reward config schema version: " + schemaVersion);
+        }
 
-        RewardConfigDocument legacyDocument = legacyReader.read(json);
+        RewardConfigDocument legacyDocument = schemaVersion == 2
+                ? legacyReader.readVersionedV2(json)
+                : legacyReader.read(json);
         RewardConfig migrated = codec.toRuntimeConfig(legacyDocument);
         codec.assertEquivalent(legacyDocument, migrated);
-        Path backup = writeBackup(source, "migration-v1");
+        Path backup = writeBackup(source, schemaVersion == 2 ? "migration-v2" : "migration-v1");
         try {
             save(migrated);
             RewardConfig verified = codec.decode(readUtf8(rewardFile));
@@ -81,10 +87,10 @@ public final class RewardConfigRepository {
         return writeBackup(Files.readAllBytes(rewardFile), reason);
     }
 
-    private boolean isVersioned(String json) throws IOException {
+    private int schemaVersion(String json) throws IOException {
         try {
             JsonObject root = new JsonParser().parse(json).getAsJsonObject();
-            return root.has("schemaVersion");
+            return root.has("schemaVersion") ? root.get("schemaVersion").getAsInt() : 0;
         } catch (JsonParseException | IllegalStateException e) {
             throw new IOException("Invalid reward configuration JSON", e);
         }

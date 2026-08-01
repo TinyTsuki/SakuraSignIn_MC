@@ -4,7 +4,6 @@ import xin.vanilla.sakura.data.time.SakuraClock;
 
 import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.config.CommonConfig;
-import com.google.gson.JsonObject;
 import lombok.NonNull;
 import net.minecraft.entity.item.ItemEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
@@ -20,10 +19,8 @@ import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.data.SignInRecord;
 import xin.vanilla.sakura.message.SakuraMessages;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
-import xin.vanilla.sakura.enums.ERewardType;
 import xin.vanilla.sakura.api.reward.RewardGrantContext;
 import xin.vanilla.sakura.api.reward.RewardGrantResult;
-import xin.vanilla.sakura.api.reward.RewardTypeId;
 import xin.vanilla.sakura.config.reward.RewardGroup;
 import xin.vanilla.sakura.enums.ESignInType;
 import xin.vanilla.sakura.enums.ETimeCoolingMethod;
@@ -47,24 +44,6 @@ import java.util.stream.Collectors;
  */
 public class RewardManager {
     private static final Logger LOGGER = LogManager.getLogger();
-    /**
-     * 反序列化奖励
-     */
-    public static <T> T deserializeReward(Reward reward) {
-        return RewardOperations.decode(reward);
-    }
-
-    /**
-     * 序列化奖励
-     */
-    public static <T> JsonObject serializeReward(T reward, RewardTypeId type) {
-        return RewardOperations.encode(type, reward);
-    }
-
-    public static <T> JsonObject serializeReward(T reward, ERewardType type) {
-        return serializeReward(reward, type.rewardTypeId());
-    }
-
     public static Component getRewardName(String languageCode, Reward reward, boolean withNum) {
         return RewardOperations.describe(languageCode, reward, withNum);
     }

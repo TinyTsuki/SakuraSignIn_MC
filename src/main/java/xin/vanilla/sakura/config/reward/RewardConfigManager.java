@@ -15,7 +15,6 @@ import xin.vanilla.banira.api.BaniraEnvironment;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.enums.ERewardRule;
-import xin.vanilla.sakura.enums.ERewardType;
 import xin.vanilla.sakura.network.data.RewardOptionSyncData;
 import xin.vanilla.sakura.network.data.RewardOptionSyncKind;
 import xin.vanilla.sakura.network.packet.RewardOptionSyncPacket;
@@ -1156,26 +1155,6 @@ public class RewardConfigManager {
         } catch (Exception e) {
             throw new IllegalArgumentException("Unable to deserialize reward configuration", e);
         }
-    }
-
-    /**
-     * 反序列化 RewardList
-     */
-    @NonNull
-    public static RewardList deSerializeRewardList(String jsonString) {
-        RewardList rewardList = new RewardList();
-        if (StringUtils.isNotNullOrEmpty(jsonString)) {
-            if (jsonString.startsWith("[")) {
-                RewardList list = GSON.fromJson(jsonString, new TypeToken<RewardList>() {
-                }.getType());
-                rewardList.addAll(list);
-            } else if (jsonString.startsWith("{")) {
-                Reward reward = GSON.fromJson(jsonString, new TypeToken<Reward>() {
-                }.getType());
-                rewardList.add(reward);
-            }
-        }
-        return rewardList;
     }
 
     public static Map<String, RewardList> getRewardMap(ERewardRule rule) {

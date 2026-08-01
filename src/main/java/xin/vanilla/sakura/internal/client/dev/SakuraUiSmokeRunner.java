@@ -1,27 +1,38 @@
 package xin.vanilla.sakura.internal.client.dev;
 
+import com.google.gson.JsonObject;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.MainMenuScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.inventory.InventoryScreen;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.potion.EffectInstance;
+import net.minecraft.potion.Effects;
+import net.minecraft.util.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.BaniraEnvironment;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.sakura.SakuraSignIn;
+import xin.vanilla.sakura.SakuraComponent;
+import xin.vanilla.sakura.api.reward.RewardTypeId;
 import xin.vanilla.sakura.client.SakuraClientState;
 import xin.vanilla.sakura.client.theme.BuiltInThemeCatalog;
 import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.config.reward.RewardConfigManager;
 import xin.vanilla.sakura.data.collection.StringList;
-import xin.vanilla.sakura.enums.ERewardType;
+import xin.vanilla.sakura.api.reward.SakuraRewardTypes;
 import xin.vanilla.sakura.event.ClientEventHandler;
 import xin.vanilla.sakura.reward.Reward;
+import xin.vanilla.sakura.reward.RewardOperations;
 import xin.vanilla.sakura.screen.RewardOptionScreen;
 import xin.vanilla.sakura.screen.SignInScreen;
 import xin.vanilla.sakura.screen.StringInputScreen;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 仅在开发环境按显式目标打开界面，供有界 runClient 烟测使用。
@@ -36,6 +47,7 @@ public final class SakuraUiSmokeRunner {
     private static String previousThemeId;
     private static boolean previousSpecialVariant;
     private static boolean themeSmokeFinished;
+    private static int rewardExtensionTicks;
 
     private SakuraUiSmokeRunner() {
     }
@@ -51,9 +63,13 @@ public final class SakuraUiSmokeRunner {
             return;
         }
         if (opened) {
+            if ("reward-extension".equalsIgnoreCase(target)) {
+                tickRewardExtensionExit();
+            }
             return;
         }
-        boolean reward = "reward".equalsIgnoreCase(target);
+        boolean rewardExtension = "reward-extension".equalsIgnoreCase(target);
+        boolean reward = "reward".equalsIgnoreCase(target) || rewardExtension;
         boolean signIn = "sign-in".equalsIgnoreCase(target);
         boolean quickAction = "quick-action".equalsIgnoreCase(target);
         boolean inputForm = "input-form".equalsIgnoreCase(target);
@@ -67,14 +83,14 @@ public final class SakuraUiSmokeRunner {
                 && minecraft.level != null
                 && parent == null;
         // 奖励配置依赖服务端下发的数据，只有输入表单可在主菜单独立验证。
-        boolean atMainMenu = inputForm && parent instanceof MainMenuScreen;
+        boolean atMainMenu = (inputForm || rewardExtension) && parent instanceof MainMenuScreen;
         if (!inWorldWithoutScreen && !atMainMenu) {
             return;
         }
 
         opened = true;
         if (reward) {
-            seedRewardSmokeData();
+            seedRewardExtensionSmokeData();
         }
         Screen screen = quickAction
                 ? new InventoryScreen(minecraft.player)
@@ -88,16 +104,63 @@ public final class SakuraUiSmokeRunner {
         }
         minecraft.setScreen(screen);
         LOGGER.info("Sakura UI smoke opened target: {}",
-                quickAction ? "quick-action" : signIn ? "sign-in" : inputForm ? "input-form" : "reward");
+                quickAction ? "quick-action" : signIn ? "sign-in" : inputForm ? "input-form"
+                        : rewardExtension ? "reward-extension" : "reward");
     }
 
-    /**
-     * 显式奖励烟测在内存中补一个带数量的物品，不写入玩家配置。
-     */
-    private static void seedRewardSmokeData() {
-        if (RewardConfigManager.getRewardConfig().getBaseRewards().isEmpty()) {
-            RewardConfigManager.getRewardConfig().getBaseRewards()
-                    .add(new Reward(new ItemStack(Items.APPLE, 5), ERewardType.ITEM));
+    private static void tickRewardExtensionExit() {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (!(minecraft.screen instanceof RewardOptionScreen) || ++rewardExtensionTicks < 100) {
+            return;
+        }
+        LOGGER.info("Sakura reward extension UI smoke PASS");
+        minecraft.stop();
+    }
+
+    /** 显式烟测只替换内存中的基础奖励，不触发配置保存。 */
+    private static void seedRewardExtensionSmokeData() {
+        JsonObject unknownPayload = new JsonObject();
+        unknownPayload.addProperty("amount", 64);
+        JsonObject invalidItemPayload = new JsonObject();
+
+        List<Reward> fixtures = Arrays.asList(
+                new Reward(new ItemStack(Items.APPLE, 5), SakuraRewardTypes.ITEM),
+                new Reward(new EffectInstance(Effects.LUCK, 200, 0), SakuraRewardTypes.EFFECT),
+                new Reward(5, SakuraRewardTypes.EXPERIENCE_POINT),
+                new Reward(2, SakuraRewardTypes.EXPERIENCE_LEVEL),
+                new Reward(1, SakuraRewardTypes.SIGN_IN_CARD),
+                new Reward(new ResourceLocation("minecraft:story/root"),
+                        SakuraRewardTypes.ADVANCEMENT),
+                new Reward(SakuraComponent.get().literal("Smoke message"),
+                        SakuraRewardTypes.MESSAGE),
+                new Reward("say Sakura reward smoke", SakuraRewardTypes.COMMAND),
+                new Reward(unknownPayload, RewardTypeId.of("example", "coin")),
+                new Reward(invalidItemPayload, SakuraRewardTypes.ITEM)
+        );
+        RewardConfigManager.getRewardConfig().getBaseRewards().clear();
+        RewardConfigManager.getRewardConfig().getBaseRewards().addAll(fixtures);
+
+        List<RewardTypeId> actualTypes = fixtures.subList(0, 8).stream()
+                .map(Reward::getTypeId)
+                .collect(Collectors.toList());
+        List<RewardTypeId> expectedTypes = Arrays.asList(
+                SakuraRewardTypes.ITEM,
+                SakuraRewardTypes.EFFECT,
+                SakuraRewardTypes.EXPERIENCE_POINT,
+                SakuraRewardTypes.EXPERIENCE_LEVEL,
+                SakuraRewardTypes.SIGN_IN_CARD,
+                SakuraRewardTypes.ADVANCEMENT,
+                SakuraRewardTypes.MESSAGE,
+                SakuraRewardTypes.COMMAND
+        );
+        if (!expectedTypes.equals(actualTypes)) {
+            throw new IllegalStateException("Unexpected reward smoke fixture order: " + actualTypes);
+        }
+        try {
+            RewardOperations.decode(fixtures.get(fixtures.size() - 1));
+            throw new IllegalStateException("Invalid item payload was accepted");
+        } catch (com.google.gson.JsonParseException expected) {
+            LOGGER.info("Sakura reward extension fixture PASS: builtIns=8, unknown=1, invalid=1");
         }
     }
 
