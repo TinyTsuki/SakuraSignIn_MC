@@ -51,6 +51,53 @@ public final class RewardSelectionModel {
         primary = id;
     }
 
+    public void selectOnly(Collection<String> ids) {
+        selectedIds.clear();
+        if (ids != null) {
+            ids.stream().filter(id -> id != null && !id.isEmpty()).forEach(selectedIds::add);
+        }
+        anchor = selectedIds.stream().findFirst().orElse(null);
+        primary = selectedIds.stream().reduce((first, second) -> second).orElse(null);
+    }
+
+    /**
+     * 中键切换奖励组，并移除该组内已有的奖励选择。
+     */
+    public void toggleGroup(String groupId, Collection<String> groupRewardIds) {
+        boolean selected = selectedIds.contains(groupId);
+        removeGroupState(groupId, groupRewardIds);
+        if (!selected && groupId != null) {
+            selectedIds.add(groupId);
+            anchor = groupId;
+        }
+        refreshPrimary(groupId);
+    }
+
+    /**
+     * 中键按“奖励 -> 组 -> 未选择”循环，只修改命中的组。
+     */
+    public void cycleMiddleReward(String rewardId, String groupId,
+                                  Collection<String> groupRewardIds) {
+        if (selectedIds.contains(groupId)) {
+            removeGroupState(groupId, groupRewardIds);
+            refreshPrimary(null);
+            return;
+        }
+        if (selectedIds.contains(rewardId)) {
+            removeGroupState(groupId, groupRewardIds);
+            selectedIds.add(groupId);
+            anchor = groupId;
+            refreshPrimary(groupId);
+            return;
+        }
+        removeGroupState(groupId, groupRewardIds);
+        if (rewardId != null) {
+            selectedIds.add(rewardId);
+            anchor = rewardId;
+        }
+        refreshPrimary(rewardId);
+    }
+
     public boolean isSelected(String id) {
         return selectedIds.contains(id);
     }
@@ -77,5 +124,22 @@ public final class RewardSelectionModel {
         selectedIds.clear();
         anchor = null;
         primary = null;
+    }
+
+    private void removeGroupState(String groupId, Collection<String> groupRewardIds) {
+        selectedIds.remove(groupId);
+        if (groupRewardIds != null) {
+            selectedIds.removeAll(groupRewardIds);
+        }
+        if ((groupId != null && groupId.equals(anchor))
+                || (groupRewardIds != null && groupRewardIds.contains(anchor))) {
+            anchor = null;
+        }
+    }
+
+    private void refreshPrimary(String preferred) {
+        primary = preferred != null && selectedIds.contains(preferred)
+                ? preferred
+                : selectedIds.stream().reduce((first, second) -> second).orElse(null);
     }
 }

@@ -16,14 +16,14 @@ import java.util.function.Function;
 /**
  * 统一奖励概率的输入、校验与 Banira 文本解析。
  */
-final class RewardProbabilityFlow {
+public final class RewardProbabilityFlow {
     private static final String PROBABILITY_REGEX = "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?";
     private static final ScopedComponent COMPONENTS = new ScopedComponent(SakuraSignIn.MODID);
 
     private RewardProbabilityFlow() {
     }
 
-    static Screen create(
+    public static Screen create(
             Screen parent,
             BigDecimal defaultProbability,
             Function<BigDecimal, Reward> rewardFactory,
