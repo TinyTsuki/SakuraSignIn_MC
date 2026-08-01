@@ -2674,9 +2674,20 @@ public class RewardOptionScreen extends BaniraScreen {
         if (eventArgs.keyCode() == GLFWKey.GLFW_KEY_ESCAPE) {
             onClose();
             eventArgs.consumed(true);
+        } else if (eventArgs.keyCode() == GLFWKey.GLFW_KEY_F5) {
+            refreshRewardScreen();
+            eventArgs.consumed(true);
         } else if (moveRewardSelection(eventArgs.keyCode())) {
             eventArgs.consumed(true);
         }
+    }
+
+    /** 重新构建当前奖励界面，并恢复默认垂直偏移。 */
+    private void refreshRewardScreen() {
+        yOffsetResetTime = 0;
+        yOffsetOld = 0;
+        setYOffset(0);
+        updateLayout();
     }
 
     private boolean moveRewardSelection(int keyCode) {
