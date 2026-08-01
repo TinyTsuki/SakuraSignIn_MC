@@ -8,6 +8,7 @@ import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.event.BaniraEvents;
 import xin.vanilla.banira.common.config.BaniraConfig;
 import xin.vanilla.sakura.api.SakuraPlayerData;
+import xin.vanilla.sakura.api.reward.SakuraRewards;
 import xin.vanilla.sakura.client.SakuraClientBootstrap;
 import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.config.CommonConfig;
@@ -15,6 +16,7 @@ import xin.vanilla.sakura.config.reward.RewardConfigManager;
 import xin.vanilla.sakura.internal.forge.ForgeSakuraEntrypoint;
 import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
+import xin.vanilla.sakura.reward.builtin.BuiltInRewardTypes;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -38,6 +40,8 @@ public final class SakuraSignIn {
         if (!COMMON_INITIALIZED.compareAndSet(false, true)) {
             return;
         }
+        BuiltInRewardTypes.register();
+        BaniraEvents.onCommonSetup(event -> event.enqueueWork(SakuraRewards::freeze));
         // 包处理器会读取配置快照，因此配置必须先于网络初始化。
         BaniraConfig.register(CommonConfig.class, MODID);
         BaniraConfig.register(ClientConfig.class, MODID);
