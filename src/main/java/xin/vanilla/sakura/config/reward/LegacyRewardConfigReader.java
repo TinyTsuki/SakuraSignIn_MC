@@ -7,7 +7,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.stream.JsonReader;
 import xin.vanilla.sakura.enums.ERewardRule;
-import xin.vanilla.sakura.enums.ERewardType;
+import xin.vanilla.sakura.api.reward.RewardTypeId;
+import xin.vanilla.sakura.api.reward.SakuraRewardTypes;
 import xin.vanilla.sakura.reward.Reward;
 import xin.vanilla.sakura.reward.RewardList;
 
@@ -113,6 +114,37 @@ public final class LegacyRewardConfigReader {
         return readRewards(array);
     }
 
+    /** 读取早期已分组但仍使用枚举类型名的 schema v2 文档。 */
+    public RewardConfigDocument readVersionedV2(String json) throws IOException {
+        try {
+            JsonObject root = gson.fromJson(json, JsonObject.class);
+            if (root == null || !root.has("schemaVersion")
+                    || root.get("schemaVersion").getAsInt() != 2) {
+                throw new JsonParseException("Expected reward schema version 2");
+            }
+            JsonArray groups = root.getAsJsonArray("groups");
+            if (groups == null) {
+                throw new JsonParseException("Reward config groups are missing");
+            }
+            RewardConfigDocument document = new RewardConfigDocument();
+            for (JsonElement element : groups) {
+                JsonObject object = element.getAsJsonObject();
+                ERewardRule rule = ERewardRule.valueOf(stringValue(object, "rule"));
+                RewardGroup group = new RewardGroup(rule, stringValue(object, "key"),
+                        readRewards(object.getAsJsonArray("rewards")));
+                if (rule == ERewardRule.CDK_REWARD) {
+                    group.setExpirationDate(stringValue(object, "expirationDate"));
+                    group.setRedemptionLimit(object.has("redemptionLimit")
+                            ? object.get("redemptionLimit").getAsInt() : 1);
+                }
+                document.getGroups().add(group);
+            }
+            return document;
+        } catch (JsonParseException | IllegalStateException | IllegalArgumentException e) {
+            throw new IOException("Invalid schema v2 reward configuration", e);
+        }
+    }
+
     private RewardList readRewards(JsonArray array) {
         RewardList rewards = new RewardList();
         if (array == null) {
@@ -120,19 +152,46 @@ public final class LegacyRewardConfigReader {
         }
         for (JsonElement element : array) {
             JsonObject json = element.getAsJsonObject();
-            ERewardType legacyType = ERewardType.valueOf(stringValue(json, "type"));
+            RewardTypeId typeId = legacyTypeId(stringValue(json, "type"));
             JsonObject content = json.has("content")
                     ? gson.fromJson(json.getAsJsonObject("content"), JsonObject.class)
                     : new JsonObject();
             BigDecimal probability = json.has("probability")
                     ? json.get("probability").getAsBigDecimal()
                     : BigDecimal.ONE;
-            Reward reward = new Reward(content, legacyType.rewardTypeId(), probability)
+            Reward reward = new Reward(content, typeId, probability)
                     .setRewarded(json.has("rewarded") && json.get("rewarded").getAsBoolean())
                     .setDisabled(json.has("disabled") && json.get("disabled").getAsBoolean());
             rewards.add(reward);
         }
         return rewards;
+    }
+
+    private static RewardTypeId legacyTypeId(String value) {
+        String normalized = value == null ? "" : value.trim();
+        if (normalized.indexOf(':') > 0) {
+            return RewardTypeId.parse(normalized);
+        }
+        switch (normalized.toUpperCase(java.util.Locale.ROOT)) {
+            case "ITEM":
+                return SakuraRewardTypes.ITEM;
+            case "EFFECT":
+                return SakuraRewardTypes.EFFECT;
+            case "EXP_POINT":
+                return SakuraRewardTypes.EXPERIENCE_POINT;
+            case "EXP_LEVEL":
+                return SakuraRewardTypes.EXPERIENCE_LEVEL;
+            case "SIGN_IN_CARD":
+                return SakuraRewardTypes.SIGN_IN_CARD;
+            case "ADVANCEMENT":
+                return SakuraRewardTypes.ADVANCEMENT;
+            case "MESSAGE":
+                return SakuraRewardTypes.MESSAGE;
+            case "COMMAND":
+                return SakuraRewardTypes.COMMAND;
+            default:
+                throw new JsonParseException("Unknown legacy reward type: " + value);
+        }
     }
 
     private static String stringValue(JsonObject object, String name) {
