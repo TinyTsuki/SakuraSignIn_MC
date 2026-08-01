@@ -62,6 +62,8 @@ public final class RewardOperationWidget extends BaseWidget {
     @Setter
     private ScreenCoordinate visualBounds;
     @Setter
+    private ScreenCoordinate clipBounds;
+    @Setter
     private Consumer<MouseEvent> pressHandler;
     @Setter
     private Consumer<MouseEvent> releaseHandler;
@@ -120,6 +122,21 @@ public final class RewardOperationWidget extends BaseWidget {
         if (!visible()) {
             return;
         }
+        if (clipBounds != null) {
+            AbstractGuiUtils.pushScissor((int) clipBounds.x(), (int) clipBounds.y(),
+                    Math.max(1, (int) clipBounds.width()),
+                    Math.max(1, (int) clipBounds.height()));
+            try {
+                renderContent(stack, partialTicks);
+            } finally {
+                AbstractGuiUtils.popScissor();
+            }
+            return;
+        }
+        renderContent(stack, partialTicks);
+    }
+
+    private void renderContent(MatrixStack stack, float partialTicks) {
         if (renderer != null) {
             renderer.accept(new RenderContext(stack, this));
             return;
@@ -163,6 +180,12 @@ public final class RewardOperationWidget extends BaseWidget {
 
     @Override
     public boolean isMouseInside(double mouseX, double mouseY) {
+        if (clipBounds != null && (mouseX < clipBounds.x()
+                || mouseX >= clipBounds.x() + clipBounds.width()
+                || mouseY < clipBounds.y()
+                || mouseY >= clipBounds.y() + clipBounds.height())) {
+            return false;
+        }
         if (!super.isMouseInside(mouseX, mouseY) || !transparentCheck || texture == null) {
             return super.isMouseInside(mouseX, mouseY);
         }
