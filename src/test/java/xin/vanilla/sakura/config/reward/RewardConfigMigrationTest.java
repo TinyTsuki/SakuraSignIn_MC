@@ -13,6 +13,10 @@ import xin.vanilla.sakura.network.packet.RewardOptionSyncPacket;
 import xin.vanilla.sakura.reward.Reward;
 import xin.vanilla.sakura.reward.RewardList;
 import xin.vanilla.sakura.config.reward.RewardConfigManager;
+import xin.vanilla.sakura.data.personaldate.PersonalDateCalendarPolicy;
+import xin.vanilla.sakura.data.personaldate.PersonalDateDeliveryMode;
+import xin.vanilla.sakura.data.personaldate.PersonalDatePreset;
+import xin.vanilla.sakura.data.personaldate.PersonalDateRecurrence;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -33,6 +38,35 @@ import static org.junit.Assert.fail;
 public class RewardConfigMigrationTest {
     @Rule
     public final TemporaryFolder temporaryFolder = new TemporaryFolder();
+
+    @Test
+    public void versionedCodecPreservesPersonalDatePresetMetadata() throws Exception {
+        RewardConfig source = new RewardConfig();
+        PersonalDatePreset preset = new PersonalDatePreset(
+                "server_day", "Server Day", PersonalDateRecurrence.YEARLY,
+                PersonalDateCalendarPolicy.PLAYER_CHOICE, 2,
+                PersonalDateDeliveryMode.ONLINE, 3, 7,
+                new RewardList(Collections.singletonList(messageReward("personal")))
+        );
+        source.setPersonalDatePresets(Collections.singletonList(preset));
+
+        RewardConfig restored = new RewardConfigCodec().decode(new RewardConfigCodec().encode(source));
+
+        assertEquals(source.getPersonalDatePresets(), restored.getPersonalDatePresets());
+    }
+
+    @Test(expected = IOException.class)
+    public void versionedCodecRejectsDuplicatePersonalDatePresetIds() throws Exception {
+        RewardConfig source = new RewardConfig();
+        PersonalDatePreset preset = new PersonalDatePreset(
+                "server_day", "Server Day", PersonalDateRecurrence.MONTHLY,
+                PersonalDateCalendarPolicy.SOLAR_ONLY, 1,
+                PersonalDateDeliveryMode.SIGN_IN, 0, 0, new RewardList()
+        );
+        source.setPersonalDatePresets(Arrays.asList(preset, preset));
+
+        new RewardConfigCodec().encode(source);
+    }
 
     @Test
     public void legacyReaderPreservesDuplicateProbabilityGroups() throws Exception {
