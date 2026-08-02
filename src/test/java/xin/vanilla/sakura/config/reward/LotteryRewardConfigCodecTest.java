@@ -15,7 +15,7 @@ public class LotteryRewardConfigCodecTest {
     public void roundTripKeepsPoolMetadataAndRewards() throws Exception {
         RewardConfig source = new RewardConfig();
         source.getLotteryPools().add(new LotteryPool("daily", "Daily Draw",
-                LotteryLimitPolicy.DAILY, 2, 0,
+                LotteryLimitPolicy.WEEKLY, 2, 30, false,
                 new RewardList(Collections.singletonList(Reward.getDefault()))));
 
         RewardConfig restored = new RewardConfigCodec().decode(

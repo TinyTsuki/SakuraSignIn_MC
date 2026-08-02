@@ -23,8 +23,18 @@ public final class LotteryPools {
 
     public static LotteryPool copy(LotteryPool pool) {
         return new LotteryPool(pool.getId(), pool.getDisplayName(), pool.getLimitPolicy(),
-                pool.getMaxDraws(), pool.getCooldownSeconds(),
+                pool.getMaxDraws(), pool.getCooldownSeconds(), pool.isShowRewards(),
                 new RewardList(pool.getRewards()).clone());
+    }
+
+    /** 玩家可浏览奖池元数据，但管理员禁用详情时不下发奖励列表。 */
+    public static List<LotteryPool> visibleCopy(List<LotteryPool> pools, boolean editor) {
+        List<LotteryPool> result = copy(pools);
+        if (!editor) {
+            result.stream().filter(pool -> !pool.isShowRewards())
+                    .forEach(pool -> pool.setRewards(new RewardList()));
+        }
+        return result;
     }
 
     public static Optional<LotteryPool> find(List<LotteryPool> pools, String id) {

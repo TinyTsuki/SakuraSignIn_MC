@@ -35,6 +35,8 @@ public class I18nStyleContractTest {
             "\"(?:title|tips|option|message|command)\\.sakura_sign_in\\.");
     private static final Pattern STATIC_TEXT_KEY = Pattern.compile(
             "Text\\.trans\\s*\\(\\s*SakuraSignIn\\.MODID\\s*,\\s*\"([^\"]+)\"\\s*(?=[,)])");
+    private static final Pattern STATIC_I18N_KEY = Pattern.compile(
+            "I18n\\.get\\s*\\(\\s*\"((?:key|word|format)\\.sakura_sign_in\\.[^\"]+)\"\\s*(?=[,)])");
     private static final Pattern STATIC_COMPONENT_KEY = Pattern.compile(
             "SakuraComponent\\.get\\(\\)\\.(?:trans|transClient|translateClient|transLang)\\s*\\("
                     + "(?:(?!\\);).){0,300}?\"(key|word|format)\"\\s*,\\s*\"([^\"]+)\"\\s*(?=[,)])",
@@ -90,6 +92,11 @@ public class I18nStyleContractTest {
         while (textMatcher.find()) {
             assertTrue(path + " references missing i18n key " + textMatcher.group(1),
                     translations.contains(textMatcher.group(1)));
+        }
+        Matcher i18nMatcher = STATIC_I18N_KEY.matcher(source);
+        while (i18nMatcher.find()) {
+            assertTrue(path + " references missing i18n key " + i18nMatcher.group(1),
+                    translations.contains(i18nMatcher.group(1)));
         }
         Matcher componentMatcher = STATIC_COMPONENT_KEY.matcher(source);
         while (componentMatcher.find()) {

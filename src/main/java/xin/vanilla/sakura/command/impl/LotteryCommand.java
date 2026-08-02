@@ -5,25 +5,14 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.Commands;
 import net.minecraft.entity.player.ServerPlayerEntity;
-import xin.vanilla.banira.api.BaniraModPresence;
+import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.sakura.SakuraComponent;
-import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.config.reward.RewardConfigManager;
-import xin.vanilla.sakura.data.lottery.LotteryPool;
 import xin.vanilla.sakura.enums.ERewardRule;
 import xin.vanilla.sakura.message.SakuraMessages;
-import xin.vanilla.sakura.network.SakuraNetwork;
-import xin.vanilla.sakura.network.packet.LotteryRevealPacket;
-import xin.vanilla.sakura.notification.SakuraNotificationTypes;
-import xin.vanilla.sakura.reward.Reward;
-import xin.vanilla.sakura.reward.lottery.LotteryDrawResult;
-import xin.vanilla.sakura.reward.lottery.LotteryRewardService;
+import xin.vanilla.sakura.reward.lottery.LotteryDrawDispatcher;
 import xin.vanilla.sakura.util.SakuraUtils;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 /** 列出并领取服务端权威抽奖池。 */
 public final class LotteryCommand {
@@ -45,7 +34,18 @@ public final class LotteryCommand {
                                 })
                                 .executes(context -> draw(
                                         context.getSource().getPlayerOrException(),
-                                        StringArgumentType.getString(context, "pool")))));
+                                        StringArgumentType.getString(context, "pool"), "1"))
+                                .then(Commands.argument("count", StringArgumentType.word())
+                                        .suggests((context, builder) -> {
+                                            for (String value : new String[]{"1", "5", "10", "15", "all"}) {
+                                                builder.suggest(value);
+                                            }
+                                            return builder.buildFuture();
+                                        })
+                                        .executes(context -> draw(
+                                                context.getSource().getPlayerOrException(),
+                                                StringArgumentType.getString(context, "pool"),
+                                                StringArgumentType.getString(context, "count"))))));
     }
 
     private static int list(ServerPlayerEntity player) {
@@ -54,63 +54,32 @@ public final class LotteryCommand {
                     player, "word", "lottery_no_pools"));
             return 1;
         }
-        String names = RewardConfigManager.getRewardConfig().getLotteryPools().stream()
-                .map(pool -> pool.getDisplayName() + " (" + pool.getId() + ")")
-                .collect(java.util.stream.Collectors.joining("\n"));
-        SakuraMessages.send(player, SakuraComponent.get().trans(
-                player, "format", "lottery_pool_list_s", names));
+        Component message = SakuraComponent.get().trans(
+                player, "word", "lottery_available_pools").color(0xFFAAAAAA);
+        RewardConfigManager.getRewardConfig().getLotteryPools().forEach(pool -> message
+                .append("\n")
+                .append(SakuraComponent.get().literal(pool.getDisplayName()
+                        + " (" + pool.getId() + ")").color(0xFFFFAA00)));
+        SakuraMessages.send(player, message);
         return 1;
     }
 
-    private static int draw(ServerPlayerEntity player, String poolId) {
-        LotteryDrawResult result = LotteryRewardService.draw(player, poolId);
-        switch (result.getStatus()) {
-            case SUCCESS:
-                Reward winner = result.getReward();
-                SakuraMessages.send(player, SakuraComponent.get().trans(player, "format",
-                        "lottery_draw_success_s", winner.getName(
-                                SakuraUtils.getPlayerLanguage(player), true).toString()),
-                        SakuraNotificationTypes.REWARD);
-                if (BaniraModPresence.isRemoteClientInstalled(player, SakuraSignIn.MODID)) {
-                    SakuraNetwork.sendToPlayer(new LotteryRevealPacket(
-                            result.getPool().getDisplayName(), winner,
-                            preview(result.getPool())), player);
-                }
-                break;
-            case LIMIT_REACHED:
-                SakuraMessages.send(player, SakuraComponent.get().trans(player, "format",
-                        "lottery_limit_reached_ss", result.getRetryAfterSeconds(),
-                        result.getRemainingDraws()), SakuraNotificationTypes.REWARD);
-                break;
-            case POOL_NOT_FOUND:
-                SakuraMessages.send(player, SakuraComponent.get().trans(
-                        player, "word", "lottery_pool_not_found"));
-                break;
-            case EMPTY_POOL:
-                SakuraMessages.send(player, SakuraComponent.get().trans(
-                        player, "word", "lottery_pool_empty"));
-                break;
-            case GRANT_FAILED:
-            default:
-                SakuraMessages.send(player, SakuraComponent.get().trans(
-                        player, "word", "lottery_grant_failed"));
-                break;
+    private static int draw(ServerPlayerEntity player, String poolId, String countText) {
+        int count;
+        try {
+            count = "all".equalsIgnoreCase(countText) ? -1 : Integer.parseInt(countText);
+        } catch (NumberFormatException ignored) {
+            SakuraMessages.send(player, SakuraComponent.get().trans(
+                    player, "word", "lottery_invalid_count"));
+            return 0;
         }
+        if (count != -1 && (count < 1
+                || count > xin.vanilla.sakura.reward.lottery.LotteryRewardService.MAX_BATCH_DRAWS)) {
+            SakuraMessages.send(player, SakuraComponent.get().trans(
+                    player, "word", "lottery_invalid_count"));
+            return 0;
+        }
+        LotteryDrawDispatcher.draw(player, poolId, count);
         return 1;
-    }
-
-    private static List<Reward> preview(LotteryPool pool) {
-        List<Reward> values = new ArrayList<>();
-        pool.getRewards().stream().filter(reward -> reward != null && !reward.isDisabled())
-                .forEach(values::add);
-        if (values.isEmpty()) {
-            return Collections.emptyList();
-        }
-        Collections.shuffle(values);
-        List<Reward> preview = new ArrayList<>();
-        for (int i = 0; i < 20; i++) {
-            preview.add(values.get(i % values.size()).clone());
-        }
-        return preview;
     }
 }

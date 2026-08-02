@@ -2478,14 +2478,12 @@ public class RewardOptionScreen extends BaniraScreen {
             if (selected.startsWith("标题") || !orderedIds.contains(selected)) {
                 continue;
             }
-            String next = RewardKeyboardNavigator.findNext(selected, points, direction);
-            if (next == null && (direction == RewardKeyboardNavigator.Direction.LEFT
-                    || direction == RewardKeyboardNavigator.Direction.RIGHT)) {
-                int index = orderedIds.indexOf(selected)
-                        + (direction == RewardKeyboardNavigator.Direction.RIGHT ? 1 : -1);
-                if (index >= 0 && index < orderedIds.size()) {
-                    next = orderedIds.get(index);
-                }
+            String next;
+            if (direction == RewardKeyboardNavigator.Direction.LEFT
+                    || direction == RewardKeyboardNavigator.Direction.RIGHT) {
+                next = RewardKeyboardNavigator.findAdjacent(selected, orderedIds, direction);
+            } else {
+                next = RewardKeyboardNavigator.findNext(selected, points, direction);
             }
             moved.add(next == null ? selected : next);
             changed |= next != null && !next.equals(selected);
