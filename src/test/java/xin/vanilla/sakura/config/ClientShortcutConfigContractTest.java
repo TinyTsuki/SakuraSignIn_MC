@@ -19,5 +19,15 @@ public class ClientShortcutConfigContractTest {
         assertTrue(source.contains("@ConfigEntry.Gui.KeyChords"));
         assertFalse(source.contains("GLFW_MOUSE_BUTTON_LEFT"));
         assertFalse(source.matches("(?s).*private\\s+.*mouseLeft.*"));
+        assertTrue(source.contains("sanitizeNavigationShortcuts"));
+    }
+
+    @Test
+    public void staleMouseLeftNavigationBindingsAreRecognized() {
+        assertTrue(ClientConfig.isMouseLeftShortcut("MouseLeft"));
+        assertTrue(ClientConfig.isMouseLeftShortcut("GLFW_MOUSE_BUTTON_LEFT"));
+        assertTrue(ClientConfig.isMouseLeftShortcut("key.mouse.left"));
+        assertFalse(ClientConfig.isMouseLeftShortcut("Left"));
+        assertFalse(ClientConfig.isMouseLeftShortcut("Ctrl + Left"));
     }
 }
