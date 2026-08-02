@@ -25,6 +25,8 @@ import xin.vanilla.sakura.config.reward.RewardGroup;
 import xin.vanilla.sakura.reward.Reward;
 import xin.vanilla.sakura.reward.RewardList;
 import xin.vanilla.sakura.data.personaldate.PersonalDatePreset;
+import xin.vanilla.sakura.data.lottery.LotteryLimitPolicy;
+import xin.vanilla.sakura.data.lottery.LotteryPool;
 import xin.vanilla.sakura.util.SakuraUtils;
 import xin.vanilla.banira.common.util.StringUtils;
 
@@ -476,6 +478,10 @@ public class RewardConfigManager {
                 result = Pattern.compile("^\\w+$").matcher(keyName).matches();
             }
             break;
+            case PERSONAL_DATE_REWARD:
+            case LOTTERY_REWARD:
+                result = keyName.matches("[a-z0-9_.-]{1,64}");
+                break;
             default:
                 result = false;
         }
@@ -535,6 +541,10 @@ public class RewardConfigManager {
             case PERSONAL_DATE_REWARD:
                 PersonalDatePreset personalPreset = personalDatePreset(keyName);
                 result = personalPreset == null ? null : personalPreset.getRewards();
+                break;
+            case LOTTERY_REWARD:
+                LotteryPool lotteryPool = lotteryPool(keyName);
+                result = lotteryPool == null ? null : lotteryPool.getRewards();
                 break;
             default:
                 throw new IllegalArgumentException("Unknown rule: " + rule);
@@ -598,6 +608,15 @@ public class RewardConfigManager {
                 PersonalDatePreset personalPreset = personalDatePreset(keyName);
                 if (personalPreset != null) {
                     personalPreset.getRewards().addAll(rewardList);
+                }
+                break;
+            case LOTTERY_REWARD:
+                LotteryPool lotteryPool = lotteryPool(keyName);
+                if (lotteryPool == null) {
+                    rewardConfig.getLotteryPools().add(new LotteryPool(keyName, keyName,
+                            LotteryLimitPolicy.DAILY, 1, 0, rewardList));
+                } else {
+                    lotteryPool.getRewards().addAll(rewardList);
                 }
                 break;
             default:
@@ -674,6 +693,13 @@ public class RewardConfigManager {
                 }
             }
             break;
+            case LOTTERY_REWARD: {
+                LotteryPool pool = lotteryPool(oldKeyName);
+                if (pool != null && validateKeyName(rule, newKeyName)) {
+                    pool.setId(newKeyName);
+                }
+            }
+            break;
             default:
                 throw new IllegalArgumentException("Unknown rule: " + rule);
         }
@@ -733,6 +759,12 @@ public class RewardConfigManager {
                     personalPreset.getRewards().clear();
                 }
                 break;
+            case LOTTERY_REWARD:
+                LotteryPool lotteryPool = lotteryPool(keyName);
+                if (lotteryPool != null) {
+                    lotteryPool.getRewards().clear();
+                }
+                break;
             default:
                 throw new IllegalArgumentException("Unknown rule: " + rule);
         }
@@ -788,6 +820,10 @@ public class RewardConfigManager {
             case PERSONAL_DATE_REWARD:
                 rewardConfig.getPersonalDatePresets().removeIf(
                         preset -> keyName.equals(preset.getId()));
+                break;
+            case LOTTERY_REWARD:
+                rewardConfig.getLotteryPools().removeIf(
+                        pool -> keyName.equals(pool.getId()));
                 break;
             default:
                 throw new IllegalArgumentException("Unknown rule: " + rule);
@@ -849,6 +885,10 @@ public class RewardConfigManager {
                 case PERSONAL_DATE_REWARD:
                     PersonalDatePreset personalPreset = personalDatePreset(keyName);
                     result = personalPreset == null ? null : personalPreset.getRewards().get(index);
+                    break;
+                case LOTTERY_REWARD:
+                    LotteryPool lotteryPool = lotteryPool(keyName);
+                    result = lotteryPool == null ? null : lotteryPool.getRewards().get(index);
                     break;
                 default:
                     throw new IllegalArgumentException("Unknown rule: " + rule);
@@ -948,6 +988,12 @@ public class RewardConfigManager {
                 PersonalDatePreset personalPreset = personalDatePreset(keyName);
                 if (personalPreset != null) {
                     personalPreset.getRewards().add(reward);
+                }
+                break;
+            case LOTTERY_REWARD:
+                LotteryPool lotteryPool = lotteryPool(keyName);
+                if (lotteryPool != null) {
+                    lotteryPool.getRewards().add(reward);
                 }
                 break;
             default:
@@ -1059,6 +1105,12 @@ public class RewardConfigManager {
                         personalPreset.getRewards().set(index, reward);
                     }
                     break;
+                case LOTTERY_REWARD:
+                    LotteryPool lotteryPool = lotteryPool(keyName);
+                    if (lotteryPool != null) {
+                        lotteryPool.getRewards().set(index, reward);
+                    }
+                    break;
                 default:
                     throw new IllegalArgumentException("Unknown rule: " + rule);
             }
@@ -1124,6 +1176,12 @@ public class RewardConfigManager {
                         personalPreset.getRewards().remove(index);
                     }
                     break;
+                case LOTTERY_REWARD:
+                    LotteryPool lotteryPool = lotteryPool(keyName);
+                    if (lotteryPool != null) {
+                        lotteryPool.getRewards().remove(index);
+                    }
+                    break;
                 default:
                     throw new IllegalArgumentException("Unknown rule: " + rule);
             }
@@ -1187,6 +1245,10 @@ public class RewardConfigManager {
                 case PERSONAL_DATE_REWARD:
                     rewardConfig.getPersonalDatePresets().sort(
                             Comparator.comparing(PersonalDatePreset::getId));
+                    break;
+                case LOTTERY_REWARD:
+                    rewardConfig.getLotteryPools().sort(
+                            Comparator.comparing(LotteryPool::getId));
                     break;
             }
         }
@@ -1270,6 +1332,11 @@ public class RewardConfigManager {
                     result.put(preset.getId(), preset.getRewards());
                 }
                 break;
+            case LOTTERY_REWARD:
+                for (LotteryPool pool : data.getLotteryPools()) {
+                    result.put(pool.getId(), pool.getRewards());
+                }
+                break;
         }
         return result;
     }
@@ -1326,6 +1393,14 @@ public class RewardConfigManager {
                     }
                 });
                 break;
+            case LOTTERY_REWARD:
+                data.getLotteryPools().forEach(pool -> {
+                    RewardList rewards = map.get(pool.getId());
+                    if (rewards != null) {
+                        pool.setRewards(rewards);
+                    }
+                });
+                break;
         }
     }
 
@@ -1346,7 +1421,8 @@ public class RewardConfigManager {
             // 如果对应查看权限不足则将数据置为空，并在服务端解析时不进行该数据的覆盖
             if (!canView.test(rule)) {
                 dataList.add(RewardOptionSyncData.redactedRule(rule));
-            } else if (rule == ERewardRule.PERSONAL_DATE_REWARD) {
+            } else if (rule == ERewardRule.PERSONAL_DATE_REWARD
+                    || rule == ERewardRule.LOTTERY_REWARD) {
                 dataList.add(RewardOptionSyncData.emptyGroup(rule, ""));
             } else {
                 dataList.addAll(toSyncData(config, rule));
@@ -1376,7 +1452,8 @@ public class RewardConfigManager {
         packetList.stream().flatMap(packet -> packet.getRewardOptionData().stream())
                 .collect(Collectors.groupingBy(RewardOptionSyncData::getRule))
                 .forEach((rule, dataList) -> {
-                    if (rule == ERewardRule.PERSONAL_DATE_REWARD) {
+                    if (rule == ERewardRule.PERSONAL_DATE_REWARD
+                            || rule == ERewardRule.LOTTERY_REWARD) {
                         return;
                     }
                     Map<String, RewardList> rewardMap = new LinkedHashMap<>();
@@ -1403,6 +1480,12 @@ public class RewardConfigManager {
     private static PersonalDatePreset personalDatePreset(String id) {
         return rewardConfig.getPersonalDatePresets().stream()
                 .filter(preset -> preset != null && Objects.equals(id, preset.getId()))
+                .findFirst().orElse(null);
+    }
+
+    public static LotteryPool lotteryPool(String id) {
+        return rewardConfig.getLotteryPools().stream()
+                .filter(pool -> pool != null && Objects.equals(id, pool.getId()))
                 .findFirst().orElse(null);
     }
 

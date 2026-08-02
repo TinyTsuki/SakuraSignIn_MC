@@ -14,6 +14,7 @@ import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.reward.Reward;
 import xin.vanilla.sakura.reward.RewardList;
 import xin.vanilla.sakura.data.personaldate.PersonalDatePreset;
+import xin.vanilla.sakura.data.lottery.LotteryPool;
 import xin.vanilla.sakura.config.reward.RewardGroup;
 import xin.vanilla.banira.common.util.CollectionUtils;
 import xin.vanilla.banira.common.util.DateUtils;
@@ -160,6 +161,10 @@ public class RewardConfig implements Serializable {
     @NonNull
     private List<PersonalDatePreset> personalDatePresets;
 
+    /** 可由玩家主动抽取的独立奖池。 */
+    @NonNull
+    private List<LotteryPool> lotteryPools;
+
     public RewardConfig() {
         this.baseRewards = new RewardList();
         this.continuousRewards = new LinkedHashMap<>();
@@ -175,6 +180,7 @@ public class RewardConfig implements Serializable {
         this.randomRewardGroups = new ArrayList<>();
         this.cdkRewards = new ArrayList<>();
         this.personalDatePresets = new ArrayList<>();
+        this.lotteryPools = new ArrayList<>();
     }
 
     /**

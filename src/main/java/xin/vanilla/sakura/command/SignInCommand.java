@@ -10,6 +10,7 @@ import xin.vanilla.sakura.command.impl.ConfigCommand;
 import xin.vanilla.sakura.command.impl.HelpCommand;
 import xin.vanilla.sakura.command.impl.LanguageCommand;
 import xin.vanilla.sakura.command.impl.SignActionCommand;
+import xin.vanilla.sakura.command.impl.LotteryCommand;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.util.SakuraUtils;
 
@@ -31,6 +32,7 @@ public final class SignInCommand {
                 .then(CdkCommand.build())
                 .then(CardCommand.build())
                 .then(LanguageCommand.build())
+                .then(LotteryCommand.build())
                 .then(ConfigCommand.build()));
     }
 

@@ -55,6 +55,9 @@ public final class PlayerSignInDataRepository {
         legacyShape.put("personalDateSlots", slots);
         legacyShape.putString("onlineTimeBaselineDate", summary.getOnlineTimeBaselineDate());
         legacyShape.putInt("onlineTimeBaselineTicks", summary.getOnlineTimeBaselineTicks());
+        ListNBT lotteryStates = new ListNBT();
+        summary.getLotteryDrawStates().forEach(state -> lotteryStates.add(state.serializeNBT()));
+        legacyShape.put("lotteryDrawStates", lotteryStates);
 
         ListNBT records = new ListNBT();
         historyRepository.loadAll(playerUuid).forEach(record -> records.add(record.writeToNBT()));
