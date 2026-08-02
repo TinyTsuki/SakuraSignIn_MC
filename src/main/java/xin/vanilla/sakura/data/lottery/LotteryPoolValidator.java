@@ -24,7 +24,7 @@ public final class LotteryPoolValidator {
         if (pool.getLimitPolicy() == null) {
             errors.add("limit_policy_required");
         }
-        if (pool.getMaxDraws() < 1 || pool.getMaxDraws() > 1_000_000) {
+        if (pool.getMaxDraws() < 1 || pool.getMaxDraws() > 100) {
             errors.add("invalid_max_draws");
         }
         if (pool.getCooldownSeconds() < 0 || pool.getCooldownSeconds() > 31_536_000) {

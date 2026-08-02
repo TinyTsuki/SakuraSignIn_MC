@@ -13,6 +13,7 @@ public class LotteryPool {
     private LotteryLimitPolicy limitPolicy = LotteryLimitPolicy.DAILY;
     private int maxDraws = 1;
     private int cooldownSeconds;
+    private boolean showRewards = true;
     private RewardList rewards = new RewardList();
 
     public LotteryPool(String id, String displayName, LotteryLimitPolicy limitPolicy,
@@ -23,5 +24,12 @@ public class LotteryPool {
         this.maxDraws = maxDraws;
         this.cooldownSeconds = cooldownSeconds;
         this.rewards = rewards == null ? new RewardList() : rewards;
+    }
+
+    public LotteryPool(String id, String displayName, LotteryLimitPolicy limitPolicy,
+                       int maxDraws, int cooldownSeconds, boolean showRewards,
+                       RewardList rewards) {
+        this(id, displayName, limitPolicy, maxDraws, cooldownSeconds, rewards);
+        this.showRewards = showRewards;
     }
 }

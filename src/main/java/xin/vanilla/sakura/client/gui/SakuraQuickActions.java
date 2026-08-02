@@ -18,6 +18,7 @@ import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.event.ClientEventHandler;
 import xin.vanilla.sakura.screen.RewardOptionScreen;
+import xin.vanilla.sakura.screen.LotteryScreen;
 import xin.vanilla.sakura.screen.PersonalDateConfigScreen;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
@@ -51,6 +52,11 @@ public final class SakuraQuickActions {
                         SakuraComponent.get().transClient("word", "edit_reward_config"),
                         context -> Minecraft.getInstance().setScreen(
                                 new RewardOptionScreen().previousScreen(context.currentScreen()))
+                ),
+                new QuickActionContextMenuItem(
+                        SakuraComponent.get().transClient("word", "lottery_screen"),
+                        context -> Minecraft.getInstance().setScreen(
+                                new LotteryScreen(context.currentScreen()))
                 ),
                 new QuickActionContextMenuItem(
                         SakuraComponent.get().transClient("word", "edit_player_config"),
@@ -103,6 +109,7 @@ public final class SakuraQuickActions {
         return texture + "|" + signIn
                 + "|" + SakuraComponent.get().translateClient("key", "categories")
                 + "|" + SakuraComponent.get().translateClient("word", "edit_reward_config")
+                + "|" + SakuraComponent.get().translateClient("word", "lottery_screen")
                 + "|" + SakuraComponent.get().translateClient("word", "edit_player_config")
                 + "|" + SakuraComponent.get().translateClient("word", "edit_client_config")
                 + "|" + SakuraComponent.get().translateClient("word", "edit_server_config");

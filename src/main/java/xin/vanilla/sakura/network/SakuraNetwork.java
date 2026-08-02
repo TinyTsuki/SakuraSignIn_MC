@@ -82,6 +82,10 @@ public final class SakuraNetwork {
                 LotteryRevealPacket::toBytes,
                 LotteryRevealPacket::new,
                 LotteryRevealPacket::handle);
+        HANDLER.register(LotteryDrawRequestPacket.class,
+                LotteryDrawRequestPacket::toBytes,
+                LotteryDrawRequestPacket::new,
+                LotteryDrawRequestPacket::handle);
         BaniraModPresence.register(SakuraSignIn.MODID, SakuraNetwork::syncInitialData);
         initialized = true;
     }
@@ -156,7 +160,9 @@ public final class SakuraNetwork {
         boolean visible = player.hasPermissions(
                 SakuraUtils.getRewardPermissionLevel(ERewardRule.LOTTERY_REWARD));
         return new LotteryPoolSyncPacket(visible
-                ? RewardConfigManager.getRewardConfig().getLotteryPools()
+                ? xin.vanilla.sakura.data.lottery.LotteryPools.visibleCopy(
+                        RewardConfigManager.getRewardConfig().getLotteryPools(),
+                        player.hasPermissions(CommonConfig.get().permission().permissionEditReward()))
                 : java.util.Collections.emptyList());
     }
 }

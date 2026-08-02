@@ -89,6 +89,7 @@ public final class RewardConfigCodec {
             object.addProperty("limitPolicy", pool.getLimitPolicy().name());
             object.addProperty("maxDraws", pool.getMaxDraws());
             object.addProperty("cooldownSeconds", pool.getCooldownSeconds());
+            object.addProperty("showRewards", pool.isShowRewards());
             JsonArray rewards = new JsonArray();
             pool.getRewards().forEach(reward -> rewards.add(RewardJsonCodec.encode(reward)));
             object.add("rewards", rewards);
@@ -471,6 +472,7 @@ public final class RewardConfigCodec {
                 LotteryLimitPolicy.valueOf(requiredString(object, "limitPolicy")),
                 object.has("maxDraws") ? object.get("maxDraws").getAsInt() : 1,
                 object.has("cooldownSeconds") ? object.get("cooldownSeconds").getAsInt() : 0,
+                !object.has("showRewards") || object.get("showRewards").getAsBoolean(),
                 rewards
         );
     }
