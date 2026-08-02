@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screen.Screen;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
@@ -40,6 +41,8 @@ public final class RewardListEntryWidget extends BaseWidget {
     private boolean drawSelectionOutline = true;
     @Setter
     private Text tooltip = Text.empty();
+    @Setter
+    private boolean tooltipRequiresShift;
     @Setter
     private Consumer<MouseEvent> releaseHandler;
     @Setter
@@ -121,7 +124,8 @@ public final class RewardListEntryWidget extends BaseWidget {
     }
 
     public void renderTooltip(MatrixStack stack, double mouseX, double mouseY) {
-        if (!visibleInViewport() || !mouseInside || tooltip == null || tooltip.content().isEmpty()) {
+        if (!visibleInViewport() || !mouseInside || tooltip == null || tooltip.content().isEmpty()
+                || (tooltipRequiresShift && !Screen.hasShiftDown())) {
             return;
         }
         TooltipWidget.drawPopupMessage(stack, FontDrawArgs.ofPopo(

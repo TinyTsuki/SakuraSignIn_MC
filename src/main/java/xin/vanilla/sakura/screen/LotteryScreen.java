@@ -33,6 +33,9 @@ import java.util.stream.Collectors;
 
 /** 玩家选择奖池、连抽次数并按服务端许可预览奖励。 */
 public final class LotteryScreen extends BaniraScreen {
+    private static final int PANEL_TOP = 24;
+    private static final int CLOSE_SIZE = 10;
+    private static final int CLOSE_PAD = 6;
     private final Screen parent;
     private final ItemRenderer itemRenderer = Minecraft.getInstance().getItemRenderer();
     private DropdownSelectWidget poolSelect;
@@ -103,8 +106,9 @@ public final class LotteryScreen extends BaniraScreen {
         addWidget(batchDrawButton);
 
         ButtonWidget closeButton = new ButtonWidget(this);
-        closeButton.presetStyle(ButtonWidget.PresetStyle.CLOSE);
-        closeButton.bounds(new ScreenCoordinate(panelX + panelWidth - 28, 32, 12, 12));
+        closeButton.presetStyleClose().radius(CLOSE_SIZE / 3f).padding(1);
+        closeButton.bounds(new ScreenCoordinate(panelX + panelWidth - CLOSE_PAD - CLOSE_SIZE,
+                PANEL_TOP + CLOSE_PAD, CLOSE_SIZE, CLOSE_SIZE));
         closeButton.onClick(button -> requestClose(CloseReason.BUTTON));
         addWidget(closeButton);
         configureCountOptions();
@@ -114,7 +118,7 @@ public final class LotteryScreen extends BaniraScreen {
     protected void onRender(MatrixStack stack, float partialTicks) {
         int panelWidth = Math.min(560, width - 40);
         int panelX = (width - panelWidth) / 2;
-        shape(stack, panelX, 24, panelWidth, height - 44,
+        shape(stack, panelX, PANEL_TOP, panelWidth, height - 44,
                 getEffectiveTheme().panelBg(), 8, 0);
         centered(stack, SakuraComponent.get().translateClient("word", "lottery_screen"),
                 34, getEffectiveTheme().textPrimary());
@@ -273,7 +277,7 @@ public final class LotteryScreen extends BaniraScreen {
     @Override
     protected ScreenCoordinate closeableWindowBounds() {
         int panelWidth = Math.min(560, width - 40);
-        return new ScreenCoordinate((width - panelWidth) / 2, 24, panelWidth, height - 44);
+        return new ScreenCoordinate((width - panelWidth) / 2, PANEL_TOP, panelWidth, height - 44);
     }
 
     private void shape(MatrixStack stack, int x, int y, int width, int height,

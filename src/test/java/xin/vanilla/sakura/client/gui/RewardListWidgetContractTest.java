@@ -25,6 +25,7 @@ public class RewardListWidgetContractTest {
         assertTrue(widget.contains("extends BaseWidget"));
         assertTrue(widget.contains("BaseShapeWidget.drawShape"));
         assertTrue(widget.contains("TooltipWidget.drawPopupMessage"));
+        assertTrue(widget.contains("tooltipRequiresShift && !Screen.hasShiftDown()"));
         assertTrue(screen.contains("Map<String, RewardListEntryWidget>"));
         assertTrue(screen.contains("registerRewardEntry("));
         assertTrue(screen.contains("entry.setReleaseHandler("));
@@ -44,9 +45,20 @@ public class RewardListWidgetContractTest {
         assertTrue(screen.contains("scrollRewardPanel(eventArgs.delta() * rewardWheelStep)"));
         assertTrue(screen.contains("addWidget(entry)"));
         assertTrue(screen.contains("getTextColorCanRepair()"));
+        assertTrue(screen.contains("RewardRuleTooltipFormatter.describe("));
+        assertTrue(screen.contains("setTooltipRequiresShift(true)"));
         assertFalse(screen.contains(".handleMouseClick("));
         assertFalse(screen.contains(".handleMouseRelease("));
         assertFalse(screen.contains(".updateMouseHover("));
+    }
+
+    @Test
+    public void compactDateRulesHaveReadableDescriptions() {
+        String formatter = read(MAIN.resolve("client/gui/RewardRuleTooltipFormatter.java"));
+        assertTrue(formatter.contains("reward_group_hint_date_days_ss"));
+        assertTrue(formatter.contains("days + 1"));
+        assertTrue(formatter.contains("reward_group_date_annual_ss"));
+        assertTrue(formatter.contains("reward_group_hint_date_ranges_ssss"));
     }
 
     @Test
