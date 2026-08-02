@@ -17,7 +17,6 @@ import java.util.function.Function;
  * 统一奖励概率的输入、校验与 Banira 文本解析。
  */
 public final class RewardProbabilityFlow {
-    private static final String PROBABILITY_REGEX = "(0?1(\\.0{0,5})?|0(\\.\\d{0,5})?)?";
     private static final ScopedComponent COMPONENTS = new ScopedComponent(SakuraSignIn.MODID);
 
     private RewardProbabilityFlow() {
@@ -31,11 +30,10 @@ public final class RewardProbabilityFlow {
     ) {
         InputFormScreen.Widget probability = new InputFormScreen.Widget()
                 .title(Text.literal(translation("enter_reward_probability")))
-                .regex(PROBABILITY_REGEX)
-                .defaultValue(NumberUtils.toFixedEx(defaultProbability, 5))
+                .regex(RewardProbabilityInput.PERCENT_REGEX)
+                .defaultValue(RewardProbabilityInput.display(defaultProbability))
                 .validator(result -> {
-                    BigDecimal value = NumberUtils.toBigDecimal(result.value());
-                    if (isProbability(value)) {
+                    if (RewardProbabilityInput.isValidPercent(result.value())) {
                         return null;
                     }
                     return translation("reward_probability_s_error", result.value());
@@ -44,13 +42,9 @@ public final class RewardProbabilityFlow {
                 .setParentScreen(parent)
                 .addWidget(probability)
                 .setCallback(result -> onSelected.accept(
-                        rewardFactory.apply(NumberUtils.toBigDecimal(result.firstValue()))
+                        rewardFactory.apply(RewardProbabilityInput.parse(result.firstValue()))
                 ));
         return new InputFormScreen(args);
-    }
-
-    private static boolean isProbability(BigDecimal value) {
-        return value.compareTo(BigDecimal.ZERO) > 0 && value.compareTo(BigDecimal.ONE) <= 0;
     }
 
     private static String translation(String key, Object... args) {

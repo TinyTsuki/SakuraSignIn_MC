@@ -53,6 +53,7 @@ import xin.vanilla.sakura.client.gui.RewardOperationWidget;
 import xin.vanilla.sakura.client.gui.RewardSelectionModel;
 import xin.vanilla.sakura.client.gui.RewardSemanticMatcher;
 import xin.vanilla.sakura.client.gui.RewardRenderer;
+import xin.vanilla.sakura.client.gui.RewardProbabilityInput;
 import xin.vanilla.sakura.client.reward.RewardEditorCoordinator;
 import xin.vanilla.sakura.api.reward.RewardTypeId;
 import xin.vanilla.sakura.api.reward.client.SakuraRewardClient;
@@ -682,12 +683,12 @@ public class RewardOptionScreen extends BaniraScreen {
     }
 
     private StringInputScreen getRuleKeyInputScreen(Screen callbackScreen, ERewardRule rule, String[] key) {
-        String validator = rule == ERewardRule.RANDOM_REWARD ? "(0?1(\\.0{0,10})?|0(\\.\\d{0,10})?)?" : "[\\d +~/:.T-]*";
-        return new StringInputScreen(callbackScreen, Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_rule_key_" + rule.getCode()), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"), validator, "", input -> {
+        return new StringInputScreen(callbackScreen, Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_rule_key_" + rule.getCode()), Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"), ruleInputRegex(rule), "", input -> {
             StringList result = new StringList();
             if (CollectionUtils.isNotNullOrEmpty(input)) {
-                if (RewardConfigManager.validateKeyName(rule, input.get(0))) {
-                    key[0] = input.get(0);
+                String normalized = normalizeRuleInput(rule, input.get(0));
+                if (RewardConfigManager.validateKeyName(rule, normalized)) {
+                    key[0] = normalized;
                 } else {
                     result.add(SakuraComponent.get().transClient("format", "reward_rule_s_error", input.get(0)).toString());
                 }
@@ -1495,22 +1496,20 @@ public class RewardOptionScreen extends BaniraScreen {
             return;
         }
 
-        String validator = rule == ERewardRule.RANDOM_REWARD
-                ? "(0?1(\\.0{0,10})?|0(\\.\\d{0,10})?)?"
-                : "[\\d +~/:.T-]*";
         Minecraft.getInstance().setScreen(new StringInputScreen(
                 this,
                 Text.trans(SakuraSignIn.MODID,
                         "word.sakura_sign_in.enter_reward_rule_key_" + rule.getCode()),
                 Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something"),
-                validator,
-                key,
+                ruleInputRegex(rule),
+                displayRuleInput(rule, key),
                 input -> {
                     StringList result = new StringList();
-                    if (RewardConfigManager.validateKeyName(rule, input.get(0))) {
+                    String normalized = normalizeRuleInput(rule, input.get(0));
+                    if (RewardConfigManager.validateKeyName(rule, normalized)) {
                         RewardConfigManager.addUndoRewardOption(rule);
                         RewardConfigManager.clearRedoList();
-                        RewardConfigManager.updateKeyName(rule, key, input.get(0));
+                        RewardConfigManager.updateKeyName(rule, key, normalized);
                         RewardConfigManager.saveRewardOption();
                     } else {
                         result.add(SakuraComponent.get().transClient(
@@ -1929,20 +1928,20 @@ public class RewardOptionScreen extends BaniraScreen {
                             return result;
                         }));
                     } else if (rule != ERewardRule.BASE_REWARD) {
-                        String validator = rule == ERewardRule.RANDOM_REWARD ? "(0?1(\\.0{0,10})?|0(\\.\\d{0,10})?)?" : "[\\d +~/:.T-]*";
                         Minecraft.getInstance().setScreen(new StringInputScreen(screen
                                 , Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_reward_rule_key_" + rule.getCode())
                                 , Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.enter_something")
-                                , validator
-                                , RewardClipboardManager.deSerializeRewardList().getKey()
+                                , ruleInputRegex(rule)
+                                , displayRuleInput(rule, RewardClipboardManager.deSerializeRewardList().getKey())
                                 , input -> {
                             StringList result = new StringList();
                             if (CollectionUtils.isNotNullOrEmpty(input)) {
-                                if (RewardConfigManager.validateKeyName(rule, input.get(0))) {
+                                String normalized = normalizeRuleInput(rule, input.get(0));
+                                if (RewardConfigManager.validateKeyName(rule, normalized)) {
                                     RewardConfigManager.addUndoRewardOption(rule);
                                     RewardConfigManager.clearRedoList();
                                     RewardList rewardList = RewardClipboardManager.deSerializeRewardList().toRewardList();
-                                    RewardConfigManager.addKeyName(rule, input.get(0), rewardList);
+                                    RewardConfigManager.addKeyName(rule, normalized, rewardList);
                                     RewardConfigManager.saveRewardOption();
                                 } else {
                                     result.add(SakuraComponent.get().transClient("format", "reward_rule_s_error", input.get(0)).toString());
@@ -2129,6 +2128,31 @@ public class RewardOptionScreen extends BaniraScreen {
     public RewardOptionScreen() {
         super(SakuraComponent.get().transClient("word", "reward_option_title"));
         season(BaniraThemes.seasonFor(SakuraSignIn.MODID));
+    }
+
+    private static String ruleInputRegex(ERewardRule rule) {
+        if (rule == ERewardRule.RANDOM_REWARD) {
+            return RewardProbabilityInput.PERCENT_REGEX;
+        }
+        if (rule == ERewardRule.PERSONAL_DATE_REWARD || rule == ERewardRule.LOTTERY_REWARD) {
+            return "[a-z0-9_.-]{0,64}";
+        }
+        return "[\\d +~/:.T-]*";
+    }
+
+    private static String displayRuleInput(ERewardRule rule, String internalKey) {
+        if (rule != ERewardRule.RANDOM_REWARD) {
+            return internalKey == null ? "" : internalKey;
+        }
+        String probability = RewardConfigManager.getDisplayKey(rule, internalKey);
+        return RewardProbabilityInput.display(NumberUtils.toBigDecimal(probability));
+    }
+
+    private static String normalizeRuleInput(ERewardRule rule, String input) {
+        String trimmed = input == null ? "" : input.trim();
+        return rule == ERewardRule.RANDOM_REWARD
+                ? NumberUtils.toFixedEx(RewardProbabilityInput.parse(trimmed), 10)
+                : trimmed;
     }
 
     @Override
