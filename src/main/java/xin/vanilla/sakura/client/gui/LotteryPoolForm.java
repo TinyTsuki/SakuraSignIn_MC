@@ -13,10 +13,7 @@ import xin.vanilla.sakura.data.lottery.LotteryPoolValidator;
 import xin.vanilla.sakura.reward.RewardList;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /** 奖池规则使用明确选项配置，避免玩家猜测策略枚举与数值含义。 */
 public final class LotteryPoolForm {
@@ -51,21 +48,22 @@ public final class LotteryPoolForm {
                 Arrays.stream(LotteryLimitPolicy.values()).map(policy -> option(
                         policy.name(), "lottery_policy_" + policy.name().toLowerCase()))
                         .toArray(DropdownOption[]::new)));
-        List<String> counts = IntStream.rangeClosed(1, 30).mapToObj(String::valueOf)
-                .collect(Collectors.toList());
-        args.addWidget(valueDropdown("maxDraws", "lottery_max_draws",
-                existing == null ? "1" : String.valueOf(existing.getMaxDraws()), counts,
-                "lottery_max_draws_tooltip"));
-        List<String> cooldowns = Arrays.asList("0", "30", "60", "300", "600", "1800",
-                "3600", "21600", "43200", "86400", "604800");
-        args.addWidget(valueDropdown("cooldown", "lottery_cooldown_seconds",
-                existing == null ? "0" : String.valueOf(existing.getCooldownSeconds()),
-                cooldowns, "lottery_cooldown_tooltip"));
+        args.addWidget(number("maxDraws", "lottery_max_draws",
+                "lottery_max_draws_tooltip",
+                existing == null ? 1 : existing.getMaxDraws(), 1, 100));
+        args.addWidget(number("cooldown", "lottery_cooldown_seconds",
+                "lottery_cooldown_tooltip",
+                existing == null ? 0 : existing.getCooldownSeconds(), 0, 31_536_000));
+        args.addWidget(dropdown("showRewards", "lottery_show_rewards",
+                String.valueOf(existing == null || existing.isShowRewards()),
+                option("true", "lottery_show_rewards_yes"),
+                option("false", "lottery_show_rewards_no")));
         args.setCallback(results -> {
             LotteryPool candidate = new LotteryPool(results.value("id"), results.value("name"),
                     LotteryLimitPolicy.valueOf(results.value("policy")),
                     Integer.parseInt(results.value("maxDraws")),
                     Integer.parseInt(results.value("cooldown")),
+                    Boolean.parseBoolean(results.value("showRewards")),
                     existing == null ? new RewardList() : existing.getRewards());
             if (LotteryPoolValidator.validate(candidate).isEmpty()) {
                 submit.accept(candidate);
@@ -74,14 +72,20 @@ public final class LotteryPoolForm {
         return new InputFormScreen(args);
     }
 
-    private static InputFormScreen.Widget valueDropdown(String name, String titleKey,
-                                                        String value, List<String> values,
-                                                        String tooltipKey) {
-        DropdownOption[] options = values.stream().map(option -> new DropdownOption(
-                option, option, net.minecraft.item.ItemStack.EMPTY, null,
-                SakuraComponent.get().transClient("word", tooltipKey)))
-                .toArray(DropdownOption[]::new);
-        return dropdown(name, titleKey, value, options);
+    private static InputFormScreen.Widget number(String name, String titleKey,
+                                                 String hintKey, int value,
+                                                 int min, int max) {
+        return new InputFormScreen.Widget().name(name).title(text(titleKey))
+                .hint(text(hintKey)).regex("[0-9]{1,8}")
+                .defaultValue(String.valueOf(value))
+                .validator(result -> {
+                    try {
+                        int parsed = Integer.parseInt(result.value());
+                        return parsed >= min && parsed <= max ? "" : tr("lottery_number_range");
+                    } catch (NumberFormatException ignored) {
+                        return tr("lottery_number_range");
+                    }
+                });
     }
 
     private static InputFormScreen.Widget dropdown(String name, String titleKey,

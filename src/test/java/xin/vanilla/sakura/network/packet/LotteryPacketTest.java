@@ -30,11 +30,23 @@ public class LotteryPacketTest {
         Reward winner = Reward.getDefault();
         TestBaniraPacketBuffer buffer = new TestBaniraPacketBuffer();
 
-        new LotteryRevealPacket("Pool", winner, Arrays.asList(winner, winner)).toBytes(buffer);
+        new LotteryRevealPacket("Pool", Arrays.asList(winner, winner),
+                Arrays.asList(winner, winner), true).toBytes(buffer);
         LotteryRevealPacket restored = new LotteryRevealPacket(buffer);
 
         assertEquals("Pool", restored.getPoolName());
-        assertEquals(winner, restored.getWinner());
+        assertEquals(2, restored.getWinners().size());
         assertEquals(2, restored.getPreview().size());
+        assertEquals(true, restored.isPreviewVisible());
+    }
+
+    @Test
+    public void drawRequestKeepsPoolAndBatchCount() {
+        TestBaniraPacketBuffer buffer = new TestBaniraPacketBuffer();
+        new LotteryDrawRequestPacket("daily", 15).toBytes(buffer);
+
+        LotteryDrawRequestPacket restored = new LotteryDrawRequestPacket(buffer);
+        assertEquals("daily", restored.getPoolId());
+        assertEquals(15, restored.getCount());
     }
 }
