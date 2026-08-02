@@ -35,9 +35,8 @@ public final class HelpCommand {
             new KeyValue<>("/sakura card give <num>[ <player>]", "card_give"),
             new KeyValue<>("/sakura card set <num>[ <player>]", "card_set"),
             new KeyValue<>("/sakura card get <player>", "card_get"),
-            new KeyValue<>("/sakura config get", "config_get"),
-            new KeyValue<>("/sakura config set date <year> <month> <day> <hour> <minute> <second>",
-                    "config_set_date")
+            new KeyValue<>("/sakura config common <configKey> <configValue>", "config_common"),
+            new KeyValue<>("/sakura config player personalDate", "config_personal_date")
     );
 
     private HelpCommand() {

@@ -1,7 +1,10 @@
 package xin.vanilla.sakura.api.reward.client;
 
 import lombok.Value;
+import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.sakura.api.reward.RewardTypeId;
+import xin.vanilla.sakura.reward.Reward;
+import xin.vanilla.sakura.reward.RewardOperations;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -58,6 +61,34 @@ public final class SakuraRewardClient {
 
     public static synchronized boolean isFrozen() {
         return frozen;
+    }
+
+    /** 客户端名称和图标必须由同一展示扩展解析。 */
+    public static Component displayName(Reward reward, String languageCode,
+                                        boolean withAmount) {
+        Registration<?> registration = reward == null ? null
+                : find(reward.getTypeId()).orElse(null);
+        if (registration == null) {
+            return reward == null ? xin.vanilla.sakura.SakuraComponent.get().literal("")
+                    : RewardOperations.describe(languageCode, reward, withAmount);
+        }
+        try {
+            return displayNameResolved(registration, reward, languageCode, withAmount);
+        } catch (RuntimeException exception) {
+            return RewardOperations.describe(languageCode, reward, withAmount);
+        }
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private static Component displayNameResolved(Registration registration, Reward reward,
+                                                 String languageCode, boolean withAmount) {
+        Object value = RewardOperations.decode(reward);
+        RewardDisplayContext context = new RewardDisplayContext() {
+            @Override public Reward reward() { return reward; }
+            @Override public String languageCode() { return languageCode; }
+            @Override public boolean withAmount() { return withAmount; }
+        };
+        return registration.getExtension().getPresentation().displayName(context, value);
     }
 
     static synchronized void clearForTests() {

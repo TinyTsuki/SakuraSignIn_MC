@@ -16,6 +16,7 @@ import xin.vanilla.sakura.network.packet.PlayerDataSyncPacket;
 import xin.vanilla.sakura.network.packet.PlayerMonthSyncPacket;
 import xin.vanilla.sakura.network.packet.RewardOptionSyncPacket;
 import xin.vanilla.sakura.network.packet.PersonalDatePresetSyncPacket;
+import xin.vanilla.sakura.network.packet.CommonConfigSnapshotPacket;
 import xin.vanilla.sakura.data.personaldate.PersonalDatePresets;
 import xin.vanilla.sakura.config.reward.RewardConfigManager;
 import xin.vanilla.sakura.notification.SakuraClientNotifications;
@@ -107,6 +108,14 @@ public class ClientProxy {
         } else {
             SakuraClientNotifications.error(message, SakuraNotificationTypes.REWARD);
         }
+    }
+
+    public static void handleCommonConfigSnapshot(CommonConfigSnapshotPacket packet) {
+        packet.applyToClient();
+        SakuraClientNotifications.success(
+                SakuraComponent.get().transClient("word", "common_config_sync_success"),
+                SakuraNotificationTypes.CONFIG
+        );
     }
 
     public static void handlePersonalDatePresetSync(PersonalDatePresetSyncPacket packet) {
