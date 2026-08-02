@@ -48,6 +48,8 @@ public final class SakuraNetwork {
                 PlayerMonthSyncPacket::new, PlayerMonthSyncPacket::handle);
         HANDLER.register(ClientConfigSyncPacket.class, ClientConfigSyncPacket::toBytes,
                 ClientConfigSyncPacket::new, ClientConfigSyncPacket::handle);
+        HANDLER.register(CommonConfigSnapshotPacket.class, CommonConfigSnapshotPacket::toBytes,
+                CommonConfigSnapshotPacket::new, CommonConfigSnapshotPacket::handle);
         HANDLER.registerSplit(RewardOptionSyncPacket.class, RewardOptionSyncPacket::toBytes,
                 RewardOptionSyncPacket::new, RewardOptionSyncPacket::handle);
         HANDLER.register(ItemStackPacket.class, ItemStackPacket::toBytes,
@@ -117,7 +119,7 @@ public final class SakuraNetwork {
             return;
         }
         ServerPlayerEntity player = (ServerPlayerEntity) playerObject;
-        CommonConfig.syncToPlayer(player);
+        sendToPlayer(new CommonConfigSnapshotPacket(CommonConfig.networkSnapshot()), player);
         SakuraPlayerData.sync(player);
         sendToPlayer(new ServerTimeSyncPacket(), player);
         sendSplitToPlayer(RewardConfigManager.toSyncPacket(player), player);

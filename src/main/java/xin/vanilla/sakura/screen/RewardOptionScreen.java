@@ -85,6 +85,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -167,6 +168,9 @@ public class RewardOptionScreen extends BaniraScreen {
     private String dragTargetGroupKey;
     private double dragMouseX;
     private double dragMouseY;
+    private int heldNavigationKey = -1;
+    private long navigationHeldSince;
+    private long nextNavigationRepeatAt;
     /**
      * 弹出菜单会在回调前清空，因此由界面保存本次菜单的业务上下文。
      */
@@ -410,7 +414,8 @@ public class RewardOptionScreen extends BaniraScreen {
 
     /** 奖励悬浮提示只描述奖励本身，操作说明集中在首屏帮助。 */
     private Text rewardItemTooltip(Reward reward) {
-        return Text.from(reward.getName(SakuraUtils.getClientLanguage(), true).clone());
+        return Text.from(SakuraRewardClient.displayName(
+                reward, SakuraUtils.getClientLanguage(), true).clone());
     }
 
     private boolean isRewardGroupCollapsed(String key) {
@@ -1488,75 +1493,10 @@ public class RewardOptionScreen extends BaniraScreen {
                 }));
     }
 
-    private StringInputScreen getPersonalDatePresetInputScreen(
+    private Screen getPersonalDatePresetInputScreen(
             Screen callbackScreen, PersonalDatePreset existing, String[] createdKey) {
-        StringList defaults = existing == null
-                ? new StringList("", "", "YEARLY", "minecraft:gregorian", "1",
-                "SIGN_IN", "0", "0")
-                : new StringList(existing.getId(), existing.getDisplayName(),
-                existing.getRecurrence().name(), String.join(",", existing.getCalendarIds()),
-                String.valueOf(existing.getMaxDateSlots()), existing.getDeliveryMode().name(),
-                String.valueOf(existing.getValidBeforeDays()),
-                String.valueOf(existing.getValidAfterDays()));
-        return new StringInputScreen(callbackScreen,
-                new TextList(
-                        Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.personal_date_preset_id"),
-                        Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.personal_date_preset_name"),
-                        Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.personal_date_recurrence"),
-                        Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.personal_date_calendars"),
-                        Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.personal_date_slots"),
-                        Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.personal_date_delivery"),
-                        Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.personal_date_before"),
-                        Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.personal_date_after")),
-                new TextList(Text.trans(SakuraSignIn.MODID,
-                        "word.sakura_sign_in.personal_date_preset_hint")),
-                new StringList("[a-z0-9_.-]{1,64}", ".{1,64}", "YEARLY|MONTHLY",
-                        "[a-z0-9_.:/,-]+", "[0-9]{1,2}", "SIGN_IN|ONLINE",
-                        "[0-9]{1,3}", "[0-9]{1,3}"), defaults, values -> {
-                    StringList errors = new StringList("", "", "", "", "", "", "", "");
-                    List<String> calendarIds = Arrays.stream(values.get(3).split(","))
-                            .map(String::trim).filter(StringUtils::isNotNullOrEmpty)
-                            .distinct().collect(Collectors.toList());
-                    RewardList rewards = existing == null
-                            ? new RewardList() : existing.getRewards();
-                    PersonalDatePreset candidate;
-                    try {
-                        candidate = new PersonalDatePreset(values.get(0), values.get(1),
-                                PersonalDateRecurrence.valueOf(values.get(2)), calendarIds,
-                                NumberUtils.toInt(values.get(4)),
-                                PersonalDateDeliveryMode.valueOf(values.get(5)),
-                                NumberUtils.toInt(values.get(6)), NumberUtils.toInt(values.get(7)),
-                                rewards);
-                    } catch (RuntimeException invalid) {
-                        errors.set(0, SakuraComponent.get().transClient(
-                                "word", "personal_date_preset_invalid").toString());
-                        return errors;
-                    }
-                    List<String> validation = PersonalDatePresetValidator.validate(candidate);
-                    if (calendarIds.stream().anyMatch(id ->
-                            !SakuraClientState.getCalendarNames().containsKey(id))) {
-                        validation = new ArrayList<>(validation);
-                        validation.add("calendarIds");
-                    }
-                    if (!validation.isEmpty()) {
-                        errors.set(0, SakuraComponent.get().transClient(
-                                "word", "personal_date_preset_invalid").toString());
-                        return errors;
-                    }
-                    if (existing != null && !existing.getId().equals(candidate.getId())) {
-                        errors.set(0, SakuraComponent.get().transClient(
-                                "word", "personal_date_preset_id_locked").toString());
-                        return errors;
-                    }
-                    boolean duplicate = RewardConfigManager.getRewardConfig()
-                            .getPersonalDatePresets().stream()
-                            .anyMatch(value -> value != existing
-                                    && candidate.getId().equals(value.getId()));
-                    if (duplicate) {
-                        errors.set(0, SakuraComponent.get().transClient(
-                                "word", "personal_date_preset_duplicate").toString());
-                        return errors;
-                    }
+        return xin.vanilla.sakura.client.gui.PersonalDatePresetForm.create(
+                callbackScreen, existing, candidate -> {
                     RewardConfigManager.addUndoRewardOption(ERewardRule.PERSONAL_DATE_REWARD);
                     if (existing == null) {
                         RewardConfigManager.getRewardConfig().getPersonalDatePresets().add(candidate);
@@ -1569,7 +1509,6 @@ public class RewardOptionScreen extends BaniraScreen {
                     createdKey[0] = candidate.getId();
                     RewardConfigManager.saveRewardOption();
                     updateLayout();
-                    return errors;
                 });
     }
 
@@ -2402,17 +2341,67 @@ public class RewardOptionScreen extends BaniraScreen {
         } else if (eventArgs.keyCode() == GLFWKey.GLFW_KEY_F5) {
             refreshRewardScreen();
             eventArgs.consumed(true);
-        } else if (moveRewardSelection(eventArgs.keyCode())) {
+        } else if (beginNavigation(eventArgs.keyCode())) {
             eventArgs.consumed(true);
         }
     }
 
+    @Override
+    public void tick() {
+        super.tick();
+        repeatHeldNavigation();
+    }
+
     /** 重新构建当前奖励界面，并恢复默认垂直偏移。 */
     private void refreshRewardScreen() {
+        rewardSelection.clear();
+        currRewardButton = null;
+        draggingRewardId = null;
+        dragTargetGroupKey = null;
+        popupOption.clear();
+        clearHeldNavigation();
         yOffsetResetTime = 0;
         yOffsetOld = 0;
         setYOffset(0);
         updateLayout();
+    }
+
+    private boolean beginNavigation(int keyCode) {
+        if (navigationDirection(keyCode) == null) {
+            return false;
+        }
+        if (heldNavigationKey == keyCode) {
+            return true;
+        }
+        if (!moveRewardSelection(keyCode)) {
+            return false;
+        }
+        long now = System.currentTimeMillis();
+        heldNavigationKey = keyCode;
+        navigationHeldSince = now;
+        nextNavigationRepeatAt = now + 350L;
+        return true;
+    }
+
+    private void repeatHeldNavigation() {
+        if (heldNavigationKey < 0 || !InputStateManager.isKeyPressing(heldNavigationKey)) {
+            clearHeldNavigation();
+            return;
+        }
+        long now = System.currentTimeMillis();
+        if (now < nextNavigationRepeatAt) {
+            return;
+        }
+        moveRewardSelection(heldNavigationKey);
+        long heldMillis = now - navigationHeldSince;
+        long interval = Math.max(50L, 180L - heldMillis / 15L);
+        nextNavigationRepeatAt = now + interval;
+    }
+
+    private void clearHeldNavigation() {
+        heldNavigationKey = -1;
+        navigationHeldSince = 0;
+        nextNavigationRepeatAt = 0;
     }
 
     private boolean moveRewardSelection(int keyCode) {
@@ -2426,22 +2415,40 @@ public class RewardOptionScreen extends BaniraScreen {
             return false;
         }
         List<RewardKeyboardNavigator.Point> points = new ArrayList<>();
+        List<String> orderedIds = new ArrayList<>();
         REWARD_BUTTONS.forEach((id, widget) -> {
             if (!id.startsWith("标题")) {
+                orderedIds.add(id);
                 points.add(new RewardKeyboardNavigator.Point(
                         id,
                         widget.realX() + widget.realWidth() / 2.0,
                         widget.realY() + widget.realHeight() / 2.0));
             }
         });
-        String next = RewardKeyboardNavigator.findNext(
-                rewardSelection.primary(), points, direction);
-        if (next == null) {
+        LinkedHashSet<String> moved = new LinkedHashSet<>();
+        boolean changed = false;
+        for (String selected : rewardSelection.selectedIds()) {
+            if (selected.startsWith("标题") || !orderedIds.contains(selected)) {
+                continue;
+            }
+            String next = RewardKeyboardNavigator.findNext(selected, points, direction);
+            if (next == null && (direction == RewardKeyboardNavigator.Direction.LEFT
+                    || direction == RewardKeyboardNavigator.Direction.RIGHT)) {
+                int index = orderedIds.indexOf(selected)
+                        + (direction == RewardKeyboardNavigator.Direction.RIGHT ? 1 : -1);
+                if (index >= 0 && index < orderedIds.size()) {
+                    next = orderedIds.get(index);
+                }
+            }
+            moved.add(next == null ? selected : next);
+            changed |= next != null && !next.equals(selected);
+        }
+        if (!changed || moved.isEmpty()) {
             return false;
         }
-        rewardSelection.selectOnly(next);
-        currRewardButton = next;
-        ensureRewardVisible(next);
+        rewardSelection.selectOnly(moved);
+        currRewardButton = rewardSelection.primary();
+        ensureRewardVisible(currRewardButton);
         return true;
     }
 
@@ -2477,6 +2484,9 @@ public class RewardOptionScreen extends BaniraScreen {
 
     @Override
     protected void onKeyReleased(KeyReleasedHandleArgs eventArgs) {
+        if (eventArgs.keyCode() == heldNavigationKey) {
+            clearHeldNavigation();
+        }
         if (isCurrentRuleRedacted()) {
             return;
         }

@@ -49,6 +49,7 @@ public final class SakuraClientBootstrap {
                 ClientProxy::handleAdvancement,
                 ClientProxy::handleRewardOptionSync,
                 ClientProxy::handlePersonalDatePresetSync,
+                ClientProxy::handleCommonConfigSnapshot,
                 ClientProxy::handleRewardOptionUploadResult
         );
         BaniraClientEvents.ModLifecycle.onClientSetup(event -> {

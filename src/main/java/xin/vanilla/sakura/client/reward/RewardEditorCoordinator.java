@@ -3,6 +3,8 @@ package xin.vanilla.sakura.client.reward;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.util.text.StringTextComponent;
+import com.mojang.blaze3d.matrix.MatrixStack;
+import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.sakura.api.reward.RewardTypeId;
 import xin.vanilla.sakura.api.reward.client.RewardClientExtension;
 import xin.vanilla.sakura.api.reward.client.RewardEditContext;
@@ -121,7 +123,7 @@ public final class RewardEditorCoordinator {
         return true;
     }
 
-    private static final class ValueTransitionScreen<T> extends Screen {
+    private static final class ValueTransitionScreen<T> extends BaniraScreen {
         private final Screen parent;
         private final Consumer<T> continuation;
         @Nullable
@@ -132,6 +134,8 @@ public final class RewardEditorCoordinator {
             super(new StringTextComponent(""));
             this.parent = parent;
             this.continuation = continuation;
+            previousScreen(parent);
+            BaniraScreen.inheritThemeAndSeason(this, parent, null, null);
         }
 
         private void submit(T value) {
@@ -144,16 +148,20 @@ public final class RewardEditorCoordinator {
         }
 
         @Override
-        protected void init() {
+        protected void initWidgets() {
             if (submitted) {
                 continuation.accept(value);
             } else {
                 Minecraft.getInstance().setScreen(parent);
             }
         }
+
+        @Override
+        protected void onRender(MatrixStack stack, float partialTicks) {
+        }
     }
 
-    private static final class DeferredScreen extends Screen {
+    private static final class DeferredScreen extends BaniraScreen {
         private final Screen parent;
         private final Runnable continuation;
         private final java.util.function.BooleanSupplier shouldContinue;
@@ -164,15 +172,21 @@ public final class RewardEditorCoordinator {
             this.parent = parent;
             this.continuation = continuation;
             this.shouldContinue = shouldContinue;
+            previousScreen(parent);
+            BaniraScreen.inheritThemeAndSeason(this, parent, null, null);
         }
 
         @Override
-        protected void init() {
+        protected void initWidgets() {
             if (shouldContinue.getAsBoolean()) {
                 continuation.run();
             } else {
                 Minecraft.getInstance().setScreen(parent);
             }
+        }
+
+        @Override
+        protected void onRender(MatrixStack stack, float partialTicks) {
         }
     }
 }
