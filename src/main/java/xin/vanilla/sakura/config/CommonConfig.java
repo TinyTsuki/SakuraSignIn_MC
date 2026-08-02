@@ -11,9 +11,7 @@ import xin.vanilla.banira.common.config.ConfigScope;
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
 import xin.vanilla.banira.common.config.annotation.Config;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
-import xin.vanilla.banira.common.network.packet.ConfigSnapshotToClient;
 import xin.vanilla.banira.common.network.packet.ConfigSyncToServer;
-import xin.vanilla.banira.api.BaniraNetwork;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.access.CommonConfigAccess;
 import xin.vanilla.sakura.data.player.HistoryRetentionPolicy;
@@ -95,10 +93,10 @@ public class CommonConfig implements ConfigData {
     /**
      * 多人游戏登录时将服务端 COMMON 配置写入客户端运行时视图。
      */
-    public static void syncToPlayer(Object player) {
+    public static Map<String, String> networkSnapshot() {
         ConfigHolder holder = BaniraConfig.holder(CommonConfig.class);
         if (holder == null) {
-            return;
+            return java.util.Collections.emptyMap();
         }
         Map<String, String> snapshot = new LinkedHashMap<>();
         for (ConfigEntryDescriptor descriptor : holder.getDescriptors()) {
@@ -108,10 +106,7 @@ public class CommonConfig implements ConfigData {
                     value != null ? ConfigSyncToServer.encodeConfigValue(value) : ""
             );
         }
-        BaniraNetwork.sendToPlayer(
-                new ConfigSnapshotToClient(holder.getConfigName(), snapshot),
-                player
-        );
+        return snapshot;
     }
 
     public interface RootView {
