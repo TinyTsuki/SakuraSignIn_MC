@@ -155,7 +155,8 @@ public class GLFWKeyHelper {
     }
 
     public static boolean matchKey(String displayString, int... codes) {
-        List<String> generated = getKeyDisplayNames(true, codes);
+        List<String> generated = getKeyDisplayNames(true, codes).stream()
+                .map(GLFWKeyHelper::normalizeModifierName).collect(Collectors.toList());
         List<String> inputKeys = parseDisplayString(displayString);
         // 按照小写字母排序后再比较
         Comparator<String> comp = Comparator.comparing(String::toLowerCase);
@@ -165,7 +166,8 @@ public class GLFWKeyHelper {
     }
 
     public static boolean matchKeyInOrder(String displayString, int... codes) {
-        List<String> generated = getKeyDisplayNames(false, codes);
+        List<String> generated = getKeyDisplayNames(false, codes).stream()
+                .map(GLFWKeyHelper::normalizeModifierName).collect(Collectors.toList());
         List<String> inputKeys = parseDisplayString(displayString);
         return generated.equals(inputKeys);
     }
@@ -191,10 +193,20 @@ public class GLFWKeyHelper {
 
         for (String part : displayString.split("\\+")) {
             if (!part.trim().isEmpty()) {
-                list.add(part.trim());
+                list.add(normalizeModifierName(part.trim()));
             }
         }
         return list;
+    }
+
+    private static String normalizeModifierName(String name) {
+        String lower = name.toLowerCase(Locale.ROOT);
+        if (lower.equals("ctrl") || lower.equals("leftctrl") || lower.equals("rightctrl")
+                || lower.equals("leftcontrol") || lower.equals("rightcontrol")) return "Ctrl";
+        if (lower.equals("shift") || lower.equals("leftshift") || lower.equals("rightshift")) return "Shift";
+        if (lower.equals("alt") || lower.equals("leftalt") || lower.equals("rightalt")) return "Alt";
+        if (lower.equals("super") || lower.equals("leftsuper") || lower.equals("rightsuper")) return "Super";
+        return name;
     }
 
     private static String formatRecordName(String name) {

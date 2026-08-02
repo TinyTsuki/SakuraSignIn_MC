@@ -122,25 +122,31 @@ public class ClientConfig implements ConfigData {
     @Accessors(chain = true, fluent = true)
     public static class RewardKeysCategory {
         @ConfigEntry.Gui.Tooltip(zh_cn = "复制选中奖励的快捷键", en_us = "Keyboard shortcuts for copying selected rewards")
+        @ConfigEntry.Gui.KeyChords
         private List<String> copy = Arrays.asList(
                 key(GLFWKey.GLFW_KEY_LEFT_CONTROL, GLFWKey.GLFW_KEY_C),
                 key(GLFWKey.GLFW_KEY_RIGHT_CONTROL, GLFWKey.GLFW_KEY_C));
         @ConfigEntry.Gui.Tooltip(zh_cn = "粘贴奖励的快捷键", en_us = "Keyboard shortcuts for pasting rewards")
+        @ConfigEntry.Gui.KeyChords
         private List<String> paste = Arrays.asList(
                 key(GLFWKey.GLFW_KEY_LEFT_CONTROL, GLFWKey.GLFW_KEY_V),
                 key(GLFWKey.GLFW_KEY_RIGHT_CONTROL, GLFWKey.GLFW_KEY_V));
         @ConfigEntry.Gui.Tooltip(zh_cn = "剪切选中奖励的快捷键", en_us = "Keyboard shortcuts for cutting selected rewards")
+        @ConfigEntry.Gui.KeyChords
         private List<String> cut = Arrays.asList(
                 key(GLFWKey.GLFW_KEY_LEFT_CONTROL, GLFWKey.GLFW_KEY_X),
                 key(GLFWKey.GLFW_KEY_RIGHT_CONTROL, GLFWKey.GLFW_KEY_X));
         @ConfigEntry.Gui.Tooltip(zh_cn = "删除选中奖励的快捷键", en_us = "Keyboard shortcuts for deleting selected rewards")
+        @ConfigEntry.Gui.KeyChords
         private List<String> delete = Arrays.asList(
                 key(GLFWKey.GLFW_KEY_DELETE));
         @ConfigEntry.Gui.Tooltip(zh_cn = "撤销奖励配置修改的快捷键", en_us = "Keyboard shortcuts for undoing reward changes")
+        @ConfigEntry.Gui.KeyChords
         private List<String> undo = Arrays.asList(
                 key(GLFWKey.GLFW_KEY_LEFT_CONTROL, GLFWKey.GLFW_KEY_Z),
                 key(GLFWKey.GLFW_KEY_RIGHT_CONTROL, GLFWKey.GLFW_KEY_Z));
         @ConfigEntry.Gui.Tooltip(zh_cn = "重做奖励配置修改的快捷键", en_us = "Keyboard shortcuts for redoing reward changes")
+        @ConfigEntry.Gui.KeyChords
         private List<String> redo = Arrays.asList(
                 key(GLFWKey.GLFW_KEY_LEFT_CONTROL, GLFWKey.GLFW_KEY_LEFT_SHIFT, GLFWKey.GLFW_KEY_Z),
                 key(GLFWKey.GLFW_KEY_RIGHT_CONTROL, GLFWKey.GLFW_KEY_RIGHT_SHIFT, GLFWKey.GLFW_KEY_Z));
@@ -151,15 +157,19 @@ public class ClientConfig implements ConfigData {
     @Accessors(chain = true, fluent = true)
     public static class SignKeysCategory {
         @ConfigEntry.Gui.Tooltip(zh_cn = "切换到上个月的快捷键", en_us = "Keyboard shortcuts for the previous month")
+        @ConfigEntry.Gui.KeyChords
         private List<String> lastMonth = Arrays.asList(
                 key(GLFWKey.GLFW_KEY_LEFT));
         @ConfigEntry.Gui.Tooltip(zh_cn = "切换到下个月的快捷键", en_us = "Keyboard shortcuts for the next month")
+        @ConfigEntry.Gui.KeyChords
         private List<String> nextMonth = Arrays.asList(
                 key(GLFWKey.GLFW_KEY_RIGHT));
         @ConfigEntry.Gui.Tooltip(zh_cn = "切换到上一年的快捷键", en_us = "Keyboard shortcuts for the previous year")
+        @ConfigEntry.Gui.KeyChords
         private List<String> lastYear = Arrays.asList(
                 key(GLFWKey.GLFW_KEY_UP));
         @ConfigEntry.Gui.Tooltip(zh_cn = "切换到下一年的快捷键", en_us = "Keyboard shortcuts for the next year")
+        @ConfigEntry.Gui.KeyChords
         private List<String> nextYear = Arrays.asList(
                 key(GLFWKey.GLFW_KEY_DOWN));
     }
