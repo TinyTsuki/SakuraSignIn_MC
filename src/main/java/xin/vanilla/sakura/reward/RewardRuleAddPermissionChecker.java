@@ -45,8 +45,12 @@ public final class RewardRuleAddPermissionChecker {
         if (config == null) {
             return 0;
         }
-        return rule == ERewardRule.PERSONAL_DATE_REWARD
-                ? config.getPersonalDatePresets().size()
-                : RewardConfigManager.getRewardMap(config, rule).size();
+        if (rule == ERewardRule.PERSONAL_DATE_REWARD) {
+            return config.getPersonalDatePresets().size();
+        }
+        if (rule == ERewardRule.LOTTERY_REWARD) {
+            return config.getLotteryPools().size();
+        }
+        return RewardConfigManager.getRewardMap(config, rule).size();
     }
 }

@@ -7,6 +7,7 @@ import net.minecraft.nbt.ListNBT;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.sakura.data.player.MonthSignInIndex;
 import xin.vanilla.sakura.data.personaldate.PlayerPersonalDateSlot;
+import xin.vanilla.sakura.data.lottery.LotteryDrawState;
 import xin.vanilla.banira.common.util.DateUtils;
 import xin.vanilla.sakura.util.SakuraUtils;
 
@@ -37,6 +38,7 @@ public class PlayerSignInData implements IPlayerSignInData {
     private List<PlayerPersonalDateSlot> personalDateSlots;
     private String onlineTimeBaselineDate = "";
     private int onlineTimeBaselineTicks;
+    private List<LotteryDrawState> lotteryDrawStates = new ArrayList<>();
     private String language = "client";
 
     @Override
@@ -246,6 +248,22 @@ public class PlayerSignInData implements IPlayerSignInData {
     }
 
     @Override
+    public @NonNull List<LotteryDrawState> getLotteryDrawStates() {
+        lotteryDrawStates.removeIf(Objects::isNull);
+        return lotteryDrawStates;
+    }
+
+    @Override
+    public void setLotteryDrawStates(List<LotteryDrawState> states) {
+        lotteryDrawStates = new ArrayList<>();
+        if (states != null) {
+            states.stream().filter(Objects::nonNull)
+                    .map(state -> LotteryDrawState.deserializeNBT(state.serializeNBT()))
+                    .forEach(lotteryDrawStates::add);
+        }
+    }
+
+    @Override
     public String getLanguage() {
         return this.language;
     }
@@ -274,6 +292,7 @@ public class PlayerSignInData implements IPlayerSignInData {
         this.setPersonalDateSlots(capability.getPersonalDateSlots());
         this.setOnlineTimeBaselineDate(capability.getOnlineTimeBaselineDate());
         this.setOnlineTimeBaselineTicks(capability.getOnlineTimeBaselineTicks());
+        this.setLotteryDrawStates(capability.getLotteryDrawStates());
     }
 
     @Override
@@ -313,6 +332,9 @@ public class PlayerSignInData implements IPlayerSignInData {
         tag.put("personalDateSlots", personalDateSlotsNBT);
         tag.putString("onlineTimeBaselineDate", getOnlineTimeBaselineDate());
         tag.putInt("onlineTimeBaselineTicks", getOnlineTimeBaselineTicks());
+        ListNBT lotteryStatesNBT = new ListNBT();
+        getLotteryDrawStates().forEach(state -> lotteryStatesNBT.add(state.serializeNBT()));
+        tag.put("lotteryDrawStates", lotteryStatesNBT);
         return tag;
     }
 
@@ -357,6 +379,12 @@ public class PlayerSignInData implements IPlayerSignInData {
         this.setPersonalDateSlots(slots);
         this.setOnlineTimeBaselineDate(nbt.getString("onlineTimeBaselineDate"));
         this.setOnlineTimeBaselineTicks(nbt.getInt("onlineTimeBaselineTicks"));
+        List<LotteryDrawState> lotteryStates = new ArrayList<>();
+        ListNBT lotteryStatesNBT = nbt.getList("lotteryDrawStates", 10);
+        for (int i = 0; i < lotteryStatesNBT.size(); i++) {
+            lotteryStates.add(LotteryDrawState.deserializeNBT(lotteryStatesNBT.getCompound(i)));
+        }
+        this.setLotteryDrawStates(lotteryStates);
     }
 
     public int calculateContinuousDays() {

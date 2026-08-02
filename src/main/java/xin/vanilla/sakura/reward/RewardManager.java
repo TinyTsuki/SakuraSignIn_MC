@@ -564,6 +564,20 @@ public class RewardManager {
             if (new Random().nextDouble() > reward.getProbability().add(BigDecimal.valueOf(offset * 0.075)).doubleValue())
                 return false;
         }
+        return grantReward(player, signInData, reward, sourceDate, sourceId);
+    }
+
+    /** 已由外层规则完成抽取时跳过概率判定，避免同一奖励被随机两次。 */
+    public static boolean giveGuaranteedRewardToPlayer(ServerPlayerEntity player,
+                                                       IPlayerSignInData signInData,
+                                                       Reward reward, Date sourceDate,
+                                                       String sourceId) {
+        reward.setRewarded(true);
+        return grantReward(player, signInData, reward, sourceDate, sourceId);
+    }
+
+    private static boolean grantReward(ServerPlayerEntity player, IPlayerSignInData signInData,
+                                       Reward reward, Date sourceDate, String sourceId) {
         RewardGrantResult result = RewardOperations.grant(new RewardGrantContext() {
             @Override
             public ServerPlayerEntity player() {

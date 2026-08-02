@@ -6,6 +6,7 @@ import net.minecraft.nbt.ListNBT;
 import xin.vanilla.sakura.data.player.MonthSignInIndex;
 import xin.vanilla.sakura.data.player.PlayerSignInSummary;
 import xin.vanilla.sakura.data.personaldate.PlayerPersonalDateSlot;
+import xin.vanilla.sakura.data.lottery.LotteryDrawState;
 import xin.vanilla.banira.common.util.DateUtils;
 
 import java.time.LocalDate;
@@ -32,6 +33,11 @@ public final class LegacyPlayerDataParser {
         summary.setCdkRecords(copyList(legacy.getList("cdkRecords", 10)));
         summary.setOnlineTimeBaselineDate(legacy.getString("onlineTimeBaselineDate"));
         summary.setOnlineTimeBaselineTicks(Math.max(0, legacy.getInt("onlineTimeBaselineTicks")));
+        ListNBT lotteryStates = legacy.getList("lotteryDrawStates", 10);
+        for (int i = 0; i < lotteryStates.size(); i++) {
+            summary.getLotteryDrawStates().add(
+                    LotteryDrawState.deserializeNBT(lotteryStates.getCompound(i)));
+        }
         ListNBT indexes = legacy.getList("monthIndexes", 10);
         for (int i = 0; i < indexes.size(); i++) {
             MonthSignInIndex index = MonthSignInIndex.deserializeNBT(indexes.getCompound(i));

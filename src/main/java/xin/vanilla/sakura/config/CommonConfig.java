@@ -183,6 +183,7 @@ public class CommonConfig implements ConfigData {
         String commandCdk();
         String commandCard();
         String commandLanguage();
+        String commandLottery();
     }
 
     public interface ConciseView {
@@ -207,6 +208,7 @@ public class CommonConfig implements ConfigData {
         int permissionRandomReward();
         int permissionCdkReward();
         int permissionPersonalDateReward();
+        int permissionLotteryReward();
         int permissionRewardProbability();
         int permissionRewardDetail();
         int permissionRewardFailedTips();
@@ -317,6 +319,8 @@ public class CommonConfig implements ConfigData {
         private String commandCard = "card";
         @ConfigEntry.Gui.Tooltip(zh_cn = "语言设置子指令名称", en_us = "Language settings subcommand name")
         private String commandLanguage = "language";
+        @ConfigEntry.Gui.Tooltip(zh_cn = "抽奖子指令名称", en_us = "Lottery subcommand name")
+        private String commandLottery = "lottery";
     }
 
     @Getter
@@ -377,6 +381,9 @@ public class CommonConfig implements ConfigData {
         @ConfigEntry.BoundedDiscrete(min = 0, max = 4)
         @ConfigEntry.Gui.Tooltip(zh_cn = "查看个性化日期奖励所需权限等级", en_us = "Permission level required to view personal date rewards")
         private int permissionPersonalDateReward = 0;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 4)
+        @ConfigEntry.Gui.Tooltip(zh_cn = "查看抽奖池所需权限等级", en_us = "Permission level required to view lottery pools")
+        private int permissionLotteryReward = 0;
         @ConfigEntry.BoundedDiscrete(min = 0, max = 4)
         @ConfigEntry.Gui.Tooltip(zh_cn = "查看奖励概率所需权限等级", en_us = "Permission level required to view reward probabilities")
         private int permissionRewardProbability = 0;
