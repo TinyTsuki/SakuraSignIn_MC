@@ -23,21 +23,52 @@ public final class LotteryDrawDispatcher {
 
     public static LotteryDrawBatchResult draw(ServerPlayerEntity player, String poolId,
                                               int count) {
-        LotteryDrawBatchResult result = LotteryRewardService.drawMany(player, poolId, count);
+        boolean animated = BaniraModPresence.isRemoteClientInstalled(player, SakuraSignIn.MODID);
+        if (animated) {
+            PendingLotteryDraws.Pending existing = PendingLotteryDraws.get(player);
+            if (existing != null) {
+                sendReveal(player, existing);
+                return existing.getResult();
+            }
+        }
+        LotteryDrawBatchResult result = animated
+                ? LotteryRewardService.prepareMany(player, poolId, count)
+                : LotteryRewardService.drawMany(player, poolId, count);
         if (result.isSuccess()) {
-            if (BaniraModPresence.isRemoteClientInstalled(player, SakuraSignIn.MODID)) {
-                SakuraNetwork.sendToPlayer(new LotteryRevealPacket(
-                        result.getPool().getDisplayName(), result.getRewards(),
-                        preview(result), result.getPool().isShowRewards()), player);
+            if (animated) {
+                sendReveal(player, PendingLotteryDraws.put(player, result));
             } else {
-                String rewards = result.getRewards().stream().map(reward -> reward.getName(
-                                SakuraUtils.getPlayerLanguage(player), true).toString())
-                        .collect(Collectors.joining(", "));
-                SakuraMessages.send(player, SakuraComponent.get().trans(player, "format",
-                        "lottery_draw_success_s", rewards), SakuraNotificationTypes.REWARD);
+                notifySuccess(player, result);
             }
             return result;
         }
+        notifyFailure(player, result);
+        return result;
+    }
+
+    public static void claim(ServerPlayerEntity player, String token) {
+        LotteryDrawBatchResult result = PendingLotteryDraws.claim(player, token);
+        if (result == null) return;
+        if (result.isSuccess()) notifySuccess(player, result);
+        else notifyFailure(player, result);
+    }
+
+    private static void sendReveal(ServerPlayerEntity player, PendingLotteryDraws.Pending pending) {
+        LotteryDrawBatchResult result = pending.getResult();
+        SakuraNetwork.sendToPlayer(new LotteryRevealPacket(pending.getToken(),
+                result.getPool().getDisplayName(), result.getRewards(), preview(result),
+                result.getPool().getPreviewMode()), player);
+    }
+
+    private static void notifySuccess(ServerPlayerEntity player, LotteryDrawBatchResult result) {
+        String rewards = result.getRewards().stream().map(reward -> reward.getName(
+                        SakuraUtils.getPlayerLanguage(player), true).toString())
+                .collect(Collectors.joining(", "));
+        SakuraMessages.send(player, SakuraComponent.get().trans(player, "format",
+                "lottery_draw_success_s", rewards), SakuraNotificationTypes.REWARD);
+    }
+
+    private static void notifyFailure(ServerPlayerEntity player, LotteryDrawBatchResult result) {
         switch (result.getStatus()) {
             case LIMIT_REACHED:
                 SakuraMessages.send(player, SakuraComponent.get().trans(player, "format",
@@ -58,11 +89,10 @@ public final class LotteryDrawDispatcher {
                         player, "word", "lottery_grant_failed"));
                 break;
         }
-        return result;
     }
 
     private static List<Reward> preview(LotteryDrawBatchResult result) {
-        if (!result.getPool().isShowRewards()) {
+        if (!result.getPool().getPreviewMode().showsItems()) {
             return Collections.emptyList();
         }
         List<Reward> values = new ArrayList<>();

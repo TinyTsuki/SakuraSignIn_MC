@@ -13,7 +13,7 @@ public class LotteryPool {
     private LotteryLimitPolicy limitPolicy = LotteryLimitPolicy.DAILY;
     private int maxDraws = 1;
     private int cooldownSeconds;
-    private boolean showRewards = true;
+    private LotteryPreviewMode previewMode = LotteryPreviewMode.ALL;
     private RewardList rewards = new RewardList();
 
     public LotteryPool(String id, String displayName, LotteryLimitPolicy limitPolicy,
@@ -27,9 +27,9 @@ public class LotteryPool {
     }
 
     public LotteryPool(String id, String displayName, LotteryLimitPolicy limitPolicy,
-                       int maxDraws, int cooldownSeconds, boolean showRewards,
+                       int maxDraws, int cooldownSeconds, LotteryPreviewMode previewMode,
                        RewardList rewards) {
         this(id, displayName, limitPolicy, maxDraws, cooldownSeconds, rewards);
-        this.showRewards = showRewards;
+        this.previewMode = previewMode == null ? LotteryPreviewMode.ALL : previewMode;
     }
 }

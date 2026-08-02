@@ -30,6 +30,8 @@ public final class RewardProbabilityFlow {
     ) {
         InputFormScreen.Widget probability = new InputFormScreen.Widget()
                 .title(Text.literal(translation("enter_reward_probability")))
+                .tooltip(Text.literal(translation("reward_probability_tooltip")))
+                .maxLength(16)
                 .regex(RewardProbabilityInput.PERCENT_REGEX)
                 .defaultValue(RewardProbabilityInput.display(defaultProbability))
                 .validator(result -> {

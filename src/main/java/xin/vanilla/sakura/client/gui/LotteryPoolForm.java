@@ -10,6 +10,7 @@ import xin.vanilla.sakura.config.reward.RewardConfigManager;
 import xin.vanilla.sakura.data.lottery.LotteryLimitPolicy;
 import xin.vanilla.sakura.data.lottery.LotteryPool;
 import xin.vanilla.sakura.data.lottery.LotteryPoolValidator;
+import xin.vanilla.sakura.data.lottery.LotteryPreviewMode;
 import xin.vanilla.sakura.reward.RewardList;
 
 import java.util.Arrays;
@@ -27,6 +28,8 @@ public final class LotteryPoolForm {
                 .setHeaderTitle(text("lottery_pool_title"));
         args.addWidget(new InputFormScreen.Widget().name("id")
                 .title(text("lottery_pool_id")).hint(text("lottery_pool_id_hint"))
+                .tooltip(text("lottery_pool_id_hint"))
+                .maxLength(64)
                 .regex("[a-z0-9_.-]{1,64}")
                 .defaultValue(existing == null ? "" : existing.getId())
                 .validator(result -> {
@@ -40,6 +43,8 @@ public final class LotteryPoolForm {
                 }));
         args.addWidget(new InputFormScreen.Widget().name("name")
                 .title(text("lottery_pool_name")).hint(text("lottery_pool_name_hint"))
+                .tooltip(text("lottery_pool_name_hint"))
+                .maxLength(96)
                 .regex(".{1,96}")
                 .defaultValue(existing == null ? "" : existing.getDisplayName()));
         args.addWidget(dropdown("policy", "lottery_limit_policy",
@@ -50,20 +55,21 @@ public final class LotteryPoolForm {
                         .toArray(DropdownOption[]::new)));
         args.addWidget(number("maxDraws", "lottery_max_draws",
                 "lottery_max_draws_tooltip",
-                existing == null ? 1 : existing.getMaxDraws(), 1, 100));
+                existing == null ? 1 : existing.getMaxDraws(), 1, 10_000));
         args.addWidget(number("cooldown", "lottery_cooldown_seconds",
                 "lottery_cooldown_tooltip",
                 existing == null ? 0 : existing.getCooldownSeconds(), 0, 31_536_000));
-        args.addWidget(dropdown("showRewards", "lottery_show_rewards",
-                String.valueOf(existing == null || existing.isShowRewards()),
-                option("true", "lottery_show_rewards_yes"),
-                option("false", "lottery_show_rewards_no")));
+        args.addWidget(dropdown("previewMode", "lottery_preview_mode",
+                (existing == null ? LotteryPreviewMode.ALL : existing.getPreviewMode()).name(),
+                Arrays.stream(LotteryPreviewMode.values()).map(mode -> option(
+                        mode.name(), "lottery_preview_" + mode.name().toLowerCase()))
+                        .toArray(DropdownOption[]::new)));
         args.setCallback(results -> {
             LotteryPool candidate = new LotteryPool(results.value("id"), results.value("name"),
                     LotteryLimitPolicy.valueOf(results.value("policy")),
                     Integer.parseInt(results.value("maxDraws")),
                     Integer.parseInt(results.value("cooldown")),
-                    Boolean.parseBoolean(results.value("showRewards")),
+                    LotteryPreviewMode.valueOf(results.value("previewMode")),
                     existing == null ? new RewardList() : existing.getRewards());
             if (LotteryPoolValidator.validate(candidate).isEmpty()) {
                 submit.accept(candidate);
@@ -76,7 +82,8 @@ public final class LotteryPoolForm {
                                                  String hintKey, int value,
                                                  int min, int max) {
         return new InputFormScreen.Widget().name(name).title(text(titleKey))
-                .hint(text(hintKey)).regex("[0-9]{1,8}")
+                .tooltip(text(hintKey)).maxLength(String.valueOf(max).length())
+                .regex("[0-9]{1,8}")
                 .defaultValue(String.valueOf(value))
                 .validator(result -> {
                     try {
