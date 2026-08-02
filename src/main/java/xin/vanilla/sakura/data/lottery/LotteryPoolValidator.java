@@ -24,8 +24,11 @@ public final class LotteryPoolValidator {
         if (pool.getLimitPolicy() == null) {
             errors.add("limit_policy_required");
         }
-        if (pool.getMaxDraws() < 1 || pool.getMaxDraws() > 100) {
+        if (pool.getMaxDraws() < 1 || pool.getMaxDraws() > 10_000) {
             errors.add("invalid_max_draws");
+        }
+        if (pool.getPreviewMode() == null) {
+            errors.add("preview_mode_required");
         }
         if (pool.getCooldownSeconds() < 0 || pool.getCooldownSeconds() > 31_536_000) {
             errors.add("invalid_cooldown");
