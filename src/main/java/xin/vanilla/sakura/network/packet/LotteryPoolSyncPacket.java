@@ -56,6 +56,7 @@ public final class LotteryPoolSyncPacket extends SplitPacket implements INetwork
             LotteryLimitPolicy policy = buffer.readEnum(LotteryLimitPolicy.class);
             int maxDraws = buffer.readVarInt();
             int cooldown = buffer.readVarInt();
+            boolean showRewards = buffer.readBoolean();
             int rewardCount = buffer.readVarInt();
             if (rewardCount < 0 || rewardCount > MAX_REWARDS) {
                 throw new IllegalArgumentException("Invalid lottery reward count: " + rewardCount);
@@ -65,7 +66,8 @@ public final class LotteryPoolSyncPacket extends SplitPacket implements INetwork
                 rewards.add(RewardJsonCodec.decode(
                         new com.google.gson.JsonParser().parse(buffer.readUtf())));
             }
-            pools.add(new LotteryPool(id, name, policy, maxDraws, cooldown, rewards));
+            pools.add(new LotteryPool(id, name, policy, maxDraws, cooldown,
+                    showRewards, rewards));
         }
     }
 
@@ -78,6 +80,7 @@ public final class LotteryPoolSyncPacket extends SplitPacket implements INetwork
             buffer.writeEnum(pool.getLimitPolicy());
             buffer.writeVarInt(pool.getMaxDraws());
             buffer.writeVarInt(pool.getCooldownSeconds());
+            buffer.writeBoolean(pool.isShowRewards());
             buffer.writeVarInt(pool.getRewards().size());
             pool.getRewards().forEach(reward ->
                     buffer.writeUtf(RewardJsonCodec.encode(reward).toString()));
