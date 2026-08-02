@@ -35,13 +35,30 @@ public final class LotteryRewardService {
 
     public static LotteryDrawBatchResult drawMany(ServerPlayerEntity player, String poolId,
                                                    int requestedCount) {
-        return drawMany(player, poolId, requestedCount, System.currentTimeMillis(),
-                ZoneId.systemDefault(), RANDOM);
+        long now = System.currentTimeMillis();
+        LotteryDrawBatchResult prepared = prepareMany(player, poolId, requestedCount,
+                now, ZoneId.systemDefault(), RANDOM);
+        return prepared.isSuccess() ? claimPrepared(player, prepared, now,
+                ZoneId.systemDefault()) : prepared;
     }
 
     static LotteryDrawBatchResult drawMany(ServerPlayerEntity player, String poolId,
                                            int requestedCount, long nowMillis,
                                            ZoneId zone, Random random) {
+        LotteryDrawBatchResult prepared = prepareMany(player, poolId, requestedCount,
+                nowMillis, zone, random);
+        return prepared.isSuccess() ? claimPrepared(player, prepared, nowMillis, zone) : prepared;
+    }
+
+    public static LotteryDrawBatchResult prepareMany(ServerPlayerEntity player, String poolId,
+                                                      int requestedCount) {
+        return prepareMany(player, poolId, requestedCount, System.currentTimeMillis(),
+                ZoneId.systemDefault(), RANDOM);
+    }
+
+    static LotteryDrawBatchResult prepareMany(ServerPlayerEntity player, String poolId,
+                                               int requestedCount, long nowMillis,
+                                               ZoneId zone, Random random) {
         LotteryPool pool = RewardConfigManager.lotteryPool(poolId);
         if (pool == null) {
             return batch(LotteryDrawStatus.POOL_NOT_FOUND, null,
@@ -65,30 +82,46 @@ public final class LotteryRewardService {
         if (limit.getRemainingDraws() != Integer.MAX_VALUE) {
             target = Math.min(target, limit.getRemainingDraws());
         }
-        List<Reward> granted = new ArrayList<>();
+        List<Reward> selectedRewards = new ArrayList<>();
         for (int i = 0; i < target; i++) {
-            Reward selected = select(candidates, random).clone();
+            selectedRewards.add(select(candidates, random).clone());
+        }
+        return batch(LotteryDrawStatus.SUCCESS, pool, selectedRewards,
+                limit.getRetryAfterSeconds(), limit.getRemainingDraws());
+    }
+
+    public static LotteryDrawBatchResult claimPrepared(ServerPlayerEntity player,
+                                                         LotteryDrawBatchResult prepared) {
+        return claimPrepared(player, prepared, System.currentTimeMillis(), ZoneId.systemDefault());
+    }
+
+    private static LotteryDrawBatchResult claimPrepared(ServerPlayerEntity player,
+                                                          LotteryDrawBatchResult prepared,
+                                                          long nowMillis, ZoneId zone) {
+        if (prepared == null || !prepared.isSuccess() || prepared.getPool() == null) {
+            return prepared;
+        }
+        LotteryPool pool = prepared.getPool();
+        IPlayerSignInData data = SakuraPlayerData.get(player);
+        LotteryDrawState state = state(data, pool.getId());
+        List<Reward> granted = new ArrayList<>();
+        for (Reward reward : prepared.getRewards()) {
+            Reward selected = reward.clone();
             if (!RewardManager.giveGuaranteedRewardToPlayer(player, data, selected,
-                    new Date(nowMillis), "lottery:" + poolId)) {
+                    new Date(nowMillis), "lottery:" + pool.getId())) {
                 if (granted.isEmpty()) {
                     return batch(LotteryDrawStatus.GRANT_FAILED, pool,
-                            java.util.Collections.singletonList(selected), 0,
-                            limit.getRemainingDraws());
+                            java.util.Collections.singletonList(selected), 0, 0);
                 }
                 break;
             }
             granted.add(selected);
             LotteryDrawLimiter.recordSuccessfulDraw(pool, state, nowMillis, zone);
         }
-        if (granted.isEmpty()) {
-            LotteryLimitResult blocked = LotteryDrawLimiter.evaluate(pool, state,
-                    nowMillis, zone);
-            return batch(LotteryDrawStatus.LIMIT_REACHED, pool, granted,
-                    blocked.getRetryAfterSeconds(), blocked.getRemainingDraws());
-        }
         SakuraPlayerData.saveAndSync(player);
         LotteryLimitResult after = LotteryDrawLimiter.evaluate(pool, state, nowMillis, zone);
-        return batch(LotteryDrawStatus.SUCCESS, pool, granted,
+        return batch(granted.isEmpty() ? LotteryDrawStatus.GRANT_FAILED : LotteryDrawStatus.SUCCESS,
+                pool, granted,
                 after.getRetryAfterSeconds(), after.getRemainingDraws());
     }
 

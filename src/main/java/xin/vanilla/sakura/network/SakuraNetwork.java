@@ -86,6 +86,10 @@ public final class SakuraNetwork {
                 LotteryDrawRequestPacket::toBytes,
                 LotteryDrawRequestPacket::new,
                 LotteryDrawRequestPacket::handle);
+        HANDLER.register(LotteryClaimPacket.class,
+                LotteryClaimPacket::toBytes,
+                LotteryClaimPacket::new,
+                LotteryClaimPacket::handle);
         BaniraModPresence.register(SakuraSignIn.MODID, SakuraNetwork::syncInitialData);
         initialized = true;
     }
