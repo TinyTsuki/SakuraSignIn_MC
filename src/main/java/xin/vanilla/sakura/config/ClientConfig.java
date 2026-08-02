@@ -18,6 +18,8 @@ import xin.vanilla.sakura.util.GLFWKeyHelper;
 import xin.vanilla.sakura.data.lottery.LotteryAnimationStyle;
 
 import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Locale;
 import java.util.List;
 
 /**
@@ -59,6 +61,36 @@ public class ClientConfig implements ConfigData {
         RewardKeysView rewardKeys();
         SignKeysView signKeys();
         ConfigHolder holder();
+    }
+
+    /** 清理由旧开发配置遗留在日历翻页快捷键中的鼠标左键。 */
+    public static void sanitizeNavigationShortcuts() {
+        ConfigHolder holder = BaniraConfig.holder(ClientConfig.class);
+        if (holder == null) return;
+        boolean changed = false;
+        for (String path : Arrays.asList("signKeys.lastMonth", "signKeys.nextMonth",
+                "signKeys.lastYear", "signKeys.nextYear")) {
+            List<String> current = holder.get(path);
+            if (current == null) continue;
+            List<String> filtered = new ArrayList<>();
+            for (String shortcut : current) {
+                if (!isMouseLeftShortcut(shortcut)) filtered.add(shortcut);
+            }
+            if (filtered.size() != current.size()) {
+                holder.set(path, filtered);
+                changed = true;
+            }
+        }
+        if (changed) holder.save();
+    }
+
+    static boolean isMouseLeftShortcut(String shortcut) {
+        if (shortcut == null) return false;
+        String value = shortcut.replace("_", "").replace(" ", "")
+                .toLowerCase(Locale.ROOT);
+        return value.equals("mouseleft") || value.equals("mouse1")
+                || value.equals("key.mouse.left") || value.equals("key.mouse.1")
+                || value.equals("glfwmousebuttonleft");
     }
 
     public interface DisplayView {
