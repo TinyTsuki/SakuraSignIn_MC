@@ -47,6 +47,7 @@ import org.lwjgl.opengl.GL11;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.client.SakuraClientState;
 import xin.vanilla.sakura.client.gui.RewardListEntryWidget;
+import xin.vanilla.sakura.client.gui.RewardRuleTooltipFormatter;
 import xin.vanilla.sakura.client.gui.RewardSelectionIds;
 import xin.vanilla.sakura.client.gui.RewardKeyboardNavigator;
 import xin.vanilla.sakura.client.gui.RewardOperationWidget;
@@ -364,8 +365,9 @@ public class RewardOptionScreen extends BaniraScreen {
                     width - 20, getEffectiveTheme().buttonText(), false);
         }).setBaseX(leftBarWidth)
                 .setDrawSelectionOutline(false)
-                .setTooltip(Text.trans(SakuraSignIn.MODID,
-                        "word.sakura_sign_in.reward_group_header_hint"));
+                .setTooltip(Text.literal(RewardRuleTooltipFormatter.describe(
+                        currentRewardRule(), key, title)))
+                .setTooltipRequiresShift(true);
         entry.bounds()
                 .x(leftMargin)
                 .y(rewardLayoutY)
