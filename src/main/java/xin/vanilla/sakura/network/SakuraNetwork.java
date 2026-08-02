@@ -74,6 +74,14 @@ public final class SakuraNetwork {
                 PersonalDateSlotUpdatePacket::toBytes,
                 PersonalDateSlotUpdatePacket::new,
                 PersonalDateSlotUpdatePacket::handle);
+        HANDLER.registerSplit(LotteryPoolSyncPacket.class,
+                LotteryPoolSyncPacket::toBytes,
+                LotteryPoolSyncPacket::new,
+                LotteryPoolSyncPacket::handle);
+        HANDLER.register(LotteryRevealPacket.class,
+                LotteryRevealPacket::toBytes,
+                LotteryRevealPacket::new,
+                LotteryRevealPacket::handle);
         BaniraModPresence.register(SakuraSignIn.MODID, SakuraNetwork::syncInitialData);
         initialized = true;
     }
@@ -124,6 +132,7 @@ public final class SakuraNetwork {
         sendToPlayer(new ServerTimeSyncPacket(), player);
         sendSplitToPlayer(RewardConfigManager.toSyncPacket(player), player);
         sendSplitToPlayer(personalDatePacket(player), player);
+        sendSplitToPlayer(lotteryPoolPacket(player), player);
         sendSplitToPlayer(new AdvancementPacket(
                 player.server.getAdvancements().getAllAdvancements()
         ), player);
@@ -141,5 +150,13 @@ public final class SakuraNetwork {
                 visible ? RewardConfigManager.getRewardConfig().getPersonalDatePresets()
                         : java.util.Collections.emptyList(),
                 SakuraCalendars.get().descriptors());
+    }
+
+    public static LotteryPoolSyncPacket lotteryPoolPacket(ServerPlayerEntity player) {
+        boolean visible = player.hasPermissions(
+                SakuraUtils.getRewardPermissionLevel(ERewardRule.LOTTERY_REWARD));
+        return new LotteryPoolSyncPacket(visible
+                ? RewardConfigManager.getRewardConfig().getLotteryPools()
+                : java.util.Collections.emptyList());
     }
 }

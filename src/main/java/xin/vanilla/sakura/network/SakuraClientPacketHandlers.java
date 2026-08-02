@@ -6,6 +6,8 @@ import xin.vanilla.sakura.network.packet.PlayerMonthSyncPacket;
 import xin.vanilla.sakura.network.packet.RewardOptionSyncPacket;
 import xin.vanilla.sakura.network.packet.PersonalDatePresetSyncPacket;
 import xin.vanilla.sakura.network.packet.CommonConfigSnapshotPacket;
+import xin.vanilla.sakura.network.packet.LotteryPoolSyncPacket;
+import xin.vanilla.sakura.network.packet.LotteryRevealPacket;
 
 import java.util.function.Consumer;
 
@@ -25,6 +27,10 @@ public final class SakuraClientPacketHandlers {
     };
     private static Consumer<CommonConfigSnapshotPacket> commonConfig = packet -> {
     };
+    private static Consumer<LotteryPoolSyncPacket> lotteryPools = packet -> {
+    };
+    private static Consumer<LotteryRevealPacket> lotteryReveal = packet -> {
+    };
     private static Consumer<Boolean> rewardUploadResult = success -> {
     };
 
@@ -37,6 +43,8 @@ public final class SakuraClientPacketHandlers {
                                 Consumer<RewardOptionSyncPacket> rewardOptionsHandler,
                                 Consumer<PersonalDatePresetSyncPacket> personalDatePresetsHandler,
                                 Consumer<CommonConfigSnapshotPacket> commonConfigHandler,
+                                Consumer<LotteryPoolSyncPacket> lotteryPoolsHandler,
+                                Consumer<LotteryRevealPacket> lotteryRevealHandler,
                                 Consumer<Boolean> rewardUploadResultHandler) {
         playerSummary = playerSummaryHandler;
         playerMonth = playerMonthHandler;
@@ -44,6 +52,8 @@ public final class SakuraClientPacketHandlers {
         rewardOptions = rewardOptionsHandler;
         personalDatePresets = personalDatePresetsHandler;
         commonConfig = commonConfigHandler;
+        lotteryPools = lotteryPoolsHandler;
+        lotteryReveal = lotteryRevealHandler;
         rewardUploadResult = rewardUploadResultHandler;
     }
 
@@ -69,6 +79,14 @@ public final class SakuraClientPacketHandlers {
 
     public static void handle(CommonConfigSnapshotPacket packet) {
         commonConfig.accept(packet);
+    }
+
+    public static void handle(LotteryPoolSyncPacket packet) {
+        lotteryPools.accept(packet);
+    }
+
+    public static void handle(LotteryRevealPacket packet) {
+        lotteryReveal.accept(packet);
     }
 
     public static void handleRewardUploadResult(boolean success) {

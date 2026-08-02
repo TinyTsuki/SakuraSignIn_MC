@@ -19,6 +19,7 @@ import xin.vanilla.sakura.reward.RewardAddPermissionChecker;
 import xin.vanilla.sakura.reward.RewardJsonCodec;
 import xin.vanilla.sakura.reward.RewardRuleAddPermissionChecker;
 import xin.vanilla.sakura.data.personaldate.PersonalDatePresets;
+import xin.vanilla.sakura.data.lottery.LotteryPools;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -86,6 +87,8 @@ public class RewardOptionSyncPacket extends SplitPacket implements INetworkPacke
                         RewardConfigManager.fromSyncPacketList(Collections.singletonList(packet));
                 candidate.setPersonalDatePresets(PersonalDatePresets.copy(
                         RewardConfigManager.getRewardConfig().getPersonalDatePresets()));
+                candidate.setLotteryPools(LotteryPools.copy(
+                        RewardConfigManager.getRewardConfig().getLotteryPools()));
                 if (!RewardAddPermissionChecker.canApply(sender,
                         RewardConfigManager.getRewardConfig(), candidate)) {
                     BaniraNetwork.sendToPlayer(new RewardOptionDataReceivedNotice(false), sender);

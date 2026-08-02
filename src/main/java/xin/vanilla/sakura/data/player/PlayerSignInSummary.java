@@ -11,6 +11,7 @@ import java.util.TreeMap;
 import java.util.ArrayList;
 import java.util.List;
 import xin.vanilla.sakura.data.personaldate.PlayerPersonalDateSlot;
+import xin.vanilla.sakura.data.lottery.LotteryDrawState;
 
 /**
  * 永久摘要不依赖可清理的月度详情，签到判定与累计统计始终可用。
@@ -31,6 +32,7 @@ public class PlayerSignInSummary {
     private List<PlayerPersonalDateSlot> personalDateSlots = new ArrayList<>();
     private String onlineTimeBaselineDate = "";
     private int onlineTimeBaselineTicks;
+    private List<LotteryDrawState> lotteryDrawStates = new ArrayList<>();
     private boolean legacyCapabilityMigrated;
     private String legacyCapabilityBackup = "";
 
@@ -55,6 +57,10 @@ public class PlayerSignInSummary {
         tag.put("personalDateSlots", slots);
         tag.putString("onlineTimeBaselineDate", onlineTimeBaselineDate);
         tag.putInt("onlineTimeBaselineTicks", onlineTimeBaselineTicks);
+        ListNBT lotteryStates = new ListNBT();
+        lotteryDrawStates.stream().filter(java.util.Objects::nonNull)
+                .forEach(state -> lotteryStates.add(state.serializeNBT()));
+        tag.put("lotteryDrawStates", lotteryStates);
 
         CompoundNBT migration = new CompoundNBT();
         migration.putBoolean("legacyCapabilityMigrated", legacyCapabilityMigrated);
@@ -86,6 +92,11 @@ public class PlayerSignInSummary {
         }
         summary.onlineTimeBaselineDate = tag.getString("onlineTimeBaselineDate");
         summary.onlineTimeBaselineTicks = Math.max(0, tag.getInt("onlineTimeBaselineTicks"));
+        ListNBT lotteryStates = tag.getList("lotteryDrawStates", 10);
+        for (int i = 0; i < lotteryStates.size(); i++) {
+            summary.lotteryDrawStates.add(
+                    LotteryDrawState.deserializeNBT(lotteryStates.getCompound(i)));
+        }
 
         CompoundNBT migration = tag.getCompound("migration");
         summary.legacyCapabilityMigrated = migration.getBoolean("legacyCapabilityMigrated");
