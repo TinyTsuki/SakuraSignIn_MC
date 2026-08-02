@@ -13,6 +13,7 @@ import xin.vanilla.banira.client.gui.widget.BaseShapeWidget;
 import xin.vanilla.banira.client.gui.widget.ButtonWidget;
 import xin.vanilla.banira.client.gui.widget.DropdownOption;
 import xin.vanilla.banira.client.gui.widget.DropdownSelectWidget;
+import xin.vanilla.banira.client.gui.widget.DropdownInputMode;
 import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.client.SakuraClientState;
@@ -59,6 +60,7 @@ public final class LotteryScreen extends BaniraScreen {
         }
 
         poolSelect = new DropdownSelectWidget(this);
+        poolSelect.inputMode(DropdownInputMode.SELECTION_ONLY);
         poolSelect.bounds(new ScreenCoordinate(panelX + 20, 54, panelWidth - 40, 22));
         poolSelect.optionEntries(pools.stream().map(pool -> new DropdownOption(
                 pool.getId(), pool.getDisplayName(), net.minecraft.item.ItemStack.EMPTY,
@@ -75,6 +77,7 @@ public final class LotteryScreen extends BaniraScreen {
         addWidget(poolSelect);
 
         countSelect = new DropdownSelectWidget(this);
+        countSelect.inputMode(DropdownInputMode.SELECTION_ONLY);
         int footerWidth = panelWidth - 40;
         int singleWidth = Math.max(70, footerWidth / 4);
         int batchWidth = Math.max(70, footerWidth / 4);
@@ -98,6 +101,12 @@ public final class LotteryScreen extends BaniraScreen {
                 "word", "lottery_batch_draw"));
         batchDrawButton.onClick(button -> requestBatchDraw());
         addWidget(batchDrawButton);
+
+        ButtonWidget closeButton = new ButtonWidget(this);
+        closeButton.presetStyle(ButtonWidget.PresetStyle.CLOSE);
+        closeButton.bounds(new ScreenCoordinate(panelX + panelWidth - 28, 32, 12, 12));
+        closeButton.onClick(button -> requestClose(CloseReason.BUTTON));
+        addWidget(closeButton);
         configureCountOptions();
     }
 
@@ -259,6 +268,12 @@ public final class LotteryScreen extends BaniraScreen {
     private static String policyName(LotteryPool pool) {
         return SakuraComponent.get().translateClient("word",
                 "lottery_policy_" + pool.getLimitPolicy().name().toLowerCase());
+    }
+
+    @Override
+    protected ScreenCoordinate closeableWindowBounds() {
+        int panelWidth = Math.min(560, width - 40);
+        return new ScreenCoordinate((width - panelWidth) / 2, 24, panelWidth, height - 44);
     }
 
     private void shape(MatrixStack stack, int x, int y, int width, int height,

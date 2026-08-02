@@ -16,6 +16,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import xin.vanilla.sakura.enums.ERewardRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -84,6 +85,18 @@ public class I18nStyleContractTest {
                     throw new AssertionError("Unable to read " + path, exception);
                 }
             });
+        }
+    }
+
+    @Test
+    public void everyRewardRuleHasItsDynamicInputTitle() throws Exception {
+        Set<String> translations = keys(read("zh_cn.json"));
+        for (ERewardRule rule : ERewardRule.values()) {
+            if (rule == ERewardRule.BASE_REWARD) {
+                continue;
+            }
+            assertTrue("Missing dynamic reward rule title for " + rule,
+                    translations.contains("word.sakura_sign_in.enter_reward_rule_key_" + rule.getCode()));
         }
     }
 
