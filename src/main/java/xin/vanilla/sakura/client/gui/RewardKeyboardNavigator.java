@@ -4,6 +4,7 @@ import lombok.Getter;
 
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.List;
 
 /**
  * 根据奖励的实际二维位置寻找键盘导航目标。
@@ -33,6 +34,19 @@ public final class RewardKeyboardNavigator {
                         .thenComparing(Point::getId))
                 .map(Point::getId)
                 .orElse(null);
+    }
+
+    /** 左右移动严格使用界面绘制顺序，行末会自然进入相邻奖励组。 */
+    public static String findAdjacent(String currentId, List<String> orderedIds,
+                                      Direction direction) {
+        if (currentId == null || orderedIds == null
+                || (direction != Direction.LEFT && direction != Direction.RIGHT)) {
+            return null;
+        }
+        int current = orderedIds.indexOf(currentId);
+        int target = current + (direction == Direction.RIGHT ? 1 : -1);
+        return current >= 0 && target >= 0 && target < orderedIds.size()
+                ? orderedIds.get(target) : null;
     }
 
     public static final class Direction {

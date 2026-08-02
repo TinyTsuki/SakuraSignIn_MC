@@ -22,10 +22,12 @@ public class RewardKeyboardNavigatorTest {
 
     @Test
     public void horizontalNavigationUsesVisualNeighbours() {
-        assertEquals("daily,1", RewardKeyboardNavigator.findNext(
-                "daily,0", POINTS, RewardKeyboardNavigator.Direction.RIGHT));
-        assertEquals("daily,0", RewardKeyboardNavigator.findNext(
-                "daily,1", POINTS, RewardKeyboardNavigator.Direction.LEFT));
+        List<String> ordered = Arrays.asList("group1,0", "group1,13",
+                "group2,0", "group2,6", "group2,7");
+        assertEquals("group2,0", RewardKeyboardNavigator.findAdjacent(
+                "group1,13", ordered, RewardKeyboardNavigator.Direction.RIGHT));
+        assertEquals("group2,6", RewardKeyboardNavigator.findAdjacent(
+                "group2,7", ordered, RewardKeyboardNavigator.Direction.LEFT));
     }
 
     @Test
@@ -40,7 +42,8 @@ public class RewardKeyboardNavigatorTest {
     public void missingCurrentOrDirectionalCandidateDoesNotMove() {
         assertNull(RewardKeyboardNavigator.findNext(
                 "missing", POINTS, RewardKeyboardNavigator.Direction.RIGHT));
-        assertNull(RewardKeyboardNavigator.findNext(
-                "daily,0", POINTS, RewardKeyboardNavigator.Direction.LEFT));
+        assertNull(RewardKeyboardNavigator.findAdjacent("daily,0",
+                Arrays.asList("daily,0", "daily,1"),
+                RewardKeyboardNavigator.Direction.LEFT));
     }
 }

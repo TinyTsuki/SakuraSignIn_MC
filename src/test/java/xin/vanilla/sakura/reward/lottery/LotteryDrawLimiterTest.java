@@ -27,7 +27,7 @@ public class LotteryDrawLimiterTest {
         long first = millis(2026, 8, 2, 23, 59);
 
         assertTrue(LotteryDrawLimiter.evaluate(pool, state, first, ZONE).isAllowed());
-        LotteryDrawLimiter.recordSuccessfulDraw(state, first, ZONE);
+        LotteryDrawLimiter.recordSuccessfulDraw(pool, state, first, ZONE);
         assertFalse(LotteryDrawLimiter.evaluate(pool, state, first, ZONE).isAllowed());
         assertTrue(LotteryDrawLimiter.evaluate(pool, state,
                 millis(2026, 8, 3, 0, 0), ZONE).isAllowed());
@@ -42,6 +42,7 @@ public class LotteryDrawLimiterTest {
         LotteryLimitResult blocked = LotteryDrawLimiter.evaluate(pool, state, 1_001L, ZONE);
         assertFalse(blocked.isAllowed());
         assertEquals(60L, blocked.getRetryAfterSeconds());
+        assertEquals(Integer.MAX_VALUE, blocked.getRemainingDraws());
         assertTrue(LotteryDrawLimiter.evaluate(pool, state, 61_000L, ZONE).isAllowed());
     }
 
@@ -49,8 +50,8 @@ public class LotteryDrawLimiterTest {
     public void lifetimeLimitNeverResetsAndSelectionUsesWeights() {
         LotteryPool pool = pool(LotteryLimitPolicy.LIFETIME, 2, 0);
         LotteryDrawState state = new LotteryDrawState("lifetime");
-        LotteryDrawLimiter.recordSuccessfulDraw(state, 1_000L, ZONE);
-        LotteryDrawLimiter.recordSuccessfulDraw(state, 2_000L, ZONE);
+        LotteryDrawLimiter.recordSuccessfulDraw(pool, state, 1_000L, ZONE);
+        LotteryDrawLimiter.recordSuccessfulDraw(pool, state, 2_000L, ZONE);
         assertFalse(LotteryDrawLimiter.evaluate(pool, state,
                 millis(2036, 1, 1, 0, 0), ZONE).isAllowed());
 
@@ -60,6 +61,25 @@ public class LotteryDrawLimiterTest {
                 new Random() {
                     @Override public double nextDouble() { return 0.95D; }
                 }));
+    }
+
+    @Test
+    public void weeklyAndMonthlyLimitsUseIndependentPeriods() {
+        LotteryPool weekly = pool(LotteryLimitPolicy.WEEKLY, 1, 0);
+        LotteryDrawState weeklyState = new LotteryDrawState("weekly");
+        long sunday = millis(2026, 8, 2, 12, 0);
+        LotteryDrawLimiter.recordSuccessfulDraw(weekly, weeklyState, sunday, ZONE);
+        assertFalse(LotteryDrawLimiter.evaluate(weekly, weeklyState, sunday, ZONE).isAllowed());
+        assertTrue(LotteryDrawLimiter.evaluate(weekly, weeklyState,
+                millis(2026, 8, 3, 12, 0), ZONE).isAllowed());
+
+        LotteryPool monthly = pool(LotteryLimitPolicy.MONTHLY, 1, 0);
+        LotteryDrawState monthlyState = new LotteryDrawState("monthly");
+        long monthEnd = millis(2026, 8, 31, 23, 59);
+        LotteryDrawLimiter.recordSuccessfulDraw(monthly, monthlyState, monthEnd, ZONE);
+        assertFalse(LotteryDrawLimiter.evaluate(monthly, monthlyState, monthEnd, ZONE).isAllowed());
+        assertTrue(LotteryDrawLimiter.evaluate(monthly, monthlyState,
+                millis(2026, 9, 1, 0, 0), ZONE).isAllowed());
     }
 
     private static LotteryPool pool(LotteryLimitPolicy policy, int max, int cooldown) {
