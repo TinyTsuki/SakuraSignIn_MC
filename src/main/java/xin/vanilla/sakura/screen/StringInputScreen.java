@@ -144,10 +144,12 @@ public final class StringInputScreen extends InputFormScreen {
         for (int i = 0; i < titles.size(); i++) {
             final int index = i;
             final String regex = cyclic(validators, index, "");
+            final Text message = cyclic(messages, index, Text.empty());
             InputFormScreen.Widget widget = new InputFormScreen.Widget()
                     .name("field_" + index)
                     .title(titles.get(index))
-                    .hint(cyclic(messages, index, Text.empty()))
+                    .hint(message)
+                    .tooltip(StringUtils.isNotNullOrEmpty(regex) ? message : null)
                     .defaultValue(cyclic(defaultValues, index, ""))
                     .validator(results -> {
                         String value = results.value(index);

@@ -15,12 +15,10 @@ import xin.vanilla.sakura.data.personaldate.PersonalDatePresetValidator;
 import xin.vanilla.sakura.data.personaldate.PersonalDateRecurrence;
 import xin.vanilla.sakura.reward.RewardList;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /** 个性化日期预设表单只让标识和名称自由输入，其余字段使用可解释选项。 */
 public final class PersonalDatePresetForm {
@@ -65,23 +63,17 @@ public final class PersonalDatePresetForm {
                 ? tr("personal_date_calendar_required") : "");
         args.addWidget(calendarWidget);
 
-        args.addWidget(dropdownValues("slots", "personal_date_slots",
-                existing == null ? "1" : String.valueOf(existing.getMaxDateSlots()),
-                IntStream.rangeClosed(1, 16).mapToObj(String::valueOf).collect(Collectors.toList()),
-                "personal_date_slots_tooltip"));
+        args.addWidget(numberWidget("slots", "personal_date_slots",
+                existing == null ? 1 : existing.getMaxDateSlots(), 1, 16));
         args.addWidget(dropdown("delivery", "personal_date_delivery",
                 existing == null ? PersonalDateDeliveryMode.SIGN_IN.name()
                         : existing.getDeliveryMode().name(), false,
                 option(PersonalDateDeliveryMode.SIGN_IN.name(), "personal_date_delivery_sign_in"),
                 option(PersonalDateDeliveryMode.ONLINE.name(), "personal_date_delivery_online")));
-        List<String> windowDays = IntStream.rangeClosed(0, 30)
-                .mapToObj(String::valueOf).collect(Collectors.toList());
-        args.addWidget(dropdownValues("before", "personal_date_before",
-                existing == null ? "0" : String.valueOf(existing.getValidBeforeDays()),
-                windowDays, "personal_date_before_tooltip"));
-        args.addWidget(dropdownValues("after", "personal_date_after",
-                existing == null ? "0" : String.valueOf(existing.getValidAfterDays()),
-                windowDays, "personal_date_after_tooltip"));
+        args.addWidget(numberWidget("before", "personal_date_before",
+                existing == null ? 0 : existing.getValidBeforeDays(), 0, 30));
+        args.addWidget(numberWidget("after", "personal_date_after",
+                existing == null ? 0 : existing.getValidAfterDays(), 0, 30));
         args.setCallback(results -> {
             List<String> calendarIds = Arrays.stream(results.value("calendars").split(","))
                     .map(value -> value.trim()).filter(StringUtils::isNotNullOrEmpty)
@@ -105,19 +97,25 @@ public final class PersonalDatePresetForm {
             String name, String titleKey, String value, String regex,
             java.util.function.Function<String, String> validator) {
         return new InputFormScreen.Widget().name(name).title(text(titleKey))
-                .hint(text(titleKey + "_hint")).regex(regex).defaultValue(value)
+                .hint(text(titleKey + "_hint")).tooltip(text(titleKey + "_hint"))
+                .maxLength(regex.contains("64") ? 64 : 256)
+                .regex(regex).defaultValue(value)
                 .validator(results -> validator.apply(results.value()));
     }
 
-    private static InputFormScreen.Widget dropdownValues(
-            String name, String titleKey, String value, List<String> values, String tooltipKey) {
-        List<DropdownOption> options = new ArrayList<>();
-        for (String option : values) {
-            options.add(new DropdownOption(option, option, net.minecraft.item.ItemStack.EMPTY,
-                    null, SakuraComponent.get().transClient("word", tooltipKey)));
-        }
-        return dropdown(name, titleKey, value, false,
-                options.toArray(new DropdownOption[0]));
+    private static InputFormScreen.Widget numberWidget(String name, String titleKey,
+                                                        int value, int min, int max) {
+        return new InputFormScreen.Widget().name(name).title(text(titleKey))
+                .tooltip(text(titleKey + "_tooltip"))
+                .maxLength(String.valueOf(max).length()).regex("[0-9]+")
+                .defaultValue(String.valueOf(value)).validator(results -> {
+                    try {
+                        int parsed = Integer.parseInt(results.value());
+                        return parsed >= min && parsed <= max ? "" : tr("personal_date_number_range");
+                    } catch (NumberFormatException ignored) {
+                        return tr("personal_date_number_range");
+                    }
+                });
     }
 
     private static InputFormScreen.Widget dropdown(
