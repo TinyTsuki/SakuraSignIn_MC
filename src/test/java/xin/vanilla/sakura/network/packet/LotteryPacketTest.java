@@ -3,6 +3,7 @@ package xin.vanilla.sakura.network.packet;
 import org.junit.Test;
 import xin.vanilla.sakura.data.lottery.LotteryLimitPolicy;
 import xin.vanilla.sakura.data.lottery.LotteryPool;
+import xin.vanilla.sakura.data.lottery.LotteryPreviewMode;
 import xin.vanilla.sakura.network.TestBaniraPacketBuffer;
 import xin.vanilla.sakura.reward.Reward;
 import xin.vanilla.sakura.reward.RewardList;
@@ -30,11 +31,12 @@ public class LotteryPacketTest {
         Reward winner = Reward.getDefault();
         TestBaniraPacketBuffer buffer = new TestBaniraPacketBuffer();
 
-        new LotteryRevealPacket("Pool", Arrays.asList(winner, winner),
-                Arrays.asList(winner, winner), true).toBytes(buffer);
+        new LotteryRevealPacket("token", "Pool", Arrays.asList(winner, winner),
+                Arrays.asList(winner, winner), LotteryPreviewMode.ALL).toBytes(buffer);
         LotteryRevealPacket restored = new LotteryRevealPacket(buffer);
 
         assertEquals("Pool", restored.getPoolName());
+        assertEquals("token", restored.getToken());
         assertEquals(2, restored.getWinners().size());
         assertEquals(2, restored.getPreview().size());
         assertEquals(true, restored.isPreviewVisible());
@@ -48,5 +50,14 @@ public class LotteryPacketTest {
         LotteryDrawRequestPacket restored = new LotteryDrawRequestPacket(buffer);
         assertEquals("daily", restored.getPoolId());
         assertEquals(15, restored.getCount());
+    }
+
+    @Test
+    public void claimPacketKeepsPendingToken() {
+        TestBaniraPacketBuffer buffer = new TestBaniraPacketBuffer();
+        new LotteryClaimPacket("pending-token").toBytes(buffer);
+
+        LotteryClaimPacket restored = new LotteryClaimPacket(buffer);
+        assertEquals("pending-token", restored.getToken());
     }
 }
