@@ -58,7 +58,7 @@ public class CommandArchitectureContractTest {
     }
 
     @Test
-    public void configCommandOnlyComposesQueryAndUpdateBuilders() throws Exception {
+    public void configCommandUsesDescriptorAndFocusedPlayerBuilders() throws Exception {
         Path configCommand = MAIN.resolve("command/impl/ConfigCommand.java");
         String source = read(configCommand);
         long lines;
@@ -67,11 +67,10 @@ public class CommandArchitectureContractTest {
         }
 
         assertTrue("Config command entry should remain small", lines <= 80);
-        assertTrue(source.contains("ConfigQueryCommand.build()"));
-        assertTrue(source.contains("ConfigUpdateCommand.build()"));
-        assertFalse(source.contains("RewardConfigManager"));
-        assertTrue(Files.exists(MAIN.resolve("command/impl/ConfigQueryCommand.java")));
-        assertTrue(Files.exists(MAIN.resolve("command/impl/ConfigUpdateCommand.java")));
+        assertTrue(source.contains("CommandUtils.configKeySuggestion"));
+        assertTrue(source.contains("CommandUtils.executeModifyConfig"));
+        assertTrue(source.contains("PersonalDateConfigCommand.build()"));
+        assertTrue(Files.exists(MAIN.resolve("command/impl/PersonalDateConfigCommand.java")));
     }
 
     private static String read(Path path) {

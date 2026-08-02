@@ -21,6 +21,7 @@ public final class SakuraNotificationTypes {
     public static final String COMMAND_FEEDBACK = PREFIX + "command_feedback";
     public static final String SIGN_IN = PREFIX + "sign_in";
     public static final String REWARD = PREFIX + "reward";
+    public static final String CONFIG = PREFIX + "config";
     public static final String CDK = PREFIX + "cdk";
     public static final String ADMIN_BROADCAST = PREFIX + "admin_broadcast";
 
@@ -30,6 +31,7 @@ public final class SakuraNotificationTypes {
         defaults.put(COMMAND_FEEDBACK, EnumNotificationTypeDisplayMode.VANILLA_CHAT);
         defaults.put(SIGN_IN, EnumNotificationTypeDisplayMode.OVERLAY);
         defaults.put(REWARD, EnumNotificationTypeDisplayMode.OVERLAY);
+        defaults.put(CONFIG, EnumNotificationTypeDisplayMode.OVERLAY);
         defaults.put(CDK, EnumNotificationTypeDisplayMode.OVERLAY);
         defaults.put(ADMIN_BROADCAST, EnumNotificationTypeDisplayMode.VANILLA_CHAT);
         DEFAULT_DISPLAYS = Collections.unmodifiableMap(defaults);
