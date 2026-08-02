@@ -9,6 +9,8 @@ import xin.vanilla.sakura.SakuraComponent;
 public enum LotteryLimitPolicy implements IEnumDescribable {
     UNLIMITED,
     DAILY,
+    WEEKLY,
+    MONTHLY,
     COOLDOWN,
     LIFETIME;
 
