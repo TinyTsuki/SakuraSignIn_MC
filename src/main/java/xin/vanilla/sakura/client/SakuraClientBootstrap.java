@@ -35,6 +35,7 @@ public final class SakuraClientBootstrap {
             return;
         }
 
+        ClientConfig.sanitizeNavigationShortcuts();
         BaniraThemes.register(SakuraSignIn.MODID,
                 () -> ClientConfig.get().display().interfaceThemeMode());
         BuiltInRewardClientTypes.register();
