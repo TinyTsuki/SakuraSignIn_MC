@@ -6,6 +6,7 @@ import net.minecraft.nbt.CompoundNBT;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.sakura.data.player.MonthSignInIndex;
 import xin.vanilla.sakura.data.personaldate.PlayerPersonalDateSlot;
+import xin.vanilla.sakura.data.lottery.LotteryDrawState;
 
 import javax.annotation.Nullable;
 import java.util.Date;
@@ -156,6 +157,11 @@ public interface IPlayerSignInData {
     int getOnlineTimeBaselineTicks();
 
     void setOnlineTimeBaselineTicks(int ticks);
+
+    @NonNull
+    List<LotteryDrawState> getLotteryDrawStates();
+
+    void setLotteryDrawStates(List<LotteryDrawState> states);
 
     /**
      * 获取语言
