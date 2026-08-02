@@ -20,6 +20,8 @@ import xin.vanilla.sakura.client.gui.RewardRenderer;
 import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.data.lottery.LotteryAnimationStyle;
 import xin.vanilla.sakura.network.packet.LotteryRevealPacket;
+import xin.vanilla.sakura.network.packet.LotteryClaimPacket;
+import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.reward.Reward;
 
 import java.util.ArrayList;
@@ -33,6 +35,7 @@ public final class LotteryRevealScreen extends BaniraScreen {
     private final ItemRenderer itemRenderer = Minecraft.getInstance().getItemRenderer();
     private ButtonWidget actionButton;
     private boolean skipped;
+    private boolean claimRequested;
 
     public LotteryRevealScreen(Screen parent, LotteryRevealPacket packet) {
         super(SakuraComponent.get().transClient("word", "lottery_result"));
@@ -51,6 +54,7 @@ public final class LotteryRevealScreen extends BaniraScreen {
                 onClose();
             } else {
                 skipped = true;
+                requestClaim();
             }
         });
         addWidget(actionButton);
@@ -70,6 +74,7 @@ public final class LotteryRevealScreen extends BaniraScreen {
         LotteryAnimationStyle style = ClientConfig.get().display().lotteryAnimationStyle();
         long elapsed = System.currentTimeMillis() - openedAt;
         boolean revealed = revealed(style, elapsed);
+        if (revealed) requestClaim();
         actionButton.text(SakuraComponent.get().transClient("word",
                 revealed ? "confirm" : "lottery_skip_animation"));
 
@@ -97,11 +102,12 @@ public final class LotteryRevealScreen extends BaniraScreen {
 
     private void renderStrip(MatrixStack stack, int panelX, int panelWidth,
                              int panelY, long elapsed) {
-        List<Reward> sequence = sequence(24);
-        double progress = Math.min(1D, elapsed / 5000D);
-        double eased = 1D - Math.pow(1D - progress, 4D);
+        int winnerIndex = 43;
+        List<Reward> sequence = sequence(48, winnerIndex);
+        double progress = Math.min(1D, elapsed / 6500D);
+        double eased = 1D - Math.pow(1D - progress, 5D);
         int spacing = 38;
-        double offset = eased * Math.max(0, sequence.size() - 4) * spacing;
+        double offset = eased * winnerIndex * spacing;
         int center = panelX + panelWidth / 2;
         shape(stack, panelX + 20, panelY + 58, panelWidth - 40, 64,
                 getEffectiveTheme().buttonBg(), 5, 0);
@@ -116,7 +122,7 @@ public final class LotteryRevealScreen extends BaniraScreen {
     }
 
     private void renderCards(MatrixStack stack, int panelY, long elapsed) {
-        List<Reward> values = sequence(7);
+        List<Reward> values = sequence(7, 6);
         int startX = width / 2 - 143;
         int active = Math.min(values.size() - 1, (int) (elapsed / 520L));
         for (int i = 0; i < values.size(); i++) {
@@ -131,8 +137,13 @@ public final class LotteryRevealScreen extends BaniraScreen {
     }
 
     private void renderRoulette(MatrixStack stack, int panelY, long elapsed) {
-        List<Reward> values = sequence(10);
-        int active = (int) (elapsed / Math.max(90L, 280L - elapsed / 20L)) % values.size();
+        int slotCount = Math.max(6, Math.min(12, packet.getPreview().size()));
+        int winnerIndex = slotCount - 1;
+        List<Reward> values = sequence(slotCount, winnerIndex);
+        double progress = Math.min(1D, elapsed / 6500D);
+        double eased = 1D - Math.pow(1D - progress, 4D);
+        int active = (int) Math.floor(eased * (values.size() * 7 + winnerIndex)) % values.size();
+        if (progress >= 1D) active = winnerIndex;
         int centerX = width / 2;
         int centerY = panelY + 92;
         for (int i = 0; i < values.size(); i++) {
@@ -172,11 +183,14 @@ public final class LotteryRevealScreen extends BaniraScreen {
         }
     }
 
-    private List<Reward> sequence(int size) {
+    private List<Reward> sequence(int size, int winnerIndex) {
         List<Reward> source = packet.getPreview();
         List<Reward> result = new ArrayList<>();
         for (int i = 0; i < size; i++) {
             result.add(source.isEmpty() ? null : source.get(i % source.size()));
+        }
+        if (winnerIndex >= 0 && winnerIndex < result.size()) {
+            result.set(winnerIndex, packet.getWinner());
         }
         return result;
     }
@@ -209,7 +223,7 @@ public final class LotteryRevealScreen extends BaniraScreen {
         if (style == LotteryAnimationStyle.INSTANT) {
             return 0L;
         }
-        return style == LotteryAnimationStyle.CARDS ? 4200L : 5200L;
+        return style == LotteryAnimationStyle.CARDS ? 4800L : 6800L;
     }
 
     @Override
@@ -221,11 +235,29 @@ public final class LotteryRevealScreen extends BaniraScreen {
                 onClose();
             } else {
                 skipped = true;
+                requestClaim();
             }
             eventArgs.consumed(true);
             return;
         }
         super.onKeyPressed(eventArgs);
+    }
+
+    private void requestClaim() {
+        if (claimRequested) return;
+        claimRequested = true;
+        SakuraNetwork.sendToServer(new LotteryClaimPacket(packet.getToken()));
+    }
+
+    @Override
+    public void onClose() {
+        if (!revealed()) {
+            skipped = true;
+            requestClaim();
+            return;
+        }
+        requestClaim();
+        super.onClose();
     }
 
     private void shape(MatrixStack stack, int x, int y, int width, int height,

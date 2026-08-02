@@ -1,6 +1,7 @@
 package xin.vanilla.sakura.data.lottery;
 
 import xin.vanilla.sakura.reward.RewardList;
+import xin.vanilla.sakura.reward.Reward;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,7 +24,7 @@ public final class LotteryPools {
 
     public static LotteryPool copy(LotteryPool pool) {
         return new LotteryPool(pool.getId(), pool.getDisplayName(), pool.getLimitPolicy(),
-                pool.getMaxDraws(), pool.getCooldownSeconds(), pool.isShowRewards(),
+                pool.getMaxDraws(), pool.getCooldownSeconds(), pool.getPreviewMode(),
                 new RewardList(pool.getRewards()).clone());
     }
 
@@ -31,8 +32,20 @@ public final class LotteryPools {
     public static List<LotteryPool> visibleCopy(List<LotteryPool> pools, boolean editor) {
         List<LotteryPool> result = copy(pools);
         if (!editor) {
-            result.stream().filter(pool -> !pool.isShowRewards())
-                    .forEach(pool -> pool.setRewards(new RewardList()));
+            for (LotteryPool pool : result) {
+                if (pool.getPreviewMode() == LotteryPreviewMode.NONE) {
+                    pool.setRewards(new RewardList());
+                } else if (pool.getPreviewMode() == LotteryPreviewMode.ITEMS_ONLY) {
+                    pool.getRewards().forEach(reward ->
+                            reward.setProbability(java.math.BigDecimal.ONE));
+                } else if (pool.getPreviewMode() == LotteryPreviewMode.PROBABILITY_ONLY) {
+                    RewardList sanitized = new RewardList();
+                    for (Reward reward : pool.getRewards()) {
+                        sanitized.add(Reward.getDefault().setProbability(reward.getProbability()));
+                    }
+                    pool.setRewards(sanitized);
+                }
+            }
         }
         return result;
     }

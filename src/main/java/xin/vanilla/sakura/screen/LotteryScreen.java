@@ -14,13 +14,19 @@ import xin.vanilla.banira.client.gui.widget.ButtonWidget;
 import xin.vanilla.banira.client.gui.widget.DropdownOption;
 import xin.vanilla.banira.client.gui.widget.DropdownSelectWidget;
 import xin.vanilla.banira.client.gui.widget.DropdownInputMode;
+import xin.vanilla.banira.client.gui.widget.ScrollbarWidget;
+import xin.vanilla.banira.client.gui.widget.TooltipWidget;
+import xin.vanilla.banira.client.data.FontDrawArgs;
+import xin.vanilla.banira.client.enums.EnumOrientation;
 import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.client.SakuraClientState;
+import xin.vanilla.sakura.client.SakuraClientPreferences;
 import xin.vanilla.sakura.client.gui.RewardRenderer;
 import xin.vanilla.sakura.config.reward.RewardConfigManager;
 import xin.vanilla.sakura.data.lottery.LotteryLimitPolicy;
 import xin.vanilla.sakura.data.lottery.LotteryPool;
+import xin.vanilla.sakura.data.lottery.LotteryPreviewMode;
 import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.network.packet.LotteryDrawRequestPacket;
 import xin.vanilla.sakura.reward.Reward;
@@ -30,6 +36,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 /** 玩家选择奖池、连抽次数并按服务端许可预览奖励。 */
 public final class LotteryScreen extends BaniraScreen {
@@ -45,6 +53,7 @@ public final class LotteryScreen extends BaniraScreen {
     private String selectedPoolId = "";
     private ScreenCoordinate previewArea;
     private int previewScrollRows;
+    private ScrollbarWidget previewScrollbar;
 
     public LotteryScreen(Screen parent) {
         super(SakuraComponent.get().transClient("word", "lottery_screen"));
@@ -58,8 +67,12 @@ public final class LotteryScreen extends BaniraScreen {
         int panelWidth = Math.min(560, width - 40);
         int panelX = (width - panelWidth) / 2;
         List<LotteryPool> pools = pools();
-        if (selectedPoolId.isEmpty() && !pools.isEmpty()) {
-            selectedPoolId = pools.get(0).getId();
+        if (selectedPoolId.isEmpty()) {
+            selectedPoolId = SakuraClientPreferences.lastLotteryPoolId();
+        }
+        if (pools.stream().noneMatch(pool -> pool.getId().equals(selectedPoolId))) {
+            selectedPoolId = pools.isEmpty() ? "" : pools.get(0).getId();
+            SakuraClientPreferences.lastLotteryPoolId(selectedPoolId);
         }
 
         poolSelect = new DropdownSelectWidget(this);
@@ -74,8 +87,10 @@ public final class LotteryScreen extends BaniraScreen {
                 ? Collections.emptyList() : Collections.singletonList(selectedPoolId));
         poolSelect.onSelectionChanged(values -> {
             selectedPoolId = values.isEmpty() ? "" : values.get(0);
+            SakuraClientPreferences.lastLotteryPoolId(selectedPoolId);
             previewScrollRows = 0;
             configureCountOptions();
+            configurePreviewScrollbar();
         });
         addWidget(poolSelect);
 
@@ -111,7 +126,12 @@ public final class LotteryScreen extends BaniraScreen {
                 PANEL_TOP + CLOSE_PAD, CLOSE_SIZE, CLOSE_SIZE));
         closeButton.onClick(button -> requestClose(CloseReason.BUTTON));
         addWidget(closeButton);
+        previewScrollbar = new ScrollbarWidget(this);
+        previewScrollbar.orientation(EnumOrientation.VERTICAL).minValue(0).scrollStep(1)
+                .onValueChanged(value -> previewScrollRows = (int) Math.round(value));
+        addWidget(previewScrollbar);
         configureCountOptions();
+        configurePreviewScrollbar();
     }
 
     @Override
@@ -142,7 +162,8 @@ public final class LotteryScreen extends BaniraScreen {
                                int width, int height) {
         shape(stack, x, y, width, height, getEffectiveTheme().buttonBg(), 5, 1);
         previewArea = new ScreenCoordinate(x, y, width, height);
-        if (!pool.isShowRewards()) {
+        LotteryPreviewMode mode = pool.getPreviewMode();
+        if (mode == LotteryPreviewMode.NONE) {
             centered(stack, "?", y + height / 2 - font.lineHeight / 2,
                     getEffectiveTheme().textPrimary());
             centered(stack, SakuraComponent.get().translateClient(
@@ -157,27 +178,41 @@ public final class LotteryScreen extends BaniraScreen {
                     getEffectiveTheme().textSecondary());
             return;
         }
-        int columns = Math.max(1, width / 34);
+        int columns = Math.max(1, (width - 10) / 34);
         int visibleRows = Math.max(1, (height - 16) / 34);
         int maxRows = Math.max(0, (rewards.size() + columns - 1) / columns - visibleRows);
         previewScrollRows = Math.max(0, Math.min(previewScrollRows, maxRows));
+        if (previewScrollbar != null) {
+            previewScrollbar.bounds(new ScreenCoordinate(x + width - 7, y + 8, 5, height - 16));
+            previewScrollbar.maxValue(maxRows).visibleSize(visibleRows).visible(maxRows > 0);
+            if ((int) Math.round(previewScrollbar.value()) != previewScrollRows) {
+                previewScrollbar.setValue(previewScrollRows);
+            }
+        }
         int start = previewScrollRows * columns;
         int end = Math.min(rewards.size(), start + columns * visibleRows);
         for (int i = start; i < end; i++) {
             int local = i - start;
             int itemX = x + 10 + (local % columns) * 34;
             int itemY = y + 10 + (local / columns) * 34;
-            RewardRenderer.renderCustomReward(stack, itemRenderer, font,
-                    SakuraClientState.getThemeTexture(),
-                    SakuraClientState.getThemeTextureCoordinate(), rewards.get(i),
-                    itemX, itemY, true, true);
+            Reward reward = rewards.get(i);
+            if (mode.showsItems()) {
+                RewardRenderer.renderCustomReward(stack, itemRenderer, font,
+                        SakuraClientState.getThemeTexture(),
+                        SakuraClientState.getThemeTextureCoordinate(), reward,
+                        itemX, itemY, true, true);
+            } else {
+                shape(stack, itemX, itemY, 16, 16, getEffectiveTheme().buttonBgHover(), 3, 1);
+                font.draw(stack, "?", itemX + 5, itemY + 4, getEffectiveTheme().textPrimary());
+            }
+            deferRewardTooltip(stack, pool, reward, mode, itemX, itemY);
         }
     }
 
     @Override
     protected void onMouseScrolled(MouseScrolledHandleArgs eventArgs) {
         LotteryPool pool = selectedPool();
-        if (pool == null || !pool.isShowRewards() || previewArea == null) {
+        if (pool == null || pool.getPreviewMode() == LotteryPreviewMode.NONE || previewArea == null) {
             return;
         }
         double mouseX = eventArgs.mouseX();
@@ -186,13 +221,54 @@ public final class LotteryScreen extends BaniraScreen {
                 || mouseY < previewArea.y() || mouseY >= previewArea.y() + previewArea.height()) {
             return;
         }
-        int columns = Math.max(1, (int) previewArea.width() / 34);
+        int columns = Math.max(1, ((int) previewArea.width() - 10) / 34);
         int visibleRows = Math.max(1, ((int) previewArea.height() - 16) / 34);
         int maxRows = Math.max(0,
                 (pool.getRewards().size() + columns - 1) / columns - visibleRows);
         previewScrollRows = Math.max(0, Math.min(maxRows,
                 previewScrollRows - (int) Math.signum(eventArgs.delta())));
         eventArgs.consumed(true);
+    }
+
+    private void configurePreviewScrollbar() {
+        if (previewScrollbar == null) return;
+        LotteryPool pool = selectedPool();
+        int panelWidth = Math.min(560, width - 40);
+        int previewWidth = panelWidth - 40;
+        int previewHeight = Math.max(36, height - 184);
+        int columns = Math.max(1, (previewWidth - 10) / 34);
+        int visibleRows = Math.max(1, (previewHeight - 16) / 34);
+        int count = pool == null ? 0 : pool.getRewards().size();
+        int maxRows = Math.max(0, (count + columns - 1) / columns - visibleRows);
+        previewScrollRows = Math.min(previewScrollRows, maxRows);
+        previewScrollbar.maxValue(maxRows).visibleSize(visibleRows).visible(maxRows > 0);
+        previewScrollbar.setValue(previewScrollRows);
+    }
+
+    private void deferRewardTooltip(MatrixStack stack, LotteryPool pool, Reward reward,
+                                    LotteryPreviewMode mode, int x, int y) {
+        double mouseX = inputState.mouseX();
+        double mouseY = inputState.mouseY();
+        if (mouseX < x || mouseX >= x + 18 || mouseY < y || mouseY >= y + 18) return;
+        List<String> lines = new ArrayList<>();
+        if (mode.showsItems()) {
+            lines.add(xin.vanilla.sakura.api.reward.client.SakuraRewardClient.displayName(
+                    reward, Minecraft.getInstance().options.languageCode, true).toString());
+        }
+        if (mode.showsProbabilities()) {
+            BigDecimal total = pool.getRewards().stream().map(Reward::getProbability)
+                    .filter(java.util.Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal percent = total.signum() <= 0 ? BigDecimal.ZERO
+                    : reward.getProbability().multiply(BigDecimal.valueOf(100))
+                    .divide(total, 2, RoundingMode.HALF_UP).stripTrailingZeros();
+            lines.add(SakuraComponent.get().translateClient("format",
+                    "lottery_probability_s", percent.toPlainString()));
+        }
+        if (lines.isEmpty()) return;
+        Text tooltip = Text.literal(String.join("\n", lines));
+        addDeferredTooltipRender(s -> TooltipWidget.drawPopupMessage(s,
+                FontDrawArgs.ofPopo(tooltip.stack(s)).x((int) mouseX).y((int) mouseY),
+                getEffectiveTheme(), season()));
     }
 
     private void configureCountOptions() {

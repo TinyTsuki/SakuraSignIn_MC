@@ -42,4 +42,15 @@ public class LotteryScreenTest {
         org.junit.Assert.assertTrue(source.contains("PANEL_TOP + CLOSE_PAD"));
         org.junit.Assert.assertTrue(source.contains("CLOSE_SIZE / 3f"));
     }
+
+    @Test
+    public void previewSupportsModeAwareTooltipsScrollingAndRememberedPool() throws Exception {
+        String source = new String(Files.readAllBytes(Paths.get(
+                "src/main/java/xin/vanilla/sakura/screen/LotteryScreen.java")),
+                StandardCharsets.UTF_8);
+        org.junit.Assert.assertTrue(source.contains("ScrollbarWidget previewScrollbar"));
+        org.junit.Assert.assertTrue(source.contains("lottery_probability_s"));
+        org.junit.Assert.assertTrue(source.contains("mode.showsItems()"));
+        org.junit.Assert.assertTrue(source.contains("SakuraClientPreferences.lastLotteryPoolId"));
+    }
 }

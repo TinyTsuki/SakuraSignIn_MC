@@ -7,6 +7,7 @@ import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.sakura.network.SakuraClientPacketHandlers;
 import xin.vanilla.sakura.reward.Reward;
 import xin.vanilla.sakura.reward.RewardJsonCodec;
+import xin.vanilla.sakura.data.lottery.LotteryPreviewMode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,22 +18,25 @@ public final class LotteryRevealPacket implements INetworkPacket {
     private static final int MAX_WINNERS = 100;
     private static final int MAX_PREVIEW = 64;
     private final String poolName;
+    private final String token;
     private final List<Reward> winners;
     private final List<Reward> preview;
-    private final boolean previewVisible;
+    private final LotteryPreviewMode previewMode;
 
-    public LotteryRevealPacket(String poolName, List<Reward> winners,
-                               List<Reward> preview, boolean previewVisible) {
+    public LotteryRevealPacket(String token, String poolName, List<Reward> winners,
+                               List<Reward> preview, LotteryPreviewMode previewMode) {
+        this.token = token == null ? "" : token;
         this.poolName = poolName == null ? "" : poolName;
         this.winners = cloneRewards(winners, MAX_WINNERS);
         this.preview = new ArrayList<>();
         if (preview != null) {
             preview.stream().limit(MAX_PREVIEW).forEach(reward -> this.preview.add(reward.clone()));
         }
-        this.previewVisible = previewVisible;
+        this.previewMode = previewMode == null ? LotteryPreviewMode.NONE : previewMode;
     }
 
     public LotteryRevealPacket(BaniraPacketBuffer buffer) {
+        token = buffer.readUtf();
         poolName = buffer.readUtf();
         int winnerCount = buffer.readVarInt();
         if (winnerCount < 1 || winnerCount > MAX_WINNERS) {
@@ -52,16 +56,17 @@ public final class LotteryRevealPacket implements INetworkPacket {
             preview.add(RewardJsonCodec.decode(
                     new com.google.gson.JsonParser().parse(buffer.readUtf())));
         }
-        previewVisible = buffer.readBoolean();
+        previewMode = buffer.readEnum(LotteryPreviewMode.class);
     }
 
     public void toBytes(BaniraPacketBuffer buffer) {
+        buffer.writeUtf(token);
         buffer.writeUtf(poolName);
         buffer.writeVarInt(winners.size());
         winners.forEach(reward -> buffer.writeUtf(RewardJsonCodec.encode(reward).toString()));
         buffer.writeVarInt(preview.size());
         preview.forEach(reward -> buffer.writeUtf(RewardJsonCodec.encode(reward).toString()));
-        buffer.writeBoolean(previewVisible);
+        buffer.writeEnum(previewMode);
     }
 
     public static void handle(LotteryRevealPacket packet, BaniraNetworkContext context) {
@@ -71,6 +76,10 @@ public final class LotteryRevealPacket implements INetworkPacket {
 
     public Reward getWinner() {
         return winners.get(0);
+    }
+
+    public boolean isPreviewVisible() {
+        return previewMode.showsItems();
     }
 
     private static List<Reward> cloneRewards(List<Reward> source, int limit) {

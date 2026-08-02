@@ -21,6 +21,7 @@ import xin.vanilla.sakura.data.lottery.LotteryLimitPolicy;
 import xin.vanilla.sakura.data.lottery.LotteryPool;
 import xin.vanilla.sakura.data.lottery.LotteryPoolValidator;
 import xin.vanilla.sakura.data.lottery.LotteryPools;
+import xin.vanilla.sakura.data.lottery.LotteryPreviewMode;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -89,7 +90,7 @@ public final class RewardConfigCodec {
             object.addProperty("limitPolicy", pool.getLimitPolicy().name());
             object.addProperty("maxDraws", pool.getMaxDraws());
             object.addProperty("cooldownSeconds", pool.getCooldownSeconds());
-            object.addProperty("showRewards", pool.isShowRewards());
+            object.addProperty("previewMode", pool.getPreviewMode().name());
             JsonArray rewards = new JsonArray();
             pool.getRewards().forEach(reward -> rewards.add(RewardJsonCodec.encode(reward)));
             object.add("rewards", rewards);
@@ -466,13 +467,22 @@ public final class RewardConfigCodec {
         for (JsonElement reward : rewardArray) {
             rewards.add(RewardJsonCodec.decode(reward));
         }
+        LotteryPreviewMode previewMode;
+        if (object.has("previewMode")) {
+            previewMode = LotteryPreviewMode.valueOf(requiredString(object, "previewMode"));
+        } else {
+            // 奖励配置属于持久化数据，旧布尔值在读取时迁移为新的四态预览策略。
+            previewMode = !object.has("showRewards") || object.get("showRewards").getAsBoolean()
+                    ? LotteryPreviewMode.ALL
+                    : LotteryPreviewMode.NONE;
+        }
         return new LotteryPool(
                 requiredString(object, "id"),
                 requiredString(object, "displayName"),
                 LotteryLimitPolicy.valueOf(requiredString(object, "limitPolicy")),
                 object.has("maxDraws") ? object.get("maxDraws").getAsInt() : 1,
                 object.has("cooldownSeconds") ? object.get("cooldownSeconds").getAsInt() : 0,
-                !object.has("showRewards") || object.get("showRewards").getAsBoolean(),
+                previewMode,
                 rewards
         );
     }
