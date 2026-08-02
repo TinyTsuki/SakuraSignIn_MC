@@ -17,6 +17,10 @@ import xin.vanilla.sakura.network.packet.PlayerMonthSyncPacket;
 import xin.vanilla.sakura.network.packet.RewardOptionSyncPacket;
 import xin.vanilla.sakura.network.packet.PersonalDatePresetSyncPacket;
 import xin.vanilla.sakura.network.packet.CommonConfigSnapshotPacket;
+import xin.vanilla.sakura.network.packet.LotteryPoolSyncPacket;
+import xin.vanilla.sakura.network.packet.LotteryRevealPacket;
+import xin.vanilla.sakura.data.lottery.LotteryPools;
+import xin.vanilla.sakura.screen.LotteryRevealScreen;
 import xin.vanilla.sakura.data.personaldate.PersonalDatePresets;
 import xin.vanilla.sakura.config.reward.RewardConfigManager;
 import xin.vanilla.sakura.notification.SakuraClientNotifications;
@@ -84,6 +88,8 @@ public class ClientProxy {
                     RewardConfigManager.fromSyncPacketList(Collections.singletonList(packet));
             candidate.setPersonalDatePresets(PersonalDatePresets.copy(
                     RewardConfigManager.getRewardConfig().getPersonalDatePresets()));
+            candidate.setLotteryPools(LotteryPools.copy(
+                    RewardConfigManager.getRewardConfig().getLotteryPools()));
             RewardConfigManager.setRewardConfig(candidate);
             RewardConfigManager.setRewardOptionDataChanged(true);
             RewardConfigManager.saveRewardOption();
@@ -127,5 +133,17 @@ public class ClientProxy {
                 PersonalDatePresets.copy(packet.getPresets()));
         RewardConfigManager.setRewardOptionDataChanged(true);
         RewardConfigManager.saveRewardOption();
+    }
+
+    public static void handleLotteryPoolSync(LotteryPoolSyncPacket packet) {
+        RewardConfigManager.getRewardConfig().setLotteryPools(
+                LotteryPools.copy(packet.getPools()));
+        RewardConfigManager.setRewardOptionDataChanged(true);
+        RewardConfigManager.saveRewardOption();
+    }
+
+    public static void handleLotteryReveal(LotteryRevealPacket packet) {
+        Minecraft.getInstance().setScreen(new LotteryRevealScreen(
+                Minecraft.getInstance().screen, packet));
     }
 }

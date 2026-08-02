@@ -17,6 +17,10 @@ import xin.vanilla.sakura.data.personaldate.PersonalDateDeliveryMode;
 import xin.vanilla.sakura.data.personaldate.PersonalDatePreset;
 import xin.vanilla.sakura.data.personaldate.PersonalDatePresetValidator;
 import xin.vanilla.sakura.data.personaldate.PersonalDateRecurrence;
+import xin.vanilla.sakura.data.lottery.LotteryLimitPolicy;
+import xin.vanilla.sakura.data.lottery.LotteryPool;
+import xin.vanilla.sakura.data.lottery.LotteryPoolValidator;
+import xin.vanilla.sakura.data.lottery.LotteryPools;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -77,6 +81,20 @@ public final class RewardConfigCodec {
             presets.add(object);
         }
         root.add("personalDatePresets", presets);
+        JsonArray lotteryPools = new JsonArray();
+        for (LotteryPool pool : document.getLotteryPools()) {
+            JsonObject object = new JsonObject();
+            object.addProperty("id", pool.getId());
+            object.addProperty("displayName", pool.getDisplayName());
+            object.addProperty("limitPolicy", pool.getLimitPolicy().name());
+            object.addProperty("maxDraws", pool.getMaxDraws());
+            object.addProperty("cooldownSeconds", pool.getCooldownSeconds());
+            JsonArray rewards = new JsonArray();
+            pool.getRewards().forEach(reward -> rewards.add(RewardJsonCodec.encode(reward)));
+            object.add("rewards", rewards);
+            lotteryPools.add(object);
+        }
+        root.add("lotteryPools", lotteryPools);
         return gson.toJson(root);
     }
 
@@ -123,6 +141,12 @@ public final class RewardConfigCodec {
                             element.getAsJsonObject()));
                 }
             }
+            JsonArray lotteryArray = root.getAsJsonArray("lotteryPools");
+            if (lotteryArray != null) {
+                for (JsonElement element : lotteryArray) {
+                    document.getLotteryPools().add(decodeLotteryPool(element.getAsJsonObject()));
+                }
+            }
             validate(document);
             return document;
         } catch (JsonParseException | IllegalStateException | IllegalArgumentException e) {
@@ -153,6 +177,7 @@ public final class RewardConfigCodec {
         }
         config.getPersonalDatePresets().forEach(preset ->
                 document.getPersonalDatePresets().add(copy(preset)));
+        document.setLotteryPools(LotteryPools.copy(config.getLotteryPools()));
         return document;
     }
 
@@ -200,6 +225,7 @@ public final class RewardConfigCodec {
         }
         document.getPersonalDatePresets().forEach(preset ->
                 config.getPersonalDatePresets().add(copy(preset)));
+        config.setLotteryPools(LotteryPools.copy(document.getLotteryPools()));
         return config;
     }
 
@@ -213,7 +239,8 @@ public final class RewardConfigCodec {
 
     private void validate(RewardConfigDocument document) throws IOException {
         if (document == null || document.getSchemaVersion() != RewardConfigDocument.CURRENT_SCHEMA_VERSION
-                || document.getGroups() == null || document.getPersonalDatePresets() == null) {
+                || document.getGroups() == null || document.getPersonalDatePresets() == null
+                || document.getLotteryPools() == null) {
             throw new IOException("Invalid reward configuration document");
         }
         for (RewardGroup group : document.getGroups()) {
@@ -238,6 +265,20 @@ public final class RewardConfigCodec {
             }
             for (Reward reward : preset.getRewards()) {
                 validateReward(reward, preset.getId());
+            }
+        }
+        Set<String> lotteryIds = new HashSet<>();
+        if (document.getLotteryPools().size() > 128) {
+            throw new IOException("Too many lottery pools");
+        }
+        for (LotteryPool pool : document.getLotteryPools()) {
+            List<String> errors = LotteryPoolValidator.validate(pool);
+            if (!errors.isEmpty() || !lotteryIds.add(pool.getId())) {
+                throw new IOException("Invalid lottery pool "
+                        + (pool == null ? "" : pool.getId()) + ": " + errors);
+            }
+            for (Reward reward : pool.getRewards()) {
+                validateReward(reward, pool.getId());
             }
         }
     }
@@ -383,6 +424,7 @@ public final class RewardConfigCodec {
         groups.sort(Comparator.comparingInt(group -> group.getRule().ordinal()));
         result.setGroups(groups);
         result.setPersonalDatePresets(new ArrayList<>(source.getPersonalDatePresets()));
+        result.setLotteryPools(LotteryPools.copy(source.getLotteryPools()));
         return result;
     }
 
@@ -410,6 +452,25 @@ public final class RewardConfigCodec {
                 PersonalDateDeliveryMode.valueOf(requiredString(object, "deliveryMode")),
                 object.get("validBeforeDays").getAsInt(),
                 object.get("validAfterDays").getAsInt(),
+                rewards
+        );
+    }
+
+    private static LotteryPool decodeLotteryPool(JsonObject object) throws IOException {
+        JsonArray rewardArray = object.getAsJsonArray("rewards");
+        if (rewardArray == null) {
+            throw new IOException("Lottery pool rewards are missing");
+        }
+        RewardList rewards = new RewardList();
+        for (JsonElement reward : rewardArray) {
+            rewards.add(RewardJsonCodec.decode(reward));
+        }
+        return new LotteryPool(
+                requiredString(object, "id"),
+                requiredString(object, "displayName"),
+                LotteryLimitPolicy.valueOf(requiredString(object, "limitPolicy")),
+                object.has("maxDraws") ? object.get("maxDraws").getAsInt() : 1,
+                object.has("cooldownSeconds") ? object.get("cooldownSeconds").getAsInt() : 0,
                 rewards
         );
     }

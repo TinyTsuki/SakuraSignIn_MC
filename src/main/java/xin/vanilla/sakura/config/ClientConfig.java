@@ -15,6 +15,7 @@ import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.config.access.ClientConfigAccess;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.sakura.util.GLFWKeyHelper;
+import xin.vanilla.sakura.data.lottery.LotteryAnimationStyle;
 
 import java.util.Arrays;
 import java.util.List;
@@ -71,6 +72,7 @@ public class ClientConfig implements ConfigData {
         boolean autoRewarded();
         boolean showSignInScreenTips();
         DisplayView showSignInScreenTips(boolean value);
+        LotteryAnimationStyle lotteryAnimationStyle();
     }
 
     public interface RewardKeysView {
@@ -109,6 +111,10 @@ public class ClientConfig implements ConfigData {
         private boolean autoRewarded = false;
         @ConfigEntry.Gui.Tooltip(zh_cn = "首次打开签到界面时显示操作说明", en_us = "Show instructions when opening the sign-in screen for the first time")
         private boolean showSignInScreenTips = true;
+        @ConfigEntry.Gui.Tooltip(
+                zh_cn = "领取抽奖奖励时使用的客户端动画\n不会影响服务端抽取结果",
+                en_us = "Client animation used when revealing lottery rewards\nDoes not affect the server result")
+        private LotteryAnimationStyle lotteryAnimationStyle = LotteryAnimationStyle.STRIP;
     }
 
     @Getter

@@ -184,6 +184,9 @@ public class SakuraUtils {
             case PERSONAL_DATE_REWARD:
                 result = CommonConfig.get().permission().permissionPersonalDateReward();
                 break;
+            case LOTTERY_REWARD:
+                result = CommonConfig.get().permission().permissionLotteryReward();
+                break;
         }
         return result;
     }
@@ -352,6 +355,9 @@ public class SakuraUtils {
                 break;
             case PERSONAL_DATE_REWARD:
                 result = "reward_personal_date";
+                break;
+            case LOTTERY_REWARD:
+                result = "reward_lottery";
                 break;
         }
         return result;

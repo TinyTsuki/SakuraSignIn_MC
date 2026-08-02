@@ -65,6 +65,8 @@ import xin.vanilla.sakura.event.ClientEventHandler;
 import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.network.packet.DownloadRewardOptionNotice;
 import xin.vanilla.sakura.network.packet.PersonalDatePresetSyncPacket;
+import xin.vanilla.sakura.network.packet.LotteryPoolSyncPacket;
+import xin.vanilla.sakura.data.lottery.LotteryPool;
 import xin.vanilla.sakura.network.packet.RewardOptionSyncPacket;
 import xin.vanilla.sakura.notification.SakuraClientNotifications;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
@@ -102,7 +104,7 @@ public class RewardOptionScreen extends BaniraScreen {
             ERewardRule.MONTH_REWARD, ERewardRule.WEEK_REWARD,
             ERewardRule.DATE_TIME_REWARD, ERewardRule.CUMULATIVE_REWARD,
             ERewardRule.RANDOM_REWARD, ERewardRule.CDK_REWARD,
-            ERewardRule.PERSONAL_DATE_REWARD
+            ERewardRule.PERSONAL_DATE_REWARD, ERewardRule.LOTTERY_REWARD
     };
 
     private final EditCommandHandler editHandler = new EditCommandHandler(this);
@@ -204,6 +206,7 @@ public class RewardOptionScreen extends BaniraScreen {
         RANDOM_REWARD(209),
         CDK_REWARD(210),
         PERSONAL_DATE_REWARD(211),
+        LOTTERY_REWARD(212),
         OFFSET_Y(301),
         HELP(302),
         DOWNLOAD(303),
@@ -849,6 +852,16 @@ public class RewardOptionScreen extends BaniraScreen {
                 }
             }
             break;
+            case LOTTERY_REWARD: {
+                Map<String, RewardList> lotteryRewards = RewardConfigManager.getRewardMap(
+                        ERewardRule.LOTTERY_REWARD);
+                for (LotteryPool pool : rewardConfig.getLotteryPools()) {
+                    this.addRewardTitleButton(pool.getDisplayName(), pool.getId(), titleIndex);
+                    this.addRewardButton(lotteryRewards, pool.getId());
+                    titleIndex--;
+                }
+            }
+            break;
         }
         rewardContentHeight = rewardLayoutY + bottomMargin;
         setYOffset(yOffset);
@@ -998,6 +1011,10 @@ public class RewardOptionScreen extends BaniraScreen {
                             SakuraNetwork.sendSplitToServer(new PersonalDatePresetSyncPacket(
                                     RewardConfigManager.getRewardConfig()
                                             .getPersonalDatePresets()));
+                        }
+                        if (!RewardConfigManager.isRuleRedacted(ERewardRule.LOTTERY_REWARD)) {
+                            SakuraNetwork.sendSplitToServer(new LotteryPoolSyncPacket(
+                                    RewardConfigManager.getRewardConfig().getLotteryPools()));
                         }
                         flag.set(true);
                     }
@@ -1392,6 +1409,8 @@ public class RewardOptionScreen extends BaniraScreen {
                 ? getCdkRuleKeyInputScreen(transition, rule, createdKey)
                 : rule == ERewardRule.PERSONAL_DATE_REWARD
                 ? getPersonalDatePresetInputScreen(transition, null, createdKey)
+                : rule == ERewardRule.LOTTERY_REWARD
+                ? getLotteryPoolInputScreen(transition, null, createdKey)
                 : getRuleKeyInputScreen(transition, rule, createdKey);
         Minecraft.getInstance().setScreen(keyScreen);
         return true;
@@ -1420,6 +1439,14 @@ public class RewardOptionScreen extends BaniraScreen {
             if (preset != null) {
                 Minecraft.getInstance().setScreen(
                         getPersonalDatePresetInputScreen(this, preset, new String[]{key}));
+            }
+            return;
+        }
+        if (rule == ERewardRule.LOTTERY_REWARD) {
+            LotteryPool pool = RewardConfigManager.lotteryPool(key);
+            if (pool != null) {
+                Minecraft.getInstance().setScreen(
+                        getLotteryPoolInputScreen(this, pool, new String[]{key}));
             }
             return;
         }
@@ -1504,6 +1531,26 @@ public class RewardOptionScreen extends BaniraScreen {
                         int index = RewardConfigManager.getRewardConfig()
                                 .getPersonalDatePresets().indexOf(existing);
                         RewardConfigManager.getRewardConfig().getPersonalDatePresets()
+                                .set(index, candidate);
+                    }
+                    createdKey[0] = candidate.getId();
+                    RewardConfigManager.saveRewardOption();
+                    updateLayout();
+                });
+    }
+
+    private Screen getLotteryPoolInputScreen(
+            Screen callbackScreen, LotteryPool existing, String[] createdKey) {
+        return xin.vanilla.sakura.client.gui.LotteryPoolForm.create(
+                callbackScreen, existing, candidate -> {
+                    RewardConfigManager.addUndoRewardOption(ERewardRule.LOTTERY_REWARD);
+                    RewardConfigManager.clearRedoList();
+                    if (existing == null) {
+                        RewardConfigManager.getRewardConfig().getLotteryPools().add(candidate);
+                    } else {
+                        int index = RewardConfigManager.getRewardConfig()
+                                .getLotteryPools().indexOf(existing);
+                        RewardConfigManager.getRewardConfig().getLotteryPools()
                                 .set(index, candidate);
                     }
                     createdKey[0] = candidate.getId();
