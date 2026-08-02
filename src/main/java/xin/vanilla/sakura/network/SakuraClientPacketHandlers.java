@@ -5,6 +5,7 @@ import xin.vanilla.sakura.network.packet.PlayerDataSyncPacket;
 import xin.vanilla.sakura.network.packet.PlayerMonthSyncPacket;
 import xin.vanilla.sakura.network.packet.RewardOptionSyncPacket;
 import xin.vanilla.sakura.network.packet.PersonalDatePresetSyncPacket;
+import xin.vanilla.sakura.network.packet.CommonConfigSnapshotPacket;
 
 import java.util.function.Consumer;
 
@@ -22,6 +23,8 @@ public final class SakuraClientPacketHandlers {
     };
     private static Consumer<PersonalDatePresetSyncPacket> personalDatePresets = packet -> {
     };
+    private static Consumer<CommonConfigSnapshotPacket> commonConfig = packet -> {
+    };
     private static Consumer<Boolean> rewardUploadResult = success -> {
     };
 
@@ -33,12 +36,14 @@ public final class SakuraClientPacketHandlers {
                                 Consumer<AdvancementPacket> advancementHandler,
                                 Consumer<RewardOptionSyncPacket> rewardOptionsHandler,
                                 Consumer<PersonalDatePresetSyncPacket> personalDatePresetsHandler,
+                                Consumer<CommonConfigSnapshotPacket> commonConfigHandler,
                                 Consumer<Boolean> rewardUploadResultHandler) {
         playerSummary = playerSummaryHandler;
         playerMonth = playerMonthHandler;
         advancements = advancementHandler;
         rewardOptions = rewardOptionsHandler;
         personalDatePresets = personalDatePresetsHandler;
+        commonConfig = commonConfigHandler;
         rewardUploadResult = rewardUploadResultHandler;
     }
 
@@ -60,6 +65,10 @@ public final class SakuraClientPacketHandlers {
 
     public static void handle(PersonalDatePresetSyncPacket packet) {
         personalDatePresets.accept(packet);
+    }
+
+    public static void handle(CommonConfigSnapshotPacket packet) {
+        commonConfig.accept(packet);
     }
 
     public static void handleRewardUploadResult(boolean success) {
