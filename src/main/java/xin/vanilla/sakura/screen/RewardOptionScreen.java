@@ -2248,41 +2248,97 @@ public class RewardOptionScreen extends BaniraScreen {
         }), new ScreenCoordinate(width - rightBarWidth, height - font.lineHeight * 2 - 2,
                 rightBarWidth, font.lineHeight * 2 + 2));
 
-        registerOperation(createDrawnIcon(OperationButtonType.HELP, "?"),
+        registerOperation(createDrawnIcon(OperationButtonType.HELP),
                 new ScreenCoordinate(width - rightBarWidth + 1, 2, 18, 18));
-        registerOperation(createDrawnIcon(OperationButtonType.DOWNLOAD, "v")
+        registerOperation(createDrawnIcon(OperationButtonType.DOWNLOAD)
                         .setTooltip(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.download_reward_config")),
                 new ScreenCoordinate(width - rightBarWidth + 1, 22, 18, 18));
-        registerOperation(createDrawnIcon(OperationButtonType.UPLOAD, "^"),
+        registerOperation(createDrawnIcon(OperationButtonType.UPLOAD),
                 new ScreenCoordinate(width - rightBarWidth + 1, 42, 18, 18));
-        registerOperation(createDrawnIcon(OperationButtonType.FOLDER, "[]")
+        registerOperation(createDrawnIcon(OperationButtonType.FOLDER)
                         .setTooltip(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.open_config_folder")),
                 new ScreenCoordinate(width - rightBarWidth + 1, 62, 18, 18));
-        registerOperation(createDrawnIcon(OperationButtonType.SORT, "=" )
+        registerOperation(createDrawnIcon(OperationButtonType.SORT)
                         .setTooltip(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.reward_rule_sort")),
                 new ScreenCoordinate(width - rightBarWidth + 1, 82, 18, 18));
-        registerOperation(createDrawnIcon(OperationButtonType.MERGE, "+")
+        registerOperation(createDrawnIcon(OperationButtonType.MERGE)
                         .setTooltip(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.merge_same_rewards")),
                 new ScreenCoordinate(width - rightBarWidth + 1, 102, 18, 18));
         updateLayout();
     }
 
-    private RewardOperationWidget createDrawnIcon(OperationButtonType type, String glyph) {
+    private RewardOperationWidget createDrawnIcon(OperationButtonType type) {
         return new RewardOperationWidget(this, type.getCode(), context -> {
             RewardOperationWidget widget = context.getWidget();
             int x = (int) widget.realX();
             int y = (int) widget.realY();
             int width = Math.max(1, (int) widget.realWidth());
             int height = Math.max(1, (int) widget.realHeight());
-            int background = widget.pressed() ? getEffectiveTheme().buttonBgPressed()
-                    : widget.hovered() ? getEffectiveTheme().buttonBgHover()
-                    : getEffectiveTheme().buttonBg();
-            AbstractGui.fill(context.getStack(), x, y, x + width, y + height, background);
-            font.draw(context.getStack(), glyph,
-                    x + (width - font.width(glyph)) / 2.0F,
-                    y + (height - font.lineHeight) / 2.0F,
-                    getEffectiveTheme().buttonText());
+            int color = widget.pressed() ? getEffectiveTheme().buttonTextPressed()
+                    : widget.hovered() ? getEffectiveTheme().buttonTextHover()
+                    : getEffectiveTheme().buttonText();
+            drawOperationIcon(context.getStack(), type, x, y + (widget.pressed() ? 1 : 0),
+                    width, height, color);
         });
+    }
+
+    /** 右侧工具栏使用无背景像素线条，避免小尺寸按钮出现厚重色块。 */
+    private void drawOperationIcon(MatrixStack stack, OperationButtonType type,
+                                   int x, int y, int width, int height, int color) {
+        int left = x + (width - 12) / 2;
+        int top = y + (height - 12) / 2;
+        switch (type) {
+            case HELP:
+                iconRect(stack, left + 3, top + 1, 5, 1, color);
+                iconRect(stack, left + 8, top + 2, 1, 3, color);
+                iconRect(stack, left + 6, top + 5, 3, 1, color);
+                iconRect(stack, left + 5, top + 6, 2, 2, color);
+                iconRect(stack, left + 5, top + 10, 2, 2, color);
+                break;
+            case DOWNLOAD:
+                iconRect(stack, left + 5, top + 1, 2, 7, color);
+                iconRect(stack, left + 3, top + 6, 2, 2, color);
+                iconRect(stack, left + 7, top + 6, 2, 2, color);
+                iconRect(stack, left + 4, top + 8, 4, 1, color);
+                iconRect(stack, left + 2, top + 10, 8, 1, color);
+                break;
+            case UPLOAD:
+                iconRect(stack, left + 5, top + 4, 2, 7, color);
+                iconRect(stack, left + 4, top + 2, 4, 1, color);
+                iconRect(stack, left + 3, top + 3, 2, 2, color);
+                iconRect(stack, left + 7, top + 3, 2, 2, color);
+                iconRect(stack, left + 2, top + 11, 8, 1, color);
+                break;
+            case FOLDER:
+                iconRect(stack, left + 1, top + 3, 5, 1, color);
+                iconRect(stack, left + 1, top + 3, 1, 8, color);
+                iconRect(stack, left + 5, top + 4, 1, 2, color);
+                iconRect(stack, left + 5, top + 5, 6, 1, color);
+                iconRect(stack, left + 10, top + 5, 1, 6, color);
+                iconRect(stack, left + 1, top + 10, 10, 1, color);
+                break;
+            case SORT:
+                iconRect(stack, left + 1, top + 2, 10, 1, color);
+                iconRect(stack, left + 1, top + 5, 7, 1, color);
+                iconRect(stack, left + 1, top + 8, 5, 1, color);
+                iconRect(stack, left + 1, top + 11, 3, 1, color);
+                break;
+            case MERGE:
+                iconRect(stack, left + 1, top + 2, 4, 1, color);
+                iconRect(stack, left + 1, top + 9, 4, 1, color);
+                iconRect(stack, left + 4, top + 2, 1, 8, color);
+                iconRect(stack, left + 4, top + 5, 6, 2, color);
+                iconRect(stack, left + 8, top + 4, 2, 1, color);
+                iconRect(stack, left + 8, top + 7, 2, 1, color);
+                break;
+            default:
+                break;
+        }
+    }
+
+    private static void iconRect(MatrixStack stack, int x, int y,
+                                 int width, int height, int color) {
+        AbstractGui.fill(stack, x, y, x + width, y + height, color);
     }
 
     private RewardOperationWidget createThemeIcon(OperationButtonType type, Coordinate coordinate) {
