@@ -2274,9 +2274,9 @@ public class RewardOptionScreen extends BaniraScreen {
             int y = (int) widget.realY();
             int width = Math.max(1, (int) widget.realWidth());
             int height = Math.max(1, (int) widget.realHeight());
-            int color = widget.pressed() ? getEffectiveTheme().buttonTextPressed()
-                    : widget.hovered() ? getEffectiveTheme().buttonTextHover()
-                    : getEffectiveTheme().buttonText();
+            int color = widget.pressed() ? getEffectiveTheme().accentPressed()
+                    : widget.hovered() ? getEffectiveTheme().accentHover()
+                    : getEffectiveTheme().accentFocused();
             drawOperationIcon(context.getStack(), type, x, y + (widget.pressed() ? 1 : 0),
                     width, height, color);
         });
@@ -2296,18 +2296,10 @@ public class RewardOptionScreen extends BaniraScreen {
                 iconRect(stack, left + 5, top + 10, 2, 2, color);
                 break;
             case DOWNLOAD:
-                iconRect(stack, left + 5, top + 1, 2, 7, color);
-                iconRect(stack, left + 3, top + 6, 2, 2, color);
-                iconRect(stack, left + 7, top + 6, 2, 2, color);
-                iconRect(stack, left + 4, top + 8, 4, 1, color);
-                iconRect(stack, left + 2, top + 10, 8, 1, color);
+                drawTransferArrow(stack, left, top, false, color);
                 break;
             case UPLOAD:
-                iconRect(stack, left + 5, top + 4, 2, 7, color);
-                iconRect(stack, left + 4, top + 2, 4, 1, color);
-                iconRect(stack, left + 3, top + 3, 2, 2, color);
-                iconRect(stack, left + 7, top + 3, 2, 2, color);
-                iconRect(stack, left + 2, top + 11, 8, 1, color);
+                drawTransferArrow(stack, left, top, true, color);
                 break;
             case FOLDER:
                 iconRect(stack, left + 1, top + 3, 5, 1, color);
@@ -2334,6 +2326,23 @@ public class RewardOptionScreen extends BaniraScreen {
             default:
                 break;
         }
+    }
+
+    private static void drawTransferArrow(MatrixStack stack, int left, int top,
+                                          boolean upload, int color) {
+        float centerX = left + 6;
+        float tipY = top + (upload ? 2 : 9);
+        float shoulderY = top + (upload ? 5 : 6);
+        float shaftStartY = top + (upload ? 9 : 2);
+        float shaftEndY = top + (upload ? 3 : 8);
+        AbstractGuiUtils.drawLine(stack, centerX, shaftStartY, centerX, shaftEndY,
+                1.6F, color);
+        AbstractGuiUtils.drawLine(stack, centerX, tipY, centerX - 3, shoulderY,
+                1.6F, color);
+        AbstractGuiUtils.drawLine(stack, centerX, tipY, centerX + 3, shoulderY,
+                1.6F, color);
+        AbstractGuiUtils.drawLine(stack, left + 2, top + 11, left + 10, top + 11,
+                1.6F, color);
     }
 
     private static void iconRect(MatrixStack stack, int x, int y,

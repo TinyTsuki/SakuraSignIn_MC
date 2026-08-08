@@ -83,7 +83,10 @@ public class RewardEditorBaniraScreenContractTest {
         assertTrue(iconStart >= 0 && iconEnd > iconStart);
         String iconRenderer = screen.substring(iconStart, iconEnd);
         assertTrue(iconRenderer.contains("drawOperationIcon("));
+        assertTrue(iconRenderer.contains("drawTransferArrow("));
+        assertTrue(iconRenderer.contains("accentFocused()"));
         assertFalse(iconRenderer.contains("buttonBg"));
+        assertFalse(iconRenderer.contains("buttonText()"));
         assertFalse(screen.contains("getHelpUV()"));
         assertTrue(screen.contains("font.lineHeight + groupHeaderVerticalPadding * 2"));
         assertTrue(screen.contains("drawWelcomeTips(matrixStack)"));
