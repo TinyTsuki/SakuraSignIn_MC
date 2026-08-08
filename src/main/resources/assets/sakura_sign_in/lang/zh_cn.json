@@ -182,6 +182,7 @@
   "word.sakura_sign_in.upload_reward_config_no_permission": "将配置文件同步至服务器\n权限不足",
   "word.sakura_sign_in.open_config_folder": "打开配置文件夹",
   "word.sakura_sign_in.reward_rule_sort": "奖励规则排序",
+  "word.sakura_sign_in.merge_same_rewards": "合并组内相同奖励",
   "format.sakura_sign_in.use_s_key": "可以使用键盘 %s 键",
   "word.sakura_sign_in.click_to_change_theme": "左键或右键点击切换主题",
   "word.sakura_sign_in.how_to_sign_in": "鼠标左键签到、补签或领取奖励",

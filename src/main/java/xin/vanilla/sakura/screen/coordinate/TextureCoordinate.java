@@ -248,36 +248,6 @@ public class TextureCoordinate implements Serializable {
     private Coordinate optionBgUV = new Coordinate().setU0(0).setV0(880).setUWidth(120).setVHeight(120);
 
     /**
-     * 帮助按钮纹理坐标
-     */
-    @NonNull
-    private Coordinate helpUV = new Coordinate().setU0(120).setV0(880).setUWidth(40).setVHeight(40);
-
-    /**
-     * 下载按钮纹理坐标
-     */
-    @NonNull
-    private Coordinate downloadUV = new Coordinate().setU0(160).setV0(880).setUWidth(40).setVHeight(40);
-
-    /**
-     * 上传按钮纹理坐标
-     */
-    @NonNull
-    private Coordinate uploadUV = new Coordinate().setU0(200).setV0(880).setUWidth(40).setVHeight(40);
-
-    /**
-     * 文件夹按钮纹理坐标
-     */
-    @NonNull
-    private Coordinate folderUV = new Coordinate().setU0(240).setV0(880).setUWidth(40).setVHeight(40);
-
-    /**
-     * 排序按钮纹理坐标
-     */
-    @NonNull
-    private Coordinate sortUV = new Coordinate().setU0(280).setV0(880).setUWidth(40).setVHeight(40);
-
-    /**
      * 签到按钮纹理坐标
      */
     @NonNull
@@ -409,26 +379,6 @@ public class TextureCoordinate implements Serializable {
 
     public @NonNull Coordinate getOptionBgUV() {
         return optionBgUV = optionBgUV == null ? new Coordinate() : optionBgUV;
-    }
-
-    public @NonNull Coordinate getHelpUV() {
-        return helpUV = helpUV == null ? new Coordinate() : helpUV;
-    }
-
-    public @NonNull Coordinate getDownloadUV() {
-        return downloadUV = downloadUV == null ? new Coordinate() : downloadUV;
-    }
-
-    public @NonNull Coordinate getUploadUV() {
-        return uploadUV = uploadUV == null ? new Coordinate() : uploadUV;
-    }
-
-    public @NonNull Coordinate getFolderUV() {
-        return folderUV = folderUV == null ? new Coordinate() : folderUV;
-    }
-
-    public @NonNull Coordinate getSortUV() {
-        return sortUV = sortUV == null ? new Coordinate() : sortUV;
     }
 
     public @NonNull Coordinate getSignInBtnUV() {

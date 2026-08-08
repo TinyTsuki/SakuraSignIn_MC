@@ -71,6 +71,10 @@ public final class RewardOperationWidget extends BaseWidget {
     private Consumer<MouseDragEvent> dragHandler;
 
     private boolean dragged;
+    private double pressX;
+    private double pressY;
+
+    private static final double DRAG_ACTIVATION_DISTANCE = 3.0;
 
     public RewardOperationWidget(BaniraScreen screen, int operation, Consumer<RenderContext> renderer) {
         super(screen, new ScreenCoordinate());
@@ -206,6 +210,8 @@ public final class RewardOperationWidget extends BaseWidget {
     @Override
     protected boolean onMouseClick(MouseEvent event) {
         dragged = false;
+        pressX = event.mouseX();
+        pressY = event.mouseY();
         if (pressHandler != null) {
             pressHandler.accept(event);
         }
@@ -215,14 +221,19 @@ public final class RewardOperationWidget extends BaseWidget {
 
     @Override
     protected boolean onMouseDrag(MouseDragEvent event) {
-        if (Math.abs(event.dragX()) > 0.01 || Math.abs(event.dragY()) > 0.01) {
-            dragged = true;
+        if (!dragged && !isDragActivated(event.mouseX() - pressX, event.mouseY() - pressY)) {
+            return true;
         }
+        dragged = true;
         if (dragHandler != null) {
             dragHandler.accept(event);
             return true;
         }
         return false;
+    }
+
+    static boolean isDragActivated(double deltaX, double deltaY) {
+        return Math.hypot(deltaX, deltaY) > DRAG_ACTIVATION_DISTANCE;
     }
 
     @Override
