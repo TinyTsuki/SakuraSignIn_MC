@@ -84,6 +84,8 @@ public class RewardEditorBaniraScreenContractTest {
         String iconRenderer = screen.substring(iconStart, iconEnd);
         assertTrue(iconRenderer.contains("drawOperationIcon("));
         assertTrue(iconRenderer.contains("drawTransferArrow("));
+        assertTrue(iconRenderer.contains("drawLineWithSquareCaps("));
+        assertTrue(iconRenderer.contains("float terminalY = top + 10"));
         assertTrue(iconRenderer.contains("accentFocused()"));
         assertFalse(iconRenderer.contains("buttonBg"));
         assertFalse(iconRenderer.contains("buttonText()"));
