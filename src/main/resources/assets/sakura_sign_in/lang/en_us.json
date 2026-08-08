@@ -182,6 +182,7 @@
   "word.sakura_sign_in.upload_reward_config_no_permission": "Sync config file to server\nPermission denied",
   "word.sakura_sign_in.open_config_folder": "Open Config Folder",
   "word.sakura_sign_in.reward_rule_sort": "Reward Rule Sorting",
+  "word.sakura_sign_in.merge_same_rewards": "Merge identical rewards in each group",
   "format.sakura_sign_in.use_s_key": "You can use the %s key",
   "word.sakura_sign_in.click_to_change_theme": "Left- or right-click to switch themes",
   "word.sakura_sign_in.how_to_sign_in": "Left-click to sign in, make up a sign-in, or claim rewards",

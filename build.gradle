@@ -249,17 +249,6 @@ tasks.named('assemble').configure {
     dependsOn 'jarAll'
 }
 
-afterEvaluate {
-    tasks.named('jar', Jar).configure {
-        manifest.attributes('MixinConfigs': "${mod_id}.mixins.json")
-    }
-    tasks.named('jarAll', Jar).configure {
-        manifest.attributes(
-                'MixinConfigs': "${mod_id}.mixins.json, banira_codex.mixins.json"
-        )
-    }
-}
-
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }

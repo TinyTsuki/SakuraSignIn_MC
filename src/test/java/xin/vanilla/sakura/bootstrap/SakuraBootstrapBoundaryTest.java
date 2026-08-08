@@ -49,6 +49,7 @@ public class SakuraBootstrapBoundaryTest {
         assertTrue(client.contains("BaniraClientEvents.Client.onClientTick"));
         assertTrue(client.contains("BaniraClientEvents.Player.onClientLoggedOut"));
         assertTrue(client.contains("BaniraInput.registerKey"));
+        assertTrue(client.contains("GLFWKey.GLFW_KEY_UNKNOWN"));
     }
 
     @Test

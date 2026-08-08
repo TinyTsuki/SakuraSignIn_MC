@@ -28,6 +28,7 @@ public class BaniraDependencyContractTest {
         assertTrue(build.contains("cacheChangingModulesFor 0, 'seconds'"));
         assertTrue(build.contains("apply from: \"gradle/banira-local-fingerprint.gradle\""));
         assertTrue(build.contains("tasks.register('jarAll', Jar)"));
+        assertTrue(!build.contains("afterEvaluate"));
 
         assertTrue(fingerprint.contains("local-build.json"));
         assertTrue(fingerprint.contains("findByName(\"MavenLocal\")"));
