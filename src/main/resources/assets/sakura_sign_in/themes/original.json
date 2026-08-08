@@ -317,56 +317,6 @@
       "uWidth": 120.0,
       "vHeight": 120.0
     },
-    "helpUV": {
-      "x": 0.0,
-      "y": 0.0,
-      "width": 0.0,
-      "height": 0.0,
-      "u0": 120.0,
-      "v0": 880.0,
-      "uWidth": 40.0,
-      "vHeight": 40.0
-    },
-    "downloadUV": {
-      "x": 0.0,
-      "y": 0.0,
-      "width": 0.0,
-      "height": 0.0,
-      "u0": 160.0,
-      "v0": 880.0,
-      "uWidth": 40.0,
-      "vHeight": 40.0
-    },
-    "uploadUV": {
-      "x": 0.0,
-      "y": 0.0,
-      "width": 0.0,
-      "height": 0.0,
-      "u0": 200.0,
-      "v0": 880.0,
-      "uWidth": 40.0,
-      "vHeight": 40.0
-    },
-    "folderUV": {
-      "x": 0.0,
-      "y": 0.0,
-      "width": 0.0,
-      "height": 0.0,
-      "u0": 240.0,
-      "v0": 880.0,
-      "uWidth": 40.0,
-      "vHeight": 40.0
-    },
-    "sortUV": {
-      "x": 0.0,
-      "y": 0.0,
-      "width": 0.0,
-      "height": 0.0,
-      "u0": 280.0,
-      "v0": 880.0,
-      "uWidth": 40.0,
-      "vHeight": 40.0
-    },
     "signInBtnUV": {
       "x": 0.0,
       "y": 0.0,

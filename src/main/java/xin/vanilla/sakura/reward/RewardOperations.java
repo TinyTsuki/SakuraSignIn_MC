@@ -106,7 +106,9 @@ public final class RewardOperations {
 
     public static Optional<Reward> merge(Reward first, Reward second) {
         if (!semanticallyMatches(first, second)
-                || first.getProbability().compareTo(second.getProbability()) != 0) {
+                || first.getProbability().compareTo(second.getProbability()) != 0
+                || first.isRewarded() != second.isRewarded()
+                || first.isDisabled() != second.isDisabled()) {
             return Optional.empty();
         }
         RewardTypeDefinition<?> raw = SakuraRewards.find(first.getTypeId()).orElse(null);
