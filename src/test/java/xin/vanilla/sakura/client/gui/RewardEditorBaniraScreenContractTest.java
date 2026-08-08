@@ -77,7 +77,13 @@ public class RewardEditorBaniraScreenContractTest {
         assertTrue(screen.contains("groupHeaderHeight()"));
         assertTrue(screen.contains("mergeCurrentRuleRewards()"));
         assertTrue(screen.contains("RewardManager.mergeRewards(entry.getValue())"));
-        assertTrue(screen.contains("createDrawnIcon(OperationButtonType.MERGE"));
+        assertTrue(screen.contains("createDrawnIcon(OperationButtonType.MERGE)"));
+        int iconStart = screen.indexOf("private RewardOperationWidget createDrawnIcon(");
+        int iconEnd = screen.indexOf("private RewardOperationWidget createThemeIcon(", iconStart);
+        assertTrue(iconStart >= 0 && iconEnd > iconStart);
+        String iconRenderer = screen.substring(iconStart, iconEnd);
+        assertTrue(iconRenderer.contains("drawOperationIcon("));
+        assertFalse(iconRenderer.contains("buttonBg"));
         assertFalse(screen.contains("getHelpUV()"));
         assertTrue(screen.contains("font.lineHeight + groupHeaderVerticalPadding * 2"));
         assertTrue(screen.contains("drawWelcomeTips(matrixStack)"));
