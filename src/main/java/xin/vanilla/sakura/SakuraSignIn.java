@@ -42,6 +42,7 @@ public final class SakuraSignIn {
         if (!COMMON_INITIALIZED.compareAndSet(false, true)) {
             return;
         }
+        SakuraLang.initialize();
         BuiltInRewardTypes.register();
         BuiltInRewardRulePermissions.registerVirtualPermissions();
         BaniraEvents.onCommonSetup(event -> event.enqueueWork(SakuraRewards::freeze));

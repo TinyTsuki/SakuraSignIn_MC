@@ -103,5 +103,7 @@ public class BuiltInRewardTypesTest {
         Reward differentProbability = new Reward(new ItemStack(Items.APPLE, 1),
                 SakuraRewardTypes.ITEM, BigDecimal.ONE);
         assertTrue(!RewardOperations.merge(firstItem, differentProbability).isPresent());
+        Reward disabled = secondItem.clone().setDisabled(true);
+        assertTrue(!RewardOperations.merge(firstItem, disabled).isPresent());
     }
 }
