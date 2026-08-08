@@ -40,9 +40,9 @@ public final class SakuraClientBootstrap {
                 () -> ClientConfig.get().display().interfaceThemeMode());
         BuiltInRewardClientTypes.register();
         signInKey = BaniraInput.registerKey(
-                SakuraSignIn.MODID, "sign_in", GLFWKey.GLFW_KEY_H);
+                SakuraSignIn.MODID, "sign_in", GLFWKey.GLFW_KEY_UNKNOWN);
         BaniraKeyHandle rewardOptionKey = BaniraInput.registerKey(
-                SakuraSignIn.MODID, "reward_option", GLFWKey.GLFW_KEY_O);
+                SakuraSignIn.MODID, "reward_option", GLFWKey.GLFW_KEY_UNKNOWN);
 
         SakuraClientPacketHandlers.register(
                 ClientProxy::handleSynPlayerData,

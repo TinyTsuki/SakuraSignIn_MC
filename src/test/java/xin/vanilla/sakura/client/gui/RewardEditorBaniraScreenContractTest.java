@@ -75,6 +75,10 @@ public class RewardEditorBaniraScreenContractTest {
         assertTrue(screen.contains("getEffectiveTheme().buttonBorderHover()"));
         assertTrue(screen.contains("drawRewardGroupBorder("));
         assertTrue(screen.contains("groupHeaderHeight()"));
+        assertTrue(screen.contains("mergeCurrentRuleRewards()"));
+        assertTrue(screen.contains("RewardManager.mergeRewards(entry.getValue())"));
+        assertTrue(screen.contains("createDrawnIcon(OperationButtonType.MERGE"));
+        assertFalse(screen.contains("getHelpUV()"));
         assertTrue(screen.contains("font.lineHeight + groupHeaderVerticalPadding * 2"));
         assertTrue(screen.contains("drawWelcomeTips(matrixStack)"));
         assertFalse(screen.contains("drawLimitedText(matrixStack, tips.content()"));
@@ -200,7 +204,8 @@ public class RewardEditorBaniraScreenContractTest {
 
     private static String read(Path path) {
         try {
-            return new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
+            return new String(Files.readAllBytes(path), StandardCharsets.UTF_8)
+                    .replace("\r\n", "\n");
         } catch (IOException exception) {
             throw new AssertionError("Unable to read " + path, exception);
         }

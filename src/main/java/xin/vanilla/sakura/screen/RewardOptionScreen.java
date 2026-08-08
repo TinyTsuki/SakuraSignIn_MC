@@ -73,6 +73,7 @@ import xin.vanilla.sakura.network.packet.RewardOptionSyncPacket;
 import xin.vanilla.sakura.notification.SakuraClientNotifications;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
 import xin.vanilla.sakura.reward.Reward;
+import xin.vanilla.sakura.reward.RewardManager;
 import xin.vanilla.sakura.client.data.RewardClipboardManager;
 import xin.vanilla.sakura.reward.RewardList;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
@@ -214,7 +215,8 @@ public class RewardOptionScreen extends BaniraScreen {
         DOWNLOAD(303),
         UPLOAD(304),
         FOLDER(305),
-        SORT(306);
+        SORT(306),
+        MERGE(307);
 
         final int code;
 
@@ -1049,6 +1051,13 @@ public class RewardOptionScreen extends BaniraScreen {
             updateLayout.set(true);
             flag.set(true);
         }
+        // 合并当前规则页各组内仅数量不同的相同奖励
+        else if (value.getOperation() == OperationButtonType.MERGE.getCode()) {
+            if (mergeCurrentRuleRewards()) {
+                updateLayout.set(true);
+            }
+            flag.set(true);
+        }
         // 打开配置文件夹
         else if (value.getOperation() == OperationButtonType.FOLDER.getCode()) {
             SystemUtils.openFileInFolder(
@@ -1056,6 +1065,27 @@ public class RewardOptionScreen extends BaniraScreen {
                             .resolve(RewardConfigManager.FILE_NAME));
             flag.set(true);
         }
+    }
+
+    private boolean mergeCurrentRuleRewards() {
+        ERewardRule rule = currentRewardRule();
+        if (rule == null || isCurrentRuleRedacted()) return false;
+        Map<String, RewardList> groups = RewardConfigManager.getRewardMap(rule);
+        Map<String, RewardList> mergedGroups = new LinkedHashMap<>();
+        boolean changed = false;
+        for (Map.Entry<String, RewardList> entry : groups.entrySet()) {
+            RewardList merged = RewardManager.mergeRewards(entry.getValue());
+            mergedGroups.put(entry.getKey(), merged);
+            changed |= merged.size() != entry.getValue().size();
+        }
+        if (!changed) return false;
+        RewardConfigManager.addUndoRewardOption(rule);
+        RewardConfigManager.clearRedoList();
+        RewardConfigManager.setRewardMap(RewardConfigManager.getRewardConfig(), rule, mergedGroups);
+        RewardConfigManager.saveRewardOption();
+        rewardSelection.clear();
+        currRewardButton = null;
+        return true;
     }
 
     /**
@@ -2218,25 +2248,41 @@ public class RewardOptionScreen extends BaniraScreen {
         }), new ScreenCoordinate(width - rightBarWidth, height - font.lineHeight * 2 - 2,
                 rightBarWidth, font.lineHeight * 2 + 2));
 
-        registerOperation(createThemeIcon(OperationButtonType.HELP,
-                        SakuraClientState.getThemeTextureCoordinate().getHelpUV()),
+        registerOperation(createDrawnIcon(OperationButtonType.HELP, "?"),
                 new ScreenCoordinate(width - rightBarWidth + 1, 2, 18, 18));
-        registerOperation(createThemeIcon(OperationButtonType.DOWNLOAD,
-                        SakuraClientState.getThemeTextureCoordinate().getDownloadUV())
+        registerOperation(createDrawnIcon(OperationButtonType.DOWNLOAD, "v")
                         .setTooltip(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.download_reward_config")),
                 new ScreenCoordinate(width - rightBarWidth + 1, 22, 18, 18));
-        registerOperation(createThemeIcon(OperationButtonType.UPLOAD,
-                        SakuraClientState.getThemeTextureCoordinate().getUploadUV()),
+        registerOperation(createDrawnIcon(OperationButtonType.UPLOAD, "^"),
                 new ScreenCoordinate(width - rightBarWidth + 1, 42, 18, 18));
-        registerOperation(createThemeIcon(OperationButtonType.FOLDER,
-                        SakuraClientState.getThemeTextureCoordinate().getFolderUV())
+        registerOperation(createDrawnIcon(OperationButtonType.FOLDER, "[]")
                         .setTooltip(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.open_config_folder")),
                 new ScreenCoordinate(width - rightBarWidth + 1, 62, 18, 18));
-        registerOperation(createThemeIcon(OperationButtonType.SORT,
-                        SakuraClientState.getThemeTextureCoordinate().getSortUV())
+        registerOperation(createDrawnIcon(OperationButtonType.SORT, "=" )
                         .setTooltip(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.reward_rule_sort")),
                 new ScreenCoordinate(width - rightBarWidth + 1, 82, 18, 18));
+        registerOperation(createDrawnIcon(OperationButtonType.MERGE, "+")
+                        .setTooltip(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.merge_same_rewards")),
+                new ScreenCoordinate(width - rightBarWidth + 1, 102, 18, 18));
         updateLayout();
+    }
+
+    private RewardOperationWidget createDrawnIcon(OperationButtonType type, String glyph) {
+        return new RewardOperationWidget(this, type.getCode(), context -> {
+            RewardOperationWidget widget = context.getWidget();
+            int x = (int) widget.realX();
+            int y = (int) widget.realY();
+            int width = Math.max(1, (int) widget.realWidth());
+            int height = Math.max(1, (int) widget.realHeight());
+            int background = widget.pressed() ? getEffectiveTheme().buttonBgPressed()
+                    : widget.hovered() ? getEffectiveTheme().buttonBgHover()
+                    : getEffectiveTheme().buttonBg();
+            AbstractGui.fill(context.getStack(), x, y, x + width, y + height, background);
+            font.draw(context.getStack(), glyph,
+                    x + (width - font.width(glyph)) / 2.0F,
+                    y + (height - font.lineHeight) / 2.0F,
+                    getEffectiveTheme().buttonText());
+        });
     }
 
     private RewardOperationWidget createThemeIcon(OperationButtonType type, Coordinate coordinate) {
