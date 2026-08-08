@@ -2331,17 +2331,18 @@ public class RewardOptionScreen extends BaniraScreen {
     private static void drawTransferArrow(MatrixStack stack, int left, int top,
                                           boolean upload, int color) {
         float centerX = left + 6;
-        float tipY = top + (upload ? 2 : 9);
+        float terminalY = top + 10;
+        float tipY = upload ? top + 2 : terminalY;
         float shoulderY = top + (upload ? 5 : 6);
-        float shaftStartY = top + (upload ? 9 : 2);
+        float shaftStartY = upload ? terminalY : top + 2;
         float shaftEndY = top + (upload ? 3 : 8);
-        AbstractGuiUtils.drawLine(stack, centerX, shaftStartY, centerX, shaftEndY,
+        AbstractGuiUtils.drawLineWithSquareCaps(stack, centerX, shaftStartY, centerX, shaftEndY,
                 1.6F, color);
-        AbstractGuiUtils.drawLine(stack, centerX, tipY, centerX - 3, shoulderY,
+        AbstractGuiUtils.drawLineWithSquareCaps(stack, centerX, tipY, centerX - 3, shoulderY,
                 1.6F, color);
-        AbstractGuiUtils.drawLine(stack, centerX, tipY, centerX + 3, shoulderY,
+        AbstractGuiUtils.drawLineWithSquareCaps(stack, centerX, tipY, centerX + 3, shoulderY,
                 1.6F, color);
-        AbstractGuiUtils.drawLine(stack, left + 2, top + 11, left + 10, top + 11,
+        AbstractGuiUtils.drawLineWithSquareCaps(stack, left + 2, top + 11, left + 10, top + 11,
                 1.6F, color);
     }
 
