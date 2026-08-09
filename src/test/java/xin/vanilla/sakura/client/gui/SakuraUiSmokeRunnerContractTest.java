@@ -28,6 +28,10 @@ public class SakuraUiSmokeRunnerContractTest {
         assertTrue(runner.contains("\"sign-in\".equalsIgnoreCase(target)"));
         assertTrue(runner.contains("\"theme-catalog\".equalsIgnoreCase(target)"));
         assertTrue(runner.contains("Sakura theme smoke PASS"));
+        assertTrue(runner.contains("\"language\".equalsIgnoreCase(target)"));
+        assertTrue(runner.contains("Sakura language smoke PASS"));
+        assertTrue(runner.contains("SakuraLang.get().getI18nFiles()"));
+        assertTrue(runner.contains("SakuraLang.getClientLanguage()"));
         assertTrue(runner.contains("\"quick-action\".equalsIgnoreCase(target)"));
         assertTrue(runner.contains("\"input-form\".equalsIgnoreCase(target)"));
         assertTrue(runner.contains("\"personal-date\".equalsIgnoreCase(target)"));

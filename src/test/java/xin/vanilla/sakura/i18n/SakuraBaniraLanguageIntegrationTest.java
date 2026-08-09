@@ -35,7 +35,7 @@ public class SakuraBaniraLanguageIntegrationTest {
         assertTrue(languageEntry.contains("registerInCache()"));
         assertTrue(languageEntry.contains("public static SakuraLang get()"));
         assertTrue(languageEntry.contains("return BaniraCommonSettings.defaultLanguage()"));
-        assertTrue(entrypoint.contains("SakuraLang.get().getI18nFiles()"));
+        assertFalse(entrypoint.contains("getI18nFiles()"));
         assertTrue(languageCommand.contains("SakuraLang.get().getI18nFiles()"));
         assertFalse(languageCommand.contains("Translator.of(SakuraSignIn.MODID)"));
         assertFalse(config.contains("defaultLanguage"));
