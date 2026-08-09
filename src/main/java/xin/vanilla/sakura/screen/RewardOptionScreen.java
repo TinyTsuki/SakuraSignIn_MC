@@ -28,6 +28,7 @@ import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.enums.IEnumDescribable;
 import xin.vanilla.banira.common.util.NumberUtils;
 import xin.vanilla.sakura.SakuraComponent;
+import xin.vanilla.sakura.SakuraLang;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.AllArgsConstructor;
@@ -423,7 +424,7 @@ public class RewardOptionScreen extends BaniraScreen {
     /** 奖励悬浮提示只描述奖励本身，操作说明集中在首屏帮助。 */
     private Text rewardItemTooltip(Reward reward) {
         return Text.from(SakuraRewardClient.displayName(
-                reward, SakuraUtils.getClientLanguage(), true).clone());
+                reward, SakuraLang.getClientLanguage(), true).clone());
     }
 
     private boolean isRewardGroupCollapsed(String key) {
