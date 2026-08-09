@@ -163,8 +163,6 @@ public class CommonConfig implements ConfigData {
         ServerView requiredTotalOnlineSeconds(int value);
         int requiredTodayOnlineSeconds();
         ServerView requiredTodayOnlineSeconds(int value);
-        String defaultLanguage();
-        ServerView defaultLanguage(String value);
     }
 
     public interface HistoryView {
@@ -282,8 +280,6 @@ public class CommonConfig implements ConfigData {
                 zh_cn = "今日在线达到指定秒数后才能签到\n跨日后重新计算，0 表示不限制",
                 en_us = "Online seconds required today before sign-in\nResets each day; 0 disables this requirement")
         private int requiredTodayOnlineSeconds = 0;
-        @ConfigEntry.Gui.Tooltip(zh_cn = "无法确定玩家语言时使用的默认语言", en_us = "Default language when a player's language is unavailable")
-        private String defaultLanguage = "en_us";
     }
 
     @Getter
