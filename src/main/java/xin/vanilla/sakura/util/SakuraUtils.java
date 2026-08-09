@@ -200,27 +200,7 @@ public class SakuraUtils {
     }
 
     public static String getValidLanguage(@Nullable PlayerEntity player, @Nullable String language) {
-        String result;
-        if (StringUtils.isNullOrEmptyEx(language) || "client".equalsIgnoreCase(language)) {
-            if (player instanceof ServerPlayerEntity) {
-                result = SakuraUtils.getServerPlayerLanguage((ServerPlayerEntity) player);
-            } else {
-                result = SakuraUtils.getClientLanguage();
-            }
-        } else if ("server".equalsIgnoreCase(language)) {
-            result = CommonConfig.get().server().defaultLanguage();
-        } else {
-            result = language;
-        }
-        return result;
-    }
-
-    public static String getServerPlayerLanguage(ServerPlayerEntity player) {
-        return player.getLanguage();
-    }
-
-    public static String getClientLanguage() {
-        return Translator.getClientLanguage();
+        return Translator.getValidLanguage(player, language);
     }
 
     /**

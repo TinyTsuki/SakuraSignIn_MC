@@ -1,6 +1,7 @@
 package xin.vanilla.sakura.command.impl;
 
 import xin.vanilla.sakura.SakuraComponent;
+import xin.vanilla.sakura.SakuraLang;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.command.CommandSource;
@@ -11,8 +12,6 @@ import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.message.SakuraMessages;
 import xin.vanilla.banira.common.data.Component;
-import xin.vanilla.banira.common.util.Translator;
-import xin.vanilla.sakura.SakuraSignIn;
 
 /**
  * 玩家语言设置指令。
@@ -27,14 +26,14 @@ public final class LanguageCommand {
                         .suggests((context, builder) -> {
                             builder.suggest("client");
                             builder.suggest("server");
-                            Translator.of(SakuraSignIn.MODID).getI18nFiles().forEach(builder::suggest);
+                            SakuraLang.get().getI18nFiles().forEach(builder::suggest);
                             return builder.buildFuture();
                         })
                         .executes(context -> {
                             ServerPlayerEntity player = context.getSource().getPlayerOrException();
                             IPlayerSignInData data = SakuraPlayerData.get(player);
                             String language = StringArgumentType.getString(context, "language");
-                            if (Translator.of(SakuraSignIn.MODID).getI18nFiles().contains(language)
+                            if (SakuraLang.get().getI18nFiles().contains(language)
                                     || "server".equalsIgnoreCase(language)
                                     || "client".equalsIgnoreCase(language)) {
                                 data.setLanguage(language);
