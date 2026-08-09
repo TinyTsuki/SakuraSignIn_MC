@@ -89,6 +89,13 @@ configurations.configureEach {
 
 repositories {
     mavenLocal()
+    maven {
+        name = "Curse Maven"
+        url = "https://www.cursemaven.com"
+        content {
+            includeGroup "curse.maven"
+        }
+    }
 }
 
 apply from: "gradle/banira-local-fingerprint.gradle"
@@ -111,6 +118,22 @@ dependencies {
     baniraCodexObf(baniraCodexCoords) {
         changing = true
     }
+
+    // jei
+    implementation fg.deobf("curse.maven:jei-238222:${jei_id}")
+
+    // ftb
+    implementation fg.deobf("curse.maven:architectury-api-419699:${architectury_id}")
+    implementation fg.deobf("curse.maven:ftb-library-forge-404465:${ftb_library_id}")
+    runtimeOnly fg.deobf("curse.maven:item-filters-309674:${item_filters_id}")
+    runtimeOnly fg.deobf("curse.maven:ftb-quests-forge-289412:${ftb_quests_id}")
+    runtimeOnly fg.deobf("curse.maven:ftb-teams-forge-404468:${ftb_teams_id}")
+    runtimeOnly fg.deobf("curse.maven:ftb-chunks-forge-314906:${ftb_chunks_id}")
+
+    // ipn
+    implementation fg.deobf("curse.maven:kotlin-for-forge-351264:${kotlin_id}")
+    implementation fg.deobf("curse.maven:libipn-679177:${libipn_id}")
+    implementation fg.deobf("curse.maven:inventory-profiles-next-495267:${ipn_id}")
 }
 
 tasks.named('processResources', ProcessResources).configure {
