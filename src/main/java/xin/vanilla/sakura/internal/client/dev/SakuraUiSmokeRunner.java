@@ -16,6 +16,7 @@ import xin.vanilla.banira.api.BaniraEnvironment;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.SakuraComponent;
+import xin.vanilla.sakura.SakuraLang;
 import xin.vanilla.sakura.api.reward.RewardTypeId;
 import xin.vanilla.sakura.client.SakuraClientState;
 import xin.vanilla.sakura.client.theme.BuiltInThemeCatalog;
@@ -64,6 +65,10 @@ public final class SakuraUiSmokeRunner {
         }
 
         String target = System.getenv(ENVIRONMENT_KEY);
+        if ("language".equalsIgnoreCase(target)) {
+            tickLanguage();
+            return;
+        }
         if ("theme-catalog".equalsIgnoreCase(target)) {
             tickThemeCatalog();
             return;
@@ -120,6 +125,32 @@ public final class SakuraUiSmokeRunner {
                 quickAction ? "quick-action" : signIn ? "sign-in" : inputForm ? "input-form"
                         : personalDate ? "personal-date"
                         : rewardExtension ? "reward-extension" : "reward");
+    }
+
+    /** 在资源加载完成后验证模组语言发现与客户端语言选择。 */
+    private static void tickLanguage() {
+        if (opened) {
+            return;
+        }
+        Minecraft minecraft = Minecraft.getInstance();
+        if (!(minecraft.screen instanceof MainMenuScreen)) {
+            return;
+        }
+
+        opened = true;
+        List<String> languages = SakuraLang.get().getI18nFiles();
+        String clientLanguage = SakuraLang.getClientLanguage();
+        String chineseTitle = SakuraLang.get().getTranslation(
+                "key.sakura_sign_in.categories", "zh_cn");
+        if (!languages.contains("zh_cn")
+                || !"zh_cn".equals(clientLanguage)
+                || !"樱花签".equals(chineseTitle)) {
+            throw new IllegalStateException("Sakura language smoke failed: languages="
+                    + languages + ", client=" + clientLanguage + ", title=" + chineseTitle);
+        }
+        LOGGER.info("Sakura language smoke PASS: languages={}, client={}, title={}",
+                languages, clientLanguage, chineseTitle);
+        minecraft.stop();
     }
 
     private static void tickRewardExtensionExit() {
