@@ -206,6 +206,11 @@ public class MonthlySignInHistoryRetentionTest {
         }
 
         @Override
+        public void save(UUID playerUuid, PlayerSignInSummary summary) {
+            stored = summary.serializeNBT();
+        }
+
+        @Override
         public void saveAndVerify(UUID playerUuid, PlayerSignInSummary summary) {
             stored = summary.serializeNBT();
         }
