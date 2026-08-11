@@ -13,7 +13,10 @@ import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import xin.vanilla.sakura.data.personaldate.PlayerPersonalDateSlot;
 
 /**
@@ -88,8 +91,24 @@ public final class PlayerSignInDataRepository {
             mergePersonalDateSlots(parsed.getSummary(), previous.get());
         }
         data.setMonthIndexes(parsed.getSummary().getMonthIndexes());
-        historyRepository.saveAndVerify(playerUuid, parsed);
-        summaryRepository.saveAndVerify(playerUuid, parsed.getSummary());
+        historyRepository.saveMonths(playerUuid, parsed, changedHistoryMonths(previous, parsed));
+        summaryRepository.save(playerUuid, parsed.getSummary());
+    }
+
+    private static Set<String> changedHistoryMonths(
+            Optional<PlayerSignInSummary> previous,
+            LegacyPlayerData candidate
+    ) {
+        Set<String> changed = new LinkedHashSet<>();
+        candidate.getRecordsByMonth().keySet().forEach(month -> {
+            if (!previous.isPresent()
+                    || !Objects.equals(
+                    previous.get().getMonthIndexes().get(month),
+                    candidate.getSummary().getMonthIndexes().get(month))) {
+                changed.add(month);
+            }
+        });
+        return changed;
     }
 
     private static ListNBT copyList(ListNBT source) {
