@@ -30,6 +30,11 @@ public final class BaniraPlayerSummaryRepository implements PlayerSummaryStore {
     }
 
     @Override
+    public void save(UUID playerUuid, PlayerSignInSummary summary) {
+        BaniraPlayerData.put(playerUuid, SakuraSignIn.MODID, summary.serializeNBT());
+    }
+
+    @Override
     public void saveAndVerify(UUID playerUuid, PlayerSignInSummary summary) throws IOException {
         CompoundNBT serialized = summary.serializeNBT();
         BaniraPlayerData.put(playerUuid, SakuraSignIn.MODID, serialized);
