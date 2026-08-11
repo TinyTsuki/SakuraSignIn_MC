@@ -127,8 +127,18 @@ public class LegacyPlayerDataMigrationServiceTest {
         }
 
         @Override
+        public void save(UUID playerUuid, LegacyPlayerData playerData) {
+            throw new AssertionError("Migration must use verified history writes");
+        }
+
+        @Override
         public Optional<PlayerSignInSummary> load(UUID playerUuid) {
             return Optional.ofNullable(summary);
+        }
+
+        @Override
+        public void save(UUID playerUuid, PlayerSignInSummary playerSummary) {
+            throw new AssertionError("Migration must use verified summary writes");
         }
 
         @Override

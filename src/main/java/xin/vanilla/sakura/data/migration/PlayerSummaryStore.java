@@ -12,5 +12,13 @@ import java.util.UUID;
 public interface PlayerSummaryStore {
     Optional<PlayerSignInSummary> load(UUID playerUuid) throws IOException;
 
+    /**
+     * 保存运行时摘要，由 Banira 的玩家保存生命周期统一落盘。
+     */
+    void save(UUID playerUuid, PlayerSignInSummary summary) throws IOException;
+
+    /**
+     * 迁移专用：强制落盘并回读验证后，才允许删除旧数据。
+     */
     void saveAndVerify(UUID playerUuid, PlayerSignInSummary summary) throws IOException;
 }
