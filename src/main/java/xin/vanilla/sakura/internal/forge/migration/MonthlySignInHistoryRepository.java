@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -38,22 +39,51 @@ public final class MonthlySignInHistoryRepository implements SignInHistoryStore 
     }
 
     @Override
-    public void saveAndVerify(UUID playerUuid, LegacyPlayerData playerData) throws IOException {
-        for (Map.Entry<String, List<CompoundNBT>> entry : playerData.getRecordsByMonth().entrySet()) {
-            CompoundNBT root = new CompoundNBT();
-            root.putInt("schemaVersion", SCHEMA_VERSION);
-            root.putString("playerUuid", playerUuid.toString());
-            root.putString("month", entry.getKey());
-            ListNBT records = new ListNBT();
-            entry.getValue().forEach(record -> records.add(record.copy()));
-            root.put("records", records);
+    public void save(UUID playerUuid, LegacyPlayerData playerData) throws IOException {
+        saveMonths(playerUuid, playerData, playerData.getRecordsByMonth().keySet());
+    }
 
+    /**
+     * 日常保存只改写实际发生签到或领奖变化的月份。
+     */
+    public void saveMonths(UUID playerUuid, LegacyPlayerData playerData, Set<String> months)
+            throws IOException {
+        for (Map.Entry<String, List<CompoundNBT>> entry : playerData.getRecordsByMonth().entrySet()) {
+            if (!months.contains(entry.getKey())) {
+                continue;
+            }
             Path target = historyFile(playerUuid, entry.getKey());
-            AtomicNbtFiles.write(target, root);
-            if (!root.equals(AtomicNbtFiles.read(target))) {
+            AtomicNbtFiles.write(target,
+                    historyRoot(playerUuid, entry.getKey(), entry.getValue()));
+        }
+    }
+
+    @Override
+    public void saveAndVerify(UUID playerUuid, LegacyPlayerData playerData) throws IOException {
+        save(playerUuid, playerData);
+        for (String month : playerData.getRecordsByMonth().keySet()) {
+            Path target = historyFile(playerUuid, month);
+            CompoundNBT expected = historyRoot(playerUuid, month,
+                    playerData.getRecordsByMonth().get(month));
+            if (!expected.equals(AtomicNbtFiles.read(target))) {
                 throw new IOException("Monthly sign-in history verification failed: " + target);
             }
         }
+    }
+
+    private static CompoundNBT historyRoot(
+            UUID playerUuid,
+            String month,
+            List<CompoundNBT> sourceRecords
+    ) {
+        CompoundNBT root = new CompoundNBT();
+        root.putInt("schemaVersion", SCHEMA_VERSION);
+        root.putString("playerUuid", playerUuid.toString());
+        root.putString("month", month);
+        ListNBT records = new ListNBT();
+        sourceRecords.forEach(record -> records.add(record.copy()));
+        root.put("records", records);
+        return root;
     }
 
     public List<SignInRecord> loadAll(UUID playerUuid) throws IOException {
