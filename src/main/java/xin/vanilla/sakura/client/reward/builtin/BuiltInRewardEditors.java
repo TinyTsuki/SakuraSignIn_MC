@@ -47,7 +47,7 @@ final class BuiltInRewardEditors {
         return StandardRewardEditors.custom(context -> Minecraft.getInstance().setScreen(
                 AdvancementRewardSelectionFlow.create(parent(context),
                         context.getInitialValue() == null
-                                ? new ResourceLocation("minecraft:story/root")
+                                ? ResourceLocation.parse("minecraft:story/root")
                                 : context.getInitialValue(),
                         context.getSubmit())));
     }

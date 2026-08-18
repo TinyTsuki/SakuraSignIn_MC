@@ -83,7 +83,7 @@ public class RewardManager {
      * @param signInData 玩家签到数据
      */
     public static int getTotalSignInDays(IPlayerSignInData signInData) {
-        return (int) signInData.getSignInRecords().stream().map(SignInRecord::getCompensateTime).map(DateUtils::toDateInt).distinct().count();
+        return signInData.getTotalSignInDays();
     }
 
     /**

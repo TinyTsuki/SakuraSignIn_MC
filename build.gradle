@@ -31,6 +31,7 @@ java {
 
 minecraft {
     mappings channel: mapping_channel, version: mapping_version
+    reobf = false
     copyIdeResources = true
 
     runs {
@@ -141,15 +142,18 @@ tasks.named('processResources', ProcessResources).configure {
 
 // 胖包资源包含 Banira 的模组声明，瘦包仅声明依赖。
 tasks.register('prepareFatResources') {
-    dependsOn 'processResources'
-    inputs.dir(layout.buildDirectory.dir('resources/main'))
+    dependsOn 'compileJava', 'processResources'
+    def processedModsToml = provider {
+        new File(sourceSets.main.output.resourcesDir, 'META-INF/mods.toml')
+    }
+    inputs.file(processedModsToml)
     inputs.property('banira_embed_mods_toml',
             "${banira_version}|${minecraft_version}|${forge_version_range}|${minecraft_version_range}")
     outputs.dir(layout.buildDirectory.dir('fatResources/main'))
     doLast {
         copy {
-            from layout.buildDirectory.dir('resources/main')
-            into layout.buildDirectory.dir('fatResources/main')
+            from processedModsToml
+            into layout.buildDirectory.dir('fatResources/main/META-INF')
         }
         def modsToml = layout.buildDirectory.file('fatResources/main/META-INF/mods.toml').get().asFile
         if (!modsToml.isFile()) {
@@ -203,17 +207,16 @@ tasks.named('jar', Jar).configure {
         ])
     }
 
-    finalizedBy 'reobfJar'
 }
 
-// 胖包合并双方已 reobf 的产物，不再执行第二次 remap。
+// 1.21.1 使用官方映射运行时，瘦包与 Banira 发布包可直接合并。
 tasks.register('jarAll', Jar) {
     archiveBaseName.set(mod_id)
     archiveVersion.set(modsJarVersion)
     archiveClassifier.set('all')
     destinationDirectory.set(modsDestinationDir)
 
-    dependsOn 'reobfJar', 'prepareFatResources', configurations.named('baniraCodexObf')
+    dependsOn 'jar', 'prepareFatResources', configurations.named('baniraCodexObf')
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
     def slimJar = tasks.named('jar', Jar)

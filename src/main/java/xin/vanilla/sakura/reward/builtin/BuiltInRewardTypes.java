@@ -62,7 +62,7 @@ public final class BuiltInRewardTypes {
                     @Override
                     public RewardMergeKey key(ItemStack value) {
                         String id = BuiltInRegistries.ITEM.getKey(value.getItem()).toString();
-                        return RewardMergeKey.of(id + (value.hasTag() ? value.getTag().toString() : ""));
+                        return RewardMergeKey.of(id + value.getComponentsPatch());
                     }
 
                     @Override
@@ -86,11 +86,12 @@ public final class BuiltInRewardTypes {
                         ? Collections.singletonList(new RewardViolation("duration", "positive"))
                         : Collections.emptyList())
                 .describer((language, value, withAmount) -> typeName(language, 2)
-                        .append(": ").append(SakuraComponent.get().object(value.getEffect().getDisplayName())))
+                        .append(": ").append(SakuraComponent.get().object(value.getEffect().value().getDisplayName())))
                 .merger(new RewardMerger<MobEffectInstance>() {
                     @Override
                     public RewardMergeKey key(MobEffectInstance value) {
-                        return RewardMergeKey.of(BuiltInRegistries.MOB_EFFECT.getKey(value.getEffect())
+                        return RewardMergeKey.of(value.getEffect().unwrapKey()
+                                .map(key -> key.location().toString()).orElse("unknown")
                                 + ":" + value.getAmplifier());
                     }
 
@@ -130,7 +131,8 @@ public final class BuiltInRewardTypes {
     private static void registerAdvancement() {
         SakuraRewards.register(RewardTypeDefinition.builder(SakuraRewardTypes.ADVANCEMENT,
                         new AdvancementRewardCodec(), (context, value) -> {
-                            Advancement advancement = context.player().server.getAdvancements().getAdvancement(value);
+                            net.minecraft.advancements.AdvancementHolder advancement =
+                                    context.player().server.getAdvancements().get(value);
                             if (advancement == null) {
                                 return RewardGrantResult.of(RewardGrantStatus.REJECTED, "unknown_advancement");
                             }

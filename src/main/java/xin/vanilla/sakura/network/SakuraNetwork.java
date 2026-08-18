@@ -52,8 +52,6 @@ public final class SakuraNetwork {
                 CommonConfigSnapshotPacket::new, CommonConfigSnapshotPacket::handle);
         HANDLER.registerSplit(RewardOptionSyncPacket.class, RewardOptionSyncPacket::toBytes,
                 RewardOptionSyncPacket::new, RewardOptionSyncPacket::handle);
-        HANDLER.register(ItemStackPacket.class, ItemStackPacket::toBytes,
-                ItemStackPacket::new, ItemStackPacket::handle);
         HANDLER.register(SignInPacket.class, SignInPacket::toBytes,
                 SignInPacket::new, SignInPacket::handle);
         HANDLER.registerSplit(AdvancementPacket.class, AdvancementPacket::toBytes,

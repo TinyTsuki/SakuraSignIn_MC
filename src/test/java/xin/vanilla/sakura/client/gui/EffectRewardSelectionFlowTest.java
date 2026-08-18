@@ -1,5 +1,6 @@
 package xin.vanilla.sakura.client.gui;
 
+import net.minecraft.core.Holder;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -7,6 +8,7 @@ import net.minecraft.resources.ResourceLocation;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import xin.vanilla.sakura.test.BaniraTestPlatform;
+import xin.vanilla.sakura.test.ForgeUnitTestBootstrap;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
@@ -18,16 +20,15 @@ import static org.junit.Assert.assertTrue;
 public class EffectRewardSelectionFlowTest {
     @BeforeClass
     public static void bootstrapMinecraftRegistries() {
-        net.minecraft.SharedConstants.tryDetectVersion();
-        net.minecraft.server.Bootstrap.bootStrap();
+        ForgeUnitTestBootstrap.bootstrap();
     }
 
     @Test
     public void preservesEffectDurationAmplifierAndProbability() throws Exception {
-        ResourceLocation effectId = new ResourceLocation("minecraft", "luck");
-        MobEffect effect = MobEffects.LUCK;
+        ResourceLocation effectId = ResourceLocation.fromNamespaceAndPath("minecraft", "luck");
+        Holder<MobEffect> effect = MobEffects.LUCK;
         BaniraTestPlatform.install();
-        BaniraTestPlatform.register(effectId.toString(), effect);
+        BaniraTestPlatform.register(effectId.toString(), effect.value());
         MobEffectInstance selected = new MobEffectInstance(effect, 7200, 3);
 
         MobEffectInstance reward = EffectRewardSelectionFlow.copyValue(selected);
@@ -39,7 +40,7 @@ public class EffectRewardSelectionFlowTest {
 
     @Test
     public void suppliesPositiveDurationForIncompleteSelectorDefaults() throws Exception {
-        MobEffect effect = MobEffects.LUCK;
+        Holder<MobEffect> effect = MobEffects.LUCK;
         MobEffectInstance reward = EffectRewardSelectionFlow.copyValue(
                 new MobEffectInstance(effect));
 

@@ -3,6 +3,7 @@ package xin.vanilla.sakura.reward.builtin;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.mojang.serialization.JsonOps;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.HoverEvent;
 import xin.vanilla.banira.common.data.Color;
@@ -50,7 +51,9 @@ public final class MessageRewardCodec implements RewardCodec<Component> {
             result.clickEvent(new ClickEvent(clickAction(json.get("clickEvent.action").getAsString()),
                     json.get("clickEvent.value").getAsString()));
         }
-        if (json.has("hoverEvent")) result.hoverEvent(HoverEvent.deserialize(json.getAsJsonObject("hoverEvent")));
+        if (json.has("hoverEvent")) {
+            result.hoverEvent(HoverEvent.CODEC.parse(JsonOps.INSTANCE, json.get("hoverEvent")).getOrThrow());
+        }
         for (JsonElement child : array(json, "children")) result.getChildren().add(decodeLegacy(child.getAsJsonObject()));
         for (JsonElement arg : array(json, "args")) result.getArgs().add(decodeLegacy(arg.getAsJsonObject()));
         return result;
@@ -58,7 +61,7 @@ public final class MessageRewardCodec implements RewardCodec<Component> {
 
     private static ClickEvent.Action clickAction(String name) {
         for (ClickEvent.Action action : ClickEvent.Action.values()) {
-            if (action.name().equalsIgnoreCase(name) || action.getName().equalsIgnoreCase(name)) return action;
+            if (action.name().equalsIgnoreCase(name)) return action;
         }
         throw new IllegalArgumentException("Unknown click action: " + name);
     }

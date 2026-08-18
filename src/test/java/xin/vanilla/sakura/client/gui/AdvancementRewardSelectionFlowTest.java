@@ -10,7 +10,7 @@ import static org.junit.Assert.assertEquals;
 public class AdvancementRewardSelectionFlowTest {
     @Test
     public void preservesAdvancementAndProbability() {
-        ResourceLocation selected = new ResourceLocation("minecraft", "story/mine_stone");
+        ResourceLocation selected = ResourceLocation.fromNamespaceAndPath("minecraft", "story/mine_stone");
 
         ResourceLocation reward = AdvancementRewardSelectionFlow.copyValue(selected);
 

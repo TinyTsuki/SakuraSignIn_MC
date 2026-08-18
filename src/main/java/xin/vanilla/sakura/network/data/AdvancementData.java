@@ -4,14 +4,12 @@ import xin.vanilla.sakura.SakuraComponent;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import net.minecraft.advancements.Advancement;
+import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.advancements.AdvancementType;
 import net.minecraft.advancements.DisplayInfo;
-import net.minecraft.advancements.FrameType;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.TagParser;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.chat.Component;
 import xin.vanilla.banira.api.BaniraIdentifier;
@@ -37,36 +35,31 @@ public class AdvancementData {
         }
     }
 
-    public static AdvancementData fromAdvancement(Advancement advancement) {
-        DisplayInfo displayInfo = advancement.getDisplay();
-        if (displayInfo == null) {
-            return new AdvancementData(advancement.getId(), createDisplayInfo(advancement.getId().toString()));
-        }
-        return new AdvancementData(advancement.getId(), displayInfo);
+    public static AdvancementData fromAdvancement(AdvancementHolder advancement) {
+        DisplayInfo displayInfo = advancement.value().display().orElse(null);
+        return new AdvancementData(advancement.id(), displayInfo == null
+                ? createDisplayInfo(advancement.id().toString()) : displayInfo);
     }
 
     public static AdvancementData readFromBuffer(BaniraPacketBuffer buffer) {
         BaniraIdentifier identifier = buffer.readIdentifier();
-        ResourceLocation id = new ResourceLocation(identifier.getNamespace(), identifier.getPath());
-        try {
-            ItemStack icon = ItemStack.of(TagParser.parseTag(buffer.readUtf()));
-            Component title = Component.Serializer.fromJson(buffer.readUtf());
-            Component description = Component.Serializer.fromJson(buffer.readUtf());
-            String background = buffer.readUtf();
-            FrameType frame = buffer.readEnum(FrameType.class);
-            return new AdvancementData(id, new DisplayInfo(
-                    icon,
-                    title == null ? SakuraComponent.get().literal("").toVanilla() : title,
-                    description == null ? SakuraComponent.get().literal("").toVanilla() : description,
-                    background.isEmpty() ? null : new ResourceLocation(background),
-                    frame,
-                    buffer.readBoolean(),
-                    buffer.readBoolean(),
-                    buffer.readBoolean()
-            ));
-        } catch (CommandSyntaxException exception) {
-            throw new IllegalArgumentException("Invalid advancement payload", exception);
-        }
+        ResourceLocation id = ResourceLocation.fromNamespaceAndPath(
+                identifier.getNamespace(), identifier.getPath());
+        ResourceLocation itemId = ResourceLocation.parse(buffer.readUtf());
+        ItemStack icon = new ItemStack(BuiltInRegistries.ITEM.get(itemId), buffer.readVarInt());
+        Component title = Component.literal(buffer.readUtf());
+        Component description = Component.literal(buffer.readUtf());
+        String background = buffer.readUtf();
+        AdvancementType type = buffer.readEnum(AdvancementType.class);
+        return new AdvancementData(id, new DisplayInfo(
+                icon, title, description,
+                background.isEmpty() ? java.util.Optional.empty()
+                        : java.util.Optional.of(ResourceLocation.parse(background)),
+                type,
+                buffer.readBoolean(),
+                buffer.readBoolean(),
+                buffer.readBoolean()
+        ));
     }
 
     public static DisplayInfo emptyDisplayInfo() {
@@ -74,27 +67,28 @@ public class AdvancementData {
     }
 
     public static DisplayInfo createDisplayInfo(String title) {
-        return createDisplayInfo(title, "", new ItemStack(Items.GRASS_BLOCK, 99));
+        return createDisplayInfo(title, "", new ItemStack(Items.AIR));
     }
 
     public static DisplayInfo createDisplayInfo(String title, String description) {
-        return createDisplayInfo(title, description, new ItemStack(Items.GRASS_BLOCK, 99));
+        return createDisplayInfo(title, description, new ItemStack(Items.AIR));
     }
 
     public static DisplayInfo createDisplayInfo(String title, String description, ItemStack itemStack) {
         return new DisplayInfo(itemStack
                 , SakuraComponent.get().literal(title).toVanilla(), SakuraComponent.get().literal(description).toVanilla()
-                , new ResourceLocation(""), FrameType.TASK
+                , java.util.Optional.empty(), AdvancementType.TASK
                 , false, false, false);
     }
 
     public void writeToBuffer(BaniraPacketBuffer buffer) {
         buffer.writeIdentifier(BaniraIdentifier.of(id.getNamespace(), id.getPath()));
-        buffer.writeUtf(displayInfo.getIcon().save(new CompoundTag()).toString());
-        buffer.writeUtf(Component.Serializer.toJson(displayInfo.getTitle()));
-        buffer.writeUtf(Component.Serializer.toJson(displayInfo.getDescription()));
-        buffer.writeUtf(displayInfo.getBackground() == null ? "" : displayInfo.getBackground().toString());
-        buffer.writeEnum(displayInfo.getFrame());
+        buffer.writeUtf(BuiltInRegistries.ITEM.getKey(displayInfo.getIcon().getItem()).toString());
+        buffer.writeVarInt(displayInfo.getIcon().getCount());
+        buffer.writeUtf(displayInfo.getTitle().getString());
+        buffer.writeUtf(displayInfo.getDescription().getString());
+        buffer.writeUtf(displayInfo.getBackground().map(ResourceLocation::toString).orElse(""));
+        buffer.writeEnum(displayInfo.getType());
         buffer.writeBoolean(displayInfo.shouldShowToast());
         buffer.writeBoolean(displayInfo.shouldAnnounceChat());
         buffer.writeBoolean(displayInfo.isHidden());

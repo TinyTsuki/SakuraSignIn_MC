@@ -8,7 +8,7 @@ import static org.junit.Assert.assertEquals;
 public class AdvancementPresentationResolverTest {
     @Test
     public void missingDisplayUsesAdvancementFallbackInsteadOfBarrier() {
-        assertEquals(new ResourceLocation("minecraft", "knowledge_book"),
+        assertEquals(ResourceLocation.fromNamespaceAndPath("minecraft", "knowledge_book"),
                 AdvancementPresentationResolver.fallbackIconId());
     }
 }
