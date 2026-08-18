@@ -43,9 +43,9 @@ public class SakuraPlayerDataBoundaryTest {
     @Test
     public void publicBoundaryDoesNotImportForgeImplementation() throws Exception {
         assertSourcesDoNotContain(Paths.get("src/main/java/xin/vanilla/sakura/api"),
-                "xin.vanilla.sakura.internal.forge");
+                "xin.vanilla.sakura.internal.neoforge");
         assertSourcesDoNotContain(Paths.get("src/main/java/xin/vanilla/sakura/platform"),
-                "xin.vanilla.sakura.internal.forge");
+                "xin.vanilla.sakura.internal.neoforge");
         assertSourcesDoNotContain(Paths.get("src/main/java/xin/vanilla/sakura"),
                 "net.minecraftforge.common.capabilities");
     }

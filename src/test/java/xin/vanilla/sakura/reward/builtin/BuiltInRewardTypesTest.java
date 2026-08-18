@@ -16,7 +16,7 @@ import xin.vanilla.sakura.api.reward.SakuraRewardTypes;
 import xin.vanilla.sakura.api.reward.SakuraRewards;
 import xin.vanilla.sakura.reward.Reward;
 import xin.vanilla.sakura.reward.RewardOperations;
-import xin.vanilla.sakura.test.ForgeUnitTestBootstrap;
+import xin.vanilla.sakura.test.NeoForgeUnitTestBootstrap;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -30,7 +30,7 @@ import static org.junit.Assert.assertTrue;
 public class BuiltInRewardTypesTest {
     @BeforeClass
     public static void bootstrapMinecraftRegistries() {
-        ForgeUnitTestBootstrap.bootstrap();
+        NeoForgeUnitTestBootstrap.bootstrap();
     }
 
     @Before

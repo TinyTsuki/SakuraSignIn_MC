@@ -1,4 +1,4 @@
-package xin.vanilla.sakura.internal.forge.dev;
+package xin.vanilla.sakura.internal.neoforge.dev;
 
 import org.junit.Test;
 
@@ -17,9 +17,9 @@ public class SakuraServerSmokeRunnerContractTest {
     @Test
     public void dedicatedServerSmokeStopsItselfAfterStartup() throws IOException {
         String runner = read(MAIN.resolve(
-                "internal/forge/dev/SakuraServerSmokeRunner.java"));
+                "internal/neoforge/dev/SakuraServerSmokeRunner.java"));
         String entrypoint = read(MAIN.resolve(
-                "internal/forge/ForgeSakuraEntrypoint.java"));
+                "internal/neoforge/NeoForgeSakuraEntrypoint.java"));
 
         assertTrue(runner.contains("SAKURA_SERVER_SMOKE"));
         assertTrue(runner.contains("BaniraEnvironment.isProduction()"));

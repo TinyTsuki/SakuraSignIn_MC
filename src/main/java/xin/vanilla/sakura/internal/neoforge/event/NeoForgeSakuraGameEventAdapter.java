@@ -1,16 +1,16 @@
-package xin.vanilla.sakura.internal.forge.event;
+package xin.vanilla.sakura.internal.neoforge.event;
 
 import xin.vanilla.sakura.data.time.SakuraClock;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.MinecraftServer;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.server.ServerLifecycleHooks;
 import xin.vanilla.banira.common.util.BaniraScheduler;
 import xin.vanilla.banira.common.util.ReflectionUtils;
 import xin.vanilla.banira.common.util.StringUtils;
@@ -28,14 +28,13 @@ import xin.vanilla.sakura.reward.personaldate.PersonalDateRewardDispatcher;
 import xin.vanilla.sakura.data.time.SakuraOnlineTime;
 import xin.vanilla.sakura.data.time.OnlineTimeRequirementResult;
 import xin.vanilla.banira.common.util.DateUtils;
-import xin.vanilla.sakura.util.SakuraUtils;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * 将 Forge 原生事件转换为 Sakura 业务调用。
+ * 将 NeoForge 原生事件转换为 Sakura 业务调用。
  */
-public final class ForgeSakuraGameEventAdapter {
+public final class NeoForgeSakuraGameEventAdapter {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final AtomicBoolean REGISTERED = new AtomicBoolean();
     private static final int MAX_CLIENT_SETTINGS_ATTEMPTS = 120;
@@ -43,18 +42,18 @@ public final class ForgeSakuraGameEventAdapter {
             new PersonalDateOnlineCheckSchedule(20L * 60L * 5L);
     private static String languageFieldName;
 
-    private ForgeSakuraGameEventAdapter() {
+    private NeoForgeSakuraGameEventAdapter() {
     }
 
     public static void register() {
         if (!REGISTERED.compareAndSet(false, true)) {
             return;
         }
-        MinecraftForge.EVENT_BUS.addListener(ForgeSakuraGameEventAdapter::onRegisterCommands);
-        MinecraftForge.EVENT_BUS.addListener(ForgeSakuraGameEventAdapter::onPlayerCloned);
-        MinecraftForge.EVENT_BUS.addListener(ForgeSakuraGameEventAdapter::onPlayerLoggedIn);
-        MinecraftForge.EVENT_BUS.addListener(ForgeSakuraGameEventAdapter::onPlayerLoggedOut);
-        MinecraftForge.EVENT_BUS.addListener(ForgeSakuraGameEventAdapter::onServerTick);
+        NeoForge.EVENT_BUS.addListener(NeoForgeSakuraGameEventAdapter::onRegisterCommands);
+        NeoForge.EVENT_BUS.addListener(NeoForgeSakuraGameEventAdapter::onPlayerCloned);
+        NeoForge.EVENT_BUS.addListener(NeoForgeSakuraGameEventAdapter::onPlayerLoggedIn);
+        NeoForge.EVENT_BUS.addListener(NeoForgeSakuraGameEventAdapter::onPlayerLoggedOut);
+        NeoForge.EVENT_BUS.addListener((ServerTickEvent.Post event) -> onServerTick());
     }
 
     private static void onRegisterCommands(RegisterCommandsEvent event) {
@@ -167,10 +166,7 @@ public final class ForgeSakuraGameEventAdapter {
                 data.isAutoRewarded(), ESignInType.SIGN_IN));
     }
 
-    private static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) {
-            return;
-        }
+    private static void onServerTick() {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null) {
             return;

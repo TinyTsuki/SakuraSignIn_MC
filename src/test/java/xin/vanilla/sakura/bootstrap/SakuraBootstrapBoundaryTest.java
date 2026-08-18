@@ -22,8 +22,8 @@ public class SakuraBootstrapBoundaryTest {
     public void entryOnlySelectsCommonAndLoaderBootstraps() {
         String entry = source(MAIN.resolve("SakuraSignIn.java"));
         assertTrue(entry.contains("initializeCommon()"));
-        assertTrue(entry.contains("ForgeSakuraEntrypoint.init()"));
-        assertTrue(entry.contains("SakuraClientBootstrap::init"));
+        assertTrue(entry.contains("NeoForgeSakuraEntrypoint.init()"));
+        assertTrue(entry.contains("SakuraClientBootstrap.init()"));
         assertFalse(entry.contains("MinecraftForge"));
         assertFalse(entry.contains("FMLJavaModLoadingContext"));
         assertFalse(entry.contains("net.minecraft.client"));
@@ -34,11 +34,11 @@ public class SakuraBootstrapBoundaryTest {
     public void bootstrapsAreIdempotentAndKeepConfigBeforeNetwork() {
         String common = source(MAIN.resolve("SakuraSignIn.java"));
         String client = source(MAIN.resolve("client/SakuraClientBootstrap.java"));
-        String forge = source(MAIN.resolve("internal/forge/ForgeSakuraEntrypoint.java"));
+        String neoForge = source(MAIN.resolve("internal/neoforge/NeoForgeSakuraEntrypoint.java"));
 
         assertTrue(common.contains("AtomicBoolean"));
         assertTrue(client.contains("AtomicBoolean"));
-        assertTrue(forge.contains("AtomicBoolean"));
+        assertTrue(neoForge.contains("AtomicBoolean"));
         assertTrue(common.contains("BuiltInRewardTypes.register()"));
         assertTrue(common.contains("BuiltInRewardRulePermissions.registerVirtualPermissions()"));
         assertTrue(common.contains("event.enqueueWork(SakuraRewards::freeze)"));
@@ -58,16 +58,16 @@ public class SakuraBootstrapBoundaryTest {
     }
 
     @Test
-    public void forgeTypesStayInsideTheEntryShellAndInternalForge() throws Exception {
+    public void neoForgeTypesStayInsideTheEntryShellAndInternalNeoForge() throws Exception {
         try (Stream<Path> files = Files.walk(MAIN)) {
             files.filter(path -> path.toString().endsWith(".java")).forEach(path -> {
                 String source = source(path);
-                if (!source.contains("net.minecraftforge")) {
+                if (!source.contains("net.neoforged")) {
                     return;
                 }
                 String relative = MAIN.relativize(path).toString().replace('\\', '/');
-                assertTrue(path + " exposes Forge outside the adapter boundary",
-                        "SakuraSignIn.java".equals(relative) || relative.startsWith("internal/forge/"));
+                assertTrue(path + " exposes NeoForge outside the adapter boundary",
+                        "SakuraSignIn.java".equals(relative) || relative.startsWith("internal/neoforge/"));
             });
         }
     }
@@ -75,7 +75,7 @@ public class SakuraBootstrapBoundaryTest {
     @Test
     public void loaderAdaptersDoNotUseSleepingWorkerThreads() {
         String adapter = source(MAIN.resolve(
-                "internal/forge/event/ForgeSakuraGameEventAdapter.java"));
+                "internal/neoforge/event/NeoForgeSakuraGameEventAdapter.java"));
         assertTrue(adapter.contains("BaniraScheduler"));
         assertFalse(adapter.contains("Thread.sleep"));
         assertFalse(adapter.contains("TimeUnit"));

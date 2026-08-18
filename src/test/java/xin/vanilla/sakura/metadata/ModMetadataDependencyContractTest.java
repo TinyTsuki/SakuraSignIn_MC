@@ -12,7 +12,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
- * 校验展开后的 Forge 元数据，避免再次声明对自身的依赖。
+ * 校验展开后的 NeoForge 元数据，避免再次声明对自身的依赖。
  */
 public class ModMetadataDependencyContractTest {
     private static final Pattern DEPENDENCY_BLOCK = Pattern.compile(
@@ -24,7 +24,7 @@ public class ModMetadataDependencyContractTest {
     @Test
     public void metadataRequiresBaniraWithoutSelfDependency() throws Exception {
         String metadata = new String(
-                Files.readAllBytes(Paths.get("build/sourcesSets/main/META-INF/mods.toml")),
+                Files.readAllBytes(Paths.get("build/resources/main/META-INF/neoforge.mods.toml")),
                 StandardCharsets.UTF_8
         );
 
@@ -39,7 +39,7 @@ public class ModMetadataDependencyContractTest {
             String dependency = modId.group(1);
             assertFalse("Sakura must not depend on itself", owner.equals(dependency));
             if ("sakura_sign_in".equals(owner) && "banira_codex".equals(dependency)) {
-                baniraRequired = blocks.group(2).contains("mandatory = true");
+                baniraRequired = blocks.group(2).contains("type = \"required\"");
             }
         }
 

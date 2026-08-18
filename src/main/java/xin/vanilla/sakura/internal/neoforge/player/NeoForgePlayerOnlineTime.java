@@ -1,10 +1,10 @@
-package xin.vanilla.sakura.internal.forge.player;
+package xin.vanilla.sakura.internal.neoforge.player;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.stats.Stats;
-/** Reads the vanilla lifetime play-time statistic on Forge 1.16.5. */
-public final class ForgePlayerOnlineTime {
-    private ForgePlayerOnlineTime() {
+/** 读取原版累计在线时长统计，避免维护重复计时器。 */
+public final class NeoForgePlayerOnlineTime {
+    private NeoForgePlayerOnlineTime() {
     }
 
     public static int playTicks(Object player) {

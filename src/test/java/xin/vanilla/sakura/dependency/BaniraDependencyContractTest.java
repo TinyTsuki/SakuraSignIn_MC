@@ -15,20 +15,21 @@ import static org.junit.Assert.assertTrue;
 public class BaniraDependencyContractTest {
 
     @Test
-    public void buildUsesCurrentForgeBaniraPublication() throws Exception {
+    public void buildUsesCurrentNeoForgeBaniraPublication() throws Exception {
         String properties = read("gradle.properties");
         String build = read("build.gradle");
         String fingerprint = read("gradle/banira-local-fingerprint.gradle");
 
-        assertTrue(properties.contains("loader_type=forge"));
+        assertTrue(properties.contains("loader_type=neoforge"));
         assertTrue(properties.contains("banira_version="));
         assertTrue(build.contains("mavenLocal()"));
         assertTrue(build.contains("xin.vanilla.banira:banira_codex:${loader_type}-${minecraft_version}-${banira_version}"));
         assertTrue(build.contains("changing = true"));
         assertTrue(build.contains("cacheChangingModulesFor 0, 'seconds'"));
-        assertTrue(build.contains("apply from: \"gradle/banira-local-fingerprint.gradle\""));
-        assertTrue(build.contains("tasks.register('jarAll', Jar)"));
-        assertTrue(!build.contains("afterEvaluate"));
+        assertTrue(build.contains("apply from: 'gradle/banira-local-fingerprint.gradle'"));
+        assertTrue(build.contains("jarJar(baniraCodexCoords)"));
+        assertTrue(build.contains("jarJar.ranged(it, baniraArtifactVersionRange)"));
+        assertTrue(build.contains("tasks.register('jarAll')"));
 
         assertTrue(fingerprint.contains("local-build.json"));
         assertTrue(fingerprint.contains("findByName(\"MavenLocal\")"));

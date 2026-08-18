@@ -1,77 +1,38 @@
-# This is an example neoforge.mods.toml file. It contains the data relating to the loading mods.
-# There are several mandatory fields (#mandatory), and many more that are optional (#optional).
-# The overall format is standard TOML format, v0.5.0.
-# Note that there are a couple of TOML lists in this file.
-# Find more information on toml format here:  https://github.com/toml-lang/toml
-# The name of the mod loader type to load - for regular FML @Mod mods it should be javafml
-modLoader = "javafml" #mandatory
-# A version range to match for said mod loader - for regular FML @Mod it will be the forge version
-loaderVersion = "${loader_version_range}" #mandatory This is typically bumped every Minecraft version by Forge. See our download page for lists of versions.
-# The license for you mod. This is mandatory metadata and allows for easier comprehension of your redistributive properties.
-# Review your options at https://choosealicense.com/. All rights reserved is the default copyright stance, and is thus the default here.
+modLoader = "javafml"
+loaderVersion = "${loader_version_range}"
 license = "${mod_license}"
-# A logo to display on the mod's information page, relative to the resources folder.
 logoFile = "logo.png"
-# A URL to refer people to when problems occur with this mod
-#issueTrackerURL="https://change.me.to.your.issue.tracker.example.invalid/" #optional
-# A list of mods - how many allowed here is determined by the individual mod loader
-[[mods]] #mandatory
-    # The modid of the mod
-    modId = "${mod_id}" #mandatory
-    # The version number of the mod
-    version = "${mod_version}" #mandatory
-    # A display name for the mod
-    displayName = "${mod_name}" #mandatory
-    # A URL to query for updates for this mod. See the JSON update specification https://docs.minecraftforge.net/en/latest/misc/updatechecker/
-    updateJSONURL = "https://update.mc.vanilla.xin/${mod_id}/neoforge/${minecraft_version}" #optional
-    # A URL for the "homepage" for this mod, displayed in the mod UI
-    displayURL = "https://mc.vanilla.xin/${mod_id}" #optional
-    # A file name (in the root of the mod JAR) containing a logo for display
-    #logoFile="sakura_sign_in.png" #optional
-    # A text field displayed in the mod UI
-    #credits="Thanks for this example mod goes to Java" #optional
-    # A text field displayed in the mod UI
-    authors = "${mod_authors}" #optional
-    # The description text for the mod (multi line!) (#mandatory)
+
+[[mods]]
+    modId = "${mod_id}"
+    version = "${mod_version}"
+    displayName = "${mod_name}"
+    updateJSONURL = "https://update.mc.vanilla.xin/${mod_id}/${loader_type}/${minecraft_version}"
+    displayURL = "https://mc.vanilla.xin/${mod_id}"
+    authors = "${mod_authors}"
     description = '''${mod_description}'''
     clientRequired = false
-# A dependency - use the . to indicate dependency for a specific modid. Dependencies are optional.
-[[dependencies."${mod_id}"]] #optional
-    # the modid of the dependency
-    modId = "neoforge" #mandatory
-    mandatory = true
-    # The type of the dependency. Can be one of "required", "optional", "incompatible" or "discouraged" (case insensitive).
-    # 'required' requires the mod to exist, 'optional' does not
-    # 'incompatible' will prevent the game from loading when the mod exists, and 'discouraged' will show a warning
-    type = "required" #mandatory
-    # Optional field describing why the dependency is required or why it is incompatible
-    # reason="..."
-    # The version range of the dependency
-    versionRange = "${neo_version_range}" #mandatory
-    # An ordering relationship for the dependency.
-    # BEFORE - This mod is loaded BEFORE the dependency
-    # AFTER - This mod is loaded AFTER the dependency
+
+[[mixins]]
+    config = "${mod_id}.mixins.json"
+
+[[dependencies."${mod_id}"]]
+    modId = "neoforge"
+    type = "required"
+    versionRange = "${neo_version_range}"
     ordering = "NONE"
-    # Side this dependency is applied on - BOTH, CLIENT, or SERVER
     side = "BOTH"
-# Here's another dependency
+
 [[dependencies."${mod_id}"]]
     modId = "minecraft"
     type = "required"
-    # This version range declares a minimum of the current minecraft version up to but not including the next major version
     versionRange = "${minecraft_version_range}"
     ordering = "NONE"
     side = "BOTH"
 
 [[dependencies."${mod_id}"]]
-    modId = "${mod_id}" # 模组ID
-    mandatory = true # 模组必须在服务器上安装
-    versionRange = "[1.0.0,)"
-    ordering = "NONE"
-    side = "SERVER" # 强制模组在服务器端运行
-[[dependencies."${mod_id}"]]
-    modId = "${mod_id}" # 模组ID
-    mandatory = false # 客户端可以不安装
-    versionRange = "[1.0.0,)"
-    ordering = "NONE"
-    side = "CLIENT" # 客户端安装是可选的
+    modId = "banira_codex"
+    type = "required"
+    versionRange = "${banira_version_range}"
+    ordering = "AFTER"
+    side = "BOTH"

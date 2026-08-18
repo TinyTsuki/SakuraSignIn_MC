@@ -1,4 +1,4 @@
-package xin.vanilla.sakura.internal.forge.dev;
+package xin.vanilla.sakura.internal.neoforge.dev;
 
 import net.minecraft.server.MinecraftServer;
 import org.apache.logging.log4j.LogManager;

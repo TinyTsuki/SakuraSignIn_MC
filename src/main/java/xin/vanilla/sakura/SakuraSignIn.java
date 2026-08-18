@@ -1,8 +1,10 @@
 package xin.vanilla.sakura;
 
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.loading.FMLEnvironment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.event.BaniraEvents;
@@ -14,7 +16,7 @@ import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.config.reward.RewardConfigManager;
 import xin.vanilla.sakura.data.calendar.SakuraCalendars;
-import xin.vanilla.sakura.internal.forge.ForgeSakuraEntrypoint;
+import xin.vanilla.sakura.internal.neoforge.NeoForgeSakuraEntrypoint;
 import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
 import xin.vanilla.sakura.reward.builtin.BuiltInRewardTypes;
@@ -23,7 +25,7 @@ import xin.vanilla.sakura.reward.builtin.BuiltInRewardRulePermissions;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Forge 模组入口，只负责选择公共、加载器与客户端启动器。
+ * NeoForge 模组入口，只负责选择公共、加载器与客户端启动器。
  */
 @Mod(SakuraSignIn.MODID)
 public final class SakuraSignIn {
@@ -32,10 +34,12 @@ public final class SakuraSignIn {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final AtomicBoolean COMMON_INITIALIZED = new AtomicBoolean();
 
-    public SakuraSignIn() {
+    public SakuraSignIn(IEventBus modEventBus, ModContainer modContainer) {
         initializeCommon();
-        ForgeSakuraEntrypoint.init();
-        DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> SakuraClientBootstrap::init);
+        NeoForgeSakuraEntrypoint.init();
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            SakuraClientBootstrap.init();
+        }
     }
 
     private static void initializeCommon() {

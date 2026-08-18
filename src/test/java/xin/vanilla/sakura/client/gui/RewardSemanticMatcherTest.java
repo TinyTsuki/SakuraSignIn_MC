@@ -10,7 +10,7 @@ import xin.vanilla.sakura.api.reward.RewardTypeId;
 import xin.vanilla.sakura.api.reward.SakuraRewardTypes;
 import xin.vanilla.sakura.reward.Reward;
 import xin.vanilla.sakura.reward.builtin.BuiltInRewardTypes;
-import xin.vanilla.sakura.test.ForgeUnitTestBootstrap;
+import xin.vanilla.sakura.test.NeoForgeUnitTestBootstrap;
 
 import java.math.BigDecimal;
 
@@ -23,7 +23,7 @@ import static org.junit.Assert.assertTrue;
 public class RewardSemanticMatcherTest {
     @BeforeClass
     public static void bootstrapMinecraftRegistries() {
-        ForgeUnitTestBootstrap.bootstrap();
+        NeoForgeUnitTestBootstrap.bootstrap();
     }
 
     @Before

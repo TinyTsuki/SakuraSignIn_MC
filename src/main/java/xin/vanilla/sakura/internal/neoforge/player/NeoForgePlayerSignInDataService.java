@@ -1,4 +1,4 @@
-package xin.vanilla.sakura.internal.forge.player;
+package xin.vanilla.sakura.internal.neoforge.player;
 
 import xin.vanilla.sakura.data.time.SakuraClock;
 
@@ -15,9 +15,9 @@ import xin.vanilla.sakura.data.migration.LegacyPlayerDataMigrationService;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.data.player.HistoryRetentionPolicy;
 import xin.vanilla.sakura.data.migration.LegacyPlayerDataParser;
-import xin.vanilla.sakura.internal.forge.migration.BaniraPlayerSummaryRepository;
-import xin.vanilla.sakura.internal.forge.migration.LegacyForgeCapabilityStore;
-import xin.vanilla.sakura.internal.forge.migration.MonthlySignInHistoryRepository;
+import xin.vanilla.sakura.internal.neoforge.migration.BaniraPlayerSummaryRepository;
+import xin.vanilla.sakura.internal.neoforge.migration.LegacyNeoForgeAttachmentStore;
+import xin.vanilla.sakura.internal.neoforge.migration.MonthlySignInHistoryRepository;
 import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.network.packet.PlayerDataSyncPacket;
 import xin.vanilla.sakura.network.packet.PlayerMonthSyncPacket;
@@ -33,23 +33,23 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Forge 1.16.5 玩家对象、迁移与网络同步实现。
+ * NeoForge 玩家对象、旧 Attachment 迁移与网络同步实现。
  */
-public final class ForgePlayerSignInDataService implements SakuraPlayerDataService {
-    public static final ForgePlayerSignInDataService INSTANCE = new ForgePlayerSignInDataService();
+public final class NeoForgePlayerSignInDataService implements SakuraPlayerDataService {
+    public static final NeoForgePlayerSignInDataService INSTANCE = new NeoForgePlayerSignInDataService();
 
     private static final Logger LOGGER = LogManager.getLogger();
     private final Map<UUID, IPlayerSignInData> serverCache = new ConcurrentHashMap<>();
     private final Map<UUID, IPlayerSignInData> clientCache = new ConcurrentHashMap<>();
 
-    private ForgePlayerSignInDataService() {
+    private NeoForgePlayerSignInDataService() {
     }
 
     @Override
     public IPlayerSignInData get(Object playerObject) {
         Player player = requirePlayer(playerObject);
         UUID playerUuid = player.getUUID();
-        if (player.getCommandSenderWorld().isClientSide) {
+        if (player.level().isClientSide) {
             return clientCache.computeIfAbsent(playerUuid, ignored -> new PlayerSignInData());
         }
         return serverCache.computeIfAbsent(playerUuid, this::loadServerData);
@@ -71,7 +71,7 @@ public final class ForgePlayerSignInDataService implements SakuraPlayerDataServi
                 new MonthlySignInHistoryRepository(BaniraDataPaths.worldDataPath());
         LegacyPlayerDataMigrationService migration = new LegacyPlayerDataMigrationService(
                 new LegacyPlayerDataParser(),
-                new LegacyForgeCapabilityStore(
+                new LegacyNeoForgeAttachmentStore(
                         BaniraDataPaths.vanillaPlayerDataPath(),
                         BaniraDataPaths.worldDataPath()
                 ),
@@ -217,14 +217,14 @@ public final class ForgePlayerSignInDataService implements SakuraPlayerDataServi
 
     private static Player requirePlayer(Object player) {
         if (!(player instanceof Player)) {
-            throw new IllegalArgumentException("Expected Forge Player");
+            throw new IllegalArgumentException("Expected NeoForge Player");
         }
         return (Player) player;
     }
 
     private static ServerPlayer requireServerPlayer(Object player) {
         if (!(player instanceof ServerPlayer)) {
-            throw new IllegalArgumentException("Expected Forge ServerPlayer");
+            throw new IllegalArgumentException("Expected NeoForge ServerPlayer");
         }
         return (ServerPlayer) player;
     }

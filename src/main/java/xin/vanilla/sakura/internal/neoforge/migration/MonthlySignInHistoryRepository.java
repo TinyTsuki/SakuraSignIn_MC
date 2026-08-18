@@ -1,4 +1,4 @@
-package xin.vanilla.sakura.internal.forge.migration;
+package xin.vanilla.sakura.internal.neoforge.migration;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -9,7 +9,7 @@ import xin.vanilla.sakura.data.migration.SignInHistoryStore;
 import xin.vanilla.sakura.data.SignInRecord;
 import xin.vanilla.sakura.data.migration.LegacyPlayerData;
 import xin.vanilla.sakura.data.player.HistoryRetentionPolicy;
-import xin.vanilla.sakura.internal.forge.storage.AtomicNbtFiles;
+import xin.vanilla.sakura.internal.neoforge.storage.AtomicNbtFiles;
 
 import java.io.IOException;
 import java.nio.file.Files;

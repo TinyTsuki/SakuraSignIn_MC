@@ -1,0 +1,61 @@
+import groovy.json.JsonSlurper
+
+def mixinConfigName = "${mod_id}.mixins.json".toString()
+
+afterEvaluate {
+    def runtimeArchives = ['jar', 'jarJar']
+            .collect { tasks.findByName(it) }
+            .findAll { it != null }
+    def verifyMixinRuntimeArtifact = tasks.register('verifyMixinRuntimeArtifact') {
+        group = 'verification'
+        description = 'Verifies NeoForge Mixin metadata and configured classes in release jars.'
+        dependsOn runtimeArchives
+        inputs.files(runtimeArchives.collect { it.archiveFile })
+
+        doLast {
+            def verifiedArchives = 0
+            runtimeArchives.each { archiveTask ->
+                def archive = archiveTask.archiveFile.get().asFile
+                if (!archive.exists()) {
+                    return
+                }
+                verifiedArchives++
+                def jar = new java.util.jar.JarFile(archive)
+                try {
+                    def metadataEntry = jar.getJarEntry('META-INF/neoforge.mods.toml')
+                    def configEntry = jar.getJarEntry(mixinConfigName)
+                    if (metadataEntry == null || configEntry == null) {
+                        throw new GradleException("${archive.name} is missing NeoForge or Mixin metadata")
+                    }
+                    def metadata
+                    jar.getInputStream(metadataEntry).withCloseable { metadata = it.getText('UTF-8') }
+                    if (!metadata.contains('[[mixins]]')
+                            || !metadata.contains("config = \"${mixinConfigName}\"")) {
+                        throw new GradleException("${archive.name} does not declare ${mixinConfigName}")
+                    }
+                    def config
+                    jar.getInputStream(configEntry).withCloseable {
+                        config = new JsonSlurper().parse(it)
+                    }
+                    if (config.containsKey('refmap')) {
+                        throw new GradleException("${mixinConfigName} declares an unused refmap")
+                    }
+                    def mixinPackage = config['package']?.toString()?.replace('.', '/')
+                    ['mixins', 'client', 'server'].collectMany { config[it] ?: [] }.each { mixinClass ->
+                        def classEntry = "${mixinPackage}/${mixinClass.toString().replace('.', '/')}.class"
+                        if (jar.getJarEntry(classEntry) == null) {
+                            throw new GradleException("${archive.name} is missing ${classEntry}")
+                        }
+                    }
+                } finally {
+                    jar.close()
+                }
+            }
+            if (verifiedArchives == 0) {
+                throw new GradleException('No runtime jar was produced for Mixin verification')
+            }
+        }
+    }
+    tasks.named('check').configure { dependsOn verifyMixinRuntimeArtifact }
+    tasks.named('assemble').configure { dependsOn verifyMixinRuntimeArtifact }
+}

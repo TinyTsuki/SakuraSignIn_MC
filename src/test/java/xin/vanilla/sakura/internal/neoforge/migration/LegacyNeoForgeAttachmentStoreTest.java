@@ -1,4 +1,4 @@
-package xin.vanilla.sakura.internal.forge.migration;
+package xin.vanilla.sakura.internal.neoforge.migration;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtAccounter;
@@ -18,14 +18,14 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
- * 验证旧玩家文件只移除 Sakura Capability，其他数据保持原样。
+ * 验证旧玩家文件只移除 Sakura Attachment，其他数据保持原样。
  */
-public class LegacyForgeCapabilityStoreTest {
+public class LegacyNeoForgeAttachmentStoreTest {
     @Rule
     public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
     @Test
-    public void backsUpExactNodeAndRemovesOnlySakuraCapability() throws Exception {
+    public void backsUpExactNodeAndRemovesOnlySakuraAttachment() throws Exception {
         UUID uuid = UUID.randomUUID();
         Path vanillaPlayerData = temporaryFolder.newFolder("playerdata").toPath();
         Path worldData = temporaryFolder.newFolder("vanilla.xin").toPath();
@@ -35,15 +35,15 @@ public class LegacyForgeCapabilityStoreTest {
         sakura.putInt("signInCard", 12);
         CompoundTag other = new CompoundTag();
         other.putString("owner", "other_mod");
-        CompoundTag forgeCaps = new CompoundTag();
-        forgeCaps.put(LegacyForgeCapabilityStore.CAPABILITY_KEY, sakura);
-        forgeCaps.put("other_mod:data", other);
+        CompoundTag attachments = new CompoundTag();
+        attachments.put(LegacyNeoForgeAttachmentStore.ATTACHMENT_KEY, sakura);
+        attachments.put("other_mod:data", other);
         CompoundTag root = new CompoundTag();
         root.putString("Dimension", "minecraft:overworld");
-        root.put("ForgeCaps", forgeCaps);
+        root.put(LegacyNeoForgeAttachmentStore.ATTACHMENTS_KEY, attachments);
         NbtIo.writeCompressed(root, playerFile.toPath());
 
-        LegacyForgeCapabilityStore store = new LegacyForgeCapabilityStore(vanillaPlayerData, worldData);
+        LegacyNeoForgeAttachmentStore store = new LegacyNeoForgeAttachmentStore(vanillaPlayerData, worldData);
         Optional<CompoundTag> loaded = store.read(uuid);
         assertTrue(loaded.isPresent());
 
@@ -53,10 +53,11 @@ public class LegacyForgeCapabilityStoreTest {
 
         CompoundTag rewritten = NbtIo.readCompressed(playerFile.toPath(), NbtAccounter.unlimitedHeap());
         assertEquals("minecraft:overworld", rewritten.getString("Dimension"));
-        assertFalse(rewritten.getCompound("ForgeCaps").contains(
-                LegacyForgeCapabilityStore.CAPABILITY_KEY, 10
+        assertFalse(rewritten.getCompound(LegacyNeoForgeAttachmentStore.ATTACHMENTS_KEY).contains(
+                LegacyNeoForgeAttachmentStore.ATTACHMENT_KEY, 10
         ));
-        assertEquals(other, rewritten.getCompound("ForgeCaps").getCompound("other_mod:data"));
+        assertEquals(other, rewritten.getCompound(
+                LegacyNeoForgeAttachmentStore.ATTACHMENTS_KEY).getCompound("other_mod:data"));
     }
 
     @Test
@@ -69,14 +70,14 @@ public class LegacyForgeCapabilityStoreTest {
 
         CompoundTag capability = new CompoundTag();
         capability.putInt("signInCard", 7);
-        CompoundTag forgeCaps = new CompoundTag();
-        forgeCaps.put(LegacyForgeCapabilityStore.CAPABILITY_KEY, capability);
+        CompoundTag attachments = new CompoundTag();
+        attachments.put(LegacyNeoForgeAttachmentStore.ATTACHMENT_KEY, capability);
         CompoundTag root = new CompoundTag();
-        root.put("ForgeCaps", forgeCaps);
+        root.put(LegacyNeoForgeAttachmentStore.ATTACHMENTS_KEY, attachments);
         NbtIo.writeCompressed(root, rollbackFile);
         Files.write(playerFile, new byte[]{1, 2, 3});
 
-        LegacyForgeCapabilityStore store = new LegacyForgeCapabilityStore(vanillaPlayerData, worldData);
+        LegacyNeoForgeAttachmentStore store = new LegacyNeoForgeAttachmentStore(vanillaPlayerData, worldData);
         Optional<CompoundTag> restored = store.read(uuid);
 
         assertTrue(restored.isPresent());

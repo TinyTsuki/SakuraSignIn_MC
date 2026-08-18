@@ -1,8 +1,8 @@
-package xin.vanilla.sakura.internal.forge.migration;
+package xin.vanilla.sakura.internal.neoforge.migration;
 
 import net.minecraft.nbt.CompoundTag;
 import xin.vanilla.sakura.data.migration.LegacyCapabilityStore;
-import xin.vanilla.sakura.internal.forge.storage.AtomicNbtFiles;
+import xin.vanilla.sakura.internal.neoforge.storage.AtomicNbtFiles;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -12,15 +12,16 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 读取并清理原版玩家文件中的旧 Forge Capability。
+ * 读取并清理原版玩家文件中的旧 NeoForge Attachment。
  */
-public final class LegacyForgeCapabilityStore implements LegacyCapabilityStore {
-    public static final String CAPABILITY_KEY = "sakura_sign_in:player_sign_in_data";
+public final class LegacyNeoForgeAttachmentStore implements LegacyCapabilityStore {
+    public static final String ATTACHMENTS_KEY = "neoforge:attachments";
+    public static final String ATTACHMENT_KEY = "sakura_sign_in:player_sign_in_data";
 
     private final Path vanillaPlayerDataPath;
     private final Path worldDataPath;
 
-    public LegacyForgeCapabilityStore(Path vanillaPlayerDataPath, Path worldDataPath) {
+    public LegacyNeoForgeAttachmentStore(Path vanillaPlayerDataPath, Path worldDataPath) {
         this.vanillaPlayerDataPath = vanillaPlayerDataPath;
         this.worldDataPath = worldDataPath;
     }
@@ -33,9 +34,9 @@ public final class LegacyForgeCapabilityStore implements LegacyCapabilityStore {
             return Optional.empty();
         }
         CompoundTag root = AtomicNbtFiles.read(playerFile);
-        CompoundTag forgeCaps = root.getCompound("ForgeCaps");
-        return forgeCaps.contains(CAPABILITY_KEY, 10)
-                ? Optional.of(forgeCaps.getCompound(CAPABILITY_KEY).copy())
+        CompoundTag attachments = root.getCompound(ATTACHMENTS_KEY);
+        return attachments.contains(ATTACHMENT_KEY, 10)
+                ? Optional.of(attachments.getCompound(ATTACHMENT_KEY).copy())
                 : Optional.empty();
     }
 
@@ -43,13 +44,13 @@ public final class LegacyForgeCapabilityStore implements LegacyCapabilityStore {
     public String backupAndVerify(UUID playerUuid, CompoundTag capability) throws IOException {
         Path directory = worldDataPath.resolve("backups")
                 .resolve("sakura_sign_in")
-                .resolve("legacy-capability");
+                .resolve("legacy-attachment");
         Path backup = nextBackupPath(directory, playerUuid, capability);
         if (!Files.exists(backup)) {
             AtomicNbtFiles.write(backup, capability);
         }
         if (!capability.equals(AtomicNbtFiles.read(backup))) {
-            throw new IOException("Legacy Capability backup verification failed: " + backup);
+            throw new IOException("Legacy Attachment backup verification failed: " + backup);
         }
         return normalize(worldDataPath.relativize(backup));
     }
@@ -70,16 +71,20 @@ public final class LegacyForgeCapabilityStore implements LegacyCapabilityStore {
     public void removeAndVerify(UUID playerUuid, CompoundTag expectedCapability) throws IOException {
         Path playerFile = playerFile(playerUuid);
         CompoundTag root = AtomicNbtFiles.read(playerFile);
-        CompoundTag forgeCaps = root.getCompound("ForgeCaps");
-        if (!forgeCaps.contains(CAPABILITY_KEY, 10)) {
+        CompoundTag attachments = root.getCompound(ATTACHMENTS_KEY);
+        if (!attachments.contains(ATTACHMENT_KEY, 10)) {
             return;
         }
-        if (!expectedCapability.equals(forgeCaps.getCompound(CAPABILITY_KEY))) {
-            throw new IOException("Legacy Capability changed during migration: " + playerUuid);
+        if (!expectedCapability.equals(attachments.getCompound(ATTACHMENT_KEY))) {
+            throw new IOException("Legacy Attachment changed during migration: " + playerUuid);
         }
 
         CompoundTag rewritten = root.copy();
-        rewritten.getCompound("ForgeCaps").remove(CAPABILITY_KEY);
+        CompoundTag rewrittenAttachments = rewritten.getCompound(ATTACHMENTS_KEY);
+        rewrittenAttachments.remove(ATTACHMENT_KEY);
+        if (rewrittenAttachments.isEmpty()) {
+            rewritten.remove(ATTACHMENTS_KEY);
+        }
         replacePlayerFileWithRollback(playerFile, root, rewritten, playerUuid);
     }
 
@@ -119,8 +124,8 @@ public final class LegacyForgeCapabilityStore implements LegacyCapabilityStore {
             Files.move(replacement, playerFile,
                     StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
             CompoundTag verified = AtomicNbtFiles.read(playerFile);
-            if (verified.getCompound("ForgeCaps").contains(CAPABILITY_KEY, 10)) {
-                throw new IOException("Legacy Capability removal verification failed: " + playerUuid);
+            if (verified.getCompound(ATTACHMENTS_KEY).contains(ATTACHMENT_KEY, 10)) {
+                throw new IOException("Legacy Attachment removal verification failed: " + playerUuid);
             }
             Files.deleteIfExists(rollback);
         } catch (IOException failure) {

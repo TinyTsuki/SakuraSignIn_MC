@@ -8,7 +8,7 @@ import net.minecraft.resources.ResourceLocation;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import xin.vanilla.sakura.test.BaniraTestPlatform;
-import xin.vanilla.sakura.test.ForgeUnitTestBootstrap;
+import xin.vanilla.sakura.test.NeoForgeUnitTestBootstrap;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
@@ -20,7 +20,7 @@ import static org.junit.Assert.assertTrue;
 public class EffectRewardSelectionFlowTest {
     @BeforeClass
     public static void bootstrapMinecraftRegistries() {
-        ForgeUnitTestBootstrap.bootstrap();
+        NeoForgeUnitTestBootstrap.bootstrap();
     }
 
     @Test

@@ -96,16 +96,16 @@ public class SakuraNetworkContractTest {
         String client = read(MAIN.resolve("network/ClientProxy.java"));
         String clientConfig = read(MAIN.resolve("network/packet/ClientConfigSyncPacket.java"));
         String network = read(MAIN.resolve("network/SakuraNetwork.java"));
-        String forgeEvents = read(MAIN.resolve(
-                "internal/forge/event/ForgeSakuraGameEventAdapter.java"));
+        String loaderEvents = read(MAIN.resolve(
+                "internal/neoforge/event/NeoForgeSakuraGameEventAdapter.java"));
 
         assertTrue(client.contains("boolean initialSync = !SakuraClientState.isEnabled()"));
         assertTrue(client.contains("if (initialSync)"));
         assertTrue(clientConfig.contains("SakuraPlayerData.save(player)"));
         assertFalse(clientConfig.contains("SakuraPlayerData.saveAndSync(player)"));
         assertTrue(network.contains("sendToPlayer(new ServerTimeSyncPacket(), player)"));
-        assertFalse(forgeEvents.contains("onPlayerTick"));
-        assertFalse(forgeEvents.contains("new ServerTimeSyncPacket()"));
+        assertFalse(loaderEvents.contains("onPlayerTick"));
+        assertFalse(loaderEvents.contains("new ServerTimeSyncPacket()"));
     }
 
     private static String read(Path path) {
