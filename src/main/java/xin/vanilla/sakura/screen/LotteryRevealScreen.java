@@ -1,9 +1,8 @@
 package xin.vanilla.sakura.screen;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.resources.language.I18n;
 import xin.vanilla.banira.api.client.theme.BaniraThemes;
 import xin.vanilla.banira.client.data.GLFWKey;
@@ -32,7 +31,6 @@ public final class LotteryRevealScreen extends BaniraScreen {
     private final LotteryRevealPacket packet;
     private final Screen parent;
     private final long openedAt = System.currentTimeMillis();
-    private final ItemRenderer itemRenderer = Minecraft.getInstance().getItemRenderer();
     private ButtonWidget actionButton;
     private boolean skipped;
     private boolean claimRequested;
@@ -61,14 +59,14 @@ public final class LotteryRevealScreen extends BaniraScreen {
     }
 
     @Override
-    protected void onRender(PoseStack stack, float partialTicks) {
+    protected void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
         int panelWidth = Math.min(560, width - 40);
         int panelHeight = 242;
         int panelX = (width - panelWidth) / 2;
         int panelY = (height - panelHeight) / 2;
-        shape(stack, panelX, panelY, panelWidth, panelHeight,
+        shape(graphics, panelX, panelY, panelWidth, panelHeight,
                 getEffectiveTheme().panelBg(), 8, 0);
-        centered(stack, packet.getPoolName(), panelY + 14,
+        centered(graphics, packet.getPoolName(), panelY + 14,
                 getEffectiveTheme().textPrimary());
 
         LotteryAnimationStyle style = ClientConfig.get().display().lotteryAnimationStyle();
@@ -79,28 +77,28 @@ public final class LotteryRevealScreen extends BaniraScreen {
                 revealed ? "confirm" : "lottery_skip_animation"));
 
         if (revealed) {
-            renderResults(stack, panelX, panelWidth, panelY);
+            renderResults(graphics, panelX, panelWidth, panelY);
         } else {
             switch (style) {
                 case CARDS:
-                    renderCards(stack, panelY, elapsed);
+                    renderCards(graphics, panelY, elapsed);
                     break;
                 case ROULETTE:
-                    renderRoulette(stack, panelY, elapsed);
+                    renderRoulette(graphics, panelY, elapsed);
                     break;
                 case INSTANT:
-                    renderResults(stack, panelX, panelWidth, panelY);
+                    renderResults(graphics, panelX, panelWidth, panelY);
                     break;
                 case STRIP:
                 default:
-                    renderStrip(stack, panelX, panelWidth, panelY, elapsed);
+                    renderStrip(graphics, panelX, panelWidth, panelY, elapsed);
                     break;
             }
         }
-        renderWidgets(stack, partialTicks);
+        renderWidgets(graphics, partialTicks);
     }
 
-    private void renderStrip(PoseStack stack, int panelX, int panelWidth,
+    private void renderStrip(GuiGraphics graphics, int panelX, int panelWidth,
                              int panelY, long elapsed) {
         int winnerIndex = 43;
         List<Reward> sequence = sequence(48, winnerIndex);
@@ -109,34 +107,34 @@ public final class LotteryRevealScreen extends BaniraScreen {
         int spacing = 38;
         double offset = eased * winnerIndex * spacing;
         int center = panelX + panelWidth / 2;
-        shape(stack, panelX + 20, panelY + 58, panelWidth - 40, 64,
+        shape(graphics, panelX + 20, panelY + 58, panelWidth - 40, 64,
                 getEffectiveTheme().buttonBg(), 5, 0);
         for (int i = 0; i < sequence.size(); i++) {
             int x = (int) Math.round(center + i * spacing - offset - 8);
             if (x >= panelX + 24 && x <= panelX + panelWidth - 40) {
-                renderCandidate(stack, sequence.get(i), x, panelY + 81);
+                renderCandidate(graphics, sequence.get(i), x, panelY + 81);
             }
         }
-        shape(stack, center - 13, panelY + 62, 26, 56,
+        shape(graphics, center - 13, panelY + 62, 26, 56,
                 getEffectiveTheme().buttonBorderHover(), 3, 2);
     }
 
-    private void renderCards(PoseStack stack, int panelY, long elapsed) {
+    private void renderCards(GuiGraphics graphics, int panelY, long elapsed) {
         List<Reward> values = sequence(7, 6);
         int startX = width / 2 - 143;
         int active = Math.min(values.size() - 1, (int) (elapsed / 520L));
         for (int i = 0; i < values.size(); i++) {
             int x = startX + i * 42;
-            shape(stack, x, panelY + 62, 34, 54,
+            shape(graphics, x, panelY + 62, 34, 54,
                     i <= active ? getEffectiveTheme().buttonBgHover()
                             : getEffectiveTheme().buttonBg(), 5, 1);
             if (i <= active) {
-                renderCandidate(stack, values.get(i), x + 9, panelY + 82);
+                renderCandidate(graphics, values.get(i), x + 9, panelY + 82);
             }
         }
     }
 
-    private void renderRoulette(PoseStack stack, int panelY, long elapsed) {
+    private void renderRoulette(GuiGraphics graphics, int panelY, long elapsed) {
         int slotCount = Math.max(6, Math.min(12, packet.getPreview().size()));
         int winnerIndex = slotCount - 1;
         List<Reward> values = sequence(slotCount, winnerIndex);
@@ -151,14 +149,14 @@ public final class LotteryRevealScreen extends BaniraScreen {
             int x = centerX + (int) Math.round(Math.cos(angle) * 78D) - 8;
             int y = centerY + (int) Math.round(Math.sin(angle) * 46D) - 8;
             if (i == active) {
-                shape(stack, x - 4, y - 4, 24, 24,
+                shape(graphics, x - 4, y - 4, 24, 24,
                         getEffectiveTheme().buttonBorderHover(), 4, 2);
             }
-            renderCandidate(stack, values.get(i), x, y);
+            renderCandidate(graphics, values.get(i), x, y);
         }
     }
 
-    private void renderResults(PoseStack stack, int panelX, int panelWidth, int panelY) {
+    private void renderResults(GuiGraphics graphics, int panelX, int panelWidth, int panelY) {
         List<Reward> winners = packet.getWinners();
         int spacing = 18;
         int maxColumns = Math.max(1, (panelWidth - 40) / spacing);
@@ -169,16 +167,16 @@ public final class LotteryRevealScreen extends BaniraScreen {
         for (int i = 0; i < winners.size(); i++) {
             int x = startX + i % columns * spacing;
             int y = startY + i / columns * spacing;
-            renderReward(stack, winners.get(i), x, y);
+            renderReward(graphics, winners.get(i), x, y);
         }
         int labelY = Math.min(panelY + 192, startY + rows * spacing + 8);
         if (winners.size() == 1) {
             String name = SakuraRewardClient.displayName(winners.get(0),
                     Minecraft.getInstance().options.languageCode, true).toString();
-            centered(stack, I18n.get("format.sakura_sign_in.lottery_won_s", name),
+            centered(graphics, I18n.get("format.sakura_sign_in.lottery_won_s", name),
                     labelY, getEffectiveTheme().textPrimary());
         } else {
-            centered(stack, I18n.get("format.sakura_sign_in.lottery_won_count_s",
+            centered(graphics, I18n.get("format.sakura_sign_in.lottery_won_count_s",
                     winners.size()), labelY, getEffectiveTheme().textPrimary());
         }
     }
@@ -195,17 +193,17 @@ public final class LotteryRevealScreen extends BaniraScreen {
         return result;
     }
 
-    private void renderCandidate(PoseStack stack, Reward reward, int x, int y) {
+    private void renderCandidate(GuiGraphics graphics, Reward reward, int x, int y) {
         if (!packet.isPreviewVisible() || reward == null) {
-            shape(stack, x, y, 16, 16, getEffectiveTheme().buttonBgHover(), 3, 1);
-            font.draw(stack, "?", x + 5, y + 4, getEffectiveTheme().textPrimary());
+            shape(graphics, x, y, 16, 16, getEffectiveTheme().buttonBgHover(), 3, 1);
+            graphics.drawString(font, "?", x + 5, y + 4, getEffectiveTheme().textPrimary(), false);
             return;
         }
-        renderReward(stack, reward, x, y);
+        renderReward(graphics, reward, x, y);
     }
 
-    private void renderReward(PoseStack stack, Reward reward, int x, int y) {
-        RewardRenderer.renderCustomReward(stack, itemRenderer, font,
+    private void renderReward(GuiGraphics graphics, Reward reward, int x, int y) {
+        RewardRenderer.renderCustomReward(graphics, font,
                 SakuraClientState.getThemeTexture(),
                 SakuraClientState.getThemeTextureCoordinate(), reward, x, y, true, false);
     }
@@ -260,16 +258,16 @@ public final class LotteryRevealScreen extends BaniraScreen {
         super.onClose();
     }
 
-    private void shape(PoseStack stack, int x, int y, int width, int height,
+    private void shape(GuiGraphics graphics, int x, int y, int width, int height,
                        int color, int radius, int border) {
-        BaseShapeWidget.drawShape(new ShapeDrawArgs().stack(stack)
+        BaseShapeWidget.drawShape(new ShapeDrawArgs().stack(graphics.pose())
                 .type(ShapeDrawArgs.ShapeType.RECT).color(color)
                 .rect(new ShapeDrawArgs.RectParams().x(x).y(y).width(width).height(height)
                         .radius(radius).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE)
                         .border(border)));
     }
 
-    private void centered(PoseStack stack, String text, int y, int color) {
-        font.draw(stack, text, width / 2.0F - font.width(text) / 2.0F, y, color);
+    private void centered(GuiGraphics graphics, String text, int y, int color) {
+        graphics.drawString(font, text, (int) (width / 2.0F - font.width(text) / 2.0F), y, color, false);
     }
 }

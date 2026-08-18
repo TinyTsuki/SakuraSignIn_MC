@@ -363,7 +363,6 @@ public class PlayerSignInData implements IPlayerSignInData {
             records.add(SignInRecord.readFromNBT(recordsNBT.getCompound(i)));
         }
         this.setSignInRecords(records);
-
         ListTag cdkRecordsNBT = nbt.getList("cdkRecords", 10); // 10 是 CompoundTag 的类型ID
         List<KeyValue<String, KeyValue<Date, Boolean>>> cdkRecords = new ArrayList<>();
         for (int i = 0; i < cdkRecordsNBT.size(); i++) {

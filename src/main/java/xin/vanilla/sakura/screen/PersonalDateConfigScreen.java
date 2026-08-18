@@ -3,6 +3,7 @@ package xin.vanilla.sakura.screen;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.language.I18n;
 import xin.vanilla.banira.api.client.theme.BaniraThemes;
@@ -91,7 +92,8 @@ public final class PersonalDateConfigScreen extends BaniraScreen {
     }
 
     @Override
-    protected void onRender(PoseStack stack, float partialTicks) {
+    protected void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+        PoseStack stack = graphics.pose();
         int panelWidth = Math.min(620, width - 40);
         int panelX = (width - panelWidth) / 2;
         BaseShapeWidget.drawShape(new ShapeDrawArgs().stack(stack)
@@ -101,19 +103,19 @@ public final class PersonalDateConfigScreen extends BaniraScreen {
                         .width(panelWidth + 16).height(height - 24)
                         .radius(8).border(0)));
         String title = I18n.get("word.sakura_sign_in.personal_date_config");
-        font.draw(stack, title, width / 2.0F - font.width(title) / 2.0F,
-                28, getEffectiveTheme().buttonText());
+        graphics.drawString(font, title, (int) (width / 2.0F - font.width(title) / 2.0F),
+                28, getEffectiveTheme().buttonText(), false);
         if (rows.isEmpty()) {
             String empty = I18n.get("word.sakura_sign_in.personal_date_no_presets");
-            font.draw(stack, empty, width / 2.0F - font.width(empty) / 2.0F,
-                    height / 2.0F, getEffectiveTheme().buttonText());
+            graphics.drawString(font, empty, (int) (width / 2.0F - font.width(empty) / 2.0F),
+                    (int) (height / 2.0F), getEffectiveTheme().buttonText(), false);
         } else {
             rows.stream().filter(row -> row.y >= CONTENT_TOP
                             && row.y + font.lineHeight <= contentBottom())
-                    .forEach(row -> font.draw(stack, row.title,
-                            panelX + 12, row.y, getEffectiveTheme().buttonText()));
+                    .forEach(row -> graphics.drawString(font, row.title,
+                            panelX + 12, row.y, getEffectiveTheme().buttonText(), false));
         }
-        renderWidgets(stack, partialTicks);
+        renderWidgets(graphics, partialTicks);
     }
 
     @Override

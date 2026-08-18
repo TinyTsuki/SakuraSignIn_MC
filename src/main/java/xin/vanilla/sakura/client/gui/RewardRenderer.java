@@ -3,7 +3,7 @@ package xin.vanilla.sakura.client.gui;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.renderer.entity.ItemRenderer;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -34,20 +34,20 @@ public final class RewardRenderer {
     private RewardRenderer() {
     }
 
-    public static void renderCustomReward(PoseStack stack, ItemRenderer itemRenderer,
+    public static void renderCustomReward(GuiGraphics graphics,
                                           Font font, ResourceLocation texture,
                                           TextureCoordinate coordinates, Reward reward,
                                           int x, int y, boolean showText) {
-        renderCustomReward(stack, itemRenderer, font, texture, coordinates,
+        renderCustomReward(graphics, font, texture, coordinates,
                 reward, x, y, showText, true);
     }
 
-    public static void renderCustomReward(PoseStack stack, ItemRenderer itemRenderer,
+    public static void renderCustomReward(GuiGraphics graphics,
                                           Font font, ResourceLocation texture,
                                           TextureCoordinate coordinates, Reward reward,
                                           int x, int y, boolean showText,
                                           boolean showQuality) {
-        NativeRenderContext context = new NativeRenderContext(stack, itemRenderer, font,
+        NativeRenderContext context = new NativeRenderContext(graphics, font,
                 texture, coordinates, reward, x, y, showText);
         Optional<SakuraRewardClient.Registration<?>> registration =
                 SakuraRewardClient.find(reward.getTypeId());
@@ -59,11 +59,12 @@ public final class RewardRenderer {
 
         if (showText && showQuality
                 && reward.getProbability().compareTo(BigDecimal.ONE) != 0) {
+            PoseStack stack = graphics.pose();
             stack.pushPose();
             stack.translate(0, 0, 250);
             int color = probabilityColor(reward.getProbability().doubleValue());
-            font.drawShadow(stack, SakuraComponent.get().literal("?").color(color).toVanilla(),
-                    x - 1, y - 1, color);
+            graphics.drawString(font, SakuraComponent.get().literal("?").color(color).toVanilla(),
+                    x - 1, y - 1, color, true);
             stack.popPose();
         }
     }
@@ -95,8 +96,8 @@ public final class RewardRenderer {
     }
 
     private static final class NativeRenderContext implements RewardRenderContext {
+        private final GuiGraphics graphics;
         private final PoseStack stack;
-        private final ItemRenderer itemRenderer;
         private final Font font;
         private final ResourceLocation texture;
         private final TextureCoordinate coordinates;
@@ -105,12 +106,12 @@ public final class RewardRenderer {
         private final int y;
         private final boolean showAmount;
 
-        private NativeRenderContext(PoseStack stack, ItemRenderer itemRenderer,
+        private NativeRenderContext(GuiGraphics graphics,
                                     Font font, ResourceLocation texture,
                                     TextureCoordinate coordinates, Reward reward,
                                     int x, int y, boolean showAmount) {
-            this.stack = stack;
-            this.itemRenderer = itemRenderer;
+            this.graphics = graphics;
+            this.stack = graphics.pose();
             this.font = font;
             this.texture = texture;
             this.coordinates = coordinates;
@@ -130,7 +131,7 @@ public final class RewardRenderer {
         @Override
         public void drawItem(Object itemStack) {
             if (itemStack instanceof ItemStack) {
-                ItemWidget.renderItem(font, (ItemStack) itemStack,
+                ItemWidget.renderItem(graphics, font, (ItemStack) itemStack,
                         x, y, showAmount);
             } else {
                 drawPlaceholder(reward.getTypeId().toString());
@@ -168,13 +169,13 @@ public final class RewardRenderer {
         public void drawAmount(String text) {
             if (!showAmount || text == null) return;
             int width = font.width(text);
-            font.drawShadow(stack, text, x + ICON_SIZE - width / 2.0F - 2,
-                    y + ICON_SIZE - font.lineHeight + 2, 0xFFFFFFFF);
+            graphics.drawString(font, text, (int) (x + ICON_SIZE - width / 2.0F - 2),
+                    y + ICON_SIZE - font.lineHeight + 2, 0xFFFFFFFF, true);
         }
 
         @Override
         public void drawPlaceholder(String typeId) {
-            ItemWidget.renderItem(font, new ItemStack(Items.BARRIER),
+            ItemWidget.renderItem(graphics, font, new ItemStack(Items.BARRIER),
                     x, y, false);
         }
     }

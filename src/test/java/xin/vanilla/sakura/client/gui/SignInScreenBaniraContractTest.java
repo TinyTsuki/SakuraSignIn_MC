@@ -19,7 +19,7 @@ public class SignInScreenBaniraContractTest {
 
         assertTrue(screen.contains("extends BaniraScreen"));
         assertTrue(screen.contains("Map<Integer, RewardOperationWidget>"));
-        assertTrue(screen.contains("renderWidgets(stack, partialTicks)"));
+        assertTrue(screen.contains("renderWidgets(graphics, partialTicks)"));
         assertTrue(screen.contains("addDeferredTooltipRender"));
         assertTrue(screen.contains("if (SakuraClientState.getCalendarCurrentDate() == null)"));
         assertTrue(screen.contains("public void refreshPlayerData()"));

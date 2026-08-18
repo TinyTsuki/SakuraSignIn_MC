@@ -5,7 +5,7 @@ import net.minecraft.advancements.AdvancementProgress;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.api.reward.*;
@@ -61,7 +61,7 @@ public final class BuiltInRewardTypes {
                 .merger(new RewardMerger<ItemStack>() {
                     @Override
                     public RewardMergeKey key(ItemStack value) {
-                        String id = Registry.ITEM.getKey(value.getItem()).toString();
+                        String id = BuiltInRegistries.ITEM.getKey(value.getItem()).toString();
                         return RewardMergeKey.of(id + (value.hasTag() ? value.getTag().toString() : ""));
                     }
 
@@ -90,7 +90,7 @@ public final class BuiltInRewardTypes {
                 .merger(new RewardMerger<MobEffectInstance>() {
                     @Override
                     public RewardMergeKey key(MobEffectInstance value) {
-                        return RewardMergeKey.of(Registry.MOB_EFFECT.getKey(value.getEffect())
+                        return RewardMergeKey.of(BuiltInRegistries.MOB_EFFECT.getKey(value.getEffect())
                                 + ":" + value.getAmplifier());
                     }
 

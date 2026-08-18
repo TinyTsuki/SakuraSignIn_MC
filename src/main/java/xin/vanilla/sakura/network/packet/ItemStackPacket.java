@@ -69,11 +69,7 @@ public class ItemStackPacket implements INetworkPacket {
                 // 如果物品堆无法添加到库存，则以物品实体的形式生成在世界上
                 if (!added) {
                     ItemEntity itemEntity = new ItemEntity(player.level(), player.getX(), player.getY(), player.getZ(), packet.itemStack);
-                    try (Level level = player.level()) {
-                        level.addFreshEntity(itemEntity);
-                    } catch (IOException e) {
-                        LOGGER.error("Failed to add item entity to world", e);
-                    }
+                    player.level().addFreshEntity(itemEntity);
                 }
             }
         });
