@@ -2,7 +2,7 @@ package xin.vanilla.sakura.client.reward;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.Component;
 import com.mojang.blaze3d.vertex.PoseStack;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.sakura.api.reward.RewardTypeId;
@@ -131,7 +131,7 @@ public final class RewardEditorCoordinator {
         private boolean submitted;
 
         private ValueTransitionScreen(Screen parent, Consumer<T> continuation) {
-            super(new TextComponent(""));
+            super(Component.empty());
             this.parent = parent;
             this.continuation = continuation;
             previousScreen(parent);
@@ -168,7 +168,7 @@ public final class RewardEditorCoordinator {
 
         private DeferredScreen(Screen parent, Runnable continuation,
                                java.util.function.BooleanSupplier shouldContinue) {
-            super(new TextComponent(""));
+            super(Component.empty());
             this.parent = parent;
             this.continuation = continuation;
             this.shouldContinue = shouldContinue;

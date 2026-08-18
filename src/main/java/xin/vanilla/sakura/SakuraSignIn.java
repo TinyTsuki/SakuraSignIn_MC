@@ -6,7 +6,7 @@ import net.minecraftforge.fml.common.Mod;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.event.BaniraEvents;
-import xin.vanilla.banira.common.config.BaniraConfig;
+import xin.vanilla.banira.api.BaniraConfigs;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.api.reward.SakuraRewards;
 import xin.vanilla.sakura.client.SakuraClientBootstrap;
@@ -46,8 +46,8 @@ public final class SakuraSignIn {
         BuiltInRewardRulePermissions.registerVirtualPermissions();
         BaniraEvents.onCommonSetup(event -> event.enqueueWork(SakuraRewards::freeze));
         // 包处理器会读取配置快照，因此配置必须先于网络初始化。
-        BaniraConfig.register(CommonConfig.class, MODID);
-        BaniraConfig.register(ClientConfig.class, MODID);
+        BaniraConfigs.register(CommonConfig.class, MODID);
+        BaniraConfigs.register(ClientConfig.class, MODID);
         SakuraNotificationTypes.registerServerTypes();
         SakuraNetwork.initialize();
 
