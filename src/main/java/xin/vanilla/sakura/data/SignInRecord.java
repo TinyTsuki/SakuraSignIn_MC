@@ -53,7 +53,6 @@ public class SignInRecord implements Serializable, Cloneable {
         this.rewardList = new RewardList();
     }
 
-
     // 序列化到 NBT
     public CompoundTag writeToNBT() {
         CompoundTag tag = new CompoundTag();

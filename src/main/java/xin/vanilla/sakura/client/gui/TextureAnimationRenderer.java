@@ -4,7 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
-import com.mojang.math.Vector3f;
+import com.mojang.math.Axis;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
@@ -40,7 +40,7 @@ final class TextureAnimationRenderer {
         stack.pushPose();
         stack.translate(coordinate.getX() + width / 2.0,
                 coordinate.getY() + height / 2.0, 0);
-        stack.mulPose(Vector3f.ZP.rotationDegrees((float) angle));
+        stack.mulPose(Axis.ZP.rotationDegrees((float) angle));
         stack.translate(-width / 2.0, -height / 2.0, 0);
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
