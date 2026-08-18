@@ -699,7 +699,9 @@ public final class SignInScreen extends BaniraScreen {
                 if (!cell.isShowHover() || !cell.isMouseInside(inputState.mouseX(), inputState.mouseY())) {
                     continue;
                 }
-                if (inputState.onlyShiftPressed()) {
+                if (inputState.isShiftPressing()
+                        && !inputState.isCtrlPressing()
+                        && !inputState.isAltPressing()) {
                     TooltipWidget.drawPopupMessage(stack, FontDrawArgs.ofPopo(
                             Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.how_to_sign_in")
                                     .stack(stack).font(font).align(EnumAlignment.CENTER)
