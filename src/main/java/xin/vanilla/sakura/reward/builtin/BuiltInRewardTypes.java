@@ -165,10 +165,11 @@ public final class BuiltInRewardTypes {
         SakuraRewards.register(RewardTypeDefinition.builder(SakuraRewardTypes.COMMAND,
                         new CommandRewardCodec(), (context, value) -> {
                             String command = value.replace("@s", context.player().getName().getString());
-                            context.player().server.getCommands().performCommand(
-                                    context.player().createCommandSourceStack().withSuppressedOutput()
-                                            .withPermission(CommonConfig.get().permission().permissionCommandReward()),
-                                    command);
+                            net.minecraft.commands.Commands commands = context.player().server.getCommands();
+                            net.minecraft.commands.CommandSourceStack source = context.player()
+                                    .createCommandSourceStack().withSuppressedOutput()
+                                    .withPermission(CommonConfig.get().permission().permissionCommandReward());
+                            commands.performCommand(commands.getDispatcher().parse(command, source), command);
                             return RewardGrantResult.success();
                         })
                 .validator(value -> value == null || value.trim().isEmpty()

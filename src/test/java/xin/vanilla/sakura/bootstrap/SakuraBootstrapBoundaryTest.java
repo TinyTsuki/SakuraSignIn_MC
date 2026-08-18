@@ -43,8 +43,8 @@ public class SakuraBootstrapBoundaryTest {
         assertTrue(common.contains("BuiltInRewardRulePermissions.registerVirtualPermissions()"));
         assertTrue(common.contains("event.enqueueWork(SakuraRewards::freeze)"));
         assertTrue(common.indexOf("BuiltInRewardTypes.register()")
-                < common.indexOf("BaniraConfig.register"));
-        assertTrue(common.indexOf("BaniraConfig.register") < common.indexOf("SakuraNetwork.initialize"));
+                < common.indexOf("BaniraConfigs.register"));
+        assertTrue(common.indexOf("BaniraConfigs.register") < common.indexOf("SakuraNetwork.initialize"));
         assertTrue(client.contains("BaniraClientEvents.ModLifecycle.onClientSetup"));
         assertTrue(client.contains("BaniraClientEvents.Client.onClientTick"));
         assertTrue(client.contains("BaniraClientEvents.Player.onClientLoggedOut"));

@@ -15,7 +15,6 @@ import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.api.client.theme.BaniraThemes;
 import xin.vanilla.banira.client.gui.ConfirmDialogScreen;
 import xin.vanilla.banira.client.gui.ReadOnlyTextScreen;
-import xin.vanilla.banira.client.util.InputStateManager;
 import xin.vanilla.banira.client.util.SystemUtils;
 import xin.vanilla.banira.client.gui.widget.BaseShapeWidget;
 import xin.vanilla.banira.client.gui.widget.LabelWidget;
@@ -1121,7 +1120,7 @@ public class RewardOptionScreen extends BaniraScreen {
 
         if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
             if (group) {
-                if (inputState.isCtrlPressed()) {
+                if (inputState.isCtrlPressing()) {
                     rewardSelection.select(key, new ArrayList<>(REWARD_BUTTONS.keySet()),
                             true, false);
                     currRewardButton = rewardSelection.primary();
@@ -1142,7 +1141,7 @@ public class RewardOptionScreen extends BaniraScreen {
                 return;
             } else {
                 rewardSelection.select(key, selectableRewardIds(),
-                        inputState.isCtrlPressed(), inputState.isShiftPressed());
+                        inputState.isCtrlPressing(), inputState.isShiftPressing());
             }
         } else if (button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT
                 && !rewardSelection.isSelected(key)) {
@@ -2570,7 +2569,7 @@ public class RewardOptionScreen extends BaniraScreen {
     }
 
     private void repeatHeldNavigation() {
-        if (heldNavigationKey < 0 || !InputStateManager.isKeyPressing(heldNavigationKey)) {
+        if (heldNavigationKey < 0 || !inputState.isKeyPressed(heldNavigationKey)) {
             clearHeldNavigation();
             return;
         }
@@ -2595,9 +2594,9 @@ public class RewardOptionScreen extends BaniraScreen {
         if (direction == null || rewardSelection.primary() == null
                 || rewardSelection.primary().startsWith("标题")
                 || !popupOption.isEmpty() || draggingRewardId != null
-                || inputState.isCtrlPressed() || inputState.isShiftPressed()
-                || InputStateManager.isKeyPressing(GLFWKey.GLFW_KEY_LEFT_ALT)
-                || InputStateManager.isKeyPressing(GLFWKey.GLFW_KEY_RIGHT_ALT)) {
+                || inputState.isCtrlPressing() || inputState.isShiftPressing()
+                || inputState.isKeyPressed(GLFWKey.GLFW_KEY_LEFT_ALT)
+                || inputState.isKeyPressed(GLFWKey.GLFW_KEY_RIGHT_ALT)) {
             return false;
         }
         List<RewardKeyboardNavigator.Point> points = new ArrayList<>();
@@ -2695,17 +2694,17 @@ public class RewardOptionScreen extends BaniraScreen {
     private boolean matchesShortcut(List<String> bindings, int releasedKey) {
         int[] keys = {
                 releasedKey,
-                InputStateManager.isKeyPressing(GLFWKey.GLFW_KEY_LEFT_CONTROL)
+                inputState.isKeyPressed(GLFWKey.GLFW_KEY_LEFT_CONTROL)
                         ? GLFWKey.GLFW_KEY_LEFT_CONTROL : GLFWKey.GLFW_KEY_UNKNOWN,
-                InputStateManager.isKeyPressing(GLFWKey.GLFW_KEY_RIGHT_CONTROL)
+                inputState.isKeyPressed(GLFWKey.GLFW_KEY_RIGHT_CONTROL)
                         ? GLFWKey.GLFW_KEY_RIGHT_CONTROL : GLFWKey.GLFW_KEY_UNKNOWN,
-                InputStateManager.isKeyPressing(GLFWKey.GLFW_KEY_LEFT_SHIFT)
+                inputState.isKeyPressed(GLFWKey.GLFW_KEY_LEFT_SHIFT)
                         ? GLFWKey.GLFW_KEY_LEFT_SHIFT : GLFWKey.GLFW_KEY_UNKNOWN,
-                InputStateManager.isKeyPressing(GLFWKey.GLFW_KEY_RIGHT_SHIFT)
+                inputState.isKeyPressed(GLFWKey.GLFW_KEY_RIGHT_SHIFT)
                         ? GLFWKey.GLFW_KEY_RIGHT_SHIFT : GLFWKey.GLFW_KEY_UNKNOWN,
-                InputStateManager.isKeyPressing(GLFWKey.GLFW_KEY_LEFT_ALT)
+                inputState.isKeyPressed(GLFWKey.GLFW_KEY_LEFT_ALT)
                         ? GLFWKey.GLFW_KEY_LEFT_ALT : GLFWKey.GLFW_KEY_UNKNOWN,
-                InputStateManager.isKeyPressing(GLFWKey.GLFW_KEY_RIGHT_ALT)
+                inputState.isKeyPressed(GLFWKey.GLFW_KEY_RIGHT_ALT)
                         ? GLFWKey.GLFW_KEY_RIGHT_ALT : GLFWKey.GLFW_KEY_UNKNOWN
         };
         int[] pressed = Arrays.stream(keys)

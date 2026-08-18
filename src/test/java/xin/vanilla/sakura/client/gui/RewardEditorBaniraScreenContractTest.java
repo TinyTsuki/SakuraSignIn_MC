@@ -39,15 +39,15 @@ public class RewardEditorBaniraScreenContractTest {
         assertTrue(screen.contains("requestConfirmation(\"confirm_clear_reward_rule\""));
         assertTrue(screen.contains("return editHandler.handleDelete();"));
         assertTrue(screen.contains("!popupOption.isEmpty() || draggingRewardId != null"));
-        assertTrue(screen.contains("inputState.isCtrlPressed()"));
-        assertTrue(screen.contains("inputState.isShiftPressed()"));
+        assertTrue(screen.contains("inputState.isCtrlPressing()"));
+        assertTrue(screen.contains("inputState.isShiftPressing()"));
         assertTrue(screen.contains("new ReadOnlyTextScreen("));
         assertTrue(screen.contains("deleteSelectedRewards()"));
         assertTrue(screen.contains("collapsedRewardGroups"));
         assertTrue(screen.contains("toggleRewardGroup("));
         assertTrue(screen.contains("isRewardGroupCollapsed(key)"));
         assertTrue(screen.contains("RewardGroupLayout"));
-        assertTrue(screen.contains("inputState.isCtrlPressed()"));
+        assertTrue(screen.contains("inputState.isCtrlPressing()"));
         assertTrue(screen.contains("moveSelectedRewardsTo("));
         assertTrue(screen.contains("event.clickCount() == 3"));
         assertTrue(screen.contains("selectSemanticRewards("));

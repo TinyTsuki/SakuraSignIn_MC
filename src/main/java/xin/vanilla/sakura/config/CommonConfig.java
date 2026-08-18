@@ -4,7 +4,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import xin.vanilla.banira.common.config.BaniraConfig;
+import xin.vanilla.banira.api.BaniraConfigs;
 import xin.vanilla.banira.common.config.ConfigData;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ConfigScope;
@@ -80,11 +80,11 @@ public class CommonConfig implements ConfigData {
     private PermissionCategory permission = new PermissionCategory();
 
     public static RootView get() {
-        return CommonConfigAccess.root(BaniraConfig.holder(CommonConfig.class));
+        return CommonConfigAccess.root(BaniraConfigs.holder(CommonConfig.class));
     }
 
     public static void save() {
-        ConfigHolder holder = BaniraConfig.holder(CommonConfig.class);
+        ConfigHolder holder = BaniraConfigs.holder(CommonConfig.class);
         if (holder != null) {
             holder.save();
         }
@@ -94,7 +94,7 @@ public class CommonConfig implements ConfigData {
      * 多人游戏登录时将服务端 COMMON 配置写入客户端运行时视图。
      */
     public static Map<String, String> networkSnapshot() {
-        ConfigHolder holder = BaniraConfig.holder(CommonConfig.class);
+        ConfigHolder holder = BaniraConfigs.holder(CommonConfig.class);
         if (holder == null) {
             return java.util.Collections.emptyMap();
         }

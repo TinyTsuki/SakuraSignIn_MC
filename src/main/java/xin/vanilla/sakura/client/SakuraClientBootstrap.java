@@ -35,7 +35,6 @@ public final class SakuraClientBootstrap {
             return;
         }
 
-        ClientConfig.sanitizeNavigationShortcuts();
         BaniraThemes.register(SakuraSignIn.MODID,
                 () -> ClientConfig.get().display().interfaceThemeMode());
         BuiltInRewardClientTypes.register();
@@ -56,6 +55,8 @@ public final class SakuraClientBootstrap {
                 ClientProxy::handleRewardOptionUploadResult
         );
         BaniraClientEvents.ModLifecycle.onClientSetup(event -> {
+            // Forge 1.19+ 在配置加载完成前禁止读取配置值。
+            ClientConfig.sanitizeNavigationShortcuts();
             SakuraClientNotificationTypes.register();
             ClientEventHandler.loadThemeTexture();
         });

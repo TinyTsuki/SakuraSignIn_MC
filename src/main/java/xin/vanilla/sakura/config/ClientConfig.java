@@ -4,7 +4,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import xin.vanilla.banira.common.config.BaniraConfig;
+import xin.vanilla.banira.api.BaniraConfigs;
 import xin.vanilla.banira.common.config.ConfigData;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ConfigScope;
@@ -46,11 +46,11 @@ public class ClientConfig implements ConfigData {
     private SignKeysCategory signKeys = new SignKeysCategory();
 
     public static RootView get() {
-        return ClientConfigAccess.root(BaniraConfig.holder(ClientConfig.class));
+        return ClientConfigAccess.root(BaniraConfigs.holder(ClientConfig.class));
     }
 
     public static void save() {
-        ConfigHolder holder = BaniraConfig.holder(ClientConfig.class);
+        ConfigHolder holder = BaniraConfigs.holder(ClientConfig.class);
         if (holder != null) {
             holder.save();
         }
@@ -65,7 +65,7 @@ public class ClientConfig implements ConfigData {
 
     /** 清理由旧开发配置遗留在日历翻页快捷键中的鼠标左键。 */
     public static void sanitizeNavigationShortcuts() {
-        ConfigHolder holder = BaniraConfig.holder(ClientConfig.class);
+        ConfigHolder holder = BaniraConfigs.holder(ClientConfig.class);
         if (holder == null) return;
         boolean changed = false;
         for (String path : Arrays.asList("signKeys.lastMonth", "signKeys.nextMonth",

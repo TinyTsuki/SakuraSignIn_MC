@@ -66,11 +66,11 @@ public final class ForgeSakuraGameEventAdapter {
      */
     private static void onPlayerCloned(PlayerEvent.Clone event) {
         if (!(event.getOriginal() instanceof ServerPlayer)
-                || !(event.getPlayer() instanceof ServerPlayer)) {
+                || !(event.getEntity() instanceof ServerPlayer)) {
             return;
         }
         ServerPlayer original = (ServerPlayer) event.getOriginal();
-        ServerPlayer replacement = (ServerPlayer) event.getPlayer();
+        ServerPlayer replacement = (ServerPlayer) event.getEntity();
         copyPlayerLanguage(original, replacement);
         SakuraPlayerData.sync(replacement);
     }
@@ -98,10 +98,10 @@ public final class ForgeSakuraGameEventAdapter {
      * 旧数据迁移失败时不得继续自动签到或删除旧数据。
      */
     private static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        if (!(event.getPlayer() instanceof ServerPlayer)) {
+        if (!(event.getEntity() instanceof ServerPlayer)) {
             return;
         }
-        ServerPlayer player = (ServerPlayer) event.getPlayer();
+        ServerPlayer player = (ServerPlayer) event.getEntity();
         try {
             LegacyMigrationResult result = SakuraPlayerData.migrateAndLoad(player);
             if (result != LegacyMigrationResult.NO_LEGACY_DATA) {
@@ -118,8 +118,8 @@ public final class ForgeSakuraGameEventAdapter {
     }
 
     private static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
-        if (event.getPlayer() instanceof ServerPlayer) {
-            SakuraPlayerData.removeServer(event.getPlayer().getUUID());
+        if (event.getEntity() instanceof ServerPlayer) {
+            SakuraPlayerData.removeServer(event.getEntity().getUUID());
         }
     }
 

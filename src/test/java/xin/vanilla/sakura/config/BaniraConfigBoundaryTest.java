@@ -30,8 +30,8 @@ public class BaniraConfigBoundaryTest {
     @Test
     public void bootstrapRegistersBaniraConfigModelsOnly() throws Exception {
         String bootstrap = source("xin/vanilla/sakura/SakuraSignIn.java");
-        assertTrue(bootstrap.contains("BaniraConfig.register(CommonConfig.class, MODID)"));
-        assertTrue(bootstrap.contains("BaniraConfig.register(ClientConfig.class, MODID)"));
+        assertTrue(bootstrap.contains("BaniraConfigs.register(CommonConfig.class, MODID)"));
+        assertTrue(bootstrap.contains("BaniraConfigs.register(ClientConfig.class, MODID)"));
         assertFalse(bootstrap.contains("import net.minecraftforge.fml.ModLoadingContext;"));
         assertFalse(bootstrap.contains("registerConfig(ModConfig.Type"));
     }
