@@ -21,9 +21,9 @@ public class SakuraBootstrapBoundaryTest {
     @Test
     public void entryOnlySelectsCommonAndLoaderBootstraps() {
         String entry = source(MAIN.resolve("SakuraSignIn.java"));
-        assertTrue(entry.contains("initializeCommon()"));
-        assertTrue(entry.contains("ForgeSakuraEntrypoint.init()"));
-        assertTrue(entry.contains("SakuraClientBootstrap::init"));
+        assertTrue(entry.contains("bootstrapCommon()"));
+        assertFalse(entry.contains("FabricSakuraEntrypoint"));
+        assertFalse(entry.contains("SakuraClientBootstrap"));
         assertFalse(entry.contains("MinecraftForge"));
         assertFalse(entry.contains("FMLJavaModLoadingContext"));
         assertFalse(entry.contains("net.minecraft.client"));
@@ -34,11 +34,12 @@ public class SakuraBootstrapBoundaryTest {
     public void bootstrapsAreIdempotentAndKeepConfigBeforeNetwork() {
         String common = source(MAIN.resolve("SakuraSignIn.java"));
         String client = source(MAIN.resolve("client/SakuraClientBootstrap.java"));
-        String forge = source(MAIN.resolve("internal/forge/ForgeSakuraEntrypoint.java"));
+        String fabric = source(MAIN.resolve("internal/fabric/FabricSakuraEntrypoint.java"));
 
         assertTrue(common.contains("AtomicBoolean"));
         assertTrue(client.contains("AtomicBoolean"));
-        assertTrue(forge.contains("AtomicBoolean"));
+        assertTrue(fabric.contains("AtomicBoolean"));
+        assertTrue(fabric.contains("SakuraSignIn.bootstrapCommon()"));
         assertTrue(common.contains("BuiltInRewardTypes.register()"));
         assertTrue(common.contains("BuiltInRewardRulePermissions.registerVirtualPermissions()"));
         assertTrue(common.contains("event.enqueueWork(SakuraRewards::freeze)"));
@@ -58,16 +59,11 @@ public class SakuraBootstrapBoundaryTest {
     }
 
     @Test
-    public void forgeTypesStayInsideTheEntryShellAndInternalForge() throws Exception {
+    public void productionDoesNotImportForgeRuntimeTypes() throws Exception {
         try (Stream<Path> files = Files.walk(MAIN)) {
             files.filter(path -> path.toString().endsWith(".java")).forEach(path -> {
                 String source = source(path);
-                if (!source.contains("net.minecraftforge")) {
-                    return;
-                }
-                String relative = MAIN.relativize(path).toString().replace('\\', '/');
-                assertTrue(path + " exposes Forge outside the adapter boundary",
-                        "SakuraSignIn.java".equals(relative) || relative.startsWith("internal/forge/"));
+                assertFalse(path + " imports Forge runtime", source.contains("net.minecraftforge"));
             });
         }
     }
@@ -75,7 +71,7 @@ public class SakuraBootstrapBoundaryTest {
     @Test
     public void loaderAdaptersDoNotUseSleepingWorkerThreads() {
         String adapter = source(MAIN.resolve(
-                "internal/forge/event/ForgeSakuraGameEventAdapter.java"));
+                "internal/fabric/event/FabricSakuraGameEventAdapter.java"));
         assertTrue(adapter.contains("BaniraScheduler"));
         assertFalse(adapter.contains("Thread.sleep"));
         assertFalse(adapter.contains("TimeUnit"));

@@ -547,7 +547,7 @@ public final class SignInScreen extends BaniraScreen {
     private void renderBackgroundTexture(PoseStack stack) {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        RenderSystem.setShaderTexture(0, SakuraClientState.getThemeTexture());
+        Minecraft.getInstance().getTextureManager().bind(SakuraClientState.getThemeTexture());
         Coordinate uv = SakuraClientState.getThemeTextureCoordinate().getBgUV();
         AbstractGuiUtils.blit(stack, SakuraClientState.getThemeTexture(),
                 bgX, bgY, bgWidth, bgHeight,
@@ -721,7 +721,8 @@ public final class SignInScreen extends BaniraScreen {
         int keyCode = eventArgs.keyCode();
         if (keyCode == GLFWKey.GLFW_KEY_ESCAPE
                 || keyCode == SakuraClientBootstrap.getSignInKey().currentKey()
-                || keyCode == Minecraft.getInstance().options.keyInventory.getKey().getValue()) {
+                || Minecraft.getInstance().options.keyInventory.matches(
+                        keyCode, eventArgs.scanCode())) {
             if (showOpeningTips) {
                 dismissOpeningTips(false);
             } else {

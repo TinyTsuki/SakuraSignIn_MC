@@ -621,7 +621,7 @@ public class RewardManager {
      */
     public static boolean giveItemStack(ServerPlayer player, ItemStack itemStack, boolean drop) {
         // 尝试将物品堆添加到玩家的库存中
-        boolean added = player.getInventory().add(itemStack);
+        boolean added = player.inventory.add(itemStack);
         // 如果物品堆无法添加到库存，则以物品实体的形式生成在世界上
         if (!added && !itemStack.isEmpty() && drop) {
             ItemEntity itemEntity = player.drop(itemStack, false);

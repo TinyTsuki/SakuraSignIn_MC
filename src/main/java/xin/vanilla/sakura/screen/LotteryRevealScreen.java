@@ -230,7 +230,8 @@ public final class LotteryRevealScreen extends BaniraScreen {
     protected void onKeyPressed(KeyPressedHandleArgs eventArgs) {
         int key = eventArgs.key();
         if (key == GLFWKey.GLFW_KEY_ESCAPE
-                || key == Minecraft.getInstance().options.keyInventory.getKey().getValue()) {
+                || Minecraft.getInstance().options.keyInventory.matches(
+                        key, eventArgs.scanCode())) {
             if (revealed()) {
                 onClose();
             } else {

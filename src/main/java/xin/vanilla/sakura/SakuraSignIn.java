@@ -1,20 +1,15 @@
 package xin.vanilla.sakura;
 
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.fml.common.Mod;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.event.BaniraEvents;
 import xin.vanilla.banira.common.config.BaniraConfig;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.api.reward.SakuraRewards;
-import xin.vanilla.sakura.client.SakuraClientBootstrap;
 import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.config.reward.RewardConfigManager;
 import xin.vanilla.sakura.data.calendar.SakuraCalendars;
-import xin.vanilla.sakura.internal.forge.ForgeSakuraEntrypoint;
 import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
 import xin.vanilla.sakura.reward.builtin.BuiltInRewardTypes;
@@ -23,22 +18,18 @@ import xin.vanilla.sakura.reward.builtin.BuiltInRewardRulePermissions;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Forge 模组入口，只负责选择公共、加载器与客户端启动器。
+ * 樱花签公共启动器，不接触具体加载器类型。
  */
-@Mod(SakuraSignIn.MODID)
 public final class SakuraSignIn {
     public static final String DEFAULT_COMMAND_PREFIX = "sakura";
     public static final String MODID = "sakura_sign_in";
     private static final Logger LOGGER = LogManager.getLogger();
     private static final AtomicBoolean COMMON_INITIALIZED = new AtomicBoolean();
 
-    public SakuraSignIn() {
-        initializeCommon();
-        ForgeSakuraEntrypoint.init();
-        DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> SakuraClientBootstrap::init);
+    private SakuraSignIn() {
     }
 
-    private static void initializeCommon() {
+    public static void bootstrapCommon() {
         if (!COMMON_INITIALIZED.compareAndSet(false, true)) {
             return;
         }

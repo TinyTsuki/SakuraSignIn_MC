@@ -1,10 +1,10 @@
-package xin.vanilla.sakura.internal.forge.player;
+package xin.vanilla.sakura.internal.fabric.player;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import xin.vanilla.sakura.data.player.HistoryRetentionPolicy;
-import xin.vanilla.sakura.internal.forge.migration.MonthlySignInHistoryRepository;
+import xin.vanilla.sakura.internal.fabric.migration.MonthlySignInHistoryRepository;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -15,7 +15,7 @@ import java.util.UUID;
 /**
  * 历史详情损坏或清理失败时，玩家核心数据仍应继续加载。
  */
-public class ForgePlayerHistoryRetentionTest {
+public class FabricPlayerHistoryRetentionTest {
     @Rule
     public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
@@ -30,7 +30,7 @@ public class ForgePlayerHistoryRetentionTest {
         Files.createDirectories(malformed.getParent());
         Files.write(malformed, "not-nbt".getBytes(StandardCharsets.UTF_8));
 
-        ForgePlayerSignInDataService.applyRetentionBestEffort(
+        FabricPlayerSignInDataService.applyRetentionBestEffort(
                 uuid,
                 new MonthlySignInHistoryRepository(worldData),
                 YearMonth.of(2024, 6),

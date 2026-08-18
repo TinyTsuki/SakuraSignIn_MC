@@ -1,4 +1,4 @@
-package xin.vanilla.sakura.internal.forge.migration;
+package xin.vanilla.sakura.internal.fabric.migration;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;

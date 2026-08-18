@@ -10,7 +10,7 @@ import xin.vanilla.sakura.data.migration.PlayerSummaryStore;
 import xin.vanilla.sakura.data.player.PlayerSignInSummary;
 import xin.vanilla.sakura.data.calendar.CalendarIds;
 import xin.vanilla.sakura.data.personaldate.PlayerPersonalDateSlot;
-import xin.vanilla.sakura.internal.forge.migration.MonthlySignInHistoryRepository;
+import xin.vanilla.sakura.internal.fabric.migration.MonthlySignInHistoryRepository;
 import xin.vanilla.sakura.reward.RewardList;
 import xin.vanilla.banira.common.util.DateUtils;
 

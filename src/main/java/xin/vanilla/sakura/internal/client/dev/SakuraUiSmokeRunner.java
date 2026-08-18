@@ -55,6 +55,7 @@ public final class SakuraUiSmokeRunner {
     private static boolean themeSmokeFinished;
     private static int rewardExtensionTicks;
     private static int personalDateTicks;
+    private static int languageExitTicks = -1;
 
     private SakuraUiSmokeRunner() {
     }
@@ -130,6 +131,9 @@ public final class SakuraUiSmokeRunner {
     /** 在资源加载完成后验证模组语言发现与客户端语言选择。 */
     private static void tickLanguage() {
         if (opened) {
+            if (languageExitTicks >= 0 && ++languageExitTicks >= 100) {
+                Minecraft.getInstance().stop();
+            }
             return;
         }
         Minecraft minecraft = Minecraft.getInstance();
@@ -138,6 +142,10 @@ public final class SakuraUiSmokeRunner {
         }
 
         opened = true;
+        minecraft.options.languageCode = "zh_cn";
+        minecraft.getLanguageManager().setSelected(
+                new net.minecraft.client.resources.language.LanguageInfo(
+                        "zh_cn", "CN", "简体中文", false));
         List<String> languages = SakuraLang.get().getI18nFiles();
         String clientLanguage = SakuraLang.getClientLanguage();
         String chineseTitle = SakuraLang.get().getTranslation(
@@ -150,7 +158,7 @@ public final class SakuraUiSmokeRunner {
         }
         LOGGER.info("Sakura language smoke PASS: languages={}, client={}, title={}",
                 languages, clientLanguage, chineseTitle);
-        minecraft.stop();
+        languageExitTicks = 0;
     }
 
     private static void tickRewardExtensionExit() {

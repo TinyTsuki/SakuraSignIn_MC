@@ -89,7 +89,7 @@ public final class SignInCell extends BaseWidget {
         Font font = screen.getFont();
 
         if (showIcon) {
-            RenderSystem.setShaderTexture(0, backgroundTexture);
+            Minecraft.getInstance().getTextureManager().bind(backgroundTexture);
             renderStatusIcon(stack, x, y, width, height);
         }
         if (showText) {
@@ -181,7 +181,7 @@ public final class SignInCell extends BaseWidget {
         stack.translate(0, 0, 200);
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        RenderSystem.setShaderTexture(0, backgroundTexture);
+        Minecraft.getInstance().getTextureManager().bind(backgroundTexture);
         AbstractGuiUtils.blit(stack, backgroundTexture, (int) tooltipX, (int) tooltipY,
                 (int) tooltipWidth, (int) tooltipHeight,
                 (float) tooltipUV.getU0(), (float) tooltipUV.getV0(),

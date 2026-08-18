@@ -1,4 +1,4 @@
-package xin.vanilla.sakura.internal.forge.migration;
+package xin.vanilla.sakura.internal.fabric.migration;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -12,7 +12,7 @@ import xin.vanilla.sakura.data.migration.PlayerSummaryStore;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.sakura.data.player.HistoryRetentionPolicy;
 import xin.vanilla.sakura.data.player.PlayerSignInSummary;
-import xin.vanilla.sakura.internal.forge.storage.AtomicNbtFiles;
+import xin.vanilla.sakura.internal.fabric.storage.AtomicNbtFiles;
 import xin.vanilla.sakura.reward.RewardList;
 import xin.vanilla.banira.common.util.DateUtils;
 

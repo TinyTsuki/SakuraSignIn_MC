@@ -130,7 +130,7 @@ public final class RewardRenderer {
         @Override
         public void drawItem(Object itemStack) {
             if (itemStack instanceof ItemStack) {
-                ItemWidget.renderItem(font, (ItemStack) itemStack,
+                ItemWidget.renderItem(itemRenderer, font, (ItemStack) itemStack,
                         x, y, showAmount);
             } else {
                 drawPlaceholder(reward.getTypeId().toString());
@@ -174,7 +174,7 @@ public final class RewardRenderer {
 
         @Override
         public void drawPlaceholder(String typeId) {
-            ItemWidget.renderItem(font, new ItemStack(Items.BARRIER),
+            ItemWidget.renderItem(itemRenderer, font, new ItemStack(Items.BARRIER),
                     x, y, false);
         }
     }

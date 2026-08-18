@@ -51,6 +51,7 @@ public final class ClientEventHandler {
 
     public static void onClientTick(BaniraKeyHandle signInKey,
                                     BaniraKeyHandle rewardOptionKey) {
+        SakuraQuickActions.register();
         SakuraUiSmokeRunner.tick();
         if (signInKey.consumeClick()) {
             openSignInScreen(null);

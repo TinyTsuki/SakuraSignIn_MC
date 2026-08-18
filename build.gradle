@@ -1,84 +1,29 @@
-buildscript {
-    repositories {
-        maven { url = 'https://repo.spongepowered.org/repository/maven-public/' }
-        mavenCentral()
-    }
-    dependencies {
-        classpath 'org.spongepowered:mixingradle:0.7-SNAPSHOT'
-    }
-}
-
 plugins {
-    id 'eclipse'
-    id 'idea'
-    id 'net.minecraftforge.gradle' version '[6.0.16,6.2)'
+    id 'fabric-loom' version '1.15-SNAPSHOT'
 }
 
 def javaVer = 8
 
-apply plugin: 'org.spongepowered.mixin'
-
-apply plugin: 'org.spongepowered.mixin'
-
-group = mod_group_id
-version = mod_version
+group = project.mod_group_id
+version = project.mod_version
 
 base {
-    archivesName = mod_id
+    archivesName = project.mod_id
 }
 
 java {
     toolchain.languageVersion = JavaLanguageVersion.of(javaVer)
 }
 
-minecraft {
-    mappings channel: mapping_channel, version: mapping_version
-    copyIdeResources = true
-
+loom {
     runs {
-        configureEach {
-            workingDirectory project.file('run')
-            property 'forge.logging.markers', 'REGISTRIES'
-            property 'forge.logging.console.level', 'debug'
-
-            mods {
-                "${mod_id}" {
-                    source sourceSets.main
-                }
-            }
-        }
-
-        client {}
-
-        server {
-            // 保留可视化服务端窗口，后续 smoke 任务会显式传入 --nogui。
-        }
-
-        data {
-            workingDirectory project.file('run-data')
-            args '--mod', mod_id, '--all', '--output', file('src/generated/resources/'),
-                    '--existing', file('src/main/resources/')
+        client {
+            programArgs '--username', 'Dev', '--uuid', '380df991-f603-344c-a090-369bad2a924a'
         }
     }
 }
-
-mixin {
-    add sourceSets.main, "${mod_id}.refmap.json"
-    config "${mod_id}.mixins.json"
-}
-
-sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 def baniraCodexCoords = "xin.vanilla.banira:banira_codex:${loader_type}-${minecraft_version}-${banira_version}"
-
-configurations {
-    // 胖包合并 Maven Local 中已经 reobf 的 Banira，避免重复 remap。
-    baniraCodexObf {
-        canBeConsumed = false
-        canBeResolved = true
-        transitive = false
-    }
-}
 
 configurations.configureEach {
     resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
@@ -86,172 +31,95 @@ configurations.configureEach {
 
 repositories {
     mavenLocal()
+    maven {
+        name = 'Terraformers Maven'
+        url = 'https://maven.terraformersmc.com/'
+    }
 }
 
-apply from: "gradle/banira-local-fingerprint.gradle"
+apply from: 'gradle/banira-local-fingerprint.gradle'
 
 dependencies {
-    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
-    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+    modImplementation(baniraCodexCoords) {
+        changing = true
+    }
+    modImplementation "com.terraformersmc:modmenu:${modmenu_version}"
 
     testImplementation 'junit:junit:4.13.2'
-
     compileOnly 'org.projectlombok:lombok:1.18.34'
     annotationProcessor 'org.projectlombok:lombok:1.18.34'
     testCompileOnly 'org.projectlombok:lombok:1.18.34'
     testAnnotationProcessor 'org.projectlombok:lombok:1.18.34'
-
-    implementation(fg.deobf(baniraCodexCoords)) {
-        changing = true
-    }
-    baniraCodexObf(baniraCodexCoords) {
-        changing = true
-    }
-
+    implementation 'com.google.code.findbugs:jsr305:3.0.2'
 }
 
-tasks.named('processResources', ProcessResources).configure {
-    var replaceProperties = [
-            minecraft_version      : minecraft_version,
-            minecraft_version_range: minecraft_version_range,
-            forge_version          : forge_version,
-            forge_version_range    : forge_version_range,
-            loader_version_range   : loader_version_range,
-            loader_type            : loader_type,
-            banira_version_range   : banira_version_range,
-            mod_id                 : mod_id,
-            mod_name               : mod_name,
-            mod_license            : mod_license,
-            mod_version            : mod_version,
-            mod_authors            : mod_authors,
-            mod_description        : mod_description,
-    ]
+processResources {
+    inputs.property 'mod_id', project.mod_id
+    inputs.property 'mod_name', project.mod_name
+    inputs.property 'mod_desc', project.mod_description
+    inputs.property 'mod_version', project.mod_version
+    inputs.property 'mod_authors', project.mod_authors
+    inputs.property 'sources_url', project.sources_url
+    inputs.property 'issues_url', project.issues_url
+    inputs.property 'license', project.mod_license
+    inputs.property 'minecraft_version', project.minecraft_version
+    inputs.property 'loader_version', project.loader_version
+    inputs.property 'banira_version_range', project.banira_version_range
+    filteringCharset 'UTF-8'
 
-    inputs.properties replaceProperties
-    filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
-        expand replaceProperties + [project: project]
+    filesMatching('fabric.mod.json') {
+        expand 'mod_id': project.mod_id,
+                'mod_name': project.mod_name,
+                'mod_desc': project.mod_description,
+                'mod_version': project.mod_version,
+                'mod_authors': project.mod_authors,
+                'sources_url': project.sources_url,
+                'issues_url': project.issues_url,
+                'license': project.mod_license,
+                'minecraft_version': project.minecraft_version,
+                'loader_version': project.loader_version,
+                'banira_version_range': project.banira_version_range
     }
-}
-
-// 胖包资源包含 Banira 的模组声明，瘦包仅声明依赖。
-tasks.register('prepareFatResources') {
-    dependsOn 'processResources'
-    inputs.dir(layout.buildDirectory.dir('resources/main'))
-    inputs.property('banira_embed_mods_toml',
-            "${banira_version}|${minecraft_version}|${forge_version_range}|${minecraft_version_range}")
-    outputs.dir(layout.buildDirectory.dir('fatResources/main'))
-    doLast {
-        copy {
-            from layout.buildDirectory.dir('resources/main')
-            into layout.buildDirectory.dir('fatResources/main')
-        }
-        def modsToml = layout.buildDirectory.file('fatResources/main/META-INF/mods.toml').get().asFile
-        if (!modsToml.isFile()) {
-            throw new GradleException('fatResources: META-INF/mods.toml missing')
-        }
-        modsToml.append("""
-[[mods]]
-    modId = "banira_codex"
-    version = "${banira_version}"
-    displayName = "香草志(Banira Codex)"
-    updateJSONURL = "https://update.mc.vanilla.xin/banira_codex/forge/${minecraft_version}"
-    displayURL = "https://mc.vanilla.xin/banira_codex"
-    authors = "Tsuki Maaii"
-    description = ''''''
-    clientRequired = false
-[[dependencies."banira_codex"]]
-    modId = "forge"
-    mandatory = true
-    versionRange = "${forge_version_range}"
-    ordering = "NONE"
-    side = "BOTH"
-[[dependencies."banira_codex"]]
-    modId = "minecraft"
-    mandatory = true
-    versionRange = "${minecraft_version_range}"
-    ordering = "NONE"
-    side = "BOTH"
-""".stripIndent(), 'UTF-8')
-    }
-}
-
-def modsJarVersion = "${loader_type}-${minecraft_version}-${mod_version}"
-def modsDestinationDir = file("${projectDir}/builds/${mod_version}")
-
-tasks.named('jar', Jar).configure {
-    // 瘦包不包含 Banira 字节码。
-    archiveBaseName.set(mod_id)
-    archiveVersion.set(modsJarVersion)
-    destinationDirectory.set(modsDestinationDir)
-
-    manifest {
-        attributes([
-                "Specification-Title"       : mod_id,
-                "Specification-Vendor"      : mod_authors,
-                "Specification-Version"     : "1",
-                "Implementation-Title"      : project.name,
-                "Implementation-Version"    : project.jar.archiveVersion,
-                "Implementation-Vendor"     : mod_authors,
-                "Implementation-Timestamp"  : new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
-                "MixinConfigs"              : "${mod_id}.mixins.json",
-        ])
-    }
-
-    finalizedBy 'reobfJar'
-}
-
-// 胖包合并双方已 reobf 的产物，不再执行第二次 remap。
-tasks.register('jarAll', Jar) {
-    archiveBaseName.set(mod_id)
-    archiveVersion.set(modsJarVersion)
-    archiveClassifier.set('all')
-    destinationDirectory.set(modsDestinationDir)
-
-    dependsOn 'reobfJar', 'prepareFatResources', configurations.named('baniraCodexObf')
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-
-    def slimJar = tasks.named('jar', Jar)
-    from {
-        zipTree(slimJar.get().archiveFile.get().asFile)
-    } {
-        exclude 'META-INF/mods.toml'
-        exclude 'META-INF/MANIFEST.MF'
-        exclude 'META-INF/*.SF'
-        exclude 'META-INF/*.RSA'
-        exclude 'META-INF/*.DSA'
-    }
-    from(layout.buildDirectory.file('fatResources/main/META-INF/mods.toml')) {
-        into 'META-INF'
-    }
-    from {
-        zipTree(configurations.baniraCodexObf.singleFile)
-    } {
-        exclude 'META-INF/mods.toml'
-        exclude 'META-INF/MANIFEST.MF'
-        exclude 'META-INF/*.SF'
-        exclude 'META-INF/*.RSA'
-        exclude 'META-INF/*.DSA'
-    }
-
-    manifest {
-        attributes([
-                "Specification-Title"       : mod_id,
-                "Specification-Vendor"      : mod_authors,
-                "Specification-Version"     : "1",
-                "Implementation-Title"      : project.name,
-                "Implementation-Version"    : "${modsJarVersion}-all",
-                "Implementation-Vendor"     : mod_authors,
-                "Implementation-Timestamp"  : new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
-                "MixinConfigs"              : "${mod_id}.mixins.json, banira_codex.mixins.json",
-        ])
-    }
-}
-
-tasks.named('assemble').configure {
-    dependsOn 'jarAll'
 }
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
+}
+
+java {
+    withSourcesJar()
+}
+
+tasks.named('jar', Jar).configure {
+    manifest {
+        attributes([
+                'Specification-Title'      : project.mod_id,
+                'Specification-Vendor'     : project.mod_authors,
+                'Specification-Version'    : '1',
+                'Implementation-Title'     : project.name,
+                'Implementation-Version'   : project.version,
+                'Implementation-Vendor'    : project.mod_authors,
+                'Implementation-Timestamp' : new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+        ])
+    }
+}
+
+tasks.named('remapJar') {
+    archiveBaseName.set(project.mod_id)
+    archiveVersion.set("${loader_type}-${minecraft_version}-${mod_version}")
+    destinationDirectory.set(file("${projectDir}/builds/${mod_version}"))
+}
+
+// Fabric 的正式产物由 Loom remapJar 生成；保留同名任务便于统一构建脚本调用。
+tasks.register('jarAll') {
+    dependsOn 'remapJar'
+}
+
+tasks.named('assemble').configure {
+    dependsOn 'remapJar'
 }

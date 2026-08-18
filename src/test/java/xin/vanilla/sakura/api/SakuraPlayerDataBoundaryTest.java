@@ -24,7 +24,7 @@ import static org.junit.Assert.assertSame;
 public class SakuraPlayerDataBoundaryTest {
 
     @Test
-    public void facadeDelegatesWithoutExposingForgeTypes() {
+    public void facadeDelegatesWithoutExposingLoaderTypes() {
         Object player = new Object();
         IPlayerSignInData data = new PlayerSignInData();
         AtomicReference<Object> requested = new AtomicReference<>();
@@ -41,11 +41,15 @@ public class SakuraPlayerDataBoundaryTest {
     }
 
     @Test
-    public void publicBoundaryDoesNotImportForgeImplementation() throws Exception {
+    public void publicBoundaryDoesNotImportLoaderImplementation() throws Exception {
         assertSourcesDoNotContain(Paths.get("src/main/java/xin/vanilla/sakura/api"),
                 "xin.vanilla.sakura.internal.forge");
         assertSourcesDoNotContain(Paths.get("src/main/java/xin/vanilla/sakura/platform"),
                 "xin.vanilla.sakura.internal.forge");
+        assertSourcesDoNotContain(Paths.get("src/main/java/xin/vanilla/sakura/api"),
+                "xin.vanilla.sakura.internal.fabric");
+        assertSourcesDoNotContain(Paths.get("src/main/java/xin/vanilla/sakura/platform"),
+                "xin.vanilla.sakura.internal.fabric");
         assertSourcesDoNotContain(Paths.get("src/main/java/xin/vanilla/sakura"),
                 "net.minecraftforge.common.capabilities");
     }

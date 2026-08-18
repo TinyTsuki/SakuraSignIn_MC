@@ -65,7 +65,7 @@ public class ItemStackPacket implements INetworkPacket {
             ServerPlayer player = ctx.senderAs(ServerPlayer.class);
             if (player != null) {
                 // 尝试将物品堆添加到玩家的库存中
-                boolean added = player.getInventory().add(packet.itemStack);
+                boolean added = player.inventory.add(packet.itemStack);
                 // 如果物品堆无法添加到库存，则以物品实体的形式生成在世界上
                 if (!added) {
                     ItemEntity itemEntity = new ItemEntity(player.level, player.getX(), player.getY(), player.getZ(), packet.itemStack);

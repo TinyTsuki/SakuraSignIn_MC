@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "${mod_id}",
+  "version": "${mod_version}",
+  "name": "${mod_name}",
+  "description": "${mod_desc}",
+  "authors": [
+    "${mod_authors}"
+  ],
+  "contact": {
+    "sources": "${sources_url}",
+    "issues": "${issues_url}"
+  },
+  "license": "${license}",
+  "icon": "logo.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "xin.vanilla.sakura.internal.fabric.FabricSakuraEntrypoint"
+    ],
+    "client": [
+      "xin.vanilla.sakura.internal.fabric.client.FabricSakuraClientEntrypoint"
+    ],
+    "modmenu": [
+      "xin.vanilla.sakura.internal.fabric.modmenu.SakuraModMenuIntegration"
+    ]
+  },
+  "mixins": [
+    "${mod_id}.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric": "*",
+    "minecraft": "${minecraft_version}",
+    "banira_codex": "${banira_version_range}"
+  }
+}

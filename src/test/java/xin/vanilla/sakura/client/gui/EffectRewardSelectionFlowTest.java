@@ -7,8 +7,6 @@ import net.minecraft.resources.ResourceLocation;
 import org.junit.Test;
 import xin.vanilla.sakura.test.BaniraTestPlatform;
 
-import java.lang.reflect.Field;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -21,17 +19,14 @@ public class EffectRewardSelectionFlowTest {
         ResourceLocation effectId = new ResourceLocation("sakura_sign_in", "test_effect");
         MobEffect effect = new MobEffect(MobEffectCategory.BENEFICIAL, 0x7FB8FF) {
         };
-        Field registryName = effect.getClass().getSuperclass().getSuperclass()
-                .getDeclaredField("registryName");
-        registryName.setAccessible(true);
-        registryName.set(effect, effectId);
+        net.minecraft.core.Registry.register(net.minecraft.core.Registry.MOB_EFFECT, effectId, effect);
         BaniraTestPlatform.install();
         BaniraTestPlatform.register(effectId.toString(), effect);
         MobEffectInstance selected = new MobEffectInstance(effect, 7200, 3);
 
         MobEffectInstance reward = EffectRewardSelectionFlow.copyValue(selected);
 
-        assertEquals(effectId, reward.getEffect().getRegistryName());
+        assertEquals(effectId, net.minecraft.core.Registry.MOB_EFFECT.getKey(reward.getEffect()));
         assertEquals(7200, reward.getDuration());
         assertEquals(3, reward.getAmplifier());
     }
@@ -46,14 +41,11 @@ public class EffectRewardSelectionFlowTest {
         assertEquals(0, reward.getAmplifier());
     }
 
-    private static MobEffect testEffect(String path) throws Exception {
+    private static MobEffect testEffect(String path) {
         ResourceLocation effectId = new ResourceLocation("sakura_sign_in", path);
         MobEffect effect = new MobEffect(MobEffectCategory.BENEFICIAL, 0x7FB8FF) {
         };
-        Field registryName = effect.getClass().getSuperclass().getSuperclass()
-                .getDeclaredField("registryName");
-        registryName.setAccessible(true);
-        registryName.set(effect, effectId);
+        net.minecraft.core.Registry.register(net.minecraft.core.Registry.MOB_EFFECT, effectId, effect);
         return effect;
     }
 

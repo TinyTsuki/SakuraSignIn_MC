@@ -35,6 +35,10 @@ public final class SakuraQuickActions {
     }
 
     public static void register() {
+        // Fabric 1.16 会在 Minecraft.options 创建前触发客户端 setup。
+        if (Minecraft.getInstance().options == null) {
+            return;
+        }
         TextureCoordinate coordinates = SakuraClientState.getThemeTextureCoordinate();
         QuickActionRegistry registry = QuickActionRegistry.get();
         String signature = signature(coordinates);
@@ -106,12 +110,6 @@ public final class SakuraQuickActions {
     private static String signature(TextureCoordinate coordinates) {
         String texture = String.valueOf(SakuraClientState.getThemeTexture());
         String signIn = coordinates != null ? String.valueOf(coordinates.getSignInBtnUV()) : "";
-        return texture + "|" + signIn
-                + "|" + SakuraComponent.get().translateClient("key", "categories")
-                + "|" + SakuraComponent.get().translateClient("word", "edit_reward_config")
-                + "|" + SakuraComponent.get().translateClient("word", "quick_action_lottery")
-                + "|" + SakuraComponent.get().translateClient("word", "edit_player_config")
-                + "|" + SakuraComponent.get().translateClient("word", "edit_client_config")
-                + "|" + SakuraComponent.get().translateClient("word", "edit_server_config");
+        return texture + "|" + signIn + "|" + Minecraft.getInstance().options.languageCode;
     }
 }

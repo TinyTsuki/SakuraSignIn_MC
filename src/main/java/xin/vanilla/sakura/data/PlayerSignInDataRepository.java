@@ -6,7 +6,7 @@ import net.minecraft.nbt.ListTag;
 import xin.vanilla.sakura.data.migration.LegacyPlayerData;
 import xin.vanilla.sakura.data.migration.LegacyPlayerDataParser;
 import xin.vanilla.sakura.data.player.PlayerSignInSummary;
-import xin.vanilla.sakura.internal.forge.migration.MonthlySignInHistoryRepository;
+import xin.vanilla.sakura.internal.fabric.migration.MonthlySignInHistoryRepository;
 import xin.vanilla.sakura.data.migration.PlayerSummaryStore;
 
 import java.io.IOException;

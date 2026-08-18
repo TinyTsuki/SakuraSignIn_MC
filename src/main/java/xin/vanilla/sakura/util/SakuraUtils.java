@@ -81,7 +81,7 @@ public class SakuraUtils {
      * @return 是否全部移除成功
      */
     public static boolean removeItemFromPlayerInventory(ServerPlayer player, ItemStack itemToRemove) {
-        Container inventory = player.getInventory();
+        Container inventory = player.inventory;
 
         // 剩余要移除的数量
         int remainingAmount = itemToRemove.getCount();
@@ -96,7 +96,7 @@ public class SakuraUtils {
             copy.setCount(stack.getCount());
 
             // 如果插槽中的物品是目标物品
-            if (stack.equals(copy, false)) {
+            if (ItemStack.matches(stack, copy)) {
                 // 获取当前物品堆叠的数量
                 int stackSize = stack.getCount();
 
@@ -126,7 +126,7 @@ public class SakuraUtils {
             ItemStack copy = itemToRemove.copy();
             copy.setCount(successfullyRemoved);
             // 将已移除的物品添加回背包
-            player.getInventory().add(copy);
+            player.inventory.add(copy);
         }
 
         // 是否成功移除所有物品
@@ -136,9 +136,9 @@ public class SakuraUtils {
     public static List<ItemStack> getPlayerItemList(ServerPlayer player) {
         List<ItemStack> result = new ArrayList<>();
         if (player != null) {
-            result.addAll(player.getInventory().items);
-            result.addAll(player.getInventory().armor);
-            result.addAll(player.getInventory().offhand);
+            result.addAll(player.inventory.items);
+            result.addAll(player.inventory.armor);
+            result.addAll(player.inventory.offhand);
             result = result.stream().filter(itemStack -> !itemStack.isEmpty() && itemStack.getItem() != Items.AIR).collect(Collectors.toList());
         }
         return result;

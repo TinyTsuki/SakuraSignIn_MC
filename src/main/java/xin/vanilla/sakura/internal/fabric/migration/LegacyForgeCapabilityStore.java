@@ -1,8 +1,8 @@
-package xin.vanilla.sakura.internal.forge.migration;
+package xin.vanilla.sakura.internal.fabric.migration;
 
 import net.minecraft.nbt.CompoundTag;
 import xin.vanilla.sakura.data.migration.LegacyCapabilityStore;
-import xin.vanilla.sakura.internal.forge.storage.AtomicNbtFiles;
+import xin.vanilla.sakura.internal.fabric.storage.AtomicNbtFiles;
 
 import java.io.IOException;
 import java.nio.file.Files;

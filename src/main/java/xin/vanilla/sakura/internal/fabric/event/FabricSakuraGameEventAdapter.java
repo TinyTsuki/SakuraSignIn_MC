@@ -1,107 +1,70 @@
-package xin.vanilla.sakura.internal.forge.event;
+package xin.vanilla.sakura.internal.fabric.event;
 
-import xin.vanilla.sakura.data.time.SakuraClock;
-
-import net.minecraft.server.level.ServerPlayer;
+import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.server.MinecraftServer;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraft.server.level.ServerPlayer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.server.ServerLifecycleHooks;
 import xin.vanilla.banira.common.util.BaniraScheduler;
-import xin.vanilla.banira.common.util.ReflectionUtils;
-import xin.vanilla.banira.common.util.StringUtils;
+import xin.vanilla.banira.common.util.DateUtils;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.command.SignInCommand;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.data.migration.LegacyMigrationResult;
+import xin.vanilla.sakura.data.time.OnlineTimeRequirementResult;
+import xin.vanilla.sakura.data.time.SakuraClock;
+import xin.vanilla.sakura.data.time.SakuraOnlineTime;
 import xin.vanilla.sakura.enums.ESignInType;
 import xin.vanilla.sakura.network.packet.SignInPacket;
 import xin.vanilla.sakura.reward.RewardManager;
 import xin.vanilla.sakura.reward.personaldate.PersonalDateDeliveryResult;
 import xin.vanilla.sakura.reward.personaldate.PersonalDateOnlineCheckSchedule;
 import xin.vanilla.sakura.reward.personaldate.PersonalDateRewardDispatcher;
-import xin.vanilla.sakura.data.time.SakuraOnlineTime;
-import xin.vanilla.sakura.data.time.OnlineTimeRequirementResult;
-import xin.vanilla.banira.common.util.DateUtils;
-import xin.vanilla.sakura.util.SakuraUtils;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * 将 Forge 原生事件转换为 Sakura 业务调用。
+ * 将 Fabric 原生回调转换为 Sakura 的稳定业务调用。
  */
-public final class ForgeSakuraGameEventAdapter {
+public final class FabricSakuraGameEventAdapter {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final AtomicBoolean REGISTERED = new AtomicBoolean();
     private static final int MAX_CLIENT_SETTINGS_ATTEMPTS = 120;
     private static final PersonalDateOnlineCheckSchedule ONLINE_REWARD_CHECK =
             new PersonalDateOnlineCheckSchedule(20L * 60L * 5L);
-    private static String languageFieldName;
 
-    private ForgeSakuraGameEventAdapter() {
+    private FabricSakuraGameEventAdapter() {
     }
 
     public static void register() {
         if (!REGISTERED.compareAndSet(false, true)) {
             return;
         }
-        MinecraftForge.EVENT_BUS.addListener(ForgeSakuraGameEventAdapter::onRegisterCommands);
-        MinecraftForge.EVENT_BUS.addListener(ForgeSakuraGameEventAdapter::onPlayerCloned);
-        MinecraftForge.EVENT_BUS.addListener(ForgeSakuraGameEventAdapter::onPlayerLoggedIn);
-        MinecraftForge.EVENT_BUS.addListener(ForgeSakuraGameEventAdapter::onPlayerLoggedOut);
-        MinecraftForge.EVENT_BUS.addListener(ForgeSakuraGameEventAdapter::onServerTick);
+        CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) ->
+                SignInCommand.register(dispatcher));
+        ServerPlayerEvents.AFTER_RESPAWN.register((original, replacement, alive) ->
+                onPlayerCloned(original, replacement));
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
+                onPlayerLoggedIn(handler.player));
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
+                SakuraPlayerData.removeServer(handler.player.getUUID()));
+        ServerTickEvents.END_SERVER_TICK.register(FabricSakuraGameEventAdapter::onServerTick);
     }
 
-    private static void onRegisterCommands(RegisterCommandsEvent event) {
-        SignInCommand.register(event.getDispatcher());
-    }
-
-    /**
-     * 数据按 UUID 缓存，重生时只复制语言并同步新玩家实体。
-     */
-    private static void onPlayerCloned(PlayerEvent.Clone event) {
-        if (!(event.getOriginal() instanceof ServerPlayer)
-                || !(event.getPlayer() instanceof ServerPlayer)) {
-            return;
-        }
-        ServerPlayer original = (ServerPlayer) event.getOriginal();
-        ServerPlayer replacement = (ServerPlayer) event.getPlayer();
-        copyPlayerLanguage(original, replacement);
+    /** 数据按 UUID 缓存，重生时只复制语言并同步新玩家实体。 */
+    private static void onPlayerCloned(ServerPlayer original, ServerPlayer replacement) {
         SakuraPlayerData.sync(replacement);
     }
 
-    private static void copyPlayerLanguage(ServerPlayer original,
-                                           ServerPlayer replacement) {
-        if (StringUtils.isNullOrEmpty(languageFieldName)) {
-            for (String field : ReflectionUtils.getPrivateFieldNames(
-                    ServerPlayer.class, String.class)) {
-                Object value = ReflectionUtils.getPrivateFieldValue(
-                        ServerPlayer.class, original, field);
-                if (original.getLanguage().equals(value)) {
-                    languageFieldName = field;
-                    break;
-                }
-            }
-        }
-        if (StringUtils.isNotNullOrEmpty(languageFieldName)) {
-            ReflectionUtils.setPrivateFieldValue(ServerPlayer.class,
-                    replacement, languageFieldName, original.getLanguage());
-        }
-    }
-
-    /**
-     * 旧数据迁移失败时不得继续自动签到或删除旧数据。
-     */
-    private static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        if (!(event.getPlayer() instanceof ServerPlayer)) {
-            return;
-        }
-        ServerPlayer player = (ServerPlayer) event.getPlayer();
+    /** 旧数据迁移失败时不得继续自动签到或删除旧数据。 */
+    private static void onPlayerLoggedIn(ServerPlayer player) {
         try {
             LegacyMigrationResult result = SakuraPlayerData.migrateAndLoad(player);
             if (result != LegacyMigrationResult.NO_LEGACY_DATA) {
@@ -112,15 +75,10 @@ public final class ForgeSakuraGameEventAdapter {
                     player.getUUID(), migrationFailure);
             return;
         }
-        normalizeOnlineTime(player, RewardManager.getCompensateDate(SakuraClock.serverNow()));
+        Date now = RewardManager.getCompensateDate(SakuraClock.serverNow());
+        normalizeOnlineTime(player, now);
         deliverOnlineRewards(player);
         waitForClientSettings(player, 0);
-    }
-
-    private static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
-        if (event.getPlayer() instanceof ServerPlayer) {
-            SakuraPlayerData.removeServer(event.getPlayer().getUUID());
-        }
     }
 
     private static void waitForClientSettings(ServerPlayer player, int attempt) {
@@ -150,9 +108,8 @@ public final class ForgeSakuraGameEventAdapter {
                 || RewardManager.isSignedIn(data, SakuraClock.serverNow(), true)) {
             return;
         }
-        java.util.Date now = RewardManager.getCompensateDate(SakuraClock.serverNow());
-        java.time.LocalDate day = now.toInstant().atZone(
-                java.time.ZoneId.systemDefault()).toLocalDate();
+        Date now = RewardManager.getCompensateDate(SakuraClock.serverNow());
+        LocalDate day = now.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
         OnlineTimeRequirementResult onlineTime = SakuraOnlineTime.evaluate(player, data, day);
         if (!onlineTime.isAllowed()) {
             long missingSeconds = Math.max(onlineTime.getMissingTotalSeconds(),
@@ -167,17 +124,9 @@ public final class ForgeSakuraGameEventAdapter {
                 data.isAutoRewarded(), ESignInType.SIGN_IN));
     }
 
-    private static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) {
-            return;
-        }
-        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-        if (server == null) {
-            return;
-        }
-        java.util.Date now = RewardManager.getCompensateDate(SakuraClock.serverNow());
-        java.time.LocalDate day = now.toInstant().atZone(
-                java.time.ZoneId.systemDefault()).toLocalDate();
+    private static void onServerTick(MinecraftServer server) {
+        Date now = RewardManager.getCompensateDate(SakuraClock.serverNow());
+        LocalDate day = now.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
         if (!ONLINE_REWARD_CHECK.shouldCheck(server.getTickCount(), day)) {
             return;
         }
@@ -195,15 +144,13 @@ public final class ForgeSakuraGameEventAdapter {
                 SakuraPlayerData.saveAndSync(player);
             }
         } catch (RuntimeException failure) {
-            LOGGER.error("Unable to deliver personal date rewards for {}",
-                    player.getUUID(), failure);
+            LOGGER.error("Unable to deliver personal date rewards for {}", player.getUUID(), failure);
         }
     }
 
-    private static void normalizeOnlineTime(ServerPlayer player, java.util.Date date) {
+    private static void normalizeOnlineTime(ServerPlayer player, Date date) {
         IPlayerSignInData data = SakuraPlayerData.get(player);
-        java.time.LocalDate day = date.toInstant().atZone(
-                java.time.ZoneId.systemDefault()).toLocalDate();
+        LocalDate day = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
         if (SakuraOnlineTime.evaluate(player, data, day).isBaselineChanged()) {
             SakuraPlayerData.saveAndSync(player);
         }

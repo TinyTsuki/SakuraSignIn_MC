@@ -1,4 +1,4 @@
-package xin.vanilla.sakura.internal.forge.storage;
+package xin.vanilla.sakura.internal.fabric.storage;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
