@@ -81,9 +81,10 @@ public final class BuiltInThemeCatalog {
         String resourcePath = RESOURCE_ROOT + id + ".json";
         if (resourceManager != null) {
             String relativePath = resourcePath.substring(("assets/" + SakuraSignIn.MODID + "/").length());
-            try (Resource resource = resourceManager.getResource(
-                    new ResourceLocation(SakuraSignIn.MODID, relativePath));
-                 InputStream input = resource.getInputStream()) {
+            Resource resource = resourceManager.getResource(
+                    new ResourceLocation(SakuraSignIn.MODID, relativePath))
+                    .orElseThrow(() -> new IOException("Missing theme descriptor: " + resourcePath));
+            try (InputStream input = resource.open()) {
                 return readDescriptor(id, input);
             }
         }
