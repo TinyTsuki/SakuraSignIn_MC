@@ -8,9 +8,9 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.Commands;
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.command.CommandDateTimeParser;
 import xin.vanilla.sakura.config.CommonConfig;
@@ -33,21 +33,21 @@ public final class SignActionCommand {
     private SignActionCommand() {
     }
 
-    public static LiteralArgumentBuilder<CommandSource> buildSign() {
+    public static LiteralArgumentBuilder<CommandSourceStack> buildSign() {
         return build(CommonConfig.get().command().commandSignIn(), SignActionCommand::sign);
     }
 
-    public static LiteralArgumentBuilder<CommandSource> buildReward() {
+    public static LiteralArgumentBuilder<CommandSourceStack> buildReward() {
         return build(CommonConfig.get().command().commandReward(), SignActionCommand::reward);
     }
 
-    public static LiteralArgumentBuilder<CommandSource> buildSignAndReward() {
+    public static LiteralArgumentBuilder<CommandSourceStack> buildSignAndReward() {
         return build(CommonConfig.get().command().commandSignInEx(), context -> sign(context, true));
     }
 
-    private static LiteralArgumentBuilder<CommandSource> build(
+    private static LiteralArgumentBuilder<CommandSourceStack> build(
             String literal,
-            Command<CommandSource> command
+            Command<CommandSourceStack> command
     ) {
         return Commands.literal(literal)
                 .executes(command)
@@ -56,14 +56,14 @@ public final class SignActionCommand {
                         .executes(command));
     }
 
-    private static int sign(CommandContext<CommandSource> context) throws CommandSyntaxException {
-        ServerPlayerEntity player = context.getSource().getPlayerOrException();
+    private static int sign(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        ServerPlayer player = context.getSource().getPlayerOrException();
         return sign(context, SakuraPlayerData.get(player).isAutoRewarded());
     }
 
-    private static int sign(CommandContext<CommandSource> context, boolean reward)
+    private static int sign(CommandContext<CommandSourceStack> context, boolean reward)
             throws CommandSyntaxException {
-        ServerPlayerEntity player = context.getSource().getPlayerOrException();
+        ServerPlayer player = context.getSource().getPlayerOrException();
         IPlayerSignInData data = SakuraPlayerData.get(player);
         for (KeyValue<Date, ESignInType> entry : signDates(context, data)) {
             RewardManager.signIn(player, new SignInPacket(
@@ -73,8 +73,8 @@ public final class SignActionCommand {
         return 1;
     }
 
-    private static int reward(CommandContext<CommandSource> context) throws CommandSyntaxException {
-        ServerPlayerEntity player = context.getSource().getPlayerOrException();
+    private static int reward(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        ServerPlayer player = context.getSource().getPlayerOrException();
         IPlayerSignInData data = SakuraPlayerData.get(player);
         List<Date> dates = new ArrayList<>();
         try {
@@ -98,7 +98,7 @@ public final class SignActionCommand {
     }
 
     private static List<KeyValue<Date, ESignInType>> signDates(
-            CommandContext<CommandSource> context,
+            CommandContext<CommandSourceStack> context,
             IPlayerSignInData data
     ) throws CommandSyntaxException {
         List<KeyValue<Date, ESignInType>> dates = new ArrayList<>();
@@ -137,7 +137,7 @@ public final class SignActionCommand {
         );
     }
 
-    private static SuggestionProvider<CommandSource> dateSuggestions() {
+    private static SuggestionProvider<CommandSourceStack> dateSuggestions() {
         return (context, builder) -> {
             LocalDateTime now = DateUtils.getLocalDateTime(SakuraClock.serverNow());
             builder.suggest(now.getYear() + " " + now.getMonthValue() + " " + now.getDayOfMonth());

@@ -29,22 +29,22 @@ import xin.vanilla.banira.common.enums.IEnumDescribable;
 import xin.vanilla.banira.common.util.NumberUtils;
 import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.SakuraLang;
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.entity.player.ClientPlayerEntity;
-import net.minecraft.client.gui.AbstractGui;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.renderer.BufferBuilder;
-import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.gui.GuiComponent;
+import net.minecraft.client.gui.screens.Screen;
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.Tesselator;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.opengl.GL11;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.client.SakuraClientState;
 import xin.vanilla.sakura.client.gui.RewardListEntryWidget;
@@ -151,7 +151,7 @@ public class RewardOptionScreen extends BaniraScreen {
      */
     private int lineItemCount;
     // 矩阵栈
-    private MatrixStack ms;
+    private PoseStack ms;
     private double rewardLayoutY;
     private double rewardContentHeight;
     // Y坐标偏移
@@ -238,13 +238,13 @@ public class RewardOptionScreen extends BaniraScreen {
     /**
      * 绘制背景纹理
      */
-    private void renderBackgroundTexture(MatrixStack matrixStack) {
+    private void renderBackgroundTexture(PoseStack matrixStack) {
         // 启用混合模式以支持透明度
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
 
         // 绑定背景纹理
-        Minecraft.getInstance().getTextureManager().bind(SakuraClientState.getThemeTexture());
+        RenderSystem.setShaderTexture(0, SakuraClientState.getThemeTexture());
 
         // 获取屏幕宽高
         int screenWidth = super.width;
@@ -267,13 +267,13 @@ public class RewardOptionScreen extends BaniraScreen {
         float vMax = (v0 + regionHeight) / textureTotalHeight;
 
         // 使用Tessellator绘制平铺的纹理片段
-        Tessellator tessellator = Tessellator.getInstance();
+        Tesselator tessellator = Tesselator.getInstance();
         BufferBuilder buffer = tessellator.getBuilder();
 
         // 绘制完整的纹理块
         for (int x = 0; x <= screenWidth - regionWidth; x += (int) regionWidth) {
             for (int y = 0; y <= screenHeight - regionHeight; y += (int) regionHeight) {
-                buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX);
+                buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
                 buffer.vertex(matrixStack.last().pose(), x, y + regionHeight, 0).uv(uMin, vMax).endVertex();
                 buffer.vertex(matrixStack.last().pose(), x + regionWidth, y + regionHeight, 0).uv(uMax, vMax).endVertex();
                 buffer.vertex(matrixStack.last().pose(), x + regionWidth, y, 0).uv(uMax, vMin).endVertex();
@@ -287,7 +287,7 @@ public class RewardOptionScreen extends BaniraScreen {
         float u = uMin + (leftoverWidth / regionWidth) * (uMax - uMin);
         if (leftoverWidth > 0) {
             for (int y = 0; y <= screenHeight - regionHeight; y += (int) regionHeight) {
-                buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX);
+                buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
                 buffer.vertex(matrixStack.last().pose(), screenWidth - leftoverWidth, y + regionHeight, 0).uv(uMin, vMax).endVertex();
                 buffer.vertex(matrixStack.last().pose(), screenWidth, y + regionHeight, 0).uv(u, vMax).endVertex();
                 buffer.vertex(matrixStack.last().pose(), screenWidth, y, 0).uv(u, vMin).endVertex();
@@ -301,7 +301,7 @@ public class RewardOptionScreen extends BaniraScreen {
         float v = vMin + (leftoverHeight / regionHeight) * (vMax - vMin);
         if (leftoverHeight > 0) {
             for (int x = 0; x <= screenWidth - regionWidth; x += (int) regionWidth) {
-                buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX);
+                buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
                 buffer.vertex(matrixStack.last().pose(), x, screenHeight, 0).uv(uMin, v).endVertex();
                 buffer.vertex(matrixStack.last().pose(), x + regionWidth, screenHeight, 0).uv(uMax, v).endVertex();
                 buffer.vertex(matrixStack.last().pose(), x + regionWidth, screenHeight - leftoverHeight, 0).uv(uMax, vMin).endVertex();
@@ -312,7 +312,7 @@ public class RewardOptionScreen extends BaniraScreen {
 
         // 绘制右下角的剩余区域
         if (leftoverWidth > 0 && leftoverHeight > 0) {
-            buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX);
+            buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
             buffer.vertex(matrixStack.last().pose(), screenWidth - leftoverWidth, screenHeight, 0).uv(uMin, v).endVertex();
             buffer.vertex(matrixStack.last().pose(), screenWidth, screenHeight, 0).uv(u, v).endVertex();
             buffer.vertex(matrixStack.last().pose(), screenWidth, screenHeight - leftoverHeight, 0).uv(u, vMin).endVertex();
@@ -352,7 +352,7 @@ public class RewardOptionScreen extends BaniraScreen {
                     ? getEffectiveTheme().buttonBgHover()
                     : getEffectiveTheme().panelBg();
             int panelHeight = (int) Math.max(height, layout.bottomY() - layout.topY());
-            AbstractGui.fill(context.getStack(), x, y, x + width, y + height, headerColor);
+            GuiComponent.fill(context.getStack(), x, y, x + width, y + height, headerColor);
             String titleId = rewardGroupTitleId(key);
             int borderColor = rewardSelection.isSelected(titleId)
                     ? groupSelectionColor()
@@ -443,7 +443,7 @@ public class RewardOptionScreen extends BaniraScreen {
         return font.lineHeight + groupHeaderVerticalPadding * 2;
     }
 
-    private void drawRewardGroupBorder(MatrixStack stack, int x, int y,
+    private void drawRewardGroupBorder(PoseStack stack, int x, int y,
                                        int width, int height, int color) {
         BaseShapeWidget.drawShape(new ShapeDrawArgs()
                 .stack(stack)
@@ -454,7 +454,7 @@ public class RewardOptionScreen extends BaniraScreen {
                         .radius(0).border(1)));
     }
 
-    private void drawLimitedText(MatrixStack stack, String content, int x, int y,
+    private void drawLimitedText(PoseStack stack, String content, int x, int y,
                                  int maxWidth, int color, boolean shadow) {
         LabelWidget.drawLimitedText(FontDrawArgs.of(Text.literal(content)
                         .stack(stack).font(font).color(color).shadow(shadow))
@@ -472,7 +472,7 @@ public class RewardOptionScreen extends BaniraScreen {
         return text.content().split("\\n", -1).length * font.lineHeight;
     }
 
-    private void drawWelcomeTips(MatrixStack stack) {
+    private void drawWelcomeTips(PoseStack stack) {
         int availableWidth = Math.max(1,
                 width - leftBarWidth - rightBarWidth - 16);
         int textWidth = Math.min(multilineTextWidth(tips), availableWidth);
@@ -641,7 +641,7 @@ public class RewardOptionScreen extends BaniraScreen {
         if (!rewardMap.containsKey(targetKey)) {
             return;
         }
-        ClientPlayerEntity player = Minecraft.getInstance().player;
+        LocalPlayer player = Minecraft.getInstance().player;
         if (player == null
                 || !player.hasPermissions(CommonConfig.get().permission().permissionEditReward())) {
             SakuraClientNotifications.warning(SakuraComponent.get().transClient(
@@ -1008,7 +1008,7 @@ public class RewardOptionScreen extends BaniraScreen {
         else if (value.getOperation() == OperationButtonType.UPLOAD.getCode()) {
             // 仅管理员可上传
             if (!Minecraft.getInstance().isLocalServer()) {
-                ClientPlayerEntity player = Minecraft.getInstance().player;
+                LocalPlayer player = Minecraft.getInstance().player;
                 if (player != null) {
                     if (player.hasPermissions(CommonConfig.get().permission().permissionEditReward())) {
                         SakuraNetwork.sendSplitToServer(RewardConfigManager.toSyncPacket(player));
@@ -1182,7 +1182,7 @@ public class RewardOptionScreen extends BaniraScreen {
         }
     }
 
-    private void renderDraggedReward(MatrixStack stack) {
+    private void renderDraggedReward(PoseStack stack) {
         if (draggingRewardId == null) {
             return;
         }
@@ -1690,7 +1690,7 @@ public class RewardOptionScreen extends BaniraScreen {
             String content, ERewardRule rule) {
         return context -> {
             RewardOperationWidget widget = context.getWidget();
-            MatrixStack stack = context.getStack();
+            PoseStack stack = context.getStack();
             int realX = (int) widget.realX();
             int realY = (int) widget.realY();
             double realWidth = widget.realWidth();
@@ -1699,10 +1699,10 @@ public class RewardOptionScreen extends BaniraScreen {
             int realY2 = (int) (widget.realY() + realHeight);
             boolean redacted = RewardConfigManager.isRuleRedacted(rule);
             if (this.currOpButton == widget.getOperation()) {
-                AbstractGui.fill(stack, realX + 1, realY, realX2 - 1, realY2, 0x44ACACAC);
+                GuiComponent.fill(stack, realX + 1, realY, realX2 - 1, realY2, 0x44ACACAC);
             }
             if (widget.hovered() && !redacted) {
-                AbstractGui.fill(stack, realX, realY, realX2, realY2, 0x99ACACAC);
+                GuiComponent.fill(stack, realX, realY, realX2, realY2, 0x99ACACAC);
             }
             drawLimitedText(stack,
                     SakuraComponent.get().transClient("word", content).toString(),
@@ -2284,7 +2284,7 @@ public class RewardOptionScreen extends BaniraScreen {
     }
 
     /** 右侧工具栏使用无背景像素线条，避免小尺寸按钮出现厚重色块。 */
-    private void drawOperationIcon(MatrixStack stack, OperationButtonType type,
+    private void drawOperationIcon(PoseStack stack, OperationButtonType type,
                                    int x, int y, int width, int height, int color) {
         int left = x + (width - 12) / 2;
         int top = y + (height - 12) / 2;
@@ -2329,7 +2329,7 @@ public class RewardOptionScreen extends BaniraScreen {
         }
     }
 
-    private static void drawTransferArrow(MatrixStack stack, int left, int top,
+    private static void drawTransferArrow(PoseStack stack, int left, int top,
                                           boolean upload, int color) {
         float centerX = left + 6;
         float terminalY = top + 10;
@@ -2347,9 +2347,9 @@ public class RewardOptionScreen extends BaniraScreen {
                 1.6F, color);
     }
 
-    private static void iconRect(MatrixStack stack, int x, int y,
+    private static void iconRect(PoseStack stack, int x, int y,
                                  int width, int height, int color) {
-        AbstractGui.fill(stack, x, y, x + width, y + height, color);
+        GuiComponent.fill(stack, x, y, x + width, y + height, color);
     }
 
     private RewardOperationWidget createThemeIcon(OperationButtonType type, Coordinate coordinate) {
@@ -2387,7 +2387,7 @@ public class RewardOptionScreen extends BaniraScreen {
     }
 
     @Override
-    protected void onRender(MatrixStack matrixStack, float partialTicks) {
+    protected void onRender(PoseStack matrixStack, float partialTicks) {
         this.ms = matrixStack;
         this.renderBackgroundTexture(matrixStack);
 
@@ -2427,15 +2427,15 @@ public class RewardOptionScreen extends BaniraScreen {
         else this.prepareRewardList();
 
         // 绘制左侧边栏列表背景
-        AbstractGui.fill(matrixStack, 0, 0, leftBarWidth, super.height, 0xAA000000);
+        GuiComponent.fill(matrixStack, 0, 0, leftBarWidth, super.height, 0xAA000000);
         AbstractGuiUtils.fillOutLine(matrixStack, 0, 0, leftBarWidth, super.height, 1, 0xFF000000);
         // 绘制左侧边栏列表标题
         if (SakuraClientState.isRewardOptionBarOpened()) {
-            AbstractGui.drawString(matrixStack, super.font, SakuraComponent.get().transClient("word", "reward_rule_type").toString(), 4, 5, 0xFFACACAC);
-            AbstractGui.fill(matrixStack, 0, leftBarTitleHeight, leftBarWidth, leftBarTitleHeight - 1, 0xAA000000);
+            GuiComponent.drawString(matrixStack, super.font, SakuraComponent.get().transClient("word", "reward_rule_type").toString(), 4, 5, 0xFFACACAC);
+            GuiComponent.fill(matrixStack, 0, leftBarTitleHeight, leftBarWidth, leftBarTitleHeight - 1, 0xAA000000);
         }
         // 绘制右侧边栏列表背景
-        AbstractGui.fill(matrixStack, super.width - rightBarWidth, 0, super.width, super.height, 0xAA000000);
+        GuiComponent.fill(matrixStack, super.width - rightBarWidth, 0, super.width, super.height, 0xAA000000);
         AbstractGuiUtils.fillOutLine(matrixStack, super.width - rightBarWidth, 0, rightBarWidth, super.height, 1, 0xFF000000);
 
         updateOperationPresentation();
@@ -2469,7 +2469,7 @@ public class RewardOptionScreen extends BaniraScreen {
         OP_BUTTONS.get(OperationButtonType.HELP.getCode()).setTooltip(
                 Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.help_button"));
 
-        ClientPlayerEntity player = Minecraft.getInstance().player;
+        LocalPlayer player = Minecraft.getInstance().player;
         RewardOperationWidget upload = OP_BUTTONS.get(OperationButtonType.UPLOAD.getCode());
         if (player != null && player.hasPermissions(CommonConfig.get().permission().permissionEditReward())) {
             upload.setTooltip(Text.trans(SakuraSignIn.MODID,
@@ -2487,7 +2487,7 @@ public class RewardOptionScreen extends BaniraScreen {
     }
 
     /** 无权限规则只展示占位页，客户端不持有其服务端奖励内容。 */
-    private void renderPermissionDenied(MatrixStack stack) {
+    private void renderPermissionDenied(PoseStack stack) {
         String message = SakuraComponent.get().transClient(
                 "word", "reward_rule_permission_denied_page").toString();
         float scale = 1.5F;

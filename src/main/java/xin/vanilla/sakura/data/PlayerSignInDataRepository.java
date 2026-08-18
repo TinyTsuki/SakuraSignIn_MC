@@ -1,8 +1,8 @@
 package xin.vanilla.sakura.data;
 
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.INBT;
-import net.minecraft.nbt.ListNBT;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.nbt.ListTag;
 import xin.vanilla.sakura.data.migration.LegacyPlayerData;
 import xin.vanilla.sakura.data.migration.LegacyPlayerDataParser;
 import xin.vanilla.sakura.data.player.PlayerSignInSummary;
@@ -42,7 +42,7 @@ public final class PlayerSignInDataRepository {
             return new PlayerSignInData();
         }
         PlayerSignInSummary summary = optional.get();
-        CompoundNBT legacyShape = new CompoundNBT();
+        CompoundTag legacyShape = new CompoundTag();
         legacyShape.putInt("totalSignInDays", summary.getTotalSignInDays());
         legacyShape.putInt("continuousSignInDays", summary.getContinuousSignInDays());
         legacyShape.putString("lastSignInTime", summary.getLastSignInTime());
@@ -50,19 +50,19 @@ public final class PlayerSignInDataRepository {
         legacyShape.putBoolean("autoRewarded", summary.isAutoRewarded());
         legacyShape.putString("language", summary.getLanguage());
         legacyShape.put("cdkRecords", copyList(summary.getCdkRecords()));
-        ListNBT indexes = new ListNBT();
+        ListTag indexes = new ListTag();
         summary.getMonthIndexes().values().forEach(index -> indexes.add(index.serializeNBT()));
         legacyShape.put("monthIndexes", indexes);
-        ListNBT slots = new ListNBT();
+        ListTag slots = new ListTag();
         summary.getPersonalDateSlots().forEach(slot -> slots.add(slot.serializeNBT()));
         legacyShape.put("personalDateSlots", slots);
         legacyShape.putString("onlineTimeBaselineDate", summary.getOnlineTimeBaselineDate());
         legacyShape.putInt("onlineTimeBaselineTicks", summary.getOnlineTimeBaselineTicks());
-        ListNBT lotteryStates = new ListNBT();
+        ListTag lotteryStates = new ListTag();
         summary.getLotteryDrawStates().forEach(state -> lotteryStates.add(state.serializeNBT()));
         legacyShape.put("lotteryDrawStates", lotteryStates);
 
-        ListNBT records = new ListNBT();
+        ListTag records = new ListTag();
         historyRepository.loadAll(playerUuid).forEach(record -> records.add(record.writeToNBT()));
         legacyShape.put("signInRecords", records);
 
@@ -72,7 +72,7 @@ public final class PlayerSignInDataRepository {
     }
 
     public void save(UUID playerUuid, IPlayerSignInData data) throws IOException {
-        CompoundNBT serialized = data.serializeNBT();
+        CompoundTag serialized = data.serializeNBT();
         // 永久摘要采用已维护的统计值，不能因详情被清理而重新计算。
         serialized.putInt("continuousSignInDays", data.getContinuousSignInDays());
         LegacyPlayerData parsed = legacyParser.parse(serialized);
@@ -111,9 +111,9 @@ public final class PlayerSignInDataRepository {
         return changed;
     }
 
-    private static ListNBT copyList(ListNBT source) {
-        ListNBT copy = new ListNBT();
-        for (INBT element : source) {
+    private static ListTag copyList(ListTag source) {
+        ListTag copy = new ListTag();
+        for (Tag element : source) {
             copy.add(element.copy());
         }
         return copy;

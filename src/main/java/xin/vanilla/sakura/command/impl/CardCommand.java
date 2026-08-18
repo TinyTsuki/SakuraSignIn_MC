@@ -3,10 +3,10 @@ package xin.vanilla.sakura.command.impl;
 import xin.vanilla.sakura.SakuraComponent;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.Commands;
-import net.minecraft.command.arguments.EntityArgument;
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.data.IPlayerSignInData;
@@ -22,7 +22,7 @@ public final class CardCommand {
     private CardCommand() {
     }
 
-    public static LiteralArgumentBuilder<CommandSource> build() {
+    public static LiteralArgumentBuilder<CommandSourceStack> build() {
         return Commands.literal(CommonConfig.get().command().commandCard())
                 .executes(context -> showOwn(context.getSource().getPlayerOrException()))
                 .then(Commands.literal("give")
@@ -71,7 +71,7 @@ public final class CardCommand {
                                 ))));
     }
 
-    private static int showOwn(ServerPlayerEntity player) {
+    private static int showOwn(ServerPlayer player) {
         String key = CommonConfig.get().makeUp().signInCard()
                 ? "has_sign_in_card_d"
                 : "server_not_enable_sign_in_card";
@@ -83,8 +83,8 @@ public final class CardCommand {
         return 1;
     }
 
-    private static int add(Collection<ServerPlayerEntity> players, int amount) {
-        for (ServerPlayerEntity player : players) {
+    private static int add(Collection<ServerPlayer> players, int amount) {
+        for (ServerPlayer player : players) {
             IPlayerSignInData data = SakuraPlayerData.get(player);
             data.setSignInCard(data.getSignInCard() + amount);
             SakuraMessages.send(player, SakuraComponent.get().trans(player, "format", "get_sign_in_card_d", amount
@@ -94,8 +94,8 @@ public final class CardCommand {
         return 1;
     }
 
-    private static int set(Collection<ServerPlayerEntity> players, int amount) {
-        for (ServerPlayerEntity player : players) {
+    private static int set(Collection<ServerPlayer> players, int amount) {
+        for (ServerPlayer player : players) {
             SakuraPlayerData.get(player).setSignInCard(amount);
             SakuraMessages.send(player, SakuraComponent.get().trans(player, "format", "set_sign_in_card_d", amount
             ));
@@ -104,7 +104,7 @@ public final class CardCommand {
         return 1;
     }
 
-    private static int showTarget(ServerPlayerEntity source, ServerPlayerEntity target) {
+    private static int showTarget(ServerPlayer source, ServerPlayer target) {
         SakuraMessages.send(source, SakuraComponent.get().trans(
                 source,
                 "format", "set_player_s_sign_in_card_d",
@@ -114,7 +114,7 @@ public final class CardCommand {
         return 1;
     }
 
-    private static Collection<ServerPlayerEntity> singleton(ServerPlayerEntity player) {
+    private static Collection<ServerPlayer> singleton(ServerPlayer player) {
         return java.util.Collections.singletonList(player);
     }
 }

@@ -2,11 +2,11 @@ package xin.vanilla.sakura.screen;
 
 import xin.vanilla.sakura.data.time.SakuraClock;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.entity.player.ClientPlayerEntity;
+import net.minecraft.client.player.LocalPlayer;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
@@ -303,7 +303,7 @@ public final class SignInScreen extends BaniraScreen {
         int monthStartWeekDay = DateUtils.getDayOfWeekOfMonthStart(current);
         int daysOfCurrentMonth = DateUtils.getDaysOfMonth(current);
 
-        ClientPlayerEntity player = Minecraft.getInstance().player;
+        LocalPlayer player = Minecraft.getInstance().player;
         if (player == null) {
             return;
         }
@@ -453,7 +453,7 @@ public final class SignInScreen extends BaniraScreen {
         refreshTextureAndLayout();
     }
 
-    private void handleSignIn(int button, SignInCell cell, ClientPlayerEntity player) {
+    private void handleSignIn(int button, SignInCell cell, LocalPlayer player) {
         if (showOpeningTips || cell == null || button != GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
             return;
         }
@@ -498,7 +498,7 @@ public final class SignInScreen extends BaniraScreen {
         }
     }
 
-    private void requestMakeUpSignIn(SignInCell cell, Date cellDate, ClientPlayerEntity player) {
+    private void requestMakeUpSignIn(SignInCell cell, Date cellDate, LocalPlayer player) {
         if (!CommonConfig.get().makeUp().signInCard()) {
             SakuraClientNotifications.warning(SakuraComponent.get().transClient(
                     "word", "server_not_enable_sign_in_card"), SakuraNotificationTypes.SIGN_IN);
@@ -528,7 +528,7 @@ public final class SignInScreen extends BaniraScreen {
     }
 
     @Override
-    protected void onRender(MatrixStack stack, float partialTicks) {
+    protected void onRender(PoseStack stack, float partialTicks) {
         renderBackground(stack);
         renderBackgroundTexture(stack);
         renderCalendarTitle(stack);
@@ -544,10 +544,10 @@ public final class SignInScreen extends BaniraScreen {
         }
     }
 
-    private void renderBackgroundTexture(MatrixStack stack) {
+    private void renderBackgroundTexture(PoseStack stack) {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        Minecraft.getInstance().getTextureManager().bind(SakuraClientState.getThemeTexture());
+        RenderSystem.setShaderTexture(0, SakuraClientState.getThemeTexture());
         Coordinate uv = SakuraClientState.getThemeTextureCoordinate().getBgUV();
         AbstractGuiUtils.blit(stack, SakuraClientState.getThemeTexture(),
                 bgX, bgY, bgWidth, bgHeight,
@@ -558,7 +558,7 @@ public final class SignInScreen extends BaniraScreen {
         RenderSystem.disableBlend();
     }
 
-    private void renderCalendarTitle(MatrixStack stack) {
+    private void renderCalendarTitle(PoseStack stack) {
         TextureCoordinate texture = SakuraClientState.getThemeTextureCoordinate();
         double yearX = bgX + texture.getYearCoordinate().getX() * scale;
         double yearY = bgY + texture.getYearCoordinate().getY() * scale;
@@ -595,7 +595,7 @@ public final class SignInScreen extends BaniraScreen {
         RewardOperationWidget info = operationWidgets.get(INFO.code);
         if (info != null) {
             info.setRotatedAngle(info.hovered() ? 10 : 0);
-            ClientPlayerEntity player = Minecraft.getInstance().player;
+            LocalPlayer player = Minecraft.getInstance().player;
             if (player != null) {
                 IPlayerSignInData data = SakuraPlayerData.get(player);
                 info.setTooltip(Text.trans(SakuraSignIn.MODID,
@@ -660,7 +660,7 @@ public final class SignInScreen extends BaniraScreen {
                 bgX, bgY, scale);
     }
 
-    private void renderOpeningTips(MatrixStack stack) {
+    private void renderOpeningTips(PoseStack stack) {
         ShapeDrawArgs.RectParams rect = new ShapeDrawArgs.RectParams()
                 .x(4).y(4).width(width - 8).height(height - 8).radius(15);
         BaseShapeWidget.drawShape(new ShapeDrawArgs()
@@ -687,7 +687,7 @@ public final class SignInScreen extends BaniraScreen {
         return text.content().split("\\n", -1).length * font.lineHeight;
     }
 
-    private void renderHoveredTooltips(MatrixStack stack) {
+    private void renderHoveredTooltips(PoseStack stack) {
         if (!popupOption.isEmpty()) {
             return;
         }

@@ -5,9 +5,9 @@ import xin.vanilla.sakura.data.time.SakuraClock;
 import xin.vanilla.sakura.SakuraComponent;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.Commands;
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.banira.common.data.KeyValue;
@@ -34,7 +34,7 @@ public final class CdkCommand {
     private CdkCommand() {
     }
 
-    public static LiteralArgumentBuilder<CommandSource> build() {
+    public static LiteralArgumentBuilder<CommandSourceStack> build() {
         return Commands.literal(CommonConfig.get().command().commandCdk())
                 .then(Commands.argument("key", StringArgumentType.greedyString())
                         .executes(context -> execute(
@@ -43,7 +43,7 @@ public final class CdkCommand {
                         )));
     }
 
-    private static int execute(ServerPlayerEntity player, String key) {
+    private static int execute(ServerPlayer player, String key) {
         IPlayerSignInData data = SakuraPlayerData.get(player);
         if (failedToday(data) >= 5) {
             send(player, "cdk_error_too_many_times", 0xFFFF0000);
@@ -122,7 +122,7 @@ public final class CdkCommand {
         );
     }
 
-    private static void send(ServerPlayerEntity player, String key, int color) {
+    private static void send(ServerPlayer player, String key, int color) {
         SakuraMessages.send(
                 player,
                 SakuraComponent.get().trans(player, "word", key).color(color),

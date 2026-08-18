@@ -1,7 +1,7 @@
 package xin.vanilla.sakura.internal.forge.migration;
 
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.ListNBT;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import lombok.Getter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -48,7 +48,7 @@ public final class MonthlySignInHistoryRepository implements SignInHistoryStore 
      */
     public void saveMonths(UUID playerUuid, LegacyPlayerData playerData, Set<String> months)
             throws IOException {
-        for (Map.Entry<String, List<CompoundNBT>> entry : playerData.getRecordsByMonth().entrySet()) {
+        for (Map.Entry<String, List<CompoundTag>> entry : playerData.getRecordsByMonth().entrySet()) {
             if (!months.contains(entry.getKey())) {
                 continue;
             }
@@ -63,7 +63,7 @@ public final class MonthlySignInHistoryRepository implements SignInHistoryStore 
         save(playerUuid, playerData);
         for (String month : playerData.getRecordsByMonth().keySet()) {
             Path target = historyFile(playerUuid, month);
-            CompoundNBT expected = historyRoot(playerUuid, month,
+            CompoundTag expected = historyRoot(playerUuid, month,
                     playerData.getRecordsByMonth().get(month));
             if (!expected.equals(AtomicNbtFiles.read(target))) {
                 throw new IOException("Monthly sign-in history verification failed: " + target);
@@ -71,16 +71,16 @@ public final class MonthlySignInHistoryRepository implements SignInHistoryStore 
         }
     }
 
-    private static CompoundNBT historyRoot(
+    private static CompoundTag historyRoot(
             UUID playerUuid,
             String month,
-            List<CompoundNBT> sourceRecords
+            List<CompoundTag> sourceRecords
     ) {
-        CompoundNBT root = new CompoundNBT();
+        CompoundTag root = new CompoundTag();
         root.putInt("schemaVersion", SCHEMA_VERSION);
         root.putString("playerUuid", playerUuid.toString());
         root.putString("month", month);
-        ListNBT records = new ListNBT();
+        ListTag records = new ListTag();
         sourceRecords.forEach(record -> records.add(record.copy()));
         root.put("records", records);
         return root;
@@ -100,7 +100,7 @@ public final class MonthlySignInHistoryRepository implements SignInHistoryStore 
 
         List<SignInRecord> result = new ArrayList<>();
         for (Path file : files) {
-            ListNBT records = AtomicNbtFiles.read(file).getList("records", 10);
+            ListTag records = AtomicNbtFiles.read(file).getList("records", 10);
             for (int i = 0; i < records.size(); i++) {
                 try {
                     result.add(SignInRecord.readFromNBT(records.getCompound(i)));
@@ -161,11 +161,11 @@ public final class MonthlySignInHistoryRepository implements SignInHistoryStore 
     }
 
     private static boolean stripRewardDetails(Path file) throws IOException {
-        CompoundNBT root = AtomicNbtFiles.read(file);
-        ListNBT records = root.getList("records", 10);
+        CompoundTag root = AtomicNbtFiles.read(file);
+        ListTag records = root.getList("records", 10);
         boolean changed = false;
         for (int i = 0; i < records.size(); i++) {
-            CompoundNBT record = records.getCompound(i);
+            CompoundTag record = records.getCompound(i);
             // 未领取奖励仍依赖签到时保存的快照，不能参与压缩。
             if (record.getBoolean("rewarded") && !"[]".equals(record.getString("rewardList"))) {
                 record.putString("rewardList", "[]");

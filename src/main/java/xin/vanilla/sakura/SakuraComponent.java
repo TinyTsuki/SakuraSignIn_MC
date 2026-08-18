@@ -1,7 +1,7 @@
 package xin.vanilla.sakura;
 
 import lombok.NonNull;
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.common.data.AbstractComponent;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumI18nType;
@@ -28,7 +28,7 @@ public final class SakuraComponent extends AbstractComponent {
         return super.trans(EnumI18nType.NONE, key(section, key), args);
     }
 
-    public Component trans(ServerPlayerEntity player, String section, String key, Object... args) {
+    public Component trans(ServerPlayer player, String section, String key, Object... args) {
         return super.trans(player, EnumI18nType.NONE, key(section, key), args);
     }
 

@@ -2,9 +2,9 @@ package xin.vanilla.sakura.command.impl;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.Commands;
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.config.CommonConfig;
@@ -19,7 +19,7 @@ public final class LotteryCommand {
     private LotteryCommand() {
     }
 
-    public static LiteralArgumentBuilder<CommandSource> build() {
+    public static LiteralArgumentBuilder<CommandSourceStack> build() {
         return Commands.literal(CommonConfig.get().command().commandLottery())
                 .requires(source -> source.hasPermission(
                         SakuraUtils.getRewardPermissionLevel(ERewardRule.LOTTERY_REWARD)))
@@ -48,7 +48,7 @@ public final class LotteryCommand {
                                                 StringArgumentType.getString(context, "count"))))));
     }
 
-    private static int list(ServerPlayerEntity player) {
+    private static int list(ServerPlayer player) {
         if (RewardConfigManager.getRewardConfig().getLotteryPools().isEmpty()) {
             SakuraMessages.send(player, SakuraComponent.get().trans(
                     player, "word", "lottery_no_pools"));
@@ -64,7 +64,7 @@ public final class LotteryCommand {
         return 1;
     }
 
-    private static int draw(ServerPlayerEntity player, String poolId, String countText) {
+    private static int draw(ServerPlayer player, String poolId, String countText) {
         int count;
         try {
             count = "all".equalsIgnoreCase(countText) ? -1 : Integer.parseInt(countText);

@@ -1,12 +1,13 @@
 package xin.vanilla.sakura.reward.builtin;
 
 import com.google.gson.JsonObject;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.potion.EffectInstance;
-import net.minecraft.potion.Effects;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import xin.vanilla.sakura.api.reward.RewardDataException;
 import xin.vanilla.sakura.api.reward.RewardRegistryTestSupport;
@@ -26,6 +27,11 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 public class BuiltInRewardTypesTest {
+    @BeforeClass
+    public static void bootstrapMinecraftRegistries() {
+        net.minecraft.SharedConstants.tryDetectVersion();
+        net.minecraft.server.Bootstrap.bootStrap();
+    }
 
     @Before
     @After
@@ -93,12 +99,12 @@ public class BuiltInRewardTypesTest {
         Reward mergedItem = RewardOperations.merge(firstItem, secondItem).get();
         assertEquals(5, ((ItemStack) RewardOperations.decode(mergedItem)).getCount());
 
-        Reward firstEffect = new Reward(new EffectInstance(Effects.LUCK, 20, 1),
+        Reward firstEffect = new Reward(new MobEffectInstance(MobEffects.LUCK, 20, 1),
                 SakuraRewardTypes.EFFECT);
-        Reward secondEffect = new Reward(new EffectInstance(Effects.LUCK, 30, 1),
+        Reward secondEffect = new Reward(new MobEffectInstance(MobEffects.LUCK, 30, 1),
                 SakuraRewardTypes.EFFECT);
         Reward mergedEffect = RewardOperations.merge(firstEffect, secondEffect).get();
-        assertEquals(50, ((EffectInstance) RewardOperations.decode(mergedEffect)).getDuration());
+        assertEquals(50, ((MobEffectInstance) RewardOperations.decode(mergedEffect)).getDuration());
 
         Reward differentProbability = new Reward(new ItemStack(Items.APPLE, 1),
                 SakuraRewardTypes.ITEM, BigDecimal.ONE);

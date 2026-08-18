@@ -1,13 +1,13 @@
 package xin.vanilla.sakura.client.gui;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.renderer.ItemRenderer;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.potion.EffectInstance;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.renderer.entity.ItemRenderer;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.resources.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.client.gui.widget.EffectIconWidget;
@@ -34,16 +34,16 @@ public final class RewardRenderer {
     private RewardRenderer() {
     }
 
-    public static void renderCustomReward(MatrixStack stack, ItemRenderer itemRenderer,
-                                          FontRenderer font, ResourceLocation texture,
+    public static void renderCustomReward(PoseStack stack, ItemRenderer itemRenderer,
+                                          Font font, ResourceLocation texture,
                                           TextureCoordinate coordinates, Reward reward,
                                           int x, int y, boolean showText) {
         renderCustomReward(stack, itemRenderer, font, texture, coordinates,
                 reward, x, y, showText, true);
     }
 
-    public static void renderCustomReward(MatrixStack stack, ItemRenderer itemRenderer,
-                                          FontRenderer font, ResourceLocation texture,
+    public static void renderCustomReward(PoseStack stack, ItemRenderer itemRenderer,
+                                          Font font, ResourceLocation texture,
                                           TextureCoordinate coordinates, Reward reward,
                                           int x, int y, boolean showText,
                                           boolean showQuality) {
@@ -95,9 +95,9 @@ public final class RewardRenderer {
     }
 
     private static final class NativeRenderContext implements RewardRenderContext {
-        private final MatrixStack stack;
+        private final PoseStack stack;
         private final ItemRenderer itemRenderer;
-        private final FontRenderer font;
+        private final Font font;
         private final ResourceLocation texture;
         private final TextureCoordinate coordinates;
         private final Reward reward;
@@ -105,8 +105,8 @@ public final class RewardRenderer {
         private final int y;
         private final boolean showAmount;
 
-        private NativeRenderContext(MatrixStack stack, ItemRenderer itemRenderer,
-                                    FontRenderer font, ResourceLocation texture,
+        private NativeRenderContext(PoseStack stack, ItemRenderer itemRenderer,
+                                    Font font, ResourceLocation texture,
                                     TextureCoordinate coordinates, Reward reward,
                                     int x, int y, boolean showAmount) {
             this.stack = stack;
@@ -130,7 +130,7 @@ public final class RewardRenderer {
         @Override
         public void drawItem(Object itemStack) {
             if (itemStack instanceof ItemStack) {
-                ItemWidget.renderItem(itemRenderer, font, (ItemStack) itemStack,
+                ItemWidget.renderItem(font, (ItemStack) itemStack,
                         x, y, showAmount);
             } else {
                 drawPlaceholder(reward.getTypeId().toString());
@@ -139,8 +139,8 @@ public final class RewardRenderer {
 
         @Override
         public void drawEffect(Object effectInstance) {
-            if (effectInstance instanceof EffectInstance) {
-                EffectIconWidget.drawEffectIcon(stack, font, (EffectInstance) effectInstance,
+            if (effectInstance instanceof MobEffectInstance) {
+                EffectIconWidget.drawEffectIcon(stack, font, (MobEffectInstance) effectInstance,
                         x, y, ICON_SIZE, ICON_SIZE, showAmount);
             } else {
                 drawPlaceholder(reward.getTypeId().toString());
@@ -174,7 +174,7 @@ public final class RewardRenderer {
 
         @Override
         public void drawPlaceholder(String typeId) {
-            ItemWidget.renderItem(itemRenderer, font, new ItemStack(Items.BARRIER),
+            ItemWidget.renderItem(font, new ItemStack(Items.BARRIER),
                     x, y, false);
         }
     }
