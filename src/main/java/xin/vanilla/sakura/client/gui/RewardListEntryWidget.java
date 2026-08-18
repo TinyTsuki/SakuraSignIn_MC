@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -100,10 +101,11 @@ public final class RewardListEntryWidget extends BaseWidget {
     }
 
     @Override
-    public void render(PoseStack stack, float partialTicks) {
+    public void render(GuiGraphics graphics, float partialTicks) {
         if (!visible() || !visibleInViewport()) {
             return;
         }
+        PoseStack stack = graphics.pose();
         if (selected && drawSelectionOutline) {
             ShapeDrawArgs.RectParams rect = new ShapeDrawArgs.RectParams()
                     .x((float) realX() - 1)
@@ -119,15 +121,16 @@ public final class RewardListEntryWidget extends BaseWidget {
                     .rect(rect));
         }
         if (renderer != null) {
-            renderer.accept(new RenderContext(stack, this));
+            renderer.accept(new RenderContext(graphics, this));
         }
     }
 
-    public void renderTooltip(PoseStack stack, double mouseX, double mouseY) {
+    public void renderTooltip(GuiGraphics graphics, double mouseX, double mouseY) {
         if (!visibleInViewport() || !mouseInside || tooltip == null || tooltip.content().isEmpty()
                 || (tooltipRequiresShift && !Screen.hasShiftDown())) {
             return;
         }
+        PoseStack stack = graphics.pose();
         TooltipWidget.drawPopupMessage(stack, FontDrawArgs.ofPopo(
                 tooltip.clone().stack(stack).font(Minecraft.getInstance().font)
         ).x(mouseX).y(mouseY), screen.getEffectiveTheme(), screen.season());
@@ -230,11 +233,13 @@ public final class RewardListEntryWidget extends BaseWidget {
 
     @Getter
     public static final class RenderContext {
+        private final GuiGraphics graphics;
         private final PoseStack stack;
         private final RewardListEntryWidget entry;
 
-        private RenderContext(PoseStack stack, RewardListEntryWidget entry) {
-            this.stack = stack;
+        private RenderContext(GuiGraphics graphics, RewardListEntryWidget entry) {
+            this.graphics = graphics;
+            this.stack = graphics.pose();
             this.entry = entry;
         }
     }

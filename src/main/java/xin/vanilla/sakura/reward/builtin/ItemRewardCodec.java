@@ -6,7 +6,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.TagParser;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
 import xin.vanilla.sakura.api.reward.RewardCodec;
 import xin.vanilla.sakura.api.reward.RewardDataException;
 
@@ -18,8 +18,8 @@ public final class ItemRewardCodec implements RewardCodec<ItemStack> {
                     ? content.get("item").getAsString()
                     : content.get("id").getAsString();
             ResourceLocation location = ResourceLocation.tryParse(itemId);
-            Item item = location == null ? null : Registry.ITEM.getOptional(location).orElse(null);
-            if (item == null || Registry.ITEM.getKey(item) == null) {
+            Item item = location == null ? null : BuiltInRegistries.ITEM.getOptional(location).orElse(null);
+            if (item == null || BuiltInRegistries.ITEM.getKey(item) == null) {
                 throw new RewardDataException("Unknown item: " + itemId);
             }
             int count = content.get("count").getAsInt();
@@ -41,7 +41,7 @@ public final class ItemRewardCodec implements RewardCodec<ItemStack> {
 
     @Override
     public JsonObject encode(ItemStack value) throws RewardDataException {
-        ResourceLocation itemId = value == null ? null : Registry.ITEM.getKey(value.getItem());
+        ResourceLocation itemId = value == null ? null : BuiltInRegistries.ITEM.getKey(value.getItem());
         if (value == null || value.isEmpty() || itemId == null
                 || value.getCount() <= 0) {
             throw new RewardDataException("Item reward must contain a registered non-empty stack");

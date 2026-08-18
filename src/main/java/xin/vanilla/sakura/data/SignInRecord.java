@@ -53,15 +53,6 @@ public class SignInRecord implements Serializable, Cloneable {
         this.rewardList = new RewardList();
     }
 
-    /**
-     * 去掉奖励明细与玩家标识，仅保留校准签到日、签到日与是否已领奖，用于长期存档瘦身
-     */
-    public void stripDetailsPreservingSignInState() {
-        this.rewardList = new RewardList();
-        this.signInUUID = "";
-        this.signInTime = (Date) this.compensateTime.clone();
-    }
-
     // 序列化到 NBT
     public CompoundTag writeToNBT() {
         CompoundTag tag = new CompoundTag();

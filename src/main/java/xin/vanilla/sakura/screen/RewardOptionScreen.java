@@ -36,7 +36,7 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.gui.GuiComponent;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.Tesselator;
@@ -351,7 +351,7 @@ public class RewardOptionScreen extends BaniraScreen {
                     ? getEffectiveTheme().buttonBgHover()
                     : getEffectiveTheme().panelBg();
             int panelHeight = (int) Math.max(height, layout.bottomY() - layout.topY());
-            GuiComponent.fill(context.getStack(), x, y, x + width, y + height, headerColor);
+            AbstractGuiUtils.fill(context.getStack(), x, y, width, height, headerColor);
             String titleId = rewardGroupTitleId(key);
             int borderColor = rewardSelection.isSelected(titleId)
                     ? groupSelectionColor()
@@ -359,9 +359,9 @@ public class RewardOptionScreen extends BaniraScreen {
                     ? getEffectiveTheme().accentFocused()
                     : groupBorderColor();
             drawRewardGroupBorder(context.getStack(), x, y, width, panelHeight, borderColor);
-            super.font.draw(context.getStack(), collapsed ? "\u25B6" : "\u25BC",
-                    x + 4, y + (height - super.font.lineHeight) / 2.0F,
-                    getEffectiveTheme().buttonText());
+            context.getGraphics().drawString(super.font, collapsed ? "\u25B6" : "\u25BC",
+                    x + 4, (int) (y + (height - super.font.lineHeight) / 2.0F),
+                    getEffectiveTheme().buttonText(), false);
             drawLimitedText(context.getStack(), title,
                     x + 16, y + (height - super.font.lineHeight) / 2,
                     width - 20, getEffectiveTheme().buttonText(), false);
@@ -401,7 +401,7 @@ public class RewardOptionScreen extends BaniraScreen {
             RewardListEntryWidget entry = new RewardListEntryWidget(this, j, context -> {
                 RewardListEntryWidget widget = context.getEntry();
                 Reward reward = rewardMap.get(key).get(widget.getOperation());
-                RewardRenderer.renderCustomReward(context.getStack(), this.itemRenderer, super.font,
+                RewardRenderer.renderCustomReward(context.getGraphics(), super.font,
                         SakuraClientState.getThemeTexture(), SakuraClientState.getThemeTextureCoordinate(),
                         reward, (int) widget.realX(), (int) widget.realY(), true);
             }).setBaseX(leftBarWidth)
@@ -1181,7 +1181,8 @@ public class RewardOptionScreen extends BaniraScreen {
         }
     }
 
-    private void renderDraggedReward(PoseStack stack) {
+    private void renderDraggedReward(GuiGraphics graphics) {
+        PoseStack stack = graphics.pose();
         if (draggingRewardId == null) {
             return;
         }
@@ -1211,7 +1212,7 @@ public class RewardOptionScreen extends BaniraScreen {
             }
             int x = startX + visualIndex % columns * spacing;
             int y = startY + visualIndex / columns * spacing;
-            RewardRenderer.renderCustomReward(stack, itemRenderer, font,
+            RewardRenderer.renderCustomReward(graphics, font,
                     SakuraClientState.getThemeTexture(),
                     SakuraClientState.getThemeTextureCoordinate(),
                     rewards.get(index), x, y, true);
@@ -1698,10 +1699,12 @@ public class RewardOptionScreen extends BaniraScreen {
             int realY2 = (int) (widget.realY() + realHeight);
             boolean redacted = RewardConfigManager.isRuleRedacted(rule);
             if (this.currOpButton == widget.getOperation()) {
-                GuiComponent.fill(stack, realX + 1, realY, realX2 - 1, realY2, 0x44ACACAC);
+                AbstractGuiUtils.fill(stack, realX + 1, realY,
+                        Math.max(0, realX2 - realX - 2), Math.max(0, realY2 - realY), 0x44ACACAC);
             }
             if (widget.hovered() && !redacted) {
-                GuiComponent.fill(stack, realX, realY, realX2, realY2, 0x99ACACAC);
+                AbstractGuiUtils.fill(stack, realX, realY,
+                        Math.max(0, realX2 - realX), Math.max(0, realY2 - realY), 0x99ACACAC);
             }
             drawLimitedText(stack,
                     SakuraComponent.get().transClient("word", content).toString(),
@@ -2240,8 +2243,8 @@ public class RewardOptionScreen extends BaniraScreen {
         }
 
         registerOperation(new RewardOperationWidget(this, OperationButtonType.OFFSET_Y.getCode(), context -> {
-            font.draw(context.getStack(), "OY:", width - rightBarWidth + 1,
-                    height - font.lineHeight * 2 - 2, 0xFFACACAC);
+            context.getGraphics().drawString(font, "OY:", width - rightBarWidth + 1,
+                    height - font.lineHeight * 2 - 2, 0xFFACACAC, false);
             drawLimitedText(context.getStack(), String.valueOf((int) yOffset),
                     width - rightBarWidth + 1, height - font.lineHeight - 2,
                     rightBarWidth, 0xFFACACAC, false);
@@ -2348,7 +2351,7 @@ public class RewardOptionScreen extends BaniraScreen {
 
     private static void iconRect(PoseStack stack, int x, int y,
                                  int width, int height, int color) {
-        GuiComponent.fill(stack, x, y, x + width, y + height, color);
+        AbstractGuiUtils.fill(stack, x, y, width, height, color);
     }
 
     private RewardOperationWidget createThemeIcon(OperationButtonType type, Coordinate coordinate) {
@@ -2386,7 +2389,8 @@ public class RewardOptionScreen extends BaniraScreen {
     }
 
     @Override
-    protected void onRender(PoseStack matrixStack, float partialTicks) {
+    protected void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+        PoseStack matrixStack = graphics.pose();
         this.ms = matrixStack;
         this.renderBackgroundTexture(matrixStack);
 
@@ -2409,7 +2413,7 @@ public class RewardOptionScreen extends BaniraScreen {
 
         // 绘制操作提示
         if (isCurrentRuleRedacted()) {
-            renderPermissionDenied(matrixStack);
+            renderPermissionDenied(graphics);
         } else if (OperationButtonType.valueOf(currOpButton) == null) {
             BaseShapeWidget.drawShape(new ShapeDrawArgs()
                     .stack(matrixStack)
@@ -2426,20 +2430,24 @@ public class RewardOptionScreen extends BaniraScreen {
         else this.prepareRewardList();
 
         // 绘制左侧边栏列表背景
-        GuiComponent.fill(matrixStack, 0, 0, leftBarWidth, super.height, 0xAA000000);
+        AbstractGuiUtils.fill(matrixStack, 0, 0, leftBarWidth, super.height, 0xAA000000);
         AbstractGuiUtils.fillOutLine(matrixStack, 0, 0, leftBarWidth, super.height, 1, 0xFF000000);
         // 绘制左侧边栏列表标题
         if (SakuraClientState.isRewardOptionBarOpened()) {
-            GuiComponent.drawString(matrixStack, super.font, SakuraComponent.get().transClient("word", "reward_rule_type").toString(), 4, 5, 0xFFACACAC);
-            GuiComponent.fill(matrixStack, 0, leftBarTitleHeight, leftBarWidth, leftBarTitleHeight - 1, 0xAA000000);
+            drawLimitedText(matrixStack,
+                    SakuraComponent.get().transClient("word", "reward_rule_type").toString(),
+                    4, 5, Math.max(0, leftBarWidth - 8), 0xFFACACAC, false);
+            AbstractGuiUtils.fill(matrixStack, 0, leftBarTitleHeight,
+                    leftBarWidth, 1, 0xAA000000);
         }
         // 绘制右侧边栏列表背景
-        GuiComponent.fill(matrixStack, super.width - rightBarWidth, 0, super.width, super.height, 0xAA000000);
+        AbstractGuiUtils.fill(matrixStack, super.width - rightBarWidth, 0,
+                rightBarWidth, super.height, 0xAA000000);
         AbstractGuiUtils.fillOutLine(matrixStack, super.width - rightBarWidth, 0, rightBarWidth, super.height, 1, 0xFF000000);
 
         updateOperationPresentation();
-        renderWidgets(matrixStack, partialTicks);
-        renderDraggedReward(matrixStack);
+        renderWidgets(graphics, partialTicks);
+        renderDraggedReward(graphics);
         addDeferredTooltipRender(stack -> {
             // 弹出菜单是当前交互焦点，避免下层奖励或工具提示穿透到菜单上方。
             if (!popupOption.isEmpty() || draggingRewardId != null) {
@@ -2486,7 +2494,8 @@ public class RewardOptionScreen extends BaniraScreen {
     }
 
     /** 无权限规则只展示占位页，客户端不持有其服务端奖励内容。 */
-    private void renderPermissionDenied(PoseStack stack) {
+    private void renderPermissionDenied(GuiGraphics graphics) {
+        PoseStack stack = graphics.pose();
         String message = SakuraComponent.get().transClient(
                 "word", "reward_rule_permission_denied_page").toString();
         float scale = 1.5F;
@@ -2495,10 +2504,10 @@ public class RewardOptionScreen extends BaniraScreen {
         float centerY = height / 2.0F;
         stack.pushPose();
         stack.scale(scale, scale, 1.0F);
-        font.draw(stack, message,
-                centerX / scale - font.width(message) / 2.0F,
-                centerY / scale - font.lineHeight / 2.0F,
-                getEffectiveTheme().buttonText());
+        graphics.drawString(font, message,
+                (int) (centerX / scale - font.width(message) / 2.0F),
+                (int) (centerY / scale - font.lineHeight / 2.0F),
+                getEffectiveTheme().buttonText(), false);
         stack.popPose();
     }
 

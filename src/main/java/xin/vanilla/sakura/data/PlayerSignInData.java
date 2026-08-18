@@ -281,7 +281,7 @@ public class PlayerSignInData implements IPlayerSignInData {
 
     public void copyFrom(IPlayerSignInData capability) {
         this.totalSignInDays.set(capability.getTotalSignInDays());
-        this.continuousSignInDays.set(capability.getContinuousSignInDays());
+        this.continuousSignInDays.set(capability.calculateContinuousDays());
         this.lastSignInTime = capability.getLastSignInTime();
         this.signInCard.set(capability.getSignInCard());
         this.autoRewarded = capability.isAutoRewarded();
@@ -300,7 +300,7 @@ public class PlayerSignInData implements IPlayerSignInData {
         // 创建一个CompoundNBT对象，并将玩家的分数和活跃状态写入其中
         CompoundTag tag = new CompoundTag();
         tag.putInt("totalSignInDays", this.getTotalSignInDays());
-        tag.putInt("continuousSignInDays", this.getContinuousSignInDays());
+        tag.putInt("continuousSignInDays", this.calculateContinuousDays());
         tag.putString("lastSignInTime", DateUtils.toDateTimeString(this.getLastSignInTime()));
         tag.putInt("signInCard", this.getSignInCard());
         tag.putBoolean("autoRewarded", this.isAutoRewarded());
@@ -362,15 +362,6 @@ public class PlayerSignInData implements IPlayerSignInData {
             records.add(SignInRecord.readFromNBT(recordsNBT.getCompound(i)));
         }
         this.setSignInRecords(records);
-        List<Date> compensateDates = new ArrayList<>();
-        for (SignInRecord r : this.getSignInRecords()) {
-            compensateDates.add(r.getCompensateTime());
-        }
-        if (!compensateDates.isEmpty()) {
-            this.setContinuousSignInDays(DateUtils.calculateContinuousDays(compensateDates, RewardManager.getCompensateDate(DateUtils.getServerDate())));
-        }
-        this.trimSignInRecordsForRetention();
-
         ListTag cdkRecordsNBT = nbt.getList("cdkRecords", 10); // 10 是 CompoundTag 的类型ID
         List<KeyValue<String, KeyValue<Date, Boolean>>> cdkRecords = new ArrayList<>();
         for (int i = 0; i < cdkRecordsNBT.size(); i++) {

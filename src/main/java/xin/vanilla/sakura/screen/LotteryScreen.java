@@ -1,9 +1,8 @@
 package xin.vanilla.sakura.screen;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.renderer.entity.ItemRenderer;
 import xin.vanilla.banira.api.client.theme.BaniraThemes;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
@@ -45,7 +44,6 @@ public final class LotteryScreen extends BaniraScreen {
     private static final int CLOSE_SIZE = 10;
     private static final int CLOSE_PAD = 6;
     private final Screen parent;
-    private final ItemRenderer itemRenderer = Minecraft.getInstance().getItemRenderer();
     private DropdownSelectWidget poolSelect;
     private DropdownSelectWidget countSelect;
     private ButtonWidget singleDrawButton;
@@ -135,45 +133,45 @@ public final class LotteryScreen extends BaniraScreen {
     }
 
     @Override
-    protected void onRender(PoseStack stack, float partialTicks) {
+    protected void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
         int panelWidth = Math.min(560, width - 40);
         int panelX = (width - panelWidth) / 2;
-        shape(stack, panelX, PANEL_TOP, panelWidth, height - 44,
+        shape(graphics, panelX, PANEL_TOP, panelWidth, height - 44,
                 getEffectiveTheme().panelBg(), 8, 0);
-        centered(stack, SakuraComponent.get().translateClient("word", "lottery_screen"),
+        centered(graphics, SakuraComponent.get().translateClient("word", "lottery_screen"),
                 34, getEffectiveTheme().textPrimary());
 
         LotteryPool pool = selectedPool();
         if (pool == null) {
-            centered(stack, SakuraComponent.get().translateClient("word", "lottery_no_pools"),
+            centered(graphics, SakuraComponent.get().translateClient("word", "lottery_no_pools"),
                     height / 2, getEffectiveTheme().textSecondary());
         } else {
             String details = SakuraComponent.get().translateClient("format",
                     "lottery_pool_details_sss", policyName(pool), pool.getMaxDraws(),
                     pool.getCooldownSeconds());
-            centered(stack, details, 84, getEffectiveTheme().textSecondary());
-            renderPreview(stack, pool, panelX + 20, 104, panelWidth - 40,
+            centered(graphics, details, 84, getEffectiveTheme().textSecondary());
+            renderPreview(graphics, pool, panelX + 20, 104, panelWidth - 40,
                     Math.max(36, height - 184));
         }
-        renderWidgets(stack, partialTicks);
+        renderWidgets(graphics, partialTicks);
     }
 
-    private void renderPreview(PoseStack stack, LotteryPool pool, int x, int y,
+    private void renderPreview(GuiGraphics graphics, LotteryPool pool, int x, int y,
                                int width, int height) {
-        shape(stack, x, y, width, height, getEffectiveTheme().buttonBg(), 5, 1);
+        shape(graphics, x, y, width, height, getEffectiveTheme().buttonBg(), 5, 1);
         previewArea = new ScreenCoordinate(x, y, width, height);
         LotteryPreviewMode mode = pool.getPreviewMode();
         if (mode == LotteryPreviewMode.NONE) {
-            centered(stack, "?", y + height / 2 - font.lineHeight / 2,
+            centered(graphics, "?", y + height / 2 - font.lineHeight / 2,
                     getEffectiveTheme().textPrimary());
-            centered(stack, SakuraComponent.get().translateClient(
+            centered(graphics, SakuraComponent.get().translateClient(
                     "word", "lottery_rewards_hidden"), y + height / 2 + 12,
                     getEffectiveTheme().textSecondary());
             return;
         }
         List<Reward> rewards = pool.getRewards();
         if (rewards.isEmpty()) {
-            centered(stack, SakuraComponent.get().translateClient(
+            centered(graphics, SakuraComponent.get().translateClient(
                     "word", "lottery_pool_empty"), y + height / 2,
                     getEffectiveTheme().textSecondary());
             return;
@@ -197,15 +195,15 @@ public final class LotteryScreen extends BaniraScreen {
             int itemY = y + 10 + (local / columns) * 34;
             Reward reward = rewards.get(i);
             if (mode.showsItems()) {
-                RewardRenderer.renderCustomReward(stack, itemRenderer, font,
+                RewardRenderer.renderCustomReward(graphics, font,
                         SakuraClientState.getThemeTexture(),
                         SakuraClientState.getThemeTextureCoordinate(), reward,
                         itemX, itemY, true, true);
             } else {
-                shape(stack, itemX, itemY, 16, 16, getEffectiveTheme().buttonBgHover(), 3, 1);
-                font.draw(stack, "?", itemX + 5, itemY + 4, getEffectiveTheme().textPrimary());
+                shape(graphics, itemX, itemY, 16, 16, getEffectiveTheme().buttonBgHover(), 3, 1);
+                graphics.drawString(font, "?", itemX + 5, itemY + 4, getEffectiveTheme().textPrimary(), false);
             }
-            deferRewardTooltip(stack, pool, reward, mode, itemX, itemY);
+            deferRewardTooltip(graphics, pool, reward, mode, itemX, itemY);
         }
     }
 
@@ -245,7 +243,7 @@ public final class LotteryScreen extends BaniraScreen {
         previewScrollbar.setValue(previewScrollRows);
     }
 
-    private void deferRewardTooltip(PoseStack stack, LotteryPool pool, Reward reward,
+    private void deferRewardTooltip(GuiGraphics graphics, LotteryPool pool, Reward reward,
                                     LotteryPreviewMode mode, int x, int y) {
         double mouseX = inputState.mouseX();
         double mouseY = inputState.mouseY();
@@ -266,8 +264,8 @@ public final class LotteryScreen extends BaniraScreen {
         }
         if (lines.isEmpty()) return;
         Text tooltip = Text.literal(String.join("\n", lines));
-        addDeferredTooltipRender(s -> TooltipWidget.drawPopupMessage(s,
-                FontDrawArgs.ofPopo(tooltip.stack(s)).x((int) mouseX).y((int) mouseY),
+        addDeferredTooltipRender(g -> TooltipWidget.drawPopupMessage(g.pose(),
+                FontDrawArgs.ofPopo(tooltip.stack(g.pose())).x((int) mouseX).y((int) mouseY),
                 getEffectiveTheme(), season()));
     }
 
@@ -356,16 +354,16 @@ public final class LotteryScreen extends BaniraScreen {
         return new ScreenCoordinate((width - panelWidth) / 2, PANEL_TOP, panelWidth, height - 44);
     }
 
-    private void shape(PoseStack stack, int x, int y, int width, int height,
+    private void shape(GuiGraphics graphics, int x, int y, int width, int height,
                        int color, int radius, int border) {
-        BaseShapeWidget.drawShape(new ShapeDrawArgs().stack(stack)
+        BaseShapeWidget.drawShape(new ShapeDrawArgs().stack(graphics.pose())
                 .type(ShapeDrawArgs.ShapeType.RECT).color(color)
                 .rect(new ShapeDrawArgs.RectParams().x(x).y(y).width(width).height(height)
                         .radius(radius).cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE)
                         .border(border)));
     }
 
-    private void centered(PoseStack stack, String text, int y, int color) {
-        font.draw(stack, text, width / 2.0F - font.width(text) / 2.0F, y, color);
+    private void centered(GuiGraphics graphics, String text, int y, int color) {
+        graphics.drawString(font, text, (int) (width / 2.0F - font.width(text) / 2.0F), y, color, false);
     }
 }

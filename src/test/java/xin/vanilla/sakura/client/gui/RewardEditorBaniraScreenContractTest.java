@@ -135,7 +135,7 @@ public class RewardEditorBaniraScreenContractTest {
     public void itemCountIsRenderedAfterTheItemModel() {
         String gui = read(MAIN.resolve("client/gui/RewardRenderer.java"));
 
-        assertTrue(gui.contains("ItemWidget.renderItem(font,"));
+        assertTrue(gui.contains("ItemWidget.renderItem(graphics, font,"));
         assertTrue(gui.contains("SakuraRewardClient.find(reward.getTypeId())"));
         assertFalse(gui.contains("fontRenderer.drawShadow(matrixStack, count"));
     }

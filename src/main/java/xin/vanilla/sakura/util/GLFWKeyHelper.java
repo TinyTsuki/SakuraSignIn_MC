@@ -7,6 +7,7 @@ import xin.vanilla.banira.common.util.StringUtils;
 
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 public class GLFWKeyHelper {
@@ -133,7 +134,7 @@ public class GLFWKeyHelper {
 
     public static List<String> getKeyRecordKeys(int... codes) {
         List<String> recordKeys = new ArrayList<>();
-        List<Integer> sortedCodes = Arrays.stream(codes).boxed().sorted().toList();
+        List<Integer> sortedCodes = Arrays.stream(codes).boxed().sorted().collect(Collectors.toList());
         for (Integer code : sortedCodes) {
             String name = KEY_CODE_TO_NAME.get(code);
             if (name == null) continue;
@@ -144,7 +145,7 @@ public class GLFWKeyHelper {
 
     public static List<String> getMouseRecordKeys(int... codes) {
         List<String> recordKeys = new ArrayList<>();
-        List<Integer> sortedCodes = Arrays.stream(codes).boxed().sorted().toList();
+        List<Integer> sortedCodes = Arrays.stream(codes).boxed().sorted().collect(Collectors.toList());
         for (Integer code : sortedCodes) {
             String name = MOUSE_CODE_TO_NAME.get(code);
             if (name == null) continue;
