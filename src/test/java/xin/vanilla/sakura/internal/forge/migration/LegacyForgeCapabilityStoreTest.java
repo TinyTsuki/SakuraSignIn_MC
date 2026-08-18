@@ -1,7 +1,7 @@
 package xin.vanilla.sakura.internal.forge.migration;
 
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.CompressedStreamTools;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtIo;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -30,27 +30,27 @@ public class LegacyForgeCapabilityStoreTest {
         Path worldData = temporaryFolder.newFolder("vanilla.xin").toPath();
         File playerFile = vanillaPlayerData.resolve(uuid + ".dat").toFile();
 
-        CompoundNBT sakura = new CompoundNBT();
+        CompoundTag sakura = new CompoundTag();
         sakura.putInt("signInCard", 12);
-        CompoundNBT other = new CompoundNBT();
+        CompoundTag other = new CompoundTag();
         other.putString("owner", "other_mod");
-        CompoundNBT forgeCaps = new CompoundNBT();
+        CompoundTag forgeCaps = new CompoundTag();
         forgeCaps.put(LegacyForgeCapabilityStore.CAPABILITY_KEY, sakura);
         forgeCaps.put("other_mod:data", other);
-        CompoundNBT root = new CompoundNBT();
+        CompoundTag root = new CompoundTag();
         root.putString("Dimension", "minecraft:overworld");
         root.put("ForgeCaps", forgeCaps);
-        CompressedStreamTools.writeCompressed(root, playerFile);
+        NbtIo.writeCompressed(root, playerFile);
 
         LegacyForgeCapabilityStore store = new LegacyForgeCapabilityStore(vanillaPlayerData, worldData);
-        Optional<CompoundNBT> loaded = store.read(uuid);
+        Optional<CompoundTag> loaded = store.read(uuid);
         assertTrue(loaded.isPresent());
 
         String backup = store.backupAndVerify(uuid, loaded.get());
         assertTrue(store.backupMatches(backup, sakura));
         store.removeAndVerify(uuid, loaded.get());
 
-        CompoundNBT rewritten = CompressedStreamTools.readCompressed(playerFile);
+        CompoundTag rewritten = NbtIo.readCompressed(playerFile);
         assertEquals("minecraft:overworld", rewritten.getString("Dimension"));
         assertFalse(rewritten.getCompound("ForgeCaps").contains(
                 LegacyForgeCapabilityStore.CAPABILITY_KEY, 10
@@ -66,17 +66,17 @@ public class LegacyForgeCapabilityStoreTest {
         Path playerFile = vanillaPlayerData.resolve(uuid + ".dat");
         Path rollbackFile = vanillaPlayerData.resolve(uuid + ".dat.sakura-migration.rollback");
 
-        CompoundNBT capability = new CompoundNBT();
+        CompoundTag capability = new CompoundTag();
         capability.putInt("signInCard", 7);
-        CompoundNBT forgeCaps = new CompoundNBT();
+        CompoundTag forgeCaps = new CompoundTag();
         forgeCaps.put(LegacyForgeCapabilityStore.CAPABILITY_KEY, capability);
-        CompoundNBT root = new CompoundNBT();
+        CompoundTag root = new CompoundTag();
         root.put("ForgeCaps", forgeCaps);
-        CompressedStreamTools.writeCompressed(root, rollbackFile.toFile());
+        NbtIo.writeCompressed(root, rollbackFile.toFile());
         Files.write(playerFile, new byte[]{1, 2, 3});
 
         LegacyForgeCapabilityStore store = new LegacyForgeCapabilityStore(vanillaPlayerData, worldData);
-        Optional<CompoundNBT> restored = store.read(uuid);
+        Optional<CompoundTag> restored = store.read(uuid);
 
         assertTrue(restored.isPresent());
         assertEquals(capability, restored.get());

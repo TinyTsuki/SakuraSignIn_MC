@@ -1,12 +1,12 @@
 package xin.vanilla.sakura.reward.builtin;
 
 import com.google.gson.JsonObject;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.JsonToNBT;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.registry.Registry;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.TagParser;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.core.Registry;
 import xin.vanilla.sakura.api.reward.RewardCodec;
 import xin.vanilla.sakura.api.reward.RewardDataException;
 
@@ -28,7 +28,7 @@ public final class ItemRewardCodec implements RewardCodec<ItemStack> {
             }
             ItemStack result = new ItemStack(item, count);
             if (content.has("nbt")) {
-                CompoundNBT tag = JsonToNBT.parseTag(content.get("nbt").getAsString());
+                CompoundTag tag = TagParser.parseTag(content.get("nbt").getAsString());
                 result.setTag(tag);
             }
             return result;

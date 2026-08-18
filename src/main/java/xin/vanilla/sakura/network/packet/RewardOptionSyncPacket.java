@@ -1,7 +1,7 @@
 package xin.vanilla.sakura.network.packet;
 
 import lombok.Getter;
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.api.BaniraNetwork;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
@@ -74,7 +74,7 @@ public class RewardOptionSyncPacket extends SplitPacket implements INetworkPacke
                 SakuraClientPacketHandlers.handle(packet);
                 return;
             }
-            ServerPlayerEntity sender = ctx.senderAs(ServerPlayerEntity.class);
+            ServerPlayer sender = ctx.senderAs(ServerPlayer.class);
             if (sender == null) {
                 return;
             }
@@ -102,7 +102,7 @@ public class RewardOptionSyncPacket extends SplitPacket implements INetworkPacke
                 RewardConfigManager.backupRewardOption(false);
                 RewardConfigManager.setRewardConfig(candidate);
                 RewardConfigManager.saveRewardOption();
-                for (ServerPlayerEntity player : sender.server.getPlayerList().getPlayers()) {
+                for (ServerPlayer player : sender.server.getPlayerList().getPlayers()) {
                     if (!player.getUUID().equals(sender.getUUID())) {
                         SakuraNetwork.sendSplitToPlayer(
                                 RewardConfigManager.toSyncPacket(player), player

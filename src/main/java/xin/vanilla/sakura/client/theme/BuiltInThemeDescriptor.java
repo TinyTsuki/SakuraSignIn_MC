@@ -3,7 +3,7 @@ package xin.vanilla.sakura.client.theme;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
 
 /**

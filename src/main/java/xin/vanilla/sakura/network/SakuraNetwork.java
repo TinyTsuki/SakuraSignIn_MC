@@ -1,6 +1,6 @@
 package xin.vanilla.sakura.network;
 
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.api.BaniraModPresence;
 import xin.vanilla.banira.api.BaniraNetwork;
@@ -109,7 +109,7 @@ public final class SakuraNetwork {
     /**
      * 签到后同步实际操作月份，保证跨月补签也能立即刷新。
      */
-    public static void syncMonth(ServerPlayerEntity player, Date date) {
+    public static void syncMonth(ServerPlayer player, Date date) {
         IPlayerSignInData data = SakuraPlayerData.get(player);
         sendToPlayer(new PlayerMonthSyncPacket(
                 player.getUUID(), monthOf(date), data.getSignInRecords()
@@ -131,10 +131,10 @@ public final class SakuraNetwork {
     }
 
     private static void syncInitialData(Object playerObject) {
-        if (!(playerObject instanceof ServerPlayerEntity)) {
+        if (!(playerObject instanceof ServerPlayer)) {
             return;
         }
-        ServerPlayerEntity player = (ServerPlayerEntity) playerObject;
+        ServerPlayer player = (ServerPlayer) playerObject;
         sendToPlayer(new CommonConfigSnapshotPacket(CommonConfig.networkSnapshot()), player);
         SakuraPlayerData.sync(player);
         sendToPlayer(new ServerTimeSyncPacket(), player);
@@ -151,7 +151,7 @@ public final class SakuraNetwork {
                 .atZone(ZoneId.systemDefault())).toString();
     }
 
-    public static PersonalDatePresetSyncPacket personalDatePacket(ServerPlayerEntity player) {
+    public static PersonalDatePresetSyncPacket personalDatePacket(ServerPlayer player) {
         boolean visible = player.hasPermissions(
                 SakuraUtils.getRewardPermissionLevel(ERewardRule.PERSONAL_DATE_REWARD));
         return new PersonalDatePresetSyncPacket(
@@ -160,7 +160,7 @@ public final class SakuraNetwork {
                 SakuraCalendars.get().descriptors());
     }
 
-    public static LotteryPoolSyncPacket lotteryPoolPacket(ServerPlayerEntity player) {
+    public static LotteryPoolSyncPacket lotteryPoolPacket(ServerPlayer player) {
         boolean visible = player.hasPermissions(
                 SakuraUtils.getRewardPermissionLevel(ERewardRule.LOTTERY_REWARD));
         return new LotteryPoolSyncPacket(visible

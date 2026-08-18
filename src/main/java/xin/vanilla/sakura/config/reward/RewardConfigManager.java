@@ -7,7 +7,7 @@ import com.google.gson.reflect.TypeToken;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.world.entity.player.Player;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.BaniraDataPaths;
@@ -1409,7 +1409,7 @@ public class RewardConfigManager {
      *
      * @param player 玩家，用于判断是否有权限
      */
-    public static RewardOptionSyncPacket toSyncPacket(PlayerEntity player) {
+    public static RewardOptionSyncPacket toSyncPacket(Player player) {
         return toSyncPacket(rewardConfig,
                 rule -> player.hasPermissions(SakuraUtils.getRewardPermissionLevel(rule)));
     }

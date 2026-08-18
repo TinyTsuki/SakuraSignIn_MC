@@ -4,9 +4,9 @@ import xin.vanilla.sakura.SakuraComponent;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.Commands;
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.api.BaniraCommonSettings;
 import xin.vanilla.sakura.command.SignInCommand;
 import xin.vanilla.banira.common.data.KeyValue;
@@ -44,8 +44,8 @@ public final class HelpCommand {
     private HelpCommand() {
     }
 
-    public static LiteralArgumentBuilder<CommandSource> build() {
-        Command<CommandSource> execute = context -> {
+    public static LiteralArgumentBuilder<CommandSourceStack> build() {
+        Command<CommandSourceStack> execute = context -> {
             int page = 1;
             try {
                 page = IntegerArgumentType.getInteger(context, "page");
@@ -67,13 +67,13 @@ public final class HelpCommand {
                         .executes(execute));
     }
 
-    public static int executeRoot(com.mojang.brigadier.context.CommandContext<CommandSource> context)
+    public static int executeRoot(com.mojang.brigadier.context.CommandContext<CommandSourceStack> context)
             throws com.mojang.brigadier.exceptions.CommandSyntaxException {
         sendPage(context.getSource().getPlayerOrException(), 1);
         return 1;
     }
 
-    private static void sendPage(ServerPlayerEntity player, int page) {
+    private static void sendPage(ServerPlayer player, int page) {
         int perPage = BaniraCommonSettings.helpInfoNumPerPage();
         int pages = pageCount();
         Component help = SakuraComponent.get().literal(

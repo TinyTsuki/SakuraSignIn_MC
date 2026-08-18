@@ -48,7 +48,7 @@ public class SakuraNetworkContractTest {
         assertFalse(summary.contains("signInRecords"));
         assertTrue(Files.exists(MAIN.resolve("network/packet/PlayerMonthRequestPacket.java")));
         assertTrue(Files.exists(MAIN.resolve("network/packet/PlayerMonthSyncPacket.java")));
-        assertTrue(network.contains("public static void syncMonth(ServerPlayerEntity player, Date date)"));
+        assertTrue(network.contains("public static void syncMonth(ServerPlayer player, Date date)"));
         assertTrue(network.contains("monthOf(date)"));
         assertTrue(signIn.contains("SakuraNetwork.syncMonth(player, signInDate)"));
     }

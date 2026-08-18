@@ -1,11 +1,11 @@
 package xin.vanilla.sakura.client.gui;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
@@ -100,7 +100,7 @@ public final class RewardListEntryWidget extends BaseWidget {
     }
 
     @Override
-    public void render(MatrixStack stack, float partialTicks) {
+    public void render(PoseStack stack, float partialTicks) {
         if (!visible() || !visibleInViewport()) {
             return;
         }
@@ -123,7 +123,7 @@ public final class RewardListEntryWidget extends BaseWidget {
         }
     }
 
-    public void renderTooltip(MatrixStack stack, double mouseX, double mouseY) {
+    public void renderTooltip(PoseStack stack, double mouseX, double mouseY) {
         if (!visibleInViewport() || !mouseInside || tooltip == null || tooltip.content().isEmpty()
                 || (tooltipRequiresShift && !Screen.hasShiftDown())) {
             return;
@@ -230,10 +230,10 @@ public final class RewardListEntryWidget extends BaseWidget {
 
     @Getter
     public static final class RenderContext {
-        private final MatrixStack stack;
+        private final PoseStack stack;
         private final RewardListEntryWidget entry;
 
-        private RenderContext(MatrixStack stack, RewardListEntryWidget entry) {
+        private RenderContext(PoseStack stack, RewardListEntryWidget entry) {
             this.stack = stack;
             this.entry = entry;
         }

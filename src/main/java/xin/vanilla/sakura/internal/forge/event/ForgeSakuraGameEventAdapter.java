@@ -2,7 +2,7 @@ package xin.vanilla.sakura.internal.forge.event;
 
 import xin.vanilla.sakura.data.time.SakuraClock;
 
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
@@ -10,7 +10,7 @@ import net.minecraftforge.event.entity.player.PlayerEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.fml.server.ServerLifecycleHooks;
+import net.minecraftforge.server.ServerLifecycleHooks;
 import xin.vanilla.banira.common.util.BaniraScheduler;
 import xin.vanilla.banira.common.util.ReflectionUtils;
 import xin.vanilla.banira.common.util.StringUtils;
@@ -65,23 +65,23 @@ public final class ForgeSakuraGameEventAdapter {
      * 数据按 UUID 缓存，重生时只复制语言并同步新玩家实体。
      */
     private static void onPlayerCloned(PlayerEvent.Clone event) {
-        if (!(event.getOriginal() instanceof ServerPlayerEntity)
-                || !(event.getPlayer() instanceof ServerPlayerEntity)) {
+        if (!(event.getOriginal() instanceof ServerPlayer)
+                || !(event.getPlayer() instanceof ServerPlayer)) {
             return;
         }
-        ServerPlayerEntity original = (ServerPlayerEntity) event.getOriginal();
-        ServerPlayerEntity replacement = (ServerPlayerEntity) event.getPlayer();
+        ServerPlayer original = (ServerPlayer) event.getOriginal();
+        ServerPlayer replacement = (ServerPlayer) event.getPlayer();
         copyPlayerLanguage(original, replacement);
         SakuraPlayerData.sync(replacement);
     }
 
-    private static void copyPlayerLanguage(ServerPlayerEntity original,
-                                           ServerPlayerEntity replacement) {
+    private static void copyPlayerLanguage(ServerPlayer original,
+                                           ServerPlayer replacement) {
         if (StringUtils.isNullOrEmpty(languageFieldName)) {
             for (String field : ReflectionUtils.getPrivateFieldNames(
-                    ServerPlayerEntity.class, String.class)) {
+                    ServerPlayer.class, String.class)) {
                 Object value = ReflectionUtils.getPrivateFieldValue(
-                        ServerPlayerEntity.class, original, field);
+                        ServerPlayer.class, original, field);
                 if (original.getLanguage().equals(value)) {
                     languageFieldName = field;
                     break;
@@ -89,7 +89,7 @@ public final class ForgeSakuraGameEventAdapter {
             }
         }
         if (StringUtils.isNotNullOrEmpty(languageFieldName)) {
-            ReflectionUtils.setPrivateFieldValue(ServerPlayerEntity.class,
+            ReflectionUtils.setPrivateFieldValue(ServerPlayer.class,
                     replacement, languageFieldName, original.getLanguage());
         }
     }
@@ -98,10 +98,10 @@ public final class ForgeSakuraGameEventAdapter {
      * 旧数据迁移失败时不得继续自动签到或删除旧数据。
      */
     private static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        if (!(event.getPlayer() instanceof ServerPlayerEntity)) {
+        if (!(event.getPlayer() instanceof ServerPlayer)) {
             return;
         }
-        ServerPlayerEntity player = (ServerPlayerEntity) event.getPlayer();
+        ServerPlayer player = (ServerPlayer) event.getPlayer();
         try {
             LegacyMigrationResult result = SakuraPlayerData.migrateAndLoad(player);
             if (result != LegacyMigrationResult.NO_LEGACY_DATA) {
@@ -118,12 +118,12 @@ public final class ForgeSakuraGameEventAdapter {
     }
 
     private static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
-        if (event.getPlayer() instanceof ServerPlayerEntity) {
+        if (event.getPlayer() instanceof ServerPlayer) {
             SakuraPlayerData.removeServer(event.getPlayer().getUUID());
         }
     }
 
-    private static void waitForClientSettings(ServerPlayerEntity player, int attempt) {
+    private static void waitForClientSettings(ServerPlayer player, int attempt) {
         MinecraftServer server = player.getServer();
         if (server == null) {
             return;
@@ -141,7 +141,7 @@ public final class ForgeSakuraGameEventAdapter {
         });
     }
 
-    private static void runAutomaticSignIn(MinecraftServer server, ServerPlayerEntity player) {
+    private static void runAutomaticSignIn(MinecraftServer server, ServerPlayer player) {
         if (!isConnected(server, player)) {
             return;
         }
@@ -187,7 +187,7 @@ public final class ForgeSakuraGameEventAdapter {
         });
     }
 
-    private static void deliverOnlineRewards(ServerPlayerEntity player) {
+    private static void deliverOnlineRewards(ServerPlayer player) {
         try {
             PersonalDateDeliveryResult result = PersonalDateRewardDispatcher.deliverOnline(
                     player, RewardManager.getCompensateDate(SakuraClock.serverNow()));
@@ -200,7 +200,7 @@ public final class ForgeSakuraGameEventAdapter {
         }
     }
 
-    private static void normalizeOnlineTime(ServerPlayerEntity player, java.util.Date date) {
+    private static void normalizeOnlineTime(ServerPlayer player, java.util.Date date) {
         IPlayerSignInData data = SakuraPlayerData.get(player);
         java.time.LocalDate day = date.toInstant().atZone(
                 java.time.ZoneId.systemDefault()).toLocalDate();
@@ -209,7 +209,7 @@ public final class ForgeSakuraGameEventAdapter {
         }
     }
 
-    private static boolean isConnected(MinecraftServer server, ServerPlayerEntity player) {
+    private static boolean isConnected(MinecraftServer server, ServerPlayer player) {
         return server.getPlayerList().getPlayer(player.getUUID()) == player;
     }
 }

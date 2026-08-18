@@ -5,11 +5,11 @@ import xin.vanilla.sakura.data.time.SakuraClock;
 import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.config.CommonConfig;
 import lombok.NonNull;
-import net.minecraft.entity.item.ItemEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.potion.EffectInstance;
-import net.minecraft.potion.Effects;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.config.reward.RewardConfig;
@@ -393,7 +393,7 @@ public class RewardManager {
     /**
      * 签到or补签
      */
-    public static void signIn(ServerPlayerEntity player, SignInPacket packet) {
+    public static void signIn(ServerPlayer player, SignInPacket packet) {
         IPlayerSignInData signInData = SakuraPlayerData.get(player);
         String notificationType = ESignInType.REWARD.equals(packet.getSignInType())
                 ? SakuraNotificationTypes.REWARD
@@ -543,19 +543,19 @@ public class RewardManager {
         SakuraPlayerData.saveAndSync(player);
     }
 
-    public static boolean giveRewardToPlayer(ServerPlayerEntity player, IPlayerSignInData signInData, Reward reward) {
+    public static boolean giveRewardToPlayer(ServerPlayer player, IPlayerSignInData signInData, Reward reward) {
         return giveRewardToPlayer(player, signInData, reward, new Date(), "sign_in");
     }
 
-    public static boolean giveRewardToPlayer(ServerPlayerEntity player, IPlayerSignInData signInData,
+    public static boolean giveRewardToPlayer(ServerPlayer player, IPlayerSignInData signInData,
                                              Reward reward, Date sourceDate, String sourceId) {
         reward.setRewarded(true);
         // 判断是否启用
         if (CommonConfig.get().reward().rewardAffectedByLuck()) {
             int offset = player.getActiveEffects().stream()
-                    .filter(instance -> instance.getEffect() == Effects.LUCK || instance.getEffect() == Effects.UNLUCK)
+                    .filter(instance -> instance.getEffect() == MobEffects.LUCK || instance.getEffect() == MobEffects.UNLUCK)
                     .map(instance -> {
-                        if (instance.getEffect() == Effects.LUCK) {
+                        if (instance.getEffect() == MobEffects.LUCK) {
                             return instance.getAmplifier();
                         } else {
                             return -instance.getAmplifier();
@@ -568,7 +568,7 @@ public class RewardManager {
     }
 
     /** 已由外层规则完成抽取时跳过概率判定，避免同一奖励被随机两次。 */
-    public static boolean giveGuaranteedRewardToPlayer(ServerPlayerEntity player,
+    public static boolean giveGuaranteedRewardToPlayer(ServerPlayer player,
                                                        IPlayerSignInData signInData,
                                                        Reward reward, Date sourceDate,
                                                        String sourceId) {
@@ -576,11 +576,11 @@ public class RewardManager {
         return grantReward(player, signInData, reward, sourceDate, sourceId);
     }
 
-    private static boolean grantReward(ServerPlayerEntity player, IPlayerSignInData signInData,
+    private static boolean grantReward(ServerPlayer player, IPlayerSignInData signInData,
                                        Reward reward, Date sourceDate, String sourceId) {
         RewardGrantResult result = RewardOperations.grant(new RewardGrantContext() {
             @Override
-            public ServerPlayerEntity player() {
+            public ServerPlayer player() {
                 return player;
             }
 
@@ -619,9 +619,9 @@ public class RewardManager {
      * @param drop      若玩家背包空间不足, 是否以物品实体的形式生成在世界上
      * @return 是否添加成功
      */
-    public static boolean giveItemStack(ServerPlayerEntity player, ItemStack itemStack, boolean drop) {
+    public static boolean giveItemStack(ServerPlayer player, ItemStack itemStack, boolean drop) {
         // 尝试将物品堆添加到玩家的库存中
-        boolean added = player.inventory.add(itemStack);
+        boolean added = player.getInventory().add(itemStack);
         // 如果物品堆无法添加到库存，则以物品实体的形式生成在世界上
         if (!added && !itemStack.isEmpty() && drop) {
             ItemEntity itemEntity = player.drop(itemStack, false);

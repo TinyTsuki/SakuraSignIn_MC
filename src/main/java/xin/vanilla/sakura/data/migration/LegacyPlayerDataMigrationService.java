@@ -1,6 +1,6 @@
 package xin.vanilla.sakura.data.migration;
 
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.CompoundTag;
 import xin.vanilla.sakura.data.migration.LegacyPlayerData;
 import xin.vanilla.sakura.data.migration.LegacyPlayerDataParser;
 import xin.vanilla.sakura.data.player.PlayerSignInSummary;
@@ -31,12 +31,12 @@ public final class LegacyPlayerDataMigrationService {
     }
 
     public LegacyMigrationResult migrate(UUID playerUuid) throws IOException {
-        Optional<CompoundNBT> legacyOptional = legacyStore.read(playerUuid);
+        Optional<CompoundTag> legacyOptional = legacyStore.read(playerUuid);
         if (!legacyOptional.isPresent()) {
             return LegacyMigrationResult.NO_LEGACY_DATA;
         }
 
-        CompoundNBT legacy = legacyOptional.get();
+        CompoundTag legacy = legacyOptional.get();
         Optional<PlayerSignInSummary> current = summaryStore.load(playerUuid);
         if (current.isPresent()
                 && current.get().isLegacyCapabilityMigrated()

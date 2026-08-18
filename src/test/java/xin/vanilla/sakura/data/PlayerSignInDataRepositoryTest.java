@@ -1,7 +1,7 @@
 package xin.vanilla.sakura.data;
 
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.ListNBT;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -125,7 +125,7 @@ public class PlayerSignInDataRepositoryTest {
     }
 
     private static final class MemorySummaryStore implements PlayerSummaryStore {
-        private CompoundNBT stored;
+        private CompoundTag stored;
         private int saveCalls;
         private int verifiedSaveCalls;
 

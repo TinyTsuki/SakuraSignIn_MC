@@ -2,9 +2,9 @@ package xin.vanilla.sakura.client.reward.builtin;
 
 import lombok.Value;
 import net.minecraft.advancements.DisplayInfo;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.client.SakuraClientState;
