@@ -2,7 +2,7 @@ package xin.vanilla.sakura.data.player;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.CompoundTag;
 
 /**
  * 一个月最多 31 天，两个位图分别记录签到与领奖状态。
@@ -42,15 +42,15 @@ public class MonthSignInIndex {
         rewardedDays |= other.rewardedDays;
     }
 
-    public CompoundNBT serializeNBT() {
-        CompoundNBT tag = new CompoundNBT();
+    public CompoundTag serializeNBT() {
+        CompoundTag tag = new CompoundTag();
         tag.putString("month", month);
         tag.putInt("signedDays", signedDays);
         tag.putInt("rewardedDays", rewardedDays);
         return tag;
     }
 
-    public static MonthSignInIndex deserializeNBT(CompoundNBT tag) {
+    public static MonthSignInIndex deserializeNBT(CompoundTag tag) {
         MonthSignInIndex index = new MonthSignInIndex(tag.getString("month"));
         index.signedDays = tag.getInt("signedDays");
         index.rewardedDays = tag.getInt("rewardedDays");

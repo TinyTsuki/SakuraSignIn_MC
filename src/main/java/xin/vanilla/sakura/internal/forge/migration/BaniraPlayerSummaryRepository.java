@@ -1,6 +1,6 @@
 package xin.vanilla.sakura.internal.forge.migration;
 
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.CompoundTag;
 import xin.vanilla.banira.api.BaniraDataPaths;
 import xin.vanilla.banira.api.BaniraPlayerData;
 import xin.vanilla.sakura.SakuraSignIn;
@@ -21,8 +21,8 @@ public final class BaniraPlayerSummaryRepository implements PlayerSummaryStore {
 
     @Override
     public Optional<PlayerSignInSummary> load(UUID playerUuid) {
-        CompoundNBT tag = BaniraPlayerData.getOrCreate(
-                playerUuid, SakuraSignIn.MODID, CompoundNBT.class
+        CompoundTag tag = BaniraPlayerData.getOrCreate(
+                playerUuid, SakuraSignIn.MODID, CompoundTag.class
         );
         return PlayerSignInSummary.isCurrentSchema(tag)
                 ? Optional.of(PlayerSignInSummary.deserializeNBT(tag))
@@ -36,7 +36,7 @@ public final class BaniraPlayerSummaryRepository implements PlayerSummaryStore {
 
     @Override
     public void saveAndVerify(UUID playerUuid, PlayerSignInSummary summary) throws IOException {
-        CompoundNBT serialized = summary.serializeNBT();
+        CompoundTag serialized = summary.serializeNBT();
         BaniraPlayerData.put(playerUuid, SakuraSignIn.MODID, serialized);
         BaniraPlayerData.flush(playerUuid);
 
@@ -44,7 +44,7 @@ public final class BaniraPlayerSummaryRepository implements PlayerSummaryStore {
         if (!Files.isRegularFile(playerFile)) {
             throw new IOException("Banira player data was not written: " + playerFile);
         }
-        CompoundNBT root = AtomicNbtFiles.read(playerFile);
+        CompoundTag root = AtomicNbtFiles.read(playerFile);
         if (!root.contains(SakuraSignIn.MODID, 10)
                 || !serialized.equals(root.getCompound(SakuraSignIn.MODID))) {
             throw new IOException("Banira player summary verification failed: " + playerUuid);

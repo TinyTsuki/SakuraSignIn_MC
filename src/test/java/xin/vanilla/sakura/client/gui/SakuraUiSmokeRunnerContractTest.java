@@ -36,7 +36,7 @@ public class SakuraUiSmokeRunnerContractTest {
         assertTrue(runner.contains("\"input-form\".equalsIgnoreCase(target)"));
         assertTrue(runner.contains("\"personal-date\".equalsIgnoreCase(target)"));
         assertTrue(runner.contains("(inputForm || rewardExtension || personalDate)"));
-        assertTrue(runner.contains("&& parent instanceof MainMenuScreen"));
+        assertTrue(runner.contains("&& parent instanceof TitleScreen"));
         assertTrue(runner.contains("inWorldWithoutScreen"));
         assertTrue(runner.contains("new RewardOptionScreen()"));
         assertTrue(runner.contains("seedRewardExtensionSmokeData()"));

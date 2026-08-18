@@ -1,7 +1,7 @@
 package xin.vanilla.sakura.network.packet;
 
 import lombok.Getter;
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
@@ -26,7 +26,7 @@ public final class LotteryClaimPacket implements INetworkPacket {
 
     public static void handle(LotteryClaimPacket packet, BaniraNetworkContext context) {
         context.enqueueWork(() -> {
-            ServerPlayerEntity sender = context.senderAs(ServerPlayerEntity.class);
+            ServerPlayer sender = context.senderAs(ServerPlayer.class);
             if (sender != null && !packet.token.isEmpty()) {
                 LotteryDrawDispatcher.claim(sender, packet.token);
             }

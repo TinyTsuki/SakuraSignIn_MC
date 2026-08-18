@@ -1,12 +1,12 @@
 package xin.vanilla.sakura.client.gui;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.texture.NativeImage;
-import net.minecraft.util.ResourceLocation;
+import com.mojang.blaze3d.platform.NativeImage;
+import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.BaniraScreen;
@@ -122,7 +122,7 @@ public final class RewardOperationWidget extends BaseWidget {
     }
 
     @Override
-    public void render(MatrixStack stack, float partialTicks) {
+    public void render(PoseStack stack, float partialTicks) {
         if (!visible()) {
             return;
         }
@@ -140,7 +140,7 @@ public final class RewardOperationWidget extends BaseWidget {
         renderContent(stack, partialTicks);
     }
 
-    private void renderContent(MatrixStack stack, float partialTicks) {
+    private void renderContent(PoseStack stack, float partialTicks) {
         if (renderer != null) {
             renderer.accept(new RenderContext(stack, this));
             return;
@@ -173,7 +173,7 @@ public final class RewardOperationWidget extends BaseWidget {
         }
     }
 
-    public void renderTooltip(MatrixStack stack, double mouseX, double mouseY) {
+    public void renderTooltip(PoseStack stack, double mouseX, double mouseY) {
         if (!visible() || !mouseInside || tooltip == null || tooltip.content().isEmpty()) {
             return;
         }
@@ -248,10 +248,10 @@ public final class RewardOperationWidget extends BaseWidget {
 
     @Getter
     public static final class RenderContext {
-        private final MatrixStack stack;
+        private final PoseStack stack;
         private final RewardOperationWidget widget;
 
-        private RenderContext(MatrixStack stack, RewardOperationWidget widget) {
+        private RenderContext(PoseStack stack, RewardOperationWidget widget) {
             this.stack = stack;
             this.widget = widget;
         }

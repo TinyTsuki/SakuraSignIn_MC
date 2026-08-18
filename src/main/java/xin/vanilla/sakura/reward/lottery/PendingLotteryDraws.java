@@ -1,7 +1,7 @@
 package xin.vanilla.sakura.reward.lottery;
 
 import lombok.Value;
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,7 +15,7 @@ public final class PendingLotteryDraws {
     private PendingLotteryDraws() {
     }
 
-    public static synchronized Pending get(ServerPlayerEntity player) {
+    public static synchronized Pending get(ServerPlayer player) {
         Pending pending = VALUES.get(player.getUUID());
         if (pending != null && System.currentTimeMillis() - pending.createdAt > EXPIRES_MS) {
             VALUES.remove(player.getUUID());
@@ -24,7 +24,7 @@ public final class PendingLotteryDraws {
         return pending;
     }
 
-    public static synchronized Pending put(ServerPlayerEntity player,
+    public static synchronized Pending put(ServerPlayer player,
                                            LotteryDrawBatchResult result) {
         Pending pending = new Pending(UUID.randomUUID().toString(), result,
                 System.currentTimeMillis());
@@ -32,7 +32,7 @@ public final class PendingLotteryDraws {
         return pending;
     }
 
-    public static synchronized LotteryDrawBatchResult claim(ServerPlayerEntity player,
+    public static synchronized LotteryDrawBatchResult claim(ServerPlayer player,
                                                              String token) {
         Pending pending = get(player);
         if (pending == null || !pending.token.equals(token)) return null;

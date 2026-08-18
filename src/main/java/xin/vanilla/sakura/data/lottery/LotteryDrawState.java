@@ -2,7 +2,7 @@ package xin.vanilla.sakura.data.lottery;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.CompoundTag;
 
 /** 每名玩家按奖池持久化的领取计数。 */
 @Data
@@ -18,8 +18,8 @@ public class LotteryDrawState {
         this.poolId = poolId == null ? "" : poolId;
     }
 
-    public CompoundNBT serializeNBT() {
-        CompoundNBT tag = new CompoundNBT();
+    public CompoundTag serializeNBT() {
+        CompoundTag tag = new CompoundTag();
         tag.putString("poolId", poolId);
         tag.putString("periodKey", periodKey);
         tag.putInt("periodDraws", periodDraws);
@@ -28,7 +28,7 @@ public class LotteryDrawState {
         return tag;
     }
 
-    public static LotteryDrawState deserializeNBT(CompoundNBT tag) {
+    public static LotteryDrawState deserializeNBT(CompoundTag tag) {
         LotteryDrawState state = new LotteryDrawState(tag.getString("poolId"));
         state.periodKey = tag.getString("periodKey");
         state.periodDraws = Math.max(0, tag.getInt("periodDraws"));

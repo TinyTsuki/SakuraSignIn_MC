@@ -1,7 +1,7 @@
 package xin.vanilla.sakura.client.gui;
 
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.potion.EffectInstance;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.world.effect.MobEffectInstance;
 import xin.vanilla.banira.client.gui.EffectSelectScreen;
 
 import java.util.Objects;
@@ -17,8 +17,8 @@ public final class EffectRewardSelectionFlow {
 
     public static Screen create(
             Screen parent,
-            EffectInstance defaultEffect,
-            Consumer<EffectInstance> onSelected
+            MobEffectInstance defaultEffect,
+            Consumer<MobEffectInstance> onSelected
     ) {
         Objects.requireNonNull(parent);
         Objects.requireNonNull(defaultEffect);
@@ -28,14 +28,14 @@ public final class EffectRewardSelectionFlow {
                 .parentScreen(parent)
                 .defaultEffect(copyValue(defaultEffect))
                 .closeAfterSubmit(true)
-                .onDataReceived((Consumer<EffectInstance>) effect -> onSelected.accept(copyValue(effect)));
+                .onDataReceived((Consumer<MobEffectInstance>) effect -> onSelected.accept(copyValue(effect)));
         return new EffectSelectScreen(args);
     }
 
-    static EffectInstance copyValue(EffectInstance effect) {
+    static MobEffectInstance copyValue(MobEffectInstance effect) {
         int duration = effect.getDuration() > 0
                 ? effect.getDuration() : DEFAULT_DURATION_TICKS;
-        return new EffectInstance(effect.getEffect(), duration, effect.getAmplifier(),
+        return new MobEffectInstance(effect.getEffect(), duration, effect.getAmplifier(),
                 effect.isAmbient(), effect.isVisible(), effect.showIcon());
     }
 }

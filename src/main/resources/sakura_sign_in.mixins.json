@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "xin.vanilla.sakura.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "sakura_sign_in.refmap.json",
+  "mixins": [],
+  "client": [
+    "MinecraftClientMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

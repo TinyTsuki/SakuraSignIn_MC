@@ -5,10 +5,10 @@ import lombok.Data;
 import lombok.NonNull;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.util.NumberUtils;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.potion.EffectInstance;
-import net.minecraft.potion.Effects;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import xin.vanilla.sakura.api.reward.SakuraRewardTypes;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.reward.Reward;
@@ -528,13 +528,13 @@ public class RewardConfig implements Serializable {
             setMonthRewards(new LinkedHashMap<>());
             setWeekRewards(new LinkedHashMap<String, RewardList>() {{
                 put("6", new RewardList() {{
-                    add(new Reward(new EffectInstance(Effects.LUCK, 6000, 1),
+                    add(new Reward(new MobEffectInstance(MobEffects.LUCK, 6000, 1),
                             SakuraRewardTypes.EFFECT));
                 }});
                 put("7", new RewardList() {{
-                    add(new Reward(new EffectInstance(Effects.HEAL, 6000, 0),
+                    add(new Reward(new MobEffectInstance(MobEffects.HEAL, 6000, 0),
                             SakuraRewardTypes.EFFECT));
-                    add(new Reward(new EffectInstance(Effects.JUMP, 6000, 0),
+                    add(new Reward(new MobEffectInstance(MobEffects.JUMP, 6000, 0),
                             SakuraRewardTypes.EFFECT));
                     add(new Reward(new ItemStack(Items.ENCHANTED_GOLDEN_APPLE, 1),
                             SakuraRewardTypes.ITEM));
@@ -544,13 +544,13 @@ public class RewardConfig implements Serializable {
                 put("0000-10-06~1", new RewardList() {{
                     add(new Reward(new ItemStack(Items.EXPERIENCE_BOTTLE, 1),
                             SakuraRewardTypes.ITEM));
-                    add(new Reward(new EffectInstance(Effects.DAMAGE_RESISTANCE, 300, 1),
+                    add(new Reward(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 300, 1),
                             SakuraRewardTypes.EFFECT));
                 }});
             }});
             setCumulativeRewards(new LinkedHashMap<String, RewardList>() {{
                 put("100", new RewardList() {{
-                    add(new Reward(new EffectInstance(Effects.LUCK, 99999, 2),
+                    add(new Reward(new MobEffectInstance(MobEffects.LUCK, 99999, 2),
                             SakuraRewardTypes.EFFECT));
                 }});
             }});
