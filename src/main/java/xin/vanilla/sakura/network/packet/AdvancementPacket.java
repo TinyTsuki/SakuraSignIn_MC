@@ -1,7 +1,7 @@
 package xin.vanilla.sakura.network.packet;
 
 import lombok.Getter;
-import net.minecraft.advancements.Advancement;
+import net.minecraft.advancements.AdvancementHolder;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
@@ -26,7 +26,7 @@ public class AdvancementPacket extends SplitPacket implements INetworkPacket,
 
     private final List<AdvancementData> advancements;
 
-    public AdvancementPacket(Collection<Advancement> advancements) {
+    public AdvancementPacket(Collection<AdvancementHolder> advancements) {
         this.advancements = advancements.stream()
                 .map(AdvancementData::fromAdvancement)
                 .collect(Collectors.toList());

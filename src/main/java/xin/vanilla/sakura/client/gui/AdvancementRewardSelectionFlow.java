@@ -33,6 +33,6 @@ public final class AdvancementRewardSelectionFlow {
     }
 
     static ResourceLocation copyValue(ResourceLocation advancement) {
-        return new ResourceLocation(advancement.toString());
+        return ResourceLocation.parse(advancement.toString());
     }
 }

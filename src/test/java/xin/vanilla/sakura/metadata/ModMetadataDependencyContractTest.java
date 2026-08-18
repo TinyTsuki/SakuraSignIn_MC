@@ -24,7 +24,7 @@ public class ModMetadataDependencyContractTest {
     @Test
     public void metadataRequiresBaniraWithoutSelfDependency() throws Exception {
         String metadata = new String(
-                Files.readAllBytes(Paths.get("build/resources/main/META-INF/mods.toml")),
+                Files.readAllBytes(Paths.get("build/sourcesSets/main/META-INF/mods.toml")),
                 StandardCharsets.UTF_8
         );
 
