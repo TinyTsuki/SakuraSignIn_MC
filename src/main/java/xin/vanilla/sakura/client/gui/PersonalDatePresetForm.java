@@ -1,6 +1,6 @@
 package xin.vanilla.sakura.client.gui;
 
-import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.client.gui.InputFormScreen;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.widget.DropdownOption;
@@ -51,7 +51,7 @@ public final class PersonalDatePresetForm {
 
         List<DropdownOption> calendars = SakuraClientState.getCalendarNames().entrySet().stream()
                 .map(entry -> new DropdownOption(entry.getKey(), calendarName(entry.getKey(), entry.getValue()),
-                        net.minecraft.item.ItemStack.EMPTY, null,
+                        net.minecraft.world.item.ItemStack.EMPTY, null,
                         SakuraComponent.get().transClient("format", "personal_date_calendar_tooltip",
                                 entry.getKey())))
                 .collect(Collectors.toList());
@@ -128,7 +128,7 @@ public final class PersonalDatePresetForm {
 
     private static DropdownOption option(String value, String key) {
         String label = tr(key);
-        return new DropdownOption(value, label, net.minecraft.item.ItemStack.EMPTY,
+        return new DropdownOption(value, label, net.minecraft.world.item.ItemStack.EMPTY,
                 null, SakuraComponent.get().transClient("word", key + "_tooltip"));
     }
 
@@ -136,7 +136,7 @@ public final class PersonalDatePresetForm {
         if (displayNameKey == null || displayNameKey.isEmpty()) {
             return id;
         }
-        String translated = net.minecraft.client.resources.I18n.get(displayNameKey);
+        String translated = net.minecraft.client.resources.language.I18n.get(displayNameKey);
         return displayNameKey.equals(translated) ? id : translated;
     }
 

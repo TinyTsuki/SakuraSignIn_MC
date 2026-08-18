@@ -1,7 +1,7 @@
 package xin.vanilla.sakura.client.gui;
 
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.client.gui.AdvancementSelectScreen;
 
 import java.util.Objects;

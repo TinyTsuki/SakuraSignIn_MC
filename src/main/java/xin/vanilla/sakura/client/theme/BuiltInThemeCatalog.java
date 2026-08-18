@@ -4,9 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import net.minecraft.resources.IResource;
-import net.minecraft.resources.IResourceManager;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.server.packs.resources.Resource;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
@@ -48,7 +48,7 @@ public final class BuiltInThemeCatalog {
     /**
      * 客户端优先从资源管理器读取描述文件，因此资源包可以替换 JSON 与纹理。
      */
-    public static BuiltInThemeDescriptor load(String requestedId, IResourceManager resourceManager) {
+    public static BuiltInThemeDescriptor load(String requestedId, ResourceManager resourceManager) {
         String id = normalize(requestedId);
         try {
             return read(id, resourceManager);
@@ -77,11 +77,11 @@ public final class BuiltInThemeCatalog {
         return THEME_IDS.contains(normalized) ? normalized : DEFAULT_THEME_ID;
     }
 
-    private static BuiltInThemeDescriptor read(String id, IResourceManager resourceManager) throws IOException {
+    private static BuiltInThemeDescriptor read(String id, ResourceManager resourceManager) throws IOException {
         String resourcePath = RESOURCE_ROOT + id + ".json";
         if (resourceManager != null) {
             String relativePath = resourcePath.substring(("assets/" + SakuraSignIn.MODID + "/").length());
-            try (IResource resource = resourceManager.getResource(
+            try (Resource resource = resourceManager.getResource(
                     new ResourceLocation(SakuraSignIn.MODID, relativePath));
                  InputStream input = resource.getInputStream()) {
                 return readDescriptor(id, input);

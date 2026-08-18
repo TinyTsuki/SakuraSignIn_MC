@@ -3,7 +3,7 @@ package xin.vanilla.sakura.data.personaldate;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.CompoundTag;
 
 @Data
 @NoArgsConstructor
@@ -16,8 +16,8 @@ public class PlayerPersonalDateSlot {
     private int day;
     private String lastClaimedOccurrenceKey = "";
 
-    public CompoundNBT serializeNBT() {
-        CompoundNBT tag = new CompoundNBT();
+    public CompoundTag serializeNBT() {
+        CompoundTag tag = new CompoundTag();
         tag.putString("presetId", presetId == null ? "" : presetId);
         tag.putInt("slotIndex", slotIndex);
         tag.putString("calendarId", calendarId == null ? "" : calendarId);
@@ -28,7 +28,7 @@ public class PlayerPersonalDateSlot {
         return tag;
     }
 
-    public static PlayerPersonalDateSlot deserializeNBT(CompoundNBT tag) {
+    public static PlayerPersonalDateSlot deserializeNBT(CompoundTag tag) {
         PlayerPersonalDateSlot slot = new PlayerPersonalDateSlot();
         slot.presetId = tag.getString("presetId");
         slot.slotIndex = tag.getInt("slotIndex");

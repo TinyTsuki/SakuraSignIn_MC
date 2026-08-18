@@ -94,7 +94,7 @@ public class BuiltInThemeCatalogTest {
                 "src/main/java/xin/vanilla/sakura/event/ClientEventHandler.java")),
                 StandardCharsets.UTF_8);
 
-        assertTrue(catalog.contains("IResourceManager resourceManager"));
+        assertTrue(catalog.contains("ResourceManager resourceManager"));
         assertTrue(catalog.contains("resourceManager.getResource("));
         assertTrue(events.contains("Minecraft.getInstance().getResourceManager()"));
     }

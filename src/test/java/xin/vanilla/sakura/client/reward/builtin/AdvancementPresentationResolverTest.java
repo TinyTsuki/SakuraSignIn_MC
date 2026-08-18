@@ -1,6 +1,6 @@
 package xin.vanilla.sakura.client.reward.builtin;
 
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;

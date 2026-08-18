@@ -2,14 +2,14 @@ package xin.vanilla.sakura.internal.client.dev;
 
 import com.google.gson.JsonObject;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screen.MainMenuScreen;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.inventory.InventoryScreen;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.potion.EffectInstance;
-import net.minecraft.potion.Effects;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.resources.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.BaniraEnvironment;
@@ -98,7 +98,7 @@ public final class SakuraUiSmokeRunner {
                 && parent == null;
         // 奖励配置依赖服务端下发的数据，只有输入表单可在主菜单独立验证。
         boolean atMainMenu = (inputForm || rewardExtension || personalDate)
-                && parent instanceof MainMenuScreen;
+                && parent instanceof TitleScreen;
         if (!inWorldWithoutScreen && !atMainMenu) {
             return;
         }
@@ -133,7 +133,7 @@ public final class SakuraUiSmokeRunner {
             return;
         }
         Minecraft minecraft = Minecraft.getInstance();
-        if (!(minecraft.screen instanceof MainMenuScreen)) {
+        if (!(minecraft.screen instanceof TitleScreen)) {
             return;
         }
 
@@ -195,7 +195,7 @@ public final class SakuraUiSmokeRunner {
 
         List<Reward> fixtures = Arrays.asList(
                 new Reward(new ItemStack(Items.APPLE, 5), SakuraRewardTypes.ITEM),
-                new Reward(new EffectInstance(Effects.LUCK, 200, 0), SakuraRewardTypes.EFFECT),
+                new Reward(new MobEffectInstance(MobEffects.LUCK, 200, 0), SakuraRewardTypes.EFFECT),
                 new Reward(5, SakuraRewardTypes.EXPERIENCE_POINT),
                 new Reward(2, SakuraRewardTypes.EXPERIENCE_LEVEL),
                 new Reward(1, SakuraRewardTypes.SIGN_IN_CARD),

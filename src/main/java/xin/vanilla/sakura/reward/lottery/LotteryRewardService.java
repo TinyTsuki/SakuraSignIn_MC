@@ -1,6 +1,6 @@
 package xin.vanilla.sakura.reward.lottery;
 
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.config.reward.RewardConfigManager;
 import xin.vanilla.sakura.data.IPlayerSignInData;
@@ -25,7 +25,7 @@ public final class LotteryRewardService {
     private LotteryRewardService() {
     }
 
-    public static LotteryDrawResult draw(ServerPlayerEntity player, String poolId) {
+    public static LotteryDrawResult draw(ServerPlayer player, String poolId) {
         LotteryDrawBatchResult batch = drawMany(player, poolId, 1);
         Reward reward = batch.getRewards() == null || batch.getRewards().isEmpty()
                 ? null : batch.getRewards().get(0);
@@ -33,7 +33,7 @@ public final class LotteryRewardService {
                 batch.getRetryAfterSeconds(), batch.getRemainingDraws());
     }
 
-    public static LotteryDrawBatchResult drawMany(ServerPlayerEntity player, String poolId,
+    public static LotteryDrawBatchResult drawMany(ServerPlayer player, String poolId,
                                                    int requestedCount) {
         long now = System.currentTimeMillis();
         LotteryDrawBatchResult prepared = prepareMany(player, poolId, requestedCount,
@@ -42,7 +42,7 @@ public final class LotteryRewardService {
                 ZoneId.systemDefault()) : prepared;
     }
 
-    static LotteryDrawBatchResult drawMany(ServerPlayerEntity player, String poolId,
+    static LotteryDrawBatchResult drawMany(ServerPlayer player, String poolId,
                                            int requestedCount, long nowMillis,
                                            ZoneId zone, Random random) {
         LotteryDrawBatchResult prepared = prepareMany(player, poolId, requestedCount,
@@ -50,13 +50,13 @@ public final class LotteryRewardService {
         return prepared.isSuccess() ? claimPrepared(player, prepared, nowMillis, zone) : prepared;
     }
 
-    public static LotteryDrawBatchResult prepareMany(ServerPlayerEntity player, String poolId,
+    public static LotteryDrawBatchResult prepareMany(ServerPlayer player, String poolId,
                                                       int requestedCount) {
         return prepareMany(player, poolId, requestedCount, System.currentTimeMillis(),
                 ZoneId.systemDefault(), RANDOM);
     }
 
-    static LotteryDrawBatchResult prepareMany(ServerPlayerEntity player, String poolId,
+    static LotteryDrawBatchResult prepareMany(ServerPlayer player, String poolId,
                                                int requestedCount, long nowMillis,
                                                ZoneId zone, Random random) {
         LotteryPool pool = RewardConfigManager.lotteryPool(poolId);
@@ -90,12 +90,12 @@ public final class LotteryRewardService {
                 limit.getRetryAfterSeconds(), limit.getRemainingDraws());
     }
 
-    public static LotteryDrawBatchResult claimPrepared(ServerPlayerEntity player,
+    public static LotteryDrawBatchResult claimPrepared(ServerPlayer player,
                                                          LotteryDrawBatchResult prepared) {
         return claimPrepared(player, prepared, System.currentTimeMillis(), ZoneId.systemDefault());
     }
 
-    private static LotteryDrawBatchResult claimPrepared(ServerPlayerEntity player,
+    private static LotteryDrawBatchResult claimPrepared(ServerPlayer player,
                                                           LotteryDrawBatchResult prepared,
                                                           long nowMillis, ZoneId zone) {
         if (prepared == null || !prepared.isSuccess() || prepared.getPool() == null) {

@@ -1,6 +1,6 @@
 package xin.vanilla.sakura.reward.personaldate;
 
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.config.reward.RewardConfigManager;
 import xin.vanilla.sakura.data.IPlayerSignInData;
@@ -18,17 +18,17 @@ public final class PersonalDateRewardDispatcher {
     private PersonalDateRewardDispatcher() {
     }
 
-    public static PersonalDateDeliveryResult deliverSignIn(ServerPlayerEntity player,
+    public static PersonalDateDeliveryResult deliverSignIn(ServerPlayer player,
                                                            Date currentDate) {
         return deliver(player, PersonalDateDeliveryMode.SIGN_IN, currentDate);
     }
 
-    public static PersonalDateDeliveryResult deliverOnline(ServerPlayerEntity player,
+    public static PersonalDateDeliveryResult deliverOnline(ServerPlayer player,
                                                            Date currentDate) {
         return deliver(player, PersonalDateDeliveryMode.ONLINE, currentDate);
     }
 
-    private static PersonalDateDeliveryResult deliver(ServerPlayerEntity player,
+    private static PersonalDateDeliveryResult deliver(ServerPlayer player,
                                                       PersonalDateDeliveryMode mode,
                                                       Date currentDate) {
         IPlayerSignInData data = SakuraPlayerData.get(player);

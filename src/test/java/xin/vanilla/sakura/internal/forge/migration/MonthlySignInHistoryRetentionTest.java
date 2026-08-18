@@ -1,7 +1,7 @@
 package xin.vanilla.sakura.internal.forge.migration;
 
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.ListNBT;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -98,7 +98,7 @@ public class MonthlySignInHistoryRetentionTest {
                 new KeyValue<>("WELCOME", new KeyValue<>(new Date(1717848794000L), true))
         ));
         repository.save(uuid, source);
-        CompoundNBT summaryBefore = summaries.stored.copy();
+        CompoundTag summaryBefore = summaries.stored.copy();
 
         histories.applyRetention(
                 uuid, YearMonth.of(2024, 6), 2, HistoryRetentionPolicy.DELETE_MONTH_FILE
@@ -141,7 +141,7 @@ public class MonthlySignInHistoryRetentionTest {
         assertTrue(Files.exists(unknown));
     }
 
-    private static CompoundNBT firstRecord(Path worldData, UUID uuid, String month) throws IOException {
+    private static CompoundTag firstRecord(Path worldData, UUID uuid, String month) throws IOException {
         return AtomicNbtFiles.read(historyFile(worldData, uuid, month))
                 .getList("records", 10)
                 .getCompound(0);
@@ -154,19 +154,19 @@ public class MonthlySignInHistoryRetentionTest {
                 .resolve(month + ".nbt");
     }
 
-    private static CompoundNBT monthRoot(UUID uuid, String month, CompoundNBT... records) {
-        CompoundNBT root = new CompoundNBT();
+    private static CompoundTag monthRoot(UUID uuid, String month, CompoundTag... records) {
+        CompoundTag root = new CompoundTag();
         root.putInt("schemaVersion", 1);
         root.putString("playerUuid", uuid.toString());
         root.putString("month", month);
-        ListNBT list = new ListNBT();
+        ListTag list = new ListTag();
         Arrays.stream(records).forEach(list::add);
         root.put("records", list);
         return root;
     }
 
-    private static CompoundNBT record(String date, boolean rewarded) {
-        CompoundNBT record = new CompoundNBT();
+    private static CompoundTag record(String date, boolean rewarded) {
+        CompoundTag record = new CompoundTag();
         record.putString("compensateTime", date);
         record.putString("signInTime", date);
         record.putString("signInUUID", UUID.randomUUID().toString());
@@ -196,7 +196,7 @@ public class MonthlySignInHistoryRetentionTest {
     }
 
     private static final class MemorySummaryStore implements PlayerSummaryStore {
-        private CompoundNBT stored;
+        private CompoundTag stored;
 
         @Override
         public Optional<PlayerSignInSummary> load(UUID playerUuid) {

@@ -1,6 +1,6 @@
 package xin.vanilla.sakura.message;
 
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.api.BaniraModPresence;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.util.MessageUtils;
@@ -15,11 +15,11 @@ public final class SakuraMessages {
     private SakuraMessages() {
     }
 
-    public static void send(ServerPlayerEntity player, Component message) {
+    public static void send(ServerPlayer player, Component message) {
         send(player, message, SakuraNotificationTypes.COMMAND_FEEDBACK);
     }
 
-    public static void send(ServerPlayerEntity player, Component message, String notificationType) {
+    public static void send(ServerPlayer player, Component message, String notificationType) {
         Component payload = message.clone().languageCode(SakuraUtils.getPlayerLanguage(player));
         if (BaniraModPresence.isRemoteClientInstalled(player, SakuraSignIn.MODID)) {
             MessageUtils.sendNotification(player, payload, notificationType);
@@ -28,8 +28,8 @@ public final class SakuraMessages {
         }
     }
 
-    public static void broadcast(ServerPlayerEntity sender, Component message) {
-        for (ServerPlayerEntity player : sender.server.getPlayerList().getPlayers()) {
+    public static void broadcast(ServerPlayer sender, Component message) {
+        for (ServerPlayer player : sender.server.getPlayerList().getPlayers()) {
             send(player, message, SakuraNotificationTypes.ADMIN_BROADCAST);
         }
     }

@@ -2,8 +2,8 @@ package xin.vanilla.sakura.command.impl;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.Commands;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
 import xin.vanilla.banira.common.config.BaniraConfig;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.util.CommandUtils;
@@ -17,14 +17,14 @@ public final class ConfigCommand {
     private ConfigCommand() {
     }
 
-    public static LiteralArgumentBuilder<CommandSource> build() {
+    public static LiteralArgumentBuilder<CommandSourceStack> build() {
         return Commands.literal("config")
                 .then(common())
                 .then(Commands.literal("player")
                         .then(PersonalDateConfigCommand.build()));
     }
 
-    private static LiteralArgumentBuilder<CommandSource> common() {
+    private static LiteralArgumentBuilder<CommandSourceStack> common() {
         return Commands.literal("common")
                 .requires(source -> source.hasPermission(
                         CommonConfig.get().permission().permissionServerConfigSet()))

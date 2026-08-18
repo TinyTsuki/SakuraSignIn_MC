@@ -2,10 +2,10 @@ package xin.vanilla.sakura.reward.builtin;
 
 import net.minecraft.advancements.Advancement;
 import net.minecraft.advancements.AdvancementProgress;
-import net.minecraft.item.ItemStack;
-import net.minecraft.potion.EffectInstance;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.registry.Registry;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.core.Registry;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.api.reward.*;
@@ -79,7 +79,7 @@ public final class BuiltInRewardTypes {
     private static void registerEffect() {
         SakuraRewards.register(RewardTypeDefinition.builder(SakuraRewardTypes.EFFECT,
                         new EffectRewardCodec(), (context, value) -> {
-                            context.player().addEffect(new EffectInstance(value));
+                            context.player().addEffect(new MobEffectInstance(value));
                             return RewardGrantResult.success();
                         })
                 .validator(value -> value == null || value.getDuration() <= 0
@@ -87,16 +87,16 @@ public final class BuiltInRewardTypes {
                         : Collections.emptyList())
                 .describer((language, value, withAmount) -> typeName(language, 2)
                         .append(": ").append(SakuraComponent.get().object(value.getEffect().getDisplayName())))
-                .merger(new RewardMerger<EffectInstance>() {
+                .merger(new RewardMerger<MobEffectInstance>() {
                     @Override
-                    public RewardMergeKey key(EffectInstance value) {
+                    public RewardMergeKey key(MobEffectInstance value) {
                         return RewardMergeKey.of(Registry.MOB_EFFECT.getKey(value.getEffect())
                                 + ":" + value.getAmplifier());
                     }
 
                     @Override
-                    public Optional<EffectInstance> merge(EffectInstance first, EffectInstance second) {
-                        return Optional.of(new EffectInstance(first.getEffect(),
+                    public Optional<MobEffectInstance> merge(MobEffectInstance first, MobEffectInstance second) {
+                        return Optional.of(new MobEffectInstance(first.getEffect(),
                                 first.getDuration() + second.getDuration(), first.getAmplifier()));
                     }
                 })

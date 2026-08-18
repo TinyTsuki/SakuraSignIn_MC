@@ -1,7 +1,7 @@
 package xin.vanilla.sakura.reward.builtin;
 
 import com.google.gson.JsonObject;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.sakura.api.reward.RewardCodec;
 import xin.vanilla.sakura.api.reward.RewardDataException;
 

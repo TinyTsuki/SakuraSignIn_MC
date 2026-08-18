@@ -1,7 +1,7 @@
 package xin.vanilla.sakura;
 
 import lombok.NonNull;
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.api.BaniraCommonSettings;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.ScopedComponent;
@@ -37,7 +37,7 @@ public final class SakuraLang extends Translator {
         return BaniraCommonSettings.defaultLanguage();
     }
 
-    public static String getServerPlayerLanguage(ServerPlayerEntity player) {
+    public static String getServerPlayerLanguage(ServerPlayer player) {
         return Translator.getServerPlayerLanguage(player);
     }
 

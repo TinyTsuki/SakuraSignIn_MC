@@ -1,6 +1,6 @@
 package xin.vanilla.sakura.network.packet;
 
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.api.BaniraNetwork;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
@@ -27,7 +27,7 @@ public class PlayerMonthRequestPacket implements INetworkPacket {
 
     public static void handle(PlayerMonthRequestPacket packet, BaniraNetworkContext ctx) {
         ctx.enqueueWork(() -> {
-            ServerPlayerEntity sender = ctx.senderAs(ServerPlayerEntity.class);
+            ServerPlayer sender = ctx.senderAs(ServerPlayer.class);
             if (sender != null) {
                 BaniraNetwork.sendToPlayer(new PlayerMonthSyncPacket(
                         sender.getUUID(), packet.month, SakuraPlayerData.get(sender).getSignInRecords()

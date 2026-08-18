@@ -1,9 +1,9 @@
 package xin.vanilla.sakura.client.gui;
 
-import net.minecraft.potion.Effect;
-import net.minecraft.potion.EffectInstance;
-import net.minecraft.potion.EffectType;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffectCategory;
+import net.minecraft.resources.ResourceLocation;
 import org.junit.Test;
 import xin.vanilla.sakura.test.BaniraTestPlatform;
 
@@ -19,7 +19,7 @@ public class EffectRewardSelectionFlowTest {
     @Test
     public void preservesEffectDurationAmplifierAndProbability() throws Exception {
         ResourceLocation effectId = new ResourceLocation("sakura_sign_in", "test_effect");
-        Effect effect = new Effect(EffectType.BENEFICIAL, 0x7FB8FF) {
+        MobEffect effect = new MobEffect(MobEffectCategory.BENEFICIAL, 0x7FB8FF) {
         };
         Field registryName = effect.getClass().getSuperclass().getSuperclass()
                 .getDeclaredField("registryName");
@@ -27,9 +27,9 @@ public class EffectRewardSelectionFlowTest {
         registryName.set(effect, effectId);
         BaniraTestPlatform.install();
         BaniraTestPlatform.register(effectId.toString(), effect);
-        EffectInstance selected = new EffectInstance(effect, 7200, 3);
+        MobEffectInstance selected = new MobEffectInstance(effect, 7200, 3);
 
-        EffectInstance reward = EffectRewardSelectionFlow.copyValue(selected);
+        MobEffectInstance reward = EffectRewardSelectionFlow.copyValue(selected);
 
         assertEquals(effectId, reward.getEffect().getRegistryName());
         assertEquals(7200, reward.getDuration());
@@ -38,17 +38,17 @@ public class EffectRewardSelectionFlowTest {
 
     @Test
     public void suppliesPositiveDurationForIncompleteSelectorDefaults() throws Exception {
-        Effect effect = testEffect("incomplete_effect");
-        EffectInstance reward = EffectRewardSelectionFlow.copyValue(
-                new EffectInstance(effect));
+        MobEffect effect = testEffect("incomplete_effect");
+        MobEffectInstance reward = EffectRewardSelectionFlow.copyValue(
+                new MobEffectInstance(effect));
 
         assertTrue(reward.getDuration() > 0);
         assertEquals(0, reward.getAmplifier());
     }
 
-    private static Effect testEffect(String path) throws Exception {
+    private static MobEffect testEffect(String path) throws Exception {
         ResourceLocation effectId = new ResourceLocation("sakura_sign_in", path);
-        Effect effect = new Effect(EffectType.BENEFICIAL, 0x7FB8FF) {
+        MobEffect effect = new MobEffect(MobEffectCategory.BENEFICIAL, 0x7FB8FF) {
         };
         Field registryName = effect.getClass().getSuperclass().getSuperclass()
                 .getDeclaredField("registryName");

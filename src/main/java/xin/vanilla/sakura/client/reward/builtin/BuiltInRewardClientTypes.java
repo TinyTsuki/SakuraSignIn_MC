@@ -1,9 +1,9 @@
 package xin.vanilla.sakura.client.reward.builtin;
 
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.potion.EffectInstance;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.sakura.api.reward.RewardTypeId;
 import xin.vanilla.sakura.api.reward.SakuraRewardTypes;
@@ -28,9 +28,9 @@ public final class BuiltInRewardClientTypes {
                 context.drawItem(value);
             }
         }, BuiltInRewardEditors.item());
-        register(SakuraRewardTypes.EFFECT, 20, 2, new BasePresentation<EffectInstance>() {
+        register(SakuraRewardTypes.EFFECT, 20, 2, new BasePresentation<MobEffectInstance>() {
             @Override
-            public void renderIcon(RewardRenderContext context, EffectInstance value) {
+            public void renderIcon(RewardRenderContext context, MobEffectInstance value) {
                 context.drawEffect(value);
             }
         }, BuiltInRewardEditors.effect());

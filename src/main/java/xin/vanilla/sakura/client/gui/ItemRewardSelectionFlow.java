@@ -1,7 +1,7 @@
 package xin.vanilla.sakura.client.gui;
 
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.item.ItemStack;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.world.item.ItemStack;
 import xin.vanilla.banira.client.gui.ItemSelectScreen;
 
 import java.util.Objects;

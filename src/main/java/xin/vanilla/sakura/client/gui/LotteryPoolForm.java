@@ -1,6 +1,6 @@
 package xin.vanilla.sakura.client.gui;
 
-import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.client.gui.InputFormScreen;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.widget.DropdownOption;
@@ -103,7 +103,7 @@ public final class LotteryPoolForm {
     }
 
     private static DropdownOption option(String value, String key) {
-        return new DropdownOption(value, tr(key), net.minecraft.item.ItemStack.EMPTY,
+        return new DropdownOption(value, tr(key), net.minecraft.world.item.ItemStack.EMPTY,
                 null, SakuraComponent.get().transClient("word", key + "_tooltip"));
     }
 

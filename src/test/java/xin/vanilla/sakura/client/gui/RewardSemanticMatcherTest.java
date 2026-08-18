@@ -3,6 +3,7 @@ package xin.vanilla.sakura.client.gui;
 import com.google.gson.JsonObject;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import xin.vanilla.sakura.api.reward.RewardRegistryTestSupport;
 import xin.vanilla.sakura.api.reward.RewardTypeId;
@@ -19,6 +20,12 @@ import static org.junit.Assert.assertTrue;
  * 验证双击选择使用奖励语义身份，而不是数量或概率等可变量。
  */
 public class RewardSemanticMatcherTest {
+    @BeforeClass
+    public static void bootstrapMinecraftRegistries() {
+        net.minecraft.SharedConstants.tryDetectVersion();
+        net.minecraft.server.Bootstrap.bootStrap();
+    }
+
     @Before
     public void registerRewardTypes() {
         RewardRegistryTestSupport.reset();
