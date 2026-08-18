@@ -1,10 +1,10 @@
 package xin.vanilla.sakura.client.gui;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.vector.Vector3f;
+import net.minecraft.resources.ResourceLocation;
+import com.mojang.math.Vector3f;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
@@ -19,7 +19,7 @@ final class TextureAnimationRenderer {
     private TextureAnimationRenderer() {
     }
 
-    static void drawRotated(MatrixStack stack, ResourceLocation texture,
+    static void drawRotated(PoseStack stack, ResourceLocation texture,
                             TextureCoordinate atlas, Coordinate coordinate,
                             double angle, boolean flipHorizontal,
                             boolean flipVertical) {
@@ -50,7 +50,7 @@ final class TextureAnimationRenderer {
         stack.popPose();
     }
 
-    static void drawTrembling(MatrixStack stack, ResourceLocation texture,
+    static void drawTrembling(PoseStack stack, ResourceLocation texture,
                               TextureCoordinate atlas, Coordinate coordinate,
                               double amplitude) {
         double x = coordinate.getX();

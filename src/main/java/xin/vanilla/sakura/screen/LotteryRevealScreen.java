@@ -1,10 +1,10 @@
 package xin.vanilla.sakura.screen;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.renderer.ItemRenderer;
-import net.minecraft.client.resources.I18n;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.renderer.entity.ItemRenderer;
+import net.minecraft.client.resources.language.I18n;
 import xin.vanilla.banira.api.client.theme.BaniraThemes;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -61,7 +61,7 @@ public final class LotteryRevealScreen extends BaniraScreen {
     }
 
     @Override
-    protected void onRender(MatrixStack stack, float partialTicks) {
+    protected void onRender(PoseStack stack, float partialTicks) {
         int panelWidth = Math.min(560, width - 40);
         int panelHeight = 242;
         int panelX = (width - panelWidth) / 2;
@@ -100,7 +100,7 @@ public final class LotteryRevealScreen extends BaniraScreen {
         renderWidgets(stack, partialTicks);
     }
 
-    private void renderStrip(MatrixStack stack, int panelX, int panelWidth,
+    private void renderStrip(PoseStack stack, int panelX, int panelWidth,
                              int panelY, long elapsed) {
         int winnerIndex = 43;
         List<Reward> sequence = sequence(48, winnerIndex);
@@ -121,7 +121,7 @@ public final class LotteryRevealScreen extends BaniraScreen {
                 getEffectiveTheme().buttonBorderHover(), 3, 2);
     }
 
-    private void renderCards(MatrixStack stack, int panelY, long elapsed) {
+    private void renderCards(PoseStack stack, int panelY, long elapsed) {
         List<Reward> values = sequence(7, 6);
         int startX = width / 2 - 143;
         int active = Math.min(values.size() - 1, (int) (elapsed / 520L));
@@ -136,7 +136,7 @@ public final class LotteryRevealScreen extends BaniraScreen {
         }
     }
 
-    private void renderRoulette(MatrixStack stack, int panelY, long elapsed) {
+    private void renderRoulette(PoseStack stack, int panelY, long elapsed) {
         int slotCount = Math.max(6, Math.min(12, packet.getPreview().size()));
         int winnerIndex = slotCount - 1;
         List<Reward> values = sequence(slotCount, winnerIndex);
@@ -158,7 +158,7 @@ public final class LotteryRevealScreen extends BaniraScreen {
         }
     }
 
-    private void renderResults(MatrixStack stack, int panelX, int panelWidth, int panelY) {
+    private void renderResults(PoseStack stack, int panelX, int panelWidth, int panelY) {
         List<Reward> winners = packet.getWinners();
         int spacing = 18;
         int maxColumns = Math.max(1, (panelWidth - 40) / spacing);
@@ -195,7 +195,7 @@ public final class LotteryRevealScreen extends BaniraScreen {
         return result;
     }
 
-    private void renderCandidate(MatrixStack stack, Reward reward, int x, int y) {
+    private void renderCandidate(PoseStack stack, Reward reward, int x, int y) {
         if (!packet.isPreviewVisible() || reward == null) {
             shape(stack, x, y, 16, 16, getEffectiveTheme().buttonBgHover(), 3, 1);
             font.draw(stack, "?", x + 5, y + 4, getEffectiveTheme().textPrimary());
@@ -204,7 +204,7 @@ public final class LotteryRevealScreen extends BaniraScreen {
         renderReward(stack, reward, x, y);
     }
 
-    private void renderReward(MatrixStack stack, Reward reward, int x, int y) {
+    private void renderReward(PoseStack stack, Reward reward, int x, int y) {
         RewardRenderer.renderCustomReward(stack, itemRenderer, font,
                 SakuraClientState.getThemeTexture(),
                 SakuraClientState.getThemeTextureCoordinate(), reward, x, y, true, false);
@@ -260,7 +260,7 @@ public final class LotteryRevealScreen extends BaniraScreen {
         super.onClose();
     }
 
-    private void shape(MatrixStack stack, int x, int y, int width, int height,
+    private void shape(PoseStack stack, int x, int y, int width, int height,
                        int color, int radius, int border) {
         BaseShapeWidget.drawShape(new ShapeDrawArgs().stack(stack)
                 .type(ShapeDrawArgs.ShapeType.RECT).color(color)
@@ -269,7 +269,7 @@ public final class LotteryRevealScreen extends BaniraScreen {
                         .border(border)));
     }
 
-    private void centered(MatrixStack stack, String text, int y, int color) {
+    private void centered(PoseStack stack, String text, int y, int color) {
         font.draw(stack, text, width / 2.0F - font.width(text) / 2.0F, y, color);
     }
 }

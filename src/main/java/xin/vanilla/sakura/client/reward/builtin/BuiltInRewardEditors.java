@@ -1,12 +1,12 @@
 package xin.vanilla.sakura.client.reward.builtin;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.potion.EffectInstance;
-import net.minecraft.potion.Effects;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.util.NumberUtils;
@@ -34,11 +34,11 @@ final class BuiltInRewardEditors {
                         context.getSubmit())));
     }
 
-    static RewardEditorProvider<EffectInstance> effect() {
+    static RewardEditorProvider<MobEffectInstance> effect() {
         return StandardRewardEditors.custom(context -> Minecraft.getInstance().setScreen(
                 EffectRewardSelectionFlow.create(parent(context),
                         context.getInitialValue() == null
-                                ? new EffectInstance(Effects.LUCK, 600, 0)
+                                ? new MobEffectInstance(MobEffects.LUCK, 600, 0)
                                 : context.getInitialValue(),
                         context.getSubmit())));
     }

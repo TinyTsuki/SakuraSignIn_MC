@@ -2,9 +2,9 @@ package xin.vanilla.sakura.data.player;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.INBT;
-import net.minecraft.nbt.ListNBT;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.nbt.ListTag;
 
 import java.util.Map;
 import java.util.TreeMap;
@@ -27,7 +27,7 @@ public class PlayerSignInSummary {
     private int signInCard;
     private boolean autoRewarded;
     private String language = "client";
-    private ListNBT cdkRecords = new ListNBT();
+    private ListTag cdkRecords = new ListTag();
     private Map<String, MonthSignInIndex> monthIndexes = new TreeMap<>();
     private List<PlayerPersonalDateSlot> personalDateSlots = new ArrayList<>();
     private String onlineTimeBaselineDate = "";
@@ -36,8 +36,8 @@ public class PlayerSignInSummary {
     private boolean legacyCapabilityMigrated;
     private String legacyCapabilityBackup = "";
 
-    public CompoundNBT serializeNBT() {
-        CompoundNBT tag = new CompoundNBT();
+    public CompoundTag serializeNBT() {
+        CompoundTag tag = new CompoundTag();
         tag.putInt("schemaVersion", SCHEMA_VERSION);
         tag.putInt("totalSignInDays", totalSignInDays);
         tag.putInt("continuousSignInDays", continuousSignInDays);
@@ -47,29 +47,29 @@ public class PlayerSignInSummary {
         tag.putString("language", language);
         tag.put("cdkRecords", copyList(cdkRecords));
 
-        ListNBT indexes = new ListNBT();
+        ListTag indexes = new ListTag();
         monthIndexes.values().forEach(index -> indexes.add(index.serializeNBT()));
         tag.put("monthIndexes", indexes);
 
-        ListNBT slots = new ListNBT();
+        ListTag slots = new ListTag();
         personalDateSlots.stream().filter(java.util.Objects::nonNull)
                 .forEach(slot -> slots.add(slot.serializeNBT()));
         tag.put("personalDateSlots", slots);
         tag.putString("onlineTimeBaselineDate", onlineTimeBaselineDate);
         tag.putInt("onlineTimeBaselineTicks", onlineTimeBaselineTicks);
-        ListNBT lotteryStates = new ListNBT();
+        ListTag lotteryStates = new ListTag();
         lotteryDrawStates.stream().filter(java.util.Objects::nonNull)
                 .forEach(state -> lotteryStates.add(state.serializeNBT()));
         tag.put("lotteryDrawStates", lotteryStates);
 
-        CompoundNBT migration = new CompoundNBT();
+        CompoundTag migration = new CompoundTag();
         migration.putBoolean("legacyCapabilityMigrated", legacyCapabilityMigrated);
         migration.putString("legacyCapabilityBackup", legacyCapabilityBackup);
         tag.put("migration", migration);
         return tag;
     }
 
-    public static PlayerSignInSummary deserializeNBT(CompoundNBT tag) {
+    public static PlayerSignInSummary deserializeNBT(CompoundTag tag) {
         PlayerSignInSummary summary = new PlayerSignInSummary();
         summary.totalSignInDays = tag.getInt("totalSignInDays");
         summary.continuousSignInDays = tag.getInt("continuousSignInDays");
@@ -79,38 +79,38 @@ public class PlayerSignInSummary {
         summary.language = tag.contains("language", 8) ? tag.getString("language") : "client";
         summary.cdkRecords = copyList(tag.getList("cdkRecords", 10));
 
-        ListNBT indexes = tag.getList("monthIndexes", 10);
+        ListTag indexes = tag.getList("monthIndexes", 10);
         for (int i = 0; i < indexes.size(); i++) {
             MonthSignInIndex index = MonthSignInIndex.deserializeNBT(indexes.getCompound(i));
             summary.monthIndexes.put(index.getMonth(), index);
         }
 
-        ListNBT slots = tag.getList("personalDateSlots", 10);
+        ListTag slots = tag.getList("personalDateSlots", 10);
         for (int i = 0; i < slots.size(); i++) {
             summary.personalDateSlots.add(
                     PlayerPersonalDateSlot.deserializeNBT(slots.getCompound(i)));
         }
         summary.onlineTimeBaselineDate = tag.getString("onlineTimeBaselineDate");
         summary.onlineTimeBaselineTicks = Math.max(0, tag.getInt("onlineTimeBaselineTicks"));
-        ListNBT lotteryStates = tag.getList("lotteryDrawStates", 10);
+        ListTag lotteryStates = tag.getList("lotteryDrawStates", 10);
         for (int i = 0; i < lotteryStates.size(); i++) {
             summary.lotteryDrawStates.add(
                     LotteryDrawState.deserializeNBT(lotteryStates.getCompound(i)));
         }
 
-        CompoundNBT migration = tag.getCompound("migration");
+        CompoundTag migration = tag.getCompound("migration");
         summary.legacyCapabilityMigrated = migration.getBoolean("legacyCapabilityMigrated");
         summary.legacyCapabilityBackup = migration.getString("legacyCapabilityBackup");
         return summary;
     }
 
-    public static boolean isCurrentSchema(CompoundNBT tag) {
+    public static boolean isCurrentSchema(CompoundTag tag) {
         return tag.getInt("schemaVersion") == SCHEMA_VERSION;
     }
 
-    private static ListNBT copyList(ListNBT source) {
-        ListNBT copy = new ListNBT();
-        for (INBT element : source) {
+    private static ListTag copyList(ListTag source) {
+        ListTag copy = new ListTag();
+        for (Tag element : source) {
             copy.add(element.copy());
         }
         return copy;

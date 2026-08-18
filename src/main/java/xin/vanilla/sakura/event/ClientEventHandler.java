@@ -3,8 +3,8 @@ package xin.vanilla.sakura.event;
 import xin.vanilla.sakura.data.time.SakuraClock;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.entity.player.ClientPlayerEntity;
-import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.api.client.BaniraKeyHandle;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.sakura.client.SakuraClientState;
@@ -66,7 +66,7 @@ public final class ClientEventHandler {
             Minecraft.getInstance().setScreen(new SignInScreen().previousScreen(previousScreen));
             return;
         }
-        ClientPlayerEntity player = Minecraft.getInstance().player;
+        LocalPlayer player = Minecraft.getInstance().player;
         if (player != null) {
             Component component = SakuraComponent.get().transClient(
                     "word", "sakura_is_offline");

@@ -1,8 +1,8 @@
 package xin.vanilla.sakura.data;
 
 import lombok.NonNull;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.nbt.CompoundTag;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.sakura.data.player.MonthSignInIndex;
 import xin.vanilla.sakura.data.personaldate.PlayerPersonalDateSlot;
@@ -17,9 +17,9 @@ import java.util.Map;
  * 玩家签到数据
  */
 public interface IPlayerSignInData {
-    CompoundNBT serializeNBT();
+    CompoundTag serializeNBT();
 
-    void deserializeNBT(CompoundNBT nbt);
+    void deserializeNBT(CompoundTag nbt);
 
     /**
      * 获取累计签到天数
@@ -177,7 +177,7 @@ public interface IPlayerSignInData {
      * 获取有效的语言
      */
     @NonNull
-    String getValidLanguage(@Nullable PlayerEntity player);
+    String getValidLanguage(@Nullable Player player);
 
     void copyFrom(IPlayerSignInData capability);
 

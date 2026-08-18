@@ -1,9 +1,9 @@
 package xin.vanilla.sakura.screen;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.renderer.ItemRenderer;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.renderer.entity.ItemRenderer;
 import xin.vanilla.banira.api.client.theme.BaniraThemes;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
@@ -79,7 +79,7 @@ public final class LotteryScreen extends BaniraScreen {
         poolSelect.inputMode(DropdownInputMode.SELECTION_ONLY);
         poolSelect.bounds(new ScreenCoordinate(panelX + 20, 54, panelWidth - 40, 22));
         poolSelect.optionEntries(pools.stream().map(pool -> new DropdownOption(
-                pool.getId(), pool.getDisplayName(), net.minecraft.item.ItemStack.EMPTY,
+                pool.getId(), pool.getDisplayName(), net.minecraft.world.item.ItemStack.EMPTY,
                 null, SakuraComponent.get().transClient("format", "lottery_pool_tooltip_sss",
                 policyName(pool), pool.getMaxDraws(), pool.getCooldownSeconds())))
                 .collect(Collectors.toList()));
@@ -135,7 +135,7 @@ public final class LotteryScreen extends BaniraScreen {
     }
 
     @Override
-    protected void onRender(MatrixStack stack, float partialTicks) {
+    protected void onRender(PoseStack stack, float partialTicks) {
         int panelWidth = Math.min(560, width - 40);
         int panelX = (width - panelWidth) / 2;
         shape(stack, panelX, PANEL_TOP, panelWidth, height - 44,
@@ -158,7 +158,7 @@ public final class LotteryScreen extends BaniraScreen {
         renderWidgets(stack, partialTicks);
     }
 
-    private void renderPreview(MatrixStack stack, LotteryPool pool, int x, int y,
+    private void renderPreview(PoseStack stack, LotteryPool pool, int x, int y,
                                int width, int height) {
         shape(stack, x, y, width, height, getEffectiveTheme().buttonBg(), 5, 1);
         previewArea = new ScreenCoordinate(x, y, width, height);
@@ -245,7 +245,7 @@ public final class LotteryScreen extends BaniraScreen {
         previewScrollbar.setValue(previewScrollRows);
     }
 
-    private void deferRewardTooltip(MatrixStack stack, LotteryPool pool, Reward reward,
+    private void deferRewardTooltip(PoseStack stack, LotteryPool pool, Reward reward,
                                     LotteryPreviewMode mode, int x, int y) {
         double mouseX = inputState.mouseX();
         double mouseY = inputState.mouseY();
@@ -286,7 +286,7 @@ public final class LotteryScreen extends BaniraScreen {
                 value, "all".equals(value)
                 ? SakuraComponent.get().translateClient("word", "lottery_draw_all")
                 : SakuraComponent.get().translateClient("format", "lottery_draw_count_s", value),
-                net.minecraft.item.ItemStack.EMPTY, null, null))
+                net.minecraft.world.item.ItemStack.EMPTY, null, null))
                 .collect(Collectors.toList()));
         countSelect.selectedValues(Collections.singletonList(batchValues.get(0)));
         if (singleDrawButton != null) {
@@ -356,7 +356,7 @@ public final class LotteryScreen extends BaniraScreen {
         return new ScreenCoordinate((width - panelWidth) / 2, PANEL_TOP, panelWidth, height - 44);
     }
 
-    private void shape(MatrixStack stack, int x, int y, int width, int height,
+    private void shape(PoseStack stack, int x, int y, int width, int height,
                        int color, int radius, int border) {
         BaseShapeWidget.drawShape(new ShapeDrawArgs().stack(stack)
                 .type(ShapeDrawArgs.ShapeType.RECT).color(color)
@@ -365,7 +365,7 @@ public final class LotteryScreen extends BaniraScreen {
                         .border(border)));
     }
 
-    private void centered(MatrixStack stack, String text, int y, int color) {
+    private void centered(PoseStack stack, String text, int y, int color) {
         font.draw(stack, text, width / 2.0F - font.width(text) / 2.0F, y, color);
     }
 }

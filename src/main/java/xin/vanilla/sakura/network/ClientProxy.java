@@ -2,7 +2,7 @@ package xin.vanilla.sakura.network;
 
 import xin.vanilla.sakura.SakuraComponent;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.entity.player.ClientPlayerEntity;
+import net.minecraft.client.player.LocalPlayer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
@@ -36,7 +36,7 @@ public class ClientProxy {
     public static final Logger LOGGER = LogManager.getLogger();
 
     public static void handleSynPlayerData(PlayerDataSyncPacket packet) {
-        ClientPlayerEntity player = Minecraft.getInstance().player;
+        LocalPlayer player = Minecraft.getInstance().player;
         if (player != null) {
             boolean initialSync = !SakuraClientState.isEnabled();
             try {
@@ -62,7 +62,7 @@ public class ClientProxy {
     }
 
     public static void handleMonthData(PlayerMonthSyncPacket packet) {
-        ClientPlayerEntity player = Minecraft.getInstance().player;
+        LocalPlayer player = Minecraft.getInstance().player;
         if (player == null || !player.getUUID().equals(packet.getPlayerUUID())) {
             return;
         }

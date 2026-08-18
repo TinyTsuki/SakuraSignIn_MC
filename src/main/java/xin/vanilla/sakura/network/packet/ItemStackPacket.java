@@ -2,11 +2,11 @@ package xin.vanilla.sakura.network.packet;
 
 import lombok.Getter;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import net.minecraft.entity.item.ItemEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.JsonToNBT;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.TagParser;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
@@ -36,7 +36,7 @@ public class ItemStackPacket implements INetworkPacket {
      */
     public ItemStackPacket(BaniraPacketBuffer buf) {
         try {
-            this.itemStack = ItemStack.of(JsonToNBT.parseTag(buf.readUtf()));
+            this.itemStack = ItemStack.of(TagParser.parseTag(buf.readUtf()));
         } catch (CommandSyntaxException exception) {
             throw new IllegalArgumentException("Invalid item stack payload", exception);
         }
@@ -48,7 +48,7 @@ public class ItemStackPacket implements INetworkPacket {
      * @param buf 用于存储ItemStack数据的PacketBuffer
      */
     public void toBytes(BaniraPacketBuffer buf) {
-        buf.writeUtf(itemStack.save(new CompoundNBT()).toString());
+        buf.writeUtf(itemStack.save(new CompoundTag()).toString());
     }
 
     /**
@@ -62,10 +62,10 @@ public class ItemStackPacket implements INetworkPacket {
         // 获取网络事件上下文并排队执行工作
         ctx.enqueueWork(() -> {
             // 获取发送数据包的玩家实体
-            ServerPlayerEntity player = ctx.senderAs(ServerPlayerEntity.class);
+            ServerPlayer player = ctx.senderAs(ServerPlayer.class);
             if (player != null) {
                 // 尝试将物品堆添加到玩家的库存中
-                boolean added = player.inventory.add(packet.itemStack);
+                boolean added = player.getInventory().add(packet.itemStack);
                 // 如果物品堆无法添加到库存，则以物品实体的形式生成在世界上
                 if (!added) {
                     ItemEntity itemEntity = new ItemEntity(player.level(), player.getX(), player.getY(), player.getZ(), packet.itemStack);

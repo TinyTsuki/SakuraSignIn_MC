@@ -1,7 +1,7 @@
 package xin.vanilla.sakura.network.packet;
 
 import lombok.Getter;
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
@@ -30,7 +30,7 @@ public class ClientConfigSyncPacket implements INetworkPacket {
 
     public static void handle(ClientConfigSyncPacket packet, BaniraNetworkContext ctx) {
         ctx.enqueueWork(() -> {
-            ServerPlayerEntity player = ctx.senderAs(ServerPlayerEntity.class);
+            ServerPlayer player = ctx.senderAs(ServerPlayer.class);
             if (player != null) {
                 IPlayerSignInData signInData = SakuraPlayerData.get(player);
                 if (signInData.isAutoRewarded() != packet.autoRewarded) {

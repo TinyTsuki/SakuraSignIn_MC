@@ -5,9 +5,9 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.Commands;
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.config.reward.RewardConfigManager;
@@ -29,7 +29,7 @@ final class PersonalDateConfigCommand {
     private PersonalDateConfigCommand() {
     }
 
-    static LiteralArgumentBuilder<CommandSource> build() {
+    static LiteralArgumentBuilder<CommandSourceStack> build() {
         return Commands.literal("personalDate")
                 .executes(PersonalDateConfigCommand::list)
                 .then(Commands.literal("list").executes(PersonalDateConfigCommand::list))
@@ -63,8 +63,8 @@ final class PersonalDateConfigCommand {
                                         .executes(PersonalDateConfigCommand::clear))));
     }
 
-    private static int list(CommandContext<CommandSource> context) throws CommandSyntaxException {
-        ServerPlayerEntity player = context.getSource().getPlayerOrException();
+    private static int list(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        ServerPlayer player = context.getSource().getPlayerOrException();
         IPlayerSignInData data = SakuraPlayerData.get(player);
         SakuraMessages.send(player, SakuraComponent.get().trans(player,
                 "word", "personal_date_command_header"));
@@ -81,8 +81,8 @@ final class PersonalDateConfigCommand {
         return 1;
     }
 
-    private static int set(CommandContext<CommandSource> context) throws CommandSyntaxException {
-        ServerPlayerEntity player = context.getSource().getPlayerOrException();
+    private static int set(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        ServerPlayer player = context.getSource().getPlayerOrException();
         String presetId = StringArgumentType.getString(context, "preset");
         PersonalDatePreset preset = preset(presetId);
         int slotIndex = IntegerArgumentType.getInteger(context, "slot") - 1;
@@ -100,15 +100,15 @@ final class PersonalDateConfigCommand {
         return apply(player, candidates, "personal_date_command_saved");
     }
 
-    private static int clear(CommandContext<CommandSource> context) throws CommandSyntaxException {
-        ServerPlayerEntity player = context.getSource().getPlayerOrException();
+    private static int clear(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        ServerPlayer player = context.getSource().getPlayerOrException();
         String presetId = StringArgumentType.getString(context, "preset");
         int slotIndex = IntegerArgumentType.getInteger(context, "slot") - 1;
         return apply(player, without(SakuraPlayerData.get(player).getPersonalDateSlots(),
                 presetId, slotIndex), "personal_date_command_cleared");
     }
 
-    private static int apply(ServerPlayerEntity player, List<PlayerPersonalDateSlot> candidates,
+    private static int apply(ServerPlayer player, List<PlayerPersonalDateSlot> candidates,
                              String successKey) {
         IPlayerSignInData data = SakuraPlayerData.get(player);
         PersonalDateSelectionResult result = SERVICE.replace(

@@ -2,7 +2,7 @@ package xin.vanilla.sakura.network.packet;
 
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import lombok.Getter;
-import net.minecraft.nbt.JsonToNBT;
+import net.minecraft.nbt.TagParser;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
@@ -42,7 +42,7 @@ public class PlayerMonthSyncPacket implements INetworkPacket {
         records = new ArrayList<>(size);
         try {
             for (int i = 0; i < size; i++) {
-                records.add(SignInRecord.readFromNBT(JsonToNBT.parseTag(buffer.readUtf())));
+                records.add(SignInRecord.readFromNBT(TagParser.parseTag(buffer.readUtf())));
             }
         } catch (CommandSyntaxException exception) {
             throw new IllegalArgumentException("Invalid sign-in month payload", exception);

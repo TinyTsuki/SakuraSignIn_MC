@@ -2,17 +2,17 @@ package xin.vanilla.sakura.screen;
 
 import xin.vanilla.sakura.data.time.SakuraClock;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.AbstractGui;
-import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.renderer.ItemRenderer;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.client.gui.GuiComponent;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.renderer.entity.ItemRenderer;
+import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
@@ -81,15 +81,15 @@ public final class SignInCell extends BaseWidget {
     }
 
     @Override
-    public void render(MatrixStack stack, float partialTicks) {
+    public void render(PoseStack stack, float partialTicks) {
         double x = absoluteX();
         double y = absoluteY();
         double width = bounds().width();
         double height = bounds().height();
-        FontRenderer font = screen.getFont();
+        Font font = screen.getFont();
 
         if (showIcon) {
-            Minecraft.getInstance().getTextureManager().bind(backgroundTexture);
+            RenderSystem.setShaderTexture(0, backgroundTexture);
             renderStatusIcon(stack, x, y, width, height);
         }
         if (showText) {
@@ -97,7 +97,7 @@ public final class SignInCell extends BaseWidget {
         }
     }
 
-    private void renderStatusIcon(MatrixStack stack, double x, double y, double width, double height) {
+    private void renderStatusIcon(PoseStack stack, double x, double y, double width, double height) {
         if (status == ESignInStatus.REWARDED.getCode()) {
             Coordinate uv = textureCoordinate.getRewardedUV();
             AbstractGuiUtils.blit(stack, backgroundTexture, (int) x, (int) y, (int) width, (int) height,
@@ -140,7 +140,7 @@ public final class SignInCell extends BaseWidget {
         }
     }
 
-    private void renderDay(MatrixStack stack, FontRenderer font, double x, double y, double width) {
+    private void renderDay(PoseStack stack, Font font, double x, double y, double width) {
         Date date = SakuraClock.clientNow();
         int color = textureCoordinate.getTextColorDefault();
         Component dayComponent = SakuraComponent.get().literal(String.valueOf(day));
@@ -163,7 +163,7 @@ public final class SignInCell extends BaseWidget {
     /**
      * 在 Screen 的延迟提示阶段绘制奖励详情，避免被弹出菜单或裁剪区域覆盖。
      */
-    public void renderTooltip(MatrixStack stack, FontRenderer font, ItemRenderer itemRenderer) {
+    public void renderTooltip(PoseStack stack, Font font, ItemRenderer itemRenderer) {
         double x = absoluteX();
         double y = absoluteY();
         double width = bounds().width();
@@ -181,7 +181,7 @@ public final class SignInCell extends BaseWidget {
         stack.translate(0, 0, 200);
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        Minecraft.getInstance().getTextureManager().bind(backgroundTexture);
+        RenderSystem.setShaderTexture(0, backgroundTexture);
         AbstractGuiUtils.blit(stack, backgroundTexture, (int) tooltipX, (int) tooltipY,
                 (int) tooltipWidth, (int) tooltipHeight,
                 (float) tooltipUV.getU0(), (float) tooltipUV.getV0(),
@@ -197,13 +197,13 @@ public final class SignInCell extends BaseWidget {
         RenderSystem.enableDepthTest();
     }
 
-    private void renderTooltipScrollBar(MatrixStack stack, double tooltipX, double tooltipY, double tooltipScale) {
+    private void renderTooltipScrollBar(PoseStack stack, double tooltipX, double tooltipY, double tooltipScale) {
         Coordinate scroll = textureCoordinate.getTooltipScrollCoordinate();
         double trackX = tooltipX + scroll.getX() * tooltipScale;
         double trackY = tooltipY + scroll.getY() * tooltipScale;
         double trackWidth = scroll.getWidth() * tooltipScale;
         double trackHeight = scroll.getHeight() * tooltipScale;
-        AbstractGui.fill(stack, (int) trackX, (int) trackY,
+        GuiComponent.fill(stack, (int) trackX, (int) trackY,
                 (int) (trackX + trackWidth), (int) (trackY + trackHeight), 0xCC232323);
 
         double visibleScale = rewardList.size() > TOOLTIP_MAX_VISIBLE_ITEMS
@@ -213,11 +213,11 @@ public final class SignInCell extends BaseWidget {
                 : (1 - visibleScale) * trackWidth / hiddenItems;
         double thumbX = trackX + tooltipScrollOffset * offsetWidth;
         double thumbWidth = trackWidth * visibleScale;
-        AbstractGui.fill(stack, (int) thumbX + 1, (int) trackY,
+        GuiComponent.fill(stack, (int) thumbX + 1, (int) trackY,
                 (int) (thumbX + thumbWidth) - 1, (int) (trackY + trackHeight), 0xCCCCCCCC);
     }
 
-    private void renderTooltipRewards(MatrixStack stack, FontRenderer font, ItemRenderer itemRenderer,
+    private void renderTooltipRewards(PoseStack stack, Font font, ItemRenderer itemRenderer,
                                       double tooltipX, double tooltipY, double tooltipScale,
                                       double margin, Coordinate cellCoordinate) {
         boolean showProbability = Minecraft.getInstance().player == null
@@ -238,7 +238,7 @@ public final class SignInCell extends BaseWidget {
         }
     }
 
-    private void renderTooltipDate(MatrixStack stack, FontRenderer font, double tooltipX,
+    private void renderTooltipDate(PoseStack stack, Font font, double tooltipX,
                                    double tooltipY, double tooltipWidth, double tooltipScale) {
         Date date = DateUtils.getDate(year, month, day);
         String monthTitle = DateUtils.toLocalStringMonth(date, Minecraft.getInstance().options.languageCode);
