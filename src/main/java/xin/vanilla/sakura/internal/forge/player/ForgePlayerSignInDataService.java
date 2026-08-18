@@ -2,8 +2,8 @@ package xin.vanilla.sakura.internal.forge.player;
 
 import xin.vanilla.sakura.data.time.SakuraClock;
 
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.server.level.ServerPlayer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.BaniraDataPaths;
@@ -47,7 +47,7 @@ public final class ForgePlayerSignInDataService implements SakuraPlayerDataServi
 
     @Override
     public IPlayerSignInData get(Object playerObject) {
-        PlayerEntity player = requirePlayer(playerObject);
+        Player player = requirePlayer(playerObject);
         UUID playerUuid = player.getUUID();
         if (player.getCommandSenderWorld().isClientSide) {
             return clientCache.computeIfAbsent(playerUuid, ignored -> new PlayerSignInData());
@@ -64,7 +64,7 @@ public final class ForgePlayerSignInDataService implements SakuraPlayerDataServi
 
     @Override
     public LegacyMigrationResult migrateAndLoad(Object playerObject) throws IOException {
-        ServerPlayerEntity player = requireServerPlayer(playerObject);
+        ServerPlayer player = requireServerPlayer(playerObject);
         UUID playerUuid = player.getUUID();
         BaniraPlayerSummaryRepository summaries = new BaniraPlayerSummaryRepository();
         MonthlySignInHistoryRepository histories =
@@ -92,14 +92,14 @@ public final class ForgePlayerSignInDataService implements SakuraPlayerDataServi
 
     @Override
     public void saveAndSync(Object playerObject) {
-        ServerPlayerEntity player = requireServerPlayer(playerObject);
+        ServerPlayer player = requireServerPlayer(playerObject);
         persistOrThrow(player.getUUID());
         sync(player);
     }
 
     @Override
     public void sync(Object playerObject) {
-        ServerPlayerEntity player = requireServerPlayer(playerObject);
+        ServerPlayer player = requireServerPlayer(playerObject);
         IPlayerSignInData data = get(player);
         String currentMonth = YearMonth.from(
                 RewardManager.getCompensateDate(SakuraClock.serverNow())
@@ -215,17 +215,17 @@ public final class ForgePlayerSignInDataService implements SakuraPlayerDataServi
         }
     }
 
-    private static PlayerEntity requirePlayer(Object player) {
-        if (!(player instanceof PlayerEntity)) {
-            throw new IllegalArgumentException("Expected Forge PlayerEntity");
+    private static Player requirePlayer(Object player) {
+        if (!(player instanceof Player)) {
+            throw new IllegalArgumentException("Expected Forge Player");
         }
-        return (PlayerEntity) player;
+        return (Player) player;
     }
 
-    private static ServerPlayerEntity requireServerPlayer(Object player) {
-        if (!(player instanceof ServerPlayerEntity)) {
-            throw new IllegalArgumentException("Expected Forge ServerPlayerEntity");
+    private static ServerPlayer requireServerPlayer(Object player) {
+        if (!(player instanceof ServerPlayer)) {
+            throw new IllegalArgumentException("Expected Forge ServerPlayer");
         }
-        return (ServerPlayerEntity) player;
+        return (ServerPlayer) player;
     }
 }

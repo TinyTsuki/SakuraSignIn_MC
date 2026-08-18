@@ -1,6 +1,6 @@
 package xin.vanilla.sakura.network.packet;
 
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
@@ -23,7 +23,7 @@ public class DownloadRewardOptionNotice implements INetworkPacket {
 
     public static void handle(DownloadRewardOptionNotice packet, BaniraNetworkContext ctx) {
         ctx.enqueueWork(() -> {
-            ServerPlayerEntity player = ctx.senderAs(ServerPlayerEntity.class);
+            ServerPlayer player = ctx.senderAs(ServerPlayer.class);
             if (player != null) {
                 SakuraNetwork.sendSplitToPlayer(RewardConfigManager.toSyncPacket(player), player);
                 SakuraNetwork.sendSplitToPlayer(SakuraNetwork.personalDatePacket(player), player);

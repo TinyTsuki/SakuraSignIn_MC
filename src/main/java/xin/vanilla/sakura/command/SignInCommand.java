@@ -2,8 +2,8 @@ package xin.vanilla.sakura.command;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.Commands;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
 import xin.vanilla.sakura.command.impl.CardCommand;
 import xin.vanilla.sakura.command.impl.CdkCommand;
 import xin.vanilla.sakura.command.impl.ConfigCommand;
@@ -21,7 +21,7 @@ public final class SignInCommand {
     private SignInCommand() {
     }
 
-    public static void register(CommandDispatcher<CommandSource> dispatcher) {
+    public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         registerConcise(dispatcher);
         dispatcher.register(Commands.literal(SakuraUtils.getCommandPrefix())
                 .executes(HelpCommand::executeRoot)
@@ -36,7 +36,7 @@ public final class SignInCommand {
                 .then(ConfigCommand.build()));
     }
 
-    private static void registerConcise(CommandDispatcher<CommandSource> dispatcher) {
+    private static void registerConcise(CommandDispatcher<CommandSourceStack> dispatcher) {
         if (CommonConfig.get().concise().conciseSignIn()) {
             dispatcher.register(SignActionCommand.buildSign());
         }

@@ -1,6 +1,6 @@
 package xin.vanilla.sakura.api.reward;
 
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 
 import java.util.Date;
 import java.util.UUID;
@@ -10,7 +10,7 @@ import java.util.UUID;
  */
 public interface RewardGrantContext {
 
-    ServerPlayerEntity player();
+    ServerPlayer player();
 
     UUID playerId();
 

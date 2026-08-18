@@ -2,7 +2,7 @@ package xin.vanilla.sakura.data;
 
 import lombok.Data;
 import lombok.NonNull;
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.CompoundTag;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.reward.RewardList;
@@ -55,8 +55,8 @@ public class SignInRecord implements Serializable, Cloneable {
 
 
     // 序列化到 NBT
-    public CompoundNBT writeToNBT() {
-        CompoundNBT tag = new CompoundNBT();
+    public CompoundTag writeToNBT() {
+        CompoundTag tag = new CompoundTag();
         tag.putString("compensateTime", DateUtils.toDateTimeString(compensateTime));
         tag.putString("signInTime", DateUtils.toDateTimeString(signInTime));
         tag.putString("signInUUID", signInUUID);
@@ -66,7 +66,7 @@ public class SignInRecord implements Serializable, Cloneable {
     }
 
     // 反序列化方法
-    public static SignInRecord readFromNBT(CompoundNBT tag) {
+    public static SignInRecord readFromNBT(CompoundTag tag) {
         SignInRecord record = new SignInRecord();
         // 读取简单字段
         record.compensateTime = DateUtils.format(tag.getString("compensateTime"));

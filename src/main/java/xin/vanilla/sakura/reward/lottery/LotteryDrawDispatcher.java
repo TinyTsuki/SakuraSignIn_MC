@@ -1,6 +1,6 @@
 package xin.vanilla.sakura.reward.lottery;
 
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.api.BaniraModPresence;
 import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.SakuraSignIn;
@@ -21,7 +21,7 @@ public final class LotteryDrawDispatcher {
     private LotteryDrawDispatcher() {
     }
 
-    public static LotteryDrawBatchResult draw(ServerPlayerEntity player, String poolId,
+    public static LotteryDrawBatchResult draw(ServerPlayer player, String poolId,
                                               int count) {
         boolean animated = BaniraModPresence.isRemoteClientInstalled(player, SakuraSignIn.MODID);
         if (animated) {
@@ -46,21 +46,21 @@ public final class LotteryDrawDispatcher {
         return result;
     }
 
-    public static void claim(ServerPlayerEntity player, String token) {
+    public static void claim(ServerPlayer player, String token) {
         LotteryDrawBatchResult result = PendingLotteryDraws.claim(player, token);
         if (result == null) return;
         if (result.isSuccess()) notifySuccess(player, result);
         else notifyFailure(player, result);
     }
 
-    private static void sendReveal(ServerPlayerEntity player, PendingLotteryDraws.Pending pending) {
+    private static void sendReveal(ServerPlayer player, PendingLotteryDraws.Pending pending) {
         LotteryDrawBatchResult result = pending.getResult();
         SakuraNetwork.sendToPlayer(new LotteryRevealPacket(pending.getToken(),
                 result.getPool().getDisplayName(), result.getRewards(), preview(result),
                 result.getPool().getPreviewMode()), player);
     }
 
-    private static void notifySuccess(ServerPlayerEntity player, LotteryDrawBatchResult result) {
+    private static void notifySuccess(ServerPlayer player, LotteryDrawBatchResult result) {
         String rewards = result.getRewards().stream().map(reward -> reward.getName(
                         SakuraUtils.getPlayerLanguage(player), true).toString())
                 .collect(Collectors.joining(", "));
@@ -68,7 +68,7 @@ public final class LotteryDrawDispatcher {
                 "lottery_draw_success_s", rewards), SakuraNotificationTypes.REWARD);
     }
 
-    private static void notifyFailure(ServerPlayerEntity player, LotteryDrawBatchResult result) {
+    private static void notifyFailure(ServerPlayer player, LotteryDrawBatchResult result) {
         switch (result.getStatus()) {
             case LIMIT_REACHED:
                 SakuraMessages.send(player, SakuraComponent.get().trans(player, "format",

@@ -1,9 +1,9 @@
 package xin.vanilla.sakura.client.reward;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.util.text.StringTextComponent;
-import com.mojang.blaze3d.matrix.MatrixStack;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.TextComponent;
+import com.mojang.blaze3d.vertex.PoseStack;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.sakura.api.reward.RewardTypeId;
 import xin.vanilla.sakura.api.reward.client.RewardClientExtension;
@@ -131,7 +131,7 @@ public final class RewardEditorCoordinator {
         private boolean submitted;
 
         private ValueTransitionScreen(Screen parent, Consumer<T> continuation) {
-            super(new StringTextComponent(""));
+            super(new TextComponent(""));
             this.parent = parent;
             this.continuation = continuation;
             previousScreen(parent);
@@ -157,7 +157,7 @@ public final class RewardEditorCoordinator {
         }
 
         @Override
-        protected void onRender(MatrixStack stack, float partialTicks) {
+        protected void onRender(PoseStack stack, float partialTicks) {
         }
     }
 
@@ -168,7 +168,7 @@ public final class RewardEditorCoordinator {
 
         private DeferredScreen(Screen parent, Runnable continuation,
                                java.util.function.BooleanSupplier shouldContinue) {
-            super(new StringTextComponent(""));
+            super(new TextComponent(""));
             this.parent = parent;
             this.continuation = continuation;
             this.shouldContinue = shouldContinue;
@@ -186,7 +186,7 @@ public final class RewardEditorCoordinator {
         }
 
         @Override
-        protected void onRender(MatrixStack stack, float partialTicks) {
+        protected void onRender(PoseStack stack, float partialTicks) {
         }
     }
 }

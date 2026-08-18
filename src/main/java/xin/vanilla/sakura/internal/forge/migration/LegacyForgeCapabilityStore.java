@@ -1,6 +1,6 @@
 package xin.vanilla.sakura.internal.forge.migration;
 
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.CompoundTag;
 import xin.vanilla.sakura.data.migration.LegacyCapabilityStore;
 import xin.vanilla.sakura.internal.forge.storage.AtomicNbtFiles;
 
@@ -26,21 +26,21 @@ public final class LegacyForgeCapabilityStore implements LegacyCapabilityStore {
     }
 
     @Override
-    public Optional<CompoundNBT> read(UUID playerUuid) throws IOException {
+    public Optional<CompoundTag> read(UUID playerUuid) throws IOException {
         Path playerFile = playerFile(playerUuid);
         recoverInterruptedRemoval(playerFile);
         if (!Files.isRegularFile(playerFile)) {
             return Optional.empty();
         }
-        CompoundNBT root = AtomicNbtFiles.read(playerFile);
-        CompoundNBT forgeCaps = root.getCompound("ForgeCaps");
+        CompoundTag root = AtomicNbtFiles.read(playerFile);
+        CompoundTag forgeCaps = root.getCompound("ForgeCaps");
         return forgeCaps.contains(CAPABILITY_KEY, 10)
                 ? Optional.of(forgeCaps.getCompound(CAPABILITY_KEY).copy())
                 : Optional.empty();
     }
 
     @Override
-    public String backupAndVerify(UUID playerUuid, CompoundNBT capability) throws IOException {
+    public String backupAndVerify(UUID playerUuid, CompoundTag capability) throws IOException {
         Path directory = worldDataPath.resolve("backups")
                 .resolve("sakura_sign_in")
                 .resolve("legacy-capability");
@@ -55,7 +55,7 @@ public final class LegacyForgeCapabilityStore implements LegacyCapabilityStore {
     }
 
     @Override
-    public boolean backupMatches(String relativePath, CompoundNBT capability) throws IOException {
+    public boolean backupMatches(String relativePath, CompoundTag capability) throws IOException {
         if (relativePath == null || relativePath.trim().isEmpty()) {
             return false;
         }
@@ -67,10 +67,10 @@ public final class LegacyForgeCapabilityStore implements LegacyCapabilityStore {
     }
 
     @Override
-    public void removeAndVerify(UUID playerUuid, CompoundNBT expectedCapability) throws IOException {
+    public void removeAndVerify(UUID playerUuid, CompoundTag expectedCapability) throws IOException {
         Path playerFile = playerFile(playerUuid);
-        CompoundNBT root = AtomicNbtFiles.read(playerFile);
-        CompoundNBT forgeCaps = root.getCompound("ForgeCaps");
+        CompoundTag root = AtomicNbtFiles.read(playerFile);
+        CompoundTag forgeCaps = root.getCompound("ForgeCaps");
         if (!forgeCaps.contains(CAPABILITY_KEY, 10)) {
             return;
         }
@@ -78,12 +78,12 @@ public final class LegacyForgeCapabilityStore implements LegacyCapabilityStore {
             throw new IOException("Legacy Capability changed during migration: " + playerUuid);
         }
 
-        CompoundNBT rewritten = root.copy();
+        CompoundTag rewritten = root.copy();
         rewritten.getCompound("ForgeCaps").remove(CAPABILITY_KEY);
         replacePlayerFileWithRollback(playerFile, root, rewritten, playerUuid);
     }
 
-    private Path nextBackupPath(Path directory, UUID playerUuid, CompoundNBT capability) throws IOException {
+    private Path nextBackupPath(Path directory, UUID playerUuid, CompoundTag capability) throws IOException {
         Files.createDirectories(directory);
         for (int index = 0; ; index++) {
             String suffix = index == 0 ? "" : "-" + index;
@@ -100,8 +100,8 @@ public final class LegacyForgeCapabilityStore implements LegacyCapabilityStore {
 
     private void replacePlayerFileWithRollback(
             Path playerFile,
-            CompoundNBT original,
-            CompoundNBT rewritten,
+            CompoundTag original,
+            CompoundTag rewritten,
             UUID playerUuid
     ) throws IOException {
         Path replacement = playerFile.resolveSibling(playerFile.getFileName() + ".sakura-migration.tmp");
@@ -118,7 +118,7 @@ public final class LegacyForgeCapabilityStore implements LegacyCapabilityStore {
         try {
             Files.move(replacement, playerFile,
                     StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-            CompoundNBT verified = AtomicNbtFiles.read(playerFile);
+            CompoundTag verified = AtomicNbtFiles.read(playerFile);
             if (verified.getCompound("ForgeCaps").contains(CAPABILITY_KEY, 10)) {
                 throw new IOException("Legacy Capability removal verification failed: " + playerUuid);
             }

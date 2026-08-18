@@ -1,6 +1,6 @@
 package xin.vanilla.sakura.data.migration;
 
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.CompoundTag;
 import org.junit.Test;
 import xin.vanilla.sakura.data.migration.LegacyPlayerData;
 import xin.vanilla.sakura.data.migration.LegacyPlayerDataParser;
@@ -25,7 +25,7 @@ public class LegacyPlayerDataMigrationServiceTest {
     @Test
     public void removesLegacyNodeOnlyAfterAllDurableWritesSucceed() throws Exception {
         UUID uuid = UUID.randomUUID();
-        CompoundNBT legacy = legacyData();
+        CompoundTag legacy = legacyData();
         RecordingStores stores = new RecordingStores(legacy);
         LegacyPlayerDataMigrationService service = stores.service();
 
@@ -58,7 +58,7 @@ public class LegacyPlayerDataMigrationServiceTest {
     @Test
     public void retryOnlyCleansUpMatchingAlreadyMigratedCapability() throws Exception {
         UUID uuid = UUID.randomUUID();
-        CompoundNBT legacy = legacyData();
+        CompoundTag legacy = legacyData();
         RecordingStores stores = new RecordingStores(legacy);
         PlayerSignInSummary summary = new LegacyPlayerDataParser().parse(legacy).getSummary();
         summary.setLegacyCapabilityMigrated(true);
@@ -73,22 +73,22 @@ public class LegacyPlayerDataMigrationServiceTest {
         assertTrue(stores.removed);
     }
 
-    private static CompoundNBT legacyData() {
-        CompoundNBT legacy = new CompoundNBT();
+    private static CompoundTag legacyData() {
+        CompoundTag legacy = new CompoundTag();
         legacy.putInt("totalSignInDays", 1);
         legacy.putString("lastSignInTime", "2024-02-02 09:10:11");
         return legacy;
     }
 
     private static final class RecordingStores implements LegacyCapabilityStore, SignInHistoryStore, PlayerSummaryStore {
-        private final CompoundNBT legacy;
+        private final CompoundTag legacy;
         private final List<String> calls = new ArrayList<>();
         private PlayerSignInSummary summary;
         private boolean backupMatches;
         private boolean failSummary;
         private boolean removed;
 
-        private RecordingStores(CompoundNBT legacy) {
+        private RecordingStores(CompoundTag legacy) {
             this.legacy = legacy;
         }
 
@@ -99,24 +99,24 @@ public class LegacyPlayerDataMigrationServiceTest {
         }
 
         @Override
-        public Optional<CompoundNBT> read(UUID playerUuid) {
+        public Optional<CompoundTag> read(UUID playerUuid) {
             return Optional.of(legacy);
         }
 
         @Override
-        public String backupAndVerify(UUID playerUuid, CompoundNBT capability) {
+        public String backupAndVerify(UUID playerUuid, CompoundTag capability) {
             calls.add("backup");
             backupMatches = true;
             return "backups/sakura_sign_in/legacy-capability/player.nbt";
         }
 
         @Override
-        public boolean backupMatches(String relativePath, CompoundNBT capability) {
+        public boolean backupMatches(String relativePath, CompoundTag capability) {
             return backupMatches;
         }
 
         @Override
-        public void removeAndVerify(UUID playerUuid, CompoundNBT expectedCapability) {
+        public void removeAndVerify(UUID playerUuid, CompoundTag expectedCapability) {
             calls.add("remove");
             removed = true;
         }

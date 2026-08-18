@@ -1,13 +1,13 @@
 package xin.vanilla.sakura.util;
 
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.inventory.IInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.LightType;
-import net.minecraft.world.World;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Container;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.level.Level;
 import xin.vanilla.banira.api.BaniraEnvironment;
 import xin.vanilla.banira.api.BaniraServer;
 import xin.vanilla.banira.common.util.Translator;
@@ -41,9 +41,9 @@ public class SakuraUtils {
     /**
      * 获取随机玩家
      */
-    public static ServerPlayerEntity getRandomPlayer() {
+    public static ServerPlayer getRandomPlayer() {
         try {
-            List<ServerPlayerEntity> players = BaniraServer.require(
+            List<ServerPlayer> players = BaniraServer.require(
                     net.minecraft.server.MinecraftServer.class).getPlayerList().getPlayers();
             return players.get(new Random().nextInt(players.size()));
         } catch (Exception ignored) {
@@ -55,7 +55,7 @@ public class SakuraUtils {
      * 获取随机玩家UUID
      */
     public static UUID getRandomPlayerUUID() {
-        PlayerEntity randomPlayer = getRandomPlayer();
+        Player randomPlayer = getRandomPlayer();
         return randomPlayer != null ? randomPlayer.getUUID() : null;
     }
 
@@ -64,7 +64,7 @@ public class SakuraUtils {
      *
      * @param uuid 玩家UUID
      */
-    public static ServerPlayerEntity getPlayer(UUID uuid) {
+    public static ServerPlayer getPlayer(UUID uuid) {
         try {
             return BaniraServer.require(net.minecraft.server.MinecraftServer.class)
                     .getPlayerList().getPlayer(uuid);
@@ -80,8 +80,8 @@ public class SakuraUtils {
      * @param itemToRemove 要移除的物品
      * @return 是否全部移除成功
      */
-    public static boolean removeItemFromPlayerInventory(ServerPlayerEntity player, ItemStack itemToRemove) {
-        IInventory inventory = player.inventory;
+    public static boolean removeItemFromPlayerInventory(ServerPlayer player, ItemStack itemToRemove) {
+        Container inventory = player.getInventory();
 
         // 剩余要移除的数量
         int remainingAmount = itemToRemove.getCount();
@@ -126,19 +126,19 @@ public class SakuraUtils {
             ItemStack copy = itemToRemove.copy();
             copy.setCount(successfullyRemoved);
             // 将已移除的物品添加回背包
-            player.inventory.add(copy);
+            player.getInventory().add(copy);
         }
 
         // 是否成功移除所有物品
         return remainingAmount == 0;
     }
 
-    public static List<ItemStack> getPlayerItemList(ServerPlayerEntity player) {
+    public static List<ItemStack> getPlayerItemList(ServerPlayer player) {
         List<ItemStack> result = new ArrayList<>();
         if (player != null) {
-            result.addAll(player.inventory.items);
-            result.addAll(player.inventory.armor);
-            result.addAll(player.inventory.offhand);
+            result.addAll(player.getInventory().items);
+            result.addAll(player.getInventory().armor);
+            result.addAll(player.getInventory().offhand);
             result = result.stream().filter(itemStack -> !itemStack.isEmpty() && itemStack.getItem() != Items.AIR).collect(Collectors.toList());
         }
         return result;
@@ -195,11 +195,11 @@ public class SakuraUtils {
 
     // region 杂项
 
-    public static String getPlayerLanguage(ServerPlayerEntity player) {
+    public static String getPlayerLanguage(ServerPlayer player) {
         return SakuraPlayerData.get(player).getValidLanguage(player);
     }
 
-    public static String getValidLanguage(@Nullable PlayerEntity player, @Nullable String language) {
+    public static String getValidLanguage(@Nullable Player player, @Nullable String language) {
         return Translator.getValidLanguage(player, language);
     }
 
@@ -231,21 +231,21 @@ public class SakuraUtils {
      * @param player 当前玩家实体
      * @return 当前环境亮度（范围0-15）
      */
-    public static int getEnvironmentBrightness(PlayerEntity player) {
+    public static int getEnvironmentBrightness(Player player) {
         int result = 0;
         if (player != null) {
-            World world = player.level;
+            Level world = player.level;
             BlockPos pos = player.blockPosition();
             // 获取基础的天空光亮度和方块光亮度
-            int skyLight = world.getBrightness(LightType.SKY, pos);
-            int blockLight = world.getBrightness(LightType.BLOCK, pos);
+            int skyLight = world.getBrightness(LightLayer.SKY, pos);
+            int blockLight = world.getBrightness(LightLayer.BLOCK, pos);
             // 获取世界时间、天气和维度的影响
             boolean isDay = world.isDay();
             boolean isRaining = world.isRaining();
             boolean isThundering = world.isThundering();
             boolean isUnderground = !world.canSeeSky(pos);
             // 判断世界维度（地表、下界、末地）
-            if (world.dimension() == World.OVERWORLD) {
+            if (world.dimension() == Level.OVERWORLD) {
                 // 如果在地表
                 if (!isUnderground) {
                     if (isDay) {
@@ -262,11 +262,11 @@ public class SakuraUtils {
                     // 没有光源时最黑，有光源则受距离影响
                     result = Math.max(Math.min(blockLight, 12), 0);
                 }
-            } else if (world.dimension() == World.NETHER) {
+            } else if (world.dimension() == Level.NETHER) {
                 // 下界亮度较暗，但部分地方有熔岩光源
                 // 近光源则亮度提升，但不会超过10
                 result = Math.min(7 + blockLight / 2, 10);
-            } else if (world.dimension() == World.END) {
+            } else if (world.dimension() == Level.END) {
                 // 末地亮度通常较暗
                 // 即使贴近光源，末地的亮度上限设为10
                 result = Math.min(6 + blockLight / 2, 10);

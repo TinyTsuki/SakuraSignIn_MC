@@ -1,10 +1,10 @@
 package xin.vanilla.sakura.screen;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.entity.player.ClientPlayerEntity;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.resources.I18n;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.resources.language.I18n;
 import xin.vanilla.banira.api.client.theme.BaniraThemes;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.data.ShapeDrawArgs;
@@ -91,7 +91,7 @@ public final class PersonalDateConfigScreen extends BaniraScreen {
     }
 
     @Override
-    protected void onRender(MatrixStack stack, float partialTicks) {
+    protected void onRender(PoseStack stack, float partialTicks) {
         int panelWidth = Math.min(620, width - 40);
         int panelX = (width - panelWidth) / 2;
         BaseShapeWidget.drawShape(new ShapeDrawArgs().stack(stack)
@@ -155,7 +155,7 @@ public final class PersonalDateConfigScreen extends BaniraScreen {
     }
 
     private void loadSlots() {
-        ClientPlayerEntity player = Minecraft.getInstance().player;
+        LocalPlayer player = Minecraft.getInstance().player;
         if (player == null) {
             return;
         }

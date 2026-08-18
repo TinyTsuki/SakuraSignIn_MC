@@ -1,7 +1,7 @@
 package xin.vanilla.sakura.network.packet;
 
 import lombok.Getter;
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.api.BaniraNetwork;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
@@ -136,7 +136,7 @@ public final class PersonalDatePresetSyncPacket extends SplitPacket implements I
 
     private static void applyServerUpdate(PersonalDatePresetSyncPacket packet,
                                           BaniraNetworkContext context) {
-        ServerPlayerEntity sender = context.senderAs(ServerPlayerEntity.class);
+        ServerPlayer sender = context.senderAs(ServerPlayer.class);
         if (sender == null || !sender.hasPermissions(
                 CommonConfig.get().permission().permissionEditReward())
                 || !sender.hasPermissions(SakuraUtils.getRewardPermissionLevel(
@@ -169,7 +169,7 @@ public final class PersonalDatePresetSyncPacket extends SplitPacket implements I
             RewardConfigManager.backupRewardOption(false);
             authoritative.setPersonalDatePresets(PersonalDatePresets.copy(packet.presets));
             RewardConfigManager.saveRewardOption();
-            for (ServerPlayerEntity player : sender.server.getPlayerList().getPlayers()) {
+            for (ServerPlayer player : sender.server.getPlayerList().getPlayers()) {
                 SakuraNetwork.sendSplitToPlayer(SakuraNetwork.personalDatePacket(player), player);
             }
             BaniraNetwork.sendToPlayer(new RewardOptionDataReceivedNotice(true), sender);

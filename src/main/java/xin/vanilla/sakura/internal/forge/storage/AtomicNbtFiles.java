@@ -1,7 +1,7 @@
 package xin.vanilla.sakura.internal.forge.storage;
 
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.CompressedStreamTools;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtIo;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,18 +16,18 @@ public final class AtomicNbtFiles {
     private AtomicNbtFiles() {
     }
 
-    public static CompoundNBT read(Path path) throws IOException {
-        return CompressedStreamTools.readCompressed(path.toFile());
+    public static CompoundTag read(Path path) throws IOException {
+        return NbtIo.readCompressed(path.toFile());
     }
 
-    public static void write(Path target, CompoundNBT tag) throws IOException {
+    public static void write(Path target, CompoundTag tag) throws IOException {
         Path parent = target.getParent();
         if (parent != null) {
             Files.createDirectories(parent);
         }
         Path temporary = target.resolveSibling(target.getFileName() + ".tmp");
         File temporaryFile = temporary.toFile();
-        CompressedStreamTools.writeCompressed(tag, temporaryFile);
+        NbtIo.writeCompressed(tag, temporaryFile);
         try {
             Files.move(temporary, target,
                     StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);

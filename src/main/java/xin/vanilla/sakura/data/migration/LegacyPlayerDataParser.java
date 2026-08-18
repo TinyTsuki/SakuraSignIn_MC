@@ -1,8 +1,8 @@
 package xin.vanilla.sakura.data.migration;
 
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.INBT;
-import net.minecraft.nbt.ListNBT;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.nbt.ListTag;
 import xin.vanilla.sakura.data.player.MonthSignInIndex;
 import xin.vanilla.sakura.data.player.PlayerSignInSummary;
 import xin.vanilla.sakura.data.personaldate.PlayerPersonalDateSlot;
@@ -22,7 +22,7 @@ import java.util.Map;
  */
 public final class LegacyPlayerDataParser {
 
-    public LegacyPlayerData parse(CompoundNBT legacy) {
+    public LegacyPlayerData parse(CompoundTag legacy) {
         PlayerSignInSummary summary = new PlayerSignInSummary();
         summary.setTotalSignInDays(legacy.getInt("totalSignInDays"));
         summary.setContinuousSignInDays(legacy.getInt("continuousSignInDays"));
@@ -33,26 +33,26 @@ public final class LegacyPlayerDataParser {
         summary.setCdkRecords(copyList(legacy.getList("cdkRecords", 10)));
         summary.setOnlineTimeBaselineDate(legacy.getString("onlineTimeBaselineDate"));
         summary.setOnlineTimeBaselineTicks(Math.max(0, legacy.getInt("onlineTimeBaselineTicks")));
-        ListNBT lotteryStates = legacy.getList("lotteryDrawStates", 10);
+        ListTag lotteryStates = legacy.getList("lotteryDrawStates", 10);
         for (int i = 0; i < lotteryStates.size(); i++) {
             summary.getLotteryDrawStates().add(
                     LotteryDrawState.deserializeNBT(lotteryStates.getCompound(i)));
         }
-        ListNBT indexes = legacy.getList("monthIndexes", 10);
+        ListTag indexes = legacy.getList("monthIndexes", 10);
         for (int i = 0; i < indexes.size(); i++) {
             MonthSignInIndex index = MonthSignInIndex.deserializeNBT(indexes.getCompound(i));
             summary.getMonthIndexes().put(index.getMonth(), index);
         }
-        ListNBT slots = legacy.getList("personalDateSlots", 10);
+        ListTag slots = legacy.getList("personalDateSlots", 10);
         for (int i = 0; i < slots.size(); i++) {
             summary.getPersonalDateSlots().add(
                     PlayerPersonalDateSlot.deserializeNBT(slots.getCompound(i)));
         }
 
-        Map<String, List<CompoundNBT>> recordsByMonth = new LinkedHashMap<>();
-        ListNBT records = legacy.getList("signInRecords", 10);
+        Map<String, List<CompoundTag>> recordsByMonth = new LinkedHashMap<>();
+        ListTag records = legacy.getList("signInRecords", 10);
         for (int i = 0; i < records.size(); i++) {
-            CompoundNBT record = records.getCompound(i);
+            CompoundTag record = records.getCompound(i);
             LocalDate day = parseDay(record.getString("compensateTime"));
             if (day == null) {
                 recordsByMonth.computeIfAbsent("unknown", key -> new ArrayList<>()).add(record.copy());
@@ -72,9 +72,9 @@ public final class LegacyPlayerDataParser {
         return date == null ? null : date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
     }
 
-    private static ListNBT copyList(ListNBT source) {
-        ListNBT copy = new ListNBT();
-        for (INBT element : source) {
+    private static ListTag copyList(ListTag source) {
+        ListTag copy = new ListTag();
+        for (Tag element : source) {
             copy.add(element.copy());
         }
         return copy;

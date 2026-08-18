@@ -4,9 +4,9 @@ import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.SakuraLang;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.Commands;
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.data.IPlayerSignInData;
@@ -20,7 +20,7 @@ public final class LanguageCommand {
     private LanguageCommand() {
     }
 
-    public static LiteralArgumentBuilder<CommandSource> build() {
+    public static LiteralArgumentBuilder<CommandSourceStack> build() {
         return Commands.literal(CommonConfig.get().command().commandLanguage())
                 .then(Commands.argument("language", StringArgumentType.word())
                         .suggests((context, builder) -> {
@@ -30,7 +30,7 @@ public final class LanguageCommand {
                             return builder.buildFuture();
                         })
                         .executes(context -> {
-                            ServerPlayerEntity player = context.getSource().getPlayerOrException();
+                            ServerPlayer player = context.getSource().getPlayerOrException();
                             IPlayerSignInData data = SakuraPlayerData.get(player);
                             String language = StringArgumentType.getString(context, "language");
                             if (SakuraLang.get().getI18nFiles().contains(language)
