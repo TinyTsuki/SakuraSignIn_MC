@@ -9,9 +9,8 @@ import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiComponent;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.renderer.entity.ItemRenderer;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.BaniraScreen;
@@ -81,7 +80,8 @@ public final class SignInCell extends BaseWidget {
     }
 
     @Override
-    public void render(PoseStack stack, float partialTicks) {
+    public void render(GuiGraphics graphics, float partialTicks) {
+        PoseStack stack = graphics.pose();
         double x = absoluteX();
         double y = absoluteY();
         double width = bounds().width();
@@ -93,7 +93,7 @@ public final class SignInCell extends BaseWidget {
             renderStatusIcon(stack, x, y, width, height);
         }
         if (showText) {
-            renderDay(stack, font, x, y, width);
+            renderDay(graphics, font, x, y, width);
         }
     }
 
@@ -140,7 +140,7 @@ public final class SignInCell extends BaseWidget {
         }
     }
 
-    private void renderDay(PoseStack stack, Font font, double x, double y, double width) {
+    private void renderDay(GuiGraphics graphics, Font font, double x, double y, double width) {
         Date date = SakuraClock.clientNow();
         int color = textureCoordinate.getTextColorDefault();
         Component dayComponent = SakuraComponent.get().literal(String.valueOf(day));
@@ -155,15 +155,16 @@ public final class SignInCell extends BaseWidget {
             color = textureCoordinate.getTextColorCanRepair();
         }
         float dayWidth = font.width(dayComponent.toString());
-        font.draw(stack, dayComponent.color(color).toVanilla(),
-                (float) (x + (width - dayWidth) / 2),
-                (float) (y + textureCoordinate.getDateOffset() * scale + 0.1f), color);
+        graphics.drawString(font, dayComponent.color(color).toVanilla(),
+                (int) (x + (width - dayWidth) / 2),
+                (int) (y + textureCoordinate.getDateOffset() * scale + 0.1f), color, false);
     }
 
     /**
      * 在 Screen 的延迟提示阶段绘制奖励详情，避免被弹出菜单或裁剪区域覆盖。
      */
-    public void renderTooltip(PoseStack stack, Font font, ItemRenderer itemRenderer) {
+    public void renderTooltip(GuiGraphics graphics, Font font) {
+        PoseStack stack = graphics.pose();
         double x = absoluteX();
         double y = absoluteY();
         double width = bounds().width();
@@ -190,8 +191,8 @@ public final class SignInCell extends BaseWidget {
         RenderSystem.disableBlend();
 
         renderTooltipScrollBar(stack, tooltipX, tooltipY, tooltipScale);
-        renderTooltipRewards(stack, font, itemRenderer, tooltipX, tooltipY, tooltipScale, margin, cellCoordinate);
-        renderTooltipDate(stack, font, tooltipX, tooltipY, tooltipWidth, tooltipScale);
+        renderTooltipRewards(graphics, font, tooltipX, tooltipY, tooltipScale, margin, cellCoordinate);
+        renderTooltipDate(graphics, font, tooltipX, tooltipY, tooltipWidth, tooltipScale);
 
         stack.popPose();
         RenderSystem.enableDepthTest();
@@ -203,8 +204,8 @@ public final class SignInCell extends BaseWidget {
         double trackY = tooltipY + scroll.getY() * tooltipScale;
         double trackWidth = scroll.getWidth() * tooltipScale;
         double trackHeight = scroll.getHeight() * tooltipScale;
-        GuiComponent.fill(stack, (int) trackX, (int) trackY,
-                (int) (trackX + trackWidth), (int) (trackY + trackHeight), 0xCC232323);
+        AbstractGuiUtils.fill(stack, (int) trackX, (int) trackY,
+                (int) trackWidth, (int) trackHeight, 0xCC232323);
 
         double visibleScale = rewardList.size() > TOOLTIP_MAX_VISIBLE_ITEMS
                 ? (double) TOOLTIP_MAX_VISIBLE_ITEMS / rewardList.size() : 1;
@@ -213,11 +214,11 @@ public final class SignInCell extends BaseWidget {
                 : (1 - visibleScale) * trackWidth / hiddenItems;
         double thumbX = trackX + tooltipScrollOffset * offsetWidth;
         double thumbWidth = trackWidth * visibleScale;
-        GuiComponent.fill(stack, (int) thumbX + 1, (int) trackY,
-                (int) (thumbX + thumbWidth) - 1, (int) (trackY + trackHeight), 0xCCCCCCCC);
+        AbstractGuiUtils.fill(stack, (int) thumbX + 1, (int) trackY,
+                Math.max(0, (int) thumbWidth - 2), (int) trackHeight, 0xCCCCCCCC);
     }
 
-    private void renderTooltipRewards(PoseStack stack, Font font, ItemRenderer itemRenderer,
+    private void renderTooltipRewards(GuiGraphics graphics, Font font,
                                       double tooltipX, double tooltipY, double tooltipScale,
                                       double margin, Coordinate cellCoordinate) {
         boolean showProbability = Minecraft.getInstance().player == null
@@ -232,13 +233,13 @@ public final class SignInCell extends BaseWidget {
             double itemX = tooltipX + cellCoordinate.getX() * tooltipScale
                     + i * (itemIconSize + margin);
             double itemY = tooltipY + cellCoordinate.getY() * tooltipScale;
-            RewardRenderer.renderCustomReward(stack, itemRenderer, font,
+            RewardRenderer.renderCustomReward(graphics, font,
                     backgroundTexture, textureCoordinate, reward,
                     (int) itemX, (int) itemY, true, showProbability);
         }
     }
 
-    private void renderTooltipDate(PoseStack stack, Font font, double tooltipX,
+    private void renderTooltipDate(GuiGraphics graphics, Font font, double tooltipX,
                                    double tooltipY, double tooltipWidth, double tooltipScale) {
         Date date = DateUtils.getDate(year, month, day);
         String monthTitle = DateUtils.toLocalStringMonth(date, Minecraft.getInstance().options.languageCode);
@@ -246,7 +247,8 @@ public final class SignInCell extends BaseWidget {
         Component title = SakuraComponent.get().literal(monthTitle + " " + dayTitle);
         double titleX = tooltipX + (tooltipWidth - font.width(title.toString())) / 2;
         double titleY = tooltipY + textureCoordinate.getTooltipDateCoordinate().getY() * tooltipScale;
-        font.draw(stack, title.color(0xFFFFFFFF).toVanilla(), (int) titleX, (int) titleY, 0xFFFFFFFF);
+        graphics.drawString(font, title.color(0xFFFFFFFF).toVanilla(),
+                (int) titleX, (int) titleY, 0xFFFFFFFF, false);
     }
 
     @Override

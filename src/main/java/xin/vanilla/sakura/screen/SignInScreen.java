@@ -6,6 +6,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -528,16 +529,17 @@ public final class SignInScreen extends BaniraScreen {
     }
 
     @Override
-    protected void onRender(PoseStack stack, float partialTicks) {
-        renderBackground(stack);
+    protected void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+        PoseStack stack = graphics.pose();
+        renderBackground(graphics);
         renderBackgroundTexture(stack);
-        renderCalendarTitle(stack);
+        renderCalendarTitle(graphics);
         updateOperationPresentation();
 
         if (showOpeningTips) {
             renderOpeningTips(stack);
         }
-        renderWidgets(stack, partialTicks);
+        renderWidgets(graphics, partialTicks);
 
         if (!showOpeningTips) {
             addDeferredTooltipRender(this::renderHoveredTooltips);
@@ -558,17 +560,17 @@ public final class SignInScreen extends BaniraScreen {
         RenderSystem.disableBlend();
     }
 
-    private void renderCalendarTitle(PoseStack stack) {
+    private void renderCalendarTitle(GuiGraphics graphics) {
         TextureCoordinate texture = SakuraClientState.getThemeTextureCoordinate();
         double yearX = bgX + texture.getYearCoordinate().getX() * scale;
         double yearY = bgY + texture.getYearCoordinate().getY() * scale;
         double monthX = bgX + texture.getMonthCoordinate().getX() * scale;
         double monthY = bgY + texture.getMonthCoordinate().getY() * scale;
         String language = Minecraft.getInstance().options.languageCode;
-        font.draw(stack, DateUtils.toLocalStringYear(SakuraClientState.getCalendarCurrentDate(), language),
-                (float) yearX, (float) yearY, texture.getTextColorDate());
-        font.draw(stack, DateUtils.toLocalStringMonth(SakuraClientState.getCalendarCurrentDate(), language),
-                (float) monthX, (float) monthY, texture.getTextColorDate());
+        graphics.drawString(font, DateUtils.toLocalStringYear(SakuraClientState.getCalendarCurrentDate(), language),
+                (int) yearX, (int) yearY, texture.getTextColorDate(), false);
+        graphics.drawString(font, DateUtils.toLocalStringMonth(SakuraClientState.getCalendarCurrentDate(), language),
+                (int) monthX, (int) monthY, texture.getTextColorDate(), false);
     }
 
     private void updateOperationPresentation() {
@@ -687,7 +689,8 @@ public final class SignInScreen extends BaniraScreen {
         return text.content().split("\\n", -1).length * font.lineHeight;
     }
 
-    private void renderHoveredTooltips(PoseStack stack) {
+    private void renderHoveredTooltips(GuiGraphics graphics) {
+        PoseStack stack = graphics.pose();
         if (!popupOption.isEmpty()) {
             return;
         }
@@ -708,13 +711,13 @@ public final class SignInScreen extends BaniraScreen {
                     ).x(inputState.mouseX()).y(inputState.mouseY()),
                             getEffectiveTheme(), season());
                 } else {
-                    cell.renderTooltip(stack, font, itemRenderer);
+                    cell.renderTooltip(graphics, font);
                 }
                 break;
             }
         }
         for (RewardOperationWidget widget : operationWidgets.values()) {
-            widget.renderTooltip(stack, inputState.mouseX(), inputState.mouseY());
+            widget.renderTooltip(graphics, inputState.mouseX(), inputState.mouseY());
         }
     }
 

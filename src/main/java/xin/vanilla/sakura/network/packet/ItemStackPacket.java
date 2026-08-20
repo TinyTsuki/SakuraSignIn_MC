@@ -68,8 +68,8 @@ public class ItemStackPacket implements INetworkPacket {
                 boolean added = player.getInventory().add(packet.itemStack);
                 // 如果物品堆无法添加到库存，则以物品实体的形式生成在世界上
                 if (!added) {
-                    ItemEntity itemEntity = new ItemEntity(player.level, player.getX(), player.getY(), player.getZ(), packet.itemStack);
-                    player.level.addFreshEntity(itemEntity);
+                    ItemEntity itemEntity = new ItemEntity(player.level(), player.getX(), player.getY(), player.getZ(), packet.itemStack);
+                    player.level().addFreshEntity(itemEntity);
                 }
             }
         });

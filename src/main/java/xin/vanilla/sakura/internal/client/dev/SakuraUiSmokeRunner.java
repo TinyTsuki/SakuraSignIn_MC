@@ -143,9 +143,7 @@ public final class SakuraUiSmokeRunner {
 
         opened = true;
         minecraft.options.languageCode = "zh_cn";
-        minecraft.getLanguageManager().setSelected(
-                new net.minecraft.client.resources.language.LanguageInfo(
-                        "zh_cn", "CN", "简体中文", false));
+        minecraft.getLanguageManager().setSelected("zh_cn");
         List<String> languages = SakuraLang.get().getI18nFiles();
         String clientLanguage = SakuraLang.getClientLanguage();
         String chineseTitle = SakuraLang.get().getTranslation(
