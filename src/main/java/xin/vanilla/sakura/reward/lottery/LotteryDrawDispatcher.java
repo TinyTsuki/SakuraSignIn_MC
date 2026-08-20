@@ -64,7 +64,7 @@ public final class LotteryDrawDispatcher {
         String rewards = result.getRewards().stream().map(reward -> reward.getName(
                         SakuraUtils.getPlayerLanguage(player), true).toString())
                 .collect(Collectors.joining(", "));
-        SakuraMessages.send(player, SakuraComponent.get().trans(player, "format",
+        SakuraMessages.success(player, SakuraComponent.get().trans(player, "format",
                 "lottery_draw_success_s", rewards), SakuraNotificationTypes.REWARD);
     }
 
