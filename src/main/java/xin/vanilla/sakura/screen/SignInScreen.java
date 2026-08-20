@@ -547,7 +547,7 @@ public final class SignInScreen extends BaniraScreen {
     private void renderBackgroundTexture(PoseStack stack) {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        Minecraft.getInstance().getTextureManager().bind(SakuraClientState.getThemeTexture());
+        RenderSystem.setShaderTexture(0, SakuraClientState.getThemeTexture());
         Coordinate uv = SakuraClientState.getThemeTextureCoordinate().getBgUV();
         AbstractGuiUtils.blit(stack, SakuraClientState.getThemeTexture(),
                 bgX, bgY, bgWidth, bgHeight,
@@ -699,7 +699,9 @@ public final class SignInScreen extends BaniraScreen {
                 if (!cell.isShowHover() || !cell.isMouseInside(inputState.mouseX(), inputState.mouseY())) {
                     continue;
                 }
-                if (inputState.onlyShiftPressed()) {
+                if (inputState.isShiftPressing()
+                        && !inputState.isCtrlPressing()
+                        && !inputState.isAltPressing()) {
                     TooltipWidget.drawPopupMessage(stack, FontDrawArgs.ofPopo(
                             Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.how_to_sign_in")
                                     .stack(stack).font(font).align(EnumAlignment.CENTER)

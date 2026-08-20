@@ -15,7 +15,7 @@ import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.api.client.theme.BaniraThemes;
 import xin.vanilla.banira.client.gui.ConfirmDialogScreen;
 import xin.vanilla.banira.client.gui.ReadOnlyTextScreen;
-import xin.vanilla.banira.client.util.InputStateManager;
+import xin.vanilla.banira.api.client.BaniraInput;
 import xin.vanilla.banira.client.util.SystemUtils;
 import xin.vanilla.banira.client.gui.widget.BaseShapeWidget;
 import xin.vanilla.banira.client.gui.widget.LabelWidget;
@@ -43,7 +43,6 @@ import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import org.lwjgl.opengl.GL11;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
@@ -245,7 +244,7 @@ public class RewardOptionScreen extends BaniraScreen {
         RenderSystem.defaultBlendFunc();
 
         // 绑定背景纹理
-        Minecraft.getInstance().getTextureManager().bind(SakuraClientState.getThemeTexture());
+        RenderSystem.setShaderTexture(0, SakuraClientState.getThemeTexture());
 
         // 获取屏幕宽高
         int screenWidth = super.width;
@@ -274,7 +273,7 @@ public class RewardOptionScreen extends BaniraScreen {
         // 绘制完整的纹理块
         for (int x = 0; x <= screenWidth - regionWidth; x += (int) regionWidth) {
             for (int y = 0; y <= screenHeight - regionHeight; y += (int) regionHeight) {
-                buffer.begin(GL11.GL_QUADS, DefaultVertexFormat.POSITION_TEX);
+                buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
                 buffer.vertex(matrixStack.last().pose(), x, y + regionHeight, 0).uv(uMin, vMax).endVertex();
                 buffer.vertex(matrixStack.last().pose(), x + regionWidth, y + regionHeight, 0).uv(uMax, vMax).endVertex();
                 buffer.vertex(matrixStack.last().pose(), x + regionWidth, y, 0).uv(uMax, vMin).endVertex();
@@ -288,7 +287,7 @@ public class RewardOptionScreen extends BaniraScreen {
         float u = uMin + (leftoverWidth / regionWidth) * (uMax - uMin);
         if (leftoverWidth > 0) {
             for (int y = 0; y <= screenHeight - regionHeight; y += (int) regionHeight) {
-                buffer.begin(GL11.GL_QUADS, DefaultVertexFormat.POSITION_TEX);
+                buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
                 buffer.vertex(matrixStack.last().pose(), screenWidth - leftoverWidth, y + regionHeight, 0).uv(uMin, vMax).endVertex();
                 buffer.vertex(matrixStack.last().pose(), screenWidth, y + regionHeight, 0).uv(u, vMax).endVertex();
                 buffer.vertex(matrixStack.last().pose(), screenWidth, y, 0).uv(u, vMin).endVertex();
@@ -302,7 +301,7 @@ public class RewardOptionScreen extends BaniraScreen {
         float v = vMin + (leftoverHeight / regionHeight) * (vMax - vMin);
         if (leftoverHeight > 0) {
             for (int x = 0; x <= screenWidth - regionWidth; x += (int) regionWidth) {
-                buffer.begin(GL11.GL_QUADS, DefaultVertexFormat.POSITION_TEX);
+                buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
                 buffer.vertex(matrixStack.last().pose(), x, screenHeight, 0).uv(uMin, v).endVertex();
                 buffer.vertex(matrixStack.last().pose(), x + regionWidth, screenHeight, 0).uv(uMax, v).endVertex();
                 buffer.vertex(matrixStack.last().pose(), x + regionWidth, screenHeight - leftoverHeight, 0).uv(uMax, vMin).endVertex();
@@ -313,7 +312,7 @@ public class RewardOptionScreen extends BaniraScreen {
 
         // 绘制右下角的剩余区域
         if (leftoverWidth > 0 && leftoverHeight > 0) {
-            buffer.begin(GL11.GL_QUADS, DefaultVertexFormat.POSITION_TEX);
+            buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
             buffer.vertex(matrixStack.last().pose(), screenWidth - leftoverWidth, screenHeight, 0).uv(uMin, v).endVertex();
             buffer.vertex(matrixStack.last().pose(), screenWidth, screenHeight, 0).uv(u, v).endVertex();
             buffer.vertex(matrixStack.last().pose(), screenWidth, screenHeight - leftoverHeight, 0).uv(u, vMin).endVertex();
@@ -1122,7 +1121,7 @@ public class RewardOptionScreen extends BaniraScreen {
 
         if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
             if (group) {
-                if (inputState.isCtrlPressed()) {
+                if (inputState.isCtrlPressing()) {
                     rewardSelection.select(key, new ArrayList<>(REWARD_BUTTONS.keySet()),
                             true, false);
                     currRewardButton = rewardSelection.primary();
@@ -1143,7 +1142,7 @@ public class RewardOptionScreen extends BaniraScreen {
                 return;
             } else {
                 rewardSelection.select(key, selectableRewardIds(),
-                        inputState.isCtrlPressed(), inputState.isShiftPressed());
+                        inputState.isCtrlPressing(), inputState.isShiftPressing());
             }
         } else if (button == GLFWKey.GLFW_MOUSE_BUTTON_RIGHT
                 && !rewardSelection.isSelected(key)) {
@@ -2571,7 +2570,7 @@ public class RewardOptionScreen extends BaniraScreen {
     }
 
     private void repeatHeldNavigation() {
-        if (heldNavigationKey < 0 || !InputStateManager.isKeyPressing(heldNavigationKey)) {
+        if (heldNavigationKey < 0 || !BaniraInput.isKeyDown(heldNavigationKey)) {
             clearHeldNavigation();
             return;
         }
@@ -2596,9 +2595,9 @@ public class RewardOptionScreen extends BaniraScreen {
         if (direction == null || rewardSelection.primary() == null
                 || rewardSelection.primary().startsWith("标题")
                 || !popupOption.isEmpty() || draggingRewardId != null
-                || inputState.isCtrlPressed() || inputState.isShiftPressed()
-                || InputStateManager.isKeyPressing(GLFWKey.GLFW_KEY_LEFT_ALT)
-                || InputStateManager.isKeyPressing(GLFWKey.GLFW_KEY_RIGHT_ALT)) {
+                || inputState.isCtrlPressing() || inputState.isShiftPressing()
+                || BaniraInput.isKeyDown(GLFWKey.GLFW_KEY_LEFT_ALT)
+                || BaniraInput.isKeyDown(GLFWKey.GLFW_KEY_RIGHT_ALT)) {
             return false;
         }
         List<RewardKeyboardNavigator.Point> points = new ArrayList<>();
@@ -2696,17 +2695,17 @@ public class RewardOptionScreen extends BaniraScreen {
     private boolean matchesShortcut(List<String> bindings, int releasedKey) {
         int[] keys = {
                 releasedKey,
-                InputStateManager.isKeyPressing(GLFWKey.GLFW_KEY_LEFT_CONTROL)
+                BaniraInput.isKeyDown(GLFWKey.GLFW_KEY_LEFT_CONTROL)
                         ? GLFWKey.GLFW_KEY_LEFT_CONTROL : GLFWKey.GLFW_KEY_UNKNOWN,
-                InputStateManager.isKeyPressing(GLFWKey.GLFW_KEY_RIGHT_CONTROL)
+                BaniraInput.isKeyDown(GLFWKey.GLFW_KEY_RIGHT_CONTROL)
                         ? GLFWKey.GLFW_KEY_RIGHT_CONTROL : GLFWKey.GLFW_KEY_UNKNOWN,
-                InputStateManager.isKeyPressing(GLFWKey.GLFW_KEY_LEFT_SHIFT)
+                BaniraInput.isKeyDown(GLFWKey.GLFW_KEY_LEFT_SHIFT)
                         ? GLFWKey.GLFW_KEY_LEFT_SHIFT : GLFWKey.GLFW_KEY_UNKNOWN,
-                InputStateManager.isKeyPressing(GLFWKey.GLFW_KEY_RIGHT_SHIFT)
+                BaniraInput.isKeyDown(GLFWKey.GLFW_KEY_RIGHT_SHIFT)
                         ? GLFWKey.GLFW_KEY_RIGHT_SHIFT : GLFWKey.GLFW_KEY_UNKNOWN,
-                InputStateManager.isKeyPressing(GLFWKey.GLFW_KEY_LEFT_ALT)
+                BaniraInput.isKeyDown(GLFWKey.GLFW_KEY_LEFT_ALT)
                         ? GLFWKey.GLFW_KEY_LEFT_ALT : GLFWKey.GLFW_KEY_UNKNOWN,
-                InputStateManager.isKeyPressing(GLFWKey.GLFW_KEY_RIGHT_ALT)
+                BaniraInput.isKeyDown(GLFWKey.GLFW_KEY_RIGHT_ALT)
                         ? GLFWKey.GLFW_KEY_RIGHT_ALT : GLFWKey.GLFW_KEY_UNKNOWN
         };
         int[] pressed = Arrays.stream(keys)

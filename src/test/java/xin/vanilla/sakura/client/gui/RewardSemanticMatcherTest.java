@@ -22,6 +22,7 @@ import static org.junit.Assert.assertTrue;
 public class RewardSemanticMatcherTest {
     @BeforeClass
     public static void bootstrapMinecraftRegistries() {
+        net.minecraft.SharedConstants.tryDetectVersion();
         net.minecraft.server.Bootstrap.bootStrap();
     }
 

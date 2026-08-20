@@ -9,6 +9,6 @@ public final class FabricPlayerOnlineTime {
 
     public static int playTicks(Object player) {
         ServerPlayer serverPlayer = (ServerPlayer) player;
-        return serverPlayer.getStats().getValue(Stats.CUSTOM.get(Stats.PLAY_ONE_MINUTE));
+        return serverPlayer.getStats().getValue(Stats.CUSTOM.get(Stats.PLAY_TIME));
     }
 }

@@ -27,9 +27,7 @@ import java.util.Date;
 public final class SakuraNetwork {
     private static final NetworkHandler HANDLER = NetworkHandler.create(
             "main_network",
-            BaniraIdentifier.of(SakuraSignIn.MODID, "main_network"),
-            "sakura-1",
-            true
+            BaniraIdentifier.of(SakuraSignIn.MODID, "main_network")
     );
     private static boolean initialized;
 

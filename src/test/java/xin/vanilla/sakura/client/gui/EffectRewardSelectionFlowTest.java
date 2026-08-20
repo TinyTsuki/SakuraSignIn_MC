@@ -8,6 +8,7 @@ import org.junit.Test;
 import xin.vanilla.sakura.test.BaniraTestPlatform;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -19,14 +20,13 @@ public class EffectRewardSelectionFlowTest {
         ResourceLocation effectId = new ResourceLocation("sakura_sign_in", "test_effect");
         MobEffect effect = new MobEffect(MobEffectCategory.BENEFICIAL, 0x7FB8FF) {
         };
-        net.minecraft.core.Registry.register(net.minecraft.core.Registry.MOB_EFFECT, effectId, effect);
         BaniraTestPlatform.install();
         BaniraTestPlatform.register(effectId.toString(), effect);
         MobEffectInstance selected = new MobEffectInstance(effect, 7200, 3);
 
         MobEffectInstance reward = EffectRewardSelectionFlow.copyValue(selected);
 
-        assertEquals(effectId, net.minecraft.core.Registry.MOB_EFFECT.getKey(reward.getEffect()));
+        assertSame(effect, reward.getEffect());
         assertEquals(7200, reward.getDuration());
         assertEquals(3, reward.getAmplifier());
     }
@@ -45,7 +45,6 @@ public class EffectRewardSelectionFlowTest {
         ResourceLocation effectId = new ResourceLocation("sakura_sign_in", path);
         MobEffect effect = new MobEffect(MobEffectCategory.BENEFICIAL, 0x7FB8FF) {
         };
-        net.minecraft.core.Registry.register(net.minecraft.core.Registry.MOB_EFFECT, effectId, effect);
         return effect;
     }
 
