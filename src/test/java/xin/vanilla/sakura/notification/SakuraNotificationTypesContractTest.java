@@ -43,4 +43,24 @@ public class SakuraNotificationTypesContractTest {
         assertFalse(events.contains("NotificationManager"));
         assertFalse(Files.exists(MAIN.resolve("screen/component/NotificationManager.java")));
     }
+
+    @Test
+    public void signInAndRewardSuccessUseTheSameSemanticThemeAsClientSuccess() throws IOException {
+        String messages = read(MAIN.resolve("message/SakuraMessages.java"));
+        String rewards = read(MAIN.resolve("reward/RewardManager.java"));
+        String cdk = read(MAIN.resolve("command/impl/CdkCommand.java"));
+        String personalDate = read(MAIN.resolve("command/impl/PersonalDateConfigCommand.java"));
+        String lottery = read(MAIN.resolve("reward/lottery/LotteryDrawDispatcher.java"));
+
+        assertTrue(messages.contains("EnumNotificationStyle.SUCCESS"));
+        assertTrue(rewards.contains("SakuraMessages.success(player, msg, notificationType)"));
+        assertTrue(rewards.contains("SakuraMessages.success(player, SakuraComponent.get().trans(player, \"format\", \"sign_in_success_s\""));
+        assertTrue(cdk.contains("SakuraMessages.success(player, message, SakuraNotificationTypes.CDK)"));
+        assertTrue(personalDate.contains("SakuraMessages.success(player, SakuraComponent.get().trans(player, \"word\", successKey))"));
+        assertTrue(lottery.contains("SakuraMessages.success(player, SakuraComponent.get().trans(player, \"format\","));
+    }
+
+    private static String read(Path path) throws IOException {
+        return new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
+    }
 }
