@@ -81,7 +81,7 @@ public final class CdkCommand {
                             : Color.RED.getRGB());
                     message.append(", ").append(detail);
                 });
-                SakuraMessages.send(player, message, SakuraNotificationTypes.CDK);
+                SakuraMessages.success(player, message, SakuraNotificationTypes.CDK);
                 success = true;
             }
         }

@@ -1,10 +1,9 @@
 package xin.vanilla.sakura.message;
 
 import net.minecraft.server.level.ServerPlayer;
-import xin.vanilla.banira.api.BaniraModPresence;
 import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.enums.EnumNotificationStyle;
 import xin.vanilla.banira.common.util.MessageUtils;
-import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
 import xin.vanilla.sakura.util.SakuraUtils;
 
@@ -19,13 +18,22 @@ public final class SakuraMessages {
         send(player, message, SakuraNotificationTypes.COMMAND_FEEDBACK);
     }
 
+    public static void success(ServerPlayer player, Component message) {
+        success(player, message, SakuraNotificationTypes.COMMAND_FEEDBACK);
+    }
+
     public static void send(ServerPlayer player, Component message, String notificationType) {
+        send(player, message, EnumNotificationStyle.NORMAL, notificationType);
+    }
+
+    public static void success(ServerPlayer player, Component message, String notificationType) {
+        send(player, message, EnumNotificationStyle.SUCCESS, notificationType);
+    }
+
+    public static void send(ServerPlayer player, Component message,
+                            EnumNotificationStyle style, String notificationType) {
         Component payload = message.clone().languageCode(SakuraUtils.getPlayerLanguage(player));
-        if (BaniraModPresence.isRemoteClientInstalled(player, SakuraSignIn.MODID)) {
-            MessageUtils.sendNotification(player, payload, notificationType);
-        } else {
-            MessageUtils.sendMessage(player, payload);
-        }
+        MessageUtils.sendNotification(player, payload, style, notificationType);
     }
 
     public static void broadcast(ServerPlayer sender, Component message) {
