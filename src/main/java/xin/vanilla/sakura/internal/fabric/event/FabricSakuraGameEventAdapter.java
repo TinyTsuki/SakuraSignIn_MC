@@ -1,6 +1,6 @@
 package xin.vanilla.sakura.internal.fabric.event;
 
-import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
@@ -47,7 +47,7 @@ public final class FabricSakuraGameEventAdapter {
         if (!REGISTERED.compareAndSet(false, true)) {
             return;
         }
-        CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) ->
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
                 SignInCommand.register(dispatcher));
         ServerPlayerEvents.AFTER_RESPAWN.register((original, replacement, alive) ->
                 onPlayerCloned(original, replacement));
