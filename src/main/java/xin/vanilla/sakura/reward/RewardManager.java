@@ -499,7 +499,7 @@ public class RewardManager {
                         });
                 storedRecord.ifPresent(record -> record.setRewarded(true));
                 signInData.markSigned(signCompensateDate, true);
-                SakuraMessages.send(player, msg, notificationType);
+                SakuraMessages.success(player, msg, notificationType);
             }
         }
         // 签到/补签
@@ -527,7 +527,7 @@ public class RewardManager {
                         msg.append(", ").append(detail);
                     }
                 });
-                SakuraMessages.send(player, msg, notificationType);
+                SakuraMessages.success(player, msg, notificationType);
             } else {
                 signInRecord.getRewardList().addAll(rewardList);
             }
@@ -537,7 +537,7 @@ public class RewardManager {
             signInData.plusTotalSignInDays();
             signInData.setContinuousSignInDays(signInData.calculateContinuousDays(serverCompensateDate));
             PersonalDateRewardDispatcher.deliverSignIn(player, serverCompensateDate);
-            SakuraMessages.send(player, SakuraComponent.get().trans(player, "format", "sign_in_success_s", DateUtils.toString(signInRecord.getCompensateTime()), signInData.calculateContinuousDays(), getTotalSignInDays(signInData)), notificationType);
+            SakuraMessages.success(player, SakuraComponent.get().trans(player, "format", "sign_in_success_s", DateUtils.toString(signInRecord.getCompensateTime()), signInData.calculateContinuousDays(), getTotalSignInDays(signInData)), notificationType);
         }
         // 持久化后再同步，客户端不会参与服务端存储。
         SakuraPlayerData.saveAndSync(player);
