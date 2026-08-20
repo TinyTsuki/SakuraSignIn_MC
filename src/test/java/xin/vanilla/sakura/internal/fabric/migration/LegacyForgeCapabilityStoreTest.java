@@ -1,6 +1,7 @@
 package xin.vanilla.sakura.internal.fabric.migration;
 
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
 import org.junit.Rule;
 import org.junit.Test;
@@ -40,7 +41,7 @@ public class LegacyForgeCapabilityStoreTest {
         CompoundTag root = new CompoundTag();
         root.putString("Dimension", "minecraft:overworld");
         root.put("ForgeCaps", forgeCaps);
-        NbtIo.writeCompressed(root, playerFile);
+        NbtIo.writeCompressed(root, playerFile.toPath());
 
         LegacyForgeCapabilityStore store = new LegacyForgeCapabilityStore(vanillaPlayerData, worldData);
         Optional<CompoundTag> loaded = store.read(uuid);
@@ -50,7 +51,8 @@ public class LegacyForgeCapabilityStoreTest {
         assertTrue(store.backupMatches(backup, sakura));
         store.removeAndVerify(uuid, loaded.get());
 
-        CompoundTag rewritten = NbtIo.readCompressed(playerFile);
+        CompoundTag rewritten = NbtIo.readCompressed(
+                playerFile.toPath(), NbtAccounter.unlimitedHeap());
         assertEquals("minecraft:overworld", rewritten.getString("Dimension"));
         assertFalse(rewritten.getCompound("ForgeCaps").contains(
                 LegacyForgeCapabilityStore.CAPABILITY_KEY, 10
@@ -72,7 +74,7 @@ public class LegacyForgeCapabilityStoreTest {
         forgeCaps.put(LegacyForgeCapabilityStore.CAPABILITY_KEY, capability);
         CompoundTag root = new CompoundTag();
         root.put("ForgeCaps", forgeCaps);
-        NbtIo.writeCompressed(root, rollbackFile.toFile());
+        NbtIo.writeCompressed(root, rollbackFile);
         Files.write(playerFile, new byte[]{1, 2, 3});
 
         LegacyForgeCapabilityStore store = new LegacyForgeCapabilityStore(vanillaPlayerData, worldData);

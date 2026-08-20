@@ -2,7 +2,7 @@ plugins {
     id 'fabric-loom' version '1.15-SNAPSHOT'
 }
 
-def javaVer = 17
+def javaVer = 21
 
 group = project.mod_group_id
 version = project.mod_version

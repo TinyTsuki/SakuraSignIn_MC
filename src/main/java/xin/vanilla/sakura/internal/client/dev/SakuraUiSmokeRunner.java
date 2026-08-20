@@ -205,7 +205,7 @@ public final class SakuraUiSmokeRunner {
                 new Reward(5, SakuraRewardTypes.EXPERIENCE_POINT),
                 new Reward(2, SakuraRewardTypes.EXPERIENCE_LEVEL),
                 new Reward(1, SakuraRewardTypes.SIGN_IN_CARD),
-                new Reward(new ResourceLocation("minecraft:story/root"),
+                new Reward(ResourceLocation.parse("minecraft:story/root"),
                         SakuraRewardTypes.ADVANCEMENT),
                 new Reward(SakuraComponent.get().literal("Smoke message"),
                         SakuraRewardTypes.MESSAGE),

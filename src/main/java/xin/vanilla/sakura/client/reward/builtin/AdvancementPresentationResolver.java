@@ -31,7 +31,7 @@ final class AdvancementPresentationResolver {
     }
 
     static ResourceLocation fallbackIconId() {
-        return new ResourceLocation("minecraft", "knowledge_book");
+        return ResourceLocation.fromNamespaceAndPath("minecraft", "knowledge_book");
     }
 
     @Value

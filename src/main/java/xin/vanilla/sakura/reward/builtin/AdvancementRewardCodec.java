@@ -9,7 +9,7 @@ public final class AdvancementRewardCodec implements RewardCodec<ResourceLocatio
     @Override
     public ResourceLocation decode(JsonObject content) throws RewardDataException {
         try {
-            return new ResourceLocation(content.get("advancement").getAsString());
+            return ResourceLocation.parse(content.get("advancement").getAsString());
         } catch (Exception exception) {
             throw new RewardDataException("Invalid advancement reward", exception);
         }

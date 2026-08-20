@@ -19,6 +19,6 @@ public final class BuiltInThemeDescriptor {
     private TextureCoordinate coordinates;
 
     public ResourceLocation textureLocation() {
-        return new ResourceLocation(texture);
+        return ResourceLocation.parse(texture);
     }
 }

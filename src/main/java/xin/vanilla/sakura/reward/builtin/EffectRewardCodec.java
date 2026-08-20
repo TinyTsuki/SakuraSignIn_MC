@@ -14,8 +14,9 @@ public final class EffectRewardCodec implements RewardCodec<MobEffectInstance> {
         try {
             String effectId = content.get("effect").getAsString();
             ResourceLocation location = ResourceLocation.tryParse(effectId);
-            MobEffect effect = location == null ? null : BuiltInRegistries.MOB_EFFECT.getOptional(location).orElse(null);
-            if (effect == null || BuiltInRegistries.MOB_EFFECT.getKey(effect) == null) {
+            net.minecraft.core.Holder<MobEffect> effect = location == null ? null
+                    : BuiltInRegistries.MOB_EFFECT.getHolder(location).orElse(null);
+            if (effect == null) {
                 throw new RewardDataException("Unknown effect: " + effectId);
             }
             int duration = content.get("duration").getAsInt();
@@ -33,7 +34,8 @@ public final class EffectRewardCodec implements RewardCodec<MobEffectInstance> {
 
     @Override
     public JsonObject encode(MobEffectInstance value) throws RewardDataException {
-        ResourceLocation effectId = value == null ? null : BuiltInRegistries.MOB_EFFECT.getKey(value.getEffect());
+        ResourceLocation effectId = value == null ? null
+                : value.getEffect().unwrapKey().map(key -> key.location()).orElse(null);
         if (value == null || effectId == null || value.getDuration() <= 0) {
             throw new RewardDataException("MobEffect reward must contain a registered effect with positive duration");
         }

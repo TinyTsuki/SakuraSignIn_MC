@@ -627,7 +627,7 @@ public class RewardManager {
             ItemEntity itemEntity = player.drop(itemStack, false);
             if (itemEntity != null) {
                 itemEntity.setNoPickUpDelay();
-                itemEntity.setThrower(player.getUUID());
+                itemEntity.setThrower(player);
             }
         }
         return added;

@@ -531,7 +531,7 @@ public final class SignInScreen extends BaniraScreen {
     @Override
     protected void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
         PoseStack stack = graphics.pose();
-        renderBackground(graphics);
+        renderBackground(graphics, mouseX, mouseY, partialTicks);
         renderBackgroundTexture(stack);
         renderCalendarTitle(graphics);
         updateOperationPresentation();
