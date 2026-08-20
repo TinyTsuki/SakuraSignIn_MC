@@ -50,9 +50,11 @@ public class CommandArchitectureContractTest {
         }
 
         String messages = read(MAIN.resolve("message/SakuraMessages.java"));
-        assertTrue(messages.contains("BaniraModPresence.isRemoteClientInstalled"));
         assertTrue(messages.contains("MessageUtils.sendNotification"));
-        assertTrue(messages.contains("MessageUtils.sendMessage"));
+        assertFalse("Banira owns client capability fallback",
+                messages.contains("BaniraModPresence") || messages.contains("MessageUtils.sendMessage"));
+        assertTrue(messages.contains("EnumNotificationStyle style"));
+        assertTrue(messages.contains("public static void success("));
         assertTrue("Per-player language must not mutate a shared message",
                 messages.contains("message.clone().languageCode"));
     }
