@@ -120,7 +120,7 @@ final class PersonalDateConfigCommand {
         }
         data.setPersonalDateSlots(result.getSlots());
         SakuraPlayerData.saveAndSync(player);
-        SakuraMessages.send(player, SakuraComponent.get().trans(player, "word", successKey));
+        SakuraMessages.success(player, SakuraComponent.get().trans(player, "word", successKey));
         return 1;
     }
 
