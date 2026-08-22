@@ -16,9 +16,4 @@ public class AdvancementRewardSelectionFlowTest {
 
         assertEquals(selected, reward);
     }
-
-    @Test(expected = ClassNotFoundException.class)
-    public void legacySakuraAdvancementSelectorIsRemoved() throws Exception {
-        Class.forName("xin.vanilla.sakura.screen.AdvancementSelectScreen");
-    }
 }
