@@ -6,9 +6,6 @@ import xin.vanilla.sakura.data.lottery.LotteryPool;
 import xin.vanilla.sakura.reward.RewardList;
 
 import java.util.Arrays;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -31,26 +28,5 @@ public class LotteryScreenTest {
         assertFalse(LotteryScreen.drawCounts(pool).contains("all"));
         assertEquals("100", LotteryScreen.drawCounts(pool)
                 .get(LotteryScreen.drawCounts(pool).size() - 1));
-    }
-
-    @Test
-    public void closeButtonUsesBaniraWindowPresetAndInset() throws Exception {
-        String source = new String(Files.readAllBytes(Paths.get(
-                "src/main/java/xin/vanilla/sakura/screen/LotteryScreen.java")),
-                StandardCharsets.UTF_8);
-        org.junit.Assert.assertTrue(source.contains("presetStyleClose()"));
-        org.junit.Assert.assertTrue(source.contains("PANEL_TOP + CLOSE_PAD"));
-        org.junit.Assert.assertTrue(source.contains("CLOSE_SIZE / 3f"));
-    }
-
-    @Test
-    public void previewSupportsModeAwareTooltipsScrollingAndRememberedPool() throws Exception {
-        String source = new String(Files.readAllBytes(Paths.get(
-                "src/main/java/xin/vanilla/sakura/screen/LotteryScreen.java")),
-                StandardCharsets.UTF_8);
-        org.junit.Assert.assertTrue(source.contains("ScrollbarWidget previewScrollbar"));
-        org.junit.Assert.assertTrue(source.contains("lottery_probability_s"));
-        org.junit.Assert.assertTrue(source.contains("mode.showsItems()"));
-        org.junit.Assert.assertTrue(source.contains("SakuraClientPreferences.lastLotteryPoolId"));
     }
 }

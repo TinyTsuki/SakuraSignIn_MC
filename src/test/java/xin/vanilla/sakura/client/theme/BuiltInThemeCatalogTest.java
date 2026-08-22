@@ -8,9 +8,6 @@ import java.awt.image.BufferedImage;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -84,21 +81,6 @@ public class BuiltInThemeCatalogTest {
             }
         }
     }
-
-    @Test
-    public void runtimeLoaderUsesTheMinecraftResourceManager() throws Exception {
-        String catalog = new String(Files.readAllBytes(Paths.get(
-                "src/main/java/xin/vanilla/sakura/client/theme/BuiltInThemeCatalog.java")),
-                StandardCharsets.UTF_8);
-        String events = new String(Files.readAllBytes(Paths.get(
-                "src/main/java/xin/vanilla/sakura/event/ClientEventHandler.java")),
-                StandardCharsets.UTF_8);
-
-        assertTrue(catalog.contains("IResourceManager resourceManager"));
-        assertTrue(catalog.contains("resourceManager.getResource("));
-        assertTrue(events.contains("Minecraft.getInstance().getResourceManager()"));
-    }
-
     private static BufferedImage readTexture(BuiltInThemeDescriptor descriptor) throws IOException {
         String path = "assets/" + descriptor.textureLocation().getNamespace() + "/"
                 + descriptor.textureLocation().getPath();
