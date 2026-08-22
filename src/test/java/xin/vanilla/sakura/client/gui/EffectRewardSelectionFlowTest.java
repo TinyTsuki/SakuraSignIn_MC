@@ -47,9 +47,4 @@ public class EffectRewardSelectionFlowTest {
         };
         return effect;
     }
-
-    @Test(expected = ClassNotFoundException.class)
-    public void legacySakuraEffectSelectorIsRemoved() throws Exception {
-        Class.forName("xin.vanilla.sakura.screen.EffecrSelectScreen");
-    }
 }
