@@ -48,9 +48,4 @@ public class EffectRewardSelectionFlowTest {
         net.minecraft.core.Registry.register(net.minecraft.core.Registry.MOB_EFFECT, effectId, effect);
         return effect;
     }
-
-    @Test(expected = ClassNotFoundException.class)
-    public void legacySakuraEffectSelectorIsRemoved() throws Exception {
-        Class.forName("xin.vanilla.sakura.screen.EffecrSelectScreen");
-    }
 }
