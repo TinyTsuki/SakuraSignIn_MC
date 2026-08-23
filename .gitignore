@@ -116,5 +116,11 @@ gradle-app.setting
 run/
 runs/
 
+# Local configuration and generated legacy data
+/jdks.properties
+/reward_option_data.json
+/sakura_sign_in-client.toml
+/sakura_sign_in-server.toml
+
 # Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
 !gradle-wrapper.jar
