@@ -1,0 +1,218 @@
+#签到与补签
+#Sign-in and make-up sign-in
+[makeUp]
+#允许使用补签卡补签
+#Allow make-up sign-in cards
+signInCard = true
+#最远可补签的天数
+#Maximum age of a make-up sign-in
+#Range: 1 ~ 365
+reSignInDays = 30
+#补签时仅计算基础与累计奖励
+#Only base and cumulative rewards for make-up sign-in
+signInCardOnlyBaseReward = true
+
+#签到冷却
+#Sign-in cooldown
+[cooling]
+#签到冷却的计算方式
+#How the sign-in cooldown is calculated
+#Allowed Values: FIXED_TIME, FIXED_INTERVAL, MIXED
+timeCoolingMethod = "FIXED_TIME"
+#固定时间模式下每日刷新签到的时间
+#Daily sign-in reset time in fixed-time mode
+#Range: -23.59 ~ 23.59
+timeCoolingTime = 0.0
+#间隔模式下两次签到之间的小时数
+#Hours required between sign-ins in interval mode
+#Range: 0.0 ~ 23.59
+timeCoolingInterval = 12.34
+
+#服务器时间校准
+#Server time calibration
+[dateTime]
+#服务端时间基准
+#通常不需要手动修改
+#Server time baseline
+#Normally does not need manual changes
+serverTime = "1970-01-01 00:00:00"
+#用于修正服务端时间的校准值
+#Calibration value used to adjust server time
+serverCalibrationTime = "1970-01-01 00:00:00"
+
+#奖励规则
+#Reward rules
+[reward]
+#奖励概率是否受玩家幸运值影响
+#Whether player luck affects reward probability
+rewardAffectedByLuck = true
+#达到更高连续天数后是否仍可获得较低档奖励
+#Allow lower-tier continuous rewards after reaching higher thresholds
+continuousRewardsRepeatable = false
+#周期奖励超过最大天数后是否重新循环
+#Restart cycle rewards after the maximum day
+cycleRewardsRepeatable = false
+
+#服务端运行设置
+#Server runtime settings
+[server]
+#玩家进入服务器后是否自动尝试签到
+#Automatically attempt sign-in when a player joins
+autoSignIn = true
+#累计在线达到指定秒数后才能签到
+#0 表示不限制
+#Lifetime online seconds required before sign-in
+#0 disables this requirement
+#Range: 0 ~ 31536000
+requiredTotalOnlineSeconds = 0
+#今日在线达到指定秒数后才能签到
+#跨日后重新计算，0 表示不限制
+#Online seconds required today before sign-in
+#Resets each day; 0 disables this requirement
+#Range: 0 ~ 86400
+requiredTodayOnlineSeconds = 0
+
+#签到历史详情保留
+#Sign-in history retention
+[history]
+#保留最近几个月的签到详情，0 表示永久保留
+#Months of detailed history to retain; 0 keeps all details
+#Range: 0 ~ 1200
+retentionMonths = 24
+#STRIP_REWARD_DETAILS 仅移除奖励快照
+#DELETE_MONTH_FILE 删除整个过期月文件
+#STRIP_REWARD_DETAILS removes reward snapshots
+#DELETE_MONTH_FILE removes expired month files
+#Allowed Values: STRIP_REWARD_DETAILS, DELETE_MONTH_FILE
+retentionPolicy = "STRIP_REWARD_DETAILS"
+
+#指令名称，请勿添加 /
+#Command names without /
+[command]
+#樱花签根指令名称
+#Root command name for Sakura Sign-In
+commandPrefix = "sakura"
+#签到子指令名称
+#Sign-in subcommand name
+commandSignIn = "sign"
+#签到并领取奖励子指令名称
+#Sign-in and claim subcommand name
+commandSignInEx = "signex"
+#领取奖励子指令名称
+#Reward claim subcommand name
+commandReward = "reward"
+#兑换码子指令名称
+#Redemption-code subcommand name
+commandCdk = "cdk"
+#补签卡管理子指令名称
+#Make-up card management subcommand name
+commandCard = "card"
+#语言设置子指令名称
+#Language settings subcommand name
+commandLanguage = "language"
+#抽奖子指令名称
+#Lottery subcommand name
+commandLottery = "lottery"
+
+#无前缀简短指令
+#Commands without the mod prefix
+[concise]
+#注册无根指令前缀的签到指令
+#Register the sign-in command without the root prefix
+conciseSignIn = true
+#注册无根指令前缀的签到并领奖指令
+#Register the sign-and-claim command without the root prefix
+conciseSignInEx = true
+#注册无根指令前缀的领奖指令
+#Register the reward command without the root prefix
+conciseReward = true
+#注册无根指令前缀的兑换码指令
+#Register the redemption-code command without the root prefix
+conciseCdk = true
+#注册无根指令前缀的补签卡指令
+#Register the card command without the root prefix
+conciseCard = false
+#注册无根指令前缀的语言指令
+#Register the language command without the root prefix
+conciseLanguage = false
+
+#指令与奖励编辑权限
+#Command and reward permissions
+[permission]
+#编辑服务端奖励配置所需权限等级
+#Permission level required to edit server reward configuration
+#Range: 0 ~ 4
+permissionEditReward = 3
+#查看基础奖励所需权限等级
+#Permission level required to view base rewards
+#Range: 0 ~ 4
+permissionBaseReward = 0
+#查看连续签到奖励所需权限等级
+#Permission level required to view continuous rewards
+#Range: 0 ~ 4
+permissionContinuousReward = 0
+#查看周期奖励所需权限等级
+#Permission level required to view cycle rewards
+#Range: 0 ~ 4
+permissionCycleReward = 0
+#查看年度奖励所需权限等级
+#Permission level required to view annual rewards
+#Range: 0 ~ 4
+permissionYearReward = 0
+#查看月度奖励所需权限等级
+#Permission level required to view monthly rewards
+#Range: 0 ~ 4
+permissionMonthReward = 0
+#查看周度奖励所需权限等级
+#Permission level required to view weekly rewards
+#Range: 0 ~ 4
+permissionWeekReward = 0
+#查看具体时间奖励所需权限等级
+#Permission level required to view date-time rewards
+#Range: 0 ~ 4
+permissionDateTimeReward = 0
+#查看累计奖励所需权限等级
+#Permission level required to view cumulative rewards
+#Range: 0 ~ 4
+permissionCumulativeReward = 0
+#查看随机奖励池所需权限等级
+#Permission level required to view random reward pools
+#Range: 0 ~ 4
+permissionRandomReward = 0
+#查看兑换码奖励所需权限等级
+#Permission level required to view redemption-code rewards
+#Range: 0 ~ 4
+permissionCdkReward = 3
+#查看个性化日期奖励所需权限等级
+#Permission level required to view personal date rewards
+#Range: 0 ~ 4
+permissionPersonalDateReward = 0
+#查看抽奖池所需权限等级
+#Permission level required to view lottery pools
+#Range: 0 ~ 4
+permissionLotteryReward = 0
+#查看奖励概率所需权限等级
+#Permission level required to view reward probabilities
+#Range: 0 ~ 4
+permissionRewardProbability = 0
+#查看奖励详情所需权限等级
+#Permission level required to view reward details
+#Range: 0 ~ 4
+permissionRewardDetail = 0
+#查看奖励失败原因所需权限等级
+#Permission level required to view reward failure details
+#Range: 0 ~ 4
+permissionRewardFailedTips = 0
+#使用指令领取奖励所需权限等级
+#Permission level required to claim rewards by command
+#Range: 0 ~ 4
+permissionCommandReward = 2
+#查看服务端配置所需权限等级
+#Permission level required to view server configuration
+#Range: 0 ~ 4
+permissionServerConfigGet = 0
+#修改服务端配置所需权限等级
+#Permission level required to change server configuration
+#Range: 0 ~ 4
+permissionServerConfigSet = 3
+

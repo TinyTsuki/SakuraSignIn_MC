@@ -1,0 +1,172 @@
+{
+  "schemaVersion": 3,
+  "groups": [
+    {
+      "rule": "BASE_REWARD",
+      "key": "base",
+      "rewards": [
+        {
+          "type": "sakura_sign_in:item",
+          "probability": 1,
+          "content": {
+            "item": "minecraft:apple",
+            "count": 1
+          }
+        }
+      ]
+    },
+    {
+      "rule": "CONTINUOUS_REWARD",
+      "key": "1",
+      "rewards": [
+        {
+          "type": "sakura_sign_in:experience_point",
+          "probability": 1,
+          "content": {
+            "expPoint": 5
+          }
+        }
+      ]
+    },
+    {
+      "rule": "CONTINUOUS_REWARD",
+      "key": "4",
+      "rewards": [
+        {
+          "type": "sakura_sign_in:item",
+          "probability": 1,
+          "content": {
+            "item": "minecraft:cake",
+            "count": 1
+          }
+        }
+      ]
+    },
+    {
+      "rule": "CONTINUOUS_REWARD",
+      "key": "8",
+      "rewards": [
+        {
+          "type": "sakura_sign_in:sign_in_card",
+          "probability": 1,
+          "content": {
+            "signInCard": 1
+          }
+        }
+      ]
+    },
+    {
+      "rule": "CYCLE_REWARD",
+      "key": "2",
+      "rewards": [
+        {
+          "type": "sakura_sign_in:experience_point",
+          "probability": 1,
+          "content": {
+            "expPoint": 3
+          }
+        }
+      ]
+    },
+    {
+      "rule": "CYCLE_REWARD",
+      "key": "5",
+      "rewards": [
+        {
+          "type": "sakura_sign_in:experience_level",
+          "probability": 1,
+          "content": {
+            "expLevel": 1
+          }
+        }
+      ]
+    },
+    {
+      "rule": "WEEK_REWARD",
+      "key": "6",
+      "rewards": [
+        {
+          "type": "sakura_sign_in:effect",
+          "probability": 1,
+          "content": {
+            "effect": "minecraft:luck",
+            "duration": 6000,
+            "amplifier": 1
+          }
+        }
+      ]
+    },
+    {
+      "rule": "WEEK_REWARD",
+      "key": "7",
+      "rewards": [
+        {
+          "type": "sakura_sign_in:effect",
+          "probability": 1,
+          "content": {
+            "effect": "minecraft:instant_health",
+            "duration": 6000,
+            "amplifier": 0
+          }
+        },
+        {
+          "type": "sakura_sign_in:effect",
+          "probability": 1,
+          "content": {
+            "effect": "minecraft:jump_boost",
+            "duration": 6000,
+            "amplifier": 0
+          }
+        },
+        {
+          "type": "sakura_sign_in:item",
+          "probability": 1,
+          "content": {
+            "item": "minecraft:enchanted_golden_apple",
+            "count": 1
+          }
+        }
+      ]
+    },
+    {
+      "rule": "DATE_TIME_REWARD",
+      "key": "0000-10-06~1",
+      "rewards": [
+        {
+          "type": "sakura_sign_in:item",
+          "probability": 1,
+          "content": {
+            "item": "minecraft:experience_bottle",
+            "count": 1
+          }
+        },
+        {
+          "type": "sakura_sign_in:effect",
+          "probability": 1,
+          "content": {
+            "effect": "minecraft:resistance",
+            "duration": 300,
+            "amplifier": 1
+          }
+        }
+      ]
+    },
+    {
+      "rule": "CUMULATIVE_REWARD",
+      "key": "100",
+      "rewards": [
+        {
+          "type": "sakura_sign_in:effect",
+          "probability": 1,
+          "content": {
+            "effect": "minecraft:luck",
+            "duration": 99999,
+            "amplifier": 2
+          }
+        }
+      ]
+    }
+  ],
+  "personalDatePresets": [],
+  "lotteryPools": []
+}

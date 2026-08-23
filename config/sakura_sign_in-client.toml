@@ -1,0 +1,72 @@
+#签到界面显示设置
+#Sign-in screen display settings
+[display]
+#选择樱花签界面使用的 Banira 配色
+#可跟随香草志、随季节自动或固定为某个季节
+#Choose the Banira color theme used by Sakura Sign-In screens
+#Follow Banira, follow the current season, or lock a season
+#Allowed Values: FOLLOW_BANIRA, AUTO, SPRING, SUMMER, AUTUMN, WINTER
+interfaceThemeMode = "SPRING"
+#内置主题 ID
+#Built-in theme ID
+themeId = "sakura"
+#使用主题的特殊签到图标
+#Use the theme's alternate sign-in icons
+specialVariant = true
+#在当月日历前方显示上月奖励
+#Show previous-month rewards before the current month
+showLastReward = false
+#在当月日历后方显示下月奖励
+#Show next-month rewards after the current month
+showNextReward = false
+#签到后自动领取对应奖励
+#Automatically claim rewards after signing in
+autoRewarded = false
+#首次打开签到界面时显示操作说明
+#Show instructions when opening the sign-in screen for the first time
+showSignInScreenTips = true
+#领取抽奖奖励时使用的客户端动画
+#不会影响服务端抽取结果
+#Client animation used when revealing lottery rewards
+#Does not affect the server result
+#Allowed Values: STRIP, CARDS, ROULETTE, INSTANT
+lotteryAnimationStyle = "STRIP"
+
+#奖励编辑快捷键
+#Reward editor shortcuts
+[rewardKeys]
+#复制选中奖励的快捷键
+#Keyboard shortcuts for copying selected rewards
+copy = ["LeftControl+C", "RightControl+C"]
+#粘贴奖励的快捷键
+#Keyboard shortcuts for pasting rewards
+paste = ["LeftControl+V", "RightControl+V"]
+#剪切选中奖励的快捷键
+#Keyboard shortcuts for cutting selected rewards
+cut = ["LeftControl+X", "RightControl+X"]
+#删除选中奖励的快捷键
+#Keyboard shortcuts for deleting selected rewards
+delete = ["Delete"]
+#撤销奖励配置修改的快捷键
+#Keyboard shortcuts for undoing reward changes
+undo = ["LeftControl+Z", "RightControl+Z"]
+#重做奖励配置修改的快捷键
+#Keyboard shortcuts for redoing reward changes
+redo = ["LeftShift+LeftControl+Z", "RightShift+RightControl+Z"]
+
+#签到界面快捷键
+#Sign-in screen shortcuts
+[signKeys]
+#切换到上个月的快捷键
+#Keyboard shortcuts for the previous month
+lastMonth = ["Left"]
+#切换到下个月的快捷键
+#Keyboard shortcuts for the next month
+nextMonth = ["Right"]
+#切换到上一年的快捷键
+#Keyboard shortcuts for the previous year
+lastYear = ["Up"]
+#切换到下一年的快捷键
+#Keyboard shortcuts for the next year
+nextYear = ["Down"]
+
