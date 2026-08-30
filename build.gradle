@@ -109,6 +109,7 @@ repositories {
 }
 
 dependencies {
+    runtimeOnly fg.deobf("maven.modrinth:spark:1dlOe6ez")
     // Development runtime performance mod; not bundled into published artifacts.
     runtimeOnly fg.deobf("maven.modrinth:embeddium:AYqEbec0")
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
