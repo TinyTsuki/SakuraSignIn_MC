@@ -100,7 +100,17 @@ repositories {
 
 apply from: "gradle/banira-local-fingerprint.gradle"
 
+repositories {
+    maven {
+        name = "Modrinth"
+        url = "https://api.modrinth.com/maven"
+        content { includeGroup "maven.modrinth" }
+    }
+}
+
 dependencies {
+    // Development runtime performance mod; not bundled into published artifacts.
+    runtimeOnly fg.deobf("maven.modrinth:embeddium:xuVAgh89")
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
