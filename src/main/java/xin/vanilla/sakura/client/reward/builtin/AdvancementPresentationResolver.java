@@ -20,14 +20,15 @@ final class AdvancementPresentationResolver {
                 .filter(candidate -> candidate.getId().equals(id))
                 .findFirst().orElse(null);
         DisplayInfo display = data == null ? null : data.getDisplayInfo();
-        if (display == null || display.getIcon().isEmpty()) {
+        ItemStack icon = display == null ? ItemStack.EMPTY : AdvancementData.displayIcon(display);
+        if (icon.isEmpty()) {
             return new ResolvedDisplay(new ItemStack(Items.KNOWLEDGE_BOOK),
                     SakuraComponent.get().transClient("word", "reward_type_6"));
         }
-        Component name = display.getTitle() == null
+        Component name = AdvancementData.displayTitle(display) == null
                 ? SakuraComponent.get().transClient("word", "reward_type_6")
-                : SakuraComponent.get().object(display.getTitle());
-        return new ResolvedDisplay(display.getIcon().copy(), name);
+                : SakuraComponent.get().object(AdvancementData.displayTitle(display));
+        return new ResolvedDisplay(icon, name);
     }
 
     static ResourceLocation fallbackIconId() {

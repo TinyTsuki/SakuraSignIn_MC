@@ -18,12 +18,19 @@ import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.data.Component;
 
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * 进度信息
  */
 @Data
 @Accessors(chain = true)
 public class AdvancementData {
+    private static final Map<Class<?>, Field[]> DISPLAY_FIELDS = new ConcurrentHashMap<>();
     @NonNull
     private final ResourceLocation id;
     @NonNull
@@ -44,6 +51,61 @@ public class AdvancementData {
             return new AdvancementData(advancement.getId(), createDisplayInfo(advancement.getId().toString()));
         }
         return new AdvancementData(advancement.getId(), displayInfo);
+    }
+
+    public static ItemStack displayIcon(DisplayInfo displayInfo) {
+        return ((ItemStack) displayValue(displayInfo, ItemStack.class, 0)).copy();
+    }
+
+    public static ITextComponent displayTitle(DisplayInfo displayInfo) {
+        return (ITextComponent) displayValue(displayInfo, ITextComponent.class, 0);
+    }
+
+    public static ITextComponent displayDescription(DisplayInfo displayInfo) {
+        return (ITextComponent) displayValue(displayInfo, ITextComponent.class, 1);
+    }
+
+    public static ResourceLocation displayBackground(DisplayInfo displayInfo) {
+        return (ResourceLocation) displayValue(displayInfo, ResourceLocation.class, 0);
+    }
+
+    public static FrameType displayFrame(DisplayInfo displayInfo) {
+        return (FrameType) displayValue(displayInfo, FrameType.class, 0);
+    }
+
+    public static boolean displayShowToast(DisplayInfo displayInfo) {
+        return (Boolean) displayValue(displayInfo, boolean.class, 0);
+    }
+
+    public static boolean displayAnnounceChat(DisplayInfo displayInfo) {
+        return (Boolean) displayValue(displayInfo, boolean.class, 1);
+    }
+
+    public static boolean displayHidden(DisplayInfo displayInfo) {
+        return (Boolean) displayValue(displayInfo, boolean.class, 2);
+    }
+
+    private static Object displayValue(DisplayInfo displayInfo, Class<?> type, int occurrence) {
+        Field[] fields = DISPLAY_FIELDS.computeIfAbsent(type, AdvancementData::displayFields);
+        if (occurrence >= fields.length) {
+            throw new IllegalStateException("DisplayInfo field was not found for " + type.getName() + '[' + occurrence + ']');
+        }
+        try {
+            return fields[occurrence].get(displayInfo);
+        } catch (IllegalAccessException exception) {
+            throw new IllegalStateException("Unable to read advancement display data", exception);
+        }
+    }
+
+    private static Field[] displayFields(Class<?> type) {
+        List<Field> fields = new ArrayList<>();
+        for (Field candidate : DisplayInfo.class.getDeclaredFields()) {
+            if (candidate.getType() == type) {
+                candidate.setAccessible(true);
+                fields.add(candidate);
+            }
+        }
+        return fields.toArray(new Field[0]);
     }
 
     public static AdvancementData readFromBuffer(BaniraPacketBuffer buffer) {
@@ -91,13 +153,14 @@ public class AdvancementData {
 
     public void writeToBuffer(BaniraPacketBuffer buffer) {
         buffer.writeIdentifier(BaniraIdentifier.of(id.getNamespace(), id.getPath()));
-        buffer.writeUtf(displayInfo.getIcon().save(new CompoundNBT()).toString());
-        buffer.writeUtf(ITextComponent.Serializer.toJson(displayInfo.getTitle()));
-        buffer.writeUtf(ITextComponent.Serializer.toJson(displayInfo.getDescription()));
-        buffer.writeUtf(displayInfo.getBackground() == null ? "" : displayInfo.getBackground().toString());
-        buffer.writeEnum(displayInfo.getFrame());
-        buffer.writeBoolean(displayInfo.shouldShowToast());
-        buffer.writeBoolean(displayInfo.shouldAnnounceChat());
-        buffer.writeBoolean(displayInfo.isHidden());
+        buffer.writeUtf(displayIcon(displayInfo).save(new CompoundNBT()).toString());
+        buffer.writeUtf(ITextComponent.Serializer.toJson(displayTitle(displayInfo)));
+        buffer.writeUtf(ITextComponent.Serializer.toJson(displayDescription(displayInfo)));
+        ResourceLocation background = displayBackground(displayInfo);
+        buffer.writeUtf(background == null ? "" : background.toString());
+        buffer.writeEnum(displayFrame(displayInfo));
+        buffer.writeBoolean(displayShowToast(displayInfo));
+        buffer.writeBoolean(displayAnnounceChat(displayInfo));
+        buffer.writeBoolean(displayHidden(displayInfo));
     }
 }
