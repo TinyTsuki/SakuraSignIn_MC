@@ -65,6 +65,7 @@ repositories {
 }
 
 dependencies {
+    runtimeOnly "maven.modrinth:spark:v5qtqRQi"
     // Development runtime performance mod; not bundled into published artifacts.
     runtimeOnly "maven.modrinth:embeddium:J7b96IEd"
     implementation "net.neoforged:neoforge:${neo_version}"
