@@ -48,6 +48,7 @@ repositories {
 }
 
 dependencies {
+    modRuntimeOnly "maven.modrinth:spark:cALUj9l1"
     // Development runtime performance mod; not bundled into published artifacts.
     modRuntimeOnly "maven.modrinth:AANobbMI:u1OEbNKx"
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
