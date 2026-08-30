@@ -39,7 +39,17 @@ repositories {
 
 apply from: 'gradle/banira-local-fingerprint.gradle'
 
+repositories {
+    maven {
+        name = "Modrinth"
+        url = "https://api.modrinth.com/maven"
+        content { includeGroup "maven.modrinth" }
+    }
+}
+
 dependencies {
+    // Development runtime performance mod; not bundled into published artifacts.
+    modRuntimeOnly "maven.modrinth:AANobbMI:u1OEbNKx"
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings loom.officialMojangMappings()
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
