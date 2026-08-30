@@ -155,24 +155,24 @@ afterEvaluate {
 
 // Keeps the development client FPS counter enabled without affecting published artifacts.
 def baniraDevFpsDefaultSettingsKey = 'extra_settings'
-tasks.register('prepareDevFpsOverlay') {
-    doLast {
-        def options = project.file('run/config/sodium-extra-options.json')
-        def root = options.exists() ? new groovy.json.JsonSlurper().parse(options) : [:]
-        if (!(root instanceof Map)) root = [:]
-        def settingsKey = root.extra_settings instanceof Map ? 'extra_settings' : baniraDevFpsDefaultSettingsKey
-        def enabledKey = settingsKey == 'extra_settings' ? 'show_fps' : 'showFps'
-        def extra = root[settingsKey] instanceof Map ? root[settingsKey] : [:]
-        extra[enabledKey] = true
-        root[settingsKey] = extra
-        options.parentFile.mkdirs()
-        options.setText(groovy.json.JsonOutput.toJson(root), 'UTF-8')
-    }
+def prepareBaniraDevFpsOverlay = {
+    def options = project.file('run/config/sodium-extra-options.json')
+    def root = options.exists() ? new groovy.json.JsonSlurper().parse(options) : [:]
+    if (!(root instanceof Map)) root = [:]
+    def settingsKey = root.extra_settings instanceof Map ? 'extra_settings' : baniraDevFpsDefaultSettingsKey
+    def enabledKey = settingsKey == 'extra_settings' ? 'show_fps' : 'showFps'
+    def extra = root[settingsKey] instanceof Map ? root[settingsKey] : [:]
+    extra[enabledKey] = true
+    root[settingsKey] = extra
+    options.parentFile.mkdirs()
+    options.setText(groovy.json.JsonOutput.toJson(root), 'UTF-8')
 }
 
-tasks.named('runClient').configure {
-    dependsOn tasks.named('prepareDevFpsOverlay')
+tasks.register('prepareDevFpsOverlay') {
+    doLast prepareBaniraDevFpsOverlay
 }
+
+prepareBaniraDevFpsOverlay()
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
