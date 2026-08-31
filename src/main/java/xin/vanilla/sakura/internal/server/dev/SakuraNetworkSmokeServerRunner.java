@@ -15,6 +15,7 @@ import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.config.reward.RewardConfig;
 import xin.vanilla.sakura.config.reward.RewardConfigManager;
 import xin.vanilla.sakura.data.IPlayerSignInData;
+import xin.vanilla.sakura.data.time.SakuraClock;
 import xin.vanilla.sakura.internal.dev.SakuraNetworkSmokeStatus;
 import xin.vanilla.sakura.reward.Reward;
 
@@ -34,6 +35,7 @@ public final class SakuraNetworkSmokeServerRunner {
     private static boolean initialized;
     private static boolean signInVerified;
     private static boolean reSignInVerified;
+    private static SakuraNetworkSmokeWorkload sustainedWorkload;
     private static boolean finished;
     private static int shutdownTicks;
     private static ReflectiveSparkProfile sparkProfile;
@@ -84,9 +86,16 @@ public final class SakuraNetworkSmokeServerRunner {
         if ("phase-one".equals(SakuraNetworkSmokeStatus.phase())) {
             CommonConfig.get().server().autoSignIn(false);
             CommonConfig.get().makeUp().signInCard(true).signInCardOnlyBaseReward(true);
+            CommonConfig.get().reward().rewardAffectedByLuck(false);
             CommonConfig.save();
             RewardConfig rewardConfig = new RewardConfig();
             rewardConfig.getBaseRewards().add(new Reward(new ItemStack(Items.APPLE, 5), SakuraRewardTypes.ITEM));
+            rewardConfig.getBaseRewards().add(new Reward("give @s minecraft:gold_nugget 1",
+                    SakuraRewardTypes.COMMAND));
+            for (int index = 0; index < 18; index++) {
+                rewardConfig.getBaseRewards().add(new Reward(new ItemStack(Items.CARROT),
+                        SakuraRewardTypes.ITEM));
+            }
             RewardConfigManager.setRewardConfig(rewardConfig);
             IPlayerSignInData data = SakuraPlayerData.get(player);
             data.setSignInCard(1);
@@ -103,15 +112,28 @@ public final class SakuraNetworkSmokeServerRunner {
             signInVerified = true;
             SakuraNetworkSmokeStatus.append("PASS sign-in-reward");
         }
-        if (!signInVerified || reSignInVerified || data.getTotalSignInDays() < 2) return;
-        if (data.getTotalSignInDays() != 2 || data.getSignInCard() != 0) {
-            throw new IllegalStateException("Re-sign-in persistence state invalid: days="
-                    + data.getTotalSignInDays() + ", cards=" + data.getSignInCard());
+        if (!signInVerified || data.getTotalSignInDays() < 2) return;
+        if (!reSignInVerified) {
+            if (data.getTotalSignInDays() != 2 || data.getSignInCard() != 0) {
+                throw new IllegalStateException("Re-sign-in persistence state invalid: days="
+                        + data.getTotalSignInDays() + ", cards=" + data.getSignInCard());
+            }
+            assertAppleReward(player, 10);
+            assertItemReward(player, Items.GOLD_NUGGET, 2);
+            SakuraNetworkSmokeStatus.append("PASS command-reward");
+            assertItemReward(player, Items.CARROT, 36);
+            SakuraNetworkSmokeStatus.append("PASS expanded-reward-list");
+            reSignInVerified = true;
+            SakuraNetworkSmokeStatus.append("PASS re-sign-in-reward");
+
+            SakuraNetworkSmokeWorkload.seedHistoricalRecords(data, player.getUUID(), SakuraClock.serverNow());
+            sustainedWorkload = new SakuraNetworkSmokeWorkload(data, SakuraClock.serverNow());
+            SakuraNetworkSmokeStatus.append("PASS historical-sign-in-fixture");
+            return;
         }
-        assertAppleReward(player, 10);
+        if (sustainedWorkload == null || !sustainedWorkload.tick()) return;
         SakuraPlayerData.saveAndSync(player);
-        reSignInVerified = true;
-        SakuraNetworkSmokeStatus.append("PASS re-sign-in-reward");
+        SakuraNetworkSmokeStatus.append("PASS sustained-history-reward-workload");
         SakuraNetworkSmokeStatus.append("FINISHED phase-one");
         finished = true;
     }
@@ -121,6 +143,11 @@ public final class SakuraNetworkSmokeServerRunner {
         if (data.getTotalSignInDays() != 2 || data.getSignInCard() != 0) {
             throw new IllegalStateException("Persisted player data was not restored: days="
                     + data.getTotalSignInDays() + ", cards=" + data.getSignInCard());
+        }
+        if (data.getSignInRecords().size() < SakuraNetworkSmokeWorkload.HISTORY_RECORD_COUNT
+                || data.getMonthIndexes().size() < SakuraNetworkSmokeWorkload.HISTORY_MONTHS) {
+            throw new IllegalStateException("Historical sign-in data was not restored: records="
+                    + data.getSignInRecords().size() + ", months=" + data.getMonthIndexes().size());
         }
         SakuraNetworkSmokeStatus.append("PASS persisted-player-data");
         SakuraNetworkSmokeStatus.append("FINISHED phase-two");
@@ -132,12 +159,17 @@ public final class SakuraNetworkSmokeServerRunner {
     }
 
     private static void assertAppleReward(ServerPlayerEntity player, int minimum) {
+        assertItemReward(player, Items.APPLE, minimum);
+    }
+
+    private static void assertItemReward(ServerPlayerEntity player, net.minecraft.item.Item item, int minimum) {
         int count = 0;
         for (ItemStack stack : player.inventory.items) {
-            if (stack.getItem() == Items.APPLE) count += stack.getCount();
+            if (stack.getItem() == item) count += stack.getCount();
         }
         if (count < minimum) {
-            throw new IllegalStateException("Reward items not delivered, expected at least " + minimum + ", got " + count);
+            throw new IllegalStateException("Reward item was not delivered, expected at least "
+                    + minimum + ", got " + count + " for " + item.getRegistryName());
         }
     }
 

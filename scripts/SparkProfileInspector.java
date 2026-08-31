@@ -17,7 +17,7 @@ import java.util.Set;
  */
 public final class SparkProfileInspector {
     private static final int TOP_NODES = 6;
-    private static final int MAX_DEPTH = 8;
+    private static final int MAX_DEPTH = 20;
 
     private final StringBuilder output = new StringBuilder();
 

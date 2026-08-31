@@ -127,7 +127,7 @@ def verifyMarkers = { File status, List<String> markers ->
 
 tasks.register('networkSmoke') {
     group = 'verification'
-    description = 'Runs a bounded two-phase Sakura dedicated server/client sign-in smoke.'
+    description = 'Runs a bounded two-phase Sakura dedicated server/client sign-in and sustained reward-history smoke.'
     doLast {
         if (smokeChild) throw new GradleException('networkSmoke cannot run inside its child Gradle process')
         delete smokeRoot
@@ -176,7 +176,9 @@ tasks.register('networkSmoke') {
                         ? ['PASS remote-login-sync', 'PASS sign-in-client', 'PASS re-sign-in-client', 'FINISHED phase-one']
                         : ['PASS remote-login-sync', 'PASS persisted-player-data-client', 'FINISHED phase-two'])
                 verifyMarkers(serverStatus, phase == 'phase-one'
-                        ? ['PASS sign-in-reward', 'PASS re-sign-in-reward', 'PASS spark-profiler-active',
+                        ? ['PASS sign-in-reward', 'PASS command-reward', 'PASS expanded-reward-list',
+                           'PASS re-sign-in-reward', 'PASS historical-sign-in-fixture',
+                           'PASS sustained-history-reward-workload', 'PASS spark-profiler-active',
                            'PASS spark-report-written', 'FINISHED phase-one', 'PASS server-shutdown']
                         : ['PASS persisted-player-data', 'FINISHED phase-two', 'PASS server-shutdown'])
             } finally {
