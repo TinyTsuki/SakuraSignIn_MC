@@ -66,7 +66,6 @@ repositories {
 
 dependencies {
     runtimeOnly "maven.modrinth:spark:v5qtqRQi"
-    runtimeOnly "curse.maven:rubidium-extra-654373:6860464"
     // Development runtime performance mod; not bundled into published artifacts.
     runtimeOnly "maven.modrinth:embeddium:J7b96IEd"
     implementation "net.neoforged:neoforge:${neo_version}"
