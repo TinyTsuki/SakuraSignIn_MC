@@ -1,0 +1,81 @@
+import org.gradle.process.ExecOperations
+
+def sparkInspectorSource = file('scripts/SparkProfileInspector.java')
+def sparkInspectorClasses = layout.buildDirectory.dir('spark-profile-inspector/classes')
+def sparkProfileExec = project.services.get(ExecOperations)
+
+tasks.register('compileSparkProfileInspector', JavaCompile) {
+    group = 'verification'
+    description = 'Compiles the local, Spark-version-neutral profile inspector.'
+    source = files(sparkInspectorSource)
+    classpath = files()
+    destinationDirectory.set(sparkInspectorClasses)
+    sourceCompatibility = '1.8'
+    targetCompatibility = '1.8'
+}
+
+def resolveSparkProfileJar = { File report ->
+    def configured = project.findProperty('sparkProfileJar')?.toString()?.trim()
+    if (configured) {
+        def candidate = file(configured)
+        if (!candidate.isFile()) throw new GradleException("Spark jar does not exist: ${candidate}")
+        return candidate
+    }
+    def recorded = new File(report.parentFile, 'spark-runtime-phase-one.txt')
+    if (recorded.isFile()) {
+        def candidate = file(recorded.getText('UTF-8').trim())
+        if (candidate.isFile()) return candidate
+    }
+    def candidates = []
+    ['modRuntimeOnly', 'runtimeClasspath'].each { name ->
+        def configuration = configurations.findByName(name)
+        if (configuration != null) candidates.addAll(configuration.files)
+    }
+    def jar = candidates.find { candidate ->
+        if (!candidate.isFile() || !candidate.name.toLowerCase().startsWith('spark-')) {
+            false
+        } else {
+            def archive = new java.util.zip.ZipFile(candidate)
+            try {
+                archive.getEntry('me/lucko/spark/proto/SparkSamplerProtos$SamplerData.class') != null
+                        || archive.getEntry('me/lucko/spark/proto/SparkProtos$SamplerData.class') != null
+            } finally {
+                archive.close()
+            }
+        }
+    }
+    if (jar == null) throw new GradleException('Unable to resolve the Spark runtime jar; pass -PsparkProfileJar=<path>.')
+    jar
+}
+
+def resolveSparkProfileReport = {
+    def configured = project.findProperty('sparkProfileReport')?.toString()?.trim()
+    if (configured) {
+        def candidate = file(configured)
+        if (!candidate.isFile()) throw new GradleException("Spark report does not exist: ${candidate}")
+        return candidate
+    }
+    def evidenceRoot = file('run-network-smoke/evidence')
+    def evidence = evidenceRoot.listFiles()?.findAll { it.isDirectory() }?.sort { left, right -> left.name <=> right.name }?.last()
+    def report = evidence == null ? null : new File(evidence, 'spark-report-phase-one.sparkprofile')
+    if (report == null || !report.isFile()) throw new GradleException('No network-smoke Spark report was found; run networkSmoke first or pass -PsparkProfileReport=<path>.')
+    report
+}
+
+tasks.register('analyzeNetworkSmokeProfile') {
+    group = 'verification'
+    description = 'Writes a readable hotspot summary beside the latest native Spark network-smoke report.'
+    dependsOn tasks.named('compileSparkProfileInspector')
+    doLast {
+        File report = resolveSparkProfileReport()
+        File sparkJar = resolveSparkProfileJar(report)
+        File summary = new File(report.parentFile, report.name.replace('.sparkprofile', '.txt'))
+        def javaExecutable = new File(System.getProperty('java.home'),
+                System.getProperty('os.name').toLowerCase().contains('windows') ? 'bin/java.exe' : 'bin/java')
+        sparkProfileExec.exec {
+            commandLine javaExecutable.absolutePath, '-cp', sparkInspectorClasses.get().asFile.absolutePath,
+                    'SparkProfileInspector', sparkJar.absolutePath, report.absolutePath, summary.absolutePath
+        }
+        logger.lifecycle("Spark profile summary: ${summary}")
+    }
+}

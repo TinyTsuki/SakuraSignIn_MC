@@ -32,6 +32,22 @@ if (smokeChild) {
 }
 
 def readUtf8 = { File file -> file.isFile() ? file.getText('UTF-8') : '' }
+def sparkRuntime = {
+    def candidates = configurations.runtimeClasspath.files
+    candidates.find { candidate ->
+        if (!candidate.isFile() || !candidate.name.toLowerCase().startsWith('spark-')) {
+            false
+        } else {
+            def archive = new java.util.zip.ZipFile(candidate)
+            try {
+                archive.getEntry('me/lucko/spark/proto/SparkSamplerProtos$SamplerData.class') != null
+                        || archive.getEntry('me/lucko/spark/proto/SparkProtos$SamplerData.class') != null
+            } finally {
+                archive.close()
+            }
+        }
+    }
+}
 def tailUtf8 = { File file, int lines ->
     if (!file.isFile()) return ''
     List<String> all = file.readLines('UTF-8')
@@ -125,6 +141,9 @@ tasks.register('networkSmoke') {
         String runId = DateTimeFormatter.ofPattern('yyyyMMdd-HHmmss').format(LocalDateTime.now())
         File evidence = file("${smokeRoot}/evidence/${runId}")
         evidence.mkdirs()
+        def profilerJar = sparkRuntime()
+        if (profilerJar == null) throw new GradleException('Unable to resolve the Spark runtime jar for network smoke evidence.')
+        new File(evidence, 'spark-runtime-phase-one.txt').setText(profilerJar.absolutePath + System.lineSeparator(), 'UTF-8')
         ['phase-one', 'phase-two'].each { phase ->
             File serverStatus = new File(evidence, "server-${phase}.status")
             File clientStatus = new File(evidence, "client-${phase}.status")
