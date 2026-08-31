@@ -110,7 +110,6 @@ repositories {
 
 dependencies {
     runtimeOnly fg.deobf("maven.modrinth:spark:GygIHGfW")
-    runtimeOnly fg.deobf("curse.maven:rubidium-extra-654373:4513591")
     // Development runtime performance mod; not bundled into published artifacts.
     runtimeOnly fg.deobf("maven.modrinth:embeddium:xuVAgh89")
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
