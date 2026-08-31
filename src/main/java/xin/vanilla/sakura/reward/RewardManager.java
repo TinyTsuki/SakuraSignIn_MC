@@ -17,6 +17,7 @@ import xin.vanilla.sakura.config.reward.RewardConfigManager;
 import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.data.SignInRecord;
+import xin.vanilla.sakura.data.SignInRecordDateIndex;
 import xin.vanilla.sakura.message.SakuraMessages;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
 import xin.vanilla.sakura.api.reward.RewardGrantContext;
@@ -49,6 +50,8 @@ import java.util.stream.Collectors;
  */
 public class RewardManager {
     private static final Logger LOGGER = LogManager.getLogger();
+    private static final Map<IPlayerSignInData, SignInRecordDateIndex> SIGN_IN_RECORD_INDEXES =
+            Collections.synchronizedMap(new WeakHashMap<>());
     public static Component getRewardName(String languageCode, Reward reward, boolean withNum) {
         return RewardOperations.describe(languageCode, reward, withNum);
     }
@@ -234,10 +237,8 @@ public class RewardManager {
         List<Reward> rewardRecords = null;
         // 如果日历日期小于等于当前日期, 则从签到记录中查找已签到的奖励记录
         if (key <= nowCompensate8) {
-            rewardRecords = playerData.getSignInRecords().stream()
+            rewardRecords = recordIndex(playerData).recordsOn(playerData.getSignInRecords(), key).stream()
                     .map(SignInRecord::clone)
-                    // 若签到日期等于当前日期
-                    .filter(record -> DateUtils.toDateInt(record.getCompensateTime()) == key)
                     .flatMap(record -> record.getRewardList().stream())
                     // .peek(reward -> {
                     //     reward.setRewarded(true);
@@ -319,6 +320,17 @@ public class RewardManager {
             }
         }
         return RewardManager.mergeRewards(result);
+    }
+
+    private static SignInRecordDateIndex recordIndex(IPlayerSignInData playerData) {
+        synchronized (SIGN_IN_RECORD_INDEXES) {
+            SignInRecordDateIndex index = SIGN_IN_RECORD_INDEXES.get(playerData);
+            if (index == null) {
+                index = new SignInRecordDateIndex();
+                SIGN_IN_RECORD_INDEXES.put(playerData, index);
+            }
+            return index;
+        }
     }
 
     public static RewardList getRandomRewardList() {
