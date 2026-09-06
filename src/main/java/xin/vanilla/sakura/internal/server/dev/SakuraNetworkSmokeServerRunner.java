@@ -16,6 +16,7 @@ import xin.vanilla.sakura.config.reward.RewardConfig;
 import xin.vanilla.sakura.config.reward.RewardConfigManager;
 import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.data.time.SakuraClock;
+import xin.vanilla.sakura.enums.ETimeCoolingMethod;
 import xin.vanilla.sakura.internal.dev.SakuraNetworkSmokeStatus;
 import xin.vanilla.sakura.reward.Reward;
 
@@ -24,6 +25,8 @@ import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.charset.StandardCharsets;
+import java.util.Properties;
 import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -36,6 +39,11 @@ public final class SakuraNetworkSmokeServerRunner {
     private static boolean signInVerified;
     private static boolean reSignInVerified;
     private static SakuraNetworkSmokeWorkload sustainedWorkload;
+    private static SakuraNetworkSmokeRewardWorkload rewardWorkload;
+    private static int workloadTicks;
+    private static long workloadStartedAt;
+    private static String originalTime;
+    private static String originalCalibration;
     private static boolean finished;
     private static int shutdownTicks;
     private static ReflectiveSparkProfile sparkProfile;
@@ -77,16 +85,20 @@ public final class SakuraNetworkSmokeServerRunner {
         } catch (Throwable error) {
             finished = true;
             SakuraNetworkSmokeStatus.append("FAIL server " + error);
-            throw error;
+            LOGGER.error("Sakura network smoke failed", error);
         }
     }
 
     private static void initialize(ServerPlayerEntity player) {
         initialized = true;
         if ("phase-one".equals(SakuraNetworkSmokeStatus.phase())) {
-            CommonConfig.get().server().autoSignIn(false);
+            CommonConfig.get().server().autoSignIn(false).requiredTotalOnlineSeconds(0).requiredTodayOnlineSeconds(0);
             CommonConfig.get().makeUp().signInCard(true).signInCardOnlyBaseReward(true);
+            CommonConfig.get().cooling().timeCoolingMethod(ETimeCoolingMethod.FIXED_TIME).timeCoolingTime(0);
+            CommonConfig.get().history().retentionMonths(0);
             CommonConfig.get().reward().rewardAffectedByLuck(false);
+            originalTime = CommonConfig.get().dateTime().serverTime();
+            originalCalibration = CommonConfig.get().dateTime().serverCalibrationTime();
             CommonConfig.save();
             RewardConfig rewardConfig = new RewardConfig();
             rewardConfig.getBaseRewards().add(new Reward(new ItemStack(Items.APPLE, 5), SakuraRewardTypes.ITEM));
@@ -100,12 +112,11 @@ public final class SakuraNetworkSmokeServerRunner {
             IPlayerSignInData data = SakuraPlayerData.get(player);
             data.setSignInCard(1);
             SakuraPlayerData.saveAndSync(player);
-            sparkProfile = ReflectiveSparkProfile.start(serverOf(player));
-            SakuraNetworkSmokeStatus.append("PASS spark-profiler-active");
+            SakuraNetworkSmokeStatus.append("PASS input-ready");
         }
     }
 
-    private static void runWritePhase(ServerPlayerEntity player) {
+    private static void runWritePhase(ServerPlayerEntity player) throws java.io.IOException {
         IPlayerSignInData data = SakuraPlayerData.get(player);
         if (!signInVerified && data.getTotalSignInDays() == 1) {
             assertAppleReward(player, 5);
@@ -114,6 +125,11 @@ public final class SakuraNetworkSmokeServerRunner {
         }
         if (!signInVerified || data.getTotalSignInDays() < 2) return;
         if (!reSignInVerified) {
+            String clientStatus = System.getProperty("sakura.networkSmoke.clientStatus", "");
+            if (clientStatus.isEmpty()) throw new IllegalStateException("Missing client status path");
+            Path path = Paths.get(clientStatus);
+            if (!Files.isRegularFile(path) || !Files.readAllLines(path, StandardCharsets.UTF_8)
+                    .contains("PASS re-sign-in-client")) return;
             if (data.getTotalSignInDays() != 2 || data.getSignInCard() != 0) {
                 throw new IllegalStateException("Re-sign-in persistence state invalid: days="
                         + data.getTotalSignInDays() + ", cards=" + data.getSignInCard());
@@ -126,29 +142,97 @@ public final class SakuraNetworkSmokeServerRunner {
             reSignInVerified = true;
             SakuraNetworkSmokeStatus.append("PASS re-sign-in-reward");
 
-            SakuraNetworkSmokeWorkload.seedHistoricalRecords(data, player.getUUID(), SakuraClock.serverNow());
-            sustainedWorkload = new SakuraNetworkSmokeWorkload(data, SakuraClock.serverNow());
-            SakuraNetworkSmokeStatus.append("PASS historical-sign-in-fixture");
+            long preparedAt = System.nanoTime();
+            java.util.Date now = SakuraClock.serverNow();
+            SakuraNetworkSmokeWorkload.seedHistoricalRecords(data, player.getUUID(), now);
+            sustainedWorkload = new SakuraNetworkSmokeWorkload(data, now);
+            rewardWorkload = new SakuraNetworkSmokeRewardWorkload(now);
+            rewardWorkload.prepare(player);
+            SakuraNetworkSmokeStatus.append("PASS historical-sign-in-fixture records=" + data.getSignInRecords().size()
+                    + " months=" + data.getMonthIndexes().size() + " preparation-ns=" + (System.nanoTime() - preparedAt));
+            sparkProfile = ReflectiveSparkProfile.start(serverOf(player));
+            workloadStartedAt = System.nanoTime();
+            SakuraNetworkSmokeStatus.append("PASS spark-profiler-active");
+            SakuraNetworkSmokeStatus.append("PASS sustained-ready");
             return;
         }
-        if (sustainedWorkload == null || !sustainedWorkload.tick()) return;
+        if (System.nanoTime() - workloadStartedAt > TimeUnit.SECONDS.toNanos(90)) {
+            throw new IllegalStateException("Sustained reward workload timed out");
+        }
+        boolean operationsPending = !rewardWorkload.complete() || sustainedWorkload.ticks() < 320;
+        if (operationsPending && sparkProfile.future.isDone()) {
+            throw new IllegalStateException("Sampler expired before sustained operations");
+        }
+        if (++workloadTicks % 10 == 0 && !rewardWorkload.complete()) rewardWorkload.runCycle(player);
+        boolean historyComplete = sustainedWorkload.tick();
+        if (operationsPending && sparkProfile.future.isDone()) {
+            throw new IllegalStateException("Sampler expired during sustained operations");
+        }
+        if (!historyComplete || !rewardWorkload.complete() || !sparkProfile.written) return;
+        rewardWorkload.report();
+        SakuraNetworkSmokeStatus.append("PASS sustained-history-reward-workload " + sustainedWorkload.timingSummary());
+        CommonConfig.get().dateTime().serverTime(originalTime).serverCalibrationTime(originalCalibration);
+        CommonConfig.save();
         SakuraPlayerData.saveAndSync(player);
-        SakuraNetworkSmokeStatus.append("PASS sustained-history-reward-workload");
+        SakuraNetworkSmokeRewardWorkload.assertRecordedRewards(data, rewardWorkload.finalSignedDay());
+        SakuraNetworkSmokeRewardWorkload.assertRecordedRewards(data, rewardWorkload.finalMakeUpDay());
+        Properties checkpoint = new Properties();
+        checkpoint.setProperty("player", player.getUUID().toString());
+        checkpoint.setProperty("totalDays", Integer.toString(data.getTotalSignInDays()));
+        checkpoint.setProperty("cards", Integer.toString(data.getSignInCard()));
+        checkpoint.setProperty("cycles", Integer.toString(rewardWorkload.cycles()));
+        checkpoint.setProperty("rewardsPerClaim", Integer.toString(SakuraNetworkSmokeRewardWorkload.REWARDS_PER_CLAIM));
+        checkpoint.setProperty("records", Integer.toString(data.getSignInRecords().size()));
+        checkpoint.setProperty("months", Integer.toString(data.getMonthIndexes().size()));
+        checkpoint.setProperty("lastSignedDay", Long.toString(rewardWorkload.finalSignedDay().getTime()));
+        checkpoint.setProperty("lastMakeUpDay", Long.toString(rewardWorkload.finalMakeUpDay().getTime()));
+        try (java.io.Writer writer = Files.newBufferedWriter(checkpointPath(), StandardCharsets.UTF_8)) {
+            checkpoint.store(writer, "Sakura sustained reward restart checkpoint");
+        }
+        SakuraNetworkSmokeStatus.append("PASS final-checkpoint cycles=" + rewardWorkload.cycles()
+                + " days=" + data.getTotalSignInDays() + " records=" + data.getSignInRecords().size());
         SakuraNetworkSmokeStatus.append("FINISHED phase-one");
         finished = true;
     }
 
-    private static void runVerifyPhase(ServerPlayerEntity player) {
+    private static Path checkpointPath() {
+        String value = System.getProperty("sakura.networkSmoke.checkpoint", "").trim();
+        if (value.isEmpty()) throw new IllegalStateException("Missing checkpoint path");
+        return Paths.get(value);
+    }
+
+    private static void runVerifyPhase(ServerPlayerEntity player) throws java.io.IOException {
+        Properties checkpoint = new Properties();
+        try (java.io.Reader reader = Files.newBufferedReader(checkpointPath(), StandardCharsets.UTF_8)) {
+            checkpoint.load(reader);
+        }
         IPlayerSignInData data = SakuraPlayerData.get(player);
-        if (data.getTotalSignInDays() != 2 || data.getSignInCard() != 0) {
+        if (!player.getUUID().toString().equals(checkpoint.getProperty("player"))
+                || Integer.parseInt(checkpoint.getProperty("cycles")) != SakuraNetworkSmokeRewardWorkload.CYCLES
+                || Integer.parseInt(checkpoint.getProperty("rewardsPerClaim")) != SakuraNetworkSmokeRewardWorkload.REWARDS_PER_CLAIM
+                || Integer.parseInt(checkpoint.getProperty("totalDays")) != 42
+                || data.getTotalSignInDays() != Integer.parseInt(checkpoint.getProperty("totalDays"))
+                || data.getSignInCard() != 0 || Integer.parseInt(checkpoint.getProperty("cards")) != 0) {
             throw new IllegalStateException("Persisted player data was not restored: days="
                     + data.getTotalSignInDays() + ", cards=" + data.getSignInCard());
         }
-        if (data.getSignInRecords().size() < SakuraNetworkSmokeWorkload.HISTORY_RECORD_COUNT
-                || data.getMonthIndexes().size() < SakuraNetworkSmokeWorkload.HISTORY_MONTHS) {
+        if (data.getSignInRecords().size() != Integer.parseInt(checkpoint.getProperty("records"))
+                || data.getSignInRecords().size() != SakuraNetworkSmokeWorkload.HISTORY_RECORD_COUNT + 42
+                || data.getMonthIndexes().size() != Integer.parseInt(checkpoint.getProperty("months"))
+                || data.getMonthIndexes().size() < SakuraNetworkSmokeWorkload.HISTORY_MONTHS
+                || !data.isRewardedOn(new java.util.Date(Long.parseLong(checkpoint.getProperty("lastSignedDay"))))
+                || !data.isRewardedOn(new java.util.Date(Long.parseLong(checkpoint.getProperty("lastMakeUpDay"))))) {
             throw new IllegalStateException("Historical sign-in data was not restored: records="
                     + data.getSignInRecords().size() + ", months=" + data.getMonthIndexes().size());
         }
+        SakuraNetworkSmokeRewardWorkload.assertInventory(player, 10, 3,
+                2 * (SakuraNetworkSmokeRewardWorkload.REWARDS_PER_CLAIM - 2));
+        SakuraNetworkSmokeRewardWorkload.assertRecordedRewards(data,
+                new java.util.Date(Long.parseLong(checkpoint.getProperty("lastSignedDay"))));
+        SakuraNetworkSmokeRewardWorkload.assertRecordedRewards(data,
+                new java.util.Date(Long.parseLong(checkpoint.getProperty("lastMakeUpDay"))));
+        SakuraNetworkSmokeStatus.append("PASS persisted-final-cycle cycles=" + checkpoint.getProperty("cycles")
+                + " days=" + data.getTotalSignInDays() + " records=" + data.getSignInRecords().size());
         SakuraNetworkSmokeStatus.append("PASS persisted-player-data");
         SakuraNetworkSmokeStatus.append("FINISHED phase-two");
         finished = true;
@@ -214,11 +298,10 @@ public final class SakuraNetworkSmokeServerRunner {
                 ClassLoader loader = plugin.getClass().getClassLoader();
                 Class<?> builderType = Class.forName("me.lucko.spark.common.sampler.SamplerBuilder", true, loader);
                 Object builder = builderType.getConstructor().newInstance();
-                // 旧版 Spark 的全线程采样在 1.16.5 开发运行时使用 4ms 频率会触发 watchdog。
-                // 20ms 仍能覆盖实际签到窗口，同时避免基线工具干扰被测服务端。
+                // Sample only the game thread at 10ms; all-thread sampling distorts this legacy runtime.
                 builderType.getMethod("samplingInterval", double.class).invoke(builder, 10.0D);
                 builderType.getMethod("completeAfter", long.class, TimeUnit.class)
-                        .invoke(builder, 20L, TimeUnit.SECONDS);
+                        .invoke(builder, 30L, TimeUnit.SECONDS);
                 builderType.getMethod("forceJavaSampler", boolean.class).invoke(builder, true);
                 Class<?> dumperType = Class.forName("me.lucko.spark.common.sampler.ThreadDumper", true, loader);
                 builderType.getMethod("threadDumper", dumperType).invoke(builder, gameThreadDumper(plugin));

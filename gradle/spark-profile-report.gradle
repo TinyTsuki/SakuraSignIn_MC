@@ -7,7 +7,7 @@ def sparkProfileExec = project.services.get(ExecOperations)
 tasks.register('compileSparkProfileInspector', JavaCompile) {
     group = 'verification'
     description = 'Compiles the local, Spark-version-neutral profile inspector.'
-    source = files(sparkInspectorSource)
+    source = files(sparkInspectorSource, file('scripts/SparkProfileInspectorTest.java'))
     classpath = files()
     destinationDirectory.set(sparkInspectorClasses)
     sourceCompatibility = '1.8'
@@ -72,6 +72,10 @@ tasks.register('analyzeNetworkSmokeProfile') {
         File summary = new File(report.parentFile, report.name.replace('.sparkprofile', '.txt'))
         def javaExecutable = new File(System.getProperty('java.home'),
                 System.getProperty('os.name').toLowerCase().contains('windows') ? 'bin/java.exe' : 'bin/java')
+        sparkProfileExec.exec {
+            commandLine javaExecutable.absolutePath, '-cp', sparkInspectorClasses.get().asFile.absolutePath,
+                    'SparkProfileInspectorTest', sparkJar.absolutePath
+        }
         sparkProfileExec.exec {
             commandLine javaExecutable.absolutePath, '-cp', sparkInspectorClasses.get().asFile.absolutePath,
                     'SparkProfileInspector', sparkJar.absolutePath, report.absolutePath, summary.absolutePath

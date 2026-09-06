@@ -20,6 +20,7 @@ public final class SakuraNetworkSmokeWorkload {
 
     private final IPlayerSignInData data;
     private final Date targetDate;
+    private final SakuraNetworkSmokeTimings timings = new SakuraNetworkSmokeTimings(TICKS);
     private int ticks;
 
     public SakuraNetworkSmokeWorkload(IPlayerSignInData data, Date targetDate) {
@@ -48,16 +49,22 @@ public final class SakuraNetworkSmokeWorkload {
 
     public boolean tick() {
         if (ticks >= TICKS) return true;
+        long startedAt = System.nanoTime();
         for (int query = 0; query < QUERIES_PER_TICK; query++) {
             RewardManager.getRewardListByDate(targetDate, data, false, true);
             data.isSignedOn(targetDate);
             data.isRewardedOn(targetDate);
         }
+        timings.record(System.nanoTime() - startedAt);
         ticks++;
         return ticks >= TICKS;
     }
 
     public int ticks() {
         return ticks;
+    }
+
+    public String timingSummary() {
+        return "ticks=" + ticks + " queries=" + ticks * QUERIES_PER_TICK + " " + timings.summary();
     }
 }
