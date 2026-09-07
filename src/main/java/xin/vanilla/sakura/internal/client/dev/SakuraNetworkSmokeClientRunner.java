@@ -38,7 +38,8 @@ public final class SakuraNetworkSmokeClientRunner {
     private static final long TIMEOUT_NANOS = TimeUnit.SECONDS.toNanos(180);
     private static final long STATE_TIMEOUT_NANOS = TimeUnit.SECONDS.toNanos(90);
     private static final long SUMMARY_TIMEOUT_NANOS = TimeUnit.SECONDS.toNanos(30);
-    private static final long UI_DURATION_NANOS = TimeUnit.SECONDS.toNanos(20);
+    private static final long UI_SAMPLE_SECONDS = Integer.getInteger("sakura.networkSmoke.rewardsPerClaim", 48) > 48 ? 60 : 20;
+    private static final long UI_DURATION_NANOS = TimeUnit.SECONDS.toNanos(UI_SAMPLE_SECONDS);
     private static final long UI_CYCLE_NANOS = TimeUnit.MILLISECONDS.toNanos(500);
     private static State state = State.CONNECT;
     private static long startedAt;
@@ -55,6 +56,7 @@ public final class SakuraNetworkSmokeClientRunner {
     private static long uiStartedAt;
     private static long lastUiCycleAt;
     private static int uiCycles;
+    private static final SakuraNetworkSmokeDeliveryCheck delivery = new SakuraNetworkSmokeDeliveryCheck();
 
     private SakuraNetworkSmokeClientRunner() {
     }
@@ -79,6 +81,7 @@ public final class SakuraNetworkSmokeClientRunner {
             if (state != State.CONNECT && state != State.LOGIN_SYNC && !remote(client)) {
                 throw new IllegalStateException("Remote connection lost in " + state);
             }
+            delivery.collect();
             switch (state) {
                 case CONNECT:
                     connect(client);
@@ -234,7 +237,7 @@ public final class SakuraNetworkSmokeClientRunner {
         serverFinished |= lines.contains("FINISHED " + SakuraNetworkSmokeStatus.phase());
     }
 
-    private static void waitForFinalSummary(Minecraft client) throws java.io.IOException {
+    private static void waitForFinalSummary(Minecraft client) throws Exception {
         readServerStatus();
         if (!serverFinished) return;
         if (checkpoint == null) {
@@ -262,6 +265,7 @@ public final class SakuraNetworkSmokeClientRunner {
         if (!SakuraClientState.isEnabled() || data.getTotalSignInDays() != days || data.getSignInCard() != cards) {
             return;
         }
+        if (!delivery.verify(client, checkpoint)) return;
         String summary = " player=" + client.player.getUUID() + " days=" + days + " cards=" + cards
                 + " cycles=" + checkpointInt(checkpoint, "cycles");
         SakuraNetworkSmokeStatus.append("PASS final-summary-client" + summary);
@@ -347,7 +351,7 @@ public final class SakuraNetworkSmokeClientRunner {
                 Class<?> builderType = Class.forName("me.lucko.spark.common.sampler.SamplerBuilder", true, loader);
                 Object builder = builderType.getConstructor().newInstance();
                 builderType.getMethod("samplingInterval", double.class).invoke(builder, 4.0D);
-                builderType.getMethod("completeAfter", long.class, TimeUnit.class).invoke(builder, 20L, TimeUnit.SECONDS);
+                builderType.getMethod("completeAfter", long.class, TimeUnit.class).invoke(builder, UI_SAMPLE_SECONDS, TimeUnit.SECONDS);
                 builderType.getMethod("forceJavaSampler", boolean.class).invoke(builder, true);
                 Class<?> dumperType = Class.forName("me.lucko.spark.common.sampler.ThreadDumper", true, loader);
                 Thread renderThread = Thread.currentThread();

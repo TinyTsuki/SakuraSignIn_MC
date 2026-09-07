@@ -52,15 +52,26 @@ final class SakuraNetworkSmokeRewardWorkload {
     }
 
     static RewardConfig createRewardConfig() {
+        return createRewardConfig(null);
+    }
+
+    static RewardConfig createRewardConfig(Date day) {
         RewardConfig rewards = new RewardConfig();
-        rewards.getBaseRewards().add(new Reward(new ItemStack(Items.APPLE, 5), SakuraRewardTypes.ITEM));
+        rewards.getBaseRewards().add(new Reward(identifiedItem(Items.APPLE, 5, day, 0), SakuraRewardTypes.ITEM));
         rewards.getBaseRewards().add(commandReward());
         for (int index = 2; index < REWARDS_PER_CLAIM; index++) {
             // Keep entries distinct through the normal merger; probability sampling is disabled by this fixture.
-            rewards.getBaseRewards().add(new Reward(new ItemStack(Items.CARROT), SakuraRewardTypes.ITEM,
+            rewards.getBaseRewards().add(new Reward(identifiedItem(Items.CARROT, 1, day, index), SakuraRewardTypes.ITEM,
                     java.math.BigDecimal.valueOf(index, 3)));
         }
         return rewards;
+    }
+
+    private static ItemStack identifiedItem(Item item, int count, Date day, int index) {
+        ItemStack stack = new ItemStack(item, count);
+        if (day != null) stack.setHoverName(new net.minecraft.util.text.StringTextComponent(
+                "smoke-" + DateUtils.toDateInt(day) + "-" + (index % 12)));
+        return stack;
     }
 
     void runCycle(ServerPlayerEntity player) {
@@ -75,6 +86,7 @@ final class SakuraNetworkSmokeRewardWorkload {
         CommonConfig.get().dateTime().serverTime(DateUtils.toDateTimeString(now))
                 .serverCalibrationTime(DateUtils.toDateTimeString(finalSignedDay));
         int before = data.getTotalSignInDays();
+        RewardConfigManager.setRewardConfig(createRewardConfig(finalSignedDay));
 
         measure("sign-in", () -> RewardManager.signIn(player, packet(finalSignedDay, false, ESignInType.SIGN_IN)));
         require(data.getTotalSignInDays() == before + 1 && data.isSignedOn(finalSignedDay)
@@ -90,6 +102,7 @@ final class SakuraNetworkSmokeRewardWorkload {
         measure("duplicate-claim", () -> RewardManager.signIn(player, packet(finalSignedDay, true, ESignInType.REWARD)));
         assertInventory(player, 5, 1, REWARDS_PER_CLAIM - 2);
 
+        RewardConfigManager.setRewardConfig(createRewardConfig(finalMakeUpDay));
         measure("re-sign-in-rewards", () -> RewardManager.signIn(player, packet(finalMakeUpDay, true, ESignInType.RE_SIGN_IN)));
         require(data.getTotalSignInDays() == before + 2 && data.isRewardedOn(finalMakeUpDay)
                 && data.getSignInCard() == CYCLES - cycles - 1, "Make-up summary or reward state invalid");
@@ -106,7 +119,7 @@ final class SakuraNetworkSmokeRewardWorkload {
         for (Map.Entry<String, SakuraNetworkSmokeTimings> entry : timings.entrySet()) {
             require(entry.getValue().count() == CYCLES, "Incomplete timed workload " + entry.getKey());
             SakuraNetworkSmokeStatus.append("PASS operation " + entry.getKey() + " rewards-per-claim="
-                    + REWARDS_PER_CLAIM + " " + entry.getValue().summary());
+                    + REWARDS_PER_CLAIM + " delivery=inventory " + entry.getValue().summary());
         }
     }
 
@@ -114,6 +127,14 @@ final class SakuraNetworkSmokeRewardWorkload {
     int cycles() { return cycles; }
     Date finalSignedDay() { return finalSignedDay; }
     Date finalMakeUpDay() { return finalMakeUpDay; }
+
+    static void assertAllRecordedRewards(IPlayerSignInData data, Date lastSignedDay) {
+        for (int cycle = 0; cycle < CYCLES; cycle++) {
+            Date day = DateUtils.addDay(lastSignedDay, -3 * cycle);
+            assertRecordedRewards(data, day);
+            assertRecordedRewards(data, DateUtils.addDay(day, -1));
+        }
+    }
 
     private void measure(String name, Runnable action) {
         long startedAt = System.nanoTime();
@@ -137,8 +158,12 @@ final class SakuraNetworkSmokeRewardWorkload {
     }
 
     static void assertInventory(ServerPlayerEntity player, int apples, int gold, int carrots) {
-        require(count(player, Items.APPLE) == apples && count(player, Items.GOLD_NUGGET) == gold
-                && count(player, Items.CARROT) == carrots, "Unexpected delivered reward quantities");
+        int actualApples = count(player, Items.APPLE);
+        int actualGold = count(player, Items.GOLD_NUGGET);
+        int actualCarrots = count(player, Items.CARROT);
+        require(actualApples == apples && actualGold == gold && actualCarrots == carrots,
+                "Unexpected delivered reward quantities: apples=" + actualApples + "/" + apples
+                        + ", gold=" + actualGold + "/" + gold + ", carrots=" + actualCarrots + "/" + carrots);
     }
 
     static void assertRecordedRewards(IPlayerSignInData data, Date day) {
@@ -150,7 +175,7 @@ final class SakuraNetworkSmokeRewardWorkload {
         SignInRecord record = records.get(0);
         require(record.isRewarded() && record.getRewardList().size() == REWARDS_PER_CLAIM,
                 "Final history detail or reward snapshot was lost");
-        java.util.List<Reward> expected = createRewardConfig().getBaseRewards();
+        java.util.List<Reward> expected = createRewardConfig(day).getBaseRewards();
         for (int index = 0; index < expected.size(); index++) {
             Reward actual = record.getRewardList().get(index);
             Reward value = expected.get(index);

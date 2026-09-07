@@ -1,5 +1,7 @@
 package xin.vanilla.sakura.internal.server.dev;
 
+import xin.vanilla.banira.common.util.DateUtils;
+
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -174,8 +176,7 @@ public final class SakuraNetworkSmokeServerRunner {
         CommonConfig.get().dateTime().serverTime(originalTime).serverCalibrationTime(originalCalibration);
         CommonConfig.save();
         SakuraPlayerData.saveAndSync(player);
-        SakuraNetworkSmokeRewardWorkload.assertRecordedRewards(data, rewardWorkload.finalSignedDay());
-        SakuraNetworkSmokeRewardWorkload.assertRecordedRewards(data, rewardWorkload.finalMakeUpDay());
+        SakuraNetworkSmokeRewardWorkload.assertAllRecordedRewards(data, rewardWorkload.finalSignedDay());
         Properties checkpoint = new Properties();
         checkpoint.setProperty("player", player.getUUID().toString());
         checkpoint.setProperty("totalDays", Integer.toString(data.getTotalSignInDays()));
@@ -186,6 +187,27 @@ public final class SakuraNetworkSmokeServerRunner {
         checkpoint.setProperty("months", Integer.toString(data.getMonthIndexes().size()));
         checkpoint.setProperty("lastSignedDay", Long.toString(rewardWorkload.finalSignedDay().getTime()));
         checkpoint.setProperty("lastMakeUpDay", Long.toString(rewardWorkload.finalMakeUpDay().getTime()));
+        String language = xin.vanilla.sakura.util.SakuraUtils.getPlayerLanguage(player);
+        checkpoint.setProperty("notificationLanguage", language);
+        for (int cycle = 0; cycle < SakuraNetworkSmokeRewardWorkload.CYCLES; cycle++) {
+            java.util.Date day = DateUtils.addDay(rewardWorkload.finalSignedDay(),
+                    -3 * (SakuraNetworkSmokeRewardWorkload.CYCLES - cycle - 1));
+            for (int offset = 0; offset <= 1; offset++) {
+                java.util.Date date = DateUtils.addDay(day, -offset);
+                int key = cycle * 2 + offset;
+                java.util.List<Reward> expected = SakuraNetworkSmokeRewardWorkload.createRewardConfig(date).getBaseRewards();
+                for (int index = 0; index < expected.size(); index++) {
+                    checkpoint.setProperty("notificationDetail." + key + "." + index,
+                            xin.vanilla.sakura.internal.dev.SakuraNetworkSmokeNotificationSnapshot.json(
+                                    expected.get(index).getName(language, true).color(java.awt.Color.GREEN.getRGB()), language));
+                }
+                checkpoint.setProperty("pressureDay." + key, Long.toString(date.getTime()));
+                xin.vanilla.sakura.data.SignInRecord record = data.getSignInRecords().stream()
+                        .filter(value -> DateUtils.toDateInt(value.getCompensateTime()) == DateUtils.toDateInt(date))
+                        .findFirst().orElseThrow(() -> new IllegalStateException("Missing pressure record"));
+                checkpoint.setProperty("pressureRecord." + key, record.writeToNBT().toString());
+            }
+        }
         try (java.io.Writer writer = Files.newBufferedWriter(checkpointPath(), StandardCharsets.UTF_8)) {
             checkpoint.store(writer, "Sakura sustained reward restart checkpoint");
         }
@@ -227,10 +249,11 @@ public final class SakuraNetworkSmokeServerRunner {
         }
         SakuraNetworkSmokeRewardWorkload.assertInventory(player, 10, 3,
                 2 * (SakuraNetworkSmokeRewardWorkload.REWARDS_PER_CLAIM - 2));
-        SakuraNetworkSmokeRewardWorkload.assertRecordedRewards(data,
+        SakuraNetworkSmokeRewardWorkload.assertAllRecordedRewards(data,
                 new java.util.Date(Long.parseLong(checkpoint.getProperty("lastSignedDay"))));
-        SakuraNetworkSmokeRewardWorkload.assertRecordedRewards(data,
-                new java.util.Date(Long.parseLong(checkpoint.getProperty("lastMakeUpDay"))));
+        SakuraNetworkSmokeStatus.append("PASS persisted-all-pressure-days days="
+                + (SakuraNetworkSmokeRewardWorkload.CYCLES * 2) + " rewards-per-day="
+                + SakuraNetworkSmokeRewardWorkload.REWARDS_PER_CLAIM);
         SakuraNetworkSmokeStatus.append("PASS persisted-final-cycle cycles=" + checkpoint.getProperty("cycles")
                 + " days=" + data.getTotalSignInDays() + " records=" + data.getSignInRecords().size());
         SakuraNetworkSmokeStatus.append("PASS persisted-player-data");

@@ -5,15 +5,20 @@ import groovy.json.JsonOutput
 import java.security.MessageDigest
 
 def smokeRoot = file("${projectDir}/run-network-smoke")
-def smokeServerDir = file("${smokeRoot}/server")
-def smokeClientDir = file("${smokeRoot}/client")
+def smokeChild = (project.findProperty('sakura.networkSmoke.child') ?: 'false').toString().toBoolean()
+def requestedSession = project.findProperty('sakura.networkSmoke.session')
+if (smokeChild && requestedSession == null) throw new GradleException('Missing isolated smoke session')
+def smokeSession = (requestedSession ?: (DateTimeFormatter.ofPattern('yyyyMMdd-HHmmss').format(LocalDateTime.now())
+        + '-' + UUID.randomUUID().toString().substring(0, 8))).toString()
+if (!(smokeSession ==~ /[0-9]{8}-[0-9]{6}-[a-f0-9]{8}/)) throw new GradleException('Invalid smoke session identifier')
+def smokeSessionRoot = file("${smokeRoot}/sessions/${smokeSession}")
+def smokeServerDir = file("${smokeSessionRoot}/server")
+def smokeClientDir = file("${smokeSessionRoot}/client")
 def smokePort = 25578
 def smokeRewardsPerClaim = Integer.parseInt((project.findProperty('sakura.networkSmoke.rewardsPerClaim') ?: '48').toString())
 if (smokeRewardsPerClaim < 3 || smokeRewardsPerClaim > 512) {
     throw new GradleException('sakura.networkSmoke.rewardsPerClaim must be between 3 and 512')
 }
-def smokeChild = (project.findProperty('sakura.networkSmoke.child') ?: 'false').toString().toBoolean()
-
 if (smokeChild) {
     layout.buildDirectory.set(file(project.property('sakura.networkSmoke.buildDir')))
     String phase = project.property('sakura.networkSmoke.phase').toString()
@@ -96,6 +101,7 @@ def gradleCommand = { String runTask, String phase, File status, File sparkRepor
             runTask, '--no-daemon', '--console=plain',
             '--project-cache-dir', projectCacheDir.absolutePath,
             '-Psakura.networkSmoke.child=true',
+            "-Psakura.networkSmoke.session=${smokeSession}".toString(),
             "-Psakura.networkSmoke.rewardsPerClaim=${smokeRewardsPerClaim}".toString(),
             "-Psakura.networkSmoke.phase=${phase}".toString(),
             "-Psakura.networkSmoke.status=${status.absolutePath}".toString(),
@@ -145,13 +151,7 @@ tasks.register('networkSmoke') {
     description = 'Runs a bounded two-phase Sakura dedicated server/client sign-in and sustained reward-history smoke.'
     doLast {
         if (smokeChild) throw new GradleException('networkSmoke cannot run inside its child Gradle process')
-        [smokeServerDir, smokeClientDir].each { directory ->
-            if (directory.canonicalFile.parentFile != smokeRoot.canonicalFile
-                    || !['server', 'client'].contains(directory.name)) {
-                throw new GradleException("Refusing to clean a directory outside isolated smoke worlds: ${directory}")
-            }
-            delete directory
-        }
+        if (smokeSessionRoot.exists()) throw new GradleException("Smoke session already exists: ${smokeSessionRoot}")
         smokeServerDir.mkdirs()
         smokeClientDir.mkdirs()
         new File(smokeServerDir, 'eula.txt').setText('eula=true' + System.lineSeparator(), 'UTF-8')
@@ -175,8 +175,8 @@ tasks.register('networkSmoke') {
                 (it.name.contains('banira_codex') || it.name.toLowerCase().startsWith('spark-')) }
                 .collectEntries { [(it.absolutePath): sha256(it)] }
         new File(evidence, 'source-state.json').setText(JsonOutput.prettyPrint(JsonOutput.toJson([
-                commit: sourceCommit, status: sourceStatus, files: sourceHashes,
-                runtimeJars: runtimeHashes, serverSampleSeconds: 30, clientSampleSeconds: 20,
+                commit: sourceCommit, status: sourceStatus, files: sourceHashes, session: smokeSession,
+                runtimeJars: runtimeHashes, serverSampleSeconds: 30, clientSampleSeconds: smokeRewardsPerClaim > 48 ? 60 : 20,
                 rewardCycles: 20, rewardsPerClaim: smokeRewardsPerClaim, historyRecords: 3600
         ])) + System.lineSeparator(), 'UTF-8')
         def profilerJar = sparkRuntime()
@@ -218,8 +218,10 @@ tasks.register('networkSmoke') {
                 verifyMarkers(clientStatus, phase == 'phase-one'
                         ? ['PASS remote-login-sync', 'PASS sign-in-client', 'PASS re-sign-in-client',
                            'PASS client-ui-spark-profiler-active', 'PASS client-ui-spark-report-written',
-                           'PASS client-ui-sustained-workload', 'PASS final-summary-client', 'FINISHED phase-one']
-                        : ['PASS remote-login-sync', 'PASS persisted-player-data-client', 'FINISHED phase-two'])
+                           'PASS client-ui-sustained-workload', 'PASS reward-notification-details-client',
+                           'PASS all-pressure-month-details-client', 'PASS final-summary-client', 'FINISHED phase-one']
+                        : ['PASS remote-login-sync', 'PASS all-pressure-month-details-client',
+                           'PASS persisted-player-data-client', 'FINISHED phase-two'])
                 verifyMarkers(serverStatus, phase == 'phase-one'
                         ? ['PASS sign-in-reward', 'PASS command-reward', 'PASS expanded-reward-list',
                            'PASS re-sign-in-reward', 'PASS historical-sign-in-fixture',
@@ -227,7 +229,8 @@ tasks.register('networkSmoke') {
                            'PASS operation sign-in', 'PASS operation claim-rewards', 'PASS operation duplicate-claim',
                            'PASS operation re-sign-in-rewards', 'PASS operation command-reward', 'PASS operation save-and-sync',
                            'PASS final-checkpoint', 'PASS spark-report-written', 'FINISHED phase-one', 'PASS server-shutdown']
-                        : ['PASS persisted-final-cycle', 'PASS persisted-player-data', 'FINISHED phase-two', 'PASS server-shutdown'])
+                        : ['PASS persisted-final-cycle', 'PASS persisted-all-pressure-days',
+                           'PASS persisted-player-data', 'FINISHED phase-two', 'PASS server-shutdown'])
             } finally {
                 destroyProcessTree(client)
                 destroyProcessTree(server)

@@ -65,9 +65,11 @@ public final class SakuraClientBootstrap {
                 SakuraRewardClient.freeze();
             }
             SakuraNetworkSmokeClientRunner.tick();
+            ClientProxy.expireMonthTransfers();
             ClientEventHandler.onClientTick(signInKey, rewardOptionKey);
         });
         BaniraClientEvents.Player.onClientLoggedOut(event -> {
+            ClientProxy.clearMonthTransfers();
             SakuraClientState.clearSession();
             SakuraPlayerData.clearClient();
         });
