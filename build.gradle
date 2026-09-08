@@ -95,6 +95,8 @@ repositories {
 }
 
 apply from: "gradle/banira-local-fingerprint.gradle"
+apply from: "gradle/network-smoke.gradle"
+apply from: "gradle/spark-profile-report.gradle"
 
 repositories {
     maven {
