@@ -472,6 +472,7 @@ public class RewardManager {
             SakuraPlayerData.saveAndSync(player);
             return;
         }
+        List<Runnable> resultNotifications = new ArrayList<>();
         // 判断领取奖励
         if (ESignInType.REWARD.equals(packet.getSignInType())) {
             if (isRewarded(signInData, signCompensateDate, false)) {
@@ -485,6 +486,7 @@ public class RewardManager {
             } else {
                 boolean showFailed = player.hasPermissions(CommonConfig.get().permission().permissionRewardFailedTips());
                 Component msg = SakuraComponent.get().trans(player, "word", "receive_reward_success");
+                List<Component> details = new ArrayList<>();
                 Optional<SignInRecord> storedRecord = signInData.getSignInRecords().stream()
                         .filter(record -> DateUtils.toDateInt(record.getCompensateTime()) == DateUtils.toDateInt(signCompensateDate))
                         .filter(record -> !record.isRewarded())
@@ -503,15 +505,15 @@ public class RewardManager {
                             Component detail = reward.getName(SakuraUtils.getPlayerLanguage(player), true);
                             if (giveRewardToPlayer(player, signInData, reward)) {
                                 detail.color(Color.GREEN.getRGB());
-                                msg.append(", ").append(detail);
+                                details.add(detail);
                             } else if (showFailed) {
                                 detail.color(Color.RED.getRGB());
-                                msg.append(", ").append(detail);
+                                details.add(detail);
                             }
                         });
                 storedRecord.ifPresent(record -> record.setRewarded(true));
                 signInData.markSigned(signCompensateDate, true);
-                SakuraMessages.success(player, msg, notificationType);
+                resultNotifications.add(() -> SakuraMessages.successBatch(player, msg, details, notificationType));
             }
         }
         // 签到/补签
@@ -528,18 +530,19 @@ public class RewardManager {
             if (packet.isAutoRewarded()) {
                 boolean showFailed = player.hasPermissions(CommonConfig.get().permission().permissionRewardFailedTips());
                 Component msg = SakuraComponent.get().trans(player, "word", "receive_reward_success");
+                List<Component> details = new ArrayList<>();
                 rewardList.forEach(reward -> {
                     Component detail = reward.getName(SakuraUtils.getPlayerLanguage(player), true);
                     if (giveRewardToPlayer(player, signInData, reward)) {
                         detail.color(Color.GREEN.getRGB());
                         signInRecord.getRewardList().add(reward);
-                        msg.append(", ").append(detail);
+                        details.add(detail);
                     } else if (showFailed) {
                         detail.color(Color.RED.getRGB());
-                        msg.append(", ").append(detail);
+                        details.add(detail);
                     }
                 });
-                SakuraMessages.success(player, msg, notificationType);
+                resultNotifications.add(() -> SakuraMessages.successBatch(player, msg, details, notificationType));
             } else {
                 signInRecord.getRewardList().addAll(rewardList);
             }
@@ -549,10 +552,23 @@ public class RewardManager {
             signInData.plusTotalSignInDays();
             signInData.setContinuousSignInDays(signInData.calculateContinuousDays(serverCompensateDate));
             PersonalDateRewardDispatcher.deliverSignIn(player, serverCompensateDate);
-            SakuraMessages.success(player, SakuraComponent.get().trans(player, "format", "sign_in_success_s", DateUtils.toString(signInRecord.getCompensateTime()), signInData.calculateContinuousDays(), getTotalSignInDays(signInData)), notificationType);
+            resultNotifications.add(() -> SakuraMessages.success(player, SakuraComponent.get().trans(player, "format", "sign_in_success_s", DateUtils.toString(signInRecord.getCompensateTime()), signInData.calculateContinuousDays(), getTotalSignInDays(signInData)), notificationType));
         }
-        // 持久化后再同步，客户端不会参与服务端存储。
-        SakuraPlayerData.saveAndSync(player);
+        // Complete every business mutation before persistence; delivery must never replay rewards.
+        SakuraPlayerData.save(player);
+        deliverAfterSave(player, "sync", () -> SakuraPlayerData.sync(player));
+        for (Runnable notification : resultNotifications) {
+            deliverAfterSave(player, notificationType, notification);
+        }
+    }
+
+    private static void deliverAfterSave(ServerPlayer player, String phase, Runnable delivery) {
+        try {
+            delivery.run();
+        } catch (RuntimeException exception) {
+            LOGGER.warn("Sign-in state saved for {}; {} delivery failed; rewards will not be replayed",
+                    player.getUUID(), phase, exception);
+        }
     }
 
     public static boolean giveRewardToPlayer(ServerPlayer player, IPlayerSignInData signInData, Reward reward) {
@@ -617,8 +633,8 @@ public class RewardManager {
             }
         }, reward);
         if (!result.isSuccess()) {
-            LOGGER.warn("Skipped reward type {}: {} ({})", reward.getTypeId(),
-                    result.getStatus(), result.getDetail());
+            LOGGER.warn("Skipped reward type {} from {} at {}: {} ({})", reward.getTypeId(),
+                    sourceId, sourceDate, result.getStatus(), result.getDetail());
         }
         return result.isSuccess();
     }

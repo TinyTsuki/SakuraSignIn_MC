@@ -3,6 +3,7 @@ package xin.vanilla.sakura.internal.neoforge;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.internal.neoforge.event.NeoForgeSakuraGameEventAdapter;
 import xin.vanilla.sakura.internal.neoforge.dev.SakuraServerSmokeRunner;
+import xin.vanilla.sakura.internal.server.dev.SakuraNetworkSmokeServerRunner;
 import xin.vanilla.sakura.internal.neoforge.player.NeoForgePlayerSignInDataService;
 import xin.vanilla.sakura.internal.neoforge.player.NeoForgePlayerOnlineTime;
 import xin.vanilla.sakura.data.time.SakuraOnlineTime;
@@ -26,5 +27,6 @@ public final class NeoForgeSakuraEntrypoint {
         SakuraOnlineTime.install(NeoForgePlayerOnlineTime::playTicks);
         NeoForgeSakuraGameEventAdapter.register();
         SakuraServerSmokeRunner.register();
+        SakuraNetworkSmokeServerRunner.register();
     }
 }

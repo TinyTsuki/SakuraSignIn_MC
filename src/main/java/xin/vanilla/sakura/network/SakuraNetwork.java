@@ -28,7 +28,7 @@ public final class SakuraNetwork {
     private static final NetworkHandler HANDLER = NetworkHandler.create(
             "main_network",
             BaniraIdentifier.of(SakuraSignIn.MODID, "main_network"),
-            "sakura-1",
+            "sakura-2",
             true
     );
     private static boolean initialized;
@@ -108,10 +108,18 @@ public final class SakuraNetwork {
      * 签到后同步实际操作月份，保证跨月补签也能立即刷新。
      */
     public static void syncMonth(ServerPlayer player, Date date) {
+        syncMonth(player, monthOf(date));
+    }
+
+    public static void syncMonth(ServerPlayer player, String month) {
+        if (!BaniraModPresence.isRemoteClientInstalled(player, SakuraSignIn.MODID)) {
+            return;
+        }
         IPlayerSignInData data = SakuraPlayerData.get(player);
-        sendToPlayer(new PlayerMonthSyncPacket(
-                player.getUUID(), monthOf(date), data.getSignInRecords()
-        ), player);
+        for (PlayerMonthSyncPacket part : PlayerMonthSyncPacket.prepare(
+                player.getUUID(), month, data.getSignInRecords())) {
+            sendToPlayer(part, player);
+        }
     }
 
     public static <T extends SplitPacket & INetworkPacket> void sendSplitToServer(T packet) {

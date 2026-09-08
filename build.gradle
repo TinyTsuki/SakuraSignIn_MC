@@ -109,6 +109,8 @@ tasks.withType(ProcessResources).configureEach {
 }
 
 apply from: 'gradle/mixin-runtime.gradle'
+apply from: 'gradle/network-smoke.gradle'
+apply from: 'gradle/spark-profile-report.gradle'
 
 def modsJarVersion = "${loader_type}-${minecraft_version}-${mod_version}"
 def modsDestinationDir = file("${projectDir}/builds/${mod_version}")
