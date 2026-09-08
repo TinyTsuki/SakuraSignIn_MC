@@ -15,6 +15,7 @@ import xin.vanilla.sakura.notification.SakuraClientNotificationTypes;
 import xin.vanilla.sakura.api.reward.client.SakuraRewardClient;
 import xin.vanilla.sakura.client.reward.builtin.BuiltInRewardClientTypes;
 import xin.vanilla.banira.client.data.GLFWKey;
+import xin.vanilla.sakura.internal.client.dev.SakuraNetworkSmokeClientRunner;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -63,9 +64,12 @@ public final class SakuraClientBootstrap {
             if (REWARD_TYPES_FROZEN.compareAndSet(false, true)) {
                 SakuraRewardClient.freeze();
             }
+            SakuraNetworkSmokeClientRunner.tick();
+            ClientProxy.expireMonthTransfers();
             ClientEventHandler.onClientTick(signInKey, rewardOptionKey);
         });
         BaniraClientEvents.Player.onClientLoggedOut(event -> {
+            ClientProxy.clearMonthTransfers();
             SakuraClientState.clearSession();
             SakuraPlayerData.clearClient();
         });
