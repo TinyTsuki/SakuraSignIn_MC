@@ -20,7 +20,6 @@ import xin.vanilla.sakura.internal.fabric.migration.LegacyForgeCapabilityStore;
 import xin.vanilla.sakura.internal.fabric.migration.MonthlySignInHistoryRepository;
 import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.network.packet.PlayerDataSyncPacket;
-import xin.vanilla.sakura.network.packet.PlayerMonthSyncPacket;
 import xin.vanilla.sakura.platform.SakuraPlayerDataService;
 import xin.vanilla.sakura.reward.RewardManager;
 import xin.vanilla.banira.common.util.DateUtils;
@@ -107,9 +106,7 @@ public final class FabricPlayerSignInDataService implements SakuraPlayerDataServ
                         .atZone(ZoneId.systemDefault())
         ).toString();
         SakuraNetwork.sendToPlayer(new PlayerDataSyncPacket(player.getUUID(), data), player);
-        SakuraNetwork.sendToPlayer(new PlayerMonthSyncPacket(
-                player.getUUID(), currentMonth, data.getSignInRecords()
-        ), player);
+        SakuraNetwork.syncMonth(player, currentMonth);
     }
 
     @Override

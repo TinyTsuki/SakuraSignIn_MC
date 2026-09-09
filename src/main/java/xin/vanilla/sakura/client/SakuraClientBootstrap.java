@@ -9,6 +9,7 @@ import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.event.ClientEventHandler;
+import xin.vanilla.sakura.internal.client.dev.SakuraNetworkSmokeClientRunner;
 import xin.vanilla.sakura.network.ClientProxy;
 import xin.vanilla.sakura.network.SakuraClientPacketHandlers;
 import xin.vanilla.sakura.notification.SakuraClientNotificationTypes;
@@ -60,12 +61,15 @@ public final class SakuraClientBootstrap {
             ClientEventHandler.loadThemeTexture();
         });
         BaniraClientEvents.Client.onClientTick(event -> {
+            SakuraNetworkSmokeClientRunner.tick();
+            ClientProxy.expireMonthTransfers();
             if (REWARD_TYPES_FROZEN.compareAndSet(false, true)) {
                 SakuraRewardClient.freeze();
             }
             ClientEventHandler.onClientTick(signInKey, rewardOptionKey);
         });
         BaniraClientEvents.Player.onClientLoggedOut(event -> {
+            ClientProxy.clearMonthTransfers();
             SakuraClientState.clearSession();
             SakuraPlayerData.clearClient();
         });
