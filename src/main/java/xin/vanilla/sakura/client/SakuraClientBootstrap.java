@@ -10,6 +10,7 @@ import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.event.ClientEventHandler;
 import xin.vanilla.sakura.network.ClientProxy;
+import xin.vanilla.sakura.internal.client.dev.SakuraNetworkSmokeClientRunner;
 import xin.vanilla.sakura.network.SakuraClientPacketHandlers;
 import xin.vanilla.sakura.notification.SakuraClientNotificationTypes;
 import xin.vanilla.sakura.api.reward.client.SakuraRewardClient;
@@ -63,9 +64,12 @@ public final class SakuraClientBootstrap {
             if (REWARD_TYPES_FROZEN.compareAndSet(false, true)) {
                 SakuraRewardClient.freeze();
             }
+            SakuraNetworkSmokeClientRunner.tick();
+            ClientProxy.expireMonthTransfers();
             ClientEventHandler.onClientTick(signInKey, rewardOptionKey);
         });
         BaniraClientEvents.Player.onClientLoggedOut(event -> {
+            ClientProxy.clearMonthTransfers();
             SakuraClientState.clearSession();
             SakuraPlayerData.clearClient();
         });

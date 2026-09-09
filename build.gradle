@@ -156,3 +156,28 @@ tasks.register('jarAll') {
 tasks.named('assemble').configure {
     dependsOn 'remapJar'
 }
+
+// Loom development runs need nested libraries from the optional performance mods.
+tasks.register('prepareDevRuntimeLibraries', Copy) {
+    group = 'verification'
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from({
+        (configurations.runtimeClasspath.files + configurations.modRuntimeOnly.files)
+                .findAll { it.name.startsWith('sodium') || it.name.startsWith('AANobbMI') }
+                .collect { zipTree(it) }
+    }) {
+        include 'META-INF/jars/*.jar'
+        eachFile { details -> details.path = details.name }
+        includeEmptyDirs = false
+    }
+    into({
+        def smoke = (project.findProperty('sakura.networkSmoke.child') ?: 'false').toString().toBoolean()
+        file(smoke ? "run-network-smoke/sessions/${project.property('sakura.networkSmoke.session')}/client/mods" : 'run/mods')
+    })
+}
+tasks.matching { it.name == 'runClient' }.configureEach {
+    dependsOn 'prepareDevRuntimeLibraries'
+}
+
+apply from: 'gradle/network-smoke.gradle'
+apply from: 'gradle/spark-profile-report.gradle'

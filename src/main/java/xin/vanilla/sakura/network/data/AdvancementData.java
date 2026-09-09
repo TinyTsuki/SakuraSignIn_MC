@@ -16,6 +16,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.chat.Component;
 import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
+import xin.vanilla.sakura.mixin.DisplayInfoAccessor;
 
 /**
  * 进度信息
@@ -89,13 +90,15 @@ public class AdvancementData {
     }
 
     public void writeToBuffer(BaniraPacketBuffer buffer) {
+        DisplayInfoAccessor display = (DisplayInfoAccessor) displayInfo;
         buffer.writeIdentifier(BaniraIdentifier.of(id.getNamespace(), id.getPath()));
-        buffer.writeUtf(displayInfo.getIcon().save(new CompoundTag()).toString());
+        buffer.writeUtf(display.sakura$getIcon().save(new CompoundTag()).toString());
         buffer.writeUtf(Component.Serializer.toJson(displayInfo.getTitle()));
         buffer.writeUtf(Component.Serializer.toJson(displayInfo.getDescription()));
-        buffer.writeUtf(displayInfo.getBackground() == null ? "" : displayInfo.getBackground().toString());
+        ResourceLocation background = display.sakura$getBackground();
+        buffer.writeUtf(background == null ? "" : background.toString());
         buffer.writeEnum(displayInfo.getFrame());
-        buffer.writeBoolean(displayInfo.shouldShowToast());
+        buffer.writeBoolean(display.sakura$shouldShowToast());
         buffer.writeBoolean(displayInfo.shouldAnnounceChat());
         buffer.writeBoolean(displayInfo.isHidden());
     }

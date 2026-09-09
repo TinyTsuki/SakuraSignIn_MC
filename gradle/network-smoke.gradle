@@ -1,0 +1,245 @@
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.concurrent.TimeUnit
+import groovy.json.JsonOutput
+import java.security.MessageDigest
+
+def smokeRoot = file("${projectDir}/run-network-smoke")
+def smokeChild = (project.findProperty('sakura.networkSmoke.child') ?: 'false').toString().toBoolean()
+def requestedSession = project.findProperty('sakura.networkSmoke.session')
+if (smokeChild && requestedSession == null) throw new GradleException('Missing isolated smoke session')
+def smokeSession = (requestedSession ?: (DateTimeFormatter.ofPattern('yyyyMMdd-HHmmss').format(LocalDateTime.now())
+        + '-' + UUID.randomUUID().toString().substring(0, 8))).toString()
+if (!(smokeSession ==~ /[0-9]{8}-[0-9]{6}-[a-f0-9]{8}/)) throw new GradleException('Invalid smoke session identifier')
+def smokeSessionRoot = file("${smokeRoot}/sessions/${smokeSession}")
+def smokeServerDir = file("${smokeSessionRoot}/server")
+def smokeClientDir = file("${smokeSessionRoot}/client")
+def smokePort = 25578
+def smokeRewardsPerClaim = Integer.parseInt((project.findProperty('sakura.networkSmoke.rewardsPerClaim') ?: '48').toString())
+if (smokeRewardsPerClaim < 3 || smokeRewardsPerClaim > 512) {
+    throw new GradleException('sakura.networkSmoke.rewardsPerClaim must be between 3 and 512')
+}
+if (smokeChild) {
+    layout.buildDirectory.set(file(project.property('sakura.networkSmoke.buildDir')))
+    String phase = project.property('sakura.networkSmoke.phase').toString()
+    String status = project.property('sakura.networkSmoke.status').toString()
+    String sparkReport = project.property('sakura.networkSmoke.sparkReport').toString()
+    loom.runs.configureEach {
+        property 'sakura.networkSmoke', 'true'
+        property 'sakura.networkSmoke.phase', phase
+        property 'sakura.networkSmoke.status', status
+        property 'sakura.networkSmoke.sparkReport', sparkReport
+        property 'sakura.networkSmoke.rewardsPerClaim', smokeRewardsPerClaim.toString()
+        ['clientSparkReport', 'serverStatus', 'clientStatus', 'checkpoint'].each { name ->
+            property "sakura.networkSmoke.${name}", project.property("sakura.networkSmoke.${name}").toString()
+        }
+    }
+    loom.runs.server {
+        runDir project.relativePath(smokeServerDir)
+        programArgs '--nogui', '--port', smokePort.toString()
+    }
+    loom.runs.client {
+        runDir project.relativePath(smokeClientDir)
+        property 'sakura.networkSmoke.host', '127.0.0.1'
+        property 'sakura.networkSmoke.port', smokePort.toString()
+        programArgs '--username', 'SakuraSmoke', '--uuid', 'fd78f0e4-8f20-3492-a36c-2c66f12ac6e8'
+    }
+}
+
+def readUtf8 = { File file -> file.isFile() ? file.getText('UTF-8') : '' }
+def sparkRuntime = {
+    def candidates = configurations.runtimeClasspath.files + configurations.modRuntimeOnly.files
+    candidates.find { candidate ->
+        if (!candidate.isFile() || !candidate.name.toLowerCase().startsWith('spark-')) {
+            false
+        } else {
+            def archive = new java.util.zip.ZipFile(candidate)
+            try {
+                archive.getEntry('me/lucko/spark/proto/SparkSamplerProtos$SamplerData.class') != null
+                        || archive.getEntry('me/lucko/spark/proto/SparkProtos$SamplerData.class') != null
+            } finally {
+                archive.close()
+            }
+        }
+    }
+}
+def tailUtf8 = { File file, int lines ->
+    if (!file.isFile()) return ''
+    List<String> all = file.readLines('UTF-8')
+    all.drop(Math.max(0, all.size() - lines)).join(System.lineSeparator())
+}
+def destroyProcessTree = { Process process ->
+    if (process == null || !process.isAlive()) return
+    process.toHandle().descendants().forEach { handle -> handle.destroyForcibly() }
+    process.destroyForcibly()
+    process.waitFor(15, TimeUnit.SECONDS)
+}
+def waitForStatus = { Process process, File status, String marker, File log, int timeoutSeconds ->
+    long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(timeoutSeconds)
+    while (System.nanoTime() < deadline) {
+        String content = readUtf8(status)
+        if (content.contains('FAIL ')) {
+            throw new GradleException("Network smoke failed while waiting for '${marker}':\n${content}\n${tailUtf8(log, 80)}")
+        }
+        if (content.contains(marker)) return
+        if (!process.isAlive()) {
+            throw new GradleException("Process exited before '${marker}' (exit ${process.exitValue()}):\n${tailUtf8(log, 120)}")
+        }
+        Thread.sleep(500L)
+    }
+    throw new GradleException("Timed out waiting for '${marker}':\n${tailUtf8(log, 120)}")
+}
+def gradleCommand = { String runTask, String phase, File status, File sparkReport, File childBuildDir, File projectCacheDir ->
+    File wrapper = file("${projectDir}/${System.getProperty('os.name').toLowerCase().contains('windows') ? 'gradlew.bat' : 'gradlew'}")
+    List<String> command = []
+    if (System.getProperty('os.name').toLowerCase().contains('windows')) {
+        command.addAll(['cmd.exe', '/d', '/c', wrapper.absolutePath])
+    } else {
+        command.add(wrapper.absolutePath)
+    }
+    command.addAll([
+            runTask, '--no-daemon', '--console=plain',
+            '--project-cache-dir', projectCacheDir.absolutePath,
+            '-Psakura.networkSmoke.child=true',
+            "-Psakura.networkSmoke.session=${smokeSession}".toString(),
+            "-Psakura.networkSmoke.rewardsPerClaim=${smokeRewardsPerClaim}".toString(),
+            "-Psakura.networkSmoke.phase=${phase}".toString(),
+            "-Psakura.networkSmoke.status=${status.absolutePath}".toString(),
+            "-Psakura.networkSmoke.sparkReport=${sparkReport.absolutePath}".toString(),
+            "-Psakura.networkSmoke.clientSparkReport=${new File(status.parentFile, "spark-client-report-${phase}.sparkprofile").absolutePath}".toString(),
+            "-Psakura.networkSmoke.serverStatus=${new File(status.parentFile, "server-${phase}.status").absolutePath}".toString(),
+            "-Psakura.networkSmoke.clientStatus=${new File(status.parentFile, "client-${phase}.status").absolutePath}".toString(),
+            "-Psakura.networkSmoke.checkpoint=${new File(status.parentFile, 'final-checkpoint.properties').absolutePath}".toString(),
+            "-Psakura.networkSmoke.buildDir=${childBuildDir.absolutePath}".toString()
+    ])
+    command
+}
+def startGradleRun = { String runTask, String phase, File status, File sparkReport, File log ->
+    File childRoot = new File(smokeRoot, runTask == 'runServer' ? 'server-gradle' : 'client-gradle')
+    File childBuildDir = new File(childRoot, 'build')
+    File projectCacheDir = new File(childRoot, 'project-cache')
+    childBuildDir.mkdirs()
+    projectCacheDir.mkdirs()
+    log.parentFile.mkdirs()
+    ProcessBuilder builder = new ProcessBuilder(gradleCommand(runTask, phase, status, sparkReport, childBuildDir, projectCacheDir).collect { it.toString() })
+    builder.directory(projectDir)
+    builder.redirectErrorStream(true)
+    builder.redirectOutput(log)
+    builder.start()
+}
+def stopServer = { Process server, File log ->
+    if (server == null || !server.isAlive()) return
+    if (!server.waitFor(60, TimeUnit.SECONDS)) {
+        destroyProcessTree(server)
+        throw new GradleException("Dedicated server did not stop cleanly:\n${tailUtf8(log, 120)}")
+    }
+    if (server.exitValue() != 0) {
+        throw new GradleException("Dedicated server exited with ${server.exitValue()}:\n${tailUtf8(log, 120)}")
+    }
+}
+def verifyMarkers = { File status, List<String> markers ->
+    String content = readUtf8(status)
+    markers.each { marker ->
+        if (!content.contains(marker)) {
+            throw new GradleException("Missing '${marker}' in ${status}:\n${content}")
+        }
+    }
+}
+
+tasks.register('networkSmoke') {
+    group = 'verification'
+    description = 'Runs a bounded two-phase Sakura dedicated server/client sign-in and sustained reward-history smoke.'
+    doLast {
+        if (smokeChild) throw new GradleException('networkSmoke cannot run inside its child Gradle process')
+        if (smokeSessionRoot.exists()) throw new GradleException("Smoke session already exists: ${smokeSessionRoot}")
+        smokeServerDir.mkdirs()
+        smokeClientDir.mkdirs()
+        new File(smokeServerDir, 'eula.txt').setText('eula=true' + System.lineSeparator(), 'UTF-8')
+        new File(smokeServerDir, 'server.properties').setText(
+                "online-mode=false${System.lineSeparator()}server-port=${smokePort}${System.lineSeparator()}" +
+                        "level-name=network-smoke-world${System.lineSeparator()}view-distance=4${System.lineSeparator()}", 'UTF-8')
+
+        String runId = DateTimeFormatter.ofPattern('yyyyMMdd-HHmmss').format(LocalDateTime.now())
+        File evidence = file("${smokeRoot}/evidence/${runId}")
+        evidence.mkdirs()
+        def sha256 = { File input -> MessageDigest.getInstance('SHA-256').digest(input.bytes).encodeHex().toString() }
+        def sourceFiles = fileTree(projectDir) {
+            include 'src/**', 'scripts/**', 'gradle/**', 'build.gradle', 'settings.gradle', 'gradle.properties'
+        }.files.sort { left, right -> left.path <=> right.path }
+        def sourceHashes = sourceFiles.collectEntries { source ->
+            [(projectDir.toPath().relativize(source.toPath()).toString().replace('\\', '/')): sha256(source)]
+        }
+        def sourceCommit = providers.exec { commandLine 'git', 'rev-parse', 'HEAD' }.standardOutput.asText.get().trim()
+        def sourceStatus = providers.exec { commandLine 'git', 'status', '--porcelain', '--untracked-files=all' }.standardOutput.asText.get()
+        def runtimeHashes = (configurations.runtimeClasspath.files + configurations.modRuntimeOnly.files).findAll { it.isFile() &&
+                (it.name.contains('banira_codex') || it.name.toLowerCase().startsWith('spark-')) }
+                .collectEntries { [(it.absolutePath): sha256(it)] }
+        new File(evidence, 'source-state.json').setText(JsonOutput.prettyPrint(JsonOutput.toJson([
+                commit: sourceCommit, status: sourceStatus, files: sourceHashes, session: smokeSession,
+                runtimeJars: runtimeHashes, serverSampleSeconds: 30, clientSampleSeconds: smokeRewardsPerClaim > 48 ? 60 : 20,
+                rewardCycles: 20, rewardsPerClaim: smokeRewardsPerClaim, historyRecords: 3600
+        ])) + System.lineSeparator(), 'UTF-8')
+        def profilerJar = sparkRuntime()
+        if (profilerJar == null) throw new GradleException('Unable to resolve the Spark runtime jar for network smoke evidence.')
+        new File(evidence, 'spark-runtime-phase-one.txt').setText(profilerJar.absolutePath + System.lineSeparator(), 'UTF-8')
+        ['phase-one', 'phase-two'].each { phase ->
+            File serverStatus = new File(evidence, "server-${phase}.status")
+            File clientStatus = new File(evidence, "client-${phase}.status")
+            File sparkReport = new File(evidence, "spark-report-${phase}.sparkprofile")
+            File clientSparkReport = new File(evidence, "spark-client-report-${phase}.sparkprofile")
+            File serverLog = new File(evidence, "server-${phase}.log")
+            File clientLog = new File(evidence, "client-${phase}.log")
+            Process server = null
+            Process client = null
+            try {
+                server = startGradleRun('runServer', phase, serverStatus, sparkReport, serverLog)
+                waitForStatus(server, serverStatus, 'PASS server-ready', serverLog, 180)
+                client = startGradleRun('runClient', phase, clientStatus, sparkReport, clientLog)
+                if (phase == 'phase-one') {
+                    waitForStatus(server, serverStatus, 'PASS spark-profiler-active', serverLog, 180)
+                    waitForStatus(server, serverStatus, 'PASS spark-report-written', serverLog, 120)
+                    if (!sparkReport.isFile() || sparkReport.length() == 0L) {
+                        throw new GradleException("Spark report was not written: ${sparkReport}")
+                    }
+                    new File(evidence, 'spark-report-phase-one.txt').setText(
+                            "file=${sparkReport.absolutePath}${System.lineSeparator()}bytes=${sparkReport.length()}${System.lineSeparator()}", 'UTF-8')
+                    logger.lifecycle("Sakura Spark report: ${sparkReport}")
+                    waitForStatus(client, clientStatus, 'PASS client-ui-spark-report-written', clientLog, 120)
+                    if (!clientSparkReport.isFile() || clientSparkReport.length() == 0L) {
+                        throw new GradleException("Client Spark report was not written: ${clientSparkReport}")
+                    }
+                }
+                waitForStatus(client, clientStatus, "FINISHED ${phase}", clientLog, 210)
+                if (!client.waitFor(45, TimeUnit.SECONDS) || client.exitValue() != 0) {
+                    throw new GradleException("Client did not stop cleanly after ${phase}:\n${tailUtf8(clientLog, 120)}")
+                }
+                waitForStatus(server, serverStatus, "FINISHED ${phase}", serverLog, 45)
+                stopServer(server, serverLog)
+                verifyMarkers(clientStatus, phase == 'phase-one'
+                        ? ['PASS remote-login-sync', 'PASS sign-in-client', 'PASS re-sign-in-client',
+                           'PASS client-ui-spark-profiler-active', 'PASS client-ui-spark-report-written',
+                           'PASS client-ui-sustained-workload', 'PASS reward-notification-details-client',
+                           'PASS all-pressure-month-details-client', 'PASS final-summary-client', 'FINISHED phase-one']
+                        : ['PASS remote-login-sync', 'PASS all-pressure-month-details-client',
+                           'PASS persisted-player-data-client', 'FINISHED phase-two'])
+                verifyMarkers(serverStatus, phase == 'phase-one'
+                        ? ['PASS sign-in-reward', 'PASS command-reward', 'PASS expanded-reward-list',
+                           'PASS re-sign-in-reward', 'PASS historical-sign-in-fixture',
+                           'PASS sustained-history-reward-workload', 'PASS spark-profiler-active',
+                           'PASS operation sign-in', 'PASS operation claim-rewards', 'PASS operation duplicate-claim',
+                           'PASS operation re-sign-in-rewards', 'PASS operation command-reward', 'PASS operation save-and-sync',
+                           'PASS final-checkpoint', 'PASS spark-report-written', 'FINISHED phase-one', 'PASS server-shutdown']
+                        : ['PASS persisted-final-cycle', 'PASS persisted-all-pressure-days',
+                           'PASS persisted-player-data', 'FINISHED phase-two', 'PASS server-shutdown'])
+            } finally {
+                destroyProcessTree(client)
+                destroyProcessTree(server)
+            }
+        }
+        List<File> crashReports = [smokeServerDir, smokeClientDir].collectMany { directory ->
+            fileTree(directory) { include '**/crash-reports/crash-*.txt' }.files as List<File>
+        }
+        if (!crashReports.isEmpty()) throw new GradleException("Network smoke created crash reports: ${crashReports*.absolutePath}")
+        logger.lifecycle("Sakura network smoke FINISHED: ${evidence}")
+    }
+}

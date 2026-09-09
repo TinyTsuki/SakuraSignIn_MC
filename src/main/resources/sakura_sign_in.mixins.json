@@ -3,7 +3,9 @@
   "minVersion": "0.8",
   "package": "xin.vanilla.sakura.mixin",
   "compatibilityLevel": "JAVA_8",
-  "mixins": [],
+  "mixins": [
+    "DisplayInfoAccessor"
+  ],
   "client": [
     "MinecraftClientMixin"
   ],
