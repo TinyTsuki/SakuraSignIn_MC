@@ -14,6 +14,7 @@ import xin.vanilla.sakura.network.packet.AdvancementPacket;
 import xin.vanilla.sakura.network.packet.ClientConfigSyncPacket;
 import xin.vanilla.sakura.network.packet.PlayerDataSyncPacket;
 import xin.vanilla.sakura.network.packet.PlayerMonthSyncPacket;
+import xin.vanilla.sakura.network.month.MonthDataTransfer;
 import xin.vanilla.sakura.network.packet.RewardOptionSyncPacket;
 import xin.vanilla.sakura.network.packet.PersonalDatePresetSyncPacket;
 import xin.vanilla.sakura.network.packet.CommonConfigSnapshotPacket;
@@ -31,9 +32,15 @@ import xin.vanilla.banira.common.data.Component;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 public class ClientProxy {
     public static final Logger LOGGER = LogManager.getLogger();
+    private static final MonthDataTransfer.Receiver MONTHS = new MonthDataTransfer.Receiver(System::nanoTime);
+
+    public static void expireMonthTransfers() { MONTHS.expire(); }
+
+    public static void clearMonthTransfers() { MONTHS.clear(); }
 
     public static void handleSynPlayerData(PlayerDataSyncPacket packet) {
         LocalPlayer player = Minecraft.getInstance().player;
@@ -66,12 +73,19 @@ public class ClientProxy {
         if (player == null || !player.getUUID().equals(packet.getPlayerUUID())) {
             return;
         }
-        IPlayerSignInData data = SakuraPlayerData.get(player);
-        List<SignInRecord> merged = new ArrayList<>(data.getSignInRecords());
-        merged.removeIf(record -> packet.getMonth().equals(PlayerMonthSyncPacket.monthOf(record)));
-        merged.addAll(packet.getRecords());
-        data.setSignInRecords(merged);
-        refreshOpenSignInScreen();
+        try {
+            Optional<List<String>> snapshot = MONTHS.accept(packet.getPart());
+            if (!snapshot.isPresent()) return;
+            List<SignInRecord> records = PlayerMonthSyncPacket.decodeRecords(packet.getMonth(), snapshot.get());
+            IPlayerSignInData data = SakuraPlayerData.get(player);
+            List<SignInRecord> merged = new ArrayList<>(data.getSignInRecords());
+            merged.removeIf(record -> packet.getMonth().equals(PlayerMonthSyncPacket.monthOf(record)));
+            merged.addAll(records);
+            data.setSignInRecords(merged);
+            refreshOpenSignInScreen();
+        } catch (RuntimeException exception) {
+            LOGGER.warn("Unable to apply synchronized Sakura month {}", packet.getMonth(), exception);
+        }
     }
 
     private static void refreshOpenSignInScreen() {

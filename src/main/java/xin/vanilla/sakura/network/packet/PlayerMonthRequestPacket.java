@@ -1,11 +1,10 @@
 package xin.vanilla.sakura.network.packet;
 
 import net.minecraft.server.level.ServerPlayer;
-import xin.vanilla.banira.api.BaniraNetwork;
 import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
-import xin.vanilla.sakura.api.SakuraPlayerData;
+import xin.vanilla.sakura.network.SakuraNetwork;
 
 /**
  * 客户端仅请求当前需要展示的月份。
@@ -29,9 +28,7 @@ public class PlayerMonthRequestPacket implements INetworkPacket {
         ctx.enqueueWork(() -> {
             ServerPlayer sender = ctx.senderAs(ServerPlayer.class);
             if (sender != null) {
-                BaniraNetwork.sendToPlayer(new PlayerMonthSyncPacket(
-                        sender.getUUID(), packet.month, SakuraPlayerData.get(sender).getSignInRecords()
-                ), sender);
+                SakuraNetwork.syncMonth(sender, packet.month);
             }
         });
         ctx.markHandled();

@@ -1,5 +1,5 @@
 plugins {
-    id 'fabric-loom' version '1.15-SNAPSHOT'
+    id 'fabric-loom' version '1.17.13'
 }
 
 def javaVer = 21
@@ -49,7 +49,7 @@ repositories {
 
 dependencies {
     modRuntimeOnly "maven.modrinth:fabric-permissions-api:62DUD085"
-    modRuntimeOnly "maven.modrinth:sodium-extra:M9kVcb0e"
+    modRuntimeOnly "maven.modrinth:sodium-extra:anDafurZ"
     modRuntimeOnly "maven.modrinth:spark:cALUj9l1"
     // Development runtime performance mod; not bundled into published artifacts.
     modRuntimeOnly "maven.modrinth:AANobbMI:u1OEbNKx"
@@ -157,3 +157,28 @@ tasks.register('jarAll') {
 tasks.named('assemble').configure {
     dependsOn 'remapJar'
 }
+
+tasks.register('prepareDevRuntimeLibraries', Copy) {
+    group = 'verification'
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from({
+        (configurations.runtimeClasspath.files + configurations.modRuntimeOnly.files)
+                .findAll { it.name.startsWith('sodium') || it.name.startsWith('AANobbMI') }
+                .collect { zipTree(it) }
+    }) {
+        include 'META-INF/jars/*.jar'
+        eachFile { details -> details.path = details.name }
+        includeEmptyDirs = false
+    }
+    into({
+        def smoke = (findProperty('sakura.networkSmoke.child') ?: 'false').toString().toBoolean()
+        file(smoke ? "run-network-smoke/sessions/${project.property('sakura.networkSmoke.session')}/client/mods" : 'run/mods')
+    })
+}
+
+tasks.named('runClient').configure {
+    dependsOn 'prepareDevRuntimeLibraries'
+}
+
+apply from: 'gradle/network-smoke.gradle'
+apply from: 'gradle/spark-profile-report.gradle'
