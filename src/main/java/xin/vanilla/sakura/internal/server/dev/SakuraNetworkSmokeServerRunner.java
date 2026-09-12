@@ -20,6 +20,7 @@ import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.data.time.SakuraClock;
 import xin.vanilla.sakura.enums.ETimeCoolingMethod;
 import xin.vanilla.sakura.internal.dev.SakuraNetworkSmokeStatus;
+import xin.vanilla.sakura.internal.dev.SakuraNetworkSmokeConfigs;
 import xin.vanilla.sakura.reward.Reward;
 
 import java.lang.reflect.Field;
@@ -65,6 +66,7 @@ public final class SakuraNetworkSmokeServerRunner {
             if (server == null || !server.isRunning()) return;
             if (!ready) {
                 ready = true;
+                SakuraNetworkSmokeConfigs.recordRuntime();
                 SakuraNetworkSmokeStatus.append("PASS server-ready");
             }
             if (sparkProfile != null && sparkProfile.writeWhenComplete()) {
@@ -213,6 +215,7 @@ public final class SakuraNetworkSmokeServerRunner {
         }
         SakuraNetworkSmokeStatus.append("PASS final-checkpoint cycles=" + rewardWorkload.cycles()
                 + " days=" + data.getTotalSignInDays() + " records=" + data.getSignInRecords().size());
+        SakuraNetworkSmokeConfigs.verifyLocal(CommonConfig.class);
         SakuraNetworkSmokeStatus.append("FINISHED phase-one");
         finished = true;
     }
@@ -257,6 +260,7 @@ public final class SakuraNetworkSmokeServerRunner {
         SakuraNetworkSmokeStatus.append("PASS persisted-final-cycle cycles=" + checkpoint.getProperty("cycles")
                 + " days=" + data.getTotalSignInDays() + " records=" + data.getSignInRecords().size());
         SakuraNetworkSmokeStatus.append("PASS persisted-player-data");
+        SakuraNetworkSmokeConfigs.verifyLocal(CommonConfig.class);
         SakuraNetworkSmokeStatus.append("FINISHED phase-two");
         finished = true;
     }

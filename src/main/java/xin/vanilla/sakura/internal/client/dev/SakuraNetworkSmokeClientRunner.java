@@ -8,9 +8,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.client.SakuraClientState;
+import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.enums.ESignInType;
 import xin.vanilla.sakura.internal.dev.SakuraNetworkSmokeStatus;
+import xin.vanilla.sakura.internal.dev.SakuraNetworkSmokeConfigs;
 import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.network.packet.SignInPacket;
 import xin.vanilla.banira.common.util.DateUtils;
@@ -73,6 +75,7 @@ public final class SakuraNetworkSmokeClientRunner {
                 if (!"phase-one".equals(phase) && !"phase-two".equals(phase)) {
                     throw new IllegalStateException("Unknown network smoke phase " + phase);
                 }
+                SakuraNetworkSmokeConfigs.recordRuntime();
             }
             long stateTimeout = state == State.FINAL_SUMMARY ? SUMMARY_TIMEOUT_NANOS : STATE_TIMEOUT_NANOS;
             if (now - startedAt > TIMEOUT_NANOS || now - stateStartedAt > stateTimeout) {
@@ -299,6 +302,7 @@ public final class SakuraNetworkSmokeClientRunner {
     }
 
     private static void finish(Minecraft client) {
+        SakuraNetworkSmokeConfigs.verifyLocal(ClientConfig.class);
         state = State.FINISHED;
         SakuraNetworkSmokeStatus.append("FINISHED " + SakuraNetworkSmokeStatus.phase());
         LOGGER.info("Sakura network smoke client finished {}", SakuraNetworkSmokeStatus.phase());
