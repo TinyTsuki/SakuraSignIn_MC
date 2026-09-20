@@ -1,0 +1,355 @@
+{
+  "schema": {
+    "display.autoRewarded": {
+      "type": "BOOLEAN",
+      "default": false,
+      "min": null,
+      "max": null,
+      "precision": 2,
+      "enum": null,
+      "permission": "INHERIT",
+      "permissionLevel": null,
+      "permissionKey": null,
+      "keyChords": false
+    },
+    "display.interfaceThemeMode": {
+      "type": "ENUM",
+      "default": "SPRING",
+      "min": null,
+      "max": null,
+      "precision": 2,
+      "enum": "xin.vanilla.banira.api.client.theme.BaniraThemeMode",
+      "permission": "INHERIT",
+      "permissionLevel": null,
+      "permissionKey": null,
+      "keyChords": false
+    },
+    "display.lotteryAnimationStyle": {
+      "type": "ENUM",
+      "default": "STRIP",
+      "min": null,
+      "max": null,
+      "precision": 2,
+      "enum": "xin.vanilla.sakura.data.lottery.LotteryAnimationStyle",
+      "permission": "INHERIT",
+      "permissionLevel": null,
+      "permissionKey": null,
+      "keyChords": false
+    },
+    "display.showLastReward": {
+      "type": "BOOLEAN",
+      "default": false,
+      "min": null,
+      "max": null,
+      "precision": 2,
+      "enum": null,
+      "permission": "INHERIT",
+      "permissionLevel": null,
+      "permissionKey": null,
+      "keyChords": false
+    },
+    "display.showNextReward": {
+      "type": "BOOLEAN",
+      "default": false,
+      "min": null,
+      "max": null,
+      "precision": 2,
+      "enum": null,
+      "permission": "INHERIT",
+      "permissionLevel": null,
+      "permissionKey": null,
+      "keyChords": false
+    },
+    "display.showSignInScreenTips": {
+      "type": "BOOLEAN",
+      "default": true,
+      "min": null,
+      "max": null,
+      "precision": 2,
+      "enum": null,
+      "permission": "INHERIT",
+      "permissionLevel": null,
+      "permissionKey": null,
+      "keyChords": false
+    },
+    "display.specialVariant": {
+      "type": "BOOLEAN",
+      "default": true,
+      "min": null,
+      "max": null,
+      "precision": 2,
+      "enum": null,
+      "permission": "INHERIT",
+      "permissionLevel": null,
+      "permissionKey": null,
+      "keyChords": false
+    },
+    "display.themeId": {
+      "type": "STRING",
+      "default": "sakura",
+      "min": null,
+      "max": null,
+      "precision": 2,
+      "enum": null,
+      "permission": "INHERIT",
+      "permissionLevel": null,
+      "permissionKey": null,
+      "keyChords": false
+    },
+    "rewardKeys.copy": {
+      "type": "STRING_LIST",
+      "default": [
+        "LeftControl+C",
+        "RightControl+C"
+      ],
+      "min": null,
+      "max": null,
+      "precision": 2,
+      "enum": null,
+      "permission": "INHERIT",
+      "permissionLevel": null,
+      "permissionKey": null,
+      "keyChords": true
+    },
+    "rewardKeys.cut": {
+      "type": "STRING_LIST",
+      "default": [
+        "LeftControl+X",
+        "RightControl+X"
+      ],
+      "min": null,
+      "max": null,
+      "precision": 2,
+      "enum": null,
+      "permission": "INHERIT",
+      "permissionLevel": null,
+      "permissionKey": null,
+      "keyChords": true
+    },
+    "rewardKeys.delete": {
+      "type": "STRING_LIST",
+      "default": [
+        "Delete"
+      ],
+      "min": null,
+      "max": null,
+      "precision": 2,
+      "enum": null,
+      "permission": "INHERIT",
+      "permissionLevel": null,
+      "permissionKey": null,
+      "keyChords": true
+    },
+    "rewardKeys.paste": {
+      "type": "STRING_LIST",
+      "default": [
+        "LeftControl+V",
+        "RightControl+V"
+      ],
+      "min": null,
+      "max": null,
+      "precision": 2,
+      "enum": null,
+      "permission": "INHERIT",
+      "permissionLevel": null,
+      "permissionKey": null,
+      "keyChords": true
+    },
+    "rewardKeys.redo": {
+      "type": "STRING_LIST",
+      "default": [
+        "LeftShift+LeftControl+Z",
+        "RightShift+RightControl+Z"
+      ],
+      "min": null,
+      "max": null,
+      "precision": 2,
+      "enum": null,
+      "permission": "INHERIT",
+      "permissionLevel": null,
+      "permissionKey": null,
+      "keyChords": true
+    },
+    "rewardKeys.undo": {
+      "type": "STRING_LIST",
+      "default": [
+        "LeftControl+Z",
+        "RightControl+Z"
+      ],
+      "min": null,
+      "max": null,
+      "precision": 2,
+      "enum": null,
+      "permission": "INHERIT",
+      "permissionLevel": null,
+      "permissionKey": null,
+      "keyChords": true
+    },
+    "signKeys.lastMonth": {
+      "type": "STRING_LIST",
+      "default": [
+        "Left"
+      ],
+      "min": null,
+      "max": null,
+      "precision": 2,
+      "enum": null,
+      "permission": "INHERIT",
+      "permissionLevel": null,
+      "permissionKey": null,
+      "keyChords": true
+    },
+    "signKeys.lastYear": {
+      "type": "STRING_LIST",
+      "default": [
+        "Up"
+      ],
+      "min": null,
+      "max": null,
+      "precision": 2,
+      "enum": null,
+      "permission": "INHERIT",
+      "permissionLevel": null,
+      "permissionKey": null,
+      "keyChords": true
+    },
+    "signKeys.nextMonth": {
+      "type": "STRING_LIST",
+      "default": [
+        "Right"
+      ],
+      "min": null,
+      "max": null,
+      "precision": 2,
+      "enum": null,
+      "permission": "INHERIT",
+      "permissionLevel": null,
+      "permissionKey": null,
+      "keyChords": true
+    },
+    "signKeys.nextYear": {
+      "type": "STRING_LIST",
+      "default": [
+        "Down"
+      ],
+      "min": null,
+      "max": null,
+      "precision": 2,
+      "enum": null,
+      "permission": "INHERIT",
+      "permissionLevel": null,
+      "permissionKey": null,
+      "keyChords": true
+    }
+  },
+  "unbound": {
+    "display.autoRewarded": false,
+    "display.interfaceThemeMode": "SPRING",
+    "display.lotteryAnimationStyle": "STRIP",
+    "display.showLastReward": false,
+    "display.showNextReward": false,
+    "display.showSignInScreenTips": true,
+    "display.specialVariant": true,
+    "display.themeId": "sakura",
+    "rewardKeys.copy": [
+      "LeftControl+C",
+      "RightControl+C"
+    ],
+    "rewardKeys.cut": [
+      "LeftControl+X",
+      "RightControl+X"
+    ],
+    "rewardKeys.delete": [
+      "Delete"
+    ],
+    "rewardKeys.paste": [
+      "LeftControl+V",
+      "RightControl+V"
+    ],
+    "rewardKeys.redo": [
+      "LeftShift+LeftControl+Z",
+      "RightShift+RightControl+Z"
+    ],
+    "rewardKeys.undo": [
+      "LeftControl+Z",
+      "RightControl+Z"
+    ],
+    "signKeys.lastMonth": [
+      "Left"
+    ],
+    "signKeys.lastYear": [
+      "Up"
+    ],
+    "signKeys.nextMonth": [
+      "Right"
+    ],
+    "signKeys.nextYear": [
+      "Down"
+    ]
+  },
+  "defaults": {
+    "display.autoRewarded": false,
+    "display.interfaceThemeMode": "SPRING",
+    "display.lotteryAnimationStyle": "STRIP",
+    "display.showLastReward": false,
+    "display.showNextReward": false,
+    "display.showSignInScreenTips": true,
+    "display.specialVariant": true,
+    "display.themeId": "sakura",
+    "rewardKeys.copy": [
+      "LeftControl+C",
+      "RightControl+C"
+    ],
+    "rewardKeys.cut": [
+      "LeftControl+X",
+      "RightControl+X"
+    ],
+    "rewardKeys.delete": [
+      "Delete"
+    ],
+    "rewardKeys.paste": [
+      "LeftControl+V",
+      "RightControl+V"
+    ],
+    "rewardKeys.redo": [
+      "LeftShift+LeftControl+Z",
+      "RightShift+RightControl+Z"
+    ],
+    "rewardKeys.undo": [
+      "LeftControl+Z",
+      "RightControl+Z"
+    ],
+    "signKeys.lastMonth": [
+      "Left"
+    ],
+    "signKeys.lastYear": [
+      "Up"
+    ],
+    "signKeys.nextMonth": [
+      "Right"
+    ],
+    "signKeys.nextYear": [
+      "Down"
+    ]
+  },
+  "changed": {
+    "display.autoRewarded": true,
+    "display.interfaceThemeMode": "SUMMER",
+    "display.lotteryAnimationStyle": "CARDS",
+    "display.showLastReward": true,
+    "display.showNextReward": true,
+    "display.showSignInScreenTips": false,
+    "display.specialVariant": false,
+    "display.themeId": "baseline,display.themeId",
+    "rewardKeys.copy": [],
+    "rewardKeys.cut": [],
+    "rewardKeys.delete": [],
+    "rewardKeys.paste": [],
+    "rewardKeys.redo": [],
+    "rewardKeys.undo": [],
+    "signKeys.lastMonth": [],
+    "signKeys.lastYear": [],
+    "signKeys.nextMonth": [],
+    "signKeys.nextYear": []
+  }
+}
