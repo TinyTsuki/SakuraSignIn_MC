@@ -12,7 +12,6 @@ import xin.vanilla.banira.common.config.annotation.Config;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
 import xin.vanilla.banira.api.client.theme.BaniraThemeMode;
 import xin.vanilla.sakura.SakuraSignIn;
-import xin.vanilla.sakura.config.access.ClientConfigAccess;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.sakura.util.GLFWKeyHelper;
 import xin.vanilla.sakura.data.lottery.LotteryAnimationStyle;
@@ -25,7 +24,8 @@ import java.util.List;
 /**
  * 仅客户端使用的显示与快捷键设置。
  */
-@Config(name = SakuraSignIn.MODID + "-client", type = ConfigScope.CLIENT)
+@Config(name = SakuraSignIn.MODID + "-client", type = ConfigScope.CLIENT,
+        generateView = true, viewUnbound = Config.UnboundAccess.DEFAULTS)
 public class ClientConfig implements ConfigData {
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
@@ -45,8 +45,8 @@ public class ClientConfig implements ConfigData {
     @ConfigEntry.Gui.Tooltip(zh_cn = "签到界面快捷键", en_us = "Sign-in screen shortcuts")
     private SignKeysCategory signKeys = new SignKeysCategory();
 
-    public static RootView get() {
-        return ClientConfigAccess.root(BaniraConfig.holder(ClientConfig.class));
+    public static ClientConfigView get() {
+        return ClientConfigView.get();
     }
 
     public static void save() {
@@ -54,13 +54,6 @@ public class ClientConfig implements ConfigData {
         if (holder != null) {
             holder.save();
         }
-    }
-
-    public interface RootView {
-        DisplayView display();
-        RewardKeysView rewardKeys();
-        SignKeysView signKeys();
-        ConfigHolder holder();
     }
 
     /** 清理由旧开发配置遗留在日历翻页快捷键中的鼠标左键。 */
@@ -91,36 +84,6 @@ public class ClientConfig implements ConfigData {
         return value.equals("mouseleft") || value.equals("mouse1")
                 || value.equals("key.mouse.left") || value.equals("key.mouse.1")
                 || value.equals("glfwmousebuttonleft");
-    }
-
-    public interface DisplayView {
-        BaniraThemeMode interfaceThemeMode();
-        String themeId();
-        DisplayView themeId(String value);
-        boolean specialVariant();
-        DisplayView specialVariant(boolean value);
-        boolean showLastReward();
-        boolean showNextReward();
-        boolean autoRewarded();
-        boolean showSignInScreenTips();
-        DisplayView showSignInScreenTips(boolean value);
-        LotteryAnimationStyle lotteryAnimationStyle();
-    }
-
-    public interface RewardKeysView {
-        List<String> copy();
-        List<String> paste();
-        List<String> cut();
-        List<String> delete();
-        List<String> undo();
-        List<String> redo();
-    }
-
-    public interface SignKeysView {
-        List<String> lastMonth();
-        List<String> nextMonth();
-        List<String> lastYear();
-        List<String> nextYear();
     }
 
     @Getter

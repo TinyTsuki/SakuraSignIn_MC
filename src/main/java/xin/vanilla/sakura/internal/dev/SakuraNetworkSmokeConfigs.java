@@ -10,6 +10,9 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import net.minecraftforge.fml.ModList;
 import xin.vanilla.banira.BaniraCodex;
+import xin.vanilla.sakura.config.ClientConfig;
+import xin.vanilla.sakura.config.ClientConfigView;
+import xin.vanilla.sakura.config.CommonConfigView;
 import xin.vanilla.banira.api.BaniraDataPaths;
 import xin.vanilla.banira.common.config.BaniraConfig;
 import xin.vanilla.banira.common.config.ConfigHolder;
@@ -31,6 +34,10 @@ import java.util.TreeSet;
 
 /** Read-only config comparison; only the separate dev checkpoint is written. */
 public final class SakuraNetworkSmokeConfigs {
+    private static final class RetainedViews {
+        static final CommonConfigView COMMON = CommonConfigView.get();
+        static final ClientConfigView CLIENT = ClientConfigView.get();
+    }
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Set<String> RUNTIME_PHASES = new HashSet<>();
 
@@ -41,6 +48,9 @@ public final class SakuraNetworkSmokeConfigs {
         ConfigHolder holder = BaniraConfig.holder(configClass);
         if (holder == null) throw new IllegalStateException("Missing config holder " + configClass.getName());
         String phase = SakuraNetworkSmokeStatus.phase();
+        verifyGeneratedReads(holder, configClass == ClientConfig.class ? RetainedViews.CLIENT : RetainedViews.COMMON, "");
+        SakuraNetworkSmokeStatus.append("PASS generated-config-reads config=" + holder.getConfigName()
+                + " phase=" + phase + " values=" + holder.getDescriptors().size());
         try {
             JsonObject snapshot = verify(holder, BaniraDataPaths.gameConfigPath(), phase);
             SakuraNetworkSmokeStatus.append(("phase-one".equals(phase)
@@ -48,6 +58,26 @@ public final class SakuraNetworkSmokeConfigs {
                     + " config=" + holder.getConfigName() + " values=" + snapshot.size());
         } catch (IOException error) {
             throw new IllegalStateException("Cannot verify config " + holder.getConfigName(), error);
+        }
+    }
+
+    private static void verifyGeneratedReads(ConfigHolder holder, Object view, String prefix) {
+        for (java.lang.reflect.Method method : view.getClass().getDeclaredMethods()) {
+            if (!java.lang.reflect.Modifier.isPublic(method.getModifiers())
+                    || java.lang.reflect.Modifier.isStatic(method.getModifiers())
+                    || method.getParameterCount() != 0 || method.getName().equals("handle")) continue;
+            try {
+                Object value = method.invoke(view);
+                String path = prefix + method.getName();
+                if (method.getReturnType().getEnclosingClass() == view.getClass()) {
+                    verifyGeneratedReads(holder, value, path + ".");
+                } else {
+                    if (!holder.hasValue(path)) throw new IllegalStateException("Unknown generated path: " + path);
+                    requireEqual("generated view", path, normalize(holder.get(path)), normalize(value));
+                }
+            } catch (ReflectiveOperationException error) {
+                throw new IllegalStateException("Cannot inspect generated config", error);
+            }
         }
     }
 

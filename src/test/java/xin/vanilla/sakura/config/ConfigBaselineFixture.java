@@ -14,6 +14,8 @@ import xin.vanilla.banira.internal.forge.config.ForgeConfigAdapter;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -23,7 +25,7 @@ import java.util.*;
 import static org.junit.Assert.*;
 
 /** Captures actual scanner and access behavior before replacing the handwritten views. */
-final class ConfigBaselineFixture implements ConfigValueStore {
+public final class ConfigBaselineFixture implements ConfigValueStore {
     private static final Gson JSON = new GsonBuilder().setPrettyPrinting().serializeNulls().create();
     final Map<String, Object> values = new TreeMap<>();
     final Map<String, Object> defaults = new TreeMap<>();
@@ -75,6 +77,46 @@ final class ConfigBaselineFixture implements ConfigValueStore {
         return result;
     }
 
+    void bind(Class<?> type) { bind(type, holder); }
+
+    static org.junit.rules.ExternalResource platformScope() {
+        return new org.junit.rules.ExternalResource() {
+            private xin.vanilla.banira.platform.BaniraPlatform previous;
+            @Override protected void before() {
+                xin.vanilla.sakura.test.BaniraTestPlatform.install();
+                previous = xin.vanilla.banira.platform.BaniraPlatforms.get();
+            }
+            @Override protected void after() {
+                xin.vanilla.banira.platform.BaniraPlatforms.install(previous);
+            }
+        };
+    }
+
+    public static ConfigHolder holderWithValues(Class<?> type, Map<String, Object> overrides) throws Exception {
+        ConfigBaselineFixture fixture = new ConfigBaselineFixture(type);
+        for (Map.Entry<String, Object> entry : overrides.entrySet()) {
+            fixture.holder.set(entry.getKey(), entry.getValue());
+        }
+        return fixture.holder;
+    }
+
+    static void bind(Class<?> type, xin.vanilla.banira.platform.BaniraConfigHandle holder) {
+        xin.vanilla.banira.platform.BaniraConfigService service = new xin.vanilla.banira.platform.BaniraConfigService() {
+            public <T> void register(Class<T> config, String modId) { throw new UnsupportedOperationException(); }
+            public <T> T view(Class<?> config, Class<T> view) { throw new UnsupportedOperationException(); }
+            public xin.vanilla.banira.platform.BaniraConfigHandle handle(Class<?> config) {
+                return config == type ? holder : null;
+            }
+        };
+        xin.vanilla.banira.platform.BaniraPlatforms.install((xin.vanilla.banira.platform.BaniraPlatform)
+                Proxy.newProxyInstance(ConfigBaselineFixture.class.getClassLoader(),
+                        new Class<?>[]{xin.vanilla.banira.platform.BaniraPlatform.class},
+                        (proxy, method, args) -> {
+                            if (method.getName().equals("configService")) return service;
+                            throw new UnsupportedOperationException(method.toString());
+                        }));
+    }
+
     static Map<String, Object> readView(Object view, Class<?> type) throws Exception {
         Map<String, Object> result = new TreeMap<>();
         collect(view, type, "", result);
@@ -83,12 +125,13 @@ final class ConfigBaselineFixture implements ConfigValueStore {
 
     private static void collect(Object view, Class<?> type, String prefix,
                                 Map<String, Object> output) throws Exception {
-        for (Method method : type.getMethods()) {
-            if (method.getParameterCount() != 0 || method.getReturnType() == Void.TYPE
-                    || method.getName().equals("holder")) continue;
+        for (Method method : type.getDeclaredMethods()) {
+            if (!Modifier.isPublic(method.getModifiers()) || Modifier.isStatic(method.getModifiers())
+                    || method.getParameterCount() != 0 || method.getReturnType() == Void.TYPE
+                    || method.getName().equals("holder") || method.getName().equals("handle")) continue;
             Object value = method.invoke(view);
             String path = prefix + method.getName();
-            if (method.getReturnType().isInterface()
+            if ((method.getReturnType().isInterface() || method.getReturnType().getEnclosingClass() == type)
                     && !List.class.isAssignableFrom(method.getReturnType())) {
                 collect(value, method.getReturnType(), path + ".", output);
             } else {

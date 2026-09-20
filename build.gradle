@@ -93,6 +93,7 @@ repositories {
     }
 }
 
+apply from: "gradle/config-view-processor.gradle"
 apply from: "gradle/banira-local-fingerprint.gradle"
 apply from: "gradle/network-smoke.gradle"
 apply from: "gradle/spark-profile-report.gradle"

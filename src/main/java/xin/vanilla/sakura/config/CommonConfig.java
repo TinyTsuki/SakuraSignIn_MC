@@ -13,7 +13,6 @@ import xin.vanilla.banira.common.config.annotation.Config;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
 import xin.vanilla.banira.common.network.packet.ConfigSyncToServer;
 import xin.vanilla.sakura.SakuraSignIn;
-import xin.vanilla.sakura.config.access.CommonConfigAccess;
 import xin.vanilla.sakura.data.player.HistoryRetentionPolicy;
 import xin.vanilla.sakura.enums.ETimeCoolingMethod;
 
@@ -23,7 +22,8 @@ import java.util.Map;
 /**
  * 服务端与通用设置共用一份 Banira COMMON 配置。
  */
-@Config(name = SakuraSignIn.MODID + "-common", type = ConfigScope.COMMON)
+@Config(name = SakuraSignIn.MODID + "-common", type = ConfigScope.COMMON,
+        generateView = true, viewUnbound = Config.UnboundAccess.DEFAULTS)
 public class CommonConfig implements ConfigData {
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
@@ -79,8 +79,8 @@ public class CommonConfig implements ConfigData {
     @ConfigEntry.Gui.Tooltip(zh_cn = "指令与奖励编辑权限", en_us = "Command and reward permissions")
     private PermissionCategory permission = new PermissionCategory();
 
-    public static RootView get() {
-        return CommonConfigAccess.root(BaniraConfig.holder(CommonConfig.class));
+    public static CommonConfigView get() {
+        return CommonConfigView.get();
     }
 
     public static void save() {
@@ -107,112 +107,6 @@ public class CommonConfig implements ConfigData {
             );
         }
         return snapshot;
-    }
-
-    public interface RootView {
-        MakeUpView makeUp();
-        CoolingView cooling();
-        DateTimeView dateTime();
-        RewardView reward();
-        ServerView server();
-        HistoryView history();
-        CommandView command();
-        ConciseView concise();
-        PermissionView permission();
-        ConfigHolder holder();
-    }
-
-    public interface MakeUpView {
-        boolean signInCard();
-        MakeUpView signInCard(boolean value);
-        int reSignInDays();
-        MakeUpView reSignInDays(int value);
-        boolean signInCardOnlyBaseReward();
-        MakeUpView signInCardOnlyBaseReward(boolean value);
-    }
-
-    public interface CoolingView {
-        ETimeCoolingMethod timeCoolingMethod();
-        CoolingView timeCoolingMethod(ETimeCoolingMethod value);
-        double timeCoolingTime();
-        CoolingView timeCoolingTime(double value);
-        double timeCoolingInterval();
-        CoolingView timeCoolingInterval(double value);
-    }
-
-    public interface DateTimeView {
-        String serverTime();
-        DateTimeView serverTime(String value);
-        String serverCalibrationTime();
-        DateTimeView serverCalibrationTime(String value);
-    }
-
-    public interface RewardView {
-        boolean rewardAffectedByLuck();
-        RewardView rewardAffectedByLuck(boolean value);
-        boolean continuousRewardsRepeatable();
-        RewardView continuousRewardsRepeatable(boolean value);
-        boolean cycleRewardsRepeatable();
-        RewardView cycleRewardsRepeatable(boolean value);
-    }
-
-    public interface ServerView {
-        boolean autoSignIn();
-        ServerView autoSignIn(boolean value);
-        int requiredTotalOnlineSeconds();
-        ServerView requiredTotalOnlineSeconds(int value);
-        int requiredTodayOnlineSeconds();
-        ServerView requiredTodayOnlineSeconds(int value);
-    }
-
-    public interface HistoryView {
-        int retentionMonths();
-        HistoryView retentionMonths(int value);
-        HistoryRetentionPolicy retentionPolicy();
-        HistoryView retentionPolicy(HistoryRetentionPolicy value);
-    }
-
-    public interface CommandView {
-        String commandPrefix();
-        CommandView commandPrefix(String value);
-        String commandSignIn();
-        String commandSignInEx();
-        String commandReward();
-        String commandCdk();
-        String commandCard();
-        String commandLanguage();
-        String commandLottery();
-    }
-
-    public interface ConciseView {
-        boolean conciseSignIn();
-        boolean conciseSignInEx();
-        boolean conciseReward();
-        boolean conciseCdk();
-        boolean conciseCard();
-        boolean conciseLanguage();
-    }
-
-    public interface PermissionView {
-        int permissionEditReward();
-        int permissionBaseReward();
-        int permissionContinuousReward();
-        int permissionCycleReward();
-        int permissionYearReward();
-        int permissionMonthReward();
-        int permissionWeekReward();
-        int permissionDateTimeReward();
-        int permissionCumulativeReward();
-        int permissionRandomReward();
-        int permissionCdkReward();
-        int permissionPersonalDateReward();
-        int permissionLotteryReward();
-        int permissionRewardProbability();
-        int permissionRewardDetail();
-        int permissionRewardFailedTips();
-        int permissionCommandReward();
-        int permissionServerConfigGet();
-        int permissionServerConfigSet();
     }
 
     @Getter
