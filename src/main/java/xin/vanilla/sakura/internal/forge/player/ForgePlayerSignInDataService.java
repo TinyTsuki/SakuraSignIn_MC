@@ -13,6 +13,7 @@ import xin.vanilla.sakura.data.PlayerSignInDataRepository;
 import xin.vanilla.sakura.data.migration.LegacyMigrationResult;
 import xin.vanilla.sakura.data.migration.LegacyPlayerDataMigrationService;
 import xin.vanilla.sakura.config.CommonConfig;
+import xin.vanilla.sakura.config.CommonConfigView;
 import xin.vanilla.sakura.data.player.HistoryRetentionPolicy;
 import xin.vanilla.sakura.data.migration.LegacyPlayerDataParser;
 import xin.vanilla.sakura.internal.forge.migration.BaniraPlayerSummaryRepository;
@@ -178,7 +179,7 @@ public final class ForgePlayerSignInDataService implements SakuraPlayerDataServi
             UUID playerUuid,
             MonthlySignInHistoryRepository histories
     ) {
-        CommonConfig.HistoryView config = CommonConfig.get().history();
+        CommonConfigView.HistoryView config = CommonConfig.get().history();
         YearMonth currentMonth = YearMonth.from(
                 RewardManager.getCompensateDate(SakuraClock.serverNow())
                         .toInstant()

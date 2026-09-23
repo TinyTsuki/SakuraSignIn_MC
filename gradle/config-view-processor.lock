@@ -1,0 +1,25 @@
+{
+  "version": "1.0.0",
+  "sourceCommit": "8ca88aaa87b9275265fe3035aea62f47bb7032ae",
+  "sourceTree": "da9ffb6a56a92c2251464f1cd7fae49856e7e8f9",
+  "jarSha256": "faba75f9cfdf11cdcf0c88a0dc1ca0e57c032c84df6c94c9d256bc8b4dba6fc3",
+  "sourceFiles": {
+    "build.gradle": "c6f54aaa73d2d29067a5b91beabc14910d08340272b2578045759cb25172086a",
+    "gradle/wrapper/gradle-wrapper.jar": "cb0da6751c2b753a16ac168bb354870ebb1e162e9083f116729cec9c781156b8",
+    "gradle/wrapper/gradle-wrapper.properties": "05e7bec397ce5a52628d31dcc4c8b636cbdc55e28f8cef19d097c71b5c5fbb42",
+    "gradlew": "d8231d345ab33433ab7b2c0720d5beb416c8d5c6789dbc01ad122b63bc2cae0d",
+    "gradlew.bat": "95e8ae8e8a256a2f066cdd745d56f7a3fc87aa058a2e4beb483300db7171bd1f",
+    "integration/config-view-processor-settings.gradle": "63402379fc43541885a3c72f1a8b22919f71e0c7a7417041b21ca208e94417f0",
+    "integration/config-view-processor.gradle": "f5bdcacae1fd2a58555d419865cbc135acc291e5e909d549193ed16d906987b4",
+    "settings.gradle": "5c0226b3c7b20340393f000d91d689981f64acfa08e60f2bf4aa23758923dda6",
+    "src/main/java/xin/vanilla/banira/config/processor/ConfigModel.java": "41800eed0cc595a14ec34fe737c6b4afa2f05ddb34fb2c82d43026817560586b",
+    "src/main/java/xin/vanilla/banira/config/processor/ConfigModelReader.java": "fe559919084a7fbff6e195d5b85963cdbe9537b6e0500896874d4af3f9fd4deb",
+    "src/main/java/xin/vanilla/banira/config/processor/ConfigViewProcessor.java": "3de5ccd5373fb491103bdb24d31fe74b3287a88266dd2fa685f57813e883d67f",
+    "src/main/java/xin/vanilla/banira/config/processor/ConfigViewWriter.java": "1d7112bd849483a98ec58f38ea817245315d083542487987d57f2d65c8fa4440",
+    "src/main/resources/META-INF/services/javax.annotation.processing.Processor": "820856b26cfe9a82d93505de083bdc3722e5f5a047d46a466ef6486cbf7eec23",
+    "src/test/java/xin/vanilla/banira/config/processor/CompilerFixture.java": "ef518483db1e2ceefb8bf5011f841c144d117320110b2e5332f9c7bc734ab3ba",
+    "src/test/java/xin/vanilla/banira/config/processor/ConfigViewProcessorTest.java": "6ea328414d6c4610ef984a21dc0f058b79da0d80408ea216978745260f0f825a",
+    "src/test/java/xin/vanilla/banira/config/processor/ConsumerBuildTest.java": "709c088db0198c31217c975b5d814213f31c0879d94234f36b9a6a832578ed39",
+    "src/test/java/xin/vanilla/banira/config/processor/RuntimeFixture.java": "54da5caf7cc6a0ce381fb1e3d1649fa1b57aa17a6848a11258325b561992250d"
+  }
+}
