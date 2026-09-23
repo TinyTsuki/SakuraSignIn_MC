@@ -148,6 +148,7 @@ def verifyMarkers = { File status, List<String> markers ->
 
 tasks.register('networkSmoke') {
     group = 'verification'
+    dependsOn 'remapJar'
     description = 'Runs a bounded two-phase Sakura dedicated server/client sign-in and sustained reward-history smoke.'
     doLast {
         if (smokeChild) throw new GradleException('networkSmoke cannot run inside its child Gradle process')
@@ -171,8 +172,7 @@ tasks.register('networkSmoke') {
         }
         def sourceCommit = providers.exec { commandLine 'git', 'rev-parse', 'HEAD' }.standardOutput.asText.get().trim()
         def sourceStatus = providers.exec { commandLine 'git', 'status', '--porcelain', '--untracked-files=all' }.standardOutput.asText.get()
-        def runtimeHashes = (configurations.runtimeClasspath.files + configurations.modRuntimeOnly.files).findAll { it.isFile() &&
-                (it.name.contains('banira_codex') || it.name.toLowerCase().startsWith('spark-')) }
+        def runtimeHashes = (configurations.runtimeClasspath.files + configurations.modRuntimeOnly.files).findAll { it.isFile() }
                 .collectEntries { [(it.absolutePath): sha256(it)] }
         new File(evidence, 'source-state.json').setText(JsonOutput.prettyPrint(JsonOutput.toJson([
                 commit: sourceCommit, status: sourceStatus, files: sourceHashes, session: smokeSession,
@@ -215,6 +215,9 @@ tasks.register('networkSmoke') {
                 }
                 waitForStatus(server, serverStatus, "FINISHED ${phase}", serverLog, 45)
                 stopServer(server, serverLog)
+                def configMarker = phase == 'phase-one' ? 'PASS complete-config-snapshot' : 'PASS complete-config-restart'
+                verifyMarkers(clientStatus, [configMarker])
+                verifyMarkers(serverStatus, [configMarker])
                 verifyMarkers(clientStatus, phase == 'phase-one'
                         ? ['PASS remote-login-sync', 'PASS sign-in-client', 'PASS re-sign-in-client',
                            'PASS client-ui-spark-profiler-active', 'PASS client-ui-spark-report-written',
