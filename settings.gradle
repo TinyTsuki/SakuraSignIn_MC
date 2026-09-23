@@ -13,3 +13,5 @@ plugins {
 }
 
 rootProject.name = 'sakura-sign-in'
+
+apply from: 'gradle/config-view-processor-settings.gradle'

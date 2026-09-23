@@ -181,3 +181,5 @@ tasks.matching { it.name == 'runClient' }.configureEach {
 
 apply from: 'gradle/network-smoke.gradle'
 apply from: 'gradle/spark-profile-report.gradle'
+
+apply from: 'gradle/config-view-processor.gradle'
