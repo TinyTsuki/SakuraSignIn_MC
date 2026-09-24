@@ -1,0 +1,45 @@
+import groovy.json.JsonSlurper
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+import java.nio.file.LinkOption
+import java.security.MessageDigest
+
+def override = providers.gradleProperty('baniraConfigProcessorDir').orNull
+if (override != null) {
+    def lock = new JsonSlurper().parse(new File(settingsDir, 'gradle/config-view-processor.lock'), 'UTF-8')
+    def directory = new File(override)
+    if (!directory.isAbsolute()) directory = new File(settingsDir, override)
+    directory = directory.canonicalFile
+    def fail = { throw new GradleException("Banira processor source fingerprint mismatch: ${directory}. Use source commit ${lock.sourceCommit}, tree ${lock.sourceTree}.") }
+    if (!directory.isDirectory() || !(lock.sourceFiles instanceof Map) || lock.sourceFiles.isEmpty()) fail()
+    def actual = new TreeSet<String>()
+    ['build.gradle', 'settings.gradle', 'gradle.properties', 'gradlew', 'gradlew.bat'].each {
+        if (new File(directory, it).exists()) actual.add(it)
+    }
+    ['src', 'gradle', 'integration'].each { child ->
+        def path = new File(directory, child).toPath()
+        if (Files.exists(path)) {
+            def stream = Files.walk(path)
+            try {
+                stream.filter { Files.isRegularFile(it, LinkOption.NOFOLLOW_LINKS) }.forEach {
+                    actual.add(directory.toPath().relativize(it).toString().replace('\\', '/'))
+                }
+            } finally { stream.close() }
+        }
+    }
+    if (actual != new TreeSet<String>(lock.sourceFiles.keySet())) fail()
+    lock.sourceFiles.each { relative, expected ->
+        def file = new File(directory, relative).canonicalFile
+        if (!file.path.startsWith(directory.path + File.separator) || !file.isFile()) fail()
+        byte[] bytes = file.bytes
+        if (!relative.endsWith('.jar')) bytes = new String(bytes, StandardCharsets.UTF_8).replace('\r\n', '\n').getBytes(StandardCharsets.UTF_8)
+        def hash = MessageDigest.getInstance('SHA-256').digest(bytes).encodeHex().toString()
+        if (!hash.equalsIgnoreCase(expected.toString())) fail()
+    }
+    includeBuild(directory) {
+        name = 'banira-config-processor'
+        dependencySubstitution {
+            substitute module('xin.vanilla:banira-config-processor') using project(':')
+        }
+    }
+}
