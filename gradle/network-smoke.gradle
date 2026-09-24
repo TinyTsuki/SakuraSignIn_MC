@@ -220,19 +220,19 @@ tasks.register('networkSmoke') {
                            'PASS client-ui-spark-profiler-active', 'PASS client-ui-spark-report-written',
                            'PASS client-ui-sustained-workload', 'PASS reward-notification-details-client',
                            'PASS all-pressure-month-details-client', 'PASS final-summary-client',
-                           'PASS complete-config-snapshot', 'FINISHED phase-one']
+                           'PASS generated-config-reads', 'PASS complete-config-snapshot', 'FINISHED phase-one']
                         : ['PASS remote-login-sync', 'PASS all-pressure-month-details-client',
-                           'PASS persisted-player-data-client', 'PASS complete-config-restart', 'FINISHED phase-two'])
+                           'PASS persisted-player-data-client', 'PASS generated-config-reads', 'PASS complete-config-restart', 'FINISHED phase-two'])
                 verifyMarkers(serverStatus, phase == 'phase-one'
                         ? ['PASS sign-in-reward', 'PASS command-reward', 'PASS expanded-reward-list',
                            'PASS re-sign-in-reward', 'PASS historical-sign-in-fixture',
                            'PASS sustained-history-reward-workload', 'PASS spark-profiler-active',
                            'PASS operation sign-in', 'PASS operation claim-rewards', 'PASS operation duplicate-claim',
                            'PASS operation re-sign-in-rewards', 'PASS operation command-reward', 'PASS operation save-and-sync',
-                           'PASS final-checkpoint', 'PASS spark-report-written', 'PASS complete-config-snapshot',
+                           'PASS final-checkpoint', 'PASS spark-report-written', 'PASS generated-config-reads', 'PASS complete-config-snapshot',
                            'FINISHED phase-one', 'PASS server-shutdown']
                         : ['PASS persisted-final-cycle', 'PASS persisted-all-pressure-days',
-                           'PASS persisted-player-data', 'PASS complete-config-restart', 'FINISHED phase-two', 'PASS server-shutdown'])
+                           'PASS persisted-player-data', 'PASS generated-config-reads', 'PASS complete-config-restart', 'FINISHED phase-two', 'PASS server-shutdown'])
                 [clientStatus, serverStatus].each { status ->
                     List<String> runtime = readUtf8(status).readLines().findAll { it.startsWith('RUNTIME ') }
                     List<String> classes = ['xin.vanilla.banira.common.data.Component',
