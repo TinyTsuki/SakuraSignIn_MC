@@ -287,3 +287,5 @@ sourceSets.each {
     it.output.resourcesDir = dir
     it.java.destinationDirectory = dir
 }
+
+apply from: 'gradle/config-view-processor.gradle'

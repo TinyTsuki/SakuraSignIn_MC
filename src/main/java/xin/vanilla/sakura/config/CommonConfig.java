@@ -1,6 +1,5 @@
 package xin.vanilla.sakura.config;
 
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -13,7 +12,6 @@ import xin.vanilla.banira.common.config.annotation.Config;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
 import xin.vanilla.banira.common.network.packet.ConfigSyncToServer;
 import xin.vanilla.sakura.SakuraSignIn;
-import xin.vanilla.sakura.config.access.CommonConfigAccess;
 import xin.vanilla.sakura.data.player.HistoryRetentionPolicy;
 import xin.vanilla.sakura.enums.ETimeCoolingMethod;
 
@@ -23,64 +21,47 @@ import java.util.Map;
 /**
  * 服务端与通用设置共用一份 Banira COMMON 配置。
  */
-@Config(name = SakuraSignIn.MODID + "-common", type = ConfigScope.COMMON)
+@Config(name = SakuraSignIn.MODID + "-common", type = ConfigScope.COMMON,
+        generateView = true, viewUnbound = Config.UnboundAccess.DEFAULTS)
 public class CommonConfig implements ConfigData {
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     @ConfigEntry.Gui.CollapsibleObject
     @ConfigEntry.Gui.Tooltip(zh_cn = "签到与补签", en_us = "Sign-in and make-up sign-in")
     private MakeUpCategory makeUp = new MakeUpCategory();
 
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     @ConfigEntry.Gui.CollapsibleObject
     @ConfigEntry.Gui.Tooltip(zh_cn = "签到冷却", en_us = "Sign-in cooldown")
     private CoolingCategory cooling = new CoolingCategory();
 
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     @ConfigEntry.Gui.CollapsibleObject
     @ConfigEntry.Gui.Tooltip(zh_cn = "服务器时间校准", en_us = "Server time calibration")
     private DateTimeCategory dateTime = new DateTimeCategory();
 
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     @ConfigEntry.Gui.CollapsibleObject
     @ConfigEntry.Gui.Tooltip(zh_cn = "奖励规则", en_us = "Reward rules")
     private RewardCategory reward = new RewardCategory();
 
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     @ConfigEntry.Gui.CollapsibleObject
     @ConfigEntry.Gui.Tooltip(zh_cn = "服务端运行设置", en_us = "Server runtime settings")
     private ServerCategory server = new ServerCategory();
 
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     @ConfigEntry.Gui.CollapsibleObject
     @ConfigEntry.Gui.Tooltip(zh_cn = "签到历史详情保留", en_us = "Sign-in history retention")
     private HistoryCategory history = new HistoryCategory();
 
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     @ConfigEntry.Gui.CollapsibleObject
     @ConfigEntry.Gui.Tooltip(zh_cn = "指令名称，请勿添加 /", en_us = "Command names without /")
     private CommandCategory command = new CommandCategory();
 
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     @ConfigEntry.Gui.CollapsibleObject
     @ConfigEntry.Gui.Tooltip(zh_cn = "无前缀简短指令", en_us = "Commands without the mod prefix")
     private ConciseCategory concise = new ConciseCategory();
 
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     @ConfigEntry.Gui.CollapsibleObject
     @ConfigEntry.Gui.Tooltip(zh_cn = "指令与奖励编辑权限", en_us = "Command and reward permissions")
     private PermissionCategory permission = new PermissionCategory();
 
-    public static RootView get() {
-        return CommonConfigAccess.root(BaniraConfigs.holder(CommonConfig.class));
+    public static CommonConfigView get() {
+        return CommonConfigView.get();
     }
 
     public static void save() {
@@ -107,112 +88,6 @@ public class CommonConfig implements ConfigData {
             );
         }
         return snapshot;
-    }
-
-    public interface RootView {
-        MakeUpView makeUp();
-        CoolingView cooling();
-        DateTimeView dateTime();
-        RewardView reward();
-        ServerView server();
-        HistoryView history();
-        CommandView command();
-        ConciseView concise();
-        PermissionView permission();
-        ConfigHolder holder();
-    }
-
-    public interface MakeUpView {
-        boolean signInCard();
-        MakeUpView signInCard(boolean value);
-        int reSignInDays();
-        MakeUpView reSignInDays(int value);
-        boolean signInCardOnlyBaseReward();
-        MakeUpView signInCardOnlyBaseReward(boolean value);
-    }
-
-    public interface CoolingView {
-        ETimeCoolingMethod timeCoolingMethod();
-        CoolingView timeCoolingMethod(ETimeCoolingMethod value);
-        double timeCoolingTime();
-        CoolingView timeCoolingTime(double value);
-        double timeCoolingInterval();
-        CoolingView timeCoolingInterval(double value);
-    }
-
-    public interface DateTimeView {
-        String serverTime();
-        DateTimeView serverTime(String value);
-        String serverCalibrationTime();
-        DateTimeView serverCalibrationTime(String value);
-    }
-
-    public interface RewardView {
-        boolean rewardAffectedByLuck();
-        RewardView rewardAffectedByLuck(boolean value);
-        boolean continuousRewardsRepeatable();
-        RewardView continuousRewardsRepeatable(boolean value);
-        boolean cycleRewardsRepeatable();
-        RewardView cycleRewardsRepeatable(boolean value);
-    }
-
-    public interface ServerView {
-        boolean autoSignIn();
-        ServerView autoSignIn(boolean value);
-        int requiredTotalOnlineSeconds();
-        ServerView requiredTotalOnlineSeconds(int value);
-        int requiredTodayOnlineSeconds();
-        ServerView requiredTodayOnlineSeconds(int value);
-    }
-
-    public interface HistoryView {
-        int retentionMonths();
-        HistoryView retentionMonths(int value);
-        HistoryRetentionPolicy retentionPolicy();
-        HistoryView retentionPolicy(HistoryRetentionPolicy value);
-    }
-
-    public interface CommandView {
-        String commandPrefix();
-        CommandView commandPrefix(String value);
-        String commandSignIn();
-        String commandSignInEx();
-        String commandReward();
-        String commandCdk();
-        String commandCard();
-        String commandLanguage();
-        String commandLottery();
-    }
-
-    public interface ConciseView {
-        boolean conciseSignIn();
-        boolean conciseSignInEx();
-        boolean conciseReward();
-        boolean conciseCdk();
-        boolean conciseCard();
-        boolean conciseLanguage();
-    }
-
-    public interface PermissionView {
-        int permissionEditReward();
-        int permissionBaseReward();
-        int permissionContinuousReward();
-        int permissionCycleReward();
-        int permissionYearReward();
-        int permissionMonthReward();
-        int permissionWeekReward();
-        int permissionDateTimeReward();
-        int permissionCumulativeReward();
-        int permissionRandomReward();
-        int permissionCdkReward();
-        int permissionPersonalDateReward();
-        int permissionLotteryReward();
-        int permissionRewardProbability();
-        int permissionRewardDetail();
-        int permissionRewardFailedTips();
-        int permissionCommandReward();
-        int permissionServerConfigGet();
-        int permissionServerConfigSet();
     }
 
     @Getter

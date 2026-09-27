@@ -1,0 +1,56 @@
+import groovy.json.JsonSlurper
+import java.security.MessageDigest
+
+def lock = new JsonSlurper().parse(rootProject.file('gradle/config-view-processor.lock'), 'UTF-8')
+def coordinate = "xin.vanilla:banira-config-processor:${lock.version}"
+def bootstrap = "Check out processor commit ${lock.sourceCommit} (tree ${lock.sourceTree}), then run ./gradlew clean test publishToMavenLocal in tools/config-processor. Or set -PbaniraConfigProcessorDir=<verified tools/config-processor directory>."
+def hash = { File file -> MessageDigest.getInstance('SHA-256').digest(file.bytes).encodeHex().toString() }
+def verifyHash = { File file ->
+    if (!hash(file).equalsIgnoreCase(lock.jarSha256.toString())) {
+        throw new GradleException("Banira processor SHA-256 mismatch: ${file}. ${bootstrap}")
+    }
+}
+
+repositories.exclusiveContent {
+    forRepository { project.repositories.mavenLocal() }
+    filter { includeModule('xin.vanilla', 'banira-config-processor') }
+}
+
+plugins.withId('java') {
+    def processor = configurations.create('baniraConfigProcessor') {
+        canBeConsumed = false
+        canBeResolved = true
+        transitive = false
+    }
+    dependencies.add(processor.name, coordinate) { version { strictly(lock.version.toString()) } }
+    def verification = tasks.register('verifyBaniraConfigProcessor') {
+        group = 'verification'
+        description = 'Checks the pinned config processor before compilation.'
+        if (providers.gradleProperty('baniraConfigProcessorDir').isPresent()) {
+            dependsOn gradle.includedBuild('banira-config-processor').task(':jar')
+        }
+        doLast {
+            File artifact
+            try { artifact = processor.singleFile }
+            catch (Exception failure) {
+                throw new GradleException("Cannot resolve Banira config processor ${coordinate}. ${bootstrap}", failure)
+            }
+            verifyHash(artifact)
+        }
+    }
+    sourceSets.configureEach { sourceSet ->
+        dependencies.add(sourceSet.annotationProcessorConfigurationName, coordinate) {
+            version { strictly(lock.version.toString()) }
+        }
+        tasks.named(sourceSet.compileJavaTaskName, JavaCompile).configure {
+            dependsOn verification
+            doFirst {
+                def artifacts = options.annotationProcessorPath.files.findAll {
+                    it.name == "banira-config-processor-${lock.version}.jar"
+                }
+                if (artifacts.size() != 1) throw new GradleException("Unexpected Banira processor compile path. ${bootstrap}")
+                verifyHash(artifacts.first())
+            }
+        }
+    }
+}

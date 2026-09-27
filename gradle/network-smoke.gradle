@@ -128,7 +128,7 @@ def startGradleRun = { String runTask, String phase, File status, File sparkRepo
     builder.start()
 }
 def stopServer = { Process server, File log ->
-    if (server == null || !server.isAlive()) return
+    if (server == null) return
     if (!server.waitFor(60, TimeUnit.SECONDS)) {
         destroyProcessTree(server)
         throw new GradleException("Dedicated server did not stop cleanly:\n${tailUtf8(log, 120)}")
@@ -215,6 +215,11 @@ tasks.register('networkSmoke') {
                 }
                 waitForStatus(server, serverStatus, "FINISHED ${phase}", serverLog, 45)
                 stopServer(server, serverLog)
+                verifyMarkers(clientStatus, ['PASS generated-config-reads'])
+                verifyMarkers(serverStatus, ['PASS generated-config-reads'])
+                String configMarker = phase == 'phase-one' ? 'PASS complete-config-snapshot' : 'PASS complete-config-restart'
+                verifyMarkers(clientStatus, [configMarker])
+                verifyMarkers(serverStatus, [configMarker])
                 verifyMarkers(clientStatus, phase == 'phase-one'
                         ? ['PASS remote-login-sync', 'PASS sign-in-client', 'PASS re-sign-in-client',
                            'PASS client-ui-spark-profiler-active', 'PASS client-ui-spark-report-written',
