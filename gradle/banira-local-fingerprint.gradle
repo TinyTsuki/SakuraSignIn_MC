@@ -15,8 +15,9 @@ def publicationDir = new File(
 )
 def publishedJar = new File(publicationDir, "banira_codex-${coordinateVersion}.jar")
 def fingerprintFile = new File(publicationDir, "banira_codex-${coordinateVersion}.local-build.json")
-def stateFile = file("${rootDir}/.gradle/banira-local-state/${coordinateVersion}.sha256")
-def remapRoot = file("${rootDir}/.gradle/loom-cache/remapped_mods/remapped/xin/vanilla/banira")
+def projectCacheDir = gradle.startParameter.projectCacheDir ?: file("${rootDir}/.gradle")
+def stateFile = new File(projectCacheDir, "banira-local-state/${coordinateVersion}.sha256")
+def remapRoot = new File(projectCacheDir, "loom-cache/remapped_mods/remapped/xin/vanilla/banira")
 
 def sha256 = { File file ->
     MessageDigest digest = MessageDigest.getInstance("SHA-256")
@@ -57,7 +58,7 @@ if (fingerprintFile.isFile()) {
                 include "**/${coordinateVersion}/banira_codex-*.jar"
                 exclude "**/*-sources.jar"
             }.files.each { remappedJar ->
-                staleRoots.add(remappedJar.parentFile.parentFile)
+                staleRoots.add(remappedJar.parentFile)
             }
         }
         staleRoots.each { staleRoot ->
