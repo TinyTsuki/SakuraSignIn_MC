@@ -68,11 +68,11 @@ public final class SakuraQuickActions {
                 ),
                 new QuickActionContextMenuItem(
                         SakuraComponent.get().transClient("word", "edit_client_config"),
-                        context -> openConfig(ClientConfig.get().holder(), context.currentScreen())
+                        context -> openConfig(xin.vanilla.banira.api.BaniraConfigs.holder(ClientConfig.class), context.currentScreen())
                 ),
                 new QuickActionContextMenuItem(
                         SakuraComponent.get().transClient("word", "edit_server_config"),
-                        context -> openConfig(CommonConfig.get().holder(), context.currentScreen())
+                        context -> openConfig(xin.vanilla.banira.api.BaniraConfigs.holder(CommonConfig.class), context.currentScreen())
                 )
         );
         registeredSignature = signature;

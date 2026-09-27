@@ -10,7 +10,7 @@ public final class SakuraModMenuIntegration implements ModMenuApi {
     @Override
     public ConfigScreenFactory<?> getModConfigScreenFactory() {
         return parent -> new ConfigEditorScreen(
-                ClientConfig.get().holder(),
+                xin.vanilla.banira.api.BaniraConfigs.holder(ClientConfig.class),
                 new ConfigEditorScreen.Args().parentScreen(parent));
     }
 }

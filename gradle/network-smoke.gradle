@@ -114,21 +114,23 @@ def gradleCommand = { String runTask, String phase, File status, File sparkRepor
     ])
     command
 }
-def startGradleRun = { String runTask, String phase, File status, File sparkReport, File log ->
+def startGradleRun = { String runTask, String phase, File status, File sparkReport, File log, boolean prepare = false ->
     File childRoot = new File(smokeRoot, runTask == 'runServer' ? 'server-gradle' : 'client-gradle')
     File childBuildDir = new File(childRoot, 'build')
     File projectCacheDir = new File(childRoot, 'project-cache')
     childBuildDir.mkdirs()
     projectCacheDir.mkdirs()
     log.parentFile.mkdirs()
-    ProcessBuilder builder = new ProcessBuilder(gradleCommand(runTask, phase, status, sparkReport, childBuildDir, projectCacheDir).collect { it.toString() })
+    def command = gradleCommand(prepare ? 'classes' : runTask, phase, status, sparkReport, childBuildDir, projectCacheDir)
+    if (prepare) command.addAll(['generateLog4jConfig', 'generateRemapClasspath', 'generateDLIConfig', 'configureLaunch'])
+    ProcessBuilder builder = new ProcessBuilder(command.collect { it.toString() })
     builder.directory(projectDir)
     builder.redirectErrorStream(true)
     builder.redirectOutput(log)
     builder.start()
 }
 def stopServer = { Process server, File log ->
-    if (server == null || !server.isAlive()) return
+    if (server == null) return
     if (!server.waitFor(60, TimeUnit.SECONDS)) {
         destroyProcessTree(server)
         throw new GradleException("Dedicated server did not stop cleanly:\n${tailUtf8(log, 120)}")
@@ -192,6 +194,27 @@ tasks.register('networkSmoke') {
             Process server = null
             Process client = null
             try {
+                if (phase == 'phase-one') {
+                    ['runServer', 'runClient'].each { task ->
+                        File log = new File(evidence, "prepare-${task}.log")
+                        Process preparation = startGradleRun(task, phase, serverStatus, sparkReport, log, true)
+                        try {
+                            if (!preparation.waitFor(600, TimeUnit.SECONDS) || preparation.exitValue() != 0) {
+                                throw new GradleException("Smoke build preparation failed: ${task}\n${tailUtf8(log, 80)}")
+                            }
+                        } finally { destroyProcessTree(preparation) }
+                    }
+                    ['server', 'client'].each { side ->
+                        fileTree(new File(smokeRoot, "${side}-gradle/project-cache/loom-cache/remapped_mods")) {
+                            include '**/*.jar'
+                            exclude '**/*-sources.jar'
+                        }.files.each { runtimeHashes[it.absolutePath] = sha256(it) }
+                    }
+                    File sourceState = new File(evidence, 'source-state.json')
+                    def state = new groovy.json.JsonSlurper().parse(sourceState, 'UTF-8')
+                    state.runtimeJars = runtimeHashes
+                    sourceState.setText(JsonOutput.prettyPrint(JsonOutput.toJson(state)) + System.lineSeparator(), 'UTF-8')
+                }
                 server = startGradleRun('runServer', phase, serverStatus, sparkReport, serverLog)
                 waitForStatus(server, serverStatus, 'PASS server-ready', serverLog, 180)
                 client = startGradleRun('runClient', phase, clientStatus, sparkReport, clientLog)
@@ -215,6 +238,11 @@ tasks.register('networkSmoke') {
                 }
                 waitForStatus(server, serverStatus, "FINISHED ${phase}", serverLog, 45)
                 stopServer(server, serverLog)
+                verifyMarkers(clientStatus, ['PASS generated-config-reads'])
+                verifyMarkers(serverStatus, ['PASS generated-config-reads'])
+                String configMarker = phase == 'phase-one' ? 'PASS complete-config-snapshot' : 'PASS complete-config-restart'
+                verifyMarkers(clientStatus, [configMarker])
+                verifyMarkers(serverStatus, [configMarker])
                 verifyMarkers(clientStatus, phase == 'phase-one'
                         ? ['PASS remote-login-sync', 'PASS sign-in-client', 'PASS re-sign-in-client',
                            'PASS client-ui-spark-profiler-active', 'PASS client-ui-spark-report-written',
