@@ -58,7 +58,7 @@ if (fingerprintFile.isFile()) {
                 include "**/${coordinateVersion}/banira_codex-*.jar"
                 exclude "**/*-sources.jar"
             }.files.each { remappedJar ->
-                staleRoots.add(remappedJar.parentFile.parentFile)
+                staleRoots.add(remappedJar.parentFile)
             }
         }
         staleRoots.each { staleRoot ->
