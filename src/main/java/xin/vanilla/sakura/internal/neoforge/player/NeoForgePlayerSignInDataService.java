@@ -178,7 +178,7 @@ public final class NeoForgePlayerSignInDataService implements SakuraPlayerDataSe
             UUID playerUuid,
             MonthlySignInHistoryRepository histories
     ) {
-        CommonConfig.HistoryView config = CommonConfig.get().history();
+        xin.vanilla.sakura.config.CommonConfigView.HistoryView config = CommonConfig.get().history();
         YearMonth currentMonth = YearMonth.from(
                 RewardManager.getCompensateDate(SakuraClock.serverNow())
                         .toInstant()

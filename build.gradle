@@ -54,6 +54,7 @@ repositories {
     mavenCentral()
 }
 
+apply from: 'gradle/config-view-processor.gradle'
 apply from: 'gradle/banira-local-fingerprint.gradle'
 
 repositories {

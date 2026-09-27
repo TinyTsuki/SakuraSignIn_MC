@@ -301,6 +301,12 @@ public final class SakuraNetworkSmokeClientRunner {
 
     private static void finish(Minecraft client) {
         state = State.FINISHED;
+        if ("phase-one".equals(SakuraNetworkSmokeStatus.phase())) {
+            xin.vanilla.sakura.config.ClientConfig.get().display().specialVariant(false);
+            xin.vanilla.sakura.config.ClientConfig.save();
+        }
+        xin.vanilla.sakura.internal.dev.SakuraNetworkSmokeConfigs.recordRuntime();
+        xin.vanilla.sakura.internal.dev.SakuraNetworkSmokeConfigs.verifyLocal(xin.vanilla.sakura.config.ClientConfig.class);
         SakuraNetworkSmokeStatus.append("FINISHED " + SakuraNetworkSmokeStatus.phase());
         LOGGER.info("Sakura network smoke client finished {}", SakuraNetworkSmokeStatus.phase());
         client.stop();

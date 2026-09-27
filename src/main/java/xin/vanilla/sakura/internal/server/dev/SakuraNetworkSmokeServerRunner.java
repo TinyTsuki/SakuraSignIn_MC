@@ -214,7 +214,10 @@ public final class SakuraNetworkSmokeServerRunner {
         }
         SakuraNetworkSmokeStatus.append("PASS final-checkpoint cycles=" + rewardWorkload.cycles()
                 + " days=" + data.getTotalSignInDays() + " records=" + data.getSignInRecords().size());
-        SakuraNetworkSmokeStatus.append("FINISHED phase-one");
+        CommonConfig.save();
+        xin.vanilla.sakura.internal.dev.SakuraNetworkSmokeConfigs.recordRuntime();
+        xin.vanilla.sakura.internal.dev.SakuraNetworkSmokeConfigs.verifyLocal(xin.vanilla.sakura.config.CommonConfig.class);
+        SakuraNetworkSmokeStatus.append("FINISHED phase-one" );
         finished = true;
     }
 
@@ -258,7 +261,9 @@ public final class SakuraNetworkSmokeServerRunner {
         SakuraNetworkSmokeStatus.append("PASS persisted-final-cycle cycles=" + checkpoint.getProperty("cycles")
                 + " days=" + data.getTotalSignInDays() + " records=" + data.getSignInRecords().size());
         SakuraNetworkSmokeStatus.append("PASS persisted-player-data");
-        SakuraNetworkSmokeStatus.append("FINISHED phase-two");
+        xin.vanilla.sakura.internal.dev.SakuraNetworkSmokeConfigs.recordRuntime();
+        xin.vanilla.sakura.internal.dev.SakuraNetworkSmokeConfigs.verifyLocal(xin.vanilla.sakura.config.CommonConfig.class);
+        SakuraNetworkSmokeStatus.append("FINISHED phase-two" );
         finished = true;
     }
 
