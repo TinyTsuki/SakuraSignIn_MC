@@ -4,7 +4,6 @@ import net.fabricmc.api.ModInitializer;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.internal.fabric.event.FabricSakuraGameEventAdapter;
-import xin.vanilla.sakura.internal.fabric.dev.SakuraServerSmokeRunner;
 import xin.vanilla.sakura.internal.server.dev.SakuraNetworkSmokeServerRunner;
 import xin.vanilla.sakura.internal.fabric.player.FabricPlayerSignInDataService;
 import xin.vanilla.sakura.internal.fabric.player.FabricPlayerOnlineTime;
@@ -27,7 +26,6 @@ public final class FabricSakuraEntrypoint implements ModInitializer {
         SakuraPlayerData.install(FabricPlayerSignInDataService.INSTANCE);
         SakuraOnlineTime.install(FabricPlayerOnlineTime::playTicks);
         FabricSakuraGameEventAdapter.register();
-        SakuraServerSmokeRunner.register();
         SakuraNetworkSmokeServerRunner.register();
     }
 }
