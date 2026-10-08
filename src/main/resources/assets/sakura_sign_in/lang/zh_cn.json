@@ -1,4 +1,9 @@
 {
+  "word.sakura_sign_in.reset_personal_date_claims": "清空自定义日期奖励领取记录",
+  "word.sakura_sign_in.reset_personal_date_failed": "无法清空日期奖励领取记录，请查看服务端日志",
+  "format.sakura_sign_in.reset_personal_date_empty": "%s 的 %s 没有可清空的日期奖励领取记录",
+  "format.sakura_sign_in.reset_personal_date_success": "已清空 %s 的 %s 日期奖励领取记录，共 %s 项",
+  "word.sakura_sign_in.personal_date_reward_success": "个性化日期奖励领取成功，详情如下：",
   "word.sakura_sign_in.delete_sign_in": "删除玩家签到记录",
   "word.sakura_sign_in.delete_one_player": "请选择一个玩家",
   "word.sakura_sign_in.delete_sign_in_failed": "无法删除签到记录，请查看服务端日志",
