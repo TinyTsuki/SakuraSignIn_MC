@@ -1,9 +1,5 @@
 package xin.vanilla.sakura.config;
 
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.experimental.Accessors;
 import xin.vanilla.banira.common.config.BaniraConfig;
 import xin.vanilla.banira.common.config.ConfigData;
 import xin.vanilla.banira.common.config.ConfigHolder;
@@ -27,20 +23,14 @@ import java.util.List;
 @Config(name = SakuraSignIn.MODID + "-client", type = ConfigScope.CLIENT,
         generateView = true, viewUnbound = Config.UnboundAccess.DEFAULTS)
 public class ClientConfig implements ConfigData {
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     @ConfigEntry.Gui.CollapsibleObject
     @ConfigEntry.Gui.Tooltip(zh_cn = "签到界面显示设置", en_us = "Sign-in screen display settings")
     private DisplayCategory display = new DisplayCategory();
 
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     @ConfigEntry.Gui.CollapsibleObject
     @ConfigEntry.Gui.Tooltip(zh_cn = "奖励编辑快捷键", en_us = "Reward editor shortcuts")
     private RewardKeysCategory rewardKeys = new RewardKeysCategory();
 
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     @ConfigEntry.Gui.CollapsibleObject
     @ConfigEntry.Gui.Tooltip(zh_cn = "签到界面快捷键", en_us = "Sign-in screen shortcuts")
     private SignKeysCategory signKeys = new SignKeysCategory();
@@ -86,9 +76,6 @@ public class ClientConfig implements ConfigData {
                 || value.equals("glfwmousebuttonleft");
     }
 
-    @Getter
-    @Setter
-    @Accessors(chain = true, fluent = true)
     public static class DisplayCategory {
         @ConfigEntry.Gui.Tooltip(
                 zh_cn = "选择樱花签界面使用的 Banira 配色\n可跟随香草志、随季节自动或固定为某个季节",
@@ -112,9 +99,6 @@ public class ClientConfig implements ConfigData {
         private LotteryAnimationStyle lotteryAnimationStyle = LotteryAnimationStyle.STRIP;
     }
 
-    @Getter
-    @Setter
-    @Accessors(chain = true, fluent = true)
     public static class RewardKeysCategory {
         @ConfigEntry.Gui.Tooltip(zh_cn = "复制选中奖励的快捷键", en_us = "Keyboard shortcuts for copying selected rewards")
         @ConfigEntry.Gui.KeyChords
@@ -147,9 +131,6 @@ public class ClientConfig implements ConfigData {
                 key(GLFWKey.GLFW_KEY_RIGHT_CONTROL, GLFWKey.GLFW_KEY_RIGHT_SHIFT, GLFWKey.GLFW_KEY_Z));
     }
 
-    @Getter
-    @Setter
-    @Accessors(chain = true, fluent = true)
     public static class SignKeysCategory {
         @ConfigEntry.Gui.Tooltip(zh_cn = "切换到上个月的快捷键", en_us = "Keyboard shortcuts for the previous month")
         @ConfigEntry.Gui.KeyChords
