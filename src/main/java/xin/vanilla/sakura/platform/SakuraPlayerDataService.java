@@ -21,6 +21,8 @@ public interface SakuraPlayerDataService {
 
     boolean deleteDay(UUID playerUuid, LocalDate day, LocalDate currentDay) throws IOException;
 
+    int resetPersonalDateClaims(UUID playerUuid, String preset, boolean all) throws IOException;
+
     void saveAndSync(Object serverPlayer);
 
     void sync(Object serverPlayer);

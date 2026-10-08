@@ -141,7 +141,17 @@ public final class FabricSakuraGameEventAdapter {
             PersonalDateDeliveryResult result = PersonalDateRewardDispatcher.deliverOnline(
                     player, RewardManager.getCompensateDate(SakuraClock.serverNow()));
             if (result.changed()) {
-                SakuraPlayerData.saveAndSync(player);
+                SakuraPlayerData.save(player);
+                try {
+                    SakuraPlayerData.sync(player);
+                } catch (RuntimeException failure) {
+                    LOGGER.warn("Personal date state saved, but synchronization failed for {}", player.getUUID(), failure);
+                }
+                try {
+                    PersonalDateRewardDispatcher.sendDetails(player, result);
+                } catch (RuntimeException failure) {
+                    LOGGER.warn("Personal date state saved, but reward details failed for {}", player.getUUID(), failure);
+                }
             }
         } catch (RuntimeException failure) {
             LOGGER.error("Unable to deliver personal date rewards for {}", player.getUUID(), failure);
