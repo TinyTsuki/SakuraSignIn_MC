@@ -6,10 +6,17 @@ import net.minecraft.nbt.ListTag;
 import xin.vanilla.sakura.data.migration.LegacyPlayerData;
 import xin.vanilla.sakura.data.migration.LegacyPlayerDataParser;
 import xin.vanilla.sakura.data.player.PlayerSignInSummary;
+import xin.vanilla.sakura.data.player.MonthSignInIndex;
+import xin.vanilla.banira.common.util.DateUtils;
 import xin.vanilla.sakura.internal.neoforge.migration.MonthlySignInHistoryRepository;
 import xin.vanilla.sakura.data.migration.PlayerSummaryStore;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.ZoneId;
+import java.util.Date;
+import java.util.Comparator;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.LinkedHashMap;
@@ -37,6 +44,7 @@ public final class PlayerSignInDataRepository {
     }
 
     public PlayerSignInData load(UUID playerUuid) throws IOException {
+        historyRepository.deletionJournal().recover(playerUuid, summaryRepository);
         Optional<PlayerSignInSummary> optional = summaryRepository.load(playerUuid);
         if (!optional.isPresent()) {
             return new PlayerSignInData();
@@ -72,6 +80,7 @@ public final class PlayerSignInDataRepository {
     }
 
     public void save(UUID playerUuid, IPlayerSignInData data) throws IOException {
+        historyRepository.deletionJournal().recover(playerUuid, summaryRepository);
         CompoundTag serialized = data.serializeNBT();
         // 永久摘要采用已维护的统计值，不能因详情被清理而重新计算。
         serialized.putInt("continuousSignInDays", data.getContinuousSignInDays());
@@ -93,6 +102,72 @@ public final class PlayerSignInDataRepository {
         data.setMonthIndexes(parsed.getSummary().getMonthIndexes());
         historyRepository.saveMonths(playerUuid, parsed, changedHistoryMonths(previous, parsed));
         summaryRepository.save(playerUuid, parsed.getSummary());
+    }
+
+    public boolean deleteDay(UUID uuid, IPlayerSignInData data, LocalDate day,
+                             LocalDate currentDay) throws IOException {
+        historyRepository.deletionJournal().recover(uuid, summaryRepository);
+        PlayerSignInData candidate = new PlayerSignInData();
+        candidate.copyFrom(data);
+        String month = YearMonth.from(day).toString();
+        MonthSignInIndex index = candidate.getMonthIndexes().get(month);
+        boolean signed = index != null && index.isSigned(day.getDayOfMonth());
+        boolean rewarded = index != null && index.isRewarded(day.getDayOfMonth());
+        boolean latestRemoved = candidate.getSignInRecords().stream().anyMatch(record ->
+                day.equals(localDay(record.getCompensateTime()))
+                        && record.getSignInTime().equals(candidate.getLastSignInTime()));
+        boolean removed = candidate.getSignInRecords().removeIf(record ->
+                day.equals(localDay(record.getCompensateTime())));
+        if (!signed && !rewarded && !removed) return false;
+
+        // 保留日常保存的合并保护，只有显式删除允许清除永久位图。
+        save(uuid, data);
+        PlayerSignInSummary before = summaryRepository.load(uuid)
+                .orElseThrow(() -> new IOException("Missing sign-in summary: " + uuid));
+        candidate.setMonthIndexes(data.getMonthIndexes());
+        index = candidate.getMonthIndexes().get(month);
+        if (index != null) {
+            int mask = ~(1 << (day.getDayOfMonth() - 1));
+            index.setSignedDays(index.getSignedDays() & mask);
+            index.setRewardedDays(index.getRewardedDays() & mask);
+        }
+        if (signed || removed) candidate.setTotalSignInDays(Math.max(0, data.getTotalSignInDays() - 1));
+        LocalDate end = candidate.isSignedOn(atStart(currentDay)) ? currentDay : currentDay.minusDays(1);
+        candidate.setContinuousSignInDays(candidate.calculateContinuousDays(atStart(end)));
+        // 详情缺失时无法确认最后一次动作的签到日，保留原冷却时间。
+        if (latestRemoved) {
+            Date last = candidate.getSignInRecords().stream().map(SignInRecord::getSignInTime)
+                    .max(Comparator.naturalOrder()).orElseGet(() -> lastIndexedDay(candidate));
+            candidate.setLastSignInTime(last);
+        }
+        PlayerSignInSummary after = legacyParser.parse(candidate.serializeNBT()).getSummary();
+        after.setLegacyCapabilityMigrated(before.isLegacyCapabilityMigrated());
+        after.setLegacyCapabilityBackup(before.getLegacyCapabilityBackup());
+        mergePersonalDateSlots(after, before);
+        historyRepository.deletionJournal().delete(uuid, day, before, after, summaryRepository);
+        candidate.setPersonalDateSlots(after.getPersonalDateSlots());
+        data.copyFrom(candidate);
+        return true;
+    }
+
+    private static Date lastIndexedDay(IPlayerSignInData data) {
+        LocalDate latest = null;
+        for (MonthSignInIndex index : data.getMonthIndexes().values()) {
+            YearMonth month = YearMonth.parse(index.getMonth());
+            for (int day = 1; day <= month.lengthOfMonth(); day++) {
+                LocalDate date = month.atDay(day);
+                if (index.isSigned(day) && (latest == null || date.isAfter(latest))) latest = date;
+            }
+        }
+        return latest == null ? DateUtils.getDate(0, 1, 1) : atStart(latest);
+    }
+
+    private static Date atStart(LocalDate day) {
+        return Date.from(day.atStartOfDay(ZoneId.systemDefault()).toInstant());
+    }
+
+    private static LocalDate localDay(Date date) {
+        return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
     }
 
     private static Set<String> changedHistoryMonths(
