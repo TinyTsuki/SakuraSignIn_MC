@@ -137,7 +137,7 @@ public class RewardManagerDeliveryTest {
     public void automaticSignInSavesCompleteStateBeforeSyncAndResults() {
         configureItemAndPersonalDate();
         signIn(ESignInType.SIGN_IN, today, true);
-        assertEquals(Arrays.asList("item", "save", "sync", "notify", "notify"), events);
+        assertEquals(Arrays.asList("item", "save", "sync", "notify", "notify", "notify"), events);
         assertCompleteSaved(today, true, 2);
         assertEquals(3, reload().getSignInCard());
         assertEquals("YEARLY:" + LocalDate.now().getYear(),
@@ -372,6 +372,104 @@ public class RewardManagerDeliveryTest {
         return null;
     }
 
+    @Test
+    public void personalDateRewardDetailsAreSentAfterSaveEvenWithoutAutomaticClaim() {
+        configureItemAndPersonalDate();
+        PlayerUtils.setRemoteClientModInstalled(player, "banira_codex", true);
+        signIn(ESignInType.SIGN_IN, today, false);
+        assertEquals(3, data.getSignInCard());
+        assertTrue("Missing birthday reward receipt", packets.stream().anyMatch(packet ->
+                packet.typeId().equals(SakuraNotificationTypes.REWARD)
+                        && packet.componentJson().contains("Birthday")
+                        && packet.componentJson().contains("reward_type_5")));
+        assertTrue(events.indexOf("save") < events.indexOf("packet"));
+        int count = packets.size();
+        data = reload();
+        signIn(ESignInType.REWARD, today, true);
+        assertEquals(3, data.getSignInCard());
+        assertEquals(1, packets.subList(0, count).stream()
+                .filter(packet -> packet.componentJson().contains("Birthday")).count());
+    }
+
+    @Test
+    public void failedPersonalDateRewardIsNotReportedAsReceived() {
+        configureItemAndPersonalDate();
+        PersonalDatePreset preset = RewardConfigManager.getRewardConfig().getPersonalDatePresets().get(0);
+        preset.setRewards(new RewardList(Collections.singletonList(new Reward(
+                SakuraComponent.get().literal("message-body"), SakuraRewardTypes.MESSAGE))));
+        player.failMessageBody = true;
+        PlayerUtils.setRemoteClientModInstalled(player, "banira_codex", true);
+        failPacketAt = 1;
+        signIn(ESignInType.SIGN_IN, today, false);
+        assertTrue(packets.stream().noneMatch(packet -> packet.componentJson().contains("Birthday")));
+        assertEquals(2, data.getSignInCard());
+    }
+
+    @Test
+    public void personalDateReceiptIsNotSentWhenSignInSaveFails() {
+        configureItemAndPersonalDate();
+        PlayerUtils.setRemoteClientModInstalled(player, "banira_codex", true);
+        failSave = true;
+        assertThrows(IllegalStateException.class, () -> signIn(ESignInType.SIGN_IN, today, false));
+        assertTrue(packets.isEmpty());
+        assertEquals(3, data.getSignInCard());
+    }
+
+    @Test
+    public void onlinePersonalDateReceiptSurvivesPostSaveSyncFailure() throws Exception {
+        configureItemAndPersonalDate();
+        RewardConfigManager.getRewardConfig().getPersonalDatePresets().get(0)
+                .setDeliveryMode(PersonalDateDeliveryMode.ONLINE);
+        PlayerUtils.setRemoteClientModInstalled(player, "banira_codex", true);
+        failSync = true;
+        java.lang.reflect.Method method = xin.vanilla.sakura.internal.fabric.event.FabricSakuraGameEventAdapter.class
+                .getDeclaredMethod("deliverOnlineRewards", ServerPlayer.class);
+        method.setAccessible(true);
+        method.invoke(null, player);
+        assertNotNull(saved);
+        assertTrue("Missing online birthday receipt", packets.stream()
+                .anyMatch(packet -> packet.componentJson().contains("Birthday")));
+        assertTrue(events.indexOf("save") < events.indexOf("packet"));
+        assertEquals(3, reload().getSignInCard());
+        int receiptCount = packets.size();
+        method.invoke(null, player);
+        assertEquals(receiptCount, packets.size());
+        assertEquals(3, data.getSignInCard());
+    }
+
+    @Test
+    public void droppedPersonalDateItemStillHasReceiptWithoutReplayingGrant() {
+        configureItemAndPersonalDate();
+        RewardConfigManager.getRewardConfig().getBaseRewards().clear();
+        ItemStack cake = new ItemStack(Items.CAKE, 1);
+        cake.setHoverName(new TextComponent("birthday-cake"));
+        RewardConfigManager.getRewardConfig().getPersonalDatePresets().get(0)
+                .setRewards(new RewardList(Collections.singletonList(new Reward(cake, SakuraRewardTypes.ITEM))));
+        inventory().full = true;
+        PlayerUtils.setRemoteClientModInstalled(player, "banira_codex", true);
+        signIn(ESignInType.SIGN_IN, today, false);
+        assertEquals(1, player.dropped);
+        assertTrue("Dropped reward receipt missing", packets.stream().anyMatch(packet ->
+                packet.componentJson().contains("Birthday") && packet.componentJson().contains("birthday-cake")));
+        data = reload();
+        signIn(ESignInType.REWARD, today, true);
+        assertEquals(1, player.dropped);
+    }
+
+    @Test
+    public void unsuccessfulItemDropIsNotReportedAsReceived() {
+        configureItemAndPersonalDate();
+        RewardConfigManager.getRewardConfig().getBaseRewards().clear();
+        RewardConfigManager.getRewardConfig().getPersonalDatePresets().get(0)
+                .setRewards(new RewardList(Collections.singletonList(new Reward(new ItemStack(Items.CAKE), SakuraRewardTypes.ITEM))));
+        inventory().full = true;
+        player.failDrop = true;
+        PlayerUtils.setRemoteClientModInstalled(player, "banira_codex", true);
+        signIn(ESignInType.SIGN_IN, today, false);
+        assertTrue(packets.stream().noneMatch(packet -> packet.componentJson().contains("Birthday")));
+        assertEquals(0, player.dropped);
+    }
+
     private List<String> configureLargeRewards() {
         PlayerUtils.setRemoteClientModInstalled(player, "banira_codex", true);
         List<String> names = new ArrayList<>();
@@ -492,10 +590,12 @@ public class RewardManagerDeliveryTest {
 
     private static final class CountingInventory extends Inventory {
         private int items;
+        private boolean full;
         private final TestPlayer owner;
         CountingInventory(TestPlayer owner) { super(owner); this.owner = owner; }
         @Override public boolean add(ItemStack stack) {
             owner.events.add("item");
+            if (full) return false;
             items += stack.getCount();
             stack.setCount(0);
             return true;
@@ -509,11 +609,22 @@ public class RewardManagerDeliveryTest {
         private boolean failMessageBody;
         private int bodyAttempts;
         private List<String> delivered;
+        private int dropped;
+        private boolean failDrop;
 
         private TestPlayer() { super(null, null, null, null); }
         @Override public UUID getUUID() { return new UUID(0, 1665); }
         @Override public boolean hasPermissions(int level) { return true; }
         @Override public Collection<MobEffectInstance> getActiveEffects() { return Collections.emptyList(); }
+        @Override public net.minecraft.world.entity.item.ItemEntity drop(ItemStack stack, boolean random) {
+            if (failDrop) return null;
+            dropped += stack.getCount();
+            try {
+                Class<?> unsafeClass = Class.forName("sun.misc.Unsafe");
+                return (net.minecraft.world.entity.item.ItemEntity) unsafeClass.getMethod("allocateInstance", Class.class)
+                        .invoke(field(unsafeClass, "theUnsafe").get(null), net.minecraft.world.entity.item.ItemEntity.class);
+            } catch (Exception failure) { throw new IllegalStateException(failure); }
+        }
         @Override public void sendMessage(net.minecraft.network.chat.Component message, UUID sender) {
             String text = message.getString();
             if (text.contains("message-body")) {
