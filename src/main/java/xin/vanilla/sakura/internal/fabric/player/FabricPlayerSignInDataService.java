@@ -25,9 +25,11 @@ import xin.vanilla.sakura.reward.RewardManager;
 import xin.vanilla.banira.common.util.DateUtils;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.ZoneId;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -40,6 +42,8 @@ public final class FabricPlayerSignInDataService implements SakuraPlayerDataServ
     private static final Logger LOGGER = LogManager.getLogger();
     private final Map<UUID, IPlayerSignInData> serverCache = new ConcurrentHashMap<>();
     private final Map<UUID, IPlayerSignInData> clientCache = new ConcurrentHashMap<>();
+    private final Set<UUID> recoveryNeeded = ConcurrentHashMap.newKeySet();
+    private final Set<UUID> reloadNeeded = ConcurrentHashMap.newKeySet();
 
     private FabricPlayerSignInDataService() {
     }
@@ -50,6 +54,11 @@ public final class FabricPlayerSignInDataService implements SakuraPlayerDataServ
         UUID playerUuid = player.getUUID();
         if (player.getCommandSenderWorld().isClientSide) {
             return clientCache.computeIfAbsent(playerUuid, ignored -> new PlayerSignInData());
+        }
+        try {
+            recoverPending(playerUuid);
+        } catch (IOException failure) {
+            throw new IllegalStateException("Unable to recover Sakura player data: " + playerUuid, failure);
         }
         return serverCache.computeIfAbsent(playerUuid, this::loadServerData);
     }
@@ -65,9 +74,22 @@ public final class FabricPlayerSignInDataService implements SakuraPlayerDataServ
     public LegacyMigrationResult migrateAndLoad(Object playerObject) throws IOException {
         ServerPlayer player = requireServerPlayer(playerObject);
         UUID playerUuid = player.getUUID();
+        LegacyMigrationResult result = migrate(playerUuid);
+        serverCache.remove(playerUuid);
+        MonthlySignInHistoryRepository histories =
+                new MonthlySignInHistoryRepository(BaniraDataPaths.worldDataPath());
+        applyRetention(playerUuid, histories);
+        serverCache.put(playerUuid, repository(histories).load(playerUuid));
+        recoveryNeeded.remove(playerUuid);
+        reloadNeeded.remove(playerUuid);
+        return result;
+    }
+
+    private LegacyMigrationResult migrate(UUID playerUuid) throws IOException {
         BaniraPlayerSummaryRepository summaries = new BaniraPlayerSummaryRepository();
         MonthlySignInHistoryRepository histories =
                 new MonthlySignInHistoryRepository(BaniraDataPaths.worldDataPath());
+        histories.deletionJournal().recover(playerUuid, summaries);
         LegacyPlayerDataMigrationService migration = new LegacyPlayerDataMigrationService(
                 new LegacyPlayerDataParser(),
                 new LegacyForgeCapabilityStore(
@@ -77,11 +99,23 @@ public final class FabricPlayerSignInDataService implements SakuraPlayerDataServ
                 histories,
                 summaries
         );
-        LegacyMigrationResult result = migration.migrate(playerUuid);
-        serverCache.remove(playerUuid);
-        applyRetention(playerUuid, histories);
-        serverCache.put(playerUuid, new PlayerSignInDataRepository(summaries, histories).load(playerUuid));
-        return result;
+        return migration.migrate(playerUuid);
+    }
+
+    @Override
+    public boolean deleteDay(UUID playerUuid, LocalDate day, LocalDate currentDay) throws IOException {
+        try {
+            recoverPending(playerUuid);
+            IPlayerSignInData data = serverCache.get(playerUuid);
+            if (data == null) {
+                migrate(playerUuid);
+                data = repository().load(playerUuid);
+            }
+            return repository().deleteDay(playerUuid, data, day, currentDay);
+        } catch (IOException | RuntimeException failure) {
+            if (serverCache.containsKey(playerUuid)) recoveryNeeded.add(playerUuid);
+            throw failure;
+        }
     }
 
     @Override
@@ -114,6 +148,8 @@ public final class FabricPlayerSignInDataService implements SakuraPlayerDataServ
         try {
             persist(playerUuid);
             serverCache.remove(playerUuid);
+            recoveryNeeded.remove(playerUuid);
+            reloadNeeded.remove(playerUuid);
         } catch (IOException saveFailure) {
             LOGGER.error("Player cache retained after save failure for {}", playerUuid, saveFailure);
         }
@@ -159,8 +195,25 @@ public final class FabricPlayerSignInDataService implements SakuraPlayerDataServ
     private void persist(UUID playerUuid) throws IOException {
         IPlayerSignInData data = serverCache.get(playerUuid);
         if (data != null) {
+            recoverPending(playerUuid);
+            data = serverCache.get(playerUuid);
             repository().save(playerUuid, data);
         }
+    }
+
+    private void recoverPending(UUID playerUuid) throws IOException {
+        if (!recoveryNeeded.contains(playerUuid) && !reloadNeeded.contains(playerUuid)) return;
+        MonthlySignInHistoryRepository histories =
+                new MonthlySignInHistoryRepository(BaniraDataPaths.worldDataPath());
+        if (histories.deletionJournal().hasPending(playerUuid)) {
+            reloadNeeded.add(playerUuid);
+        }
+        if (reloadNeeded.contains(playerUuid)) {
+            IPlayerSignInData recovered = repository(histories).load(playerUuid);
+            if (serverCache.containsKey(playerUuid)) serverCache.put(playerUuid, recovered);
+            reloadNeeded.remove(playerUuid);
+        }
+        recoveryNeeded.remove(playerUuid);
     }
 
     private static PlayerSignInDataRepository repository() {

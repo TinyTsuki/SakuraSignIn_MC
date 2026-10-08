@@ -1,4 +1,9 @@
 {
+  "word.sakura_sign_in.delete_sign_in": "Delete player sign-in records",
+  "word.sakura_sign_in.delete_one_player": "Select one player",
+  "word.sakura_sign_in.delete_sign_in_failed": "Unable to delete sign-in records. Check the server log",
+  "format.sakura_sign_in.delete_sign_in_success": "Deleted %s's sign-in record for %s",
+  "format.sakura_sign_in.delete_sign_in_missing": "%s has no sign-in record for %s",
   "key.sakura_sign_in.categories": "Sakura Sign-In",
   "key.sakura_sign_in.sign_in": "Open Sign-In Page",
   "key.sakura_sign_in.reward_option": "Open Reward Configuration Page",

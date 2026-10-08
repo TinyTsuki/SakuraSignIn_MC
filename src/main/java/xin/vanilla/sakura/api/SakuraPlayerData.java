@@ -5,6 +5,7 @@ import xin.vanilla.sakura.data.migration.LegacyMigrationResult;
 import xin.vanilla.sakura.platform.SakuraPlayerDataService;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -35,6 +36,10 @@ public final class SakuraPlayerData {
 
     public static void save(Object serverPlayer) {
         service().save(serverPlayer);
+    }
+
+    public static boolean deleteDay(UUID playerUuid, LocalDate day, LocalDate currentDay) throws IOException {
+        return service().deleteDay(playerUuid, day, currentDay);
     }
 
     public static void saveAndSync(Object serverPlayer) {
