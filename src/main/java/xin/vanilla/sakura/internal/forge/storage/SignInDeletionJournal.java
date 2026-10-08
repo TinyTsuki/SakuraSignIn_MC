@@ -15,7 +15,7 @@ import java.time.YearMonth;
 import java.util.UUID;
 
 /**
- * 删除跨越摘要和月文件，恢复日志先于两个文件落盘。
+ * 管理操作先保存恢复日志，再更新摘要与必要的月文件。
  */
 public final class SignInDeletionJournal {
     private final Path worldData;
@@ -55,6 +55,21 @@ public final class SignInDeletionJournal {
         journal.put("afterSummary", after.serializeNBT());
         journal.put("beforeHistory", original);
         journal.put("afterHistory", replacement);
+        commit(uuid, journal, summaries);
+    }
+
+    public void resetPersonalDates(UUID uuid, PlayerSignInSummary before,
+                                   PlayerSignInSummary after, PlayerSummaryStore summaries) throws IOException {
+        recover(uuid, summaries);
+        CompoundTag journal = new CompoundTag();
+        journal.putString("playerUuid", uuid.toString());
+        journal.putString("operation", "personalDateReset");
+        journal.put("beforeSummary", before.serializeNBT());
+        journal.put("afterSummary", after.serializeNBT());
+        commit(uuid, journal, summaries);
+    }
+
+    private void commit(UUID uuid, CompoundTag journal, PlayerSummaryStore summaries) throws IOException {
         Path pending = pendingFile(uuid);
         writeVerified(directory(uuid).resolve("backup-" + UUID.randomUUID() + ".nbt"), journal);
         writeVerified(pending, journal);
@@ -77,8 +92,13 @@ public final class SignInDeletionJournal {
         if (!exists(pending)) return;
         CompoundTag journal = AtomicNbtFiles.read(pending);
         String month = journal.getString("month");
+        String operation = journal.getString("operation");
+        boolean summaryOnly = "personalDateReset".equals(operation);
         try {
-            YearMonth.parse(month);
+            if (!operation.isEmpty() && !summaryOnly) {
+                throw new IllegalArgumentException("Unknown operation");
+            }
+            if (!summaryOnly) YearMonth.parse(month);
             if (!uuid.toString().equals(journal.getString("playerUuid"))) {
                 throw new IllegalArgumentException("Player mismatch");
             }
@@ -86,10 +106,12 @@ public final class SignInDeletionJournal {
                 if (!PlayerSignInSummary.isCurrentSchema(journal.getCompound(side + "Summary"))) {
                     throw new IllegalArgumentException("Missing summary snapshot");
                 }
-                CompoundTag snapshot = journal.getCompound(side + "History");
-                if (!uuid.toString().equals(snapshot.getString("playerUuid"))
-                        || !month.equals(snapshot.getString("month")) || !snapshot.contains("records", 9)) {
-                    throw new IllegalArgumentException("Invalid history snapshot");
+                if (!summaryOnly) {
+                    CompoundTag snapshot = journal.getCompound(side + "History");
+                    if (!uuid.toString().equals(snapshot.getString("playerUuid"))
+                            || !month.equals(snapshot.getString("month")) || !snapshot.contains("records", 9)) {
+                        throw new IllegalArgumentException("Invalid history snapshot");
+                    }
                 }
             }
         } catch (RuntimeException invalid) {
@@ -97,11 +119,13 @@ public final class SignInDeletionJournal {
         }
         boolean rollback = journal.getBoolean("rollback");
         String side = rollback ? "before" : "after";
-        Path history = historyFile(uuid, month);
-        if (rollback && !journal.getBoolean("historyExisted")) {
-            Files.deleteIfExists(history);
-        } else {
-            writeVerified(history, journal.getCompound(side + "History"));
+        if (!summaryOnly) {
+            Path history = historyFile(uuid, month);
+            if (rollback && !journal.getBoolean("historyExisted")) {
+                Files.deleteIfExists(history);
+            } else {
+                writeVerified(history, journal.getCompound(side + "History"));
+            }
         }
         try {
             summaries.saveAndVerify(uuid,
