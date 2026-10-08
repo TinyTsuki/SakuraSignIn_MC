@@ -30,6 +30,7 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.ZoneId;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -42,6 +43,8 @@ public final class ForgePlayerSignInDataService implements SakuraPlayerDataServi
     private static final Logger LOGGER = LogManager.getLogger();
     private final Map<UUID, IPlayerSignInData> serverCache = new ConcurrentHashMap<>();
     private final Map<UUID, IPlayerSignInData> clientCache = new ConcurrentHashMap<>();
+    private final Set<UUID> recoveryNeeded = ConcurrentHashMap.newKeySet();
+    private final Set<UUID> reloadNeeded = ConcurrentHashMap.newKeySet();
 
     private ForgePlayerSignInDataService() {
     }
@@ -52,6 +55,11 @@ public final class ForgePlayerSignInDataService implements SakuraPlayerDataServi
         UUID playerUuid = player.getUUID();
         if (player.getCommandSenderWorld().isClientSide) {
             return clientCache.computeIfAbsent(playerUuid, ignored -> new PlayerSignInData());
+        }
+        try {
+            recoverPending(playerUuid);
+        } catch (IOException failure) {
+            throw new IllegalStateException("Unable to recover Sakura player data: " + playerUuid, failure);
         }
         return serverCache.computeIfAbsent(playerUuid, this::loadServerData);
     }
@@ -73,6 +81,8 @@ public final class ForgePlayerSignInDataService implements SakuraPlayerDataServi
                 new MonthlySignInHistoryRepository(BaniraDataPaths.worldDataPath());
         applyRetention(playerUuid, histories);
         serverCache.put(playerUuid, repository(histories).load(playerUuid));
+        recoveryNeeded.remove(playerUuid);
+        reloadNeeded.remove(playerUuid);
         return result;
     }
 
@@ -96,6 +106,7 @@ public final class ForgePlayerSignInDataService implements SakuraPlayerDataServi
     @Override
     public boolean deleteDay(UUID playerUuid, LocalDate day, LocalDate currentDay) throws IOException {
         try {
+            recoverPending(playerUuid);
             IPlayerSignInData data = serverCache.get(playerUuid);
             if (data == null) {
                 migrate(playerUuid);
@@ -103,7 +114,7 @@ public final class ForgePlayerSignInDataService implements SakuraPlayerDataServi
             }
             return repository().deleteDay(playerUuid, data, day, currentDay);
         } catch (IOException | RuntimeException failure) {
-            serverCache.remove(playerUuid);
+            if (serverCache.containsKey(playerUuid)) recoveryNeeded.add(playerUuid);
             throw failure;
         }
     }
@@ -138,6 +149,8 @@ public final class ForgePlayerSignInDataService implements SakuraPlayerDataServi
         try {
             persist(playerUuid);
             serverCache.remove(playerUuid);
+            recoveryNeeded.remove(playerUuid);
+            reloadNeeded.remove(playerUuid);
         } catch (IOException saveFailure) {
             LOGGER.error("Player cache retained after save failure for {}", playerUuid, saveFailure);
         }
@@ -183,8 +196,25 @@ public final class ForgePlayerSignInDataService implements SakuraPlayerDataServi
     private void persist(UUID playerUuid) throws IOException {
         IPlayerSignInData data = serverCache.get(playerUuid);
         if (data != null) {
+            recoverPending(playerUuid);
+            data = serverCache.get(playerUuid);
             repository().save(playerUuid, data);
         }
+    }
+
+    private void recoverPending(UUID playerUuid) throws IOException {
+        if (!recoveryNeeded.contains(playerUuid) && !reloadNeeded.contains(playerUuid)) return;
+        MonthlySignInHistoryRepository histories =
+                new MonthlySignInHistoryRepository(BaniraDataPaths.worldDataPath());
+        if (histories.deletionJournal().hasPending(playerUuid)) {
+            reloadNeeded.add(playerUuid);
+        }
+        if (reloadNeeded.contains(playerUuid)) {
+            IPlayerSignInData recovered = repository(histories).load(playerUuid);
+            if (serverCache.containsKey(playerUuid)) serverCache.put(playerUuid, recovered);
+            reloadNeeded.remove(playerUuid);
+        }
+        recoveryNeeded.remove(playerUuid);
     }
 
     private static PlayerSignInDataRepository repository() {

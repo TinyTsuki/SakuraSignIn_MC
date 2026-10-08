@@ -11,8 +11,21 @@ import xin.vanilla.sakura.data.personaldate.PlayerPersonalDateSlot;
 import xin.vanilla.sakura.data.player.PlayerSignInSummary;
 import xin.vanilla.sakura.internal.forge.migration.MonthlySignInHistoryRepository;
 import xin.vanilla.sakura.internal.forge.storage.AtomicNbtFiles;
+import xin.vanilla.sakura.internal.forge.player.ForgePlayerSignInDataService;
+import xin.vanilla.sakura.test.BaniraTestPlatform;
+import xin.vanilla.banira.api.Banira;
+import xin.vanilla.banira.platform.BaniraPlatform;
+import xin.vanilla.banira.platform.BaniraPlatforms;
+import xin.vanilla.banira.platform.BaniraPathService;
+import xin.vanilla.banira.platform.BaniraPlayerDataService;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Proxy;
+import java.lang.reflect.Method;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Map;
+import java.util.Set;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
@@ -233,6 +246,134 @@ public class SignInDeletionTest {
         assertTrue(repository.load(uuid).isSignedOn(otherDay));
         assertEquals("unchanged", AtomicNbtFiles.read(month).getString("extension"));
         assertFalse(delete(repository, data, today));
+    }
+
+    @Test
+    public void preliminaryFailurePreservesDirtyServerCache() throws Exception {
+        BaniraTestPlatform.install();
+        BaniraPlatform previous = Banira.platform();
+        BaniraPlatforms.install((BaniraPlatform) Proxy.newProxyInstance(getClass().getClassLoader(),
+                new Class<?>[]{BaniraPlatform.class}, (proxy, method, args) -> {
+                    if (method.getName().equals("pathService")) throw new IllegalStateException("history unavailable");
+                    return method.invoke(previous, args);
+                }));
+        Field field = ForgePlayerSignInDataService.class.getDeclaredField("serverCache");
+        field.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        Map<UUID, IPlayerSignInData> cache = (Map<UUID, IPlayerSignInData>) field.get(ForgePlayerSignInDataService.INSTANCE);
+        PlayerSignInData dirty = signed(9);
+        dirty.setSignInCard(11);
+        dirty.setPersonalDateSlots(Collections.singletonList(new PlayerPersonalDateSlot(
+                "birthday", 0, CalendarIds.GREGORIAN, 10, 9, "YEARLY:2026")));
+        CompoundNBT before = dirty.serializeNBT();
+        cache.put(uuid, dirty);
+        try {
+            try {
+                ForgePlayerSignInDataService.INSTANCE.deleteDay(uuid, today, today);
+                fail("Expected unavailable history");
+            } catch (IllegalStateException expected) {
+                assertEquals("history unavailable", expected.getMessage());
+            }
+            assertSame(dirty, cache.get(uuid));
+            assertEquals(before, cache.get(uuid).serializeNBT());
+        } finally {
+            cache.remove(uuid);
+            ForgePlayerSignInDataService.INSTANCE.removeServer(uuid);
+            BaniraPlatforms.install(previous);
+        }
+    }
+
+    @Test
+    public void prunedLatestMakeUpActionKeepsItsCooldownTimestamp() throws Exception {
+        PlayerSignInDataRepository repository = repository();
+        PlayerSignInData data = signed(8, 9);
+        data.markSigned(DateUtils.format("2026-09-30 12:00:00"), true);
+        data.setTotalSignInDays(3);
+        java.util.Date makeUpTime = DateUtils.format("2026-10-09 15:00:00");
+        data.setLastSignInTime(makeUpTime);
+        repository.save(uuid, data);
+        assertTrue(delete(repository, data, today));
+        assertEquals(makeUpTime, repository.load(uuid).getLastSignInTime());
+        assertEquals(2, repository.load(uuid).getTotalSignInDays());
+    }
+
+    @Test
+    public void recoveredDeletionMustReloadCacheEvenAfterJournalRemoval() throws Exception {
+        PlayerSignInDataRepository repository = repository();
+        PlayerSignInData stale = signed(9);
+        PlayerSignInData data = signed(9);
+        repository.save(uuid, data);
+        assertTrue(delete(repository, data, today));
+        Path world = temporary.getRoot().toPath();
+        Path directory = world.resolve("sakura_sign_in/deletions").resolve(uuid.toString());
+        CompoundNBT journal;
+        try (java.util.stream.Stream<Path> files = Files.list(directory)) {
+            journal = AtomicNbtFiles.read(files.filter(path -> path.getFileName().toString().startsWith("backup-"))
+                    .findFirst().get());
+        }
+        Path pending = directory.resolve("pending.nbt");
+        AtomicNbtFiles.write(pending, journal);
+        CompoundNBT root = new CompoundNBT();
+        root.put("sakura_sign_in", journal.getCompound("beforeSummary"));
+        BaniraTestPlatform.install();
+        BaniraPlatform previous = Banira.platform();
+        BaniraPathService paths = (BaniraPathService) Proxy.newProxyInstance(getClass().getClassLoader(),
+                new Class<?>[]{BaniraPathService.class}, (proxy, method, args) -> {
+                    if (method.getName().equals("worldDataPath")) return world;
+                    if (method.getName().equals("playerDataPath")) return world.resolve("playerdata");
+                    throw new UnsupportedOperationException(method.getName());
+                });
+        BaniraPlayerDataService players = (BaniraPlayerDataService) Proxy.newProxyInstance(getClass().getClassLoader(),
+                new Class<?>[]{BaniraPlayerDataService.class}, (proxy, method, args) -> {
+                    switch (method.getName()) {
+                        case "getOrCreate": return root.getCompound((String) args[1]);
+                        case "put": root.put((String) args[1], (CompoundNBT) args[2]); return null;
+                        case "flush": AtomicNbtFiles.write(world.resolve("playerdata").resolve(uuid + ".nbt"), root); return null;
+                        default: throw new UnsupportedOperationException(method.getName());
+                    }
+                });
+        BaniraPlatforms.install((BaniraPlatform) Proxy.newProxyInstance(getClass().getClassLoader(),
+                new Class<?>[]{BaniraPlatform.class}, (proxy, method, args) -> {
+                    if (method.getName().equals("pathService")) return paths;
+                    if (method.getName().equals("playerDataService")) return players;
+                    return method.invoke(previous, args);
+                }));
+        Field field = ForgePlayerSignInDataService.class.getDeclaredField("serverCache");
+        field.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        Map<UUID, IPlayerSignInData> cache = (Map<UUID, IPlayerSignInData>) field.get(ForgePlayerSignInDataService.INSTANCE);
+        Field recovery = ForgePlayerSignInDataService.class.getDeclaredField("recoveryNeeded");
+        recovery.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        Set<UUID> needed = (Set<UUID>) recovery.get(ForgePlayerSignInDataService.INSTANCE);
+        cache.put(uuid, stale); needed.add(uuid);
+        Method retry = ForgePlayerSignInDataService.class.getDeclaredMethod("recoverPending", UUID.class);
+        retry.setAccessible(true);
+        Path broken = world.resolve("sakura_sign_in/history").resolve(uuid.toString()).resolve("2026-09.nbt");
+        Files.write(broken, new byte[]{0, 1});
+        try {
+            try {
+                retry.invoke(ForgePlayerSignInDataService.INSTANCE, uuid);
+                fail("Expected unreadable unrelated history");
+            } catch (InvocationTargetException expected) {
+                assertTrue(expected.getCause() instanceof IOException);
+            }
+            assertFalse(Files.exists(pending));
+            assertSame(stale, cache.get(uuid));
+            Files.delete(broken);
+            retry.invoke(ForgePlayerSignInDataService.INSTANCE, uuid);
+            assertFalse(cache.get(uuid).isSignedOn(date(9)));
+            assertEquals(0, cache.get(uuid).getTotalSignInDays());
+            Method persist = ForgePlayerSignInDataService.class.getDeclaredMethod("persist", UUID.class);
+            persist.setAccessible(true);
+            persist.invoke(ForgePlayerSignInDataService.INSTANCE, uuid);
+            assertEquals(0, root.getCompound("sakura_sign_in").getInt("totalSignInDays"));
+        } finally {
+            Files.deleteIfExists(broken);
+            cache.remove(uuid);
+            ForgePlayerSignInDataService.INSTANCE.removeServer(uuid);
+            BaniraPlatforms.install(previous);
+        }
     }
 
     private PlayerSignInDataRepository repository() {

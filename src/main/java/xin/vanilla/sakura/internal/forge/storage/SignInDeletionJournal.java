@@ -8,6 +8,8 @@ import xin.vanilla.sakura.data.player.PlayerSignInSummary;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.UUID;
@@ -22,12 +24,17 @@ public final class SignInDeletionJournal {
         this.worldData = worldData.resolve("sakura_sign_in");
     }
 
+    public boolean hasPending(UUID uuid) throws IOException {
+        return exists(pendingFile(uuid));
+    }
+
     public void delete(UUID uuid, LocalDate day, PlayerSignInSummary before,
                        PlayerSignInSummary after, PlayerSummaryStore summaries) throws IOException {
         recover(uuid, summaries);
         String month = YearMonth.from(day).toString();
         Path history = historyFile(uuid, month);
-        CompoundNBT original = Files.exists(history) ? AtomicNbtFiles.read(history) : emptyHistory(uuid, month);
+        boolean historyExisted = exists(history);
+        CompoundNBT original = historyExisted ? AtomicNbtFiles.read(history) : emptyHistory(uuid, month);
         CompoundNBT replacement = original.copy();
         ListNBT kept = new ListNBT();
         ListNBT records = original.getList("records", 10);
@@ -43,7 +50,7 @@ public final class SignInDeletionJournal {
         journal.putString("playerUuid", uuid.toString());
         journal.putString("month", month);
         journal.putString("day", day.toString());
-        journal.putBoolean("historyExisted", Files.exists(history));
+        journal.putBoolean("historyExisted", historyExisted);
         journal.put("beforeSummary", before.serializeNBT());
         journal.put("afterSummary", after.serializeNBT());
         journal.put("beforeHistory", original);
@@ -67,7 +74,7 @@ public final class SignInDeletionJournal {
 
     public void recover(UUID uuid, PlayerSummaryStore summaries) throws IOException {
         Path pending = pendingFile(uuid);
-        if (!Files.exists(pending)) return;
+        if (!exists(pending)) return;
         CompoundNBT journal = AtomicNbtFiles.read(pending);
         String month = journal.getString("month");
         try {
@@ -107,6 +114,15 @@ public final class SignInDeletionJournal {
 
     private Path directory(UUID uuid) {
         return worldData.resolve("deletions").resolve(uuid.toString());
+    }
+
+    private static boolean exists(Path file) throws IOException {
+        try {
+            Files.readAttributes(file, BasicFileAttributes.class);
+            return true;
+        } catch (NoSuchFileException missing) {
+            return false;
+        }
     }
 
     private Path pendingFile(UUID uuid) {

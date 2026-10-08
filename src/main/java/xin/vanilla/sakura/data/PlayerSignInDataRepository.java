@@ -134,7 +134,8 @@ public final class PlayerSignInDataRepository {
         if (signed || removed) candidate.setTotalSignInDays(Math.max(0, data.getTotalSignInDays() - 1));
         LocalDate end = candidate.isSignedOn(atStart(currentDay)) ? currentDay : currentDay.minusDays(1);
         candidate.setContinuousSignInDays(candidate.calculateContinuousDays(atStart(end)));
-        if (latestRemoved || day.equals(localDay(data.getLastSignInTime()))) {
+        // 详情缺失时无法确认最后一次动作的签到日，保留原冷却时间。
+        if (latestRemoved) {
             Date last = candidate.getSignInRecords().stream().map(SignInRecord::getSignInTime)
                     .max(Comparator.naturalOrder()).orElseGet(() -> lastIndexedDay(candidate));
             candidate.setLastSignInTime(last);
