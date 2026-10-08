@@ -26,6 +26,7 @@ import xin.vanilla.sakura.reward.RewardManager;
 import xin.vanilla.banira.common.util.DateUtils;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.ZoneId;
 import java.util.Map;
@@ -66,9 +67,20 @@ public final class ForgePlayerSignInDataService implements SakuraPlayerDataServi
     public LegacyMigrationResult migrateAndLoad(Object playerObject) throws IOException {
         ServerPlayerEntity player = requireServerPlayer(playerObject);
         UUID playerUuid = player.getUUID();
+        LegacyMigrationResult result = migrate(playerUuid);
+        serverCache.remove(playerUuid);
+        MonthlySignInHistoryRepository histories =
+                new MonthlySignInHistoryRepository(BaniraDataPaths.worldDataPath());
+        applyRetention(playerUuid, histories);
+        serverCache.put(playerUuid, repository(histories).load(playerUuid));
+        return result;
+    }
+
+    private LegacyMigrationResult migrate(UUID playerUuid) throws IOException {
         BaniraPlayerSummaryRepository summaries = new BaniraPlayerSummaryRepository();
         MonthlySignInHistoryRepository histories =
                 new MonthlySignInHistoryRepository(BaniraDataPaths.worldDataPath());
+        histories.deletionJournal().recover(playerUuid, summaries);
         LegacyPlayerDataMigrationService migration = new LegacyPlayerDataMigrationService(
                 new LegacyPlayerDataParser(),
                 new LegacyForgeCapabilityStore(
@@ -78,11 +90,22 @@ public final class ForgePlayerSignInDataService implements SakuraPlayerDataServi
                 histories,
                 summaries
         );
-        LegacyMigrationResult result = migration.migrate(playerUuid);
-        serverCache.remove(playerUuid);
-        applyRetention(playerUuid, histories);
-        serverCache.put(playerUuid, new PlayerSignInDataRepository(summaries, histories).load(playerUuid));
-        return result;
+        return migration.migrate(playerUuid);
+    }
+
+    @Override
+    public boolean deleteDay(UUID playerUuid, LocalDate day, LocalDate currentDay) throws IOException {
+        try {
+            IPlayerSignInData data = serverCache.get(playerUuid);
+            if (data == null) {
+                migrate(playerUuid);
+                data = repository().load(playerUuid);
+            }
+            return repository().deleteDay(playerUuid, data, day, currentDay);
+        } catch (IOException | RuntimeException failure) {
+            serverCache.remove(playerUuid);
+            throw failure;
+        }
     }
 
     @Override

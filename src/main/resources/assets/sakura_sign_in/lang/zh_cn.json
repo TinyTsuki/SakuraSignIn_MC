@@ -1,4 +1,9 @@
 {
+  "word.sakura_sign_in.delete_sign_in": "删除玩家签到记录",
+  "word.sakura_sign_in.delete_one_player": "请选择一个玩家",
+  "word.sakura_sign_in.delete_sign_in_failed": "无法删除签到记录，请查看服务端日志",
+  "format.sakura_sign_in.delete_sign_in_success": "已删除 %s 在 %s 的签到记录",
+  "format.sakura_sign_in.delete_sign_in_missing": "%s 在 %s 没有签到记录",
   "key.sakura_sign_in.categories": "樱花签",
   "key.sakura_sign_in.sign_in": "打开签到页面",
   "key.sakura_sign_in.reward_option": "打开奖励配置页面",

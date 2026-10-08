@@ -5,6 +5,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.Commands;
 import xin.vanilla.sakura.command.impl.CardCommand;
+import xin.vanilla.sakura.command.impl.DeleteCommand;
 import xin.vanilla.sakura.command.impl.CdkCommand;
 import xin.vanilla.sakura.command.impl.ConfigCommand;
 import xin.vanilla.sakura.command.impl.HelpCommand;
@@ -31,6 +32,7 @@ public final class SignInCommand {
                 .then(SignActionCommand.buildSignAndReward())
                 .then(CdkCommand.build())
                 .then(CardCommand.build())
+                .then(DeleteCommand.build())
                 .then(LanguageCommand.build())
                 .then(LotteryCommand.build())
                 .then(ConfigCommand.build()));
