@@ -10,6 +10,7 @@ import xin.vanilla.sakura.data.SignInRecord;
 import xin.vanilla.sakura.data.migration.LegacyPlayerData;
 import xin.vanilla.sakura.data.player.HistoryRetentionPolicy;
 import xin.vanilla.sakura.internal.fabric.storage.AtomicNbtFiles;
+import xin.vanilla.sakura.internal.fabric.storage.SignInDeletionJournal;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -36,6 +37,10 @@ public final class MonthlySignInHistoryRepository implements SignInHistoryStore 
 
     public MonthlySignInHistoryRepository(Path worldDataPath) {
         this.worldDataPath = worldDataPath;
+    }
+
+    public SignInDeletionJournal deletionJournal() {
+        return new SignInDeletionJournal(worldDataPath);
     }
 
     @Override
