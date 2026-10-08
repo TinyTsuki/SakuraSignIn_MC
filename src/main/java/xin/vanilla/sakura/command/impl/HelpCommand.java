@@ -32,6 +32,7 @@ public final class HelpCommand {
             new KeyValue<>("/sakura reward[ <year> <month> <day>]", "reward"),
             new KeyValue<>("/sakura signex[ <year> <month> <day>]", "sign_and_reward"),
             new KeyValue<>("/sakura cdk <key>", "cdk"),
+            new KeyValue<>("/sakura delete <player>[ <year> <month> <day>]", "delete_sign_in"),
             new KeyValue<>("/sakura lottery list", "lottery_list"),
             new KeyValue<>("/sakura lottery draw <pool> [count|all]", "lottery_draw"),
             new KeyValue<>("/sakura card give <num>[ <player>]", "card_give"),
