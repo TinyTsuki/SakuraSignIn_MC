@@ -9,6 +9,7 @@ import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.client.SakuraClientState;
 import xin.vanilla.sakura.config.reward.RewardConfigManager;
+import xin.vanilla.sakura.data.calendar.CalendarIds;
 import xin.vanilla.sakura.data.personaldate.PersonalDateDeliveryMode;
 import xin.vanilla.sakura.data.personaldate.PersonalDatePreset;
 import xin.vanilla.sakura.data.personaldate.PersonalDatePresetValidator;
@@ -16,6 +17,7 @@ import xin.vanilla.sakura.data.personaldate.PersonalDateRecurrence;
 import xin.vanilla.sakura.reward.RewardList;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -56,10 +58,10 @@ public final class PersonalDatePresetForm {
                                 entry.getKey())))
                 .collect(Collectors.toList());
         InputFormScreen.Widget calendarWidget = dropdown("calendars", "personal_date_calendars",
-                existing == null ? "minecraft:gregorian"
-                        : String.join(", ", existing.getCalendarIds()), true,
-                calendars.toArray(new DropdownOption[0]));
-        calendarWidget.validator(results -> StringUtils.isNullOrEmptyEx(results.value())
+                "", true, calendars.toArray(new DropdownOption[0]))
+                .defaultValues(existing == null ? Collections.singletonList(CalendarIds.GREGORIAN)
+                        : existing.getCalendarIds());
+        calendarWidget.validator(results -> results.values().isEmpty()
                 ? tr("personal_date_calendar_required") : "");
         args.addWidget(calendarWidget);
 
@@ -75,9 +77,7 @@ public final class PersonalDatePresetForm {
         args.addWidget(numberWidget("after", "personal_date_after",
                 existing == null ? 0 : existing.getValidAfterDays(), 0, 30));
         args.setCallback(results -> {
-            List<String> calendarIds = Arrays.stream(results.value("calendars").split(","))
-                    .map(value -> value.trim()).filter(StringUtils::isNotNullOrEmpty)
-                    .distinct().collect(Collectors.toList());
+            List<String> calendarIds = results.values("calendars");
             PersonalDatePreset candidate = new PersonalDatePreset(
                     results.value("id"), results.value("name"),
                     PersonalDateRecurrence.valueOf(results.value("recurrence")), calendarIds,

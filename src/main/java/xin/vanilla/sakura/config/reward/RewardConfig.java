@@ -14,6 +14,9 @@ import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.reward.Reward;
 import xin.vanilla.sakura.reward.RewardList;
 import xin.vanilla.sakura.data.personaldate.PersonalDatePreset;
+import xin.vanilla.sakura.data.personaldate.PersonalDateDeliveryMode;
+import xin.vanilla.sakura.data.personaldate.PersonalDateRecurrence;
+import xin.vanilla.sakura.data.calendar.CalendarIds;
 import xin.vanilla.sakura.data.lottery.LotteryPool;
 import xin.vanilla.sakura.config.reward.RewardGroup;
 import xin.vanilla.banira.common.util.CollectionUtils;
@@ -554,6 +557,12 @@ public class RewardConfig implements Serializable {
                             SakuraRewardTypes.EFFECT));
                 }});
             }});
+            getPersonalDatePresets().add(new PersonalDatePreset(
+                    "birthday", "Birthday", PersonalDateRecurrence.YEARLY,
+                    Collections.singletonList(CalendarIds.GREGORIAN),
+                    1, PersonalDateDeliveryMode.SIGN_IN, 0, 0,
+                    new RewardList(Collections.singletonList(
+                            new Reward(new ItemStack(Items.CAKE, 1), SakuraRewardTypes.ITEM)))));
         }};
     }
 
