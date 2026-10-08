@@ -366,6 +366,8 @@ public class RewardManager {
         if (rewardList == null) {
             return result;
         }
+        Optional<RewardList> prepared = RewardOperations.mergePreparedBuiltIns(rewardList);
+        if (prepared.isPresent()) return prepared.get();
         for (Reward candidate : rewardList) {
             boolean merged = false;
             for (int index = 0; index < result.size(); index++) {
