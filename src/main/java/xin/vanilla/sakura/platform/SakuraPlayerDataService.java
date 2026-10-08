@@ -4,6 +4,7 @@ import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.data.migration.LegacyMigrationResult;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.UUID;
 
 /**
@@ -17,6 +18,8 @@ public interface SakuraPlayerDataService {
     LegacyMigrationResult migrateAndLoad(Object serverPlayer) throws IOException;
 
     void save(Object serverPlayer);
+
+    boolean deleteDay(UUID playerUuid, LocalDate day, LocalDate currentDay) throws IOException;
 
     void saveAndSync(Object serverPlayer);
 
