@@ -162,6 +162,41 @@ public final class PlayerSignInDataRepository {
         return latest == null ? DateUtils.getDate(0, 1, 1) : atStart(latest);
     }
 
+    public int resetPersonalDateClaims(UUID uuid, IPlayerSignInData data, String preset) throws IOException {
+        return resetPersonalDateClaims(uuid, data, preset, "all".equals(preset));
+    }
+
+    public int resetPersonalDateClaims(UUID uuid, IPlayerSignInData data, String preset, boolean all) throws IOException {
+        if (preset == null || preset.isEmpty()) throw new IllegalArgumentException("Expected preset ID or all");
+        historyRepository.deletionJournal().recover(uuid, summaryRepository);
+        Optional<PlayerSignInSummary> stored = summaryRepository.load(uuid);
+        boolean hasClaims = data.getPersonalDateSlots().stream().anyMatch(slot -> matchesClaim(slot, preset, all))
+                || stored.map(summary -> summary.getPersonalDateSlots().stream()
+                .anyMatch(slot -> matchesClaim(slot, preset, all))).orElse(false);
+        if (!hasClaims) return 0;
+
+        save(uuid, data);
+        PlayerSignInSummary before = summaryRepository.load(uuid)
+                .orElseThrow(() -> new IOException("Missing player summary: " + uuid));
+        PlayerSignInSummary after = PlayerSignInSummary.deserializeNBT(before.serializeNBT());
+        int cleared = 0;
+        for (PlayerPersonalDateSlot slot : after.getPersonalDateSlots()) {
+            if (matchesClaim(slot, preset, all)) {
+                slot.setLastClaimedOccurrenceKey("");
+                cleared++;
+            }
+        }
+        if (cleared == 0) return 0;
+        historyRepository.deletionJournal().resetPersonalDates(uuid, before, after, summaryRepository);
+        data.setPersonalDateSlots(after.getPersonalDateSlots());
+        return cleared;
+    }
+
+    private static boolean matchesClaim(PlayerPersonalDateSlot slot, String preset, boolean all) {
+        return (all || preset.equals(slot.getPresetId()))
+                && slot.getLastClaimedOccurrenceKey() != null && !slot.getLastClaimedOccurrenceKey().isEmpty();
+    }
+
     private static Date atStart(LocalDate day) {
         return Date.from(day.atStartOfDay(ZoneId.systemDefault()).toInstant());
     }

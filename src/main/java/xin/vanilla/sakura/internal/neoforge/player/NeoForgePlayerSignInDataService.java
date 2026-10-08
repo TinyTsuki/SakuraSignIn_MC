@@ -124,6 +124,22 @@ public final class NeoForgePlayerSignInDataService implements SakuraPlayerDataSe
     }
 
     @Override
+    public int resetPersonalDateClaims(UUID playerUuid, String preset, boolean all) throws IOException {
+        try {
+            recoverPending(playerUuid);
+            IPlayerSignInData data = serverCache.get(playerUuid);
+            if (data == null) {
+                migrate(playerUuid);
+                data = repository().load(playerUuid);
+            }
+            return repository().resetPersonalDateClaims(playerUuid, data, preset, all);
+        } catch (IOException | RuntimeException failure) {
+            if (serverCache.containsKey(playerUuid)) recoveryNeeded.add(playerUuid);
+            throw failure;
+        }
+    }
+
+    @Override
     public void saveAndSync(Object playerObject) {
         ServerPlayer player = requireServerPlayer(playerObject);
         persistOrThrow(player.getUUID());
