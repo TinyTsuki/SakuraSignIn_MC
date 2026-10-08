@@ -1,6 +1,5 @@
 package xin.vanilla.sakura.config.reward;
 
-import net.minecraft.server.Bootstrap;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import xin.vanilla.sakura.api.reward.RewardRegistryTestSupport;
@@ -13,6 +12,7 @@ import xin.vanilla.sakura.test.BaniraTestPlatform;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Collections;
 
 import static org.junit.Assert.*;
@@ -20,14 +20,14 @@ import static org.junit.Assert.*;
 public class DefaultBirthdayPresetTest {
     @Rule public xin.vanilla.sakura.test.UnboundConfigPlatform platform = new xin.vanilla.sakura.test.UnboundConfigPlatform();
     @Rule public TemporaryFolder temporary = new TemporaryFolder();
-    @BeforeClass public static void bootstrap() { net.minecraft.SharedConstants.tryDetectVersion(); Bootstrap.bootStrap(); BaniraTestPlatform.install(); }
+    @BeforeClass public static void bootstrap() { xin.vanilla.sakura.test.NeoForgeUnitTestBootstrap.bootstrap(); BaniraTestPlatform.install(); }
     @Before public void prepare() { RewardRegistryTestSupport.reset(); BuiltInRewardTypes.register(); }
     @After public void cleanup() { RewardRegistryTestSupport.reset(); }
 
     @Test public void defaultBirthdayIsAnAnnualOneDateCakeExample() {
         PersonalDatePreset birthday = birthday(RewardConfig.getDefault());
         assertEquals(PersonalDateRecurrence.YEARLY, birthday.getRecurrence());
-        assertEquals(Collections.singletonList(CalendarIds.GREGORIAN), birthday.getCalendarIds());
+        assertEquals(Arrays.asList(CalendarIds.GREGORIAN, CalendarIds.CHINESE_LUNAR), birthday.getCalendarIds());
         assertEquals(1, birthday.getMaxDateSlots());
         assertEquals(PersonalDateDeliveryMode.SIGN_IN, birthday.getDeliveryMode());
         assertEquals(0, birthday.getValidBeforeDays()); assertEquals(0, birthday.getValidAfterDays());
@@ -40,7 +40,8 @@ public class DefaultBirthdayPresetTest {
 
     @Test public void firstCreationPersistsTheDefaultBirthdayExample() throws Exception {
         RewardConfigRepository repository = new RewardConfigRepository(temporary.newFolder().toPath());
-        birthday(repository.loadOrCreate(RewardConfig.getDefault()));
+        assertEquals(Arrays.asList(CalendarIds.GREGORIAN, CalendarIds.CHINESE_LUNAR),
+                birthday(repository.loadOrCreate(RewardConfig.getDefault())).getCalendarIds());
     }
 
     @Test public void existingConfigurationIsNotRewrittenOrGivenAnUnrequestedPreset() throws Exception {
