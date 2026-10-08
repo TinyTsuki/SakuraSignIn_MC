@@ -28,6 +28,7 @@ import xin.vanilla.sakura.enums.ETimeCoolingMethod;
 import xin.vanilla.sakura.network.packet.SignInPacket;
 import xin.vanilla.sakura.util.*;
 import xin.vanilla.sakura.reward.personaldate.PersonalDateRewardDispatcher;
+import xin.vanilla.sakura.reward.personaldate.PersonalDateDeliveryResult;
 import xin.vanilla.sakura.data.time.OnlineTimeRequirementResult;
 import xin.vanilla.sakura.data.time.SakuraOnlineTime;
 import xin.vanilla.banira.common.data.Component;
@@ -553,7 +554,11 @@ public class RewardManager {
             signInData.markSigned(signCompensateDate, packet.isAutoRewarded());
             signInData.plusTotalSignInDays();
             signInData.setContinuousSignInDays(signInData.calculateContinuousDays(serverCompensateDate));
-            PersonalDateRewardDispatcher.deliverSignIn(player, serverCompensateDate);
+            PersonalDateDeliveryResult personalDates =
+                    PersonalDateRewardDispatcher.deliverSignIn(player, serverCompensateDate);
+            if (!personalDates.getReceipts().isEmpty()) {
+                resultNotifications.add(() -> PersonalDateRewardDispatcher.sendDetails(player, personalDates));
+            }
             resultNotifications.add(() -> SakuraMessages.success(player, SakuraComponent.get().trans(player, "format", "sign_in_success_s", DateUtils.toString(signInRecord.getCompensateTime()), signInData.calculateContinuousDays(), getTotalSignInDays(signInData)), notificationType));
         }
         // Complete every business mutation before persistence; delivery must never replay rewards.
@@ -647,7 +652,7 @@ public class RewardManager {
      * @param player    目标玩家
      * @param itemStack 物品堆
      * @param drop      若玩家背包空间不足, 是否以物品实体的形式生成在世界上
-     * @return 是否添加成功
+     * @return 是否已添加到背包或成功生成掉落物
      */
     public static boolean giveItemStack(ServerPlayerEntity player, ItemStack itemStack, boolean drop) {
         // 尝试将物品堆添加到玩家的库存中
@@ -658,6 +663,7 @@ public class RewardManager {
             if (itemEntity != null) {
                 itemEntity.setNoPickUpDelay();
                 itemEntity.setThrower(player.getUUID());
+                return true;
             }
         }
         return added;

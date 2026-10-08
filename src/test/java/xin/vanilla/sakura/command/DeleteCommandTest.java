@@ -10,6 +10,7 @@ import net.minecraft.util.text.StringTextComponent;
 import org.junit.Test;
 
 import xin.vanilla.sakura.command.impl.DeleteCommand;
+import xin.vanilla.sakura.command.impl.ResetCommand;
 import java.time.LocalDate;
 
 import static org.junit.Assert.*;
@@ -33,6 +34,19 @@ public class DeleteCommandTest {
         assertEquals(TODAY, parse("2026-10-09"));
         assertEquals(TODAY, parse("2026 10 9"));
         assertEquals(TODAY, parse("~ ~ ~"));
+    }
+
+    @Test
+    public void claimResetRequiresPermissionTwoAndExplicitPreset() throws Exception {
+        CommandNode<CommandSource> node = ResetCommand.build().build();
+        CommandSource console = new CommandSource(ICommandSource.NULL, Vector3d.ZERO, Vector2f.ZERO,
+                null, 2, "Console", new StringTextComponent("Console"), null, null);
+        assertTrue(node.canUse(console));
+        assertFalse(node.canUse(console.withPermission(1)));
+        assertNull(node.getChild("personalDate").getChild("player").getCommand());
+        assertNotNull(node.getChild("personalDate").getChild("player").getChild("target").getCommand());
+        assertNotNull(node.getChild("personalDate").getChild("player").getChild("preset")
+                .getChild("preset").getCommand());
     }
 
     @Test

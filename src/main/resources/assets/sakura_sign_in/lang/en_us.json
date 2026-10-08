@@ -1,4 +1,9 @@
 {
+  "word.sakura_sign_in.reset_personal_date_claims": "Clear personal date reward claims",
+  "word.sakura_sign_in.reset_personal_date_failed": "Unable to clear personal date reward claims. Check the server log",
+  "format.sakura_sign_in.reset_personal_date_empty": "%s has no personal date reward claims to clear for %s",
+  "format.sakura_sign_in.reset_personal_date_success": "Cleared %s's personal date reward claims for %s: %s entries",
+  "word.sakura_sign_in.personal_date_reward_success": "Personal date rewards received:",
   "word.sakura_sign_in.delete_sign_in": "Delete player sign-in records",
   "word.sakura_sign_in.delete_one_player": "Select one player",
   "word.sakura_sign_in.delete_sign_in_failed": "Unable to delete sign-in records. Check the server log",
