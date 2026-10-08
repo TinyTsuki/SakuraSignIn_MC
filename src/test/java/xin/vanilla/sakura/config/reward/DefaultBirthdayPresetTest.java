@@ -13,6 +13,7 @@ import xin.vanilla.sakura.test.BaniraTestPlatform;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Collections;
 
 import static org.junit.Assert.*;
@@ -27,7 +28,7 @@ public class DefaultBirthdayPresetTest {
     @Test public void defaultBirthdayIsAnAnnualOneDateCakeExample() {
         PersonalDatePreset birthday = birthday(RewardConfig.getDefault());
         assertEquals(PersonalDateRecurrence.YEARLY, birthday.getRecurrence());
-        assertEquals(Collections.singletonList(CalendarIds.GREGORIAN), birthday.getCalendarIds());
+        assertEquals(Arrays.asList(CalendarIds.GREGORIAN, CalendarIds.CHINESE_LUNAR), birthday.getCalendarIds());
         assertEquals(1, birthday.getMaxDateSlots());
         assertEquals(PersonalDateDeliveryMode.SIGN_IN, birthday.getDeliveryMode());
         assertEquals(0, birthday.getValidBeforeDays()); assertEquals(0, birthday.getValidAfterDays());
@@ -40,7 +41,8 @@ public class DefaultBirthdayPresetTest {
 
     @Test public void firstCreationPersistsTheDefaultBirthdayExample() throws Exception {
         RewardConfigRepository repository = new RewardConfigRepository(temporary.newFolder().toPath());
-        birthday(repository.loadOrCreate(RewardConfig.getDefault()));
+        assertEquals(Arrays.asList(CalendarIds.GREGORIAN, CalendarIds.CHINESE_LUNAR),
+                birthday(repository.loadOrCreate(RewardConfig.getDefault())).getCalendarIds());
     }
 
     @Test public void existingConfigurationIsNotRewrittenOrGivenAnUnrequestedPreset() throws Exception {

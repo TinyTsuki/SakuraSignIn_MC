@@ -559,7 +559,7 @@ public class RewardConfig implements Serializable {
             }});
             getPersonalDatePresets().add(new PersonalDatePreset(
                     "birthday", "Birthday", PersonalDateRecurrence.YEARLY,
-                    Collections.singletonList(CalendarIds.GREGORIAN),
+                    Arrays.asList(CalendarIds.GREGORIAN, CalendarIds.CHINESE_LUNAR),
                     1, PersonalDateDeliveryMode.SIGN_IN, 0, 0,
                     new RewardList(Collections.singletonList(
                             new Reward(new ItemStack(Items.CAKE, 1), SakuraRewardTypes.ITEM)))));
