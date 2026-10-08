@@ -42,6 +42,14 @@ public final class SakuraPlayerData {
         return service().deleteDay(playerUuid, day, currentDay);
     }
 
+    public static int resetPersonalDateClaims(UUID playerUuid, String preset) throws IOException {
+        return resetPersonalDateClaims(playerUuid, preset, "all".equals(preset));
+    }
+
+    public static int resetPersonalDateClaims(UUID playerUuid, String preset, boolean all) throws IOException {
+        return service().resetPersonalDateClaims(playerUuid, preset, all);
+    }
+
     public static void saveAndSync(Object serverPlayer) {
         service().saveAndSync(serverPlayer);
     }
