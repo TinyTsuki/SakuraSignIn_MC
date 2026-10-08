@@ -63,14 +63,19 @@ public class ConfigViewLifecycleTest {
         assertEquals(saved, read.get());
     }
 
-    @Test public void declarationBeansRetainFluentAccessorsWithoutExposingRootFields() throws Exception {
-        CommonConfig.HistoryCategory history = new CommonConfig.HistoryCategory();
+    @Test public void generatedViewsRetainFluentAccessorsWithoutExposingRootFields() throws Exception {
+        install(temporary.newFolder().toPath(), FabricBaniraConfigService.INSTANCE);
+        FabricBaniraConfigService.INSTANCE.register(CommonConfig.class, "sakura_sign_in");
+        FabricBaniraConfigService.INSTANCE.register(ClientConfig.class, "sakura_sign_in");
+        CommonConfigView.HistoryView history = CommonConfig.get().history();
         assertSame(history, history.retentionMonths(12));
         assertEquals(12, history.retentionMonths());
-        ClientConfig.SignKeysCategory keys = new ClientConfig.SignKeysCategory();
+        assertEquals(Integer.valueOf(12), holder(CommonConfig.class).get("history.retentionMonths"));
+        ClientConfigView.SignKeysView keys = ClientConfig.get().signKeys();
         List<String> chords = Collections.singletonList("A,B");
         assertSame(keys, keys.lastMonth(chords));
         assertEquals(chords, keys.lastMonth());
+        assertEquals(chords, holder(ClientConfig.class).get("signKeys.lastMonth"));
         for (Class<?> root : Arrays.asList(CommonConfig.class, ClientConfig.class)) {
             for (Field field : root.getDeclaredFields()) {
                 if (Modifier.isStatic(field.getModifiers())) continue;

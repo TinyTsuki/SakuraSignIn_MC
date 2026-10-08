@@ -1,8 +1,5 @@
 package xin.vanilla.sakura.config;
 
-import lombok.Getter;
-import lombok.Setter;
-import lombok.experimental.Accessors;
 import xin.vanilla.banira.common.config.BaniraConfig;
 import xin.vanilla.banira.common.config.ConfigData;
 import xin.vanilla.banira.common.config.ConfigHolder;
@@ -90,9 +87,6 @@ public class CommonConfig implements ConfigData {
         return snapshot;
     }
 
-    @Getter
-    @Setter
-    @Accessors(chain = true, fluent = true)
     public static class MakeUpCategory {
         @ConfigEntry.Gui.Tooltip(zh_cn = "允许使用补签卡补签", en_us = "Allow make-up sign-in cards")
         private boolean signInCard = true;
@@ -103,9 +97,6 @@ public class CommonConfig implements ConfigData {
         private boolean signInCardOnlyBaseReward = true;
     }
 
-    @Getter
-    @Setter
-    @Accessors(chain = true, fluent = true)
     public static class CoolingCategory {
         @ConfigEntry.Gui.Tooltip(zh_cn = "签到冷却的计算方式", en_us = "How the sign-in cooldown is calculated")
         private ETimeCoolingMethod timeCoolingMethod = ETimeCoolingMethod.FIXED_TIME;
@@ -117,9 +108,6 @@ public class CommonConfig implements ConfigData {
         private double timeCoolingInterval = 12.34;
     }
 
-    @Getter
-    @Setter
-    @Accessors(chain = true, fluent = true)
     public static class DateTimeCategory {
         @ConfigEntry.Gui.Tooltip(zh_cn = "服务端时间基准\n通常不需要手动修改", en_us = "Server time baseline\nNormally does not need manual changes")
         private String serverTime = "1970-01-01 00:00:00";
@@ -127,9 +115,6 @@ public class CommonConfig implements ConfigData {
         private String serverCalibrationTime = "1970-01-01 00:00:00";
     }
 
-    @Getter
-    @Setter
-    @Accessors(chain = true, fluent = true)
     public static class RewardCategory {
         @ConfigEntry.Gui.Tooltip(zh_cn = "奖励概率是否受玩家幸运值影响", en_us = "Whether player luck affects reward probability")
         private boolean rewardAffectedByLuck = true;
@@ -139,9 +124,6 @@ public class CommonConfig implements ConfigData {
         private boolean cycleRewardsRepeatable = false;
     }
 
-    @Getter
-    @Setter
-    @Accessors(chain = true, fluent = true)
     public static class ServerCategory {
         @ConfigEntry.Gui.Tooltip(zh_cn = "玩家进入服务器后是否自动尝试签到", en_us = "Automatically attempt sign-in when a player joins")
         private boolean autoSignIn = true;
@@ -157,9 +139,6 @@ public class CommonConfig implements ConfigData {
         private int requiredTodayOnlineSeconds = 0;
     }
 
-    @Getter
-    @Setter
-    @Accessors(chain = true, fluent = true)
     public static class HistoryCategory {
         @ConfigEntry.BoundedDiscrete(min = 0, max = 1200)
         @ConfigEntry.Gui.Tooltip(
@@ -172,9 +151,6 @@ public class CommonConfig implements ConfigData {
         private HistoryRetentionPolicy retentionPolicy = HistoryRetentionPolicy.STRIP_REWARD_DETAILS;
     }
 
-    @Getter
-    @Setter
-    @Accessors(chain = true, fluent = true)
     public static class CommandCategory {
         @ConfigEntry.Gui.Tooltip(zh_cn = "樱花签根指令名称", en_us = "Root command name for Sakura Sign-In")
         private String commandPrefix = "sakura";
@@ -194,9 +170,6 @@ public class CommonConfig implements ConfigData {
         private String commandLottery = "lottery";
     }
 
-    @Getter
-    @Setter
-    @Accessors(chain = true, fluent = true)
     public static class ConciseCategory {
         @ConfigEntry.Gui.Tooltip(zh_cn = "注册无根指令前缀的签到指令", en_us = "Register the sign-in command without the root prefix")
         private boolean conciseSignIn = true;
@@ -212,9 +185,6 @@ public class CommonConfig implements ConfigData {
         private boolean conciseLanguage = false;
     }
 
-    @Getter
-    @Setter
-    @Accessors(chain = true, fluent = true)
     public static class PermissionCategory {
         @ConfigEntry.BoundedDiscrete(min = 0, max = 4)
         @ConfigEntry.Gui.Tooltip(zh_cn = "编辑服务端奖励配置所需权限等级", en_us = "Permission level required to edit server reward configuration")

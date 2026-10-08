@@ -1,8 +1,5 @@
 package xin.vanilla.sakura.config;
 
-import lombok.Getter;
-import lombok.Setter;
-import lombok.experimental.Accessors;
 import xin.vanilla.banira.common.config.BaniraConfig;
 import xin.vanilla.banira.common.config.ConfigData;
 import xin.vanilla.banira.common.config.ConfigHolder;
@@ -79,9 +76,6 @@ public class ClientConfig implements ConfigData {
                 || value.equals("glfwmousebuttonleft");
     }
 
-    @Getter
-    @Setter
-    @Accessors(chain = true, fluent = true)
     public static class DisplayCategory {
         @ConfigEntry.Gui.Tooltip(
                 zh_cn = "选择樱花签界面使用的 Banira 配色\n可跟随香草志、随季节自动或固定为某个季节",
@@ -105,9 +99,6 @@ public class ClientConfig implements ConfigData {
         private LotteryAnimationStyle lotteryAnimationStyle = LotteryAnimationStyle.STRIP;
     }
 
-    @Getter
-    @Setter
-    @Accessors(chain = true, fluent = true)
     public static class RewardKeysCategory {
         @ConfigEntry.Gui.Tooltip(zh_cn = "复制选中奖励的快捷键", en_us = "Keyboard shortcuts for copying selected rewards")
         @ConfigEntry.Gui.KeyChords
@@ -140,9 +131,6 @@ public class ClientConfig implements ConfigData {
                 key(GLFWKey.GLFW_KEY_RIGHT_CONTROL, GLFWKey.GLFW_KEY_RIGHT_SHIFT, GLFWKey.GLFW_KEY_Z));
     }
 
-    @Getter
-    @Setter
-    @Accessors(chain = true, fluent = true)
     public static class SignKeysCategory {
         @ConfigEntry.Gui.Tooltip(zh_cn = "切换到上个月的快捷键", en_us = "Keyboard shortcuts for the previous month")
         @ConfigEntry.Gui.KeyChords
