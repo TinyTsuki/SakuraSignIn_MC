@@ -28,7 +28,8 @@ import xin.vanilla.sakura.enums.ETimeCoolingMethod;
 import xin.vanilla.sakura.network.packet.SignInPacket;
 import xin.vanilla.sakura.util.*;
 import xin.vanilla.sakura.reward.personaldate.PersonalDateRewardDispatcher;
-import xin.vanilla.sakura.reward.personaldate.PersonalDateDeliveryResult;
+import xin.vanilla.sakura.reward.personaldate.PersonalDateRewardService;
+import xin.vanilla.sakura.data.personaldate.PersonalDateRewardSnapshot;
 import xin.vanilla.sakura.data.time.OnlineTimeRequirementResult;
 import xin.vanilla.sakura.data.time.SakuraOnlineTime;
 import xin.vanilla.banira.common.data.Component;
@@ -514,7 +515,10 @@ public class RewardManager {
                                 details.add(detail);
                             }
                         });
-                storedRecord.ifPresent(record -> record.setRewarded(true));
+                storedRecord.ifPresent(record -> {
+                    details.addAll(claimPersonalDateRewards(player, signInData, record));
+                    record.setRewarded(true);
+                });
                 signInData.markSigned(signCompensateDate, true);
                 resultNotifications.add(() -> SakuraMessages.successBatch(player, msg, details, notificationType));
             }
@@ -529,6 +533,9 @@ public class RewardManager {
             signInRecord.setSignInTime(serverDate);
             signInRecord.setCompensateTime(signCompensateDate);
             signInRecord.setSignInUUID(player.getUUID().toString());
+            if (packet.getSignInType() == ESignInType.SIGN_IN) {
+                signInRecord.setPersonalDateRewards(PersonalDateRewardDispatcher.reserveSignIn(player, signCompensateDate));
+            }
             // 是否自动领取
             if (packet.isAutoRewarded()) {
                 boolean showFailed = player.hasPermissions(CommonConfig.get().permission().permissionRewardFailedTips());
@@ -545,6 +552,7 @@ public class RewardManager {
                         details.add(detail);
                     }
                 });
+                details.addAll(claimPersonalDateRewards(player, signInData, signInRecord));
                 resultNotifications.add(() -> SakuraMessages.successBatch(player, msg, details, notificationType));
             } else {
                 signInRecord.getRewardList().addAll(rewardList);
@@ -554,11 +562,6 @@ public class RewardManager {
             signInData.markSigned(signCompensateDate, packet.isAutoRewarded());
             signInData.plusTotalSignInDays();
             signInData.setContinuousSignInDays(signInData.calculateContinuousDays(serverCompensateDate));
-            PersonalDateDeliveryResult personalDates =
-                    PersonalDateRewardDispatcher.deliverSignIn(player, serverCompensateDate);
-            if (!personalDates.getReceipts().isEmpty()) {
-                resultNotifications.add(() -> PersonalDateRewardDispatcher.sendDetails(player, personalDates));
-            }
             resultNotifications.add(() -> SakuraMessages.success(player, SakuraComponent.get().trans(player, "format", "sign_in_success_s", DateUtils.toString(signInRecord.getCompensateTime()), signInData.calculateContinuousDays(), getTotalSignInDays(signInData)), notificationType));
         }
         // Complete every business mutation before persistence; delivery must never replay rewards.
@@ -576,6 +579,27 @@ public class RewardManager {
             LOGGER.warn("Sign-in state saved for {}; {} delivery failed; rewards will not be replayed",
                     player.getUUID(), phase, exception);
         }
+    }
+
+    private static List<Component> claimPersonalDateRewards(ServerPlayerEntity player,
+                                                           IPlayerSignInData data, SignInRecord record) {
+        List<Component> details = new ArrayList<>();
+        for (PersonalDateRewardSnapshot snapshot : record.getPersonalDateRewards()) {
+            for (Reward reward : snapshot.getRewards()) {
+                if (reward.isRewarded() || reward.isDisabled()) continue;
+                reward.setRewarded(true);
+                reward.setDisabled(true);
+                if (giveRewardToPlayer(player, data, reward,
+                        Date.from(snapshot.getTargetDate().atStartOfDay(ZoneId.systemDefault()).toInstant()),
+                        "personal_date:" + snapshot.getPresetId())) {
+                    details.add(SakuraComponent.get().trans(player, "format", "personal_date_additional_rewards",
+                            snapshot.getPresetName()).append(reward.getName(SakuraUtils.getPlayerLanguage(player), true))
+                            .color(Color.GREEN.getRGB()));
+                }
+            }
+            PersonalDateRewardService.completeClaim(data, snapshot);
+        }
+        return details;
     }
 
     public static boolean giveRewardToPlayer(ServerPlayerEntity player, IPlayerSignInData signInData, Reward reward) {

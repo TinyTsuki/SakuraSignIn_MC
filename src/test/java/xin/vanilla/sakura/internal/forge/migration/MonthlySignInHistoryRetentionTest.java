@@ -29,6 +29,7 @@ import java.util.UUID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertThrows;
 
 /**
  * 月度详情可以清理，但永久签到摘要必须保持稳定。
@@ -145,6 +146,33 @@ public class MonthlySignInHistoryRetentionTest {
         return AtomicNbtFiles.read(historyFile(worldData, uuid, month))
                 .getList("records", 10)
                 .getCompound(0);
+    }
+
+    @Test
+    public void cannotDeleteExpiredMonthContainingDeferredPersonalDateRewards() throws Exception {
+        Path world = temporaryFolder.newFolder("pending-date-world").toPath();
+        UUID uuid = UUID.randomUUID();
+        CompoundNBT pending = xin.vanilla.sakura.data.PersonalDatePendingSnapshotTest.record();
+        pending.putString("compensateTime", "2026-01-09 12:00:00");
+        AtomicNbtFiles.write(historyFile(world, uuid, "2026-01"), monthRoot(uuid, "2026-01", pending));
+        MonthlySignInHistoryRepository history = new MonthlySignInHistoryRepository(world);
+        history.applyRetention(uuid, YearMonth.of(2026, 10), 1, HistoryRetentionPolicy.DELETE_MONTH_FILE);
+        assertTrue(Files.exists(historyFile(world, uuid, "2026-01")));
+        assertEquals(1, firstRecord(world, uuid, "2026-01").getList("personalDateRewards", 10).size());
+        pending.putBoolean("rewarded", true);
+        AtomicNbtFiles.write(historyFile(world, uuid, "2026-01"), monthRoot(uuid, "2026-01", pending));
+        history.applyRetention(uuid, YearMonth.of(2026, 10), 1, HistoryRetentionPolicy.DELETE_MONTH_FILE);
+        assertFalse(Files.exists(historyFile(world, uuid, "2026-01")));
+    }
+
+    @Test
+    public void invalidDeferredHistoryBlocksLoadInsteadOfDroppingEntitlement() throws Exception {
+        Path world = temporaryFolder.newFolder("invalid-pending-date").toPath();
+        UUID uuid = UUID.randomUUID();
+        CompoundNBT pending = xin.vanilla.sakura.data.PersonalDatePendingSnapshotTest.record();
+        pending.getList("personalDateRewards", 10).getCompound(0).putString("occurrenceKey", "");
+        AtomicNbtFiles.write(historyFile(world, uuid, "2026-10"), monthRoot(uuid, "2026-10", pending));
+        assertThrows(IOException.class, () -> new MonthlySignInHistoryRepository(world).loadAll(uuid));
     }
 
     private static Path historyFile(Path worldData, UUID uuid, String month) {

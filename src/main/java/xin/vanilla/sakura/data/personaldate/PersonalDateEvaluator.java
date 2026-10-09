@@ -46,7 +46,7 @@ public final class PersonalDateEvaluator {
         for (LocalDate target = firstTarget; !target.isAfter(lastTarget); target = target.plusDays(1)) {
             if (matches(preset, slot, target)) {
                 String key = occurrenceKey(preset.getRecurrence(), target);
-                if (!alreadyClaimed(key, slot.getLastClaimedOccurrenceKey())) {
+                if (!alreadyClaimed(key, slot.claimedKey(preset.getRecurrence()))) {
                     occurrences.add(new PersonalDateOccurrence(
                             preset.getId(), slot.getSlotIndex(), target, key));
                 }
