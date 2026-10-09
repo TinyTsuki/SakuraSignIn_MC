@@ -159,6 +159,39 @@ public class PersonalDateClaimResetTest {
         }
     }
 
+    @Test
+    public void dualRecurrenceClaimsSurviveOrdinaryMergeAndResetTogether() throws Exception {
+        PlayerSignInDataRepository repo = repository();
+        PlayerSignInData data = player();
+        data.getPersonalDateSlots().get(0).setLastClaimedOccurrenceKey("MONTHLY:2026-10");
+        repo.save(uuid, data);
+        data.setPersonalDateSlots(Arrays.asList(
+                new PlayerPersonalDateSlot("birthday", 0, CalendarIds.GREGORIAN, 10, 9, "YEARLY:2026"),
+                data.getPersonalDateSlots().get(1)));
+        repo.save(uuid, data);
+        PlayerPersonalDateSlot restored = repo.load(uuid).getPersonalDateSlots().get(0);
+        assertEquals("YEARLY:2026", restored.claimedKey(xin.vanilla.sakura.data.personaldate.PersonalDateRecurrence.YEARLY));
+        assertEquals("MONTHLY:2026-10", restored.claimedKey(xin.vanilla.sakura.data.personaldate.PersonalDateRecurrence.MONTHLY));
+        assertEquals(1, reset(repo, data, "birthday"));
+        repo.save(uuid, data);
+        restored = repo.load(uuid).getPersonalDateSlots().get(0);
+        assertEquals("", restored.claimedKey(xin.vanilla.sakura.data.personaldate.PersonalDateRecurrence.YEARLY));
+        assertEquals("", restored.claimedKey(xin.vanilla.sakura.data.personaldate.PersonalDateRecurrence.MONTHLY));
+    }
+
+    @Test
+    public void dualRecurrenceClaimsRemainIntactWhenResetPersistenceFails() throws Exception {
+        PlayerSignInDataRepository repo = repository();
+        PlayerSignInData data = player();
+        data.getPersonalDateSlots().get(0).setLastClaimedOccurrenceKey("MONTHLY:2026-10");
+        repo.save(uuid, data);
+        store.failNext = true;
+        assertThrows(IOException.class, () -> reset(repo, data, "birthday"));
+        PlayerPersonalDateSlot restored = repo.load(uuid).getPersonalDateSlots().get(0);
+        assertEquals("YEARLY:2026", restored.claimedKey(xin.vanilla.sakura.data.personaldate.PersonalDateRecurrence.YEARLY));
+        assertEquals("MONTHLY:2026-10", restored.claimedKey(xin.vanilla.sakura.data.personaldate.PersonalDateRecurrence.MONTHLY));
+    }
+
     private int reset(PlayerSignInDataRepository repo, PlayerSignInData data, String preset) throws Exception {
         return repo.resetPersonalDateClaims(uuid, data, preset);
     }

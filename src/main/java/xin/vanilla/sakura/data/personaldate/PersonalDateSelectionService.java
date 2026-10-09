@@ -38,8 +38,7 @@ public final class PersonalDateSelectionService {
             }
             PlayerPersonalDateSlot accepted = copy(candidate);
             PlayerPersonalDateSlot previous = currentByKey.get(key);
-            accepted.setLastClaimedOccurrenceKey(previous == null
-                    ? "" : previous.getLastClaimedOccurrenceKey());
+            accepted.copyClaimState(previous);
             candidateByKey.put(key, accepted);
         }
 
