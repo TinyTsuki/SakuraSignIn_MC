@@ -91,7 +91,7 @@ public class ClientConfig implements ConfigData {
         private boolean showNextReward = false;
         @ConfigEntry.Gui.Tooltip(zh_cn = "签到后自动领取对应奖励", en_us = "Automatically claim rewards after signing in")
         private boolean autoRewarded = false;
-        @ConfigEntry.Gui.Tooltip(zh_cn = "首次打开签到界面时显示操作说明", en_us = "Show instructions when opening the sign-in screen for the first time")
+        @ConfigEntry.Gui.Tooltip(zh_cn = "每次打开签到界面时显示操作提示", en_us = "Show instructions each time the sign-in screen is opened")
         private boolean showSignInScreenTips = true;
         @ConfigEntry.Gui.Tooltip(
                 zh_cn = "领取抽奖奖励时使用的客户端动画\n不会影响服务端抽取结果",
