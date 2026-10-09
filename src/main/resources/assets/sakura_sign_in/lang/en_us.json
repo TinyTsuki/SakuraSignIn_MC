@@ -1,4 +1,5 @@
 {
+  "format.sakura_sign_in.personal_date_additional_rewards": "[%s] additional rewards: ",
   "word.sakura_sign_in.reset_personal_date_claims": "Clear personal date reward claims",
   "word.sakura_sign_in.reset_personal_date_failed": "Unable to clear personal date reward claims. Check the server log",
   "format.sakura_sign_in.reset_personal_date_empty": "%s has no personal date reward claims to clear for %s",
