@@ -64,6 +64,10 @@ public final class LotteryRewardService {
             return batch(LotteryDrawStatus.POOL_NOT_FOUND, null,
                     java.util.Collections.emptyList(), 0, 0);
         }
+        if (!xin.vanilla.sakura.data.lottery.LotteryPoolValidator.isFree(pool)) {
+            return batch(LotteryDrawStatus.PAYMENT_UNAVAILABLE, pool,
+                    java.util.Collections.emptyList(), 0, 0);
+        }
         List<Reward> candidates = eligibleRewards(pool);
         if (candidates.isEmpty()) {
             return batch(LotteryDrawStatus.EMPTY_POOL, pool,
@@ -102,6 +106,10 @@ public final class LotteryRewardService {
             return prepared;
         }
         LotteryPool pool = prepared.getPool();
+        if (!xin.vanilla.sakura.data.lottery.LotteryPoolValidator.isFree(pool)) {
+            return batch(LotteryDrawStatus.PAYMENT_UNAVAILABLE, pool,
+                    java.util.Collections.emptyList(), 0, 0);
+        }
         IPlayerSignInData data = SakuraPlayerData.get(player);
         LotteryDrawState state = state(data, pool.getId());
         List<Reward> granted = new ArrayList<>();

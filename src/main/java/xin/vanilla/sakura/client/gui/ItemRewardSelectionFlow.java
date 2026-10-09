@@ -19,6 +19,11 @@ public final class ItemRewardSelectionFlow {
             ItemStack defaultItem,
             Consumer<ItemStack> onSelected
     ) {
+        return create(parent, defaultItem, onSelected, true);
+    }
+
+    public static Screen create(Screen parent, ItemStack defaultItem,
+                                Consumer<ItemStack> onSelected, boolean closeAfterSubmit) {
         Objects.requireNonNull(parent);
         Objects.requireNonNull(defaultItem);
         Objects.requireNonNull(onSelected);
@@ -26,7 +31,7 @@ public final class ItemRewardSelectionFlow {
         ItemSelectScreen.Args args = new ItemSelectScreen.Args()
                 .parentScreen(parent)
                 .defaultItem(defaultItem.copy())
-                .closeAfterSubmit(true)
+                .closeAfterSubmit(closeAfterSubmit)
                 .onDataReceived((Consumer<ItemStack>) itemStack -> onSelected.accept(itemStack.copy()));
         return new ItemSelectScreen(args);
     }

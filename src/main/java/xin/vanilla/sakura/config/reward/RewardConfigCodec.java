@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * 在版本化 JSON 文档与运行时奖励模型之间转换。
  */
 public final class RewardConfigCodec {
+    public static final int LOTTERY_FORMAT = 1;
     private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
     public String encode(RewardConfig config) throws IOException {
@@ -82,11 +83,14 @@ public final class RewardConfigCodec {
             presets.add(object);
         }
         root.add("personalDatePresets", presets);
+        root.addProperty("lotteryFormat", LOTTERY_FORMAT);
         JsonArray lotteryPools = new JsonArray();
         for (LotteryPool pool : document.getLotteryPools()) {
             JsonObject object = new JsonObject();
             object.addProperty("id", pool.getId());
             object.addProperty("displayName", pool.getDisplayName());
+            object.addProperty("description", pool.getDescription());
+            object.addProperty("voucherExpression", pool.getVoucherExpression());
             object.addProperty("limitPolicy", pool.getLimitPolicy().name());
             object.addProperty("maxDraws", pool.getMaxDraws());
             object.addProperty("cooldownSeconds", pool.getCooldownSeconds());
@@ -107,6 +111,7 @@ public final class RewardConfigCodec {
     public RewardConfigDocument decodeDocument(String json) throws IOException {
         try {
             JsonObject root = new JsonParser().parse(json).getAsJsonObject();
+            validateLotteryFormat(root);
             int version = root.has("schemaVersion") ? root.get("schemaVersion").getAsInt() : 0;
             if (version != RewardConfigDocument.CURRENT_SCHEMA_VERSION) {
                 throw new IOException("Unsupported reward config schema version: " + version);
@@ -467,16 +472,8 @@ public final class RewardConfigCodec {
         for (JsonElement reward : rewardArray) {
             rewards.add(RewardJsonCodec.decode(reward));
         }
-        LotteryPreviewMode previewMode;
-        if (object.has("previewMode")) {
-            previewMode = LotteryPreviewMode.valueOf(requiredString(object, "previewMode"));
-        } else {
-            // 奖励配置属于持久化数据，旧布尔值在读取时迁移为新的四态预览策略。
-            previewMode = !object.has("showRewards") || object.get("showRewards").getAsBoolean()
-                    ? LotteryPreviewMode.ALL
-                    : LotteryPreviewMode.NONE;
-        }
-        return new LotteryPool(
+        LotteryPreviewMode previewMode = LotteryPreviewMode.valueOf(requiredString(object, "previewMode"));
+        LotteryPool pool = new LotteryPool(
                 requiredString(object, "id"),
                 requiredString(object, "displayName"),
                 LotteryLimitPolicy.valueOf(requiredString(object, "limitPolicy")),
@@ -485,6 +482,25 @@ public final class RewardConfigCodec {
                 previewMode,
                 rewards
         );
+        pool.setDescription(requiredString(object, "description"));
+        pool.setVoucherExpression(requiredString(object, "voucherExpression"));
+        return pool;
+    }
+
+    static void validateLotteryFormat(JsonObject root) throws IOException {
+        JsonElement format = root.get("lotteryFormat");
+        if (format != null && (!format.isJsonPrimitive()
+                || !format.getAsJsonPrimitive().isNumber()
+                || !"1".equals(format.getAsString()))) {
+            throw new IOException("Unsupported lottery subformat");
+        }
+        JsonElement pools = root.get("lotteryPools");
+        if (pools != null && (!pools.isJsonArray() || pools.getAsJsonArray().size() > 128)) {
+            throw new IOException("Invalid lottery pools");
+        }
+        if (pools != null && pools.getAsJsonArray().size() > 0 && format == null) {
+            throw new IOException("Missing lottery subformat");
+        }
     }
 
     private static PersonalDatePreset copy(PersonalDatePreset preset) {

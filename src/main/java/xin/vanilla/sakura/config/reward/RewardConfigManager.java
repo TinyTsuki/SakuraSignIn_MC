@@ -81,6 +81,8 @@ public class RewardConfigManager {
     @NonNull
     private static RewardConfig rewardConfig = new RewardConfig();
     @Getter
+    private static volatile long lotteryGeneration;
+    @Getter
     @Setter
     private static boolean rewardOptionDataChanged = true;
 
@@ -124,12 +126,13 @@ public class RewardConfigManager {
     /**
      * 加载 JSON 数据
      */
-    public static void loadRewardOption() {
+    public static synchronized void loadRewardOption() {
         {
             try {
                 rewardConfig = repository().loadOrCreate(RewardConfig.getDefault());
                 rewardConfig.refreshContinuousRewardsRelation();
                 rewardConfig.refreshCycleRewardsRelation();
+                lotteryGeneration++;
             } catch (Exception e) {
                 LOGGER.error("Error loading reward configuration: ", e);
             }
@@ -186,10 +189,11 @@ public class RewardConfigManager {
     /**
      * 保存 JSON 数据
      */
-    public static void saveRewardOption() {
+    public static synchronized void saveRewardOption() {
         {
             try {
                 repository().save(rewardConfig);
+                lotteryGeneration++;
             } catch (IOException e) {
                 LOGGER.error("Error saving reward configuration: ", e);
             }
@@ -204,6 +208,36 @@ public class RewardConfigManager {
             File redoHistoryFile = new File(dir, "redo_history.json");
             serializeHistoryFile(redoHistoryFile, redoList);
         }
+    }
+
+    public static void replaceLotteryPools(List<LotteryPool> pools) throws IOException {
+        replaceLotteryPools(pools, repository());
+    }
+
+    static synchronized void replaceLotteryPools(List<LotteryPool> pools,
+                                                  RewardConfigRepository repository) throws IOException {
+        replaceLotteryPools(pools, candidate -> {
+            repository.backupCurrent("lottery-update");
+            repository.save(candidate);
+        });
+    }
+
+    @FunctionalInterface
+    interface LotteryConfigPersistence {
+        void save(RewardConfig candidate) throws IOException;
+    }
+
+    static synchronized void replaceLotteryPools(List<LotteryPool> pools,
+                                                  LotteryConfigPersistence persistence) throws IOException {
+        RewardConfig candidate = REWARD_CONFIG_CODEC.decode(REWARD_CONFIG_CODEC.encode(rewardConfig));
+        candidate.setLotteryPools(pools);
+        candidate = REWARD_CONFIG_CODEC.decode(REWARD_CONFIG_CODEC.encode(candidate));
+        candidate.refreshContinuousRewardsRelation();
+        candidate.refreshCycleRewardsRelation();
+        persistence.save(candidate);
+        rewardConfig = candidate;
+        lotteryGeneration++;
+        rewardOptionDataChanged = true;
     }
 
 

@@ -41,6 +41,7 @@ public final class LotteryPoolSyncPacket extends SplitPacket implements INetwork
     private final List<LotteryPool> pools;
 
     public LotteryPoolSyncPacket(List<LotteryPool> pools) {
+        validate(pools);
         this.pools = LotteryPools.copy(pools);
     }
 
@@ -52,8 +53,10 @@ public final class LotteryPoolSyncPacket extends SplitPacket implements INetwork
         }
         pools = new ArrayList<>();
         for (int i = 0; i < count; i++) {
-            String id = buffer.readUtf();
-            String name = buffer.readUtf();
+            String id = buffer.readUtf(64);
+            String name = buffer.readUtf(96);
+            String description = buffer.readUtf(LotteryPoolValidator.MAX_DESCRIPTION);
+            String voucher = buffer.readUtf(LotteryPoolValidator.MAX_VOUCHER_EXPRESSION);
             LotteryLimitPolicy policy = buffer.readEnum(LotteryLimitPolicy.class);
             int maxDraws = buffer.readVarInt();
             int cooldown = buffer.readVarInt();
@@ -67,17 +70,24 @@ public final class LotteryPoolSyncPacket extends SplitPacket implements INetwork
                 rewards.add(RewardJsonCodec.decode(
                         new com.google.gson.JsonParser().parse(buffer.readUtf())));
             }
-            pools.add(new LotteryPool(id, name, policy, maxDraws, cooldown,
-                    previewMode, rewards));
+            LotteryPool pool = new LotteryPool(id, name, policy, maxDraws, cooldown,
+                    previewMode, rewards);
+            pool.setDescription(description);
+            pool.setVoucherExpression(voucher);
+            pools.add(pool);
         }
+        validate(pools);
     }
 
     public void toBytes(BaniraPacketBuffer buffer) {
         super.toBytes(buffer);
+        validate(pools);
         buffer.writeVarInt(pools.size());
         for (LotteryPool pool : pools) {
-            buffer.writeUtf(pool.getId());
-            buffer.writeUtf(pool.getDisplayName());
+            buffer.writeUtf(pool.getId(), 64);
+            buffer.writeUtf(pool.getDisplayName(), 96);
+            buffer.writeUtf(pool.getDescription(), LotteryPoolValidator.MAX_DESCRIPTION);
+            buffer.writeUtf(pool.getVoucherExpression(), LotteryPoolValidator.MAX_VOUCHER_EXPRESSION);
             buffer.writeEnum(pool.getLimitPolicy());
             buffer.writeVarInt(pool.getMaxDraws());
             buffer.writeVarInt(pool.getCooldownSeconds());
@@ -123,15 +133,21 @@ public final class LotteryPoolSyncPacket extends SplitPacket implements INetwork
                     || !RewardAddPermissionChecker.canApply(sender, authoritative, candidate)) {
                 throw new IllegalArgumentException("Lottery reward permission denied");
             }
-            RewardConfigManager.backupRewardOption(false);
-            authoritative.setLotteryPools(LotteryPools.copy(packet.pools));
-            RewardConfigManager.saveRewardOption();
+            RewardConfigManager.replaceLotteryPools(packet.pools);
             for (ServerPlayerEntity player : sender.server.getPlayerList().getPlayers()) {
                 SakuraNetwork.sendSplitToPlayer(SakuraNetwork.lotteryPoolPacket(player), player);
             }
             BaniraNetwork.sendToPlayer(new RewardOptionDataReceivedNotice(true), sender);
-        } catch (RuntimeException failure) {
+        } catch (RuntimeException | java.io.IOException failure) {
             BaniraNetwork.sendToPlayer(new RewardOptionDataReceivedNotice(false), sender);
+        }
+    }
+
+    private static void validate(List<LotteryPool> pools) {
+        Set<String> ids = new HashSet<>();
+        if (pools == null || pools.size() > MAX_POOLS || pools.stream().anyMatch(pool ->
+                !LotteryPoolValidator.validate(pool).isEmpty() || !ids.add(pool.getId()))) {
+            throw new IllegalArgumentException("Invalid lottery pool update");
         }
     }
 

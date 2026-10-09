@@ -26,7 +26,7 @@ public final class BaniraTestPlatform {
                 new Class<?>[]{BaniraRegistryService.class},
                 (proxy, method, args) -> {
                     String name = method.getName();
-                    if (name.endsWith("Key")) {
+                    if (name.endsWith("Key") || name.endsWith("KeyObject")) {
                         return args[0] != null ? KEYS.get(args[0]) : null;
                     }
                     if ("item".equals(name) || "effect".equals(name)

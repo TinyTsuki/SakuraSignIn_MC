@@ -34,11 +34,11 @@ public final class LotteryPoolForm {
                 .defaultValue(existing == null ? "" : existing.getId())
                 .validator(result -> {
                     String id = result.value();
-                    if (existing != null && !existing.getId().equals(id)) {
-                        return tr("lottery_pool_id_locked");
+                    if (existing != null) {
+                        return existing.getId().equals(id) ? "" : tr("lottery_pool_id_locked");
                     }
                     boolean duplicate = RewardConfigManager.getRewardConfig().getLotteryPools()
-                            .stream().anyMatch(pool -> pool != existing && id.equals(pool.getId()));
+                            .stream().anyMatch(pool -> id.equals(pool.getId()));
                     return duplicate ? tr("lottery_pool_duplicate") : "";
                 }));
         args.addWidget(new InputFormScreen.Widget().name("name")
@@ -47,6 +47,32 @@ public final class LotteryPoolForm {
                 .maxLength(96)
                 .regex(".{1,96}")
                 .defaultValue(existing == null ? "" : existing.getDisplayName()));
+        args.addWidget(new InputFormScreen.Widget().name("description")
+                .title(text("lottery_pool_description")).hint(text("lottery_pool_description"))
+                .tooltip(text("lottery_pool_description"))
+                .maxLength(LotteryPoolValidator.MAX_DESCRIPTION).allowEmpty(true)
+                .regex("[\\s\\S]{0,2048}")
+                .defaultValue(existing == null ? "" : existing.getDescription()));
+        args.addWidget(new InputFormScreen.Widget().name("voucherExpression")
+                .title(text("lottery_voucher_expression")).hint(text("lottery_voucher_expression"))
+                .tooltip(text("lottery_voucher_item"))
+                .type(InputFormScreen.WidgetType.PICKER)
+                .picker((screen, selected) -> ItemRewardSelectionFlow.create(screen,
+                        net.minecraft.item.ItemStack.EMPTY, stack -> net.minecraft.client.Minecraft.getInstance()
+                                .setScreen(voucherItemForm(screen, stack, selected)), false))
+                .maxLength(LotteryPoolValidator.MAX_VOUCHER_EXPRESSION).allowEmpty(true)
+                .defaultValue(existing == null ? "" : existing.getVoucherExpression())
+                .validator(result -> {
+                    try {
+                        xin.vanilla.banira.api.BaniraCosts.parse(result.value());
+                        return "";
+                    } catch (xin.vanilla.banira.api.cost.CostExpressionException failure) {
+                        return SakuraComponent.get().transClient("format", "lottery_expression_error_ss",
+                                failure.line(), failure.column()).toString();
+                    } catch (IllegalArgumentException failure) {
+                        return tr("lottery_expression_invalid");
+                    }
+                }));
         args.addWidget(dropdown("policy", "lottery_limit_policy",
                 existing == null ? LotteryLimitPolicy.DAILY.name()
                         : existing.getLimitPolicy().name(),
@@ -71,10 +97,35 @@ public final class LotteryPoolForm {
                     Integer.parseInt(results.value("cooldown")),
                     LotteryPreviewMode.valueOf(results.value("previewMode")),
                     existing == null ? new RewardList() : existing.getRewards());
+            candidate.setDescription(results.value("description"));
+            candidate.setVoucherExpression(results.value("voucherExpression"));
             if (LotteryPoolValidator.validate(candidate).isEmpty()) {
                 submit.accept(candidate);
             }
         });
+        return new InputFormScreen(args);
+    }
+
+    private static Screen voucherItemForm(Screen parent, net.minecraft.item.ItemStack stack,
+                                           Consumer<String> selected) {
+        InputFormScreen.Args args = new InputFormScreen.Args().setParentScreen(parent)
+                .setHeaderTitle(text("lottery_voucher_item"));
+        args.addWidget(dropdown("match", "lottery_voucher_match", "ID",
+                option("ID", "lottery_voucher_match_id"),
+                option("EXACT", "lottery_voucher_match_exact")));
+        args.addWidget(new InputFormScreen.Widget().name("amount")
+                .title(text("lottery_voucher_amount")).hint(text("lottery_voucher_amount"))
+                .maxLength(10).regex("[0-9]{1,10}")
+                .defaultValue(String.valueOf(stack.getCount()))
+                .validator(result -> {
+                    try {
+                        return Integer.parseInt(result.value()) > 0 ? "" : tr("lottery_number_range");
+                    } catch (NumberFormatException failure) {
+                        return tr("lottery_number_range");
+                    }
+                }));
+        args.setCallback(results -> selected.accept(LotteryVoucherExpressions.item(stack,
+                Integer.parseInt(results.value("amount")), "EXACT".equals(results.value("match")))));
         return new InputFormScreen(args);
     }
 

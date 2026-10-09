@@ -70,6 +70,10 @@ public final class LotteryDrawDispatcher {
 
     private static void notifyFailure(ServerPlayerEntity player, LotteryDrawBatchResult result) {
         switch (result.getStatus()) {
+            case PAYMENT_UNAVAILABLE:
+                SakuraMessages.send(player, SakuraComponent.get().trans(
+                        player, "word", "lottery_payment_unavailable"));
+                break;
             case LIMIT_REACHED:
                 SakuraMessages.send(player, SakuraComponent.get().trans(player, "format",
                         "lottery_limit_reached_ss", result.getRetryAfterSeconds(),

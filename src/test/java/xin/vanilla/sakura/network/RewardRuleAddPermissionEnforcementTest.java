@@ -68,4 +68,15 @@ public class RewardRuleAddPermissionEnforcementTest {
         assertEquals(Collections.singletonList(ERewardRule.PERSONAL_DATE_REWARD),
                 RewardRuleAddPermissionChecker.requiredAddedRules(before, after));
     }
+
+    @Test
+    public void addingLotteryPoolRequiresLotteryRulePermission() {
+        RewardConfig before = new RewardConfig();
+        RewardConfig after = new RewardConfig();
+        after.getLotteryPools().add(new xin.vanilla.sakura.data.lottery.LotteryPool(
+                "daily", "Daily", xin.vanilla.sakura.data.lottery.LotteryLimitPolicy.DAILY,
+                1, 0, new RewardList()));
+        assertEquals(Collections.singletonList(ERewardRule.LOTTERY_REWARD),
+                RewardRuleAddPermissionChecker.requiredAddedRules(before, after));
+    }
 }
