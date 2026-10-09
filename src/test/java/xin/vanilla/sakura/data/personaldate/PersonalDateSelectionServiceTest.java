@@ -71,6 +71,18 @@ public class PersonalDateSelectionServiceTest {
         );
     }
 
+    @Test
+    public void selectionCannotForgeOrDropEitherRecurrenceCursor() {
+        PlayerPersonalDateSlot current = slot("server_day", 0, 6, 8, "YEARLY:2026");
+        current.setLastClaimedOccurrenceKey("MONTHLY:2026-10");
+        PlayerPersonalDateSlot candidate = slot("server_day", 0, 7, 9, "YEARLY:2099");
+        PersonalDateSelectionResult result = service.replace(Collections.singletonList(preset("server_day", 2)),
+                Collections.singletonList(current), Collections.singletonList(candidate));
+        assertTrue(result.isSuccess());
+        assertEquals("YEARLY:2026", result.getSlots().get(0).claimedKey(PersonalDateRecurrence.YEARLY));
+        assertEquals("MONTHLY:2026-10", result.getSlots().get(0).claimedKey(PersonalDateRecurrence.MONTHLY));
+    }
+
     private static PlayerPersonalDateSlot slot(String id, int index, int month, int day,
                                                String cursor) {
         return new PlayerPersonalDateSlot(

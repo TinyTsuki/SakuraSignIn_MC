@@ -110,6 +110,10 @@ public final class MonthlySignInHistoryRepository implements SignInHistoryStore 
                 try {
                     result.add(SignInRecord.readFromNBT(records.getCompound(i)));
                 } catch (RuntimeException malformedRecord) {
+                    if (!records.getCompound(i).getBoolean("rewarded")
+                            && records.getCompound(i).contains("personalDateRewards")) {
+                        throw new IOException("Unreadable pending personal date rewards in " + file, malformedRecord);
+                    }
                     LOGGER.warn("Skipping unreadable sign-in history record in {}: {}",
                             file, malformedRecord.getMessage());
                 }
@@ -147,6 +151,16 @@ public final class MonthlySignInHistoryRepository implements SignInHistoryStore 
                 continue;
             }
             if (policy == HistoryRetentionPolicy.DELETE_MONTH_FILE) {
+                ListTag pending = AtomicNbtFiles.read(file).getList("records", 10);
+                boolean keep = false;
+                for (int i = 0; i < pending.size(); i++) {
+                    CompoundTag record = pending.getCompound(i);
+                    if (!record.getBoolean("rewarded") && record.contains("personalDateRewards")) {
+                        keep = true;
+                        break;
+                    }
+                }
+                if (keep) continue;
                 Files.deleteIfExists(file);
                 result.deletedMonthFiles++;
             } else if (stripRewardDetails(file)) {
