@@ -1,191 +1,234 @@
 package xin.vanilla.sakura.network.packet;
 
-import lombok.Getter;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import xin.vanilla.banira.api.BaniraNetwork;
 import xin.vanilla.banira.common.api.INetworkPacket;
-import xin.vanilla.banira.common.network.BaniraNetworkContext;
-import xin.vanilla.banira.common.network.BaniraPacketBuffer;
-import xin.vanilla.banira.common.network.SplitPacket;
+import xin.vanilla.banira.common.network.*;
 import xin.vanilla.sakura.config.CommonConfig;
-import xin.vanilla.sakura.config.reward.RewardConfig;
-import xin.vanilla.sakura.config.reward.RewardConfigManager;
-import xin.vanilla.sakura.data.lottery.LotteryLimitPolicy;
-import xin.vanilla.sakura.data.lottery.LotteryPool;
-import xin.vanilla.sakura.data.lottery.LotteryPoolValidator;
-import xin.vanilla.sakura.data.lottery.LotteryPools;
-import xin.vanilla.sakura.data.lottery.LotteryPreviewMode;
+import xin.vanilla.sakura.config.reward.*;
+import xin.vanilla.sakura.data.lottery.*;
 import xin.vanilla.sakura.enums.ERewardRule;
-import xin.vanilla.sakura.network.SakuraClientPacketHandlers;
-import xin.vanilla.sakura.network.SakuraNetwork;
-import xin.vanilla.sakura.reward.RewardAddPermissionChecker;
-import xin.vanilla.sakura.reward.RewardJsonCodec;
-import xin.vanilla.sakura.reward.RewardList;
-import xin.vanilla.sakura.reward.RewardRuleAddPermissionChecker;
+import xin.vanilla.sakura.network.*;
+import xin.vanilla.sakura.network.lottery.LotteryPoolReceiver;
+import xin.vanilla.sakura.reward.*;
 import xin.vanilla.sakura.util.SakuraUtils;
+import java.io.IOException;
+import java.util.*;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-/** 奖池元数据与奖励使用独立分包，由服务端校验并广播权威快照。 */
-@Getter
 public final class LotteryPoolSyncPacket extends SplitPacket implements INetworkPacket,
         SplitPacket.MergeableSplitPacket<LotteryPoolSyncPacket>,
         SplitPacket.SplittableSplitPacket<LotteryPoolSyncPacket> {
-    private static final int CHUNK_SIZE = 8;
-    private static final int MAX_POOLS = 128;
-    private static final int MAX_REWARDS = 256;
-    private final List<LotteryPool> pools;
+    private static final LotteryPoolReceiver SERVER = new LotteryPoolReceiver(System::nanoTime);
+    private final long generation;
+    private final boolean configurationUpload;
+    private final String fragment;
+    private List<LotteryPool> pools;
 
-    public LotteryPoolSyncPacket(List<LotteryPool> pools) {
-        validate(pools);
+    public LotteryPoolSyncPacket(List<LotteryPool> pools, long generation) {
+        configurationUpload = false;
+        if (generation < 0) throw new IllegalArgumentException("Invalid lottery revision");
+        try {
+            RewardConfigDocument document = new RewardConfigDocument();
+            document.setLotteryPools(pools);
+            fragment = new RewardConfigCodec().encodeDocument(document);
+        } catch (IOException | RuntimeException failure) {
+            throw new IllegalArgumentException("Invalid lottery snapshot", failure);
+        }
+        LotteryProtocolLimits.json(fragment, LotteryProtocolLimits.MAX_DOCUMENT_BYTES);
+        this.generation = generation;
         this.pools = LotteryPools.copy(pools);
+        setId(UUID.randomUUID().toString()); setTotal(1); setSort(0);
+    }
+
+    public LotteryPoolSyncPacket(RewardConfig configuration, long generation) {
+        if (generation < 0) throw new IllegalArgumentException("Invalid reward revision");
+        try { fragment = new RewardConfigCodec().encode(configuration); }
+        catch (IOException failure) { throw new IllegalArgumentException("Invalid reward snapshot", failure); }
+        LotteryProtocolLimits.json(fragment, LotteryProtocolLimits.MAX_UPLOAD_BYTES);
+        this.generation = generation; configurationUpload = true;
+        setId(UUID.randomUUID().toString()); setTotal(1); setSort(0);
+    }
+
+    private LotteryPoolSyncPacket(long generation, boolean upload, String fragment, String id, int total, int sort) {
+        configurationUpload = upload;
+        this.generation = generation; this.fragment = fragment;
+        setId(id); setTotal(total); setSort(sort);
+        if (!hasValidHeader()) throw new IllegalArgumentException("Invalid lottery fragment");
     }
 
     public LotteryPoolSyncPacket(BaniraPacketBuffer buffer) {
-        super(buffer);
-        int count = buffer.readVarInt();
-        if (count < 0 || count > MAX_POOLS) {
-            throw new IllegalArgumentException("Invalid lottery pool count: " + count);
+        this(readHeader(buffer));
+    }
+
+    private LotteryPoolSyncPacket(Header header) {
+        this(header.generation, header.upload, header.fragment, header.id, header.total, header.sort);
+    }
+
+    private static Header readHeader(BaniraPacketBuffer buffer) {
+        String id = buffer.readUtf(36);
+        int total = buffer.readInt(), sort = buffer.readInt();
+        long generation = buffer.readLong();
+        boolean upload = buffer.readBoolean();
+        if (total < 1 || total > (upload ? LotteryProtocolLimits.MAX_UPLOAD_PARTS : LotteryProtocolLimits.MAX_PARTS)
+                || sort < 0 || sort >= total || generation < 0)
+            throw new IllegalArgumentException("Invalid lottery fragment header");
+        return new Header(id, total, sort, generation, upload, buffer.readUtf(LotteryProtocolLimits.MAX_FRAGMENT_CHARS));
+    }
+
+    public long getGeneration() { return generation; }
+    public String getFragment() { return fragment; }
+    public boolean isConfigurationUpload() { return configurationUpload; }
+    public int maximumBytes() {
+        return configurationUpload ? LotteryProtocolLimits.MAX_UPLOAD_BYTES : LotteryProtocolLimits.MAX_DOCUMENT_BYTES;
+    }
+
+    public RewardConfig getConfiguration() {
+        if (!configurationUpload || getTotal() != 1) throw new IllegalStateException("Incomplete reward upload");
+        LotteryProtocolLimits.json(fragment, LotteryProtocolLimits.MAX_UPLOAD_BYTES);
+        try { return new RewardConfigCodec().decode(fragment); }
+        catch (IOException failure) { throw new IllegalArgumentException("Invalid reward upload", failure); }
+    }
+
+    public synchronized List<LotteryPool> getPools() {
+        if (pools == null) {
+            if (getTotal() != 1) throw new IllegalStateException("Incomplete lottery snapshot");
+            pools = decode(fragment);
         }
-        pools = new ArrayList<>();
-        for (int i = 0; i < count; i++) {
-            String id = buffer.readUtf(64);
-            String name = buffer.readUtf(96);
-            String description = buffer.readUtf(LotteryPoolValidator.MAX_DESCRIPTION);
-            String voucher = buffer.readUtf(LotteryPoolValidator.MAX_VOUCHER_EXPRESSION);
-            LotteryLimitPolicy policy = buffer.readEnum(LotteryLimitPolicy.class);
-            int maxDraws = buffer.readVarInt();
-            int cooldown = buffer.readVarInt();
-            LotteryPreviewMode previewMode = buffer.readEnum(LotteryPreviewMode.class);
-            int rewardCount = buffer.readVarInt();
-            if (rewardCount < 0 || rewardCount > MAX_REWARDS) {
-                throw new IllegalArgumentException("Invalid lottery reward count: " + rewardCount);
-            }
-            RewardList rewards = new RewardList();
-            for (int rewardIndex = 0; rewardIndex < rewardCount; rewardIndex++) {
-                rewards.add(RewardJsonCodec.decode(
-                        new com.google.gson.JsonParser().parse(buffer.readUtf())));
-            }
-            LotteryPool pool = new LotteryPool(id, name, policy, maxDraws, cooldown,
-                    previewMode, rewards);
-            pool.setDescription(description);
-            pool.setVoucherExpression(voucher);
-            pools.add(pool);
+        return LotteryPools.copy(pools);
+    }
+
+    private static List<LotteryPool> decode(String document) {
+        LotteryProtocolLimits.json(document, LotteryProtocolLimits.MAX_DOCUMENT_BYTES);
+        try {
+            RewardConfigDocument decoded = new RewardConfigCodec().decodeDocument(document);
+            if (!decoded.getGroups().isEmpty() || !decoded.getPersonalDatePresets().isEmpty())
+                throw new IllegalArgumentException("Lottery snapshot contains unrelated reward groups");
+            return LotteryPools.copy(decoded.getLotteryPools());
+        } catch (IOException failure) {
+            throw new IllegalArgumentException("Invalid lottery snapshot", failure);
         }
-        validate(pools);
+    }
+
+    public boolean hasValidHeader() {
+        try {
+            LotteryProtocolLimits.token(getId());
+            return generation >= 0 && getTotal() >= 1 && getTotal() <= (configurationUpload
+                    ? LotteryProtocolLimits.MAX_UPLOAD_PARTS : LotteryProtocolLimits.MAX_PARTS)
+                    && getSort() >= 0 && getSort() < getTotal() && fragment != null
+                    && fragment.length() <= LotteryProtocolLimits.MAX_FRAGMENT_CHARS
+                    && LotteryProtocolLimits.bytes(fragment) <= LotteryProtocolLimits.MAX_FRAGMENT_BYTES;
+        } catch (IllegalArgumentException failure) { return false; }
     }
 
     public void toBytes(BaniraPacketBuffer buffer) {
-        super.toBytes(buffer);
-        validate(pools);
-        buffer.writeVarInt(pools.size());
-        for (LotteryPool pool : pools) {
-            buffer.writeUtf(pool.getId(), 64);
-            buffer.writeUtf(pool.getDisplayName(), 96);
-            buffer.writeUtf(pool.getDescription(), LotteryPoolValidator.MAX_DESCRIPTION);
-            buffer.writeUtf(pool.getVoucherExpression(), LotteryPoolValidator.MAX_VOUCHER_EXPRESSION);
-            buffer.writeEnum(pool.getLimitPolicy());
-            buffer.writeVarInt(pool.getMaxDraws());
-            buffer.writeVarInt(pool.getCooldownSeconds());
-            buffer.writeEnum(pool.getPreviewMode());
-            buffer.writeVarInt(pool.getRewards().size());
-            pool.getRewards().forEach(reward ->
-                    buffer.writeUtf(RewardJsonCodec.encode(reward).toString()));
-        }
+        if (!hasValidHeader()) throw new IllegalArgumentException("Lottery snapshot must be split before encoding");
+        buffer.writeUtf(getId(), 36); buffer.writeInt(getTotal()); buffer.writeInt(getSort());
+        buffer.writeLong(generation); buffer.writeBoolean(configurationUpload);
+        buffer.writeUtf(fragment, LotteryProtocolLimits.MAX_FRAGMENT_BYTES);
     }
 
     public static void handle(LotteryPoolSyncPacket packet, BaniraNetworkContext context) {
         if (context.isClientSide()) {
-            context.enqueueWork(() -> SakuraClientPacketHandlers.handle(packet));
-        } else {
-            context.enqueueWork(() -> applyServerUpdate(packet, context));
+            if (packet.configurationUpload) { context.markHandled(); return; }
+            Object origin = context.connectionKey();
+            if (origin != null) context.enqueueWork(() -> SakuraClientPacketHandlers.handle(packet, origin));
         }
+        else if (context.isServerSide()) context.enqueueWork(() -> applyServerUpdate(packet, context));
         context.markHandled();
     }
 
-    private static void applyServerUpdate(LotteryPoolSyncPacket packet,
-                                          BaniraNetworkContext context) {
+    private static void applyServerUpdate(LotteryPoolSyncPacket packet, BaniraNetworkContext context) {
         ServerPlayerEntity sender = context.senderAs(ServerPlayerEntity.class);
-        if (sender == null || !sender.hasPermissions(
-                CommonConfig.get().permission().permissionEditReward())
-                || !sender.hasPermissions(SakuraUtils.getRewardPermissionLevel(
-                ERewardRule.LOTTERY_REWARD))) {
-            if (sender != null) {
-                BaniraNetwork.sendToPlayer(new RewardOptionDataReceivedNotice(false), sender);
-            }
-            return;
+        if (sender == null || sender.server.getPlayerList().getPlayer(sender.getUUID()) != sender) return;
+        if (!sender.hasPermissions(CommonConfig.get().permission().permissionEditReward())
+                || !packet.configurationUpload && !sender.hasPermissions(SakuraUtils.getRewardPermissionLevel(ERewardRule.LOTTERY_REWARD))
+                || packet.generation != RewardConfigManager.getLotteryGeneration()) {
+            SERVER.remove(sender.connection);
+            BaniraNetwork.sendToPlayer(new RewardOptionDataReceivedNotice(false), sender); return;
         }
         try {
-            Set<String> ids = new HashSet<>();
-            if (packet.pools.size() > MAX_POOLS || packet.pools.stream().anyMatch(pool ->
-                    !LotteryPoolValidator.validate(pool).isEmpty() || !ids.add(pool.getId()))) {
-                throw new IllegalArgumentException("Invalid lottery pool update");
-            }
+            LotteryPoolSyncPacket complete = SERVER.accept(sender.connection, packet);
+            if (complete == null) return;
             RewardConfig authoritative = RewardConfigManager.getRewardConfig();
-            RewardConfig candidate = RewardConfigManager.deserializeRewardOption(
-                    RewardConfigManager.serializeRewardOption(authoritative));
-            candidate.setLotteryPools(LotteryPools.copy(packet.pools));
-            if (!RewardRuleAddPermissionChecker.canApply(sender, authoritative, candidate)
-                    || !RewardAddPermissionChecker.canApply(sender, authoritative, candidate)) {
-                throw new IllegalArgumentException("Lottery reward permission denied");
+            RewardConfig candidate;
+            if (complete.configurationUpload) {
+                candidate = RewardConfigManager.mergeUpload(complete.getConfiguration(), authoritative,
+                        rule -> sender.hasPermissions(SakuraUtils.getRewardPermissionLevel(rule)));
+            } else {
+                candidate = RewardConfigManager.deserializeRewardOption(RewardConfigManager.serializeRewardOption(authoritative));
+                candidate.setLotteryPools(complete.getPools());
             }
-            RewardConfigManager.replaceLotteryPools(packet.pools);
+            if (!RewardRuleAddPermissionChecker.canApply(sender, authoritative, candidate)
+                    || !RewardAddPermissionChecker.canApply(sender, authoritative, candidate))
+                throw new IllegalArgumentException("Lottery reward permission denied");
+            if (complete.configurationUpload) RewardConfigManager.replaceRewardConfig(candidate, complete.generation);
+            else RewardConfigManager.replaceLotteryPools(candidate.getLotteryPools(), complete.generation);
             for (ServerPlayerEntity player : sender.server.getPlayerList().getPlayers()) {
+                if (complete.configurationUpload) {
+                    SakuraNetwork.sendSplitToPlayer(RewardConfigManager.toSyncPacket(player), player);
+                    SakuraNetwork.sendSplitToPlayer(SakuraNetwork.personalDatePacket(player), player);
+                }
                 SakuraNetwork.sendSplitToPlayer(SakuraNetwork.lotteryPoolPacket(player), player);
             }
             BaniraNetwork.sendToPlayer(new RewardOptionDataReceivedNotice(true), sender);
-        } catch (RuntimeException | java.io.IOException failure) {
+        } catch (IOException | RuntimeException failure) {
+            SERVER.remove(sender.connection);
             BaniraNetwork.sendToPlayer(new RewardOptionDataReceivedNotice(false), sender);
         }
     }
 
-    private static void validate(List<LotteryPool> pools) {
-        Set<String> ids = new HashSet<>();
-        if (pools == null || pools.size() > MAX_POOLS || pools.stream().anyMatch(pool ->
-                !LotteryPoolValidator.validate(pool).isEmpty() || !ids.add(pool.getId()))) {
-            throw new IllegalArgumentException("Invalid lottery pool update");
+    public static void expireServerTransfers() { SERVER.expire(); }
+    public static void clearServerTransfers() { SERVER.clear(); }
+    public static void removeServerTransfer(Object connection) { SERVER.remove(connection); }
+
+    @Override public List<LotteryPoolSyncPacket> splitPacket() {
+        List<LotteryPoolSyncPacket> parts = new ArrayList<>();
+        for (int start = 0; start < fragment.length();) {
+            int end = Math.min(start + LotteryProtocolLimits.MAX_FRAGMENT_CHARS, fragment.length());
+            if (end < fragment.length() && Character.isHighSurrogate(fragment.charAt(end - 1))) end--;
+            parts.add(new LotteryPoolSyncPacket(generation, configurationUpload, fragment.substring(start, end), getId(), 1, 0));
+            start = end;
         }
+        if (parts.size() > (configurationUpload ? LotteryProtocolLimits.MAX_UPLOAD_PARTS : LotteryProtocolLimits.MAX_PARTS))
+            throw new IllegalArgumentException("Too many lottery fragments");
+        for (int i = 0; i < parts.size(); i++) { parts.get(i).setTotal(parts.size()); parts.get(i).setSort(i); }
+        return parts;
     }
 
-    @Override
-    public List<LotteryPoolSyncPacket> splitPacket() {
-        if (pools.isEmpty()) {
-            List<LotteryPoolSyncPacket> result = Collections.singletonList(
-                    new LotteryPoolSyncPacket(Collections.emptyList()));
-            initializeParts(result);
-            return result;
+    @Override public LotteryPoolSyncPacket mergePackets(List<LotteryPoolSyncPacket> packets) {
+        if (packets == null || packets.isEmpty() || packets.size() > LotteryProtocolLimits.MAX_UPLOAD_PARTS)
+            throw new IllegalArgumentException("Invalid lottery assembly");
+        LotteryPoolSyncPacket first = packets.get(0);
+        Map<Integer, LotteryPoolSyncPacket> sorted = new TreeMap<>();
+        int bytes = 0;
+        for (LotteryPoolSyncPacket part : packets) {
+            if (!part.hasValidHeader() || !first.getId().equals(part.getId()) || first.generation != part.generation
+                    || first.configurationUpload != part.configurationUpload
+                    || part.getTotal() != packets.size() || sorted.put(part.getSort(), part) != null)
+                throw new IllegalArgumentException("Mixed lottery assembly");
+            int size = LotteryProtocolLimits.bytes(part.fragment);
+            if (bytes > first.maximumBytes() - size)
+                throw new IllegalArgumentException("Lottery assembly exceeds byte budget");
+            bytes += size;
         }
-        List<LotteryPoolSyncPacket> result = new ArrayList<>();
-        for (int start = 0; start < pools.size(); start += CHUNK_SIZE) {
-            result.add(new LotteryPoolSyncPacket(
-                    pools.subList(start, Math.min(start + CHUNK_SIZE, pools.size()))));
-        }
-        initializeParts(result);
-        return result;
+        StringBuilder document = new StringBuilder();
+        sorted.values().forEach(part -> document.append(part.fragment));
+        LotteryPoolSyncPacket complete;
+        if (first.configurationUpload) {
+            LotteryProtocolLimits.json(document.toString(), LotteryProtocolLimits.MAX_UPLOAD_BYTES);
+            try { complete = new LotteryPoolSyncPacket(new RewardConfigCodec().decode(document.toString()), first.generation); }
+            catch (IOException failure) { throw new IllegalArgumentException("Invalid reward upload", failure); }
+        } else complete = new LotteryPoolSyncPacket(decode(document.toString()), first.generation);
+        complete.setId(first.getId()); return complete;
     }
 
-    @Override
-    public LotteryPoolSyncPacket mergePackets(List<LotteryPoolSyncPacket> packets) {
-        List<LotteryPool> merged = new ArrayList<>();
-        packets.forEach(packet -> merged.addAll(packet.pools));
-        return new LotteryPoolSyncPacket(merged);
-    }
+    @Override public int getChunkSize() { return LotteryProtocolLimits.MAX_FRAGMENT_CHARS; }
 
-    @Override
-    public int getChunkSize() {
-        return CHUNK_SIZE;
-    }
-
-    private void initializeParts(List<LotteryPoolSyncPacket> packets) {
-        for (int i = 0; i < packets.size(); i++) {
-            LotteryPoolSyncPacket packet = packets.get(i);
-            packet.setId(getId());
-            packet.setSort(i);
-            packet.setTotal(packets.size());
+    private static final class Header {
+        final String id, fragment; final int total, sort; final long generation; final boolean upload;
+        Header(String id, int total, int sort, long generation, boolean upload, String fragment) {
+            this.upload = upload;
+            this.id = id; this.total = total; this.sort = sort; this.generation = generation; this.fragment = fragment;
         }
     }
 }

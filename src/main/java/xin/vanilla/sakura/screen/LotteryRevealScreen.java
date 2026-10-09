@@ -246,7 +246,7 @@ public final class LotteryRevealScreen extends BaniraScreen {
     private void requestClaim() {
         if (claimRequested) return;
         claimRequested = true;
-        SakuraNetwork.sendToServer(new LotteryClaimPacket(packet.getToken()));
+        SakuraNetwork.sendToServer(new LotteryClaimPacket(packet.getOperationId(), packet.getToken()));
     }
 
     @Override

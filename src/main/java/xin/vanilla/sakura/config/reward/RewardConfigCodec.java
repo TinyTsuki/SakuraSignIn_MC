@@ -84,8 +84,13 @@ public final class RewardConfigCodec {
         }
         root.add("personalDatePresets", presets);
         root.addProperty("lotteryFormat", LOTTERY_FORMAT);
+        root.add("lotteryPools", lotteryArray(document.getLotteryPools()));
+        return gson.toJson(root);
+    }
+
+    private static JsonArray lotteryArray(List<LotteryPool> pools) {
         JsonArray lotteryPools = new JsonArray();
-        for (LotteryPool pool : document.getLotteryPools()) {
+        for (LotteryPool pool : pools) {
             JsonObject object = new JsonObject();
             object.addProperty("id", pool.getId());
             object.addProperty("displayName", pool.getDisplayName());
@@ -96,12 +101,19 @@ public final class RewardConfigCodec {
             object.addProperty("cooldownSeconds", pool.getCooldownSeconds());
             object.addProperty("previewMode", pool.getPreviewMode().name());
             JsonArray rewards = new JsonArray();
-            pool.getRewards().forEach(reward -> rewards.add(RewardJsonCodec.encode(reward)));
+            pool.getRewards().forEach(reward -> {
+                JsonElement encoded = RewardJsonCodec.encode(reward);
+                String json = encoded.toString();
+                xin.vanilla.sakura.data.lottery.LotteryProtocolLimits.text(json,
+                        xin.vanilla.sakura.data.lottery.LotteryProtocolLimits.MAX_REWARD_CHARS);
+                xin.vanilla.sakura.data.lottery.LotteryProtocolLimits.json(json,
+                        xin.vanilla.sakura.data.lottery.LotteryProtocolLimits.MAX_REWARD_BYTES);
+                rewards.add(encoded);
+            });
             object.add("rewards", rewards);
             lotteryPools.add(object);
         }
-        root.add("lotteryPools", lotteryPools);
-        return gson.toJson(root);
+        return lotteryPools;
     }
 
     public RewardConfig decode(String json) throws IOException {
@@ -287,6 +299,17 @@ public final class RewardConfigCodec {
             for (Reward reward : pool.getRewards()) {
                 validateReward(reward, pool.getId());
             }
+        }
+        try {
+            JsonObject wire = new JsonObject();
+            wire.addProperty("schemaVersion", RewardConfigDocument.CURRENT_SCHEMA_VERSION);
+            wire.add("groups", new JsonArray()); wire.add("personalDatePresets", new JsonArray());
+            wire.addProperty("lotteryFormat", LOTTERY_FORMAT);
+            wire.add("lotteryPools", lotteryArray(document.getLotteryPools()));
+            xin.vanilla.sakura.data.lottery.LotteryProtocolLimits.json(gson.toJson(wire),
+                    xin.vanilla.sakura.data.lottery.LotteryProtocolLimits.MAX_DOCUMENT_BYTES);
+        } catch (IllegalArgumentException failure) {
+            throw new IOException("Lottery configuration exceeds protocol limits", failure);
         }
     }
 

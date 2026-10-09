@@ -25,10 +25,11 @@ import java.util.Date;
  * Sakura 唯一网络入口；注册、发送与客户端可选握手均由 Banira 承担。
  */
 public final class SakuraNetwork {
+    public static final String PROTOCOL_VERSION = "sakura-5";
     private static final NetworkHandler HANDLER = NetworkHandler.create(
             "main_network",
             BaniraIdentifier.of(SakuraSignIn.MODID, "main_network"),
-            "sakura-3",
+            PROTOCOL_VERSION,
             true
     );
     private static boolean initialized;
@@ -74,7 +75,7 @@ public final class SakuraNetwork {
                 PersonalDateSlotUpdatePacket::toBytes,
                 PersonalDateSlotUpdatePacket::new,
                 PersonalDateSlotUpdatePacket::handle);
-        HANDLER.registerSplit(LotteryPoolSyncPacket.class,
+        HANDLER.register(LotteryPoolSyncPacket.class,
                 LotteryPoolSyncPacket::toBytes,
                 LotteryPoolSyncPacket::new,
                 LotteryPoolSyncPacket::handle);
@@ -90,6 +91,10 @@ public final class SakuraNetwork {
                 LotteryClaimPacket::toBytes,
                 LotteryClaimPacket::new,
                 LotteryClaimPacket::handle);
+        HANDLER.register(LotteryQuoteRequestPacket.class, LotteryQuoteRequestPacket::toBytes,
+                LotteryQuoteRequestPacket::new, LotteryQuoteRequestPacket::handle);
+        HANDLER.register(LotteryQuotePacket.class, LotteryQuotePacket::toBytes,
+                LotteryQuotePacket::new, LotteryQuotePacket::handle);
         BaniraModPresence.register(SakuraSignIn.MODID, SakuraNetwork::syncInitialData);
         initialized = true;
     }
@@ -175,6 +180,6 @@ public final class SakuraNetwork {
                 ? xin.vanilla.sakura.data.lottery.LotteryPools.visibleCopy(
                         RewardConfigManager.getRewardConfig().getLotteryPools(),
                         player.hasPermissions(CommonConfig.get().permission().permissionEditReward()))
-                : java.util.Collections.emptyList());
+                : java.util.Collections.emptyList(), RewardConfigManager.getLotteryGeneration());
     }
 }

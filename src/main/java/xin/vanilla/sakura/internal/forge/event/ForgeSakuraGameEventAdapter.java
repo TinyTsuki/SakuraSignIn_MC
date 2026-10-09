@@ -55,6 +55,10 @@ public final class ForgeSakuraGameEventAdapter {
         MinecraftForge.EVENT_BUS.addListener(ForgeSakuraGameEventAdapter::onPlayerLoggedIn);
         MinecraftForge.EVENT_BUS.addListener(ForgeSakuraGameEventAdapter::onPlayerLoggedOut);
         MinecraftForge.EVENT_BUS.addListener(ForgeSakuraGameEventAdapter::onServerTick);
+        MinecraftForge.EVENT_BUS.addListener((net.minecraftforge.fml.event.server.FMLServerStoppedEvent event) -> {
+            xin.vanilla.sakura.network.packet.LotteryPoolSyncPacket.clearServerTransfers();
+            xin.vanilla.sakura.reward.lottery.PendingLotteryDraws.clear();
+        });
     }
 
     private static void onRegisterCommands(RegisterCommandsEvent event) {
@@ -119,6 +123,9 @@ public final class ForgeSakuraGameEventAdapter {
 
     private static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getPlayer() instanceof ServerPlayerEntity) {
+            ServerPlayerEntity player = (ServerPlayerEntity) event.getPlayer();
+            xin.vanilla.sakura.network.packet.LotteryPoolSyncPacket.removeServerTransfer(player.connection);
+            xin.vanilla.sakura.reward.lottery.PendingLotteryDraws.remove(player.getUUID());
             SakuraPlayerData.removeServer(event.getPlayer().getUUID());
         }
     }
@@ -168,6 +175,7 @@ public final class ForgeSakuraGameEventAdapter {
     }
 
     private static void onServerTick(TickEvent.ServerTickEvent event) {
+        xin.vanilla.sakura.network.packet.LotteryPoolSyncPacket.expireServerTransfers();
         if (event.phase != TickEvent.Phase.END) {
             return;
         }

@@ -104,6 +104,20 @@ public class LotteryConfigUpdateTest {
                 current.getCycleRewardsRelation().get("1")));
     }
 
+    @Test public void staleRevisionCannotReplaceOrPersistPools() throws Exception {
+        long stale = RewardConfigManager.getLotteryGeneration();
+        RewardConfigManager.replaceLotteryPools(Collections.singletonList(pool()), candidate -> { });
+        RewardConfig current = RewardConfigManager.getRewardConfig();
+        Path directory = temporary.newFolder("stale").toPath();
+        RewardConfigRepository repository = new RewardConfigRepository(directory);
+        repository.save(current);
+        byte[] bytes = Files.readAllBytes(directory.resolve(RewardConfigRepository.REWARD_FILE_NAME));
+        assertThrows(java.io.IOException.class, () -> RewardConfigManager.replaceLotteryPools(
+                Collections.emptyList(), stale, repository));
+        assertSame(current, RewardConfigManager.getRewardConfig());
+        assertArrayEquals(bytes, Files.readAllBytes(directory.resolve(RewardConfigRepository.REWARD_FILE_NAME)));
+    }
+
     @Test public void invalidUpdateKeepsFileAndGeneration() throws Exception {
         Path directory = temporary.newFolder("invalid").toPath();
         RewardConfigRepository repository = new RewardConfigRepository(directory);

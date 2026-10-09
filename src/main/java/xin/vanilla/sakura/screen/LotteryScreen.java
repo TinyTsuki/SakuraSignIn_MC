@@ -290,11 +290,10 @@ public final class LotteryScreen extends BaniraScreen {
                 .collect(Collectors.toList()));
         countSelect.selectedValues(Collections.singletonList(batchValues.get(0)));
         if (singleDrawButton != null) {
-            singleDrawButton.enabled(xin.vanilla.sakura.data.lottery.LotteryPoolValidator.isFree(pool));
+            singleDrawButton.enabled(false);
         }
         if (batchDrawButton != null) {
-            batchDrawButton.enabled(xin.vanilla.sakura.data.lottery.LotteryPoolValidator.isFree(pool)
-                    && !"1".equals(batchValues.get(0)));
+            batchDrawButton.enabled(false);
         }
     }
 
@@ -332,8 +331,10 @@ public final class LotteryScreen extends BaniraScreen {
 
     private void requestDraw(int count) {
         LotteryPool pool = selectedPool();
-        if (xin.vanilla.sakura.data.lottery.LotteryPoolValidator.isFree(pool)) {
-            SakuraNetwork.sendToServer(new LotteryDrawRequestPacket(pool.getId(), count));
+        if (pool != null) {
+            xin.vanilla.sakura.data.lottery.LotteryDrawRequest request =
+                    xin.vanilla.sakura.client.SakuraClientState.getLotteryRequests().draw(pool.getId(), count);
+            if (request != null) SakuraNetwork.sendToServer(new LotteryDrawRequestPacket(request));
         }
     }
 

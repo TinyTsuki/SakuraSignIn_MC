@@ -24,21 +24,16 @@ public final class LotteryDrawDispatcher {
     public static LotteryDrawBatchResult draw(ServerPlayerEntity player, String poolId,
                                               int count) {
         boolean animated = BaniraModPresence.isRemoteClientInstalled(player, SakuraSignIn.MODID);
-        if (animated) {
-            PendingLotteryDraws.Pending existing = PendingLotteryDraws.get(player);
-            if (existing != null) {
-                sendReveal(player, existing);
-                return existing.getResult();
-            }
-        }
-        LotteryDrawBatchResult result = animated
-                ? LotteryRewardService.prepareMany(player, poolId, count)
-                : LotteryRewardService.drawMany(player, poolId, count);
+        LotteryDrawBatchResult result = LotteryRewardService.drawMany(player, poolId, count);
         if (result.isSuccess()) {
+            notifySuccess(player, result);
             if (animated) {
-                sendReveal(player, PendingLotteryDraws.put(player, result));
-            } else {
-                notifySuccess(player, result);
+                try {
+                    PendingLotteryDraws.Pending pending = PendingLotteryDraws.put(player.getUUID());
+                    sendReveal(player, pending, result);
+                } catch (IllegalArgumentException failure) {
+                    PendingLotteryDraws.remove(player.getUUID());
+                }
             }
             return result;
         }
@@ -46,16 +41,13 @@ public final class LotteryDrawDispatcher {
         return result;
     }
 
-    public static void claim(ServerPlayerEntity player, String token) {
-        LotteryDrawBatchResult result = PendingLotteryDraws.claim(player, token);
-        if (result == null) return;
-        if (result.isSuccess()) notifySuccess(player, result);
-        else notifyFailure(player, result);
+    public static void acknowledge(ServerPlayerEntity player, String operationId, String token) {
+        PendingLotteryDraws.acknowledge(player.getUUID(), operationId, token);
     }
 
-    private static void sendReveal(ServerPlayerEntity player, PendingLotteryDraws.Pending pending) {
-        LotteryDrawBatchResult result = pending.getResult();
-        SakuraNetwork.sendToPlayer(new LotteryRevealPacket(pending.getToken(),
+    private static void sendReveal(ServerPlayerEntity player, PendingLotteryDraws.Pending pending,
+                                    LotteryDrawBatchResult result) {
+        SakuraNetwork.sendToPlayer(new LotteryRevealPacket(pending.getOperationId(), pending.getToken(),
                 result.getPool().getDisplayName(), result.getRewards(), preview(result),
                 result.getPool().getPreviewMode()), player);
     }
