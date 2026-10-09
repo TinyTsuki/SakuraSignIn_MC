@@ -235,10 +235,7 @@ public final class PlayerSignInDataRepository {
         previous.getPersonalDateSlots().forEach(slot -> merged.put(slotKey(slot), copySlot(slot)));
         candidate.getPersonalDateSlots().forEach(slot -> {
             PlayerPersonalDateSlot old = merged.get(slotKey(slot));
-            if (old != null && (slot.getLastClaimedOccurrenceKey() == null
-                    || slot.getLastClaimedOccurrenceKey().isEmpty())) {
-                slot.setLastClaimedOccurrenceKey(old.getLastClaimedOccurrenceKey());
-            }
+            slot.mergeClaimState(old);
             merged.put(slotKey(slot), copySlot(slot));
         });
         candidate.setPersonalDateSlots(new java.util.ArrayList<>(merged.values()));
