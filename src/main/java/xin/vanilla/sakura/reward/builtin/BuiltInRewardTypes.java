@@ -23,6 +23,20 @@ public final class BuiltInRewardTypes {
     private BuiltInRewardTypes() {
     }
 
+    public static boolean supportsMergePreparation(RewardTypeDefinition<?> definition) {
+        if (definition == null || definition.getMerger() == null
+                || definition.getMerger().getClass().getEnclosingClass() != BuiltInRewardTypes.class) {
+            return false;
+        }
+        RewardTypeId id = definition.getId();
+        Class<?> codec = definition.getCodec().getClass();
+        return (id.equals(SakuraRewardTypes.ITEM) && codec == ItemRewardCodec.class)
+                || (id.equals(SakuraRewardTypes.EFFECT) && codec == EffectRewardCodec.class)
+                || ((id.equals(SakuraRewardTypes.EXPERIENCE_POINT)
+                || id.equals(SakuraRewardTypes.EXPERIENCE_LEVEL)
+                || id.equals(SakuraRewardTypes.SIGN_IN_CARD)) && codec == IntegerRewardCodec.class);
+    }
+
     public static void register() {
         registerItem();
         registerEffect();
