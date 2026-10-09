@@ -8,6 +8,7 @@ import xin.vanilla.sakura.data.personaldate.PersonalDateDeliveryMode;
 import xin.vanilla.sakura.reward.RewardManager;
 import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.data.personaldate.PersonalDatePreset;
+import xin.vanilla.sakura.data.personaldate.PersonalDateRewardSnapshot;
 import xin.vanilla.sakura.message.SakuraMessages;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
 import xin.vanilla.sakura.util.SakuraUtils;
@@ -27,9 +28,9 @@ public final class PersonalDateRewardDispatcher {
     private PersonalDateRewardDispatcher() {
     }
 
-    public static PersonalDateDeliveryResult deliverSignIn(ServerPlayer player,
-                                                           Date currentDate) {
-        return deliver(player, PersonalDateDeliveryMode.SIGN_IN, currentDate);
+    public static List<PersonalDateRewardSnapshot> reserveSignIn(ServerPlayer player, Date currentDate) {
+        return SERVICE.reserveForSignIn(currentDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate(),
+                RewardConfigManager.getRewardConfig().getPersonalDatePresets(), SakuraPlayerData.get(player));
     }
 
     public static PersonalDateDeliveryResult deliverOnline(ServerPlayer player,
