@@ -156,7 +156,7 @@ public class RewardManagerDeliveryTest {
     public void automaticSignInSavesCompleteStateBeforeSyncAndResults() {
         configureItemAndPersonalDate();
         signIn(ESignInType.SIGN_IN, today, true);
-        assertEquals(Arrays.asList("item", "save", "sync", "notify", "notify", "notify"), events);
+        assertEquals(Arrays.asList("item", "save", "sync", "notify", "notify"), events);
         assertCompleteSaved(today, true, 2);
         assertEquals(3, reload().getSignInCard());
         assertEquals("YEARLY:" + LocalDate.now().getYear(),
@@ -433,22 +433,28 @@ public class RewardManagerDeliveryTest {
     }
 
     @Test
-    public void personalDateRewardDetailsAreSentAfterSaveEvenWithoutAutomaticClaim() {
+    public void personalDateRewardsWaitForClaimAndShareOneReceipt() {
         configureItemAndPersonalDate();
         PlayerUtils.setRemoteClientModInstalled(player, "banira_codex", true);
         signIn(ESignInType.SIGN_IN, today, false);
-        assertEquals(3, data.getSignInCard());
-        assertTrue("Missing birthday reward receipt", packets.stream().anyMatch(packet ->
-                packet.typeId().equals(SakuraNotificationTypes.REWARD)
-                        && packet.componentJson().contains("Birthday")
-                        && packet.componentJson().contains("reward_type_5")));
-        assertTrue(events.indexOf("save") < events.indexOf("packet"));
-        int count = packets.size();
+        assertEquals(2, data.getSignInCard());
+        assertEquals("", data.getPersonalDateSlots().get(0).getLastClaimedOccurrenceKey());
+        assertTrue(packets.stream().noneMatch(packet -> packet.componentJson().contains("Birthday")));
+        assertEquals(1, saved.getList("signInRecords", 10).getCompound(0).getList("personalDateRewards", 10).size());
         data = reload();
+        packets.clear(); events.clear();
         signIn(ESignInType.REWARD, today, true);
         assertEquals(3, data.getSignInCard());
-        assertEquals(1, packets.subList(0, count).stream()
-                .filter(packet -> packet.componentJson().contains("Birthday")).count());
+        assertEquals(1, packets.size());
+        assertTrue(packets.get(0).componentJson().contains("receive_reward_success"));
+        assertTrue(packets.get(0).componentJson().contains("personal_date_additional_rewards"));
+        assertTrue(packets.get(0).componentJson().contains("Birthday"));
+        assertTrue(packets.get(0).componentJson().contains("reward_type_5"));
+        assertTrue(events.indexOf("save") < events.indexOf("packet"));
+        int count = packets.size();
+        signIn(ESignInType.REWARD, today, true);
+        assertEquals(3, data.getSignInCard());
+        assertEquals(1, packets.subList(0, count).stream().filter(packet -> packet.componentJson().contains("Birthday")).count());
     }
 
     @Test
@@ -461,6 +467,8 @@ public class RewardManagerDeliveryTest {
         PlayerUtils.setRemoteClientModInstalled(player, "banira_codex", true);
         failPacketAt = 1;
         signIn(ESignInType.SIGN_IN, today, false);
+        packets.clear(); packetAttempts = 0;
+        signIn(ESignInType.REWARD, today, true);
         assertTrue(packets.stream().noneMatch(packet -> packet.componentJson().contains("Birthday")));
         assertEquals(2, data.getSignInCard());
     }
@@ -472,7 +480,7 @@ public class RewardManagerDeliveryTest {
         failSave = true;
         assertThrows(IllegalStateException.class, () -> signIn(ESignInType.SIGN_IN, today, false));
         assertTrue(packets.isEmpty());
-        assertEquals(3, data.getSignInCard());
+        assertEquals(2, data.getSignInCard());
     }
 
     @Test
@@ -509,6 +517,8 @@ public class RewardManagerDeliveryTest {
         inventory().full = true;
         PlayerUtils.setRemoteClientModInstalled(player, "banira_codex", true);
         signIn(ESignInType.SIGN_IN, today, false);
+        assertEquals(0, player.dropped);
+        signIn(ESignInType.REWARD, today, true);
         assertEquals(1, player.dropped);
         assertTrue("Dropped reward receipt missing", packets.stream().anyMatch(packet ->
                 packet.componentJson().contains("Birthday") && packet.componentJson().contains("birthday-cake")));
@@ -527,8 +537,76 @@ public class RewardManagerDeliveryTest {
         player.failDrop = true;
         PlayerUtils.setRemoteClientModInstalled(player, "banira_codex", true);
         signIn(ESignInType.SIGN_IN, today, false);
+        signIn(ESignInType.REWARD, today, true);
         assertTrue(packets.stream().noneMatch(packet -> packet.componentJson().contains("Birthday")));
         assertEquals(0, player.dropped);
+    }
+
+    @Test
+    public void pendingPersonalDateUsesSignedSnapshotAfterPresetAndDateChange() {
+        configureItemAndPersonalDate();
+        PlayerUtils.setRemoteClientModInstalled(player, "banira_codex", true);
+        signIn(ESignInType.SIGN_IN, today, false);
+        data = reload();
+        data.getPersonalDateSlots().get(0).setMonth(1);
+        data.getPersonalDateSlots().get(0).setDay(1);
+        RewardConfigManager.getRewardConfig().setPersonalDatePresets(Collections.emptyList());
+        packets.clear();
+        signIn(ESignInType.REWARD, today, true);
+        assertEquals(3, data.getSignInCard());
+        assertEquals(1, data.getPersonalDateSlots().get(0).getMonth());
+        assertEquals("YEARLY:" + LocalDate.now().getYear(), data.getPersonalDateSlots().get(0).getLastClaimedOccurrenceKey());
+        assertEquals(1, packets.size());
+        assertTrue(packets.get(0).componentJson().contains("Birthday"));
+    }
+
+    @Test
+    public void calendarPreviewExcludesPendingAndClaimedPersonalDateRewards() {
+        configureItemAndPersonalDate();
+        signIn(ESignInType.SIGN_IN, today, false);
+        RewardList pending = RewardManager.getRewardListByDate(today, data, true, false);
+        assertEquals(1, pending.size());
+        assertEquals(SakuraRewardTypes.ITEM, pending.get(0).getTypeId());
+        signIn(ESignInType.REWARD, today, true);
+        RewardList claimed = RewardManager.getRewardListByDate(today, data, true, false);
+        assertEquals(1, claimed.size());
+        assertEquals(SakuraRewardTypes.ITEM, claimed.get(0).getTypeId());
+    }
+
+    @Test
+    public void automaticClaimCombinesPersonalDateWithOrdinaryRewards() {
+        configureItemAndPersonalDate();
+        PlayerUtils.setRemoteClientModInstalled(player, "banira_codex", true);
+        signIn(ESignInType.SIGN_IN, today, true);
+        assertEquals(3, data.getSignInCard());
+        assertEquals(1, packets.stream().filter(packet -> packet.componentJson().contains("receive_reward_success")).count());
+        assertTrue(packets.stream().anyMatch(packet -> packet.componentJson().contains("Birthday")
+                && packet.componentJson().contains("receive_reward_success")));
+    }
+
+    @Test
+    public void makeUpDoesNotAppendCurrentDaysPersonalDateReward() {
+        configureItemAndPersonalDate();
+        signIn(ESignInType.RE_SIGN_IN, DateUtils.addDay(today, -1), false);
+        assertEquals(1, data.getSignInCard());
+        assertEquals("", data.getPersonalDateSlots().get(0).getLastClaimedOccurrenceKey());
+        assertEquals(0, saved.getList("signInRecords", 10).getCompound(0).getList("personalDateRewards", 10).size());
+    }
+
+    @Test
+    public void switchingPendingPresetToOnlineCannotBypassQueuedClaim() throws Exception {
+        configureItemAndPersonalDate();
+        signIn(ESignInType.SIGN_IN, today, false);
+        RewardConfigManager.getRewardConfig().getPersonalDatePresets().get(0).setDeliveryMode(PersonalDateDeliveryMode.ONLINE);
+        java.lang.reflect.Method method = xin.vanilla.sakura.internal.fabric.event.FabricSakuraGameEventAdapter.class
+                .getDeclaredMethod("deliverOnlineRewards", ServerPlayer.class);
+        method.setAccessible(true);
+        method.invoke(null, player);
+        assertEquals(2, data.getSignInCard());
+        signIn(ESignInType.REWARD, today, true);
+        assertEquals(3, data.getSignInCard());
+        method.invoke(null, player);
+        assertEquals(3, data.getSignInCard());
     }
 
     private List<String> configureLargeRewards() {

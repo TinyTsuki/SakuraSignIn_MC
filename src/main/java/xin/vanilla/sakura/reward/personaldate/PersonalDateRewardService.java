@@ -6,6 +6,8 @@ import xin.vanilla.sakura.data.personaldate.PersonalDateEvaluator;
 import xin.vanilla.sakura.data.personaldate.PersonalDateOccurrence;
 import xin.vanilla.sakura.data.personaldate.PersonalDatePreset;
 import xin.vanilla.sakura.data.personaldate.PlayerPersonalDateSlot;
+import xin.vanilla.sakura.data.personaldate.PersonalDateRewardSnapshot;
+import xin.vanilla.sakura.data.SignInRecord;
 import xin.vanilla.sakura.reward.Reward;
 
 import java.time.LocalDate;
@@ -55,6 +57,7 @@ public final class PersonalDateRewardService {
                 continue;
             }
             evaluator.findActiveOccurrences(preset, slot, currentDate)
+                    .stream().filter(occurrence -> !hasPending(playerData, occurrence))
                     .forEach(occurrence -> pending.add(
                             new PendingOccurrence(preset, slot, occurrence)));
         }
@@ -74,6 +77,50 @@ public final class PersonalDateRewardService {
             claimed++;
         }
         return new PersonalDateDeliveryResult(claimed, rewards);
+    }
+
+    public List<PersonalDateRewardSnapshot> reserveForSignIn(LocalDate currentDate,
+                                                            List<PersonalDatePreset> presets,
+                                                            IPlayerSignInData data) {
+        List<PersonalDateRewardSnapshot> snapshots = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        Set<String> periods = new HashSet<>();
+        for (PlayerPersonalDateSlot slot : data.getPersonalDateSlots()) {
+            if (slot == null || !seen.add(slot.getPresetId() + "#" + slot.getSlotIndex())) continue;
+            for (PersonalDatePreset preset : presets) {
+                if (preset == null || preset.getDeliveryMode() != PersonalDateDeliveryMode.SIGN_IN
+                        || !preset.getId().equals(slot.getPresetId())) continue;
+                for (PersonalDateOccurrence occurrence : evaluator.findActiveOccurrences(preset, slot, currentDate)) {
+                    if (!hasPending(data, occurrence) && periods.add(occurrence.getPresetId() + "#"
+                            + occurrence.getSlotIndex() + "#" + occurrence.getOccurrenceKey())) {
+                        snapshots.add(new PersonalDateRewardSnapshot(preset.getId(), preset.getDisplayName(),
+                                slot.getSlotIndex(), slot.getCalendarId(), occurrence.getOccurrenceKey(),
+                                occurrence.getTargetDate(), preset.getRewards()));
+                    }
+                }
+            }
+        }
+        return snapshots;
+    }
+
+    private static boolean hasPending(IPlayerSignInData data, PersonalDateOccurrence occurrence) {
+        return data.getSignInRecords().stream().filter(record -> !record.isRewarded())
+                .flatMap(record -> record.getPersonalDateRewards().stream())
+                .anyMatch(snapshot -> snapshot.getPresetId().equals(occurrence.getPresetId())
+                        && snapshot.getSlotIndex() == occurrence.getSlotIndex()
+                        && snapshot.getOccurrenceKey().equals(occurrence.getOccurrenceKey()));
+    }
+
+    public static void completeClaim(IPlayerSignInData data, PersonalDateRewardSnapshot snapshot) {
+        PlayerPersonalDateSlot slot = data.getPersonalDateSlots().stream()
+                .filter(value -> value.getPresetId().equals(snapshot.getPresetId())
+                        && value.getSlotIndex() == snapshot.getSlotIndex()).findFirst().orElse(null);
+        if (slot == null) {
+            slot = new PlayerPersonalDateSlot(snapshot.getPresetId(), snapshot.getSlotIndex(),
+                    snapshot.getCalendarId(), 0, 0, "");
+            data.getPersonalDateSlots().add(slot);
+        }
+        slot.setLastClaimedOccurrenceKey(snapshot.getOccurrenceKey());
     }
 
     private static final class PendingOccurrence {
