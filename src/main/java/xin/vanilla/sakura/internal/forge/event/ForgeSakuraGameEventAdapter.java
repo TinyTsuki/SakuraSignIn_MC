@@ -51,10 +51,19 @@ public final class ForgeSakuraGameEventAdapter {
             return;
         }
         MinecraftForge.EVENT_BUS.addListener(ForgeSakuraGameEventAdapter::onRegisterCommands);
+        xin.vanilla.sakura.reward.lottery.LotteryRewardService.install(
+                xin.vanilla.sakura.internal.forge.lottery.ForgeLotteryServices::get,
+                xin.vanilla.sakura.internal.forge.lottery.ForgeLotteryServices::isCurrent);
         MinecraftForge.EVENT_BUS.addListener(ForgeSakuraGameEventAdapter::onPlayerCloned);
         MinecraftForge.EVENT_BUS.addListener(ForgeSakuraGameEventAdapter::onPlayerLoggedIn);
         MinecraftForge.EVENT_BUS.addListener(ForgeSakuraGameEventAdapter::onPlayerLoggedOut);
         MinecraftForge.EVENT_BUS.addListener(ForgeSakuraGameEventAdapter::onServerTick);
+        MinecraftForge.EVENT_BUS.addListener((net.minecraftforge.event.server.ServerStoppedEvent event) -> {
+            xin.vanilla.sakura.network.packet.LotteryPoolSyncPacket.clearServerTransfers();
+            xin.vanilla.sakura.reward.lottery.PendingLotteryDraws.clear();
+            try { xin.vanilla.sakura.internal.forge.lottery.ForgeLotteryServices.stop(); }
+            catch (Exception failure) { LOGGER.error("Lottery operation flush failed", failure); }
+        });
     }
 
     private static void onRegisterCommands(RegisterCommandsEvent event) {
@@ -113,12 +122,17 @@ public final class ForgeSakuraGameEventAdapter {
             return;
         }
         normalizeOnlineTime(player, RewardManager.getCompensateDate(SakuraClock.serverNow()));
+        xin.vanilla.sakura.internal.forge.lottery.ForgeLotteryServices.get(player).recover(player);
         deliverOnlineRewards(player);
         waitForClientSettings(player, 0);
     }
 
     private static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getPlayer() instanceof ServerPlayer) {
+            ServerPlayer player = (ServerPlayer) event.getPlayer();
+            xin.vanilla.sakura.internal.forge.lottery.ForgeLotteryServices.disconnect(player);
+            xin.vanilla.sakura.network.packet.LotteryPoolSyncPacket.removeServerTransfer(player.connection);
+            xin.vanilla.sakura.reward.lottery.PendingLotteryDraws.remove(player.getUUID());
             SakuraPlayerData.removeServer(event.getPlayer().getUUID());
         }
     }
@@ -168,6 +182,7 @@ public final class ForgeSakuraGameEventAdapter {
     }
 
     private static void onServerTick(TickEvent.ServerTickEvent event) {
+        xin.vanilla.sakura.network.packet.LotteryPoolSyncPacket.expireServerTransfers();
         if (event.phase != TickEvent.Phase.END) {
             return;
         }

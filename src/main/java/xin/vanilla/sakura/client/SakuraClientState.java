@@ -19,6 +19,9 @@ import java.util.LinkedHashMap;
  */
 public final class SakuraClientState {
     @Getter
+    private static final xin.vanilla.sakura.network.LotteryClientRequests lotteryRequests =
+            new xin.vanilla.sakura.network.LotteryClientRequests(java.util.UUID::randomUUID);
+    @Getter
     @Setter
     private static boolean enabled;
     @Getter
@@ -58,6 +61,7 @@ public final class SakuraClientState {
     }
 
     public static void clearSession() {
+        lotteryRequests.clear();
         enabled = false;
         calendarCurrentDate = null;
         advancementData = Collections.emptyList();

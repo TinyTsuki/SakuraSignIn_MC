@@ -45,6 +45,8 @@ public final class SakuraClientBootstrap {
         BaniraKeyHandle rewardOptionKey = BaniraInput.registerKey(
                 SakuraSignIn.MODID, "reward_option", GLFWKey.GLFW_KEY_UNKNOWN);
 
+        xin.vanilla.sakura.config.reward.RewardConfigManager.configureClientScope(
+                () -> net.minecraft.client.Minecraft.getInstance().isSameThread());
         SakuraClientPacketHandlers.register(
                 ClientProxy::handleSynPlayerData,
                 ClientProxy::handleMonthData,
@@ -54,6 +56,8 @@ public final class SakuraClientBootstrap {
                 ClientProxy::handleCommonConfigSnapshot,
                 ClientProxy::handleLotteryPoolSync,
                 ClientProxy::handleLotteryReveal,
+                ClientProxy::handleLotteryQuote,
+                ClientProxy::handleLotteryOutcome,
                 ClientProxy::handleRewardOptionUploadResult
         );
         BaniraClientEvents.ModLifecycle.onClientSetup(event -> {
@@ -66,10 +70,12 @@ public final class SakuraClientBootstrap {
             }
             SakuraNetworkSmokeClientRunner.tick();
             ClientProxy.expireMonthTransfers();
+            ClientProxy.expireLotteryTransfers();
             ClientEventHandler.onClientTick(signInKey, rewardOptionKey);
         });
         BaniraClientEvents.Player.onClientLoggedOut(event -> {
             ClientProxy.clearMonthTransfers();
+            ClientProxy.clearLotteryTransfers();
             SakuraClientState.clearSession();
             SakuraPlayerData.clearClient();
         });
