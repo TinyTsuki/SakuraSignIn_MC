@@ -10,6 +10,8 @@ import xin.vanilla.sakura.reward.RewardList;
 public class LotteryPool {
     private String id = "";
     private String displayName = "";
+    private String description = "";
+    private String voucherExpression = "";
     private LotteryLimitPolicy limitPolicy = LotteryLimitPolicy.DAILY;
     private int maxDraws = 1;
     private int cooldownSeconds;

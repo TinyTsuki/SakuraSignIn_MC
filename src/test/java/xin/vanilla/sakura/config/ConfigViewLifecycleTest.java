@@ -35,6 +35,28 @@ public class ConfigViewLifecycleTest {
     @Test public void retainedHistoryFollowsFileReloadAndRebinding() throws Exception { verify(false); }
     @Test public void retainedClientCategoryFollowsFileReloadAndRebinding() throws Exception { verify(true); }
 
+    @Test public void clientRewardScopeIsRegisteredAfterConfigSetup() throws Exception {
+        String source = new String(Files.readAllBytes(java.nio.file.Paths.get(
+                "src/main/java/xin/vanilla/sakura/client/SakuraClientBootstrap.java")), StandardCharsets.UTF_8);
+        int setup = source.indexOf("BaniraClientEvents.ModLifecycle.onClientSetup(event -> {");
+        int next = source.indexOf("BaniraClientEvents.Client.onClientTick", setup);
+        assertTrue(setup >= 0 && next > setup);
+        assertFalse(source.substring(0, setup).contains("RewardConfigManager.configureClientScope"));
+        assertTrue(source.substring(setup, next).contains("RewardConfigManager.configureClientScope"));
+    }
+
+    @Test public void rewardScopeReadsRequireLoadedForgeConfiguration() throws Exception {
+        try (FileFixture fixture = new FileFixture(CommonConfig.class,
+                temporary.newFile("scope.toml").toPath(), false)) {
+            ConfigBaselineFixture.bind(CommonConfig.class, fixture.holder);
+            assertThrows(IllegalStateException.class, () -> CommonConfig.get().reward().continuousRewardsRepeatable());
+            assertThrows(IllegalStateException.class, () ->
+                    xin.vanilla.sakura.config.reward.RewardConfigManager.configureClientScope(() -> false));
+            fixture.load();
+            xin.vanilla.sakura.config.reward.RewardConfigManager.configureClientScope(() -> false);
+        } finally { ConfigBaselineFixture.bind(CommonConfig.class, null); }
+    }
+
     private void verify(boolean client) throws Exception {
         Class<?> type = client ? ClientConfig.class : CommonConfig.class;
         String key = client ? "signKeys.lastMonth" : "history.retentionMonths";
@@ -91,8 +113,13 @@ public class ConfigViewLifecycleTest {
         final Object backend;
         final ConfigHolder holder;
         final CommentedFileConfig file;
+        final ForgeConfigSpec spec;
 
         FileFixture(Class<?> type, Path path) throws Exception {
+            this(type, path, true);
+        }
+
+        FileFixture(Class<?> type, Path path, boolean loaded) throws Exception {
             this.path = path;
             ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
             List<ConfigEntryDescriptor> descriptors = new ArrayList<>();
@@ -103,7 +130,7 @@ public class ConfigViewLifecycleTest {
                     Class.class, String.class, List.class, Map.class, Map.class, Map.class);
             scan.setAccessible(true);
             scan.invoke(null, builder, type, "", descriptors, values, tooltips, titles);
-            ForgeConfigSpec spec = builder.build();
+            spec = builder.build();
             Class<?> backendType = Class.forName("xin.vanilla.banira.internal.forge.config.ForgeConfigValueStore");
             Constructor<?> constructor = backendType.getDeclaredConstructor(ForgeConfigSpec.class, Map.class);
             constructor.setAccessible(true);
@@ -114,6 +141,10 @@ public class ConfigViewLifecycleTest {
             invoke("setHolder", new Class<?>[]{ConfigHolder.class}, holder);
             file = (CommentedFileConfig) invoke("wrap", new Class<?>[]{CommentedFileConfig.class},
                     CommentedFileConfig.builder(path).sync().build());
+            if (loaded) load();
+        }
+
+        void load() {
             file.load();
             spec.setConfig(file);
             holder.acceptInitialExternalLoad();

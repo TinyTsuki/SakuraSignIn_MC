@@ -53,11 +53,15 @@ public final class SakuraClientBootstrap {
                 ClientProxy::handleCommonConfigSnapshot,
                 ClientProxy::handleLotteryPoolSync,
                 ClientProxy::handleLotteryReveal,
+                ClientProxy::handleLotteryQuote,
+                ClientProxy::handleLotteryOutcome,
                 ClientProxy::handleRewardOptionUploadResult
         );
         BaniraClientEvents.ModLifecycle.onClientSetup(event -> {
             // Forge 1.19+ 在配置加载完成前禁止读取配置值。
             ClientConfig.sanitizeNavigationShortcuts();
+            xin.vanilla.sakura.config.reward.RewardConfigManager.configureClientScope(
+                    () -> net.minecraft.client.Minecraft.getInstance().isSameThread());
             SakuraClientNotificationTypes.register();
             ClientEventHandler.loadThemeTexture();
         });
@@ -67,10 +71,12 @@ public final class SakuraClientBootstrap {
             }
             SakuraNetworkSmokeClientRunner.tick();
             ClientProxy.expireMonthTransfers();
+            ClientProxy.expireLotteryTransfers();
             ClientEventHandler.onClientTick(signInKey, rewardOptionKey);
         });
         BaniraClientEvents.Player.onClientLoggedOut(event -> {
             ClientProxy.clearMonthTransfers();
+            ClientProxy.clearLotteryTransfers();
             SakuraClientState.clearSession();
             SakuraPlayerData.clearClient();
         });
