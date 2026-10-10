@@ -23,9 +23,12 @@ public final class LotteryPools {
     }
 
     public static LotteryPool copy(LotteryPool pool) {
-        return new LotteryPool(pool.getId(), pool.getDisplayName(), pool.getLimitPolicy(),
+        LotteryPool result = new LotteryPool(pool.getId(), pool.getDisplayName(), pool.getLimitPolicy(),
                 pool.getMaxDraws(), pool.getCooldownSeconds(), pool.getPreviewMode(),
                 new RewardList(pool.getRewards()).clone());
+        result.setDescription(pool.getDescription());
+        result.setVoucherExpression(pool.getVoucherExpression());
+        return result;
     }
 
     /** 玩家可浏览奖池元数据，但管理员禁用详情时不下发奖励列表。 */

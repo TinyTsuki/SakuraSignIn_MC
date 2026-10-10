@@ -50,6 +50,15 @@ public final class NeoForgeSakuraGameEventAdapter {
             return;
         }
         NeoForge.EVENT_BUS.addListener(NeoForgeSakuraGameEventAdapter::onRegisterCommands);
+        xin.vanilla.sakura.reward.lottery.LotteryRewardService.install(
+                xin.vanilla.sakura.internal.neoforge.lottery.NeoForgeLotteryServices::get,
+                xin.vanilla.sakura.internal.neoforge.lottery.NeoForgeLotteryServices::isCurrent);
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) -> {
+            xin.vanilla.sakura.network.packet.LotteryPoolSyncPacket.clearServerTransfers();
+            xin.vanilla.sakura.reward.lottery.PendingLotteryDraws.clear();
+            try { xin.vanilla.sakura.internal.neoforge.lottery.NeoForgeLotteryServices.stop(); }
+            catch (Exception failure) { LOGGER.error("Lottery operation flush failed", failure); }
+        });
         NeoForge.EVENT_BUS.addListener(NeoForgeSakuraGameEventAdapter::onPlayerCloned);
         NeoForge.EVENT_BUS.addListener(NeoForgeSakuraGameEventAdapter::onPlayerLoggedIn);
         NeoForge.EVENT_BUS.addListener(NeoForgeSakuraGameEventAdapter::onPlayerLoggedOut);
@@ -112,12 +121,17 @@ public final class NeoForgeSakuraGameEventAdapter {
             return;
         }
         normalizeOnlineTime(player, RewardManager.getCompensateDate(SakuraClock.serverNow()));
+        xin.vanilla.sakura.internal.neoforge.lottery.NeoForgeLotteryServices.get(player).recover(player);
         deliverOnlineRewards(player);
         waitForClientSettings(player, 0);
     }
 
     private static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer) {
+            ServerPlayer player = (ServerPlayer) event.getEntity();
+            xin.vanilla.sakura.internal.neoforge.lottery.NeoForgeLotteryServices.disconnect(player);
+            xin.vanilla.sakura.network.packet.LotteryPoolSyncPacket.removeServerTransfer(player.connection);
+            xin.vanilla.sakura.reward.lottery.PendingLotteryDraws.remove(player.getUUID());
             SakuraPlayerData.removeServer(event.getEntity().getUUID());
         }
     }
@@ -167,6 +181,7 @@ public final class NeoForgeSakuraGameEventAdapter {
     }
 
     private static void onServerTick() {
+        xin.vanilla.sakura.network.packet.LotteryPoolSyncPacket.expireServerTransfers();
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null) {
             return;

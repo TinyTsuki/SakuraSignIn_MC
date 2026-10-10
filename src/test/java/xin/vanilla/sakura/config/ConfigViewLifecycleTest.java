@@ -35,6 +35,28 @@ public class ConfigViewLifecycleTest {
     @Test public void retainedHistoryFollowsFileReloadAndRebinding() throws Exception { verify(false); }
     @Test public void retainedClientCategoryFollowsFileReloadAndRebinding() throws Exception { verify(true); }
 
+    @Test public void clientRewardScopeIsRegisteredAfterConfigSetup() throws Exception {
+        String source = new String(Files.readAllBytes(java.nio.file.Paths.get(
+                "src/main/java/xin/vanilla/sakura/client/SakuraClientBootstrap.java")), StandardCharsets.UTF_8);
+        int setup = source.indexOf("BaniraClientEvents.ModLifecycle.onClientSetup(event -> {");
+        int next = source.indexOf("BaniraClientEvents.Client.onClientTick", setup);
+        assertTrue(setup >= 0 && next > setup);
+        assertFalse(source.substring(0, setup).contains("RewardConfigManager.configureClientScope"));
+        assertTrue(source.substring(setup, next).contains("RewardConfigManager.configureClientScope"));
+    }
+
+    @Test public void rewardScopeReadsRequireLoadedNeoForgeConfiguration() throws Exception {
+        try (FileFixture fixture = new FileFixture(CommonConfig.class,
+                temporary.newFile("scope.toml").toPath(), false)) {
+            ConfigBaselineFixture.bind(CommonConfig.class, fixture.holder);
+            assertThrows(IllegalStateException.class, () -> CommonConfig.get().reward().continuousRewardsRepeatable());
+            assertThrows(IllegalStateException.class, () ->
+                    xin.vanilla.sakura.config.reward.RewardConfigManager.configureClientScope(() -> false));
+            fixture.load();
+            xin.vanilla.sakura.config.reward.RewardConfigManager.configureClientScope(() -> false);
+        } finally { ConfigBaselineFixture.bind(CommonConfig.class, null); }
+    }
+
     private void verify(boolean client) throws Exception {
         net.neoforged.fml.loading.FMLPaths.loadAbsolutePaths(temporary.getRoot().toPath());
         Class<?> type = client ? ClientConfig.class : CommonConfig.class;
@@ -95,7 +117,9 @@ public class ConfigViewLifecycleTest {
         final CommentedFileConfig file;
         final ModConfigSpec spec;
 
-        FileFixture(Class<?> type, Path path) throws Exception {
+        FileFixture(Class<?> type, Path path) throws Exception { this(type, path, true); }
+
+        FileFixture(Class<?> type, Path path, boolean loaded) throws Exception {
             this.path = path;
             ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
             List<ConfigEntryDescriptor> descriptors = new ArrayList<>();
@@ -115,6 +139,10 @@ public class ConfigViewLifecycleTest {
             holder = ConfigHolder.create("fixture", config.name(), config.type(), (ConfigValueStore) backend,
                     descriptors, tooltips, titles);
             file = CommentedFileConfig.builder(path).sync().build();
+            if (loaded) load();
+        }
+
+        void load() throws Exception {
             file.load();
             spec.correct(file);
             file.save();
