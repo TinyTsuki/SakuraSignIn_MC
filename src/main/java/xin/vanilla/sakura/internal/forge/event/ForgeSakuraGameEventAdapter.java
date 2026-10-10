@@ -51,6 +51,9 @@ public final class ForgeSakuraGameEventAdapter {
             return;
         }
         MinecraftForge.EVENT_BUS.addListener(ForgeSakuraGameEventAdapter::onRegisterCommands);
+        xin.vanilla.sakura.reward.lottery.LotteryRewardService.install(
+                xin.vanilla.sakura.internal.forge.lottery.ForgeLotteryServices::get,
+                xin.vanilla.sakura.internal.forge.lottery.ForgeLotteryServices::isCurrent);
         MinecraftForge.EVENT_BUS.addListener(ForgeSakuraGameEventAdapter::onPlayerCloned);
         MinecraftForge.EVENT_BUS.addListener(ForgeSakuraGameEventAdapter::onPlayerLoggedIn);
         MinecraftForge.EVENT_BUS.addListener(ForgeSakuraGameEventAdapter::onPlayerLoggedOut);
@@ -58,6 +61,8 @@ public final class ForgeSakuraGameEventAdapter {
         MinecraftForge.EVENT_BUS.addListener((net.minecraftforge.fml.event.server.FMLServerStoppedEvent event) -> {
             xin.vanilla.sakura.network.packet.LotteryPoolSyncPacket.clearServerTransfers();
             xin.vanilla.sakura.reward.lottery.PendingLotteryDraws.clear();
+            try { xin.vanilla.sakura.internal.forge.lottery.ForgeLotteryServices.stop(); }
+            catch (Exception failure) { LOGGER.error("Lottery operation flush failed", failure); }
         });
     }
 
@@ -117,6 +122,7 @@ public final class ForgeSakuraGameEventAdapter {
             return;
         }
         normalizeOnlineTime(player, RewardManager.getCompensateDate(SakuraClock.serverNow()));
+        xin.vanilla.sakura.internal.forge.lottery.ForgeLotteryServices.get(player).recover(player);
         deliverOnlineRewards(player);
         waitForClientSettings(player, 0);
     }
@@ -124,6 +130,7 @@ public final class ForgeSakuraGameEventAdapter {
     private static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getPlayer() instanceof ServerPlayerEntity) {
             ServerPlayerEntity player = (ServerPlayerEntity) event.getPlayer();
+            xin.vanilla.sakura.internal.forge.lottery.ForgeLotteryServices.disconnect(player);
             xin.vanilla.sakura.network.packet.LotteryPoolSyncPacket.removeServerTransfer(player.connection);
             xin.vanilla.sakura.reward.lottery.PendingLotteryDraws.remove(player.getUUID());
             SakuraPlayerData.removeServer(event.getPlayer().getUUID());

@@ -18,7 +18,7 @@ public final class LotteryOperationCodec {
 
     public String encode(LotteryOperation operation) throws IOException {
         JsonObject root = new JsonObject();
-        root.addProperty("schemaVersion", 1);
+        root.addProperty("schemaVersion", 2);
         root.addProperty("playerId", operation.getPlayerId().toString());
         LotteryDrawRequest draw = operation.getRequest();
         LotteryQuoteRequest request = draw.getRequest();
@@ -34,6 +34,14 @@ public final class LotteryOperationCodec {
         root.addProperty("displayToken", operation.getDisplayToken());
         root.addProperty("stage", operation.getStage().name());
         root.addProperty("grantedCount", operation.getGrantedCount());
+        root.addProperty("acknowledged", operation.isAcknowledged());
+        root.addProperty("rollbackPending", operation.isRollbackPending());
+        root.addProperty("zoneId", operation.getZoneId());
+        LotteryDrawState quota = operation.getQuotaBefore();
+        JsonObject before = new JsonObject();
+        before.addProperty("poolId", quota.getPoolId()); before.addProperty("periodKey", quota.getPeriodKey());
+        before.addProperty("periodDraws", quota.getPeriodDraws()); before.addProperty("totalDraws", quota.getTotalDraws());
+        before.addProperty("lastDraw", quota.getLastDrawEpochMillis()); root.add("quotaBefore", before);
         root.add("pool", new JsonParser().parse(operation.poolSnapshot()));
         JsonArray rewards = new JsonArray();
         for (String reward : operation.rewardSnapshots()) rewards.add(new JsonParser().parse(reward));
@@ -49,7 +57,7 @@ public final class LotteryOperationCodec {
         try {
             LotteryProtocolLimits.json(json, MAX_BYTES);
             JsonObject root = new JsonParser().parse(json).getAsJsonObject();
-            if (integer(root, "schemaVersion") != 1) throw new IllegalArgumentException("Unknown operation schema");
+            if (integer(root, "schemaVersion") != 2) throw new IllegalArgumentException("Unknown operation schema");
             LotteryDrawRequest request = new LotteryDrawRequest(uuid(root, "session"), number(root, "sequence"),
                     number(root, "generation"), string(root, "poolId"), integer(root, "requestedCount"),
                     string(root, "quoteToken"));
@@ -57,11 +65,16 @@ public final class LotteryOperationCodec {
             JsonArray array = required(root, "rewards").getAsJsonArray();
             if (array.size() > 100) throw new IllegalArgumentException("Too many draw results");
             for (JsonElement reward : array) rewards.add(reward.toString());
+            JsonObject before = required(root, "quotaBefore").getAsJsonObject();
+            LotteryDrawState quota = new LotteryDrawState(string(before, "poolId"));
+            quota.setPeriodKey(string(before, "periodKey")); quota.setPeriodDraws(integer(before, "periodDraws"));
+            quota.setTotalDraws(integer(before, "totalDraws")); quota.setLastDrawEpochMillis(number(before, "lastDraw"));
             return new LotteryOperation(uuid(root, "playerId"), request, required(root, "pool").toString(),
                     integer(root, "count"), number(root, "seed"), number(root, "createdAt"),
                     string(root, "displayToken"), LotteryOperation.Stage.valueOf(string(root, "stage")),
                     integer(root, "grantedCount"), rewards,
-                    root.has("receipt") ? receipt(root.getAsJsonObject("receipt")) : null);
+                    root.has("receipt") ? receipt(root.getAsJsonObject("receipt")) : null,
+                    quota, string(root, "zoneId"), bool(root, "acknowledged"), bool(root, "rollbackPending"));
         } catch (RuntimeException invalid) { throw new IOException("Invalid lottery operation", invalid); }
     }
 

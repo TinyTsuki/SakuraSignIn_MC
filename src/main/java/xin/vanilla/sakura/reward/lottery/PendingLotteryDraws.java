@@ -25,6 +25,14 @@ public final class PendingLotteryDraws {
         VALUES.put(player, pending); return pending;
     }
 
+    public static synchronized Pending put(UUID player, String operationId, String token) {
+        expire();
+        xin.vanilla.sakura.data.lottery.LotteryProtocolLimits.operationId(operationId);
+        xin.vanilla.sakura.data.lottery.LotteryProtocolLimits.token(token);
+        if (!VALUES.containsKey(player) && VALUES.size() >= 256) throw new IllegalArgumentException("Too many lottery displays");
+        Pending pending = new Pending(operationId, token, System.currentTimeMillis());
+        VALUES.put(player, pending); return pending;
+    }
     public static synchronized boolean acknowledge(UUID player, String operationId, String token) {
         Pending pending = get(player);
         if (pending == null || !pending.operationId.equals(operationId) || !pending.token.equals(token)) return false;

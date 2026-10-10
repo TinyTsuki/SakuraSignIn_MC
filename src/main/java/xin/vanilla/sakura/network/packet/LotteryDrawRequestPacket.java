@@ -27,7 +27,8 @@ public final class LotteryDrawRequestPacket implements INetworkPacket {
         LotteryPacketFields.writeRequest(buffer, request.getRequest()); buffer.writeUtf(request.getQuoteToken(), 36);
     }
     public static void handle(LotteryDrawRequestPacket packet, BaniraNetworkContext context) {
-        if (context.isServerSide()) context.enqueueWork(() -> LotteryPacketServerHandlers.draw(packet.request, context));
+        Object origin = context.connectionKey();
+        if (context.isServerSide() && origin != null) context.enqueueWork(() -> LotteryPacketServerHandlers.draw(packet.request, context, origin));
         context.markHandled();
     }
 }

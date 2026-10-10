@@ -11,6 +11,8 @@ public enum LotteryDrawStatus implements IEnumDescribable {
     EMPTY_POOL,
     LIMIT_REACHED,
     PAYMENT_UNAVAILABLE,
+    OPERATION_PENDING,
+    OPERATION_UNCERTAIN,
     GRANT_FAILED;
 
     @Override

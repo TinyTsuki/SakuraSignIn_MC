@@ -10,6 +10,7 @@ import xin.vanilla.sakura.enums.ERewardRule;
 import xin.vanilla.sakura.message.SakuraMessages;
 import xin.vanilla.sakura.network.packet.LotteryQuotePacket;
 import xin.vanilla.sakura.util.SakuraUtils;
+import xin.vanilla.sakura.reward.lottery.*;
 
 public final class LotteryPacketServerHandlers {
     private LotteryPacketServerHandlers() { }
@@ -22,24 +23,16 @@ public final class LotteryPacketServerHandlers {
         return LotteryQuote.Status.PAYMENT_UNAVAILABLE;
     }
 
-    public static void quote(LotteryQuoteRequest request, BaniraNetworkContext context) {
+    public static void quote(LotteryQuoteRequest request, BaniraNetworkContext context, Object origin) {
         ServerPlayerEntity player = context.senderAs(ServerPlayerEntity.class);
-        if (player == null) return;
-        long generation = RewardConfigManager.getLotteryGeneration();
-        boolean permitted = player.hasPermissions(SakuraUtils.getRewardPermissionLevel(ERewardRule.LOTTERY_REWARD));
-        LotteryQuote.Status status = status(request, generation, permitted,
-                RewardConfigManager.lotteryPool(request.getPoolId()) != null);
-        BaniraNetwork.sendToPlayer(new LotteryQuotePacket(new LotteryQuote(request, status,
-                generation, 0, "", "")), player);
+        if (!LotteryRewardService.isCurrent(player, origin)) return;
+        BaniraNetwork.sendToPlayer(new LotteryQuotePacket(LotteryRewardService.operations(player).quote(player, request)), player);
     }
 
-    public static void draw(LotteryDrawRequest request, BaniraNetworkContext context) {
+    public static void draw(LotteryDrawRequest request, BaniraNetworkContext context, Object origin) {
         ServerPlayerEntity player = context.senderAs(ServerPlayerEntity.class);
-        if (player == null) return;
-        LotteryQuoteRequest header = request.getRequest();
-        if (!player.hasPermissions(SakuraUtils.getRewardPermissionLevel(ERewardRule.LOTTERY_REWARD))
-                || header.getGeneration() != RewardConfigManager.getLotteryGeneration()
-                || RewardConfigManager.lotteryPool(header.getPoolId()) == null) return;
-        SakuraMessages.send(player, SakuraComponent.get().trans(player, "word", "lottery_payment_unavailable"));
+        if (!LotteryRewardService.isCurrent(player, origin)) return;
+        LotteryDrawBatchResult result = LotteryRewardService.operations(player).draw(player, request);
+        if (!result.isSuccess()) LotteryDrawDispatcher.notifyFailure(player, result);
     }
 }

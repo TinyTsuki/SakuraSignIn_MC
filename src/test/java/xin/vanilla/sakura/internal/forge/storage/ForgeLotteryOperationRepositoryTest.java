@@ -23,7 +23,7 @@ public class ForgeLotteryOperationRepositoryTest {
     }
     private static LotteryOperation completed(long sequence) {
         return LotteryOperationTest.prepared(sequence).paying().paid(LotteryOperationTest.receipt())
-                .selectRewards().granting().grantSucceeded().granting().grantSucceeded();
+                .selectRewards().granting().grantSucceeded().granting().grantSucceeded().complete();
     }
     private static void complete(ForgeLotteryOperationRepository repo, long sequence) throws IOException {
         LotteryOperation op = LotteryOperationTest.prepared(sequence); repo.write(op);
@@ -33,7 +33,7 @@ public class ForgeLotteryOperationRepositoryTest {
         op = op.granting(); repo.write(op);
         op = op.grantSucceeded(); repo.write(op);
         op = op.granting(); repo.write(op);
-        repo.write(op.grantSucceeded());
+        repo.write(op = op.grantSucceeded()); repo.write(op.complete());
     }
     @Test public void normalReopenKeepsReceiptSeedAndConfirmedGrantPrefix() throws Exception {
         ForgeLotteryOperationRepository repo = repository(); LotteryOperation op = LotteryOperationTest.prepared(1);
@@ -174,6 +174,24 @@ public class ForgeLotteryOperationRepositoryTest {
         rejectIo(() -> denied.write(LotteryOperationTest.prepared(2)));
         assertArrayEquals(before, Files.readAllBytes(watermark));
         assertNull(repository().load(LotteryOperationTest.PLAYER, LotteryOperationTest.prepared(2).getOperationId()));
+    }
+    @Test public void transientAccessDeniedCanReplaceVerifiedJournalWithoutDeletingOriginal() throws Exception {
+        LotteryOperation op = LotteryOperationTest.prepared(1); repository().write(op);
+        int[] denied = {2};
+        ForgeLotteryOperationRepository retrying = new ForgeLotteryOperationRepository(temporary.getRoot().toPath(),
+                (source, target) -> {
+                    if (denied[0]-- > 0) throw new java.nio.file.AccessDeniedException(target.toString());
+                    Files.move(source, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                });
+        retrying.write(op.paying());
+        assertEquals(LotteryOperation.Stage.PAYING, repository().load(LotteryOperationTest.PLAYER, op.getOperationId()).getStage());
+    }
+    @Test public void permanentAccessDeniedPreservesOriginalJournal() throws Exception {
+        LotteryOperation op = LotteryOperationTest.prepared(1); repository().write(op);
+        ForgeLotteryOperationRepository denied = new ForgeLotteryOperationRepository(temporary.getRoot().toPath(),
+                (source, target) -> { throw new java.nio.file.AccessDeniedException(target.toString()); });
+        rejectIo(() -> denied.write(op.paying()));
+        assertEquals(LotteryOperation.Stage.PREPARED, repository().load(LotteryOperationTest.PLAYER, op.getOperationId()).getStage());
     }
     private interface IoAction { void run() throws IOException; }
     private static void rejectIo(IoAction action) throws IOException {

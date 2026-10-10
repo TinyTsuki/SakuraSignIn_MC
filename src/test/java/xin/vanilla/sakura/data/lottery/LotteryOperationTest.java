@@ -84,7 +84,7 @@ public class LotteryOperationTest {
         LotteryOperation first = paid.granting().grantSucceeded();
         assertEquals(1, first.getGrantedCount());
         assertEquals(LotteryOperation.Stage.PAID, first.getStage());
-        LotteryOperation done = first.granting().grantSucceeded();
+        LotteryOperation done = first.granting().grantSucceeded().complete();
         assertEquals(LotteryOperation.Stage.COMPLETED, done.getStage());
         assertEquals(2, done.getGrantedCount());
         reject(done::paying); reject(done::granting); reject(done::rolledBack); reject(first::rolledBack);

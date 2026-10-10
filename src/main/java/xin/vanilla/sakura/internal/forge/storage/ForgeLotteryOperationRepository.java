@@ -6,10 +6,12 @@ import xin.vanilla.sakura.data.lottery.LotteryProtocolLimits;
 import xin.vanilla.sakura.platform.LotteryOperationRepository;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -85,17 +87,19 @@ public final class ForgeLotteryOperationRepository implements LotteryOperationRe
                     || records.stream().anyMatch(value -> !value.isTerminal()))
                 throw new IOException("Lottery request is replayed or another operation is incomplete");
             // Reserve the sequence before publishing the operation. Failed creation cannot be retried as a new debit.
-            writeHighWater(player, session, sequence);
+            writeHighWater(player, session, sequence, watermark);
         } else {
             if (watermark < sequence) throw new IOException("Lottery replay watermark is missing");
             if (encoded.equals(codec.encode(previous))) return;
             if (!canFollow(previous, encoded, operation)) throw new IOException("Invalid lottery operation transition");
         }
-        atomicWrite(file(player, operation.getOperationId()), encoded);
+        atomicWrite(file(player, operation.getOperationId()), encoded, previous == null ? null : codec.encode(previous));
         if (operation.isTerminal()) prune(player);
     }
 
     private boolean canFollow(LotteryOperation before, String encoded, LotteryOperation next) throws IOException {
+        if (before.getStage() == LotteryOperation.Stage.COMPLETED && !before.isAcknowledged())
+            return encoded.equals(codec.encode(before.acknowledge()));
         if (before.isTerminal() || before.getStage() == LotteryOperation.Stage.UNCERTAIN) return false;
         List<LotteryOperation> allowed = new ArrayList<>();
         allowed.add(before.uncertain());
@@ -105,9 +109,11 @@ public final class ForgeLotteryOperationRepository implements LotteryOperationRe
                 if (next.getReceipt() != null) allowed.add(before.paid(next.getReceipt()));
                 allowed.add(before.rolledBack()); break;
             case PAID:
+                if (before.isRollbackPending()) { allowed.add(before.rolledBack()); break; }
                 allowed.add(before.selectRewards());
-                if (!before.getRewards().isEmpty()) allowed.add(before.granting());
-                if (before.getGrantedCount() == 0) allowed.add(before.rolledBack());
+                if (!before.getRewards().isEmpty() && before.getGrantedCount() < before.getCount()) allowed.add(before.granting());
+                if (before.getGrantedCount() == before.getCount()) allowed.add(before.complete());
+                if (before.getGrantedCount() == 0) allowed.add(before.beginRollback());
                 break;
             case GRANTING: allowed.add(before.grantSucceeded()); break;
             default: return false;
@@ -146,11 +152,15 @@ public final class ForgeLotteryOperationRepository implements LotteryOperationRe
             return value;
         } catch (RuntimeException invalid) { throw new IOException("Invalid lottery replay watermark: " + file, invalid); }
     }
-    private void writeHighWater(UUID player, UUID session, long sequence) throws IOException {
+    private static String watermarkJson(UUID session, long sequence) {
         com.google.gson.JsonObject object = new com.google.gson.JsonObject();
         object.addProperty("schemaVersion", 1); object.addProperty("session", session.toString());
         object.addProperty("sequence", sequence);
-        atomicWrite(directory(player).resolve("_sessions").resolve(session + ".json"), object.toString());
+        return object.toString();
+    }
+    private void writeHighWater(UUID player, UUID session, long sequence, long previous) throws IOException {
+        atomicWrite(directory(player).resolve("_sessions").resolve(session + ".json"), watermarkJson(session, sequence),
+                previous == 0 ? null : watermarkJson(session, previous));
     }
 
     @Override public void flush() { }
@@ -179,7 +189,7 @@ public final class ForgeLotteryOperationRepository implements LotteryOperationRe
         } catch (NoSuchFileException missing) { return null; }
     }
 
-    private void atomicWrite(Path file, String json) throws IOException {
+    private void atomicWrite(Path file, String json, String expected) throws IOException {
         Files.createDirectories(file.getParent());
         Path temporary = Files.createTempFile(file.getParent(), "lottery-", ".tmp");
         try {
@@ -189,7 +199,24 @@ public final class ForgeLotteryOperationRepository implements LotteryOperationRe
                 while (bytes.hasRemaining()) channel.write(bytes);
                 channel.force(true);
             }
-            replacement.replace(temporary, file);
+            long started = System.nanoTime();
+            while (true) {
+                if (Thread.currentThread().isInterrupted()) throw new InterruptedIOException("Lottery write interrupted");
+                if (!java.util.Objects.equals(expected, read(file, LotteryOperationCodec.MAX_BYTES)))
+                    throw new IOException("Lottery record changed before replacement: " + file);
+                try { replacement.replace(temporary, file); break; }
+                catch (AccessDeniedException denied) {
+                    if (!System.getProperty("os.name", "").startsWith("Windows")
+                            || System.nanoTime() - started >= 1_000_000_000L) throw denied;
+                    Files.readAttributes(temporary, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+                    try { Thread.sleep(25); }
+                    catch (InterruptedException interrupted) {
+                        Thread.currentThread().interrupt();
+                        InterruptedIOException failure = new InterruptedIOException("Lottery write interrupted");
+                        failure.initCause(interrupted); failure.addSuppressed(denied); throw failure;
+                    }
+                }
+            }
             if (!json.equals(read(file, LotteryOperationCodec.MAX_BYTES)))
                 throw new IOException("Lottery record readback failed: " + file);
         } finally { Files.deleteIfExists(temporary); }
