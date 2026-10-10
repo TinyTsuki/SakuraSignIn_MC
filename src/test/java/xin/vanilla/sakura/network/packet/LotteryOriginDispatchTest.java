@@ -16,6 +16,9 @@ public class LotteryOriginDispatchTest {
         LotteryPoolSyncPacket.handle(new LotteryPoolSyncPacket(Collections.emptyList(), 7), context);
         context.origin = new Object(); context.queued.run(); assertSame(original, seen.get());
         seen.set(null); context = new Context(); original = context.origin;
+        LotteryDrawOutcomePacket.handle(new LotteryDrawOutcomePacket(UUID.randomUUID() + "-1"), context);
+        context.origin = new Object(); context.queued.run(); assertSame(original, seen.get());
+        seen.set(null); context = new Context(); original = context.origin;
         LotteryQuotePacket.handle(new LotteryQuotePacket(new LotteryQuote(new LotteryQuoteRequest(
                 UUID.randomUUID(), 1, 7, "daily", 1), LotteryQuote.Status.PAYMENT_UNAVAILABLE, 7, 0, "", "")), context);
         context.origin = new Object(); context.queued.run(); assertSame(original, seen.get());
@@ -32,7 +35,7 @@ public class LotteryOriginDispatchTest {
     private static void callbacks(AtomicReference<Object> seen) {
         SakuraClientPacketHandlers.register(p -> {}, p -> {}, p -> {}, p -> {}, p -> {}, p -> {},
                 (p, origin) -> seen.set(origin), (p, origin) -> seen.set(origin),
-                (p, origin) -> seen.set(origin), success -> {});
+                (p, origin) -> seen.set(origin), (p, origin) -> seen.set(origin), success -> {});
     }
     private static class Context implements BaniraNetworkContext {
         Object origin = new Object(); Runnable queued; boolean client = true, handled;

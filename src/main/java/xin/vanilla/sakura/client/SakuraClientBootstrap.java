@@ -57,6 +57,7 @@ public final class SakuraClientBootstrap {
                 ClientProxy::handleLotteryPoolSync,
                 ClientProxy::handleLotteryReveal,
                 ClientProxy::handleLotteryQuote,
+                ClientProxy::handleLotteryOutcome,
                 ClientProxy::handleRewardOptionUploadResult
         );
         BaniraClientEvents.ModLifecycle.onClientSetup(event -> {

@@ -10,6 +10,7 @@ public final class LotteryClientRequests {
     private long sequence, generation = -1;
     private LotteryQuoteRequest pending;
     private LotteryQuote quote;
+    private LotteryDrawRequest activeDraw;
 
     public LotteryClientRequests(Supplier<UUID> sessions) {
         this.sessions = sessions; clear();
@@ -17,10 +18,19 @@ public final class LotteryClientRequests {
 
     public void clear() {
         session = java.util.Objects.requireNonNull(sessions.get()); sequence = 0; generation = -1;
-        pending = null; quote = null;
+        pending = null; quote = null; activeDraw = null;
     }
 
     public long getGeneration() { return generation; }
+    public LotteryQuote getQuote() { return quote; }
+    public LotteryQuoteRequest getPending() { return pending; }
+    public boolean isDrawing() { return activeDraw != null; }
+
+    public boolean finishDraw(String operationId) {
+        if (activeDraw == null || !activeDraw.getOperationId().equals(operationId)) return false;
+        activeDraw = null;
+        return true;
+    }
 
     public boolean observeGeneration(long value) {
         if (value < 0 || value < generation) return false;
@@ -29,6 +39,7 @@ public final class LotteryClientRequests {
     }
 
     public LotteryQuoteRequest request(String poolId, int count) {
+        if (activeDraw != null) return null;
         pending = new LotteryQuoteRequest(session, Math.incrementExact(sequence), generation, poolId, count);
         sequence = pending.getRequestId();
         return pending;
@@ -42,11 +53,12 @@ public final class LotteryClientRequests {
     }
 
     public LotteryDrawRequest draw(String poolId, int count) {
-        if (pending != null || quote == null || !quote.isReady() || quote.getGeneration() != generation
+        if (activeDraw != null || pending != null || quote == null || !quote.isReady() || quote.getGeneration() != generation
                 || !quote.getRequest().getPoolId().equals(poolId) || quote.getRequest().getCount() != count) return null;
         LotteryDrawRequest draw = new LotteryDrawRequest(session, Math.incrementExact(sequence), generation,
                 poolId, count, quote.getQuoteToken());
         sequence = draw.getRequest().getRequestId(); quote = null;
+        activeDraw = draw;
         return draw;
     }
 }

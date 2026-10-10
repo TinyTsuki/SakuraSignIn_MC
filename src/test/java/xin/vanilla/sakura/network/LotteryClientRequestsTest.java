@@ -43,6 +43,15 @@ public class LotteryClientRequestsTest {
         state.request("daily", 1);
         assertNull(state.draw("daily", 1));
     }
+    @Test public void newQuoteCannotAuthorizeAnotherDrawWhilePreviousOperationIsUnconfirmed() {
+        LotteryClientRequests state = new LotteryClientRequests(() -> SESSION);
+        state.observeGeneration(7);
+        state.accept(ready(state.request("daily", 1)));
+        assertNotNull(state.draw("daily", 1));
+        LotteryQuoteRequest next = state.request("daily", 1);
+        if (next != null) state.accept(ready(next));
+        assertNull(state.draw("daily", 1));
+    }
 
     private static LotteryQuote ready(LotteryQuoteRequest request) {
         return new LotteryQuote(request, LotteryQuote.Status.READY, request.getGeneration(), 10, "paper", TOKEN);

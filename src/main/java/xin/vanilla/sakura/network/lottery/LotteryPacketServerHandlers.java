@@ -9,6 +9,7 @@ import xin.vanilla.sakura.data.lottery.*;
 import xin.vanilla.sakura.enums.ERewardRule;
 import xin.vanilla.sakura.message.SakuraMessages;
 import xin.vanilla.sakura.network.packet.LotteryQuotePacket;
+import xin.vanilla.sakura.network.packet.LotteryDrawOutcomePacket;
 import xin.vanilla.sakura.util.SakuraUtils;
 import xin.vanilla.sakura.reward.lottery.*;
 
@@ -33,6 +34,7 @@ public final class LotteryPacketServerHandlers {
         ServerPlayerEntity player = context.senderAs(ServerPlayerEntity.class);
         if (!LotteryRewardService.isCurrent(player, origin)) return;
         LotteryDrawBatchResult result = LotteryRewardService.operations(player).draw(player, request);
+        BaniraNetwork.sendToPlayer(new LotteryDrawOutcomePacket(request.getOperationId()), player);
         if (!result.isSuccess()) LotteryDrawDispatcher.notifyFailure(player, result);
     }
 }

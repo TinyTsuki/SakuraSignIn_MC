@@ -25,7 +25,7 @@ import java.util.Date;
  * Sakura 唯一网络入口；注册、发送与客户端可选握手均由 Banira 承担。
  */
 public final class SakuraNetwork {
-    public static final String PROTOCOL_VERSION = "sakura-5";
+    public static final String PROTOCOL_VERSION = "sakura-6";
     private static final NetworkHandler HANDLER = NetworkHandler.create(
             "main_network",
             BaniraIdentifier.of(SakuraSignIn.MODID, "main_network"),
@@ -95,6 +95,8 @@ public final class SakuraNetwork {
                 LotteryQuoteRequestPacket::new, LotteryQuoteRequestPacket::handle);
         HANDLER.register(LotteryQuotePacket.class, LotteryQuotePacket::toBytes,
                 LotteryQuotePacket::new, LotteryQuotePacket::handle);
+        HANDLER.register(LotteryDrawOutcomePacket.class, LotteryDrawOutcomePacket::toBytes,
+                LotteryDrawOutcomePacket::new, LotteryDrawOutcomePacket::handle);
         BaniraModPresence.register(SakuraSignIn.MODID, SakuraNetwork::syncInitialData);
         initialized = true;
     }

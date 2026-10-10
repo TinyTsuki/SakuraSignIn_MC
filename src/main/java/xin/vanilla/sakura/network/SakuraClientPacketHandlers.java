@@ -9,6 +9,7 @@ import xin.vanilla.sakura.network.packet.CommonConfigSnapshotPacket;
 import xin.vanilla.sakura.network.packet.LotteryPoolSyncPacket;
 import xin.vanilla.sakura.network.packet.LotteryRevealPacket;
 import xin.vanilla.sakura.network.packet.LotteryQuotePacket;
+import xin.vanilla.sakura.network.packet.LotteryDrawOutcomePacket;
 
 import java.util.function.Consumer;
 import java.util.function.BiConsumer;
@@ -34,6 +35,7 @@ public final class SakuraClientPacketHandlers {
     private static BiConsumer<LotteryRevealPacket, Object> lotteryReveal = (packet, origin) -> {
     };
     private static BiConsumer<LotteryQuotePacket, Object> lotteryQuote = (packet, origin) -> { };
+    private static BiConsumer<LotteryDrawOutcomePacket, Object> lotteryOutcome = (packet, origin) -> { };
     private static Consumer<Boolean> rewardUploadResult = success -> {
     };
 
@@ -49,6 +51,7 @@ public final class SakuraClientPacketHandlers {
                                 BiConsumer<LotteryPoolSyncPacket, Object> lotteryPoolsHandler,
                                 BiConsumer<LotteryRevealPacket, Object> lotteryRevealHandler,
                                 BiConsumer<LotteryQuotePacket, Object> lotteryQuoteHandler,
+                                BiConsumer<LotteryDrawOutcomePacket, Object> lotteryOutcomeHandler,
                                 Consumer<Boolean> rewardUploadResultHandler) {
         playerSummary = playerSummaryHandler;
         playerMonth = playerMonthHandler;
@@ -59,6 +62,7 @@ public final class SakuraClientPacketHandlers {
         lotteryPools = lotteryPoolsHandler;
         lotteryReveal = lotteryRevealHandler;
         lotteryQuote = lotteryQuoteHandler;
+        lotteryOutcome = lotteryOutcomeHandler;
         rewardUploadResult = rewardUploadResultHandler;
     }
 
@@ -95,6 +99,7 @@ public final class SakuraClientPacketHandlers {
     }
 
     public static void handle(LotteryQuotePacket packet, Object origin) { lotteryQuote.accept(packet, origin); }
+    public static void handle(LotteryDrawOutcomePacket packet, Object origin) { lotteryOutcome.accept(packet, origin); }
 
     public static void handleRewardUploadResult(boolean success) {
         rewardUploadResult.accept(success);

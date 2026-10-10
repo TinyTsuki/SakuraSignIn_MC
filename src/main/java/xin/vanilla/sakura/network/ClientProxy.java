@@ -173,8 +173,13 @@ public class ClientProxy {
 
     public static void handleLotteryReveal(LotteryRevealPacket packet, Object origin) {
         if (!currentConnection(origin)) return;
+        SakuraClientState.getLotteryRequests().finishDraw(packet.getOperationId());
         Minecraft.getInstance().setScreen(new LotteryRevealScreen(
                 Minecraft.getInstance().screen, packet));
+    }
+
+    public static void handleLotteryOutcome(xin.vanilla.sakura.network.packet.LotteryDrawOutcomePacket packet, Object origin) {
+        if (currentConnection(origin)) SakuraClientState.getLotteryRequests().finishDraw(packet.getOperationId());
     }
 
     private static boolean currentConnection(Object origin) {
