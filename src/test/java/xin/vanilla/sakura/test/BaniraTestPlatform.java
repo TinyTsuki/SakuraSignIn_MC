@@ -26,7 +26,7 @@ public final class BaniraTestPlatform {
                 new Class<?>[]{BaniraRegistryService.class},
                 (proxy, method, args) -> {
                     String name = method.getName();
-                    if (name.endsWith("Key")) {
+                    if (name.endsWith("Key") || name.endsWith("KeyObject")) {
                         return args[0] != null ? KEYS.get(args[0]) : null;
                     }
                     if ("item".equals(name) || "effect".equals(name)
@@ -47,7 +47,7 @@ public final class BaniraTestPlatform {
                         case "loaderType":
                             return "test";
                         case "minecraftVersion":
-                            return "1.16.5";
+                            return "1.18.2";
                         case "configDir":
                             return Paths.get("build", "test-config");
                         case "modDisplayName":

@@ -20,6 +20,16 @@ public class ConfigViewLifecycleTest {
     @Test public void retainedHistoryFollowRealFileReloadAndRebinding() throws Exception { verify(false); }
     @Test public void retainedClientCategoryFollowsRealFileReloadAndRebinding() throws Exception { verify(true); }
 
+    @Test public void clientRewardScopeIsRegisteredAfterConfigSetup() throws Exception {
+        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+                "src/main/java/xin/vanilla/sakura/client/SakuraClientBootstrap.java")), java.nio.charset.StandardCharsets.UTF_8);
+        int setup = source.indexOf("BaniraClientEvents.ModLifecycle.onClientSetup(event -> {");
+        int next = source.indexOf("BaniraClientEvents.Client.onClientTick", setup);
+        assertTrue(setup >= 0 && next > setup);
+        assertFalse(source.substring(0, setup).contains("RewardConfigManager.configureClientScope"));
+        assertTrue(source.substring(setup, next).contains("RewardConfigManager.configureClientScope"));
+    }
+
     private void verify(boolean client) throws Exception {
         Path directory = temporary.newFolder().toPath();
         install(directory, FabricBaniraConfigService.INSTANCE);
