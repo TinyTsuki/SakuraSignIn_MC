@@ -5,6 +5,7 @@ import java.util.UUID;
 import java.util.function.Supplier;
 
 public final class LotteryClientRequests {
+    private final java.util.Set<String> seenReveals = new java.util.LinkedHashSet<>();
     private final Supplier<UUID> sessions;
     private UUID session;
     private long sequence, generation = -1;
@@ -18,13 +19,22 @@ public final class LotteryClientRequests {
 
     public void clear() {
         session = java.util.Objects.requireNonNull(sessions.get()); sequence = 0; generation = -1;
-        pending = null; quote = null; activeDraw = null;
+        pending = null; quote = null; activeDraw = null; seenReveals.clear();
     }
 
     public long getGeneration() { return generation; }
     public LotteryQuote getQuote() { return quote; }
     public LotteryQuoteRequest getPending() { return pending; }
     public boolean isDrawing() { return activeDraw != null; }
+
+    public boolean acceptReveal(String operationId) {
+        if (operationId == null || operationId.isEmpty() || !seenReveals.add(operationId)) return false;
+        if (seenReveals.size() > 100) {
+            java.util.Iterator<String> oldest = seenReveals.iterator();
+            oldest.next(); oldest.remove();
+        }
+        return true;
+    }
 
     public boolean finishDraw(String operationId) {
         if (activeDraw == null || !activeDraw.getOperationId().equals(operationId)) return false;
