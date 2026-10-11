@@ -20,6 +20,15 @@ public class ConfigViewLifecycleTest {
     @Test public void retainedHistoryFollowRealFileReloadAndRebinding() throws Exception { verify(false); }
     @Test public void retainedClientCategoryFollowsRealFileReloadAndRebinding() throws Exception { verify(true); }
 
+    @Test public void lotteryScopeStartsAfterClientSetup() throws Exception {
+        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+                "src/main/java/xin/vanilla/sakura/client/SakuraClientBootstrap.java")), java.nio.charset.StandardCharsets.UTF_8);
+        int setup = source.indexOf("ModLifecycle.onClientSetup");
+        assertTrue(setup >= 0);
+        assertTrue(source.indexOf("ClientConfig.sanitizeNavigationShortcuts") > setup);
+        assertTrue(source.indexOf("configureClientScope") > setup);
+    }
+
     private void verify(boolean client) throws Exception {
         Path directory = temporary.newFolder().toPath();
         install(directory, FabricBaniraConfigService.INSTANCE);

@@ -57,10 +57,15 @@ public class LotteryDrawLimiterTest {
 
         Reward first = Reward.getDefault().setProbability(new java.math.BigDecimal("0.1"));
         Reward second = Reward.getDefault().setProbability(new java.math.BigDecimal("0.9"));
-        assertSame(second, LotteryRewardService.select(Arrays.asList(first, second),
-                new Random() {
-                    @Override public double nextDouble() { return 0.95D; }
-                }));
+        first.getContent().addProperty("selected", "first"); second.getContent().addProperty("selected", "second");
+        pool.setRewards(new xin.vanilla.sakura.reward.RewardList(Arrays.asList(first, second)));
+        xin.vanilla.sakura.data.lottery.LotteryOperation selected = xin.vanilla.sakura.data.lottery.LotteryOperation.prepare(
+                java.util.UUID.randomUUID(), new xin.vanilla.sakura.data.lottery.LotteryDrawRequest(java.util.UUID.randomUUID(),
+                        1, 0, pool.getId(), 1, java.util.UUID.randomUUID().toString()), pool, 1, 1, 100,
+                java.util.UUID.randomUUID().toString()).paying().paid(
+                xin.vanilla.banira.api.cost.CostPaymentPlan.ready(1, java.util.Collections.emptyList(),
+                        java.util.Collections.emptyList()).paid().withSnapshots(java.util.Collections.emptyList())).selectRewards();
+        assertEquals("second", selected.getRewards().get(0).getContent().get("selected").getAsString());
     }
 
     @Test

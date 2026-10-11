@@ -36,7 +36,6 @@ public final class SakuraClientBootstrap {
             return;
         }
 
-        ClientConfig.sanitizeNavigationShortcuts();
         BaniraThemes.register(SakuraSignIn.MODID,
                 () -> ClientConfig.get().display().interfaceThemeMode());
         BuiltInRewardClientTypes.register();
@@ -54,15 +53,21 @@ public final class SakuraClientBootstrap {
                 ClientProxy::handleCommonConfigSnapshot,
                 ClientProxy::handleLotteryPoolSync,
                 ClientProxy::handleLotteryReveal,
+                ClientProxy::handleLotteryQuote,
+                ClientProxy::handleLotteryOutcome,
                 ClientProxy::handleRewardOptionUploadResult
         );
         BaniraClientEvents.ModLifecycle.onClientSetup(event -> {
+            ClientConfig.sanitizeNavigationShortcuts();
+            xin.vanilla.sakura.config.reward.RewardConfigManager.configureClientScope(
+                    () -> net.minecraft.client.Minecraft.getInstance().isSameThread());
             SakuraClientNotificationTypes.register();
             ClientEventHandler.loadThemeTexture();
         });
         BaniraClientEvents.Client.onClientTick(event -> {
             SakuraNetworkSmokeClientRunner.tick();
             ClientProxy.expireMonthTransfers();
+            ClientProxy.expireLotteryTransfers();
             if (REWARD_TYPES_FROZEN.compareAndSet(false, true)) {
                 SakuraRewardClient.freeze();
             }
@@ -70,6 +75,7 @@ public final class SakuraClientBootstrap {
         });
         BaniraClientEvents.Player.onClientLoggedOut(event -> {
             ClientProxy.clearMonthTransfers();
+            ClientProxy.clearLotteryTransfers();
             SakuraClientState.clearSession();
             SakuraPlayerData.clearClient();
         });

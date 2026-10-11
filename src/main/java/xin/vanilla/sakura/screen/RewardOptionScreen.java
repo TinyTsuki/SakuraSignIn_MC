@@ -45,6 +45,7 @@ import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.lwjgl.opengl.GL11;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.client.SakuraClientState;
 import xin.vanilla.sakura.client.gui.RewardListEntryWidget;
@@ -100,6 +101,23 @@ import java.util.stream.Collectors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 public class RewardOptionScreen extends BaniraScreen {
+    private boolean editsPending;
+    private void saveEditor() {
+        RewardConfigManager.saveRewardOption(); editsPending = true;
+    }
+    private boolean uploadEditorSnapshot() {
+        LocalPlayer player = Minecraft.getInstance().player;
+        long generation = SakuraClientState.getLotteryRequests().getGeneration();
+        if (player == null || !SakuraClientState.isEnabled() || generation < 0
+                || !player.hasPermissions(CommonConfig.get().permission().permissionEditReward())) return false;
+        SakuraNetwork.sendSplitToServer(new LotteryPoolSyncPacket(RewardConfigManager.getRewardConfig(), generation));
+        editsPending = false; return true;
+    }
+    @Override protected void onClosed() {
+        if (Minecraft.getInstance().isLocalServer() && editsPending) uploadEditorSnapshot();
+        super.onClosed();
+    }
+
     private static final Logger LOGGER = LogManager.getLogger();
     private static final String REWARD_TYPE_OPTION_PREFIX = "reward-type:";
     private static final ERewardRule[] REWARD_RULES = {
@@ -682,7 +700,7 @@ public class RewardOptionScreen extends BaniraScreen {
         for (DraggedReward reward : moving) {
             RewardConfigManager.addReward(rule, targetKey, reward.reward());
         }
-        RewardConfigManager.saveRewardOption();
+        saveEditor();
         rewardSelection.clear();
         updateLayout();
     }
@@ -1004,36 +1022,13 @@ public class RewardOptionScreen extends BaniraScreen {
             ));
             flag.set(true);
         }
-        // 上传奖励配置
         else if (value.getOperation() == OperationButtonType.UPLOAD.getCode()) {
-            // 仅管理员可上传
-            if (!Minecraft.getInstance().isLocalServer()) {
-                LocalPlayer player = Minecraft.getInstance().player;
-                if (player != null) {
-                    if (player.hasPermissions(CommonConfig.get().permission().permissionEditReward())) {
-                        SakuraNetwork.sendSplitToServer(RewardConfigManager.toSyncPacket(player));
-                        if (!RewardConfigManager.isRuleRedacted(
-                                ERewardRule.PERSONAL_DATE_REWARD)) {
-                            SakuraNetwork.sendSplitToServer(new PersonalDatePresetSyncPacket(
-                                    RewardConfigManager.getRewardConfig()
-                                            .getPersonalDatePresets()));
-                        }
-                        if (!RewardConfigManager.isRuleRedacted(ERewardRule.LOTTERY_REWARD)) {
-                            SakuraNetwork.sendSplitToServer(new LotteryPoolSyncPacket(
-                                    RewardConfigManager.getRewardConfig().getLotteryPools()));
-                        }
-                        flag.set(true);
-                    }
-                }
-            } else {
-                Component component = SakuraComponent.get().trans("word", "local_server_not_support_this_operation");
-                SakuraClientNotifications.warning(component, SakuraNotificationTypes.REWARD);
-            }
+            if (uploadEditorSnapshot()) flag.set(true);
         }
         // 下载奖励配置
         else if (value.getOperation() == OperationButtonType.DOWNLOAD.getCode()) {
             if (button == GLFWKey.GLFW_MOUSE_BUTTON_LEFT) {
-                if (!Minecraft.getInstance().isLocalServer()) {
+                if (SakuraClientState.isEnabled()) {
                     // 备份签到奖励配置
                     RewardConfigManager.backupRewardOption();
                     // 同步签到奖励配置到客户端
@@ -1048,7 +1043,7 @@ public class RewardOptionScreen extends BaniraScreen {
         // 排序
         else if (value.getOperation() == OperationButtonType.SORT.getCode()) {
             RewardConfigManager.sortRewards();
-            RewardConfigManager.saveRewardOption();
+            saveEditor();
             updateLayout.set(true);
             flag.set(true);
         }
@@ -1083,7 +1078,7 @@ public class RewardOptionScreen extends BaniraScreen {
         RewardConfigManager.addUndoRewardOption(rule);
         RewardConfigManager.clearRedoList();
         RewardConfigManager.setRewardMap(RewardConfigManager.getRewardConfig(), rule, mergedGroups);
-        RewardConfigManager.saveRewardOption();
+        saveEditor();
         rewardSelection.clear();
         currRewardButton = null;
         return true;
@@ -1360,7 +1355,7 @@ public class RewardOptionScreen extends BaniraScreen {
                     RewardConfigManager.addUndoRewardOption(rule);
                     RewardConfigManager.clearRedoList();
                     RewardConfigManager.clearKey(rule, key);
-                    RewardConfigManager.saveRewardOption();
+                    saveEditor();
                     updateLayout();
                 });
             } else if ("delete".equals(optionId)) {
@@ -1421,7 +1416,7 @@ public class RewardOptionScreen extends BaniraScreen {
             RewardConfigManager.addUndoRewardOption(rule);
             RewardConfigManager.clearRedoList();
             RewardConfigManager.addReward(rule, groupKeyForSave(rule, groupKey), reward);
-            RewardConfigManager.saveRewardOption();
+            saveEditor();
             updateLayout();
         };
         if (groupKey != null || rule == ERewardRule.BASE_REWARD) {
@@ -1435,7 +1430,7 @@ public class RewardOptionScreen extends BaniraScreen {
                     RewardConfigManager.addUndoRewardOption(rule);
                     RewardConfigManager.clearRedoList();
                     RewardConfigManager.addReward(rule, createdKey[0], reward);
-                    RewardConfigManager.saveRewardOption();
+                    saveEditor();
                     updateLayout();
                 }),
                 () -> StringUtils.isNotNullOrEmpty(createdKey[0])
@@ -1461,7 +1456,7 @@ public class RewardOptionScreen extends BaniraScreen {
             RewardConfigManager.addUndoRewardOption(rule);
             RewardConfigManager.clearRedoList();
             RewardConfigManager.updateReward(rule, key, index, updated);
-            RewardConfigManager.saveRewardOption();
+            saveEditor();
             updateLayout();
         });
     }
@@ -1523,7 +1518,7 @@ public class RewardOptionScreen extends BaniraScreen {
                             RewardConfigManager.updateKeyName(rule, key,
                                     String.format("%s|%s|-1|%d", input.get(0), input.get(1),
                                             NumberUtils.toInt(input.get(2), 1)));
-                            RewardConfigManager.saveRewardOption();
+                            saveEditor();
                         }
                         return result;
                     }));
@@ -1544,7 +1539,7 @@ public class RewardOptionScreen extends BaniraScreen {
                         RewardConfigManager.addUndoRewardOption(rule);
                         RewardConfigManager.clearRedoList();
                         RewardConfigManager.updateKeyName(rule, key, normalized);
-                        RewardConfigManager.saveRewardOption();
+                        saveEditor();
                     } else {
                         result.add(SakuraComponent.get().transClient(
                                 "format", "reward_rule_s_error", input.get(0)).toString());
@@ -1567,7 +1562,7 @@ public class RewardOptionScreen extends BaniraScreen {
                                 .set(index, candidate);
                     }
                     createdKey[0] = candidate.getId();
-                    RewardConfigManager.saveRewardOption();
+                    saveEditor();
                     updateLayout();
                 });
     }
@@ -1587,7 +1582,7 @@ public class RewardOptionScreen extends BaniraScreen {
                                 .set(index, candidate);
                     }
                     createdKey[0] = candidate.getId();
-                    RewardConfigManager.saveRewardOption();
+                    saveEditor();
                     updateLayout();
                 });
     }
@@ -1598,7 +1593,7 @@ public class RewardOptionScreen extends BaniraScreen {
             RewardConfigManager.addUndoRewardOption(rule);
             RewardConfigManager.clearRedoList();
             RewardConfigManager.updateReward(rule, key, index, updated);
-            RewardConfigManager.saveRewardOption();
+            saveEditor();
             updateLayout();
         });
     }
@@ -1678,7 +1673,7 @@ public class RewardOptionScreen extends BaniraScreen {
             default:
                 return;
         }
-        RewardConfigManager.saveRewardOption();
+        saveEditor();
         updateLayout();
     }
 
@@ -1889,7 +1884,7 @@ public class RewardOptionScreen extends BaniraScreen {
                 RewardList rewardList = RewardConfigManager.getKeyName(rule, key).clone();
                 RewardClipboardManager.setClipboard(rewardList, key);
                 RewardConfigManager.deleteKey(rule, key);
-                RewardConfigManager.saveRewardOption();
+                saveEditor();
             }
             // 普通按钮
             else {
@@ -1898,7 +1893,7 @@ public class RewardOptionScreen extends BaniraScreen {
                 Reward reward = RewardConfigManager.getReward(rule, key, Integer.parseInt(index)).clone();
                 RewardClipboardManager.setClipboard(reward, key);
                 RewardConfigManager.deleteReward(rule, key, Integer.parseInt(index));
-                RewardConfigManager.saveRewardOption();
+                saveEditor();
             }
             updateLayout();
             return true;
@@ -1958,7 +1953,7 @@ public class RewardOptionScreen extends BaniraScreen {
                                     RewardConfigManager.clearRedoList();
                                     RewardList rewardList = RewardClipboardManager.deSerializeRewardList().toRewardList();
                                     RewardConfigManager.addKeyName(rule, String.format("%s|%s|-1|%d", input.get(0), input.get(1), NumberUtils.toInt(input.get(2), 1)), rewardList);
-                                    RewardConfigManager.saveRewardOption();
+                                    saveEditor();
                                 }
                             }
                             return result;
@@ -1978,7 +1973,7 @@ public class RewardOptionScreen extends BaniraScreen {
                                     RewardConfigManager.clearRedoList();
                                     RewardList rewardList = RewardClipboardManager.deSerializeRewardList().toRewardList();
                                     RewardConfigManager.addKeyName(rule, normalized, rewardList);
-                                    RewardConfigManager.saveRewardOption();
+                                    saveEditor();
                                 } else {
                                     result.add(SakuraComponent.get().transClient("format", "reward_rule_s_error", input.get(0)).toString());
                                 }
@@ -1990,7 +1985,7 @@ public class RewardOptionScreen extends BaniraScreen {
                         RewardConfigManager.clearRedoList();
                         RewardList rewardList = RewardClipboardManager.deSerializeRewardList().toRewardList();
                         RewardConfigManager.addKeyName(rule, "", rewardList);
-                        RewardConfigManager.saveRewardOption();
+                        saveEditor();
                     }
 
                 }
@@ -2000,7 +1995,7 @@ public class RewardOptionScreen extends BaniraScreen {
                     RewardConfigManager.clearRedoList();
                     RewardList rewardList = RewardClipboardManager.deSerializeRewardList().toRewardList();
                     RewardConfigManager.addKeyName(rule, key, rewardList);
-                    RewardConfigManager.saveRewardOption();
+                    saveEditor();
                 }
                 // 普通按钮
                 else {
@@ -2009,7 +2004,7 @@ public class RewardOptionScreen extends BaniraScreen {
                     for (Reward reward : RewardClipboardManager.deSerializeRewardList()) {
                         RewardConfigManager.addReward(rule, key, reward);
                     }
-                    RewardConfigManager.saveRewardOption();
+                    saveEditor();
                 }
                 updateLayout();
                 return true;
@@ -2029,7 +2024,7 @@ public class RewardOptionScreen extends BaniraScreen {
             RewardConfigManager.addUndoRewardOption(rule);
             RewardConfigManager.clearRedoList();
             RewardConfigManager.addKeyName(rule, "base", rewards);
-            RewardConfigManager.saveRewardOption();
+            saveEditor();
             updateLayout();
             return true;
         }
@@ -2057,7 +2052,7 @@ public class RewardOptionScreen extends BaniraScreen {
                     RewardConfigManager.addReward(rule, groupKey, reward.clone());
                 }
             }
-            RewardConfigManager.saveRewardOption();
+            saveEditor();
             updateLayout();
             return true;
         }
@@ -2082,14 +2077,14 @@ public class RewardOptionScreen extends BaniraScreen {
                 } else {
                     RewardConfigManager.deleteKey(rule, key);
                 }
-                RewardConfigManager.saveRewardOption();
+                saveEditor();
             }
             // 普通按钮
             else {
                 RewardConfigManager.addUndoRewardOption(rule);
                 RewardConfigManager.clearRedoList();
                 RewardConfigManager.deleteReward(rule, key, Integer.parseInt(index));
-                RewardConfigManager.saveRewardOption();
+                saveEditor();
             }
             updateLayout();
             return true;
@@ -2119,7 +2114,7 @@ public class RewardOptionScreen extends BaniraScreen {
                     RewardConfigManager.deleteReward(rule, groupKey, rewardIndex);
                 }
             });
-            RewardConfigManager.saveRewardOption();
+            saveEditor();
             rewardSelection.clear();
             currRewardButton = null;
             updateLayout();
@@ -2135,7 +2130,7 @@ public class RewardOptionScreen extends BaniraScreen {
             if (!map.isEmpty()) {
                 RewardConfigManager.addRedoRewardOption(rule);
                 RewardConfigManager.setRewardMap(RewardConfigManager.getRewardConfig(), rule, map);
-                RewardConfigManager.saveRewardOption();
+                saveEditor();
                 updateLayout();
                 return true;
             }
@@ -2152,7 +2147,7 @@ public class RewardOptionScreen extends BaniraScreen {
             if (!map.isEmpty()) {
                 RewardConfigManager.addUndoRewardOption(rule);
                 RewardConfigManager.setRewardMap(RewardConfigManager.getRewardConfig(), rule, map);
-                RewardConfigManager.saveRewardOption();
+                saveEditor();
                 updateLayout();
                 return true;
             }

@@ -68,6 +68,17 @@ public class RewardAddPermissionEnforcementTest {
                 RewardAddPermissionChecker.requiredAddedTypes(config(), config(reward(unknown, "coin"))));
     }
 
+    @Test
+    public void lotteryRewardsRequireTheSameAddedTypePermissions() {
+        RewardConfig candidate = config();
+        candidate.getLotteryPools().add(new xin.vanilla.sakura.data.lottery.LotteryPool(
+                "daily", "Daily", xin.vanilla.sakura.data.lottery.LotteryLimitPolicy.DAILY,
+                1, 0, new xin.vanilla.sakura.reward.RewardList(Collections.singletonList(
+                reward(SakuraRewardTypes.COMMAND, "command")))));
+        assertEquals(Collections.singletonList(SakuraRewardTypes.COMMAND),
+                RewardAddPermissionChecker.requiredAddedTypes(config(), candidate));
+    }
+
     private static RewardConfig config(Reward... rewards) {
         RewardConfig result = new RewardConfig();
         Collections.addAll(result.getBaseRewards(), rewards);
