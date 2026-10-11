@@ -47,14 +47,27 @@ public final class FabricSakuraGameEventAdapter {
         if (!REGISTERED.compareAndSet(false, true)) {
             return;
         }
+        xin.vanilla.sakura.reward.lottery.LotteryRewardService.install(
+                xin.vanilla.sakura.internal.fabric.lottery.FabricLotteryServices::get,
+                xin.vanilla.sakura.internal.fabric.lottery.FabricLotteryServices::isCurrent);
+        net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
+            xin.vanilla.sakura.network.packet.LotteryPoolSyncPacket.clearServerTransfers();
+            xin.vanilla.sakura.reward.lottery.PendingLotteryDraws.clear();
+            try { xin.vanilla.sakura.internal.fabric.lottery.FabricLotteryServices.stop(); }
+            catch (Exception failure) { LOGGER.error("Lottery operation flush failed", failure); }
+        });
         CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) ->
                 SignInCommand.register(dispatcher));
         ServerPlayerEvents.AFTER_RESPAWN.register((original, replacement, alive) ->
                 onPlayerCloned(original, replacement));
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
                 onPlayerLoggedIn(handler.player));
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
-                SakuraPlayerData.removeServer(handler.player.getUUID()));
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            xin.vanilla.sakura.internal.fabric.lottery.FabricLotteryServices.disconnect(handler.player);
+            xin.vanilla.sakura.network.packet.LotteryPoolSyncPacket.removeServerTransfer(handler);
+            xin.vanilla.sakura.reward.lottery.PendingLotteryDraws.remove(handler.player.getUUID());
+            SakuraPlayerData.removeServer(handler.player.getUUID());
+        });
         ServerTickEvents.END_SERVER_TICK.register(FabricSakuraGameEventAdapter::onServerTick);
     }
 
@@ -77,6 +90,7 @@ public final class FabricSakuraGameEventAdapter {
         }
         Date now = RewardManager.getCompensateDate(SakuraClock.serverNow());
         normalizeOnlineTime(player, now);
+        xin.vanilla.sakura.internal.fabric.lottery.FabricLotteryServices.get(player).recover(player);
         deliverOnlineRewards(player);
         waitForClientSettings(player, 0);
     }
@@ -125,6 +139,7 @@ public final class FabricSakuraGameEventAdapter {
     }
 
     private static void onServerTick(MinecraftServer server) {
+        xin.vanilla.sakura.network.packet.LotteryPoolSyncPacket.expireServerTransfers();
         Date now = RewardManager.getCompensateDate(SakuraClock.serverNow());
         LocalDate day = now.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
         if (!ONLINE_REWARD_CHECK.shouldCheck(server.getTickCount(), day)) {
