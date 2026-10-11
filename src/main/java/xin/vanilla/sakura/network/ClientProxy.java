@@ -37,6 +37,10 @@ import java.util.Optional;
 public class ClientProxy {
     public static final Logger LOGGER = LogManager.getLogger();
     private static final MonthDataTransfer.Receiver MONTHS = new MonthDataTransfer.Receiver(System::nanoTime);
+    private static final xin.vanilla.sakura.network.lottery.LotteryPoolReceiver LOTTERY =
+            new xin.vanilla.sakura.network.lottery.LotteryPoolReceiver(System::nanoTime);
+    public static void expireLotteryTransfers() { LOTTERY.expire(); }
+    public static void clearLotteryTransfers() { LOTTERY.clear(); }
 
     public static void expireMonthTransfers() { MONTHS.expire(); }
 
@@ -149,15 +153,38 @@ public class ClientProxy {
         RewardConfigManager.saveRewardOption();
     }
 
-    public static void handleLotteryPoolSync(LotteryPoolSyncPacket packet) {
+    public static void handleLotteryPoolSync(LotteryPoolSyncPacket packet, Object origin) {
+        if (!currentConnection(origin) || packet.getGeneration() < SakuraClientState.getLotteryRequests().getGeneration()) return;
+        LotteryPoolSyncPacket complete;
+        try { complete = LOTTERY.accept(origin, packet); }
+        catch (IllegalArgumentException failure) {
+            LOTTERY.remove(origin); LOGGER.warn("Rejected lottery snapshot", failure); return;
+        }
+        if (complete == null || !SakuraClientState.getLotteryRequests().observeGeneration(complete.getGeneration())) return;
         RewardConfigManager.getRewardConfig().setLotteryPools(
-                LotteryPools.copy(packet.getPools()));
+                complete.getPools());
         RewardConfigManager.setRewardOptionDataChanged(true);
         RewardConfigManager.saveRewardOption();
     }
 
-    public static void handleLotteryReveal(LotteryRevealPacket packet) {
+    public static void handleLotteryQuote(xin.vanilla.sakura.network.packet.LotteryQuotePacket packet, Object origin) {
+        if (currentConnection(origin)) SakuraClientState.getLotteryRequests().accept(packet.getQuote());
+    }
+
+    public static void handleLotteryReveal(LotteryRevealPacket packet, Object origin) {
+        if (!currentConnection(origin)
+                || !SakuraClientState.getLotteryRequests().acceptReveal(packet.getOperationId())) return;
+        SakuraClientState.getLotteryRequests().finishDraw(packet.getOperationId());
         Minecraft.getInstance().setScreen(new LotteryRevealScreen(
                 Minecraft.getInstance().screen, packet));
+    }
+
+    public static void handleLotteryOutcome(xin.vanilla.sakura.network.packet.LotteryDrawOutcomePacket packet, Object origin) {
+        if (currentConnection(origin)) SakuraClientState.getLotteryRequests().finishDraw(packet.getOperationId());
+    }
+
+    private static boolean currentConnection(Object origin) {
+        return origin != null && Minecraft.getInstance().getConnection() != null
+                && Minecraft.getInstance().getConnection().getConnection() == origin;
     }
 }
