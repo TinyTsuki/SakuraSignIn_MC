@@ -37,6 +37,39 @@ public class LotteryPaymentIntegrationTest {
         return new LotteryDrawRequest(session, 2, 3, "daily", quote.getRequest().getCount(), quote.getQuoteToken());
     }
 
+    @Test public void presenceHookReplaysRecoveredDisplayWithoutRebilling() throws Exception {
+        LotteryOperationService service = service();
+        LotteryRewardService.install(player -> service, (player, origin) -> true);
+        try {
+            runtime.clientPresent = false;
+            LotteryQuote quote = quote(service, 2);
+            LotteryDrawRequest request = draw(quote);
+            assertTrue(service.draw(actor, request).isSuccess());
+            LotteryOperation saved = repository.load(actor.id, request.getOperationId());
+            assertFalse(saved.isAcknowledged());
+            service.recover(actor);
+            assertTrue(runtime.displays.isEmpty());
+            runtime.clientPresent = true;
+            LotteryRewardService.class.getMethod("recover", Object.class).invoke(null, actor);
+            LotteryRewardService.class.getMethod("recover", Object.class).invoke(null, actor);
+            assertEquals(Arrays.asList(saved.getOperationId(), saved.getOperationId()), runtime.displays);
+            assertEquals(6, actor.points);
+            assertEquals(Arrays.asList(2, 1), runtime.grants);
+            assertEquals(2, runtime.state.getTotalDraws());
+            service.acknowledge(actor, saved.getOperationId(), saved.getDisplayToken());
+            LotteryRewardService.class.getMethod("recover", Object.class).invoke(null, actor);
+            assertTrue(repository.load(actor.id, saved.getOperationId()).isAcknowledged());
+            assertEquals(2, runtime.displays.size());
+        } finally { LotteryRewardService.install(player -> null, (player, origin) -> false); }
+    }
+
+    @Test public void initialSyncRetriesRecoveryAfterPresence() throws Exception {
+        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+                "src/main/java/xin/vanilla/sakura/network/SakuraNetwork.java")), java.nio.charset.StandardCharsets.UTF_8);
+        int sync = source.indexOf("private static void syncInitialData");
+        assertTrue(source.substring(sync).contains("LotteryRewardService.recover(player)"));
+    }
+
     @Test public void duplicateDrawBillsGrantsAndAdvancesQuotaOnce() throws Exception {
         LotteryOperationService service = service(); LotteryQuote quote = quote(service, 2);
         assertTrue(quote.isReady()); assertEquals(0, seeds); assertEquals(10, actor.points);
@@ -270,7 +303,8 @@ public class LotteryPaymentIntegrationTest {
     final class Runtime implements LotteryOperationService.Runtime {
         LotteryPool pool = LotteryOperationTest.pool(); LotteryDrawState state = new LotteryDrawState("daily");
         final List<Integer> grants = new ArrayList<>();
-        boolean preflight = true, grantThrows, failQuota, failNotify;
+        boolean preflight = true, grantThrows, failQuota, failNotify, clientPresent = true;
+        final List<String> displays = new ArrayList<>();
         public UUID playerId(Object player) { return ((Actor) player).id; }
         public Object connection(Object player) { return ((Actor) player).live ? ((Actor) player).connection : null; }
         public boolean permitted(Object player) { return ((Actor) player).permitted; }
@@ -313,6 +347,7 @@ public class LotteryPaymentIntegrationTest {
         }
         public void completed(Object player, LotteryOperation operation, LotteryDrawBatchResult result, boolean recovered) {
             if (failNotify) throw new IllegalStateException("injected notification");
+            if (clientPresent) displays.add(operation.getOperationId());
         }
     }
     static final class FailingRepository implements LotteryOperationRepository {
