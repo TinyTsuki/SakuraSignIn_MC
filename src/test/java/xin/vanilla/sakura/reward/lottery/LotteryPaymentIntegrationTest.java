@@ -70,6 +70,20 @@ public class LotteryPaymentIntegrationTest {
         assertTrue(source.substring(sync).contains("LotteryRewardService.recover(player)"));
     }
 
+    @Test public void paidRecoveryEmitsEachCompletedDisplayOncePerCall() throws Exception {
+        LotteryOperationService service = service();
+        repository.failResults = true;
+        LotteryDrawRequest request = draw(quote(service, 2));
+        assertFalse(service.draw(actor, request).isSuccess());
+        assertTrue(runtime.displays.isEmpty());
+        repository.failResults = false;
+        service().recover(actor);
+        assertEquals(Collections.singletonList(request.getOperationId()), runtime.displays);
+        assertEquals(6, actor.points);
+        assertEquals(Arrays.asList(2, 1), runtime.grants);
+        assertEquals(2, runtime.state.getTotalDraws());
+    }
+
     @Test public void duplicateDrawBillsGrantsAndAdvancesQuotaOnce() throws Exception {
         LotteryOperationService service = service(); LotteryQuote quote = quote(service, 2);
         assertTrue(quote.isReady()); assertEquals(0, seeds); assertEquals(10, actor.points);

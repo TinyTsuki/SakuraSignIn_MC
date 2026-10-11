@@ -233,14 +233,19 @@ public final class LotteryOperationService {
         requireOwner(); if (!live(player) || !runtime.permitted(player)) return; UUID id = runtime.playerId(player);
         if (blocked.contains(id)) return;
         try {
-            for (LotteryOperation operation : repository.incomplete(id)) finish(player, operation, true);
+            Set<String> emitted = new HashSet<>();
+            for (LotteryOperation operation : repository.incomplete(id)) {
+                if (finish(player, operation, true).isSuccess()) emitted.add(operation.getOperationId());
+            }
             List<LotteryOperation> completed = repository.list(id);
             completed.removeIf(op -> op.getStage() != LotteryOperation.Stage.COMPLETED || op.isAcknowledged());
             if (!completed.isEmpty()) {
                 completed.sort(Comparator.comparingLong(LotteryOperation::getCreatedAt));
                 LotteryOperation latest = completed.get(completed.size() - 1);
-                try { runtime.completed(player, latest, result(latest), true); }
-                catch (RuntimeException followUp) { LOGGER.error("Lottery recovery display failed", followUp); }
+                if (!emitted.contains(latest.getOperationId())) {
+                    try { runtime.completed(player, latest, result(latest), true); }
+                    catch (RuntimeException followUp) { LOGGER.error("Lottery recovery display failed", followUp); }
+                }
             }
         } catch (IOException | RuntimeException failure) { unavailable(id, failure); }
     }

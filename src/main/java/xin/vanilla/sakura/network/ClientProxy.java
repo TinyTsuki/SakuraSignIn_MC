@@ -172,7 +172,8 @@ public class ClientProxy {
     }
 
     public static void handleLotteryReveal(LotteryRevealPacket packet, Object origin) {
-        if (!currentConnection(origin)) return;
+        if (!currentConnection(origin)
+                || !SakuraClientState.getLotteryRequests().acceptReveal(packet.getOperationId())) return;
         SakuraClientState.getLotteryRequests().finishDraw(packet.getOperationId());
         Minecraft.getInstance().setScreen(new LotteryRevealScreen(
                 Minecraft.getInstance().screen, packet));
