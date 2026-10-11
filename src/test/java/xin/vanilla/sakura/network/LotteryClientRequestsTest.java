@@ -53,6 +53,41 @@ public class LotteryClientRequestsTest {
         assertNull(state.draw("daily", 1));
     }
 
+    @Test public void repeatedRevealsStayIdempotentUntilClientSessionIsCleared() throws Exception {
+        LotteryClientRequests state = new LotteryClientRequests(() -> SESSION);
+        java.lang.reflect.Method accept = LotteryClientRequests.class.getMethod("acceptReveal", String.class);
+        String first = SESSION + "-1", second = SESSION + "-2";
+        assertEquals(true, accept.invoke(state, first));
+        assertEquals(false, accept.invoke(state, first));
+        state.finishDraw(first);
+        state.observeGeneration(10);
+        assertEquals(true, accept.invoke(state, second));
+        assertEquals(false, accept.invoke(state, first));
+        assertEquals(false, accept.invoke(state, second));
+        state.clear();
+        assertEquals(true, accept.invoke(state, first));
+    }
+
+    @Test public void revealHistoryIsBoundedAndRejectsEmptyIdentifiers() throws Exception {
+        LotteryClientRequests state = new LotteryClientRequests(() -> SESSION);
+        java.lang.reflect.Method accept = LotteryClientRequests.class.getMethod("acceptReveal", String.class);
+        assertEquals(false, accept.invoke(state, new Object[]{null}));
+        assertEquals(false, accept.invoke(state, ""));
+        for (int i = 0; i < 101; i++) assertEquals(true, accept.invoke(state, SESSION + "-" + i));
+        java.lang.reflect.Field history = LotteryClientRequests.class.getDeclaredField("seenReveals");
+        history.setAccessible(true);
+        assertEquals(100, ((java.util.Set<?>) history.get(state)).size());
+        assertEquals(false, accept.invoke(state, SESSION + "-100"));
+    }
+
+    @Test public void clientDisplayEntryUsesTheSessionDeduplicator() throws Exception {
+        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+                "src/main/java/xin/vanilla/sakura/network/ClientProxy.java")), java.nio.charset.StandardCharsets.UTF_8);
+        int begin = source.indexOf("public static void handleLotteryReveal");
+        int end = source.indexOf("public static void handleLotteryOutcome", begin);
+        assertTrue(source.substring(begin, end).contains("acceptReveal(packet.getOperationId())"));
+    }
+
     private static LotteryQuote ready(LotteryQuoteRequest request) {
         return new LotteryQuote(request, LotteryQuote.Status.READY, request.getGeneration(), 10, "paper", TOKEN);
     }
