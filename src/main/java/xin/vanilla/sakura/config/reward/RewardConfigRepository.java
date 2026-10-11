@@ -90,6 +90,7 @@ public final class RewardConfigRepository {
     private int schemaVersion(String json) throws IOException {
         try {
             JsonObject root = new JsonParser().parse(json).getAsJsonObject();
+            RewardConfigCodec.validateLotteryFormat(root);
             return root.has("schemaVersion") ? root.get("schemaVersion").getAsInt() : 0;
         } catch (JsonParseException | IllegalStateException e) {
             throw new IOException("Invalid reward configuration JSON", e);

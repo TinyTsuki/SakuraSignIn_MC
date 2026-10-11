@@ -10,6 +10,7 @@ import xin.vanilla.sakura.network.packet.LotteryRevealPacket;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
 import xin.vanilla.sakura.reward.Reward;
 import xin.vanilla.sakura.util.SakuraUtils;
+import xin.vanilla.sakura.data.lottery.LotteryOperation;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -23,39 +24,31 @@ public final class LotteryDrawDispatcher {
 
     public static LotteryDrawBatchResult draw(ServerPlayer player, String poolId,
                                               int count) {
-        boolean animated = BaniraModPresence.isRemoteClientInstalled(player, SakuraSignIn.MODID);
-        if (animated) {
-            PendingLotteryDraws.Pending existing = PendingLotteryDraws.get(player);
-            if (existing != null) {
-                sendReveal(player, existing);
-                return existing.getResult();
-            }
-        }
-        LotteryDrawBatchResult result = animated
-                ? LotteryRewardService.prepareMany(player, poolId, count)
-                : LotteryRewardService.drawMany(player, poolId, count);
-        if (result.isSuccess()) {
-            if (animated) {
-                sendReveal(player, PendingLotteryDraws.put(player, result));
-            } else {
-                notifySuccess(player, result);
-            }
-            return result;
-        }
-        notifyFailure(player, result);
+        LotteryDrawBatchResult result = LotteryRewardService.drawMany(player, poolId, count);
+        if (!result.isSuccess()) notifyFailure(player, result);
         return result;
     }
-
-    public static void claim(ServerPlayer player, String token) {
-        LotteryDrawBatchResult result = PendingLotteryDraws.claim(player, token);
-        if (result == null) return;
-        if (result.isSuccess()) notifySuccess(player, result);
-        else notifyFailure(player, result);
+    public static void completed(ServerPlayer player, LotteryOperation operation,
+                                 LotteryDrawBatchResult result, boolean recovered) {
+        if (!recovered) notifySuccess(player, result);
+        if (BaniraModPresence.isRemoteClientInstalled(player, SakuraSignIn.MODID)) {
+                try {
+                    PendingLotteryDraws.Pending pending = PendingLotteryDraws.put(player.getUUID(), operation.getOperationId(), operation.getDisplayToken());
+                    sendReveal(player, pending, result);
+                } catch (IllegalArgumentException failure) {
+                    PendingLotteryDraws.remove(player.getUUID());
+                }
+        }
     }
 
-    private static void sendReveal(ServerPlayer player, PendingLotteryDraws.Pending pending) {
-        LotteryDrawBatchResult result = pending.getResult();
-        SakuraNetwork.sendToPlayer(new LotteryRevealPacket(pending.getToken(),
+    public static void acknowledge(ServerPlayer player, String operationId, String token) {
+        LotteryRewardService.operations(player).acknowledge(player, operationId, token);
+        PendingLotteryDraws.acknowledge(player.getUUID(), operationId, token);
+    }
+
+    private static void sendReveal(ServerPlayer player, PendingLotteryDraws.Pending pending,
+                                    LotteryDrawBatchResult result) {
+        SakuraNetwork.sendToPlayer(new LotteryRevealPacket(pending.getOperationId(), pending.getToken(),
                 result.getPool().getDisplayName(), result.getRewards(), preview(result),
                 result.getPool().getPreviewMode()), player);
     }
@@ -68,8 +61,19 @@ public final class LotteryDrawDispatcher {
                 "lottery_draw_success_s", rewards), SakuraNotificationTypes.REWARD);
     }
 
-    private static void notifyFailure(ServerPlayer player, LotteryDrawBatchResult result) {
+    public static void notifyFailure(ServerPlayer player, LotteryDrawBatchResult result) {
         switch (result.getStatus()) {
+            case OPERATION_PENDING:
+            case OPERATION_UNCERTAIN:
+                xin.vanilla.banira.common.data.Component pending = SakuraComponent.get().trans(player, "word",
+                        "enum_lottery_draw_status_" + result.getStatus().name().toLowerCase(java.util.Locale.ROOT));
+                SakuraMessages.send(player, result.getRewards().isEmpty() ? pending : SakuraComponent.get().trans(player,
+                        "format", "lottery_partial_complete_ss", result.getRewards().size(), pending));
+                break;
+            case PAYMENT_UNAVAILABLE:
+                SakuraMessages.send(player, SakuraComponent.get().trans(
+                        player, "word", "lottery_payment_unavailable"));
+                break;
             case LIMIT_REACHED:
                 SakuraMessages.send(player, SakuraComponent.get().trans(player, "format",
                         "lottery_limit_reached_ss", result.getRetryAfterSeconds(),
