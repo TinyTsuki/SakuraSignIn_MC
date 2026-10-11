@@ -16,6 +16,10 @@ public final class LotteryRewardService {
     }
     public static boolean isCurrent(Object player, Object origin) { return origins.test(player, origin); }
     public static LotteryOperationService operations(Object player) { return services.apply(player); }
+    public static void recover(Object player) {
+        LotteryOperationService service = player == null ? null : operations(player);
+        if (service != null) service.recover(player);
+    }
     public static LotteryDrawBatchResult drawMany(Object player, String poolId, int count) {
         LotteryOperationService service = player == null ? null : operations(player);
         return service == null ? new LotteryDrawBatchResult(LotteryDrawStatus.PAYMENT_UNAVAILABLE, null,
