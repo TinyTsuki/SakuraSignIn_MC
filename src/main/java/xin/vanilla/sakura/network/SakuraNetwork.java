@@ -156,6 +156,7 @@ public final class SakuraNetwork {
         sendSplitToPlayer(RewardConfigManager.toSyncPacket(player), player);
         sendSplitToPlayer(personalDatePacket(player), player);
         sendSplitToPlayer(lotteryPoolPacket(player), player);
+        xin.vanilla.sakura.reward.lottery.LotteryRewardService.recover(player);
         sendSplitToPlayer(new AdvancementPacket(
                 player.server.getAdvancements().getAllAdvancements()
         ), player);
