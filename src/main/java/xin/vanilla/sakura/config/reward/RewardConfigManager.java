@@ -446,7 +446,13 @@ public class RewardConfigManager {
      */
     public static void backupRewardOption(boolean save) {
         try {
-            repository().backupCurrent(save ? "client-before-sync" : "server-before-sync");
+            RewardConfigRepository storage = repository();
+            String reason = save ? "client-before-sync" : "server-before-sync";
+            if (clientScope.getAsBoolean()) {
+                storage.backupCurrentIfPresent(reason);
+            } else {
+                storage.backupCurrent(reason);
+            }
         } catch (IOException e) {
             LOGGER.error("Error backing up reward configuration: ", e);
         }
