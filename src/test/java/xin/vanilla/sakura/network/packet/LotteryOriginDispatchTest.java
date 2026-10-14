@@ -9,6 +9,14 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.Assert.*;
 
 public class LotteryOriginDispatchTest {
+    @Test public void clientGuardUsesTheUnderlyingTransportIdentity() throws Exception {
+        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+                "src/main/java/xin/vanilla/sakura/network/ClientProxy.java")),
+                java.nio.charset.StandardCharsets.UTF_8);
+        String guard = source.substring(source.indexOf("private static boolean currentConnection("));
+        assertTrue(guard.contains("getConnection().getConnection() == origin"));
+        assertFalse(guard.contains("ClientPlayNetworking.getSender() == origin"));
+    }
     @After public void reset() { callbacks(new AtomicReference<>()); }
     @Test public void queuedHandlersCaptureOriginalTransportBeforeConnectionChanges() {
         AtomicReference<Object> seen = new AtomicReference<>(); callbacks(seen);

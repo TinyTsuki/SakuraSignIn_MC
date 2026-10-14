@@ -185,6 +185,6 @@ public class ClientProxy {
 
     private static boolean currentConnection(Object origin) {
         return origin != null && Minecraft.getInstance().getConnection() != null
-                && net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.getSender() == origin;
+                && Minecraft.getInstance().getConnection().getConnection() == origin;
     }
 }
