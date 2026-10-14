@@ -11,6 +11,7 @@ import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
@@ -85,6 +86,16 @@ public final class RewardConfigRepository {
             throw new IOException("Reward configuration does not exist: " + rewardFile);
         }
         return writeBackup(Files.readAllBytes(rewardFile), reason);
+    }
+
+    public Path backupCurrentIfPresent(String reason) throws IOException {
+        byte[] source;
+        try {
+            source = Files.readAllBytes(rewardFile);
+        } catch (NoSuchFileException absent) {
+            return null;
+        }
+        return writeBackup(source, reason);
     }
 
     private int schemaVersion(String json) throws IOException {
