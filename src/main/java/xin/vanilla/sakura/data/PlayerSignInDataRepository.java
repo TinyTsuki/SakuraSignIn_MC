@@ -7,6 +7,8 @@ import xin.vanilla.sakura.data.migration.LegacyPlayerData;
 import xin.vanilla.sakura.data.migration.LegacyPlayerDataParser;
 import xin.vanilla.sakura.data.player.PlayerSignInSummary;
 import xin.vanilla.sakura.data.player.MonthSignInIndex;
+import xin.vanilla.sakura.data.lottery.LotteryDrawState;
+import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.util.DateUtils;
 import xin.vanilla.sakura.internal.forge.migration.MonthlySignInHistoryRepository;
 import xin.vanilla.sakura.data.migration.PlayerSummaryStore;
@@ -16,7 +18,9 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.LinkedHashMap;
@@ -81,10 +85,7 @@ public final class PlayerSignInDataRepository {
 
     public void save(UUID playerUuid, IPlayerSignInData data) throws IOException {
         historyRepository.deletionJournal().recover(playerUuid, summaryRepository);
-        CompoundTag serialized = data.serializeNBT();
-        // 永久摘要采用已维护的统计值，不能因详情被清理而重新计算。
-        serialized.putInt("continuousSignInDays", data.getContinuousSignInDays());
-        LegacyPlayerData parsed = legacyParser.parse(serialized);
+        LegacyPlayerData parsed = snapshotForSave(data);
         Optional<PlayerSignInSummary> previous = summaryRepository.load(playerUuid);
         if (previous.isPresent()) {
             previous.get().getMonthIndexes().forEach((month, previousIndex) ->
@@ -102,6 +103,81 @@ public final class PlayerSignInDataRepository {
         data.setMonthIndexes(parsed.getSummary().getMonthIndexes());
         historyRepository.saveMonths(playerUuid, parsed, changedHistoryMonths(previous, parsed));
         summaryRepository.save(playerUuid, parsed.getSummary());
+    }
+
+    private LegacyPlayerData snapshotForSave(IPlayerSignInData data) {
+        if (!canSnapshotDirectly(data)) {
+            CompoundTag serialized = data.serializeNBT();
+            serialized.putInt("continuousSignInDays", data.getContinuousSignInDays());
+            return legacyParser.parse(serialized);
+        }
+
+        PlayerSignInSummary summary = new PlayerSignInSummary();
+        summary.setTotalSignInDays(data.getTotalSignInDays());
+        summary.setLastSignInTime(DateUtils.toDateTimeString(data.getLastSignInTime()));
+        summary.setSignInCard(data.getSignInCard());
+        summary.setAutoRewarded(data.isAutoRewarded());
+        summary.setLanguage(Objects.requireNonNull(data.getLanguage()));
+        for (MonthSignInIndex source : data.getMonthIndexes().values()) {
+            MonthSignInIndex index = MonthSignInIndex.deserializeNBT(source.serializeNBT());
+            summary.getMonthIndexes().put(index.getMonth(), index);
+        }
+
+        List<CompoundTag> records = new ArrayList<>();
+        for (SignInRecord record : data.getSignInRecords()) {
+            records.add(record.writeToNBT());
+        }
+        ListTag cdkRecords = new ListTag();
+        for (KeyValue<String, KeyValue<Date, Boolean>> record : data.getCdkRecords()) {
+            CompoundTag tag = new CompoundTag();
+            tag.putString("key", record.key());
+            tag.putString("date", DateUtils.toDateTimeString(record.value().key()));
+            tag.putBoolean("value", record.value().value());
+            cdkRecords.add(tag);
+        }
+        summary.setCdkRecords(cdkRecords);
+        for (PlayerPersonalDateSlot slot : data.getPersonalDateSlots()) {
+            summary.getPersonalDateSlots().add(copySlot(slot));
+        }
+        summary.setOnlineTimeBaselineDate(data.getOnlineTimeBaselineDate());
+        summary.setOnlineTimeBaselineTicks(Math.max(0, data.getOnlineTimeBaselineTicks()));
+        for (LotteryDrawState state : data.getLotteryDrawStates()) {
+            summary.getLotteryDrawStates().add(LotteryDrawState.deserializeNBT(state.serializeNBT()));
+        }
+        // 永久统计取维护值；记录编码完成后再分月，保持原解析时序和日期规则。
+        summary.setContinuousSignInDays(data.getContinuousSignInDays());
+        Map<String, List<CompoundTag>> recordsByMonth = new LinkedHashMap<>();
+        for (CompoundTag record : records) {
+            Date date = DateUtils.format(record.getString("compensateTime"));
+            String month = "unknown";
+            if (date != null) {
+                LocalDate day = localDay(date);
+                month = String.format("%04d-%02d", day.getYear(), day.getMonthValue());
+                summary.getMonthIndexes().computeIfAbsent(month, MonthSignInIndex::new)
+                        .markSigned(day.getDayOfMonth(), record.getBoolean("rewarded"));
+            }
+            // 内置记录编码产生独占 NBT，快照直接持有，无需再复制整个记录树。
+            recordsByMonth.computeIfAbsent(month, key -> new ArrayList<>()).add(record);
+        }
+        return new LegacyPlayerData(summary, recordsByMonth);
+    }
+
+    private static boolean canSnapshotDirectly(IPlayerSignInData data) {
+        if (data.getClass() != PlayerSignInData.class || data.getLanguage() == null) return false;
+        // 扩展编码可能返回共享 NBT 或改变其他字段，整次保存沿用旧链。
+        for (MonthSignInIndex index : data.getMonthIndexes().values()) {
+            if (index == null || index.getClass() != MonthSignInIndex.class) return false;
+        }
+        for (SignInRecord record : data.getSignInRecords()) {
+            if (record.getClass() != SignInRecord.class) return false;
+        }
+        for (PlayerPersonalDateSlot slot : data.getPersonalDateSlots()) {
+            if (slot.getClass() != PlayerPersonalDateSlot.class) return false;
+        }
+        for (LotteryDrawState state : data.getLotteryDrawStates()) {
+            if (state.getClass() != LotteryDrawState.class) return false;
+        }
+        return true;
     }
 
     public boolean deleteDay(UUID uuid, IPlayerSignInData data, LocalDate day,
