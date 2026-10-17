@@ -2,6 +2,7 @@ package xin.vanilla.sakura.data;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -74,6 +75,12 @@ public class PlayerSignInDataRepositoryTest {
 
     @Rule
     public final TemporaryFolder temporaryFolder = new TemporaryFolder();
+
+    @BeforeClass
+    public static void bootstrapMinecraftRegistries() {
+        net.minecraft.SharedConstants.tryDetectVersion();
+        net.minecraft.server.Bootstrap.bootStrap();
+    }
 
     @Test
     public void reloadsSummaryCdkAndMonthlyRecordsAfterSave() throws Exception {
