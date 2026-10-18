@@ -5,6 +5,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.language.I18n;
 import xin.vanilla.banira.api.client.theme.BaniraThemes;
+import xin.vanilla.banira.api.client.ui.*;
+import xin.vanilla.sakura.client.ui.LotteryRevealUiSession;
+import xin.vanilla.sakura.client.ui.SakuraUiPages;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
@@ -28,31 +31,46 @@ import xin.vanilla.sakura.reward.Reward;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class LotteryRevealScreen extends BaniraScreen {
+public final class LotteryRevealScreen extends BaniraScreen implements UiPageSource {
     private final LotteryRevealPacket packet;
-    private final long openedAt = System.nanoTime();
     private final LotteryAnimationStyle style = ClientConfig.get().display().lotteryAnimationStyle();
+    private final Object uiConnection = Minecraft.getInstance() == null ? null : Minecraft.getInstance().getConnection();
+    private final LotteryRevealUiSession revealSession;
+    private UiPageState revealPageState;
     private LotteryRevealLayout layout;
     private ButtonWidget actionButton;
     private ScrollbarWidget resultScrollbar;
     private int resultScrollRows;
-    private boolean skipped, claimRequested;
 
     public LotteryRevealScreen(Screen parent, LotteryRevealPacket packet) {
         super(SakuraComponent.get().transClient("word", "lottery_result"));
         this.packet = packet;
+        revealSession = new LotteryRevealUiSession(packet, style, () -> System.nanoTime() / 1_000_000,
+                () -> uiConnection == Minecraft.getInstance().getConnection(),
+                () -> Minecraft.getInstance().options.keyInventory.getKey().getValue(),
+                () -> SakuraNetwork.sendToServer(new LotteryClaimPacket(packet.getOperationId(), packet.getToken())));
         previousScreen(parent);
         season(BaniraThemes.seasonFor(SakuraSignIn.MODID));
     }
+    @Override public String uiSurfaceId() { return SakuraSignIn.MODID + ":lottery-result"; }
+    @Override public UiPageSession pageSession() { return revealSession; }
+    @Override public UiPageSpec uiPage() { return SakuraUiPages.page("lottery-result", this, revealSession); }
+    @Override protected void onRemoved() { BaniraUi.screenRemoved(this); super.onRemoved(); }
+    @Override public void capturePageState(UiPageState state) {
+        revealPageState = state;
+        if (state != null && layout != null) state.rowPosition(resultScrollRows * Math.min(layout.columns(), Math.max(1, packet.getWinners().size())));
+    }
+    @Override public void preparePageState(UiPageState state) { revealPageState = state; }
 
     @Override
     protected void initWidgets() {
         layout = LotteryRevealLayout.calculate(width,height);
+        if (revealPageState != null) resultScrollRows = (int) revealPageState.rowPosition() / Math.min(layout.columns(), Math.max(1, packet.getWinners().size()));
         actionButton = new ButtonWidget(this);
         actionButton.bounds(bounds(layout.action()));
         actionButton.onClick(button -> {
             if (revealed()) onClose();
-            else { skipped = true; requestClaim(); }
+            else revealSession.skip();
         });
         addWidget(actionButton);
         resultScrollbar = new ScrollbarWidget(this);
@@ -67,8 +85,8 @@ public final class LotteryRevealScreen extends BaniraScreen {
         LotteryLayout.Rect panel = layout.panel(), content = layout.content();
         shape(stack,panel.x(),panel.y(),panel.width(),panel.height(),getEffectiveTheme().panelBg(),8,0);
         fitted(stack,packet.getPoolName(),layout.title());
-        long elapsed = (System.nanoTime()-openedAt)/1_000_000;
-        boolean revealed = revealed(elapsed);
+        long elapsed = revealSession.elapsed();
+        boolean revealed = revealed();
         if (revealed) requestClaim();
         actionButton.text(SakuraComponent.get().transClient("word",revealed ? "confirm" : "lottery_skip_animation"));
         resultScrollbar.visible(false);
@@ -177,22 +195,21 @@ public final class LotteryRevealScreen extends BaniraScreen {
         RewardRenderer.renderCustomReward(stack,font,SakuraClientState.getThemeTexture(),
                 SakuraClientState.getThemeTextureCoordinate(),reward,x,y,true,false);
     }
-    private boolean revealed() { return revealed((System.nanoTime()-openedAt)/1_000_000); }
-    private boolean revealed(long elapsed) { return skipped || elapsed >= (style==LotteryAnimationStyle.INSTANT?0:style==LotteryAnimationStyle.CARDS?4800:6800); }
+    private boolean revealed() { return revealSession.revealed(); }
     @Override protected void onKeyPressed(KeyPressedHandleArgs event) {
         if(event.key()==GLFWKey.GLFW_KEY_ESCAPE || event.key()==Minecraft.getInstance().options.keyInventory.getKey().getValue()) {
-            if(revealed()) onClose(); else { skipped=true;requestClaim(); }
+            if(revealed()) onClose(); else revealSession.skip();
             event.consumed(true);return;
         }
         super.onKeyPressed(event);
     }
     private void requestClaim() {
-        if(claimRequested) return;
-        claimRequested=true;
-        SakuraNetwork.sendToServer(new LotteryClaimPacket(packet.getOperationId(),packet.getToken()));
+        revealSession.requestClaim();
     }
     @Override public void onClose() {
-        if(!revealed()) { skipped=true;requestClaim();return; }
+        if(!revealed()) { revealSession.skip();return; }
+        if(BaniraUi.closePage(this, UiCloseReason.USER_CLOSE)) return;
+        if(revealSession.requestClose()) return;
         requestClaim();super.onClose();
     }
     @Override protected ScreenCoordinate closeableWindowBounds() { return bounds(layout.panel()); }

@@ -5,6 +5,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.util.FormattedCharSequence;
 import xin.vanilla.banira.api.client.theme.BaniraThemes;
+import xin.vanilla.banira.api.client.ui.*;
+import xin.vanilla.sakura.client.ui.LotteryUiSession;
+import xin.vanilla.sakura.client.ui.SakuraUiPages;
 import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
@@ -33,7 +36,12 @@ import java.util.stream.Collectors;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
-public final class LotteryScreen extends BaniraScreen {
+public final class LotteryScreen extends BaniraScreen implements UiPageSource {
+    private LotteryUiSession lotteryUiSession;
+    private final Object uiConnection = Minecraft.getInstance() == null ? null : Minecraft.getInstance().getConnection();
+    private String selectedCount = "";
+    private UiPageState lotteryPageState;
+    private Double pendingDescriptionScroll;
     private final LotteryPaymentViewModel payment = new LotteryPaymentViewModel(
             SakuraClientState.getLotteryRequests(), () -> System.nanoTime() / 1_000_000,
             request -> SakuraNetwork.sendToServer(new LotteryQuoteRequestPacket(request)),
@@ -54,17 +62,67 @@ public final class LotteryScreen extends BaniraScreen {
         season(BaniraThemes.seasonFor(SakuraSignIn.MODID));
     }
 
+    private boolean uiConnected() { return uiConnection == Minecraft.getInstance().getConnection(); }
+    @Override public String uiSurfaceId() { return SakuraSignIn.MODID + ":lottery"; }
+    @Override public UiPageSpec uiPage() { return SakuraUiPages.page("lottery", this, pageSession()); }
+    @Override public UiPageSession pageSession() {
+        if (lotteryUiSession == null) lotteryUiSession = new LotteryUiSession(new LotteryUiSession.Port() {
+            public void prepare() { prepareSelection(); }
+            public List<LotteryPool> pools() { return LotteryScreen.pools(); }
+            public String poolId() { return selectedPoolId; }
+            public void pool(String id) {
+                selectedPoolId = id; SakuraClientPreferences.lastLotteryPoolId(id);
+                previewScrollRows = 0; infoViewport.reset(); descriptionViewport.reset(); pendingDescriptionScroll = null; prepareSelection();
+            }
+            public List<String> counts() { return batchCounts(); }
+            public String count() { return selectedCount; }
+            public void count(String value) { selectedCount = value; selectPayment(); }
+            public LotteryAnimationStyle animation() { return ClientConfig.get().display().lotteryAnimationStyle(); }
+            public void animation(LotteryAnimationStyle value) { setAnimation(value); }
+            public long generation() { return SakuraClientState.getLotteryRequests().getGeneration(); }
+            public LotteryPaymentViewModel payment() { return payment; }
+            public String name(Reward reward) { return xin.vanilla.sakura.api.reward.client.SakuraRewardClient.displayName(reward, Minecraft.getInstance().options.languageCode, true).toString(); }
+        }, this::uiConnected);
+        return lotteryUiSession;
+    }
+    private void prepareSelection() {
+        if (selectedPoolId.isEmpty()) selectedPoolId = SakuraClientPreferences.lastLotteryPoolId();
+        validateSelection();
+        List<String> values = batchCounts(); if (!values.contains(selectedCount)) selectedCount = values.get(0);
+        selectPayment();
+    }
+    private List<String> batchCounts() {
+        List<String> values = drawCounts(selectedPool()).stream().filter(value -> !"1".equals(value)).collect(Collectors.toCollection(ArrayList::new));
+        if (values.isEmpty()) values.add("1"); return values;
+    }
+    private static void setAnimation(LotteryAnimationStyle style) {
+        if (style != ClientConfig.get().display().lotteryAnimationStyle()) {
+            ClientConfig.get().display().lotteryAnimationStyle(style); ClientConfig.save();
+        }
+    }
+    @Override public void capturePageState(UiPageState state) {
+        lotteryPageState = state;
+        if (state != null && layout != null && font != null) {
+            state.rowPosition(previewScrollRows * Math.max(1, (layout.preview().width() - 10) / 34));
+            state.detailScroll(descriptionViewport.scrollRows() * font.lineHeight);
+        }
+    }
+    @Override public void preparePageState(UiPageState state) { lotteryPageState = state; }
+
     @Override
     protected void initWidgets() {
         layout = LotteryLayout.calculate(width, height);
-        if (selectedPoolId.isEmpty()) selectedPoolId = SakuraClientPreferences.lastLotteryPoolId();
-        validateSelection();
+        prepareSelection();
+        if (lotteryPageState != null) {
+            previewScrollRows = (int) lotteryPageState.rowPosition() / Math.max(1, (layout.preview().width() - 10) / 34);
+            pendingDescriptionScroll = lotteryPageState.detailScroll();
+        }
         poolSelect = dropdown(layout.pool());
         refreshPoolOptions();
         poolSelect.onSelectionChanged(values -> {
             selectedPoolId = values.isEmpty() ? "" : values.get(0);
             SakuraClientPreferences.lastLotteryPoolId(selectedPoolId);
-            previewScrollRows = 0; infoViewport.reset(); descriptionViewport.reset();
+            previewScrollRows = 0; infoViewport.reset(); descriptionViewport.reset(); pendingDescriptionScroll = null;
             configureCountOptions();
         });
 
@@ -76,7 +134,7 @@ public final class LotteryScreen extends BaniraScreen {
         addWidget(singleDrawButton);
 
         countSelect = dropdown(layout.count());
-        countSelect.onSelectionChanged(values -> selectPayment());
+        countSelect.onSelectionChanged(values -> { selectedCount = values.isEmpty() ? "1" : values.get(0); selectPayment(); });
         batchDrawButton = new ButtonWidget(this);
         batchDrawButton.bounds(bounds(layout.batch()));
         batchDrawButton.text(SakuraComponent.get().transClient("word", "lottery_batch_draw"));
@@ -89,11 +147,7 @@ public final class LotteryScreen extends BaniraScreen {
         animationSelect.selectedValues(Collections.singletonList(ClientConfig.get().display().lotteryAnimationStyle().name()));
         animationSelect.onSelectionChanged(values -> {
             if (values.isEmpty()) return;
-            LotteryAnimationStyle style = LotteryAnimationStyle.valueOf(values.get(0));
-            if (style != ClientConfig.get().display().lotteryAnimationStyle()) {
-                ClientConfig.get().display().lotteryAnimationStyle(style);
-                ClientConfig.save();
-            }
+            setAnimation(LotteryAnimationStyle.valueOf(values.get(0)));
         });
 
         ButtonWidget closeButton = new ButtonWidget(this);
@@ -193,6 +247,9 @@ public final class LotteryScreen extends BaniraScreen {
                                  NotificationDetailViewport viewport, ScrollbarWidget scrollbar, String text, int color) {
         List<FormattedCharSequence> lines = font.split(net.minecraft.network.chat.Component.literal(text), area.width() - 9);
         viewport.layout(area.x(), area.y(), area.width() - 9, area.height(), font.lineHeight, lines.size());
+        if (viewport == descriptionViewport && pendingDescriptionScroll != null) {
+            viewport.scrollTo(pendingDescriptionScroll / font.lineHeight); pendingDescriptionScroll = null;
+        }
         AbstractGuiUtils.pushScissor(area.x(), area.y(), area.width() - 9, area.height());
         try {
             for (int i = viewport.firstLine(); i < viewport.lastLineExclusive(); i++)
@@ -284,19 +341,18 @@ public final class LotteryScreen extends BaniraScreen {
 
     private void configureCountOptions() {
         if (countSelect == null) return;
-        List<String> values = drawCounts(selectedPool()).stream().filter(value -> !"1".equals(value)).collect(Collectors.toList());
-        if (values.isEmpty()) values.add("1");
-        String previous = countSelect.getSelectedValues().isEmpty() ? "" : countSelect.getSelectedValues().get(0);
+        List<String> values = batchCounts();
         countSelect.optionEntries(values.stream().map(value -> new DropdownOption(value,
                 "all".equals(value) ? SakuraComponent.get().translateClient("word", "lottery_draw_all")
                         : SakuraComponent.get().translateClient("format", "lottery_draw_count_s", value),
                 net.minecraft.world.item.ItemStack.EMPTY, null, null)).collect(Collectors.toList()));
-        countSelect.selectedValues(Collections.singletonList(values.contains(previous) ? previous : values.get(0)));
+        selectedCount = values.contains(selectedCount) ? selectedCount : values.get(0);
+        countSelect.selectedValues(Collections.singletonList(selectedCount));
         selectPayment();
     }
 
     private int batchCount() {
-        String count = countSelect.getSelectedValues().isEmpty() ? "1" : countSelect.getSelectedValues().get(0);
+        String count = selectedCount.isEmpty() ? "1" : selectedCount;
         return "all".equals(count) ? -1 : Integer.parseInt(count);
     }
     private void selectPayment() { payment.select(selectedPoolId, batchCount()); }
@@ -315,8 +371,12 @@ public final class LotteryScreen extends BaniraScreen {
     private static List<LotteryPool> pools() { return RewardConfigManager.getRewardConfig().getLotteryPools(); }
     private static String policyName(LotteryPool pool) { return SakuraComponent.get().translateClient("word", "lottery_policy_" + pool.getLimitPolicy().name().toLowerCase(Locale.ROOT)); }
 
-    @Override protected void onRemoved() { payment.cancelIntent(); super.onRemoved(); }
-    @Override public void onClose() { payment.cancelIntent(); super.onClose(); }
+    @Override protected void onRemoved() { BaniraUi.screenRemoved(this); super.onRemoved(); }
+    @Override public void onClose() {
+        if (BaniraUi.closePage(this, UiCloseReason.USER_CLOSE)) return;
+        if (lotteryUiSession != null && lotteryUiSession.requestClose()) return;
+        payment.cancelIntent(); super.onClose();
+    }
     @Override protected ScreenCoordinate closeableWindowBounds() { return bounds(layout.panel()); }
     private static ScreenCoordinate bounds(LotteryLayout.Rect rect) { return new ScreenCoordinate(rect.x(), rect.y(), rect.width(), rect.height()); }
     private void shape(GuiGraphics stack, int x, int y, int width, int height, int color, int radius, int border) {

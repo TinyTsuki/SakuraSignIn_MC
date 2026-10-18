@@ -23,6 +23,7 @@ public final class LotteryPoolForm {
 
     public static Screen create(Screen parent, LotteryPool existing,
                                 Consumer<LotteryPool> submit) {
+        Consumer<LotteryPool> connectedSubmit = connectedOnce(submit);
         InputFormScreen.Args args = new InputFormScreen.Args()
                 .setParentScreen(parent)
                 .setHeaderTitle(text("lottery_pool_title"));
@@ -100,7 +101,7 @@ public final class LotteryPoolForm {
             candidate.setDescription(results.value("description"));
             candidate.setVoucherExpression(results.value("voucherExpression"));
             if (LotteryPoolValidator.validate(candidate).isEmpty()) {
-                submit.accept(candidate);
+                connectedSubmit.accept(candidate);
             }
         });
         return new InputFormScreen(args);
@@ -108,6 +109,7 @@ public final class LotteryPoolForm {
 
     private static Screen voucherItemForm(Screen parent, net.minecraft.world.item.ItemStack stack,
                                            Consumer<String> selected) {
+        Consumer<String> connectedSelected = connectedOnce(selected);
         InputFormScreen.Args args = new InputFormScreen.Args().setParentScreen(parent)
                 .setHeaderTitle(text("lottery_voucher_item"));
         args.addWidget(dropdown("match", "lottery_voucher_match", "ID",
@@ -124,9 +126,19 @@ public final class LotteryPoolForm {
                         return tr("lottery_number_range");
                     }
                 }));
-        args.setCallback(results -> selected.accept(LotteryVoucherExpressions.item(stack,
+        args.setCallback(results -> connectedSelected.accept(LotteryVoucherExpressions.item(stack,
                 Integer.parseInt(results.value("amount")), "EXACT".equals(results.value("match")))));
         return new InputFormScreen(args);
+    }
+
+    private static <T> Consumer<T> connectedOnce(Consumer<T> callback) {
+        var client = net.minecraft.client.Minecraft.getInstance();
+        Object origin = client == null ? null : client.getConnection();
+        var submitted = new java.util.concurrent.atomic.AtomicBoolean();
+        return value -> {
+            var current = net.minecraft.client.Minecraft.getInstance();
+            if (origin == (current == null ? null : current.getConnection()) && submitted.compareAndSet(false, true)) callback.accept(value);
+        };
     }
 
     private static InputFormScreen.Widget number(String name, String titleKey,

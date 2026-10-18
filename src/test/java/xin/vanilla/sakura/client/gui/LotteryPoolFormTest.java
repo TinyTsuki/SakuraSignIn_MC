@@ -71,6 +71,17 @@ public class LotteryPoolFormTest {
         assertEquals(12, paper.getCount());
         assertEquals(2, BaniraCosts.parse(exact).resource().amount());
     }
+    @Test public void validPoolSubmissionIsConsumedOnlyOnceAcrossSharedViews() throws Exception {
+        java.util.concurrent.atomic.AtomicInteger submissions = new java.util.concurrent.atomic.AtomicInteger();
+        Screen parent = new Screen(net.minecraft.network.chat.Component.empty()) { };
+        Screen screen = LotteryPoolForm.create(parent, pool(), value -> submissions.incrementAndGet());
+        Field field = InputFormScreen.class.getDeclaredField("args"); field.setAccessible(true);
+        InputFormScreen.Args args = (InputFormScreen.Args) field.get(screen);
+        InputFormScreen.Results results = new InputFormScreen.Results(); int index = 0;
+        for (var widget : args.getWidgets()) results.value(widget.name(), index++, widget.defaultValue());
+        args.getCallback().accept(results); args.getCallback().accept(results);
+        assertEquals(1, submissions.get());
+    }
 
     @Test public void editingSyncedPoolCopyKeepsItsLockedIdValid() throws Exception {
         xin.vanilla.sakura.config.reward.RewardConfig previous =

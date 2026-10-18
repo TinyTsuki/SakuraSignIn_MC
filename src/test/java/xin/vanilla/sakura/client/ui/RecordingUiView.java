@@ -15,26 +15,31 @@ final class RecordingUiView implements UiView {
     final Map<String, UiGameElement> icons = new HashMap<>();
     final Map<String, Boolean> enabled = new HashMap<>();
     final Map<String, String> draftValues = new HashMap<>();
+    final Map<String, UiValue> values = new HashMap<>();
+    final Map<String, UiControlSpec> controls = new HashMap<>();
+    final Map<String, Consumer<UiValue>> changes = new HashMap<>();
+    final Map<String, ScreenCoordinate> areas = new HashMap<>();
     final UiPageState state = new UiPageState();
     UiRowProvider rows;
     boolean nativeView;
-    int closes, limit;
+    int closes, limit, writes;
     public boolean nativeView() { return nativeView; }
     public UiPageState state() { return state; }
     public void theme(BaniraColorConfig value) { }
-    public void text(String id, Component value) { texts.put(id, value); }
+    public void text(String id, Component value) { writes++; texts.put(id, value); }
     public void tooltip(String id, Component value) { tooltips.put(id, value); }
-    public void value(String id, UiValue value) { }
-    public void control(String id, UiControlSpec value) { }
+    public void value(String id, UiValue value) { values.put(id, value); }
+    public void control(String id, UiControlSpec value) { controls.put(id, value); }
     public void draft(String id, String value) { draftValues.put(id, value); }
-    public void enabled(String id, boolean value) { enabled.put(id, value); }
+    public void enabled(String id, boolean value) { writes++; enabled.put(id, value); }
     public AutoCloseable onAction(String id, Runnable value) { actions.put(id, value); return () -> actions.remove(id, value); }
     public AutoCloseable onLongAction(String id, Runnable value) { longActions.put(id, value); return () -> longActions.remove(id, value); }
-    public AutoCloseable onValue(String id, Consumer<UiValue> value) { return () -> { }; }
+    public AutoCloseable onValue(String id, Consumer<UiValue> value) { changes.put(id, value); return () -> changes.remove(id, value); }
     public AutoCloseable onDraft(String id, Consumer<String> value) { drafts.put(id, value); return () -> drafts.remove(id, value); }
     public AutoCloseable onPointer(String id, Consumer<UiPointer> value) { pointers.put(id, value); return () -> pointers.remove(id, value); }
     public void hudPosition(double x, double y) { }
     public void gameElement(String id, UiGameElement value) { icons.put(id, value); }
+    public void gameElement(String id, UiGameElement value, ScreenCoordinate area) { icons.put(id, value); areas.put(id, area); }
     public void rows(String id, UiRowProvider value, int max) { rows = value; limit = max; }
     public ScreenCoordinate bounds(String id) { return new ScreenCoordinate(0, 0, 400, 300); }
     public void requestClose() { closes++; }
