@@ -30,6 +30,10 @@ import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.network.packet.PersonalDateSlotUpdatePacket;
 import xin.vanilla.sakura.notification.SakuraClientNotifications;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
+import xin.vanilla.banira.api.client.ui.*;
+import xin.vanilla.banira.client.gui.InputFormScreen;
+import xin.vanilla.sakura.client.ui.PersonalDateUiSession;
+import xin.vanilla.sakura.client.ui.SakuraUiPages;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -39,8 +43,63 @@ import java.util.stream.Collectors;
 /**
  * 编辑服务器定义的玩家个性化日期。
  */
-public final class PersonalDateConfigScreen extends xin.vanilla.banira.client.gui.PlayerConfigScreen {
+public final class PersonalDateConfigScreen extends xin.vanilla.banira.client.gui.PlayerConfigScreen implements UiPageSource {
     private final List<PlayerPersonalDateSlot> slots = new ArrayList<>();
+    private final java.util.Map<String, CollapsiblePanelWidget> dateSections = new java.util.LinkedHashMap<>();
+    private PersonalDateUiSession personalSession;
+    private Object uiConnection;
+
+    @Override public UiPageSession pageSession() {
+        if (personalSession == null) {
+            uiConnection = Minecraft.getInstance().getConnection();
+            personalSession = new PersonalDateUiSession(new PersonalDateUiSession.Port() {
+                public List<PersonalDateUiSession.Entry> entries() {
+                    List<PersonalDateUiSession.Entry> rows = new ArrayList<>();
+                    for (PersonalDatePreset preset : activePresets()) {
+                        rows.add(new PersonalDateUiSession.Entry(preset.getId(), preset.getDisplayName(), "", "", preset.getId(), true));
+                        for (int index = 0; index < preset.getMaxDateSlots(); index++) {
+                            PlayerPersonalDateSlot slot = findOrCreate(preset, index);
+                            String date = preset.getRecurrence() == PersonalDateRecurrence.MONTHLY ? Integer.toString(slot.getDay()) : slot.getMonth() + "/" + slot.getDay();
+                            rows.add(new PersonalDateUiSession.Entry(slotKey(slot), preset.getDisplayName() + " " + (index + 1),
+                                    calendarName(slot.getCalendarId()), slot.getCalendarId(), date, preset.getId(), false));
+                        }
+                    }
+                    return rows;
+                }
+                private void withSlot(String key, boolean edit) {
+                    slots.stream().filter(slot -> slotKey(slot).equals(key)).findFirst().ifPresent(slot -> activePresets().stream()
+                            .filter(preset -> preset.getId().equals(slot.getPresetId())).findFirst().ifPresent(preset -> {
+                                if (edit) openDateInput(preset, slot); else cycleCalendar(preset, slot);
+                            }));
+                }
+                public void cycle(String key) { withSlot(key, false); }
+                public void edit(String key) { withSlot(key, true); }
+                public void save() { savePlayerConfig(); }
+                public void commonConfig() { openBaniraPlayerConfig(); }
+            }, this::uiConnected);
+        }
+        return personalSession;
+    }
+    private static String slotKey(PlayerPersonalDateSlot slot) { return slot.getPresetId() + ":" + slot.getSlotIndex(); }
+    private boolean uiConnected() {
+        return uiConnection != null && uiConnection == Minecraft.getInstance().getConnection()
+                && Minecraft.getInstance().player != null;
+    }
+    @Override public String uiSurfaceId() { return SakuraSignIn.MODID + ":personal-date"; }
+    @Override public UiPageSpec uiPage() { return SakuraUiPages.page("personal-date", this, pageSession()); }
+    @Override public void capturePageState(UiPageState state) {
+        pageSession(); personalSession.query(playerSearchQuery()); capturePlayerPageState(state);
+        dateSections.forEach((id, section) -> personalSession.expanded(id, section.expanded()));
+    }
+    @Override public void preparePageState(UiPageState state) {
+        pageSession(); playerSearchQuery(personalSession.query()); preparePlayerPageState(state);
+    }
+    @Override protected void onRemoved() { BaniraUi.screenRemoved(this); super.onRemoved(); }
+    @Override public void onClose() {
+        if (BaniraUi.closePage(this, UiCloseReason.USER_CLOSE)) return;
+        if (personalSession != null && personalSession.requestClose()) return;
+        super.onClose();
+    }
 
     public PersonalDateConfigScreen(Screen parent) {
         super(SakuraSignIn.MODID, SakuraComponent.get().transClient("word", "personal_date_config"),
@@ -50,6 +109,7 @@ public final class PersonalDateConfigScreen extends xin.vanilla.banira.client.gu
 
     @Override
     protected void buildPlayerConfig(CollapsiblePanelWidget root) {
+        dateSections.clear();
         addBaniraConfigRow(root);
         List<PersonalDatePreset> presets = activePresets();
         if (presets.isEmpty()) {
@@ -60,6 +120,8 @@ public final class PersonalDateConfigScreen extends xin.vanilla.banira.client.gu
             CollapsiblePanelWidget section = addPlayerSection(root,
                     "personal_date_" + preset.getId(),
                     SakuraComponent.get().literal(preset.getDisplayName()), null);
+            dateSections.put(preset.getId(), section);
+            if (personalSession != null) section.expanded(personalSession.expanded(preset.getId()));
             for (int index = 0; index < preset.getMaxDateSlots(); index++) {
                 addDateRow(section, preset, index);
             }
@@ -162,14 +224,20 @@ public final class PersonalDateConfigScreen extends xin.vanilla.banira.client.gu
     private void openDateInput(PersonalDatePreset preset, PlayerPersonalDateSlot slot) {
         boolean monthly = preset.getRecurrence() == PersonalDateRecurrence.MONTHLY;
         String current = monthly ? String.valueOf(slot.getDay()) : slot.getMonth() + "/" + slot.getDay();
-        Minecraft.getInstance().setScreen(new StringInputScreen(this,
-                Text.trans(SakuraSignIn.MODID, monthly
+        Object connection = Minecraft.getInstance().getConnection();
+        InputFormScreen.Args args = new InputFormScreen.Args().setParentScreen(this)
+                .setTitle(Text.trans(SakuraSignIn.MODID, monthly
                         ? "word.sakura_sign_in.personal_date_day"
-                        : "word.sakura_sign_in.personal_date_month_day"),
-                Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.personal_date_value_hint"),
-                monthly ? "[0-9]{1,3}" : "[0-9]{1,2}/[0-9]{1,3}", current,
-                values -> {
-                    String[] parts = values.get(0).split("/");
+                        : "word.sakura_sign_in.personal_date_month_day"));
+        args.addWidget(new InputFormScreen.Widget().name("date")
+                .title(args.getTitle()).hint(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.personal_date_value_hint"))
+                .tooltip(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.personal_date_value_hint"))
+                .regex(monthly ? "[0-9]{1,3}" : "[0-9]{1,2}/[0-9]{1,3}").defaultValue(current));
+        java.util.concurrent.atomic.AtomicBoolean submitted = new java.util.concurrent.atomic.AtomicBoolean();
+        args.setCallback(values -> {
+                    if (connection == null || connection != Minecraft.getInstance().getConnection()
+                            || !submitted.compareAndSet(false, true)) return;
+                    String[] parts = values.value("date").split("/");
                     if (monthly) {
                         slot.setMonth(0);
                         slot.setDay(Integer.parseInt(parts[0]));
@@ -178,7 +246,8 @@ public final class PersonalDateConfigScreen extends xin.vanilla.banira.client.gu
                         slot.setDay(Integer.parseInt(parts[1]));
                     }
                     refreshWidget();
-                }));
+                });
+        Minecraft.getInstance().setScreen(new InputFormScreen(args));
     }
 
     @Override

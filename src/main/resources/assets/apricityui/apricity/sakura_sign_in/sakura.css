@@ -1,0 +1,19 @@
+.sakura-page .header { display:flex; align-items:center; gap:6px; }
+.sakura-page .title { flex:1; min-width:0; }
+.sakura-page .header .tool { flex-shrink:0; }
+.calendar-tools { display:flex; flex-shrink:0; align-items:center; gap:4px; padding:4px 8px; }
+.calendar-tools .paragraph { flex:1; min-width:0; max-height:36px; overflow-y:auto; margin:0; }
+.calendar { display:flex; flex-wrap:wrap; width:100%; }
+.weekdays { display:flex; flex-shrink:0; min-height:20px; }
+.weekdays > div { flex:0 0 14.2857%; min-width:0; padding:4px 2px; text-align:center; overflow:hidden; }
+.day { position:relative; flex:0 0 14.2857%; min-width:0; height:40px; padding:2px; }
+.day button { width:100%; height:100%; min-width:0; padding:4px; text-align:right; }
+.day-status { position:absolute; left:5px; top:12px; width:14px; height:14px; pointer-events:none; }
+.themes { justify-content:center; }
+.themes button { flex:0 0 24px; min-width:24px; width:24px; height:24px; padding:0; }
+.tip-actions { display:flex; flex-wrap:wrap; gap:6px; }
+.tip-actions button:disabled { display:none; }
+.dates-page .row { position:relative; padding-right:80px; }
+.dates-page .row .editor { position:absolute; right:0; top:0; width:76px; height:36px; }
+.dates-page .row .editor button { min-width:0; width:100%; height:36px; overflow:hidden; }
+.sakura-page .footer { max-height:64px; overflow-y:auto; flex-wrap:wrap; }

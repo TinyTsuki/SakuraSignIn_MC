@@ -1,6 +1,10 @@
 package xin.vanilla.sakura.screen;
 
 import xin.vanilla.sakura.data.time.SakuraClock;
+import xin.vanilla.banira.api.client.ui.*;
+import xin.vanilla.banira.client.data.Texture;
+import xin.vanilla.sakura.client.ui.SignInUiSession;
+import xin.vanilla.sakura.client.ui.SakuraUiPages;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -69,7 +73,7 @@ import static xin.vanilla.sakura.screen.SignInScreen.OperationButtonType.UP_ARRO
 /**
  * 签到日历主界面。Sakura 只保留主题与签到业务，交互生命周期由 Banira 管理。
  */
-public final class SignInScreen extends BaniraScreen {
+public final class SignInScreen extends BaniraScreen implements UiPageSource {
     public static int lastOffset = 6;
     public static int nextOffset = 6;
 
@@ -88,6 +92,83 @@ public final class SignInScreen extends BaniraScreen {
     private int bgWidth;
     private int bgX;
     private int bgY;
+    private SignInUiSession pageSession;
+    private Object uiConnection;
+    private long localRevision;
+
+    @Override public String uiSurfaceId() { return SakuraSignIn.MODID + ":signin"; }
+    @Override public UiPageSession pageSession() {
+        if (pageSession == null) {
+            uiConnection = Minecraft.getInstance().getConnection();
+            pageSession = new SignInUiSession(new SignInUiSession.Port() {
+                public long revision() { return localRevision + SakuraUiPages.signInRevision(); }
+                public void refresh() { refreshLayout(); }
+                public void reload() { ClientEventHandler.loadThemeTexture(); refreshLayout(); }
+                public List<SignInUiSession.Cell> cells() {
+                    return signInCells.stream().map(cell -> new SignInUiSession.Cell(
+                            cell.getYear() * 10000 + cell.getMonth() * 100 + cell.getDay(),
+                            cell.uiDay(), cell.uiTooltip(), cell.uiStatusIcon())).toList();
+                }
+                public Component title() {
+                    Date date = SakuraClientState.getCalendarCurrentDate();
+                    return SakuraComponent.get().literal(DateUtils.toLocalStringYear(date, Minecraft.getInstance().options.languageCode)
+                            + " " + DateUtils.toLocalStringMonth(date, Minecraft.getInstance().options.languageCode));
+                }
+                public Component info() {
+                    LocalPlayer player = Minecraft.getInstance().player;
+                    if (player == null) return SakuraComponent.get().literal("");
+                    IPlayerSignInData data = SakuraPlayerData.get(player);
+                    return SakuraComponent.get().transClient("format", "sign_in_info", data.getSignInCard(),
+                            data.getContinuousSignInDays(), data.getTotalSignInDays());
+                }
+                public List<Component> weekdays() {
+                    TextureCoordinate texture = SakuraClientState.getThemeTextureCoordinate();
+                    List<Component> result = new ArrayList<>();
+                    for (int index = 0; index < 7; index++) {
+                        int day = Math.floorMod(texture.getWeekStart() - 1 + index, 7) + 1;
+                        String name = DateUtils.toLocalStringWeek(DateUtils.getDate(2024, 1, day), Minecraft.getInstance().options.languageCode);
+                        result.add(SakuraComponent.get().literal(name));
+                    }
+                    return result;
+                }
+                public Component tips() { return SakuraComponent.get().transClient("word", "sign_in_screen_tips"); }
+                public boolean openingTips() { return showOpeningTips; }
+                public void dismissTips(boolean persist) { dismissOpeningTips(persist); localRevision++; }
+                public void move(int months, int years) {
+                    Date current = SakuraClientState.getCalendarCurrentDate();
+                    changeCalendar(years == 0 ? DateUtils.addMonth(current, months) : DateUtils.addYear(current, years));
+                    localRevision++;
+                }
+                public void activate(int date) {
+                    LocalPlayer player = Minecraft.getInstance().player;
+                    if (player == null) return;
+                    signInCells.stream().filter(cell -> cell.getYear() * 10000 + cell.getMonth() * 100 + cell.getDay() == date)
+                            .findFirst().ifPresent(cell -> handleSignIn(GLFWKey.GLFW_MOUSE_BUTTON_LEFT, cell, player));
+                    localRevision++;
+                }
+                public void theme(int index, boolean special) {
+                    selectBuiltInTheme(OperationButtonType.fromCode(100 + index), special); localRevision++;
+                }
+                public Texture themeIcon(int index) {
+                    return SakuraUiPages.themeIcon(SakuraClientState.getThemeTexture(), SakuraClientState.getThemeTextureCoordinate(),
+                            index, SakuraClientState.getActiveThemeId().equals(OperationButtonType.fromCode(100 + index).themeId));
+                }
+                public boolean key(int code, boolean pressed) { return handlePageKey(code, pressed); }
+            }, this::uiConnected);
+        }
+        return pageSession;
+    }
+    private boolean uiConnected() {
+        return uiConnection != null && uiConnection == Minecraft.getInstance().getConnection()
+                && Minecraft.getInstance().player != null;
+    }
+    @Override public UiPageSpec uiPage() { return SakuraUiPages.page("signin", this, pageSession()); }
+    @Override protected void onRemoved() { BaniraUi.screenRemoved(this); super.onRemoved(); }
+    @Override public void onClose() {
+        if (BaniraUi.closePage(this, UiCloseReason.USER_CLOSE)) return;
+        if (pageSession != null && pageSession.requestClose()) return;
+        super.onClose();
+    }
 
     @Getter
     enum OperationButtonType implements IEnumDescribable {
@@ -510,6 +591,8 @@ public final class SignInScreen extends BaniraScreen {
                     "word", "not_enough_sign_in_card"), SakuraNotificationTypes.SIGN_IN);
             return;
         }
+        Object connection = Minecraft.getInstance().getConnection();
+        java.util.concurrent.atomic.AtomicBoolean confirmed = new java.util.concurrent.atomic.AtomicBoolean();
         Minecraft.getInstance().setScreen(new ConfirmDialogScreen(
                 new ConfirmDialogScreen.Args()
                         .parentScreen(this)
@@ -517,6 +600,8 @@ public final class SignInScreen extends BaniraScreen {
                         .message(SakuraComponent.get().transClient("format", "confirm_make_up_sign_in",
                                 DateUtils.toString(cellDate)))
                         .onConfirm(() -> {
+                            if (connection == null || connection != Minecraft.getInstance().getConnection()
+                                    || player != Minecraft.getInstance().player || !confirmed.compareAndSet(false, true)) return;
                             cell.setStatus(ClientConfig.get().display().autoRewarded()
                                     ? ESignInStatus.REWARDED.getCode()
                                     : ESignInStatus.SIGNED_IN.getCode());
@@ -723,7 +808,11 @@ public final class SignInScreen extends BaniraScreen {
 
     @Override
     protected void onKeyPressed(KeyPressedHandleArgs eventArgs) {
-        int keyCode = eventArgs.keyCode();
+        if (handlePageKey(eventArgs.keyCode(), true)) eventArgs.consumed(true);
+    }
+
+    private boolean handlePageKey(int keyCode, boolean pressed) {
+        if (!pressed) return handleCalendarKey(keyCode);
         if (keyCode == GLFWKey.GLFW_KEY_ESCAPE
                 || keyCode == SakuraClientBootstrap.getSignInKey().currentKey()
                 || keyCode == Minecraft.getInstance().options.keyInventory.getKey().getValue()) {
@@ -732,13 +821,18 @@ public final class SignInScreen extends BaniraScreen {
             } else {
                 onClose();
             }
-            eventArgs.consumed(true);
+            localRevision++;
+            return true;
         }
+        return false;
     }
 
     @Override
     protected void onKeyReleased(KeyReleasedHandleArgs eventArgs) {
-        int keyCode = eventArgs.keyCode();
+        if (handlePageKey(eventArgs.keyCode(), false)) eventArgs.consumed(true);
+    }
+
+    private boolean handleCalendarKey(int keyCode) {
         if (matchesKey(ClientConfig.get().signKeys().lastMonth(), keyCode)) {
             changeCalendar(DateUtils.addMonth(SakuraClientState.getCalendarCurrentDate(), -1));
         } else if (matchesKey(ClientConfig.get().signKeys().nextMonth(), keyCode)) {
@@ -748,9 +842,10 @@ public final class SignInScreen extends BaniraScreen {
         } else if (matchesKey(ClientConfig.get().signKeys().nextYear(), keyCode)) {
             changeCalendar(DateUtils.addYear(SakuraClientState.getCalendarCurrentDate(), 1));
         } else {
-            return;
+            return false;
         }
-        eventArgs.consumed(true);
+        localRevision++;
+        return true;
     }
 
     private boolean matchesKey(List<String> bindings, int keyCode) {

@@ -43,6 +43,49 @@ import java.util.function.Consumer;
 public final class SignInCell extends BaseWidget {
     public static final int TOOLTIP_MAX_VISIBLE_ITEMS = 5;
 
+    public Component uiDay() {
+        Date now = SakuraClock.clientNow();
+        int color = textureCoordinate.getTextColorDefault();
+        boolean currentMonth = year == DateUtils.getYearPart(now) && month == DateUtils.getMonthOfDate(now);
+        boolean today = currentMonth && day == DateUtils.getDayOfMonth(now);
+        if (today) color = textureCoordinate.getTextColorToday();
+        else if (currentMonth) color = textureCoordinate.getTextColorCurrent();
+        else if (status == ESignInStatus.CAN_REPAIR.getCode()) color = textureCoordinate.getTextColorCanRepair();
+        return SakuraComponent.get().literal(showText ? Integer.toString(day) : "").color(color).underlined(today);
+    }
+
+    public xin.vanilla.banira.client.data.Texture uiStatusIcon() {
+        if (!showIcon) return null;
+        boolean rewarded = status == ESignInStatus.REWARDED.getCode();
+        Coordinate uv = rewarded ? textureCoordinate.getRewardedUV()
+                : status == ESignInStatus.SIGNED_IN.getCode() || ClientConfig.get().display().autoRewarded()
+                ? textureCoordinate.getSignedInUV() : textureCoordinate.getNotSignedInUV();
+        return xin.vanilla.banira.client.data.Texture.of(backgroundTexture, textureCoordinate.getTotalWidth(), textureCoordinate.getTotalHeight())
+                .u0((int) (uv.getU0() + (rewarded ? 0 : uv.getX())))
+                .v0((int) (uv.getV0() + (rewarded ? 0 : uv.getY())))
+                .uWidth((int) uv.getUWidth()).vHeight((int) uv.getVHeight());
+    }
+
+    public Component uiTooltip() {
+        Component result = SakuraComponent.get().literal(DateUtils.toString(DateUtils.getDate(year, month, day)));
+        if (!showHover) return result;
+        LocalPlayerPermission permissions = tooltipPermissions();
+        if (!permissions.details) return result;
+        String language = Minecraft.getInstance().options.languageCode;
+        for (Reward reward : rewardList) {
+            result.append("\n").append(reward.getName(language, true));
+            if (permissions.probability) result.append(" (" + reward.getProbability().stripTrailingZeros().toPlainString() + ")");
+        }
+        return result;
+    }
+
+    private LocalPlayerPermission tooltipPermissions() {
+        net.minecraft.client.player.LocalPlayer player = Minecraft.getInstance().player;
+        return new LocalPlayerPermission(player == null || player.hasPermissions(CommonConfig.get().permission().permissionRewardDetail()),
+                player == null || player.hasPermissions(CommonConfig.get().permission().permissionRewardProbability()));
+    }
+    private record LocalPlayerPermission(boolean details, boolean probability) { }
+
     private final ResourceLocation backgroundTexture;
     private final TextureCoordinate textureCoordinate;
     private final double scale;
