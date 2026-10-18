@@ -20,6 +20,11 @@ import xin.vanilla.sakura.reward.Reward;
 import xin.vanilla.sakura.reward.RewardOperations;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
+import xin.vanilla.banira.api.client.ui.UiGameElement;
+import xin.vanilla.banira.client.data.Texture;
+import xin.vanilla.banira.client.gui.widget.DropdownOption;
+import xin.vanilla.sakura.client.SakuraClientState;
+import xin.vanilla.sakura.SakuraLang;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -32,6 +37,45 @@ public final class RewardRenderer {
     private static final int ICON_SIZE = 16;
 
     private RewardRenderer() {
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public static UiGameElement uiIcon(Reward reward) {
+        UiIconContext context = new UiIconContext(reward);
+        try {
+            SakuraRewardClient.Registration registration = SakuraRewardClient.find(reward.getTypeId()).orElse(null);
+            if (registration != null) registration.getExtension().getPresentation().renderIcon(context, RewardOperations.decode(reward));
+        } catch (RuntimeException | LinkageError failure) {
+            LOGGER.warn("Reward icon failed for {}", reward.getTypeId(), failure);
+        }
+        return context.icon;
+    }
+
+    private static final class UiIconContext implements RewardRenderContext {
+        private final Reward reward;
+        private UiGameElement icon = UiGameElement.option(new DropdownOption("", new ItemStack(Items.BARRIER), null));
+        private UiIconContext(Reward reward) { this.reward = reward; }
+        public Reward reward() { return reward; }
+        public String languageCode() { return SakuraLang.getClientLanguage(); }
+        public boolean withAmount() { return true; }
+        public int x() { return 0; }
+        public int y() { return 0; }
+        public int size() { return ICON_SIZE; }
+        public void drawItem(Object stack) {
+            if (stack instanceof ItemStack item) icon = UiGameElement.option(new DropdownOption("", item.copy(), null));
+        }
+        public void drawEffect(Object effect) { if (effect instanceof MobEffectInstance value) icon = UiGameElement.effect(value); }
+        public void drawBuiltInIcon(String id) {
+            TextureCoordinate coordinates = SakuraClientState.getThemeTextureCoordinate();
+            Coordinate uv = switch (id) {
+                case "point" -> coordinates.getPointUV(); case "level" -> coordinates.getLevelUV();
+                case "card" -> coordinates.getCardUV(); case "message" -> coordinates.getMessageUV(); default -> null;
+            };
+            if (uv != null) icon = UiGameElement.sprite(Texture.of(SakuraClientState.getThemeTexture(), coordinates.getTotalWidth(), coordinates.getTotalHeight())
+                    .u0((int) uv.getU0()).v0((int) uv.getV0()).uWidth((int) uv.getUWidth()).vHeight((int) uv.getVHeight()));
+        }
+        public void drawAmount(String text) { }
+        public void drawPlaceholder(String id) { }
     }
 
     public static void renderCustomReward(GuiGraphics graphics,

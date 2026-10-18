@@ -1,4 +1,8 @@
 {
+  "word.sakura_sign_in.ui_reward_undo": "Undo",
+  "word.sakura_sign_in.ui_reward_redo": "Redo",
+  "word.sakura_sign_in.ui_reward_move": "Move to group",
+  "word.sakura_sign_in.ui_reward_add": "Add reward",
   "format.sakura_sign_in.personal_date_additional_rewards": "[%s] additional rewards: ",
   "word.sakura_sign_in.reset_personal_date_claims": "Clear personal date reward claims",
   "word.sakura_sign_in.reset_personal_date_failed": "Unable to clear personal date reward claims. Check the server log",

@@ -21,7 +21,7 @@ public final class SakuraUiPages {
                 .v0((int) uv.getV0()).uWidth((int) uv.getUWidth()).vHeight((int) uv.getVHeight());
     }
     public static UiPageSpec page(String name, BaniraScreen screen, UiPageSession session) {
-        if (!name.equals("signin") && !name.equals("personal-date")) throw new IllegalArgumentException("Unknown Sakura page");
+        if (!name.equals("signin") && !name.equals("personal-date") && !name.equals("rewards")) throw new IllegalArgumentException("Unknown Sakura page");
         return new UiPageSpec(SakuraSignIn.MODID + ":" + name, SakuraSignIn.MODID + "/" + name + ".html",
                 session, previous -> screen, screen::getEffectiveTheme);
     }

@@ -18,6 +18,11 @@ import java.util.stream.Collectors;
  */
 public final class StringInputScreen extends InputFormScreen {
 
+    @Override
+    protected boolean auiCompatible() {
+        return true;
+    }
+
     private interface SubmissionHandler {
         StringList apply(StringList values);
     }
@@ -121,11 +126,14 @@ public final class StringInputScreen extends InputFormScreen {
         if (titles == null || titles.isEmpty()) {
             throw new IllegalArgumentException("Input form requires at least one title");
         }
+        net.minecraft.client.Minecraft client = net.minecraft.client.Minecraft.getInstance();
+        Object connection = client == null ? null : client.getConnection();
 
         Args args = new Args()
                 .setParentScreen(parent)
                 .setTitle(titles.get(0))
                 .setCallback(results -> {
+                    if (client != null && client.getConnection() != connection) return;
                     StringList values = new StringList();
                     for (int i = 0; i < titles.size(); i++) {
                         values.add(results.value(i));

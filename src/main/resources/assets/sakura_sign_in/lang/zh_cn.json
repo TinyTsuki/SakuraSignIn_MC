@@ -1,4 +1,8 @@
 {
+  "word.sakura_sign_in.ui_reward_undo": "撤销",
+  "word.sakura_sign_in.ui_reward_redo": "重做",
+  "word.sakura_sign_in.ui_reward_move": "移动到奖励组",
+  "word.sakura_sign_in.ui_reward_add": "添加奖励",
   "format.sakura_sign_in.personal_date_additional_rewards": "[%s]追加奖励：",
   "word.sakura_sign_in.reset_personal_date_claims": "清空自定义日期奖励领取记录",
   "word.sakura_sign_in.reset_personal_date_failed": "无法清空日期奖励领取记录，请查看服务端日志",

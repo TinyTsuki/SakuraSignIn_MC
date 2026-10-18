@@ -99,7 +99,233 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-public class RewardOptionScreen extends BaniraScreen {
+import xin.vanilla.banira.api.client.ui.*;
+import xin.vanilla.banira.client.gui.InputFormScreen;
+import xin.vanilla.banira.client.gui.widget.DropdownOption;
+import xin.vanilla.sakura.client.ui.RewardEditorUiSession;
+import xin.vanilla.sakura.client.ui.SakuraUiPages;
+
+public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
+    private RewardEditorUiSession rewardUiSession;
+    private final Object uiConnection = Minecraft.getInstance() == null ? null : Minecraft.getInstance().getConnection();
+    private long uiRevision;
+    private UiPageState rewardPageState;
+    private boolean restoreRewardPage;
+    private String lastUiEntry;
+    private long lastUiClick;
+    private int uiClicks;
+    private boolean uiKeyNavigation;
+
+    @Override public String uiSurfaceId() { return SakuraSignIn.MODID + ":rewards"; }
+    @Override public UiPageSession pageSession() {
+        if (rewardUiSession == null) {
+            rewardUiSession = new RewardEditorUiSession(new RewardEditorUiSession.Port() {
+                public long revision() { return uiRevision + (RewardConfigManager.isRewardOptionDataChanged() ? 1 : 0); }
+                public void refresh() { if (RewardConfigManager.isRewardOptionDataChanged()) updateLayout(); }
+                public List<RewardEditorUiSession.Entry> entries() { return rewardUiEntries(); }
+                public int rule() { ERewardRule rule = currentRewardRule(); return rule == null ? 0 : rule.getCode(); }
+                public void rule(int rule) { if (ERewardRule.valueOf(rule) != null) { currOpButton = 200 + rule; updateLayout(); } }
+                public boolean redacted() { return isCurrentRuleRedacted(); }
+                public boolean enabled(RewardEditorUiSession.Action action) { return rewardUiEnabled(action); }
+                public boolean sidebarOpen() { return SakuraClientState.isRewardOptionBarOpened(); }
+                public void command(RewardEditorUiSession.Action action) { rewardUiCommand(action); }
+                public void entry(String id, RewardEditorUiSession.EntryAction action) { rewardUiEntry(id, action); }
+                public void suspend() { draggingRewardId = null; dragTargetGroupKey = null; clearHeldNavigation(); popupOption.clear(); }
+                public void closed(UiCloseReason reason) { if (reason != UiCloseReason.DISCONNECT && rewardUiConnected()) onClosed(); }
+                public void tick() { uiKeyNavigation = true; try { repeatHeldNavigation(); } finally { uiKeyNavigation = false; } }
+                public boolean key(int key, int scan, int modifiers, boolean pressed) {
+                    uiKeyNavigation = true;
+                    try {
+                        if (pressed) {
+                            KeyPressedHandleArgs args = new KeyPressedHandleArgs().keyCode(key).scanCode(scan).modifiers(modifiers);
+                            onKeyPressed(args); return args.consumed();
+                        }
+                        KeyReleasedHandleArgs args = new KeyReleasedHandleArgs().keyCode(key).scanCode(scan).modifiers(modifiers);
+                        onKeyReleased(args); return args.consumed();
+                    } finally { uiKeyNavigation = false; }
+                }
+            }, this::rewardUiConnected);
+        }
+        return rewardUiSession;
+    }
+    private boolean rewardUiConnected() { return uiConnection == Minecraft.getInstance().getConnection(); }
+    @Override public UiPageSpec uiPage() { return getClass() == RewardOptionScreen.class ? SakuraUiPages.page("rewards", this, pageSession()) : null; }
+    @Override protected void onRemoved() { BaniraUi.screenRemoved(this); super.onRemoved(); }
+    @Override public void onClose() {
+        if (BaniraUi.closePage(this, UiCloseReason.USER_CLOSE)) return;
+        if (rewardUiSession != null && rewardUiSession.requestClose()) return;
+        super.onClose();
+    }
+    @Override public void capturePageState(UiPageState state) {
+        rewardPageState = state;
+        if (state == null) return;
+        state.detailScroll(-ruleListOffset);
+        List<String> ids = new ArrayList<>(REWARD_BUTTONS.keySet());
+        for (int i = 0; i < ids.size(); i++) {
+            RewardListEntryWidget entry = REWARD_BUTTONS.get(ids.get(i));
+            if (entry.realY() + entry.realHeight() > 0) {
+                state.rowPosition(i); state.scrollAnchor((currOpButton - 200) + ":" + ids.get(i)); break;
+            }
+        }
+        state.selectedId(currRewardButton == null ? "" : currRewardButton);
+    }
+    @Override public void preparePageState(UiPageState state) {
+        rewardPageState = state; restoreRewardPage = true;
+        if (state != null) ruleListOffset = -state.detailScroll();
+    }
+    private List<RewardEditorUiSession.Entry> rewardUiEntries() {
+        if (isCurrentRuleRedacted()) return List.of();
+        List<RewardEditorUiSession.Entry> entries = new ArrayList<>();
+        ERewardRule rule = currentRewardRule();
+        REWARD_BUTTONS.forEach((id, widget) -> {
+            boolean group = id.startsWith("标题,");
+            String key = group ? id.substring(3) : rewardGroupKey(id);
+            Reward reward = group ? null : rewardAt(id);
+            String label = group ? rewardGroupDisplayName(key) : SakuraRewardClient.displayName(reward, SakuraLang.getClientLanguage(), true).toString();
+            String detail = group ? RewardConfigManager.getRewardMap(rule).getOrDefault(key, new RewardList()).size() + ""
+                    : reward.getTypeId() + "  " + RewardProbabilityInput.display(reward.getProbability()) + "%";
+            String tooltip = group ? RewardRuleTooltipFormatter.describe(rule, key, label) : rewardItemTooltip(reward).content();
+            boolean editable = group ? rule != ERewardRule.BASE_REWARD
+                    : SakuraRewardClient.find(reward.getTypeId()).map(reg -> reg.getExtension().getEditor() != null).orElse(false);
+            entries.add(new RewardEditorUiSession.Entry(id, label, detail, tooltip,
+                    group ? null : RewardRenderer.uiIcon(reward), group, group && isRewardGroupCollapsed(key), rewardSelection.isSelected(id), editable));
+        });
+        return entries;
+    }
+    private boolean rewardUiEnabled(RewardEditorUiSession.Action action) {
+        if (action == RewardEditorUiSession.Action.SIDEBAR || action == RewardEditorUiSession.Action.HELP
+                || action == RewardEditorUiSession.Action.FOLDER || action == RewardEditorUiSession.Action.DOWNLOAD) return true;
+        if (action == RewardEditorUiSession.Action.UPLOAD) {
+            LocalPlayer player = Minecraft.getInstance().player;
+            return player != null && player.hasPermissions(CommonConfig.get().permission().permissionEditReward()) && SakuraClientState.isEnabled();
+        }
+        if (currentRewardRule() == null || isCurrentRuleRedacted()) return false;
+        if ((action == RewardEditorUiSession.Action.CUT || action == RewardEditorUiSession.Action.DELETE) && "标题,base".equals(currRewardButton)) return false;
+        if (action == RewardEditorUiSession.Action.CLEAR) return currentRewardRule().getCode() <= 10;
+        if (action == RewardEditorUiSession.Action.COPY || action == RewardEditorUiSession.Action.CUT || action == RewardEditorUiSession.Action.DELETE
+                || action == RewardEditorUiSession.Action.MOVE) return currRewardButton != null && !"panel".equals(currRewardButton);
+        return true;
+    }
+    private void rewardUiCommand(RewardEditorUiSession.Action action) {
+        if (!rewardUiConnected() || !rewardUiEnabled(action)) return;
+        switch (action) {
+            case ADD: chooseRewardType(); break;
+            case COPY: editHandler.handleCopy(); break;
+            case CUT: editHandler.handleCut(); break;
+            case PASTE: if (currRewardButton == null) currRewardButton = "panel"; editHandler.handlePaste(); break;
+            case DELETE: requestDeleteConfirmation(); break;
+            case UNDO: editHandler.handleUndo(); break;
+            case REDO: editHandler.handleRedo(); break;
+            case MOVE: chooseRewardTarget(); break;
+            case CLEAR: {
+                int operation = currOpButton; ERewardRule rule = currentRewardRule();
+                requestConfirmation("confirm_clear_reward_rule", () -> clearRewardRule(operation, rule)); break;
+            }
+            case SIDEBAR: SakuraClientState.setRewardOptionBarOpened(!SakuraClientState.isRewardOptionBarOpened()); updateLayout(); break;
+            default:
+                OperationButtonType type = OperationButtonType.valueOf(action.name());
+                RewardOperationWidget widget = type == null ? null : OP_BUTTONS.get(type.getCode());
+                if (widget != null) {
+                    AtomicBoolean layout = new AtomicBoolean(), handled = new AtomicBoolean();
+                    handleOperation(new MouseEvent().button(0), widget, layout, handled);
+                    if (layout.get()) updateLayout();
+                }
+        }
+        uiRevision++;
+    }
+    private void chooseRewardType() {
+        List<DropdownOption> types = SakuraRewardClient.all().stream().filter(reg -> reg.getExtension().getEditor() != null)
+                .map(reg -> new DropdownOption(reg.getTypeId().toString(), reg.getExtension().getTypeName() == null
+                        ? reg.getTypeId().toString() : reg.getExtension().getTypeName().get().toString())).toList();
+        if (types.isEmpty()) return;
+        ERewardRule rule = currentRewardRule();
+        String group = currRewardButton == null || "panel".equals(currRewardButton) ? null
+                : currRewardButton.startsWith("标题,") ? currRewardButton.substring(3) : rewardGroupKey(currRewardButton);
+        String[] selected = {""};
+        Screen transition = RewardEditorCoordinator.deferred(this, () -> openCreateReward(rule, group, RewardTypeId.parse(selected[0])), () -> !selected[0].isEmpty());
+        Minecraft.getInstance().setScreen(new InputFormScreen(new InputFormScreen.Args().setParentScreen(transition)
+                .setTitle(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.ui_reward_add"))
+                .addWidget(new InputFormScreen.Widget().type(InputFormScreen.WidgetType.DROPDOWN).dropdownOptionEntries(types)
+                        .defaultValue(types.get(0).value()).title(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.reward_rule_type")))
+                .setCallback(result -> { if (rewardUiConnected()) selected[0] = result.firstValue(); })));
+    }
+    private void chooseRewardTarget() {
+        ERewardRule rule = currentRewardRule();
+        List<DropdownOption> targets = RewardConfigManager.getRewardMap(rule).keySet().stream()
+                .map(key -> new DropdownOption(key, rewardGroupDisplayName(key))).toList();
+        if (targets.isEmpty()) return;
+        Minecraft.getInstance().setScreen(new InputFormScreen(new InputFormScreen.Args().setParentScreen(this)
+                .setTitle(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.ui_reward_move"))
+                .addWidget(new InputFormScreen.Widget().type(InputFormScreen.WidgetType.DROPDOWN).dropdownOptionEntries(targets)
+                        .defaultValue(targets.get(0).value()).title(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.reward_rule_type")))
+                .setCallback(result -> { if (rewardUiConnected() && rule == currentRewardRule()) moveSelectedRewardsTo(result.firstValue()); })));
+    }
+    private void rewardUiEntry(String id, RewardEditorUiSession.EntryAction action) {
+        if (!rewardUiConnected() || isCurrentRuleRedacted() || !REWARD_BUTTONS.containsKey(id)) return;
+        boolean group = id.startsWith("标题,");
+        String key = group ? id.substring(3) : rewardGroupKey(id);
+        ERewardRule rule = currentRewardRule();
+        if (action == RewardEditorUiSession.EntryAction.CONTEXT) {
+            if (!rewardSelection.isSelected(id)) rewardSelection.selectOnly(id);
+            currRewardButton = id; openRewardActions(id); return;
+        }
+        if (action == RewardEditorUiSession.EntryAction.SELECT) {
+            if (group && !Screen.hasControlDown()) { toggleRewardGroup(key); rewardSelection.clear(); updateLayout(); }
+            else {
+                long now = System.currentTimeMillis();
+                uiClicks = id.equals(lastUiEntry) && now - lastUiClick < 300 ? uiClicks + 1 : 1;
+                lastUiEntry = id; lastUiClick = now;
+                if (!group && uiClicks == 2) selectSemanticRewards(id);
+                else if (!group && uiClicks == 3) selectGroupRewards(key);
+                else rewardSelection.select(id, new ArrayList<>(REWARD_BUTTONS.keySet()), Screen.hasControlDown(), Screen.hasShiftDown());
+            }
+        } else if (action == RewardEditorUiSession.EntryAction.GROUP_SELECT) {
+            if (group) toggleRewardGroupSelection(key); else selectGroupRewards(key);
+        } else {
+            rewardSelection.selectOnly(id); currRewardButton = id;
+            if (action == RewardEditorUiSession.EntryAction.EDIT) { if (group) editRewardGroup(rule, key); else editReward(rule, key, REWARD_BUTTONS.get(id).getOperation()); }
+            else if (action == RewardEditorUiSession.EntryAction.PROBABILITY && !group) editRewardProbability(rule, key, REWARD_BUTTONS.get(id).getOperation());
+            else if (action == RewardEditorUiSession.EntryAction.DELETE) requestDeleteConfirmation();
+        }
+        currRewardButton = rewardSelection.primary(); uiRevision++;
+    }
+
+    private void openRewardActions(String id) {
+        ERewardRule rule = currentRewardRule();
+        boolean group = id.startsWith("标题,"), base = "标题,base".equals(id);
+        Reward reward = group ? null : rewardAt(id);
+        List<DropdownOption> options = new ArrayList<>();
+        if (group ? !base : reward != null && SakuraRewardClient.find(reward.getTypeId()).map(reg -> reg.getExtension().getEditor() != null).orElse(false))
+            options.add(rewardActionOption("edit", "edit"));
+        if (!group) options.add(rewardActionOption("probability", "edit_probability"));
+        options.add(rewardActionOption("copy", "copy"));
+        if (!base) options.add(rewardActionOption("cut", "cut"));
+        options.add(rewardActionOption("paste", "paste"));
+        if (group) {
+            for (var registration : SakuraRewardClient.all()) {
+                if (registration.getExtension().getEditor() == null) continue;
+                Component label = registration.getExtension().getTypeName() == null ? SakuraComponent.get().literal(registration.getTypeId().toString())
+                        : registration.getExtension().getTypeName().get();
+                options.add(new DropdownOption(REWARD_TYPE_OPTION_PREFIX + registration.getTypeId(), label.toString()));
+            }
+            options.add(rewardActionOption("clear", "clear"));
+        }
+        if (!base) options.add(rewardActionOption("delete", "delete"));
+        String[] selected = {""};
+        Screen transition = RewardEditorCoordinator.deferred(this, () -> {
+            if (rewardUiConnected() && currentRewardRule() == rule && !isCurrentRuleRedacted() && REWARD_BUTTONS.containsKey(id)) {
+                handlePopupOption(0, "奖励按钮:" + id, selected[0], new AtomicBoolean()); uiRevision++;
+            }
+        }, () -> !selected[0].isEmpty());
+        Minecraft.getInstance().setScreen(new InputFormScreen(new InputFormScreen.Args().setParentScreen(transition)
+                .setTitle(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.reward_option_title"))
+                .addWidget(new InputFormScreen.Widget().type(InputFormScreen.WidgetType.DROPDOWN).dropdownOptionEntries(options)
+                        .defaultValue(options.get(0).value()).title(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.edit")))
+                .setCallback(result -> { if (rewardUiConnected()) selected[0] = result.firstValue(); })));
+    }
+    private static DropdownOption rewardActionOption(String id, String key) {
+        return new DropdownOption(id, SakuraComponent.get().transClient("word", key).toString());
+    }
     private boolean editsPending;
     private void saveEditor() {
         RewardConfigManager.saveRewardOption(); editsPending = true;
@@ -1412,6 +1638,7 @@ public class RewardOptionScreen extends BaniraScreen {
     private boolean openCreateReward(ERewardRule rule, String groupKey,
                                      RewardTypeId rewardType) {
         Consumer<Reward> save = reward -> {
+            if (!rewardUiConnected()) return;
             RewardConfigManager.addUndoRewardOption(rule);
             RewardConfigManager.clearRedoList();
             RewardConfigManager.addReward(rule, groupKeyForSave(rule, groupKey), reward);
@@ -1426,6 +1653,7 @@ public class RewardOptionScreen extends BaniraScreen {
         Screen transition = RewardEditorCoordinator.deferred(
                 this,
                 () -> RewardEditorCoordinator.openCreate(this, rewardType, reward -> {
+                    if (!rewardUiConnected()) return;
                     RewardConfigManager.addUndoRewardOption(rule);
                     RewardConfigManager.clearRedoList();
                     RewardConfigManager.addReward(rule, createdKey[0], reward);
@@ -1452,6 +1680,7 @@ public class RewardOptionScreen extends BaniraScreen {
     private boolean editReward(ERewardRule rule, String key, int index) {
         Reward reward = RewardConfigManager.getReward(rule, key, index);
         return RewardEditorCoordinator.openEdit(this, reward, updated -> {
+            if (!rewardUiConnected()) return;
             RewardConfigManager.addUndoRewardOption(rule);
             RewardConfigManager.clearRedoList();
             RewardConfigManager.updateReward(rule, key, index, updated);
@@ -1494,7 +1723,7 @@ public class RewardOptionScreen extends BaniraScreen {
                     new TextList(Text.trans(SakuraSignIn.MODID,
                             "word.sakura_sign_in.enter_something")),
                     new StringList("\\w*", "", "\\d*"),
-                    new StringList(split[0], split[1], split[3]),
+                    new StringList(split[0], split[1], split.length > 3 ? split[3] : "1"),
                     input -> {
                         StringList result = new StringList("", "", "");
                         if (!RewardConfigManager.validateKeyName(rule, input.get(0))) {
@@ -1551,6 +1780,7 @@ public class RewardOptionScreen extends BaniraScreen {
             Screen callbackScreen, PersonalDatePreset existing, String[] createdKey) {
         return xin.vanilla.sakura.client.gui.PersonalDatePresetForm.create(
                 callbackScreen, existing, candidate -> {
+                    if (!rewardUiConnected()) return;
                     RewardConfigManager.addUndoRewardOption(ERewardRule.PERSONAL_DATE_REWARD);
                     if (existing == null) {
                         RewardConfigManager.getRewardConfig().getPersonalDatePresets().add(candidate);
@@ -1570,6 +1800,7 @@ public class RewardOptionScreen extends BaniraScreen {
             Screen callbackScreen, LotteryPool existing, String[] createdKey) {
         return xin.vanilla.sakura.client.gui.LotteryPoolForm.create(
                 callbackScreen, existing, candidate -> {
+                    if (!rewardUiConnected()) return;
                     RewardConfigManager.addUndoRewardOption(ERewardRule.LOTTERY_REWARD);
                     RewardConfigManager.clearRedoList();
                     if (existing == null) {
@@ -1589,6 +1820,7 @@ public class RewardOptionScreen extends BaniraScreen {
     private boolean editRewardProbability(ERewardRule rule, String key, int index) {
         Reward reward = RewardConfigManager.getReward(rule, key, index).clone();
         return RewardEditorCoordinator.openProbability(this, reward, updated -> {
+            if (!rewardUiConnected()) return;
             RewardConfigManager.addUndoRewardOption(rule);
             RewardConfigManager.clearRedoList();
             RewardConfigManager.updateReward(rule, key, index, updated);
@@ -1608,7 +1840,7 @@ public class RewardOptionScreen extends BaniraScreen {
                         .parentScreen(this)
                         .title(SakuraComponent.get().transClient("word", "confirm_operation"))
                         .message(message)
-                        .onConfirm(action)
+                        .onConfirm(() -> { if (rewardUiConnected()) action.run(); })
         ));
     }
 
@@ -1709,6 +1941,7 @@ public class RewardOptionScreen extends BaniraScreen {
     }
 
     private void updateLayout() {
+        uiRevision++;
         this.leftBarWidth = SakuraClientState.isRewardOptionBarOpened() ? 100 : 20;
         this.lineItemCount = Math.max(1,
                 (super.width - leftBarWidth - leftMargin - rightMargin
@@ -2263,6 +2496,13 @@ public class RewardOptionScreen extends BaniraScreen {
                         .setTooltip(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.merge_same_rewards")),
                 new ScreenCoordinate(width - rightBarWidth + 1, 102, 18, 18));
         updateLayout();
+        if (restoreRewardPage && rewardPageState != null) {
+            restoreRewardPage = false;
+            String anchor = rewardPageState.scrollAnchor();
+            int separator = anchor.indexOf(':');
+            RewardListEntryWidget entry = REWARD_BUTTONS.get(separator < 0 ? anchor : anchor.substring(separator + 1));
+            if (entry != null) setYOffset(topMargin - entry.bounds().y());
+        }
     }
 
     private RewardOperationWidget createDrawnIcon(OperationButtonType type) {
@@ -2595,6 +2835,7 @@ public class RewardOptionScreen extends BaniraScreen {
 
     private boolean moveRewardSelection(int keyCode) {
         RewardKeyboardNavigator.Direction direction = navigationDirection(keyCode);
+        if (uiKeyNavigation) direction = RewardEditorUiSession.listDirection(direction);
         if (direction == null || rewardSelection.primary() == null
                 || rewardSelection.primary().startsWith("标题")
                 || !popupOption.isEmpty() || draggingRewardId != null
@@ -2605,15 +2846,19 @@ public class RewardOptionScreen extends BaniraScreen {
         }
         List<RewardKeyboardNavigator.Point> points = new ArrayList<>();
         List<String> orderedIds = new ArrayList<>();
-        REWARD_BUTTONS.forEach((id, widget) -> {
-            if (!id.startsWith("标题")) {
-                orderedIds.add(id);
-                points.add(new RewardKeyboardNavigator.Point(
-                        id,
-                        widget.realX() + widget.realWidth() / 2.0,
-                        widget.realY() + widget.realHeight() / 2.0));
-            }
-        });
+        if (uiKeyNavigation && rewardUiSession != null) {
+            orderedIds.addAll(rewardUiSession.navigationIds());
+        } else {
+            REWARD_BUTTONS.forEach((id, widget) -> {
+                if (!id.startsWith("标题")) {
+                    orderedIds.add(id);
+                    points.add(new RewardKeyboardNavigator.Point(
+                            id,
+                            widget.realX() + widget.realWidth() / 2.0,
+                            widget.realY() + widget.realHeight() / 2.0));
+                }
+            });
+        }
         LinkedHashSet<String> moved = new LinkedHashSet<>();
         boolean changed = false;
         for (String selected : rewardSelection.selectedIds()) {
@@ -2636,6 +2881,8 @@ public class RewardOptionScreen extends BaniraScreen {
         rewardSelection.selectOnly(moved);
         currRewardButton = rewardSelection.primary();
         ensureRewardVisible(currRewardButton);
+        if (uiKeyNavigation && rewardUiSession != null) rewardUiSession.reveal(currRewardButton);
+        uiRevision++;
         return true;
     }
 
