@@ -17,6 +17,7 @@ plugins {
 def javaVer = 17
 
 apply from: 'gradle/aui-validation-output.gradle'
+apply from: 'gradle/aui-artifact-check.gradle'
 apply from: 'gradle/aui-validation-publication.gradle'
 
 apply plugin: 'org.spongepowered.mixin'
