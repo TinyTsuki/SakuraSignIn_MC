@@ -577,7 +577,9 @@ public class RewardManagerDeliveryTest {
     }
 
     private static void collectNames(Component component, List<String> names) {
-        if (component.text().startsWith("reward-")) {
+        String name = component.original() instanceof net.minecraft.network.chat.Component original
+                ? original.getString() : component.text();
+        if (name.startsWith("reward-")) {
             assertEquals(java.awt.Color.GREEN.getRGB(), component.color().argb());
             names.add(component.toString(true));
             return;
