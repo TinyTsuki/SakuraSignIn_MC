@@ -343,95 +343,92 @@ public class RewardConfigManager {
         redoHistory().clear();
     }
 
-    /**
-     * 添加撤销数据
-     * 数据修改前调用
-     */
     public static void addUndoRewardOption(ERewardRule rule) {
-        File dir = new File(RewardConfigManager.getConfigDirectory().toFile(), "history/undo/" + rule.name().toLowerCase());
-        if (!dir.exists()) {
-            dir.mkdirs();
-        }
-        String historyId = System.currentTimeMillis() + "." + random.nextInt(1000000);
-        File dataFile = new File(dir, historyId + "." + FILE_NAME);
-        try (FileWriter writer = new FileWriter(dataFile)) {
-            Gson gson = new GsonBuilder().enableComplexMapKeySerialization().create();
-            writer.write(gson.toJson(getRewardMap(rule)));
-            undoHistory().computeIfAbsent(rule, k -> new ConcurrentLinkedDeque<>()).push(historyId);
-        } catch (IOException e) {
-            LOGGER.error("Error saving undo data: ", e);
-        }
-        // 删除旧文件
-        deleteOldFile(dir, 100);
+        writeHistory(rule, "undo", undoHistory());
     }
 
-    /**
-     * 获取撤销数据
-     * Ctrl Z 时调用
-     */
-    public static Map<String, RewardList> getUnDoRewardOption(ERewardRule rule) {
-        File dir = new File(RewardConfigManager.getConfigDirectory().toFile(), "history/undo/" + rule.name().toLowerCase());
-        if (!dir.exists()) {
-            dir.mkdirs();
-        }
-        // 移除队列末尾
-        File dataFile = new File(dir, undoHistory().getOrDefault(rule, new ConcurrentLinkedDeque<>()).poll() + "." + FILE_NAME);
-        if (!dataFile.exists()) {
-            return new LinkedHashMap<>();
-        }
-        try {
-            String jsonString = new String(Files.readAllBytes(Paths.get(dataFile.getPath())));
-            return GSON.fromJson(jsonString, new TypeToken<LinkedHashMap<String, RewardList>>() {
-            }.getType());
-        } catch (IOException e) {
-            LOGGER.error("Error loading undo data: ", e);
-        }
-        return new LinkedHashMap<>();
-    }
-
-    /**
-     * 添加重做数据
-     * 撤销时修改数据前调用
-     */
     public static void addRedoRewardOption(ERewardRule rule) {
-        File dir = new File(RewardConfigManager.getConfigDirectory().toFile(), "history/redo/" + rule.name().toLowerCase());
-        if (!dir.exists()) {
-            dir.mkdirs();
-        }
-        String historyId = System.currentTimeMillis() + "." + random.nextInt(1000000);
-        File dataFile = new File(dir, historyId + "." + FILE_NAME);
-        try (FileWriter writer = new FileWriter(dataFile)) {
-            Gson gson = new GsonBuilder().enableComplexMapKeySerialization().create();
-            writer.write(gson.toJson(getRewardMap(rule)));
-            redoHistory().computeIfAbsent(rule, k -> new ConcurrentLinkedDeque<>()).push(historyId);
-        } catch (IOException e) {
-            LOGGER.error("Error saving redo data: ", e);
-        }
-        // 删除旧文件
-        deleteOldFile(dir, 100);
+        writeHistory(rule, "redo", redoHistory());
     }
 
-    /**
-     * 获取重做数据
-     * Ctrl Shift Z 时调用
-     */
+    public static Map<String, RewardList> getUnDoRewardOption(ERewardRule rule) {
+        return takeHistoryRewards(rule, "undo", undoHistory());
+    }
+
     public static Map<String, RewardList> getReDoRewardOption(ERewardRule rule) {
-        File dir = new File(RewardConfigManager.getConfigDirectory().toFile(), "history/redo/" + rule.name().toLowerCase());
-        if (!dir.exists()) {
-            dir.mkdirs();
+        return takeHistoryRewards(rule, "redo", redoHistory());
+    }
+
+    public static synchronized boolean undoRewardOption(ERewardRule rule) {
+        return restoreHistory(rule, "undo", undoHistory(), "redo", redoHistory());
+    }
+
+    public static synchronized boolean redoRewardOption(ERewardRule rule) {
+        return restoreHistory(rule, "redo", redoHistory(), "undo", undoHistory());
+    }
+
+    private static Path historyDirectory(ERewardRule rule, String direction) {
+        return getConfigDirectory().resolve("history").resolve(direction)
+                .resolve(rule.name().toLowerCase(Locale.ROOT));
+    }
+
+    private static boolean writeHistory(ERewardRule rule, String direction,
+                                        Map<ERewardRule, ConcurrentLinkedDeque<String>> history) {
+        Path directory = historyDirectory(rule, direction);
+        String id = System.currentTimeMillis() + "." + random.nextInt(1000000);
+        try {
+            String snapshot = RewardRuleHistory.encode(getRewardConfig(), rule);
+            Files.createDirectories(directory);
+            Files.writeString(directory.resolve(id + "." + FILE_NAME), snapshot,
+                    java.nio.charset.StandardCharsets.UTF_8);
+            history.computeIfAbsent(rule, key -> new ConcurrentLinkedDeque<>()).push(id);
+            deleteOldFile(directory.toFile(), 100);
+            return true;
+        } catch (IOException | RuntimeException e) {
+            LOGGER.error("Error saving reward history: ", e);
+            return false;
         }
-        File dataFile = new File(dir, redoHistory().getOrDefault(rule, new ConcurrentLinkedDeque<>()).poll() + "." + FILE_NAME);
-        if (!dataFile.exists()) {
+    }
+
+    private static RewardRuleHistory.Snapshot readHistory(ERewardRule rule, String direction,
+                                                          String id) throws IOException {
+        if (!id.matches("\\d+\\.\\d+")) throw new IOException("Invalid reward history identity");
+        return RewardRuleHistory.decode(Files.readString(
+                historyDirectory(rule, direction).resolve(id + "." + FILE_NAME),
+                java.nio.charset.StandardCharsets.UTF_8), rule);
+    }
+
+    private static Map<String, RewardList> takeHistoryRewards(ERewardRule rule, String direction,
+                                   Map<ERewardRule, ConcurrentLinkedDeque<String>> history) {
+        ConcurrentLinkedDeque<String> entries = history.get(rule);
+        String id = entries == null ? null : entries.peek();
+        if (id == null) return new LinkedHashMap<>();
+        try {
+            RewardRuleHistory.Snapshot snapshot = readHistory(rule, direction, id);
+            entries.poll();
+            return snapshot.rewards();
+        } catch (IOException | RuntimeException e) {
+            LOGGER.error("Error loading reward history: ", e);
             return new LinkedHashMap<>();
         }
+    }
+
+    private static boolean restoreHistory(ERewardRule rule, String direction,
+                   Map<ERewardRule, ConcurrentLinkedDeque<String>> history, String oppositeDirection,
+                   Map<ERewardRule, ConcurrentLinkedDeque<String>> oppositeHistory) {
+        ConcurrentLinkedDeque<String> entries = history.get(rule);
+        String id = entries == null ? null : entries.peek();
+        if (id == null) return false;
         try {
-            String jsonString = new String(Files.readAllBytes(Paths.get(dataFile.getPath())));
-            return GSON.fromJson(jsonString, new TypeToken<LinkedHashMap<String, RewardList>>() {
-            }.getType());
-        } catch (IOException e) {
-            LOGGER.error("Error loading redo data: ", e);
+            RewardRuleHistory.Snapshot snapshot = readHistory(rule, direction, id);
+            if (!writeHistory(rule, oppositeDirection, oppositeHistory)) return false;
+            snapshot.restore(getRewardConfig());
+            entries.poll();
+            return true;
+        } catch (IOException | RuntimeException e) {
+            LOGGER.error("Error restoring reward history: ", e);
+            return false;
         }
-        return new LinkedHashMap<>();
     }
 
     /**

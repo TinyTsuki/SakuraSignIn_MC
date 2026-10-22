@@ -1784,6 +1784,7 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
                 callbackScreen, existing, candidate -> {
                     if (!rewardUiConnected()) return;
                     RewardConfigManager.addUndoRewardOption(ERewardRule.PERSONAL_DATE_REWARD);
+                    RewardConfigManager.clearRedoList();
                     if (existing == null) {
                         RewardConfigManager.getRewardConfig().getPersonalDatePresets().add(candidate);
                     } else {
@@ -2360,10 +2361,7 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
          */
         public boolean handleUndo() {
             if (updateRule()) return false;
-            Map<String, RewardList> map = RewardConfigManager.getUnDoRewardOption(rule);
-            if (!map.isEmpty()) {
-                RewardConfigManager.addRedoRewardOption(rule);
-                RewardConfigManager.setRewardMap(RewardConfigManager.getRewardConfig(), rule, map);
+            if (RewardConfigManager.undoRewardOption(rule)) {
                 saveEditor();
                 updateLayout();
                 return true;
@@ -2377,10 +2375,7 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
         public boolean handleRedo() {
             if (updateRule()) return false;
 
-            Map<String, RewardList> map = RewardConfigManager.getReDoRewardOption(rule);
-            if (!map.isEmpty()) {
-                RewardConfigManager.addUndoRewardOption(rule);
-                RewardConfigManager.setRewardMap(RewardConfigManager.getRewardConfig(), rule, map);
+            if (RewardConfigManager.redoRewardOption(rule)) {
                 saveEditor();
                 updateLayout();
                 return true;
