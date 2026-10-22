@@ -35,6 +35,9 @@ public final class LotteryPoolForm {
                 .defaultValue(existing == null ? "" : existing.getId())
                 .validator(result -> {
                     String id = result.value();
+                    if (id == null || !id.matches("[a-z0-9_.-]{1,64}")) {
+                        return tr("input_format_invalid");
+                    }
                     if (existing != null) {
                         return existing.getId().equals(id) ? "" : tr("lottery_pool_id_locked");
                     }
@@ -47,7 +50,12 @@ public final class LotteryPoolForm {
                 .tooltip(text("lottery_pool_name_hint"))
                 .maxLength(96)
                 .regex(".{1,96}")
-                .defaultValue(existing == null ? "" : existing.getDisplayName()));
+                .defaultValue(existing == null ? "" : existing.getDisplayName())
+                .validator(result -> {
+                    String name = result.value();
+                    return name == null || name.trim().isEmpty() || name.length() > 96
+                            ? tr("input_format_invalid") : "";
+                }));
         args.addWidget(new InputFormScreen.Widget().name("description")
                 .title(text("lottery_pool_description")).hint(text("lottery_pool_description"))
                 .tooltip(text("lottery_pool_description"))
@@ -100,9 +108,11 @@ public final class LotteryPoolForm {
                     existing == null ? new RewardList() : existing.getRewards());
             candidate.setDescription(results.value("description"));
             candidate.setVoucherExpression(results.value("voucherExpression"));
-            if (LotteryPoolValidator.validate(candidate).isEmpty()) {
-                connectedSubmit.accept(candidate);
+            if (!LotteryPoolValidator.validate(candidate).isEmpty()) {
+                results.runningResult(tr("input_format_invalid"));
+                return;
             }
+            connectedSubmit.accept(candidate);
         });
         return new InputFormScreen(args);
     }

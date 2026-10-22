@@ -106,6 +106,55 @@ public class LotteryPoolFormTest {
         }
     }
 
+    @Test public void invalidIdRetainsDraftUntilCorrectedOnce() {
+        correctedForm("bad/id", "Daily", "id", "new-pool");
+    }
+
+    @Test public void whitespaceNameRetainsDraftUntilCorrectedOnce() {
+        correctedForm("new-pool", " \t ", "name", "Daily");
+    }
+
+    @Test public void idValidatorRejectsInvalidSyntaxAndLength() throws Exception {
+        InputFormScreen.Widget id = widget(form(null, new AtomicReference<>()), "id");
+        for (String value : java.util.List.of("bad/id", "BAD", "x".repeat(65))) {
+            assertFalse(id.validator().apply(new InputFormScreen.Results().value("id", 0, value).curName("id")).isEmpty());
+        }
+        assertEquals("", id.validator().apply(new InputFormScreen.Results().value("id", 0, "new.pool-1").curName("id")));
+    }
+
+    @Test public void callbackReportsInvalidCandidateInsteadOfSilentSuccess() throws Exception {
+        AtomicReference<LotteryPool> submitted = new AtomicReference<>();
+        InputFormScreen.Args args = form(pool(), submitted);
+        InputFormScreen.Results result = defaults(args).value("name", 1, "   ");
+        args.getCallback().accept(result);
+        assertNull(submitted.get());
+        assertNotNull("Invalid candidate must report failure", result.runningResult());
+        assertFalse(result.runningResult().isBlank());
+        args.getCallback().accept(defaults(args));
+        assertNotNull(submitted.get());
+    }
+
+    private static void correctedForm(String id, String name, String field, String correction) {
+        java.util.concurrent.atomic.AtomicInteger submissions = new java.util.concurrent.atomic.AtomicInteger();
+        Screen parent = new Screen(net.minecraft.network.chat.Component.literal("parent")) {};
+        InputFormScreen form = (InputFormScreen) LotteryPoolForm.create(parent, null, value -> submissions.incrementAndGet());
+        var session = form.uiSession();
+        session.draft("id", id); session.draft("name", name);
+        assertFalse("Invalid input must prevent submission", session.canSubmit());
+        assertFalse(session.submit()); assertFalse(session.finished());
+        assertEquals(0, submissions.get());
+        assertEquals(field.equals("id") ? id : name, session.draft(field));
+        session.draft(field, correction);
+        assertTrue(session.submit()); assertEquals(1, submissions.get());
+        assertFalse(session.submit()); assertEquals(1, submissions.get());
+    }
+
+    private static InputFormScreen.Results defaults(InputFormScreen.Args args) {
+        InputFormScreen.Results result = new InputFormScreen.Results(); int index = 0;
+        for (InputFormScreen.Widget widget : args.getWidgets()) result.value(widget.name(), index++, widget.defaultValue());
+        return result;
+    }
+
     private static LotteryPool pool() {
         return new LotteryPool("daily", "Daily", LotteryLimitPolicy.DAILY, 1, 0, new RewardList());
     }

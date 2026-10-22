@@ -34,6 +34,9 @@ public final class PersonalDatePresetForm {
                 .setHeaderTitle(text("personal_date_preset_title"));
         args.addWidget(textWidget("id", "personal_date_preset_id",
                 existing == null ? "" : existing.getId(), "[a-z0-9_.-]{1,64}", value -> {
+                    if (value == null || !value.matches("[a-z0-9_.-]{1,64}")) {
+                        return tr("input_format_invalid");
+                    }
                     if (existing != null && !existing.getId().equals(value)) {
                         return tr("personal_date_preset_id_locked");
                     }
@@ -44,7 +47,9 @@ public final class PersonalDatePresetForm {
                     return duplicate ? tr("personal_date_preset_duplicate") : "";
                 }));
         args.addWidget(textWidget("name", "personal_date_preset_name",
-                existing == null ? "" : existing.getDisplayName(), ".{1,64}", value -> ""));
+                existing == null ? "" : existing.getDisplayName(), ".{1,64}", value ->
+                        value == null || value.trim().isEmpty() || value.length() > 64
+                                ? tr("input_format_invalid") : ""));
         args.addWidget(dropdown("recurrence", "personal_date_recurrence",
                 existing == null ? PersonalDateRecurrence.YEARLY.name()
                         : existing.getRecurrence().name(), false,
@@ -86,9 +91,11 @@ public final class PersonalDatePresetForm {
                     Integer.parseInt(results.value("before")),
                     Integer.parseInt(results.value("after")),
                     existing == null ? new RewardList() : existing.getRewards());
-            if (PersonalDatePresetValidator.validate(candidate).isEmpty()) {
-                submit.accept(candidate);
+            if (!PersonalDatePresetValidator.validate(candidate).isEmpty()) {
+                results.runningResult(tr("personal_date_preset_invalid"));
+                return;
             }
+            submit.accept(candidate);
         });
         return new InputFormScreen(args);
     }
