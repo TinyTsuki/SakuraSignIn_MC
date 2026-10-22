@@ -1747,6 +1747,7 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
                                     String.format("%s|%s|-1|%d", input.get(0), input.get(1),
                                             NumberUtils.toInt(input.get(2), 1)));
                             saveEditor();
+                            updateLayout();
                         }
                         return result;
                     }));
@@ -1768,6 +1769,7 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
                         RewardConfigManager.clearRedoList();
                         RewardConfigManager.updateKeyName(rule, key, normalized);
                         saveEditor();
+                        updateLayout();
                     } else {
                         result.add(SakuraComponent.get().transClient(
                                 "format", "reward_rule_s_error", input.get(0)).toString());
