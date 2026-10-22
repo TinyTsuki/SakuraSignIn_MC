@@ -92,6 +92,39 @@ public class RewardHistoryPersistenceTest {
         assertTrue("Failed reads must not consume history", RewardConfigManager.getUnDoRewardOption(rule).containsKey("1"));
     }
 
+    @Test public void malformedLegacyRewardMustNotReplaceModelOrConsumeHistory() throws Exception {
+        ERewardRule rule = ERewardRule.MONTH_REWARD;
+        RewardConfig config = RewardConfigManager.getRewardConfig();
+        config.getMonthRewards().put("1", new RewardList());
+        RewardConfigManager.addUndoRewardOption(rule);
+        Path file = undoFile(rule);
+        byte[] valid = Files.readAllBytes(file);
+        Files.write(file, "{\"1\":[{}]}".getBytes(StandardCharsets.UTF_8));
+        config.getMonthRewards().put("2", new RewardList());
+        String before = new RewardConfigCodec().encode(config);
+        assertFalse("Malformed legacy reward must not apply", RewardConfigManager.undoRewardOption(rule));
+        assertEquals(before, new RewardConfigCodec().encode(config));
+        Files.write(file, valid);
+        assertTrue("Same history entry must remain usable", RewardConfigManager.undoRewardOption(rule));
+        assertFalse(config.getMonthRewards().containsKey("2"));
+    }
+
+    @Test public void legacyMapWithCompleteRewardStillRestores() throws Exception {
+        ERewardRule rule = ERewardRule.MONTH_REWARD;
+        RewardList rewards = new RewardList();
+        JsonObject content = new JsonObject();
+        content.addProperty("value", 3);
+        rewards.add(new xin.vanilla.sakura.reward.Reward(content,
+                xin.vanilla.sakura.api.reward.SakuraRewardTypes.EXPERIENCE_POINT));
+        RewardConfigManager.getRewardConfig().getMonthRewards().put("1", rewards);
+        RewardConfigManager.addUndoRewardOption(rule);
+        Files.write(undoFile(rule), new com.google.gson.Gson()
+                .toJson(Collections.singletonMap("1", rewards)).getBytes(StandardCharsets.UTF_8));
+        RewardConfigManager.getRewardConfig().getMonthRewards().clear();
+        assertTrue(RewardConfigManager.undoRewardOption(rule));
+        assertEquals(rewards, RewardConfigManager.getRewardConfig().getMonthRewards().get("1"));
+    }
+
     @Test public void ordinaryHistoryStillReadsRewardLists() {
         ERewardRule rule = ERewardRule.MONTH_REWARD;
         RewardConfigManager.getRewardConfig().getMonthRewards().put("1", new RewardList());
