@@ -36,6 +36,7 @@ public final class PersonalDateUiSession implements UiPageSession {
     }
     public String query() { return query; }
     public void query(String value) { query = Objects.requireNonNull(value); }
+    public boolean acceptsChildResult() { return !closed && connection.getAsBoolean(); }
     private boolean live(UiView owner, long token) { return !closed && view == owner && generation == token && connection.getAsBoolean(); }
     @Override public void bind(UiView next) {
         detach(UiDetachReason.RELOAD);

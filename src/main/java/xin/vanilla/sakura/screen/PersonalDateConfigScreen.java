@@ -31,7 +31,7 @@ import xin.vanilla.sakura.network.packet.PersonalDateSlotUpdatePacket;
 import xin.vanilla.sakura.notification.SakuraClientNotifications;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
 import xin.vanilla.banira.api.client.ui.*;
-import xin.vanilla.banira.client.gui.InputFormScreen;
+import xin.vanilla.sakura.client.gui.PersonalDateInputForm;
 import xin.vanilla.sakura.client.ui.PersonalDateUiSession;
 import xin.vanilla.sakura.client.ui.SakuraUiPages;
 
@@ -98,6 +98,7 @@ public final class PersonalDateConfigScreen extends xin.vanilla.banira.client.gu
     @Override public void onClose() {
         if (BaniraUi.closePage(this, UiCloseReason.USER_CLOSE)) return;
         if (personalSession != null && personalSession.requestClose()) return;
+        if (personalSession != null) personalSession.close(UiCloseReason.USER_CLOSE);
         super.onClose();
     }
 
@@ -222,32 +223,10 @@ public final class PersonalDateConfigScreen extends xin.vanilla.banira.client.gu
     }
 
     private void openDateInput(PersonalDatePreset preset, PlayerPersonalDateSlot slot) {
-        boolean monthly = preset.getRecurrence() == PersonalDateRecurrence.MONTHLY;
-        String current = monthly ? String.valueOf(slot.getDay()) : slot.getMonth() + "/" + slot.getDay();
-        Object connection = Minecraft.getInstance().getConnection();
-        InputFormScreen.Args args = new InputFormScreen.Args().setParentScreen(this)
-                .setTitle(Text.trans(SakuraSignIn.MODID, monthly
-                        ? "word.sakura_sign_in.personal_date_day"
-                        : "word.sakura_sign_in.personal_date_month_day"));
-        args.addWidget(new InputFormScreen.Widget().name("date")
-                .title(args.getTitle()).hint(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.personal_date_value_hint"))
-                .tooltip(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.personal_date_value_hint"))
-                .regex(monthly ? "[0-9]{1,3}" : "[0-9]{1,2}/[0-9]{1,3}").defaultValue(current));
-        java.util.concurrent.atomic.AtomicBoolean submitted = new java.util.concurrent.atomic.AtomicBoolean();
-        args.setCallback(values -> {
-                    if (connection == null || connection != Minecraft.getInstance().getConnection()
-                            || !submitted.compareAndSet(false, true)) return;
-                    String[] parts = values.value("date").split("/");
-                    if (monthly) {
-                        slot.setMonth(0);
-                        slot.setDay(Integer.parseInt(parts[0]));
-                    } else {
-                        slot.setMonth(Integer.parseInt(parts[0]));
-                        slot.setDay(Integer.parseInt(parts[1]));
-                    }
-                    refreshWidget();
-                });
-        Minecraft.getInstance().setScreen(new InputFormScreen(args));
+        pageSession();
+        PersonalDateUiSession owner = personalSession;
+        Minecraft.getInstance().setScreen(PersonalDateInputForm.create(this, preset, slot,
+                owner::acceptsChildResult, this::refreshWidget));
     }
 
     @Override
