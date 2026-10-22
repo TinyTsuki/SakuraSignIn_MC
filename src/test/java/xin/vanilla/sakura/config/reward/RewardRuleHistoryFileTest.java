@@ -1,5 +1,7 @@
 package xin.vanilla.sakura.config.reward;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import xin.vanilla.banira.platform.BaniraPathService;
@@ -12,6 +14,7 @@ import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.stream.Stream;
 
 import static org.junit.Assert.*;
@@ -73,6 +76,36 @@ public class RewardRuleHistoryFileTest {
         Files.write(file, valid);
         assertTrue(RewardConfigManager.undoRewardOption(RULE));
         assertTrue(RewardConfigManager.getRewardConfig().getMonthRewards().isEmpty());
+    }
+
+    @Test public void malformedLegacyRewardMustNotReplaceModelOrConsumeHistory() throws Exception {
+        RewardConfig config = RewardConfigManager.getRewardConfig();
+        config.getMonthRewards().put("1", new RewardList());
+        RewardConfigManager.addUndoRewardOption(RULE);
+        Path file = undoFile();
+        byte[] valid = Files.readAllBytes(file);
+        Files.writeString(file, "{\"1\":[{}]}", StandardCharsets.UTF_8);
+        config.getMonthRewards().put("2", new RewardList());
+        String before = new RewardConfigCodec().encode(config);
+        assertFalse("Malformed legacy reward must not apply", RewardConfigManager.undoRewardOption(RULE));
+        assertEquals(before, new RewardConfigCodec().encode(config));
+        Files.write(file, valid);
+        assertTrue("Same history entry must remain usable", RewardConfigManager.undoRewardOption(RULE));
+        assertFalse(config.getMonthRewards().containsKey("2"));
+    }
+
+    @Test public void legacyMapWithCompleteRewardStillRestores() throws Exception {
+        RewardList rewards = new RewardList();
+        JsonObject content = new JsonObject();
+        content.addProperty("value", 3);
+        rewards.add(new xin.vanilla.sakura.reward.Reward(content,
+                xin.vanilla.sakura.api.reward.SakuraRewardTypes.EXPERIENCE_POINT));
+        RewardConfigManager.getRewardConfig().getMonthRewards().put("1", rewards);
+        RewardConfigManager.addUndoRewardOption(RULE);
+        Files.writeString(undoFile(), new Gson().toJson(Collections.singletonMap("1", rewards)), StandardCharsets.UTF_8);
+        RewardConfigManager.getRewardConfig().getMonthRewards().clear();
+        assertTrue(RewardConfigManager.undoRewardOption(RULE));
+        assertEquals(rewards, RewardConfigManager.getRewardConfig().getMonthRewards().get("1"));
     }
 
     @Test public void oppositeHistoryWriteFailureLeavesModelAndUndoAvailable() throws Exception {

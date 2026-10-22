@@ -6,6 +6,7 @@ import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import xin.vanilla.sakura.enums.ERewardRule;
 import xin.vanilla.sakura.reward.RewardList;
+import xin.vanilla.sakura.reward.RewardJsonCodec;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
@@ -38,6 +39,12 @@ final class RewardRuleHistory {
             Map<String, RewardList> rewards = new Gson().fromJson(json,
                     new TypeToken<LinkedHashMap<String, RewardList>>() { }.getType());
             if (rewards == null || rewards.containsValue(null)) throw new IOException("Invalid reward history");
+            for (RewardList list : rewards.values()) {
+                list.forEach(RewardJsonCodec::encode);
+            }
+            RewardConfig legacy = new RewardConfig();
+            RewardConfigManager.setRewardMap(legacy, rule, rewards);
+            new RewardConfigCodec().encode(legacy);
             return new Snapshot(rule, null, rewards);
         } catch (RuntimeException e) {
             throw new IOException("Invalid reward history", e);
