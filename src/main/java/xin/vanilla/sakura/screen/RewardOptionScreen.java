@@ -1553,6 +1553,7 @@ public class RewardOptionScreen extends BaniraScreen {
         return xin.vanilla.sakura.client.gui.PersonalDatePresetForm.create(
                 callbackScreen, existing, candidate -> {
                     RewardConfigManager.addUndoRewardOption(ERewardRule.PERSONAL_DATE_REWARD);
+                    RewardConfigManager.clearRedoList();
                     if (existing == null) {
                         RewardConfigManager.getRewardConfig().getPersonalDatePresets().add(candidate);
                     } else {
@@ -2126,10 +2127,7 @@ public class RewardOptionScreen extends BaniraScreen {
          */
         public boolean handleUndo() {
             if (updateRule()) return false;
-            Map<String, RewardList> map = RewardConfigManager.getUnDoRewardOption(rule);
-            if (!map.isEmpty()) {
-                RewardConfigManager.addRedoRewardOption(rule);
-                RewardConfigManager.setRewardMap(RewardConfigManager.getRewardConfig(), rule, map);
+            if (RewardConfigManager.undoRewardOption(rule)) {
                 saveEditor();
                 updateLayout();
                 return true;
@@ -2143,10 +2141,7 @@ public class RewardOptionScreen extends BaniraScreen {
         public boolean handleRedo() {
             if (updateRule()) return false;
 
-            Map<String, RewardList> map = RewardConfigManager.getReDoRewardOption(rule);
-            if (!map.isEmpty()) {
-                RewardConfigManager.addUndoRewardOption(rule);
-                RewardConfigManager.setRewardMap(RewardConfigManager.getRewardConfig(), rule, map);
+            if (RewardConfigManager.redoRewardOption(rule)) {
                 saveEditor();
                 updateLayout();
                 return true;
