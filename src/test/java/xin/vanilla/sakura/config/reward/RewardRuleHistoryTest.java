@@ -16,6 +16,13 @@ import java.util.Collections;
 import static org.junit.Assert.*;
 
 public class RewardRuleHistoryTest {
+    @Test public void incompleteLegacyRewardsAreRejectedForEveryRule() {
+        for (ERewardRule rule : ERewardRule.values()) {
+            assertThrows("Incomplete reward accepted for " + rule, java.io.IOException.class,
+                    () -> RewardRuleHistory.decode("{\"1\":[{}]}", rule));
+        }
+    }
+
     private RewardConfig config() {
         RewardConfig config = new RewardConfig();
         config.getPersonalDatePresets().add(new PersonalDatePreset("birthday", "Birthday",
