@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html><head><meta name="aui-viewport" content="mode=gui" /><link rel="stylesheet" href="../banira_codex/shared.css"><link rel="stylesheet" href="lottery.css"></head>
-<body><main class="page lottery">
+<body><main id="window" class="page lottery">
 <header class="header"><div id="brand" class="game-icon"></div><div class="heading"><div class="label">SAKURA SIGN IN</div><div id="title" class="title"></div></div><button id="close" class="tool"><div id="close_icon" class="glyph"></div></button></header>
-<section class="pool"><div id="pool_label" class="label"></div><input id="pool" readonly></section>
-<div id="policy" class="label policy"></div>
-<section class="body"><section class="candidates"><section id="detail" class="description"><div id="description" class="paragraph"></div></section>
-<div class="caption"><div id="preview_title"></div><div id="preview_count" class="label"></div></div>
-<section id="content" class="content lottery-results"><div id="empty" class="label"></div><div class="grid"><div id="fields"></div><div id="fields_middle"></div><div id="fields_end"></div></div></section></section>
-<aside class="billing"><div class="caption"><div id="fee_label"></div><div id="quote_status" class="label"></div></div><div id="fee" class="fee"></div>
-<div class="caption"><div id="available_label" class="label"></div><div id="available"></div></div><div id="count_label" class="label"></div><input id="count" readonly>
-<div class="actions"><button id="single"><div id="single_label"></div></button><button id="batch" class="primary"><div id="batch_label"></div></button></div></aside></section>
-<div id="info" class="paragraph status"></div><footer class="footer modes"><div id="animation_label" class="label"></div><input id="animation" class="template" readonly><button id="animation_strip"></button><button id="animation_cards"></button><button id="animation_roulette"></button><button id="animation_instant"></button></footer>
+<section class="pool"><div id="pool_label" class="label"></div><input id="pool" readonly><div id="policy" class="label"></div></section>
+<section id="detail" class="description"><div id="description" class="paragraph"></div></section>
+<div class="caption"><div id="preview_title" class="heading"></div><div id="preview_count" class="label"></div></div>
+<section id="content" class="content lottery-results"><div id="empty" class="label"></div><div class="grid"><div id="fields"></div><div id="fields_middle"></div><div id="fields_end"></div></div></section>
+<div id="info" class="paragraph status"></div>
+<section id="draw_bar" class="billing"><div class="fee-group"><div id="fee_label" class="label"></div><div id="fee" class="fee"></div></div>
+<div class="capacity"><div id="available_label" class="label"></div><div id="available"></div></div>
+<button id="single"><div id="single_label"></div></button><div class="count"><div id="count_label" class="label"></div><input id="count" readonly></div><button id="batch" class="primary"><div id="batch_label"></div></button></section>
+<footer class="footer modes"><div id="animation_label" class="label"></div><input id="animation" class="template" readonly><button id="animation_strip"></button><button id="animation_cards"></button><button id="animation_roulette"></button><button id="animation_instant"></button></footer>
 </main></body></html>

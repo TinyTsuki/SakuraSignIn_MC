@@ -22,11 +22,14 @@ public class LotteryUiPresentationTest {
         var port = new LotteryUiOperationHandoffTest.Port();
         var view = new RecordingUiView(); var session = new LotteryUiSession(port, () -> true);
         session.bind(view); assertEquals("\u2014", text(view, "fee")); assertEquals("\u2014", text(view, "available"));
-        session.tick(); assertEquals(translated("lottery_confirming"), text(view, "quote_status"));
+        session.tick(); assertEquals(translated("lottery_quote_pending"), text(view, "info"));
+        assertEquals(Boolean.TRUE, view.enabled.get("info"));
         port.accept(); session.tick(); assertEquals("xpPoints(2)", text(view, "fee")); assertEquals("12", text(view, "available"));
-        assertEquals(translated("lottery_confirmed"), text(view, "quote_status"));
+        assertEquals("", text(view, "info")); assertEquals(Boolean.FALSE, view.enabled.get("info"));
+        assertFalse(view.texts.containsKey("quote_status"));
         port.millis = 3000; session.tick(); assertEquals("xpPoints(2)", text(view, "fee"));
         assertEquals("\u2014", text(view, "available")); assertFalse(view.enabled.get("batch"));
+        assertEquals(Boolean.TRUE, view.enabled.get("info"));
     }
     @Test public void everyRejectedQuoteDisablesDrawsAndKeepsAnHonestFailureReason() {
         for (LotteryQuote.Status status : LotteryQuote.Status.values()) {
@@ -49,6 +52,7 @@ public class LotteryUiPresentationTest {
                 default -> "lottery_payment_unavailable";
             };
             assertEquals(translated(key), text(view, "info"));
+            assertEquals(Boolean.TRUE, view.enabled.get("info"));
             view.actions.get("single").run(); assertTrue(port.draws.isEmpty());
         }
     }
@@ -104,7 +108,7 @@ public class LotteryUiPresentationTest {
         }
         assertEquals(List.of(), UiBoundaryChecks.resources(UiBoundaryChecks.ownResources("sakura_sign_in"), false));
     }
-    @Test public void compactBillingScrollKeepsRewardViewportFixedAndHasNoRetainedIcons() throws Exception {
+    @Test public void bottomDrawBarKeepsRewardViewportFixedAndHasNoRetainedIcons() throws Exception {
         var view = new RecordingUiView(); new LotteryUiSession(new LotteryUiOperationHandoffTest.Port(), () -> true).bind(view);
         assertFalse("Scrollable billing cannot own retained icons outside the reward viewport", view.icons.containsKey("single_icon"));
         assertFalse(view.icons.containsKey("batch_icon"));
@@ -113,18 +117,20 @@ public class LotteryUiPresentationTest {
         for (String name : List.of("single", "batch"))
             assertFalse(html.contains("id=\"" + name + "_icon\""));
         String css = Files.readString(root.resolve("lottery.css"));
-        String body = css.substring(css.indexOf(".body{"), css.indexOf('}', css.indexOf(".body{")));
-        assertTrue(body.contains("overflow:hidden")); assertFalse(body.contains("flex-wrap"));
+        assertFalse("No side billing column", html.contains("<aside"));
+        assertTrue(html.indexOf("class=\"billing\"") > html.indexOf("id=\"content\""));
+        assertFalse(html.contains("quote_status"));
         String billing = css.substring(css.indexOf(".billing{"), css.indexOf('}', css.indexOf(".billing{")));
-        assertTrue(billing.contains("overflow-y:auto"));
+        assertTrue(billing.contains("flex-shrink:0"));
+        assertFalse(billing.contains("overflow-y:auto"));
     }
     @Test public void compactViewportReservesACompleteRewardRow() throws Exception {
         String css = Files.readString(Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in/lottery.css"));
-        assertTrue(css.contains(".description{max-height:22px;"));
-        assertTrue(css.contains(".header,.footer{padding:3px 8px}"));
-        assertTrue(css.contains(".status{margin:0}"));
-        String body = css.substring(css.indexOf(".body{"), css.indexOf('}', css.indexOf(".body{")));
-        assertTrue(body.contains("padding:2px"));
+        assertTrue(css.contains("max-height:20px"));
+        assertTrue(css.contains("max-width:480px"));
+        assertTrue(css.contains("max-height:280px"));
+        assertTrue("Use the AUI font renderer explicitly", css.contains("font-family:default"));
+        assertTrue(css.contains(".status[disabled]"));
     }
     @Test public void compactCaptionsKeepPercentagesAndAnimationNamesWithinTheirColumns() throws Exception {
         var port = new LotteryUiOperationHandoffTest.Port(); var view = new RecordingUiView();

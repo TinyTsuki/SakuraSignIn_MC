@@ -140,22 +140,21 @@ public final class LotteryUiSession implements UiPageSession {
                 && quote.getGeneration() == port.generation() && pool != null && quote.getRequest().getPoolId().equals(pool.getId());
         String state = pool == null ? "lottery_no_pools" : payment.isDrawing() ? "lottery_drawing"
                 : payment.isPending() || quote == null ? "lottery_quote_pending"
-                : ready ? "lottery_server_confirmed" : switch (quote.getStatus()) {
+                : ready ? "" : switch (quote.getStatus()) {
                     case FORBIDDEN -> "lottery_permission_denied";
                     case STALE_GENERATION -> "lottery_configuration_changed";
                     case POOL_NOT_FOUND -> "lottery_pool_not_found";
                     default -> "lottery_payment_unavailable";
                 };
-        String text = tr(state).toString();
-        String quoteState = ready ? "lottery_confirmed" : payment.isPending() ? "lottery_confirming" : "lottery_unavailable";
+        String text = state.isEmpty() ? "" : tr(state).toString();
         String available = ready ? String.valueOf(quote.getAvailableCount()) : "\u2014";
         boolean single = pool != null && payment.canDraw(1), batch = pool != null && payment.canDraw(batchCount());
-        String stamp = List.of(text, cost, quoteState, available, single, batch, payment.isDrawing()).toString();
+        String stamp = List.of(text, cost, available, single, batch, payment.isDrawing()).toString();
         if (stamp.equals(displayedStatus)) return;
         displayedStatus = stamp;
         view.text("info", literal(text)); view.tooltip("info", literal(text));
+        view.enabled("info", !text.isEmpty());
         view.text("fee", literal(cost)); view.tooltip("fee", literal(cost));
-        view.text("quote_status", tr(quoteState)); view.tooltip("quote_status", tr(quoteState));
         view.text("available", literal(available));
         view.enabled("single", single); view.enabled("batch", batch);
         view.enabled("pool", !payment.isDrawing()); view.enabled("count", !payment.isDrawing());
