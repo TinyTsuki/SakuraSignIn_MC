@@ -36,19 +36,20 @@ final class LotteryUiRewards {
                     int index = row * 3 + offset;
                     Reward reward = rewards.get(index);
                     String label = items ? name.apply(reward) : "?";
-                    String detail = "";
+                    String detail = "", tooltipDetail = "";
                     if (probabilities) {
                         BigDecimal weight = reward.getProbability() == null ? BigDecimal.ZERO : reward.getProbability();
                         BigDecimal percent = total.signum() <= 0 ? BigDecimal.ZERO : weight.multiply(BigDecimal.valueOf(100))
                                 .divide(total, 2, RoundingMode.HALF_UP).stripTrailingZeros();
-                        detail = SakuraComponent.get().translateClient("format", "lottery_probability_s", percent.toPlainString());
+                        detail = percent.toPlainString() + "%";
+                        tooltipDetail = SakuraComponent.get().translateClient("format", "lottery_probability_display_s", detail);
                     }
                     cell.gameElement("icon", items ? icons.apply(index) : null);
                     cell.text("icon", SakuraComponent.get().literal(items ? "" : "?"));
                     cell.text("label", SakuraComponent.get().literal(label));
                     cell.text("detail", SakuraComponent.get().literal(detail));
-                    var tooltip = SakuraComponent.get().literal(label + (detail.isEmpty() ? "" : "\n" + detail));
-                    cell.tooltip("label", tooltip); cell.tooltip("icon", tooltip);
+                    var tooltip = SakuraComponent.get().literal(label + (tooltipDetail.isEmpty() ? "" : "\n" + tooltipDetail));
+                    cell.tooltip("label", tooltip); cell.tooltip("icon", tooltip); cell.tooltip("detail", tooltip);
                 }
             }, 40);
         }

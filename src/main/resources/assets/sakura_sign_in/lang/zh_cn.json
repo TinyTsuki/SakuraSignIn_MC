@@ -428,5 +428,11 @@
   "word.sakura_sign_in.lottery_configuration_changed": "奖池配置已更新，当前报价失效。",
   "word.sakura_sign_in.lottery_server_confirmed": "服务端已确认当前抽取请求。",
   "format.sakura_sign_in.lottery_policy_limit_ss": "%s · %s 次",
-  "format.sakura_sign_in.lottery_interval_s": "抽取间隔 %s 秒"
+  "format.sakura_sign_in.lottery_interval_s": "抽取间隔 %s 秒",
+  "word.sakura_sign_in.lottery_pool_selector": "奖池",
+  "word.sakura_sign_in.lottery_animation_button_strip": "横带",
+  "word.sakura_sign_in.lottery_animation_button_cards": "翻牌",
+  "word.sakura_sign_in.lottery_animation_button_roulette": "轮盘",
+  "word.sakura_sign_in.lottery_animation_button_instant": "即时",
+  "format.sakura_sign_in.lottery_probability_display_s": "相对概率：%s"
 }

@@ -49,7 +49,7 @@ public final class LotteryUiSession implements UiPageSession {
         long token = binding;
         next.text("title", tr("lottery_screen"));
         next.text("single_label", tr("lottery_single_draw")); next.text("batch_label", tr("lottery_batch_draw"));
-        next.text("pool_label", tr("lottery_pool_title")); next.text("fee_label", tr("lottery_cost_label"));
+        next.text("pool_label", tr("lottery_pool_selector")); next.text("fee_label", tr("lottery_cost_label"));
         next.text("available_label", tr("lottery_available_count")); next.text("count_label", tr("lottery_batch_count"));
         next.text("preview_title", tr("lottery_candidates")); next.text("animation_label", tr("lottery_animation"));
         next.gameElement("brand", UiGameElement.option(new DropdownOption("sakura", new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.CHERRY_SAPLING), null)));
@@ -74,7 +74,7 @@ public final class LotteryUiSession implements UiPageSession {
         }));
         for (LotteryAnimationStyle style : LotteryAnimationStyle.values()) {
             String id = "animation_" + style.name().toLowerCase(Locale.ROOT);
-            next.text(id, style.enumDescription()); next.tooltip(id, style.enumDescription());
+            next.text(id, tr("lottery_animation_button_" + style.name().toLowerCase(Locale.ROOT))); next.tooltip(id, style.enumDescription());
             bindings.add(next.onAction(id, () -> { if (live(next, token)) { port.animation(style); animation(); } }));
         }
         bindings.add(next.onAction("single", () -> { if (live(next, token)) { port.payment().click(1); status(); } }));

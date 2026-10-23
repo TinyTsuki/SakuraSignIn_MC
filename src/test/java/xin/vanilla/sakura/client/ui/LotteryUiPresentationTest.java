@@ -120,11 +120,23 @@ public class LotteryUiPresentationTest {
     }
     @Test public void compactViewportReservesACompleteRewardRow() throws Exception {
         String css = Files.readString(Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in/lottery.css"));
-        assertTrue(css.contains(".description{max-height:18px;"));
+        assertTrue(css.contains(".description{max-height:22px;"));
         assertTrue(css.contains(".header,.footer{padding:3px 8px}"));
         assertTrue(css.contains(".status{margin:0}"));
         String body = css.substring(css.indexOf(".body{"), css.indexOf('}', css.indexOf(".body{")));
-        assertTrue(body.contains("padding:4px"));
+        assertTrue(body.contains("padding:2px"));
+    }
+    @Test public void compactCaptionsKeepPercentagesAndAnimationNamesWithinTheirColumns() throws Exception {
+        var port = new LotteryUiOperationHandoffTest.Port(); var view = new RecordingUiView();
+        new LotteryUiSession(port, () -> true).bind(view);
+        var cell = new RecordingUiView(); view.providers.get("fields").bind(cell, 0);
+        assertEquals("100%", text(cell, "detail"));
+        assertFalse(cell.tooltips.get("icon").toString().contains("%%"));
+        for (var style : LotteryAnimationStyle.values())
+            assertEquals(translated("lottery_animation_button_" + style.name().toLowerCase(Locale.ROOT)), text(view, "animation_" + style.name().toLowerCase(Locale.ROOT)));
+        String css = Files.readString(Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in/lottery.css"));
+        String labels = css.substring(css.indexOf(".grid .label,.grid .paragraph{"), css.indexOf('}', css.indexOf(".grid .label,.grid .paragraph{")));
+        assertTrue(labels.contains("width:100%"));
     }
     @Test public void gridCoordinatesReturnToFlatRewardIndexesAcrossNativeAndRepeatedHandoffs() {
         var port = new LotteryUiOperationHandoffTest.Port(); var session = new LotteryUiSession(port, () -> true);

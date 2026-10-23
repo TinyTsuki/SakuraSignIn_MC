@@ -416,8 +416,8 @@
   "word.sakura_sign_in.lottery_drawing": "Draw in progress",
   "word.sakura_sign_in.lottery_free": "Free",
   "format.sakura_sign_in.lottery_cost_per_draw_s": "Cost per draw: %s",
-  "word.sakura_sign_in.lottery_cost_label": "Cost per draw",
-  "word.sakura_sign_in.lottery_available_count": "Available for this request",
+  "word.sakura_sign_in.lottery_cost_label": "Draw cost",
+  "word.sakura_sign_in.lottery_available_count": "Max. draws now",
   "word.sakura_sign_in.lottery_batch_count": "Batch size",
   "word.sakura_sign_in.lottery_candidates": "Candidate rewards",
   "word.sakura_sign_in.lottery_animation": "Animation",
@@ -428,5 +428,11 @@
   "word.sakura_sign_in.lottery_configuration_changed": "Pool configuration changed. This quote is no longer valid.",
   "word.sakura_sign_in.lottery_server_confirmed": "The server confirmed the current draw request.",
   "format.sakura_sign_in.lottery_policy_limit_ss": "%s · %s draws",
-  "format.sakura_sign_in.lottery_interval_s": "Interval: %s seconds"
+  "format.sakura_sign_in.lottery_interval_s": "Interval: %s seconds",
+  "word.sakura_sign_in.lottery_pool_selector": "Prize pool",
+  "word.sakura_sign_in.lottery_animation_button_strip": "Strip",
+  "word.sakura_sign_in.lottery_animation_button_cards": "Cards",
+  "word.sakura_sign_in.lottery_animation_button_roulette": "Roulette",
+  "word.sakura_sign_in.lottery_animation_button_instant": "Instant",
+  "format.sakura_sign_in.lottery_probability_display_s": "Relative probability: %s"
 }
