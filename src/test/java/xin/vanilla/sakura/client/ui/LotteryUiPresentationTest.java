@@ -126,7 +126,10 @@ public class LotteryUiPresentationTest {
     }
     @Test public void compactViewportReservesACompleteRewardRow() throws Exception {
         String css = Files.readString(Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in/lottery.css"));
-        assertTrue(css.contains("max-height:20px"));
+        assertTrue(css.contains("max-height:16px"));
+        String description = css.substring(css.indexOf(".description{"), css.indexOf('}', css.indexOf(".description{")));
+        assertFalse("A fixed ten-pixel border box clips an eight-pixel AUI line", description.contains("height:10px"));
+        assertTrue(description.contains("padding:0 8px"));
         assertTrue(css.contains("max-width:480px"));
         assertTrue(css.contains("max-height:280px"));
         assertTrue("Use the AUI font renderer explicitly", css.contains("font-family:default"));
