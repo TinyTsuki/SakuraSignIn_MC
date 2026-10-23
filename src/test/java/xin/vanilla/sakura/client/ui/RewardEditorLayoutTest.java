@@ -40,12 +40,10 @@ public class RewardEditorLayoutTest {
         assertSame(help.getParentNode(),id(root,"close").getParentNode());
     }
     @Test public void longToolLabelsStayWithinTheirFixedHeight() throws Exception {
-        for(String selector:List.of(".reward-header-actions #help",".reward-tools button")){
-            var rule=rule(selector);
-            assertEquals(selector,"nowrap",rule.get("white-space"));
-            assertEquals(selector,"hidden",rule.get("overflow"));
-            assertEquals(selector,"ellipsis",rule.get("text-overflow"));
-        }
+        var buttons=rule(".rewards-page button");
+        assertEquals("nowrap",buttons.get("white-space"));
+        assertEquals("hidden",buttons.get("overflow"));
+        assertEquals("ellipsis",buttons.get("text-overflow"));
         assertEquals("0",rule(".reward-header-actions #help").get("min-width"));
         assertEquals("column",rule(".rewards-page .header").get("flex-direction"));
     }
