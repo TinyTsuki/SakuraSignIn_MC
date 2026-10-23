@@ -88,7 +88,7 @@ public class LotteryUiOperationHandoffTest {
         assertEquals(List.of("5", "10", "12", "all"), view.controls.get("count").options().stream().map(option -> option.value()).toList());
         assertEquals(4, view.controls.get("animation").options().size());
         assertFalse(view.enabled.get("single")); session.tick(); port.accept(); session.tick(); assertTrue(view.enabled.get("batch"));
-        assertTrue(view.texts.get("info").toString().contains("xpPoints(2)"));
+        assertTrue(view.texts.get("fee").toString().contains("xpPoints(2)"));
         for (LotteryAnimationStyle style : LotteryAnimationStyle.values()) { view.changes.get("animation").accept(UiValue.text(style.name())); assertEquals(style, port.style); }
         view.changes.get("count").accept(UiValue.text("12")); assertEquals("12", port.count);
         int scans = port.scans; for (int i = 0; i < 100; i++) session.tick(); assertEquals("Stable ticks must not rescan pools", scans, port.scans);

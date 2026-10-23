@@ -69,7 +69,7 @@ public class LotteryUiAnimationParityTest {
         long[] clock = {0}; var session = new LotteryRevealUiSession(packet(), LotteryAnimationStyle.STRIP, () -> clock[0], () -> true, () -> 69, () -> {});
         var view = new RecordingUiView(); session.bind(view); assertTrue(view.areas.size() <= 56); assertFalse(view.enabled.get("content"));
         clock[0] = 6500; session.tick(); assertEquals(187, view.areas.get("marker").x(), 0);
-        clock[0] = 6800; session.tick(); assertEquals(120, view.limit); assertTrue(view.enabled.get("content")); assertFalse(view.enabled.get("scene"));
+        clock[0] = 6800; session.tick(); assertEquals(40, view.limit); assertTrue(view.enabled.get("content")); assertFalse(view.enabled.get("scene"));
         assertTrue(view.areas.get("slot43").width() == 0);
     }
     @Test public void revealedStableFramesDoNotRewriteTheDocument() {

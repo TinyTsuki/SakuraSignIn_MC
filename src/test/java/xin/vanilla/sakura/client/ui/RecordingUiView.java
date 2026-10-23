@@ -21,6 +21,7 @@ final class RecordingUiView implements UiView {
     final Map<String, ScreenCoordinate> areas = new HashMap<>();
     final UiPageState state = new UiPageState();
     UiRowProvider rows;
+    final Map<String, UiRowProvider> providers = new LinkedHashMap<>();
     boolean nativeView;
     int closes, limit, writes;
     public boolean nativeView() { return nativeView; }
@@ -40,7 +41,7 @@ final class RecordingUiView implements UiView {
     public void hudPosition(double x, double y) { }
     public void gameElement(String id, UiGameElement value) { icons.put(id, value); }
     public void gameElement(String id, UiGameElement value, ScreenCoordinate area) { icons.put(id, value); areas.put(id, area); }
-    public void rows(String id, UiRowProvider value, int max) { rows = value; limit = max; }
+    public void rows(String id, UiRowProvider value, int max) { providers.put(id, value); if (!"fields_middle".equals(id) && !"fields_end".equals(id)) rows = value; limit = max; }
     public ScreenCoordinate bounds(String id) { return new ScreenCoordinate(0, 0, 400, 300); }
     public void requestClose() { closes++; }
 }

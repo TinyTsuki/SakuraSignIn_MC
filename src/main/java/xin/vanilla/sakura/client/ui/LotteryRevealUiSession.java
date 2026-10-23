@@ -51,6 +51,7 @@ public final class LotteryRevealUiSession implements UiPageSession {
         if (closed) return;
         view = Objects.requireNonNull(next);
         if (next.nativeView()) return;
+        LotteryUiRewards.enter(next);
         long token = binding;
         next.text("title", SakuraComponent.get().literal(packet.getPoolName()));
         next.tooltip("title", SakuraComponent.get().literal(packet.getPoolName()));
@@ -87,15 +88,8 @@ public final class LotteryRevealUiSession implements UiPageSession {
                     : SakuraComponent.get().translateClient("format", "lottery_won_count_s", winners.size());
             view.text("summary", SakuraComponent.get().literal(summary)); view.tooltip("summary", SakuraComponent.get().literal(summary));
             UiView owner = view; long token = binding;
-            view.rows("fields", new UiRowProvider() {
-                public int size() { return winners.size(); }
-                public String key(int index) { return packet.getOperationId() + ":" + index; }
-                public void bind(UiView row, int index) {
-                    if (!live(owner, token)) return;
-                    String name = name(winners.get(index)); row.text("label", SakuraComponent.get().literal(name));
-                    row.tooltip("label", SakuraComponent.get().literal(name)); row.gameElement("icon", winnerIcons.get(index));
-                }
-            }, 120);
+            LotteryUiRewards.bind(view, winners, packet.getOperationId(), () -> live(owner, token),
+                    LotteryRevealUiSession::name, true, false, winnerIcons::get);
             return;
         }
         ScreenCoordinate area = view.bounds("scene");
@@ -157,6 +151,7 @@ public final class LotteryRevealUiSession implements UiPageSession {
     }
     public boolean requestClose() { if (view == null || closed) return false; view.requestClose(); return true; }
     @Override public void detach(UiDetachReason reason) {
+        LotteryUiRewards.leave(view);
         binding++; view = null;
         for (AutoCloseable resource : bindings) try { resource.close(); } catch (Exception failure) { throw new IllegalStateException(failure); }
         bindings.clear();
