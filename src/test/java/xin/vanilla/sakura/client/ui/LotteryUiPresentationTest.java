@@ -118,6 +118,14 @@ public class LotteryUiPresentationTest {
         String billing = css.substring(css.indexOf(".billing{"), css.indexOf('}', css.indexOf(".billing{")));
         assertTrue(billing.contains("overflow-y:auto"));
     }
+    @Test public void compactViewportReservesACompleteRewardRow() throws Exception {
+        String css = Files.readString(Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in/lottery.css"));
+        assertTrue(css.contains(".description{max-height:18px;"));
+        assertTrue(css.contains(".header,.footer{padding:3px 8px}"));
+        assertTrue(css.contains(".status{margin:0}"));
+        String body = css.substring(css.indexOf(".body{"), css.indexOf('}', css.indexOf(".body{")));
+        assertTrue(body.contains("padding:4px"));
+    }
     @Test public void gridCoordinatesReturnToFlatRewardIndexesAcrossNativeAndRepeatedHandoffs() {
         var port = new LotteryUiOperationHandoffTest.Port(); var session = new LotteryUiSession(port, () -> true);
         for (int repeat = 0; repeat < 4; repeat++) {
