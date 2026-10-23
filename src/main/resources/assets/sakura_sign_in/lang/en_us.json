@@ -382,6 +382,7 @@
   "word.sakura_sign_in.lottery_skip_animation": "Skip Animation",
   "word.sakura_sign_in.lottery_rewards_hidden": "This pool does not disclose reward details",
   "word.sakura_sign_in.lottery_draw_all": "Draw All",
+  "word.sakura_sign_in.lottery_draw_all_short": "All",
   "format.sakura_sign_in.lottery_draw_count_s": "Draw %s",
   "format.sakura_sign_in.lottery_won_count_s": "Received %s rewards",
   "format.sakura_sign_in.lottery_pool_tooltip_sss": "Limit: %s\nPeriod draws: %s\nCooldown: %s seconds",

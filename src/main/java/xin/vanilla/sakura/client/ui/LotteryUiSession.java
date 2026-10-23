@@ -89,7 +89,7 @@ public final class LotteryUiSession implements UiPageSession {
         selectedPool = pools.stream().filter(pool -> pool.getId().equals(port.poolId())).findFirst().orElse(null);
         select("pool", pools.stream().map(pool -> option(pool.getId(), pool.getDisplayName())).toList(), port.poolId());
         select("count", port.counts().stream().map(value -> option(value, "all".equals(value)
-                ? tr("lottery_draw_all").toString() : value)).toList(), port.count());
+                ? tr("lottery_draw_all_short").toString() : value)).toList(), port.count());
         select("animation", Arrays.stream(LotteryAnimationStyle.values()).map(style -> option(style.name(), style.enumDescription().toString())).toList(), port.animation().name());
         animation();
         LotteryPool pool = selectedPool;

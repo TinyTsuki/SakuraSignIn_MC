@@ -97,6 +97,13 @@ public class LotteryUiPresentationTest {
         Runnable retired = view.actions.get("animation_strip"); session.detach(UiDetachReason.SWITCH); retired.run();
         assertEquals(LotteryAnimationStyle.INSTANT, port.style);
     }
+    @Test public void allCountUsesCompactLabelAndRetainsCompleteTooltip() {
+        var port = new LotteryUiOperationHandoffTest.Port(); port.count("all");
+        var view = new RecordingUiView(); new LotteryUiSession(port, () -> true).bind(view);
+        var all = view.controls.get("count").options().stream().filter(option -> "all".equals(option.value())).findFirst().orElseThrow();
+        assertEquals(translated("lottery_draw_all_short"), all.displayLabel());
+        assertEquals(translated("lottery_draw_all"), view.tooltips.get("count").toString());
+    }
     @Test public void approvedTemplatesUseScopedGridAndNoPrototypeOrManagementCode() throws Exception {
         Path root = Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in");
         assertTrue("Dedicated compact lottery stylesheet", Files.exists(root.resolve("lottery.css")));
@@ -126,7 +133,7 @@ public class LotteryUiPresentationTest {
     }
     @Test public void compactViewportReservesACompleteRewardRow() throws Exception {
         String css = Files.readString(Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in/lottery.css"));
-        assertTrue(css.contains("max-height:16px"));
+        assertTrue(css.contains("max-height:12px"));
         String description = css.substring(css.indexOf(".description{"), css.indexOf('}', css.indexOf(".description{")));
         assertFalse("A fixed ten-pixel border box clips an eight-pixel AUI line", description.contains("height:10px"));
         assertTrue(description.contains("padding:0 8px"));

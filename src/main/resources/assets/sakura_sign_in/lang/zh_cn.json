@@ -382,6 +382,7 @@
   "word.sakura_sign_in.lottery_skip_animation": "跳过动画",
   "word.sakura_sign_in.lottery_rewards_hidden": "该奖池未公开奖励详情",
   "word.sakura_sign_in.lottery_draw_all": "抽取全部",
+  "word.sakura_sign_in.lottery_draw_all_short": "全部",
   "format.sakura_sign_in.lottery_draw_count_s": "抽取 %s 次",
   "format.sakura_sign_in.lottery_won_count_s": "已获得 %s 项奖励",
   "format.sakura_sign_in.lottery_pool_tooltip_sss": "限制：%s\n周期次数：%s\n冷却：%s 秒",
