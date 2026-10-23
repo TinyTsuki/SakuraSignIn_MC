@@ -53,7 +53,7 @@ public final class LotteryUiSession implements UiPageSession {
         next.text("available_label", tr("lottery_available_count")); next.text("count_label", tr("lottery_batch_count"));
         next.text("preview_title", tr("lottery_candidates")); next.text("animation_label", tr("lottery_animation"));
         next.gameElement("brand", UiGameElement.option(new DropdownOption("sakura", new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.CHERRY_SAPLING), null)));
-        next.gameElement("close_icon", icon("close")); next.gameElement("single_icon", icon("single")); next.gameElement("batch_icon", icon("batch"));
+        next.gameElement("close_icon", icon("close"));
         next.tooltip("close", xin.vanilla.banira.BaniraComponent.get().transClientAuto("config_editor_close"));
         next.tooltip("pool", tr("lottery_pool_title")); next.tooltip("count", tr("lottery_max_draws"));
         bindings.add(next.onValue("pool", value -> {

@@ -104,6 +104,20 @@ public class LotteryUiPresentationTest {
         }
         assertEquals(List.of(), UiBoundaryChecks.resources(UiBoundaryChecks.ownResources("sakura_sign_in"), false));
     }
+    @Test public void compactBillingScrollKeepsRewardViewportFixedAndHasNoRetainedIcons() throws Exception {
+        var view = new RecordingUiView(); new LotteryUiSession(new LotteryUiOperationHandoffTest.Port(), () -> true).bind(view);
+        assertFalse("Scrollable billing cannot own retained icons outside the reward viewport", view.icons.containsKey("single_icon"));
+        assertFalse(view.icons.containsKey("batch_icon"));
+        Path root = Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in");
+        String html = Files.readString(root.resolve("lottery.html"));
+        for (String name : List.of("single", "batch"))
+            assertFalse(html.contains("id=\"" + name + "_icon\""));
+        String css = Files.readString(root.resolve("lottery.css"));
+        String body = css.substring(css.indexOf(".body{"), css.indexOf('}', css.indexOf(".body{")));
+        assertTrue(body.contains("overflow:hidden")); assertFalse(body.contains("flex-wrap"));
+        String billing = css.substring(css.indexOf(".billing{"), css.indexOf('}', css.indexOf(".billing{")));
+        assertTrue(billing.contains("overflow-y:auto"));
+    }
     @Test public void gridCoordinatesReturnToFlatRewardIndexesAcrossNativeAndRepeatedHandoffs() {
         var port = new LotteryUiOperationHandoffTest.Port(); var session = new LotteryUiSession(port, () -> true);
         for (int repeat = 0; repeat < 4; repeat++) {
