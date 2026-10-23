@@ -62,7 +62,7 @@ public class RewardRuleHistoryFileTest {
 
     private Path undoFile() throws Exception {
         try (Stream<Path> files = Files.list(RewardConfigManager.getConfigDirectory().resolve("history/undo/month_reward"))) {
-            return files.findFirst().orElseThrow();
+            return files.findFirst().orElseThrow(() -> new AssertionError("No history file"));
         }
     }
 
