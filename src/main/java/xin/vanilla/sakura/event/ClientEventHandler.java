@@ -30,22 +30,24 @@ public final class ClientEventHandler {
     }
 
     public static void loadThemeTexture() {
+        if (!Minecraft.getInstance().isSameThread()) {
+            Minecraft.getInstance().execute(ClientEventHandler::loadThemeTexture);
+            return;
+        }
         BuiltInThemeDescriptor theme = BuiltInThemeCatalog.load(
                 ClientConfig.get().display().themeId(),
                 Minecraft.getInstance().getResourceManager());
-        TextureCoordinate coordinates = theme.getCoordinates();
+        TextureCoordinate coordinates = theme.getLayout();
         boolean specialVariant = ClientConfig.get().display().specialVariant()
                 && coordinates.isSpecial();
 
+        xin.vanilla.sakura.client.theme.SakuraThemeTextures.install(theme);
         SakuraClientState.setActiveThemeId(theme.getId());
-        SakuraClientState.setThemeTexture(theme.textureLocation());
+        SakuraClientState.setTheme(theme);
+        SakuraClientState.setThemeTexture(theme.texture("background.calendar").location());
         SakuraClientState.setThemeTextureCoordinate(coordinates);
         SakuraClientState.setSpecialThemeVariant(specialVariant);
 
-        // 特殊版本复用同一图集，只改变两个签到状态图标的绘制偏移。
-        int signInIconOffset = specialVariant ? 320 : 0;
-        coordinates.getNotSignedInUV().setX(signInIconOffset);
-        coordinates.getSignedInUV().setX(signInIconOffset);
         SakuraQuickActions.register();
     }
 

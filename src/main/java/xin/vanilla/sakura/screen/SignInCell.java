@@ -30,6 +30,8 @@ import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.util.DateUtils;
 import xin.vanilla.banira.client.data.GLFWKey;
+import xin.vanilla.sakura.client.theme.ThemeTexture;
+import xin.vanilla.sakura.client.theme.SakuraThemeTextures;
 
 import java.util.Date;
 import java.util.function.Consumer;
@@ -56,14 +58,7 @@ public final class SignInCell extends BaseWidget {
 
     public xin.vanilla.banira.client.data.Texture uiStatusIcon() {
         if (!showIcon) return null;
-        boolean rewarded = status == ESignInStatus.REWARDED.getCode();
-        Coordinate uv = rewarded ? textureCoordinate.getRewardedUV()
-                : status == ESignInStatus.SIGNED_IN.getCode() || ClientConfig.get().display().autoRewarded()
-                ? textureCoordinate.getSignedInUV() : textureCoordinate.getNotSignedInUV();
-        return xin.vanilla.banira.client.data.Texture.of(backgroundTexture, textureCoordinate.getTotalWidth(), textureCoordinate.getTotalHeight())
-                .u0((int) (uv.getU0() + (rewarded ? 0 : uv.getX())))
-                .v0((int) (uv.getV0() + (rewarded ? 0 : uv.getY())))
-                .uWidth((int) uv.getUWidth()).vHeight((int) uv.getVHeight());
+        return statusTexture().texture();
     }
 
     public Component uiTooltip() {
@@ -142,27 +137,20 @@ public final class SignInCell extends BaseWidget {
 
     private void renderStatusIcon(PoseStack stack, double x, double y, double width, double height) {
         if (status == ESignInStatus.REWARDED.getCode()) {
-            Coordinate uv = textureCoordinate.getRewardedUV();
-            AbstractGuiUtils.blit(stack, backgroundTexture, (int) x, (int) y, (int) width, (int) height,
-                    (float) uv.getU0(), (float) uv.getV0(),
-                    (int) uv.getUWidth(), (int) uv.getVHeight(),
-                    textureCoordinate.getTotalWidth(), textureCoordinate.getTotalHeight());
+            statusTexture().draw(stack, (int) x, (int) y, (int) width, (int) height);
             return;
         }
 
-        Coordinate uv = status == ESignInStatus.SIGNED_IN.getCode()
-                || ClientConfig.get().display().autoRewarded()
-                ? textureCoordinate.getSignedInUV()
-                : textureCoordinate.getNotSignedInUV();
         updateAprilFoolsPosition(x, y, width, height);
-        float u0 = (float) (uv.getU0() + uv.getX());
-        float v0 = (float) (uv.getV0() + uv.getY());
         int hoverPadding = mouseInside ? 2 : 0;
-        AbstractGuiUtils.blit(stack, backgroundTexture,
+        statusTexture().draw(stack,
                 (int) iconX - hoverPadding, (int) iconY - hoverPadding,
-                (int) width + hoverPadding * 2, (int) height + hoverPadding * 2,
-                u0, v0, (int) uv.getUWidth(), (int) uv.getVHeight(),
-                textureCoordinate.getTotalWidth(), textureCoordinate.getTotalHeight());
+                (int) width + hoverPadding * 2, (int) height + hoverPadding * 2);
+    }
+
+    private ThemeTexture statusTexture() {
+        return SakuraThemeTextures.status(status == ESignInStatus.REWARDED.getCode() ? "rewarded"
+                : status == ESignInStatus.SIGNED_IN.getCode() || ClientConfig.get().display().autoRewarded() ? "signed_in" : "not_signed_in");
     }
 
     private void updateAprilFoolsPosition(double x, double y, double width, double height) {
@@ -211,12 +199,12 @@ public final class SignInCell extends BaseWidget {
         double x = absoluteX();
         double y = absoluteY();
         double width = bounds().width();
-        Coordinate tooltipUV = textureCoordinate.getTooltipUV();
+        ThemeTexture tooltipTexture = SakuraThemeTextures.get("background.tooltip");
         Coordinate cellCoordinate = textureCoordinate.getTooltipCellCoordinate();
         double margin = textureCoordinate.getTooltipCellHMargin();
         double tooltipWidth = margin + (itemIconSize + margin) * TOOLTIP_MAX_VISIBLE_ITEMS;
-        double tooltipHeight = tooltipWidth * tooltipUV.getVHeight() / tooltipUV.getUWidth();
-        double tooltipScale = tooltipWidth / tooltipUV.getUWidth();
+        double tooltipHeight = tooltipWidth * textureCoordinate.getTooltipHeight() / textureCoordinate.getTooltipWidth();
+        double tooltipScale = tooltipWidth / textureCoordinate.getTooltipWidth();
         double tooltipX = (x == iconX ? screen.inputState().mouseX() : iconX + width / 2) - tooltipWidth / 2;
         double tooltipY = (y == iconY ? screen.inputState().mouseY() : iconY - 2) - tooltipHeight - 1;
 
@@ -225,12 +213,7 @@ public final class SignInCell extends BaseWidget {
         stack.translate(0, 0, 200);
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        RenderSystem.setShaderTexture(0, backgroundTexture);
-        AbstractGuiUtils.blit(stack, backgroundTexture, (int) tooltipX, (int) tooltipY,
-                (int) tooltipWidth, (int) tooltipHeight,
-                (float) tooltipUV.getU0(), (float) tooltipUV.getV0(),
-                (int) tooltipUV.getUWidth(), (int) tooltipUV.getVHeight(),
-                textureCoordinate.getTotalWidth(), textureCoordinate.getTotalHeight());
+        tooltipTexture.draw(stack, (int) tooltipX, (int) tooltipY, (int) tooltipWidth, (int) tooltipHeight);
         RenderSystem.disableBlend();
 
         renderTooltipScrollBar(stack, tooltipX, tooltipY, tooltipScale);

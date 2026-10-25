@@ -4,6 +4,8 @@ import xin.vanilla.sakura.data.time.SakuraClock;
 import xin.vanilla.banira.api.client.ui.*;
 import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.sakura.client.ui.SignInUiSession;
+import xin.vanilla.sakura.client.theme.ThemeTexture;
+import xin.vanilla.sakura.client.theme.SakuraThemeTextures;
 import xin.vanilla.sakura.client.ui.SakuraUiPages;
 
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -235,12 +237,12 @@ public final class SignInScreen extends BaniraScreen implements UiPageSource {
 
     private void updateLayoutMetrics() {
         TextureCoordinate texture = SakuraClientState.getThemeTextureCoordinate();
-        aspectRatio = texture.getBgUV().getUWidth() / texture.getBgUV().getVHeight();
+        aspectRatio = texture.getWidth() / (double) texture.getHeight();
         bgHeight = Math.max(height - 20, 120);
         bgWidth = (int) Math.max(bgHeight * aspectRatio, 100);
         bgX = (width - bgWidth) / 2;
         bgY = 0;
-        scale = bgHeight / texture.getBgUV().getVHeight();
+        scale = bgHeight / (double) texture.getHeight();
     }
 
     private void refreshLayout() {
@@ -265,23 +267,23 @@ public final class SignInScreen extends BaniraScreen implements UiPageSource {
     private void createOperationWidgets() {
         TextureCoordinate texture = SakuraClientState.getThemeTextureCoordinate();
         registerOperation(createTextureOperation(LEFT_ARROW, texture.getLeftArrowCoordinate(),
-                texture.getArrowUV(), texture.getArrowHoverUV(), texture.getArrowTapUV())
+                SakuraThemeTextures.get("button.arrow.normal"), SakuraThemeTextures.get("button.arrow.hover"), SakuraThemeTextures.get("button.arrow.pressed"))
                 .setFlipHorizontal(true)
                 .setTooltip(Text.trans(SakuraSignIn.MODID, "format.sakura_sign_in.use_s_key", "←")));
         registerOperation(createTextureOperation(RIGHT_ARROW, texture.getRightArrowCoordinate(),
-                texture.getArrowUV(), texture.getArrowHoverUV(), texture.getArrowTapUV())
+                SakuraThemeTextures.get("button.arrow.normal"), SakuraThemeTextures.get("button.arrow.hover"), SakuraThemeTextures.get("button.arrow.pressed"))
                 .setTooltip(Text.trans(SakuraSignIn.MODID, "format.sakura_sign_in.use_s_key", "→")));
         registerOperation(createTextureOperation(UP_ARROW, texture.getUpArrowCoordinate(),
-                texture.getArrowUV(), texture.getArrowHoverUV(), texture.getArrowTapUV())
+                SakuraThemeTextures.get("button.arrow.normal"), SakuraThemeTextures.get("button.arrow.hover"), SakuraThemeTextures.get("button.arrow.pressed"))
                 .setRotatedAngle(270)
                 .setTooltip(Text.trans(SakuraSignIn.MODID, "format.sakura_sign_in.use_s_key", "↑")));
         registerOperation(createTextureOperation(DOWN_ARROW, texture.getDownArrowCoordinate(),
-                texture.getArrowUV(), texture.getArrowHoverUV(), texture.getArrowTapUV())
+                SakuraThemeTextures.get("button.arrow.normal"), SakuraThemeTextures.get("button.arrow.hover"), SakuraThemeTextures.get("button.arrow.pressed"))
                 .setRotatedAngle(90)
                 .setFlipVertical(true)
                 .setTooltip(Text.trans(SakuraSignIn.MODID, "format.sakura_sign_in.use_s_key", "↓")));
         registerOperation(createTextureOperation(INFO, texture.getSignInInfoCoordinate(),
-                texture.getSignInInfoUV(), texture.getSignInInfoUV(), texture.getSignInInfoUV()));
+                SakuraThemeTextures.get("icon.info"), SakuraThemeTextures.get("icon.info"), SakuraThemeTextures.get("icon.info")));
 
         registerThemeOperation(THEME_ORIGINAL_BUTTON);
         registerThemeOperation(THEME_SAKURA_BUTTON);
@@ -296,14 +298,12 @@ public final class SignInScreen extends BaniraScreen implements UiPageSource {
     }
 
     private RewardOperationWidget createTextureOperation(OperationButtonType type, Coordinate bounds,
-                                                         Coordinate normal, Coordinate hover,
-                                                         Coordinate pressed) {
-        RewardOperationWidget widget = new RewardOperationWidget(this, type.code, SakuraClientState.getThemeTexture())
-                .setNormal(copyCoordinate(normal))
-                .setHover(copyCoordinate(hover))
-                .setPressed(copyCoordinate(pressed))
-                .setTextureWidth(SakuraClientState.getThemeTextureCoordinate().getTotalWidth())
-                .setTextureHeight(SakuraClientState.getThemeTextureCoordinate().getTotalHeight())
+                                                         ThemeTexture normal, ThemeTexture hover,
+                                                         ThemeTexture pressed) {
+        RewardOperationWidget widget = new RewardOperationWidget(this, type.code, normal)
+                .setNormal(normal)
+                .setHover(hover)
+                .setPressed(pressed)
                 .setTransparentCheck(true)
                 .setBounds(bounds, bgX, bgY, scale);
         widget.setReleaseHandler(event -> handleOperation(widget, event.button()));
@@ -313,7 +313,9 @@ public final class SignInScreen extends BaniraScreen implements UiPageSource {
     private void registerThemeOperation(OperationButtonType type) {
         TextureCoordinate texture = SakuraClientState.getThemeTextureCoordinate();
         RewardOperationWidget widget = createTextureOperation(type, texture.getThemeCoordinate(),
-                texture.getThemeUV(), texture.getThemeHoverUV(), texture.getThemeTapUV())
+                SakuraThemeTextures.get("selector." + type.themeId + ".normal"),
+                SakuraThemeTextures.get("selector." + type.themeId + ".hover"),
+                SakuraThemeTextures.get("selector." + type.themeId + ".pressed"))
                 .setTooltip(Text.trans(SakuraSignIn.MODID,
                         "word.sakura_sign_in.click_to_change_theme"));
         registerOperation(widget);
@@ -322,18 +324,6 @@ public final class SignInScreen extends BaniraScreen implements UiPageSource {
     private void registerOperation(RewardOperationWidget widget) {
         operationWidgets.put(widget.getOperation(), widget);
         addWidget(widget);
-    }
-
-    private static Coordinate copyCoordinate(Coordinate source) {
-        return new Coordinate()
-                .setX(source.getX()).setY(source.getY())
-                .setWidth(source.getWidth()).setHeight(source.getHeight())
-                .setU0(source.getU0()).setV0(source.getV0())
-                .setUWidth(source.getUWidth()).setVHeight(source.getVHeight());
-    }
-
-    private static Coordinate offsetU(Coordinate source, double offset) {
-        return copyCoordinate(source).setU0(source.getU0() + offset);
     }
 
     private void createOpeningTipButtons() {
@@ -634,14 +624,7 @@ public final class SignInScreen extends BaniraScreen implements UiPageSource {
     private void renderBackgroundTexture(PoseStack stack) {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        RenderSystem.setShaderTexture(0, SakuraClientState.getThemeTexture());
-        Coordinate uv = SakuraClientState.getThemeTextureCoordinate().getBgUV();
-        AbstractGuiUtils.blit(stack, SakuraClientState.getThemeTexture(),
-                bgX, bgY, bgWidth, bgHeight,
-                (float) uv.getU0(), (float) uv.getV0(),
-                (int) uv.getUWidth(), (int) uv.getVHeight(),
-                SakuraClientState.getThemeTextureCoordinate().getTotalWidth(),
-                SakuraClientState.getThemeTextureCoordinate().getTotalHeight());
+        SakuraThemeTextures.get("background.calendar").draw(stack, bgX, bgY, bgWidth, bgHeight);
         RenderSystem.disableBlend();
     }
 
@@ -701,13 +684,11 @@ public final class SignInScreen extends BaniraScreen implements UiPageSource {
                 continue;
             }
             int index = type.code - THEME_ORIGINAL_BUTTON.code;
-            double uOffset = index * texture.getThemeUV().getUWidth();
             boolean selected = SakuraClientState.getActiveThemeId().equals(type.themeId);
-            Coordinate normal = selected ? texture.getThemeTapUV() : texture.getThemeUV();
-            Coordinate hover = selected ? texture.getThemeTapUV() : texture.getThemeHoverUV();
-            widget.setNormal(offsetU(normal, uOffset))
-                    .setHover(offsetU(hover, uOffset))
-                    .setPressed(offsetU(texture.getThemeTapUV(), uOffset))
+            String prefix = "selector." + type.themeId;
+            widget.setNormal(SakuraThemeTextures.get(prefix + (selected ? ".pressed" : ".normal")))
+                    .setHover(SakuraThemeTextures.get(prefix + (selected ? ".pressed" : ".hover")))
+                    .setPressed(SakuraThemeTextures.get(prefix + ".pressed"))
                     .setBounds(new Coordinate()
                                     .setX(index * (texture.getThemeCoordinate().getWidth()
                                             + texture.getThemeHMargin()) + texture.getThemeCoordinate().getX())

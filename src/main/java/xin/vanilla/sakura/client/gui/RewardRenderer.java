@@ -66,13 +66,8 @@ public final class RewardRenderer {
         }
         public void drawEffect(Object effect) { if (effect instanceof MobEffectInstance value) icon = UiGameElement.effect(value); }
         public void drawBuiltInIcon(String id) {
-            TextureCoordinate coordinates = SakuraClientState.getThemeTextureCoordinate();
-            Coordinate uv = switch (id) {
-                case "point" -> coordinates.getPointUV(); case "level" -> coordinates.getLevelUV();
-                case "card" -> coordinates.getCardUV(); case "message" -> coordinates.getMessageUV(); default -> null;
-            };
-            if (uv != null) icon = UiGameElement.sprite(Texture.of(SakuraClientState.getThemeTexture(), coordinates.getTotalWidth(), coordinates.getTotalHeight())
-                    .u0((int) uv.getU0()).v0((int) uv.getV0()).uWidth((int) uv.getUWidth()).vHeight((int) uv.getVHeight()));
+            if (java.util.Set.of("point", "level", "card", "message").contains(id))
+                icon = UiGameElement.sprite(xin.vanilla.sakura.client.theme.SakuraThemeTextures.get("reward." + id).texture());
         }
         public void drawAmount(String text) { }
         public void drawPlaceholder(String id) { }
@@ -194,19 +189,10 @@ public final class RewardRenderer {
 
         @Override
         public void drawBuiltInIcon(String iconId) {
-            Coordinate uv;
-            switch (iconId) {
-                case "point": uv = coordinates.getPointUV(); break;
-                case "level": uv = coordinates.getLevelUV(); break;
-                case "card": uv = coordinates.getCardUV(); break;
-                case "message": uv = coordinates.getMessageUV(); break;
-                default:
-                    drawPlaceholder(reward.getTypeId().toString());
-                    return;
+            if (!java.util.Set.of("point", "level", "card", "message").contains(iconId)) {
+                drawPlaceholder(reward.getTypeId().toString());return;
             }
-            AbstractGuiUtils.blit(stack, texture, x, y, ICON_SIZE, ICON_SIZE,
-                    uv.getU0(), uv.getV0(), (int) uv.getUWidth(), (int) uv.getVHeight(),
-                    coordinates.getTotalWidth(), coordinates.getTotalHeight());
+            xin.vanilla.sakura.client.theme.SakuraThemeTextures.get("reward." + iconId).draw(stack, x, y, ICON_SIZE, ICON_SIZE);
         }
 
         @Override

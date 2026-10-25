@@ -2,65 +2,56 @@ package xin.vanilla.sakura.client.ui;
 
 import org.junit.*;
 import xin.vanilla.banira.client.data.Texture;
+import xin.vanilla.sakura.client.SakuraClientState;
 import xin.vanilla.sakura.client.theme.*;
 import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.enums.ESignInStatus;
 import xin.vanilla.sakura.reward.RewardList;
 import xin.vanilla.sakura.screen.SignInCell;
-import xin.vanilla.sakura.screen.coordinate.*;
 import static org.junit.Assert.*;
 
 public class SignInUiCellAtlasTest {
-    @Test public void selectedThemeUsesTheOriginalPressedAtlasRegion() {
-        for (String id : BuiltInThemeCatalog.themeIds()) {
-            BuiltInThemeDescriptor theme = BuiltInThemeCatalog.load(id);
-            TextureCoordinate coordinates = theme.getCoordinates();
-            coordinates.getThemeTapUV().setV0(41);
-            for (int index = 0; index < 5; index++) {
-                Texture selected = SakuraUiPages.themeIcon(theme.textureLocation(), coordinates, index, true);
-                assertEquals("Selected theme needs its pressed atlas region", 41, selected.v0());
-                assertEquals((int) (coordinates.getThemeTapUV().getU0() + index * coordinates.getThemeUV().getUWidth()), selected.u0());
-                Texture normal = SakuraUiPages.themeIcon(theme.textureLocation(), coordinates, index, false);
-                assertEquals((int) coordinates.getThemeUV().getV0(), normal.v0());
-            }
-        }
-    }
     @Rule public xin.vanilla.sakura.test.UnboundConfigPlatform platform = new xin.vanilla.sakura.test.UnboundConfigPlatform();
     @BeforeClass public static void bootstrap() { SignInUiParityTest.bootstrap(); }
-    @Test public void fiveThemesAndSpecialOffsetsKeepTheOriginalAtlasIdentity() {
+    @Test public void selectedThemeUsesItsStandalonePressedImage() {
+        var old = SakuraClientState.getTheme();
+        try {
+            for (String id : BuiltInThemeCatalog.themeIds()) {
+                var theme = BuiltInThemeCatalog.load(id); SakuraClientState.setTheme(theme);
+                for (int i = 0; i < 5; i++) for (boolean selected : new boolean[]{false, true}) {
+                    assertTexture(SakuraUiPages.themeIcon(null, theme.getLayout(), i, selected),
+                            theme.texture("selector." + BuiltInThemeCatalog.themeIds().get(i) + (selected ? ".pressed" : ".normal")));
+                }
+            }
+        } finally { SakuraClientState.setTheme(old); }
+    }
+    @Test public void fiveThemesAndSpecialVariantsUseIndependentImages() {
+        var old = SakuraClientState.getTheme(); boolean special = SakuraClientState.isSpecialThemeVariant();
         boolean auto = ClientConfig.get().display().autoRewarded();
         try {
             ClientConfig.get().display().autoRewarded(false);
             for (String id : BuiltInThemeCatalog.themeIds()) {
-                BuiltInThemeDescriptor theme = BuiltInThemeCatalog.load(id);
-                TextureCoordinate coordinates = theme.getCoordinates();
-                SignInCell cell = new SignInCell(null, theme.textureLocation(), coordinates, 0, 0, 20, 20, 1,
+                var theme = BuiltInThemeCatalog.load(id); SakuraClientState.setTheme(theme);
+                var cell = new SignInCell(null, theme.texture("background.calendar").location(), theme.getLayout(), 0, 0, 20, 20, 1,
                         new RewardList(), 2026, 10, 9, ESignInStatus.NOT_SIGNED_IN.getCode()).setShowIcon(true);
-                assertTexture(cell.uiStatusIcon(), theme, coordinates.getNotSignedInUV(), true);
-                coordinates.getNotSignedInUV().setX(320);
-                assertTexture(cell.uiStatusIcon(), theme, coordinates.getNotSignedInUV(), true);
-                cell.setStatus(ESignInStatus.SIGNED_IN.getCode()); coordinates.getSignedInUV().setX(320);
-                assertTexture(cell.uiStatusIcon(), theme, coordinates.getSignedInUV(), true);
-                cell.setStatus(ESignInStatus.REWARDED.getCode());
-                assertTexture(cell.uiStatusIcon(), theme, coordinates.getRewardedUV(), false);
-                cell.setShowIcon(false); assertNull(cell.uiStatusIcon());
+                for (boolean variant : new boolean[]{false, true}) {
+                    if (variant && !theme.getLayout().isSpecial()) continue;
+                    SakuraClientState.setSpecialThemeVariant(variant);
+                    cell.setStatus(ESignInStatus.NOT_SIGNED_IN.getCode());
+                    assertTexture(cell.uiStatusIcon(), theme.texture("status.not_signed_in." + (variant ? "special" : "normal")));
+                    cell.setStatus(ESignInStatus.SIGNED_IN.getCode());
+                    assertTexture(cell.uiStatusIcon(), theme.texture("status.signed_in." + (variant ? "special" : "normal")));
+                    cell.setStatus(ESignInStatus.REWARDED.getCode()); assertTexture(cell.uiStatusIcon(), theme.texture("status.rewarded"));
+                }
+                ClientConfig.get().display().autoRewarded(true); cell.setStatus(ESignInStatus.SIGNED_IN.getCode());
+                assertTexture(cell.uiStatusIcon(), theme.texture("status.signed_in." + (SakuraClientState.isSpecialThemeVariant() ? "special" : "normal")));
+                ClientConfig.get().display().autoRewarded(false); cell.setShowIcon(false); assertNull(cell.uiStatusIcon());
             }
-        } finally { ClientConfig.get().display().autoRewarded(auto); }
+        } finally { ClientConfig.get().display().autoRewarded(auto); SakuraClientState.setTheme(old); SakuraClientState.setSpecialThemeVariant(special); }
     }
-    @Test public void replacementPackCoordinatesAreNotReplacedByHardcodedUvs() {
-        BuiltInThemeDescriptor theme = BuiltInThemeCatalog.load("sakura");
-        TextureCoordinate coordinates = theme.getCoordinates();
-        coordinates.getRewardedUV().setU0(27).setV0(41).setUWidth(13).setVHeight(17);
-        SignInCell cell = new SignInCell(null, theme.textureLocation(), coordinates, 0, 0, 20, 20, 1,
-                new RewardList(), 2026, 10, 9, ESignInStatus.REWARDED.getCode()).setShowIcon(true);
-        Texture texture = cell.uiStatusIcon();
-        assertEquals(27, texture.u0()); assertEquals(41, texture.v0()); assertEquals(13, texture.uWidth()); assertEquals(17, texture.vHeight());
-    }
-    private static void assertTexture(Texture actual, BuiltInThemeDescriptor theme, Coordinate uv, boolean offset) {
-        assertEquals(theme.textureLocation(), actual.location());
-        assertEquals(theme.getCoordinates().getTotalWidth(), actual.uvWidth());
-        assertEquals(theme.getCoordinates().getTotalHeight(), actual.uvHeight());
-        assertEquals((int) (uv.getU0() + (offset ? uv.getX() : 0)), actual.u0());
-        assertEquals((int) (uv.getV0() + (offset ? uv.getY() : 0)), actual.v0());
+    private static void assertTexture(Texture actual, ThemeTexture expected) {
+        assertEquals(expected.location(), actual.location()); assertEquals(0, actual.u0()); assertEquals(0, actual.v0());
+        assertEquals(expected.width(), actual.uvWidth()); assertEquals(expected.height(), actual.uvHeight());
+        assertEquals(expected.width(), actual.uWidth()); assertEquals(expected.height(), actual.vHeight());
     }
 }

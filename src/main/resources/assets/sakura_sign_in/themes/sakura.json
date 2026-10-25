@@ -1,11 +1,13 @@
 {
-  "format": 1,
+  "format": 2,
   "id": "sakura",
-  "texture": "sakura_sign_in:textures/gui/sign_in_calendar_sakura.png",
-  "coordinates": {
+  "textureRoot": "sakura_sign_in:textures/gui/themes/sakura/",
+  "layout": {
+    "tooltipWidth": 300,
+    "tooltipHeight": 96,
+    "width": 500,
+    "height": 600,
     "special": true,
-    "totalWidth": 500,
-    "totalHeight": 1000,
     "weekStart": 7,
     "textColorDefault": -9758,
     "textColorCurrent": -887152,
@@ -13,329 +15,117 @@
     "textColorToday": -2081437,
     "textColorDate": -16777216,
     "yearCoordinate": {
-      "x": 128.0,
-      "y": 60.0,
-      "width": 92.0,
-      "height": 16.0,
-      "u0": 0.0,
-      "v0": 0.0,
-      "uWidth": 0.0,
-      "vHeight": 0.0
+      "x": 128,
+      "y": 60,
+      "width": 92,
+      "height": 16
     },
     "monthCoordinate": {
-      "x": 320.0,
-      "y": 60.0,
-      "width": 62.0,
-      "height": 16.0,
-      "u0": 0.0,
-      "v0": 0.0,
-      "uWidth": 0.0,
-      "vHeight": 0.0
+      "x": 320,
+      "y": 60,
+      "width": 62,
+      "height": 16
     },
     "cellCoordinate": {
-      "x": 70.0,
-      "y": 128.0,
-      "width": 34.0,
-      "height": 34.0,
-      "u0": 0.0,
-      "v0": 0.0,
-      "uWidth": 0.0,
-      "vHeight": 0.0
+      "x": 70,
+      "y": 128,
+      "width": 34,
+      "height": 34
     },
     "cellHMargin": 20,
     "cellVMargin": 24,
     "dateOffset": 36,
     "leftArrowCoordinate": {
-      "x": 320.0,
-      "y": 60.0,
-      "width": 62.0,
-      "height": 16.0,
-      "u0": 0.0,
-      "v0": 0.0,
-      "uWidth": 0.0,
-      "vHeight": 0.0
+      "x": 320,
+      "y": 60,
+      "width": 62,
+      "height": 16
     },
     "rightArrowCoordinate": {
-      "x": 320.0,
-      "y": 60.0,
-      "width": 62.0,
-      "height": 16.0,
-      "u0": 0.0,
-      "v0": 0.0,
-      "uWidth": 0.0,
-      "vHeight": 0.0
+      "x": 320,
+      "y": 60,
+      "width": 62,
+      "height": 16
     },
     "upArrowCoordinate": {
-      "x": 128.0,
-      "y": 60.0,
-      "width": 92.0,
-      "height": 16.0,
-      "u0": 0.0,
-      "v0": 0.0,
-      "uWidth": 0.0,
-      "vHeight": 0.0
+      "x": 128,
+      "y": 60,
+      "width": 92,
+      "height": 16
     },
     "downArrowCoordinate": {
-      "x": 128.0,
-      "y": 60.0,
-      "width": 92.0,
-      "height": 16.0,
-      "u0": 0.0,
-      "v0": 0.0,
-      "uWidth": 0.0,
-      "vHeight": 0.0
+      "x": 128,
+      "y": 60,
+      "width": 92,
+      "height": 16
     },
     "signInInfoCoordinate": {
-      "x": 375.0,
-      "y": 5.0,
-      "width": 120.0,
-      "height": 96.0,
-      "u0": 0.0,
-      "v0": 0.0,
-      "uWidth": 0.0,
-      "vHeight": 0.0
+      "x": 375,
+      "y": 5,
+      "width": 120,
+      "height": 96
     },
     "themeCoordinate": {
-      "x": 300.0,
-      "y": 552.0,
-      "width": 40.0,
-      "height": 48.0,
-      "u0": 0.0,
-      "v0": 0.0,
-      "uWidth": 0.0,
-      "vHeight": 0.0
+      "x": 300,
+      "y": 552,
+      "width": 40,
+      "height": 48
     },
     "themeHMargin": 0,
-    "bgUV": {
-      "x": 0.0,
-      "y": 0.0,
-      "width": 0.0,
-      "height": 0.0,
-      "u0": 0.0,
-      "v0": 0.0,
-      "uWidth": 500.0,
-      "vHeight": 600.0
-    },
-    "tooltipUV": {
-      "x": 0.0,
-      "y": 0.0,
-      "width": 0.0,
-      "height": 0.0,
-      "u0": 0.0,
-      "v0": 784.0,
-      "uWidth": 300.0,
-      "vHeight": 96.0
-    },
     "tooltipCellHMargin": 5,
     "tooltipCellCoordinate": {
-      "x": 15.0,
-      "y": 10.0,
-      "width": 42.0,
-      "height": 42.0,
-      "u0": 0.0,
-      "v0": 0.0,
-      "uWidth": 0.0,
-      "vHeight": 0.0
+      "x": 15,
+      "y": 10,
+      "width": 42,
+      "height": 42
     },
     "tooltipDateCoordinate": {
-      "x": 110.0,
-      "y": 64.0,
-      "width": 50.0,
-      "height": 19.0,
-      "u0": 0.0,
-      "v0": 0.0,
-      "uWidth": 0.0,
-      "vHeight": 0.0
+      "x": 110,
+      "y": 64,
+      "width": 50,
+      "height": 19
     },
     "tooltipScrollCoordinate": {
-      "x": 10.0,
-      "y": 93.0,
-      "width": 280.0,
-      "height": 1.0,
-      "u0": 0.0,
-      "v0": 0.0,
-      "uWidth": 0.0,
-      "vHeight": 0.0
-    },
-    "arrowUV": {
-      "x": 0.0,
-      "y": 0.0,
-      "width": 0.0,
-      "height": 0.0,
-      "u0": 0.0,
-      "v0": 600.0,
-      "uWidth": 40.0,
-      "vHeight": 40.0
-    },
-    "arrowHoverUV": {
-      "x": 0.0,
-      "y": 0.0,
-      "width": 0.0,
-      "height": 0.0,
-      "u0": 0.0,
-      "v0": 600.0,
-      "uWidth": 40.0,
-      "vHeight": 40.0
-    },
-    "arrowTapUV": {
-      "x": 0.0,
-      "y": 0.0,
-      "width": 0.0,
-      "height": 0.0,
-      "u0": 40.0,
-      "v0": 600.0,
-      "uWidth": 40.0,
-      "vHeight": 40.0
-    },
-    "signInInfoUV": {
-      "x": 0.0,
-      "y": 0.0,
-      "width": 0.0,
-      "height": 0.0,
-      "u0": 200.0,
-      "v0": 640.0,
-      "uWidth": 60.0,
-      "vHeight": 48.0
-    },
-    "notSignedInUV": {
-      "x": 0.0,
-      "y": 0.0,
-      "width": 0.0,
-      "height": 0.0,
-      "u0": 80.0,
-      "v0": 600.0,
-      "uWidth": 40.0,
-      "vHeight": 40.0
-    },
-    "signedInUV": {
-      "x": 0.0,
-      "y": 0.0,
-      "width": 0.0,
-      "height": 0.0,
-      "u0": 120.0,
-      "v0": 600.0,
-      "uWidth": 40.0,
-      "vHeight": 40.0
-    },
-    "rewardedUV": {
-      "x": 0.0,
-      "y": 0.0,
-      "width": 0.0,
-      "height": 0.0,
-      "u0": 160.0,
-      "v0": 600.0,
-      "uWidth": 40.0,
-      "vHeight": 40.0
-    },
-    "buffUV": {
-      "x": 0.0,
-      "y": 0.0,
-      "width": 0.0,
-      "height": 0.0,
-      "u0": 200.0,
-      "v0": 600.0,
-      "uWidth": 40.0,
-      "vHeight": 40.0
-    },
-    "pointUV": {
-      "x": 0.0,
-      "y": 0.0,
-      "width": 0.0,
-      "height": 0.0,
-      "u0": 240.0,
-      "v0": 600.0,
-      "uWidth": 40.0,
-      "vHeight": 40.0
-    },
-    "levelUV": {
-      "x": 0.0,
-      "y": 0.0,
-      "width": 0.0,
-      "height": 0.0,
-      "u0": 280.0,
-      "v0": 600.0,
-      "uWidth": 40.0,
-      "vHeight": 40.0
-    },
-    "cardUV": {
-      "x": 0.0,
-      "y": 0.0,
-      "width": 0.0,
-      "height": 0.0,
-      "u0": 320.0,
-      "v0": 600.0,
-      "uWidth": 40.0,
-      "vHeight": 40.0
-    },
-    "messageUV": {
-      "x": 0.0,
-      "y": 0.0,
-      "width": 0.0,
-      "height": 0.0,
-      "u0": 360.0,
-      "v0": 600.0,
-      "uWidth": 40.0,
-      "vHeight": 40.0
-    },
-    "themeUV": {
-      "x": 0.0,
-      "y": 0.0,
-      "width": 0.0,
-      "height": 0.0,
-      "u0": 0.0,
-      "v0": 640.0,
-      "uWidth": 40.0,
-      "vHeight": 48.0
-    },
-    "themeHoverUV": {
-      "x": 0.0,
-      "y": 0.0,
-      "width": 0.0,
-      "height": 0.0,
-      "u0": 0.0,
-      "v0": 688.0,
-      "uWidth": 40.0,
-      "vHeight": 48.0
-    },
-    "themeTapUV": {
-      "x": 0.0,
-      "y": 0.0,
-      "width": 0.0,
-      "height": 0.0,
-      "u0": 0.0,
-      "v0": 736.0,
-      "uWidth": 40.0,
-      "vHeight": 48.0
-    },
-    "optionBgUV": {
-      "x": 0.0,
-      "y": 0.0,
-      "width": 0.0,
-      "height": 0.0,
-      "u0": 0.0,
-      "v0": 880.0,
-      "uWidth": 120.0,
-      "vHeight": 120.0
-    },
-    "signInBtnUV": {
-      "x": 0.0,
-      "y": 0.0,
-      "width": 0.0,
-      "height": 0.0,
-      "u0": 120.0,
-      "v0": 920.0,
-      "uWidth": 60.0,
-      "vHeight": 60.0
-    },
-    "rewardOptionBtnUV": {
-      "x": 0.0,
-      "y": 0.0,
-      "width": 0.0,
-      "height": 0.0,
-      "u0": 180.0,
-      "v0": 920.0,
-      "uWidth": 60.0,
-      "vHeight": 60.0
+      "x": 10,
+      "y": 93,
+      "width": 280,
+      "height": 1
     }
+  },
+  "textures": {
+    "background.calendar": "backgrounds/calendar.png",
+    "background.tooltip": "backgrounds/tooltip.png",
+    "background.editor": "backgrounds/editor.png",
+    "button.arrow.normal": "buttons/arrow/normal.png",
+    "button.arrow.hover": "buttons/arrow/normal.png",
+    "button.arrow.pressed": "buttons/arrow/pressed.png",
+    "icon.info": "icons/info.png",
+    "icon.sign_in": "icons/sign_in.png",
+    "icon.reward_editor": "icons/reward_editor.png",
+    "status.not_signed_in.normal": "status/not_signed_in.png",
+    "status.not_signed_in.special": "status/not_signed_in_special.png",
+    "status.signed_in.normal": "status/signed_in.png",
+    "status.signed_in.special": "status/signed_in_special.png",
+    "status.rewarded": "status/rewarded.png",
+    "reward.buff": "rewards/buff.png",
+    "reward.point": "rewards/point.png",
+    "reward.level": "rewards/level.png",
+    "reward.card": "rewards/card.png",
+    "reward.message": "rewards/message.png",
+    "selector.original.normal": "selectors/original/normal.png",
+    "selector.original.hover": "selectors/original/hover.png",
+    "selector.original.pressed": "selectors/original/pressed.png",
+    "selector.sakura.normal": "selectors/sakura/normal.png",
+    "selector.sakura.hover": "selectors/sakura/hover.png",
+    "selector.sakura.pressed": "selectors/sakura/pressed.png",
+    "selector.clover.normal": "selectors/clover/normal.png",
+    "selector.clover.hover": "selectors/clover/hover.png",
+    "selector.clover.pressed": "selectors/clover/pressed.png",
+    "selector.maple.normal": "selectors/maple/normal.png",
+    "selector.maple.hover": "selectors/maple/hover.png",
+    "selector.maple.pressed": "selectors/maple/pressed.png",
+    "selector.chaos.normal": "selectors/chaos/normal.png",
+    "selector.chaos.hover": "selectors/chaos/hover.png",
+    "selector.chaos.pressed": "selectors/chaos/pressed.png"
   }
 }

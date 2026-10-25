@@ -47,6 +47,8 @@ import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL11;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.client.SakuraClientState;
+import xin.vanilla.sakura.client.theme.ThemeTexture;
+import xin.vanilla.sakura.client.theme.SakuraThemeTextures;
 import xin.vanilla.sakura.client.gui.RewardListEntryWidget;
 import xin.vanilla.sakura.client.gui.RewardRuleTooltipFormatter;
 import xin.vanilla.sakura.client.gui.RewardSelectionIds;
@@ -487,27 +489,22 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
         RenderSystem.defaultBlendFunc();
 
         // 绑定背景纹理
-        RenderSystem.setShaderTexture(0, SakuraClientState.getThemeTexture());
+        ThemeTexture background = SakuraThemeTextures.get("background.editor");
+        RenderSystem.setShaderTexture(0, background.location());
 
         // 获取屏幕宽高
         int screenWidth = super.width;
         int screenHeight = super.height;
 
         // 获取纹理指定区域的坐标和大小
-        float u0 = (float) SakuraClientState.getThemeTextureCoordinate().getOptionBgUV().getU0();
-        float v0 = (float) SakuraClientState.getThemeTextureCoordinate().getOptionBgUV().getV0();
-        float regionWidth = (float) SakuraClientState.getThemeTextureCoordinate().getOptionBgUV().getUWidth();
-        float regionHeight = (float) SakuraClientState.getThemeTextureCoordinate().getOptionBgUV().getVHeight();
-        if (regionWidth == 0) regionWidth = screenWidth;
-        if (regionHeight == 0) regionHeight = screenHeight;
-        int textureTotalWidth = SakuraClientState.getThemeTextureCoordinate().getTotalWidth();
-        int textureTotalHeight = SakuraClientState.getThemeTextureCoordinate().getTotalHeight();
+        float regionWidth = background.width();
+        float regionHeight = background.height();
 
         // 计算UV比例
-        float uMin = u0 / textureTotalWidth;
-        float vMin = v0 / textureTotalHeight;
-        float uMax = (u0 + regionWidth) / textureTotalWidth;
-        float vMax = (v0 + regionHeight) / textureTotalHeight;
+        float uMin = 0;
+        float vMin = 0;
+        float uMax = 1;
+        float vMax = 1;
 
         // 使用Tessellator绘制平铺的纹理片段
         Tesselator tessellator = Tesselator.getInstance();
@@ -2440,17 +2437,17 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
                 .setDragHandler(event -> scrollRewardPanel(event.dragY()));
 
         registerOperation(createThemeIcon(OperationButtonType.OPEN,
-                        SakuraClientState.getThemeTextureCoordinate().getArrowUV(),
-                        SakuraClientState.getThemeTextureCoordinate().getArrowHoverUV(),
-                        SakuraClientState.getThemeTextureCoordinate().getArrowTapUV())
+                        SakuraThemeTextures.get("button.arrow.normal"),
+                        SakuraThemeTextures.get("button.arrow.hover"),
+                        SakuraThemeTextures.get("button.arrow.pressed"))
                         .setHoverTint(0)
                         .setVisualBounds(new ScreenCoordinate(4, (height - 16) / 2.0, 16, 16))
                         .setTooltip(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.open_sidebar")),
                 new ScreenCoordinate(0, 0, 20, height));
         registerOperation(createThemeIcon(OperationButtonType.CLOSE,
-                        SakuraClientState.getThemeTextureCoordinate().getArrowUV(),
-                        SakuraClientState.getThemeTextureCoordinate().getArrowHoverUV(),
-                        SakuraClientState.getThemeTextureCoordinate().getArrowTapUV())
+                        SakuraThemeTextures.get("button.arrow.normal"),
+                        SakuraThemeTextures.get("button.arrow.hover"),
+                        SakuraThemeTextures.get("button.arrow.pressed"))
                         .setFlipHorizontal(true)
                         .setHoverTint(0)
                         .setTooltip(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.close_sidebar")),
@@ -2586,18 +2583,16 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
         AbstractGuiUtils.fill(stack, x, y, width, height, color);
     }
 
-    private RewardOperationWidget createThemeIcon(OperationButtonType type, Coordinate coordinate) {
+    private RewardOperationWidget createThemeIcon(OperationButtonType type, ThemeTexture coordinate) {
         return createThemeIcon(type, coordinate, coordinate, coordinate);
     }
 
-    private RewardOperationWidget createThemeIcon(OperationButtonType type, Coordinate normal,
-                                                   Coordinate hover, Coordinate pressed) {
-        return new RewardOperationWidget(this, type.getCode(), SakuraClientState.getThemeTexture())
+    private RewardOperationWidget createThemeIcon(OperationButtonType type, ThemeTexture normal,
+                                                   ThemeTexture hover, ThemeTexture pressed) {
+        return new RewardOperationWidget(this, type.getCode(), normal)
                 .setNormal(normal)
                 .setHover(hover)
                 .setPressed(pressed)
-                .setTextureWidth(SakuraClientState.getThemeTextureCoordinate().getTotalWidth())
-                .setTextureHeight(SakuraClientState.getThemeTextureCoordinate().getTotalHeight())
                 .setHoverTint(0xAA808080)
                 .setPressedTint(0xAAA0A0A0);
     }
