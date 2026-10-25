@@ -125,6 +125,17 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
                 public long revision() { return uiRevision + (RewardConfigManager.isRewardOptionDataChanged() ? 1 : 0); }
                 public void refresh() { if (RewardConfigManager.isRewardOptionDataChanged()) updateLayout(); }
                 public List<RewardEditorUiSession.Entry> entries() { return rewardUiEntries(); }
+                public RewardEditorUiSession.Detail detail() { return rewardUiDetail(); }
+                public int ruleCount(int code) {
+                    ERewardRule rule = ERewardRule.valueOf(code);
+                    return rule == null || RewardConfigManager.isRuleRedacted(rule) ? -1
+                            : RewardConfigManager.getRewardMap(rule).values().stream().mapToInt(List::size).sum();
+                }
+                public Component status() { return SakuraComponent.get().transClient("word", editsPending ? "aui_saved_locally" : "aui_no_changes"); }
+                public Component probability(String id) {
+                    Reward reward = rewardAt(id);
+                    return SakuraComponent.get().literal(reward == null ? "" : RewardProbabilityInput.display(reward.getProbability()) + "%");
+                }
                 public int rule() { ERewardRule rule = currentRewardRule(); return rule == null ? 0 : rule.getCode(); }
                 public void rule(int rule) { if (ERewardRule.valueOf(rule) != null) { currOpButton = 200 + rule; updateLayout(); } }
                 public boolean redacted() { return isCurrentRuleRedacted(); }
@@ -185,7 +196,7 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
             Reward reward = group ? null : rewardAt(id);
             String label = group ? rewardGroupDisplayName(key) : SakuraRewardClient.displayName(reward, SakuraLang.getClientLanguage(), true).toString();
             String detail = group ? RewardConfigManager.getRewardMap(rule).getOrDefault(key, new RewardList()).size() + ""
-                    : reward.getTypeId() + "  " + RewardProbabilityInput.display(reward.getProbability()) + "%";
+                    : reward.getTypeId().toString();
             String tooltip = group ? RewardRuleTooltipFormatter.describe(rule, key, label) : rewardItemTooltip(reward).content();
             boolean editable = group ? rule != ERewardRule.BASE_REWARD
                     : SakuraRewardClient.find(reward.getTypeId()).map(reg -> reg.getExtension().getEditor() != null).orElse(false);
@@ -193,6 +204,52 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
                     group ? null : RewardRenderer.uiIcon(reward), group, group && isRewardGroupCollapsed(key), rewardSelection.isSelected(id), editable));
         });
         return entries;
+    }
+    private static RewardEditorUiSession.Fact rewardFact(String key, Object value) {
+        return new RewardEditorUiSession.Fact(SakuraComponent.get().transClient("word", key),
+                SakuraComponent.get().literal(String.valueOf(value)));
+    }
+    private RewardEditorUiSession.Detail rewardUiDetail() {
+        if (isCurrentRuleRedacted() || currRewardButton == null || !rewardSelection.isSelected(currRewardButton)
+                || !REWARD_BUTTONS.containsKey(currRewardButton)) return null;
+        String id = currRewardButton;
+        boolean group = id.startsWith("标题,");
+        String key = group ? id.substring(3) : rewardGroupKey(id);
+        ERewardRule rule = currentRewardRule();
+        List<RewardEditorUiSession.Fact> facts = new ArrayList<>();
+        if (!group) {
+            Reward reward = rewardAt(id);
+            if (reward == null) return null;
+            facts.add(rewardFact("edit_probability", RewardProbabilityInput.display(reward.getProbability()) + "%"));
+            facts.add(rewardFact("aui_group", rewardGroupDisplayName(key)));
+            boolean editable = SakuraRewardClient.find(reward.getTypeId()).map(reg -> reg.getExtension().getEditor() != null).orElse(false);
+            return new RewardEditorUiSession.Detail(id, SakuraRewardClient.displayName(reward, SakuraLang.getClientLanguage(), true).toString(),
+                    reward.getTypeId().toString(), rewardItemTooltip(reward).content(), RewardRenderer.uiIcon(reward), facts, editable, true);
+        }
+        String description = RewardRuleTooltipFormatter.describe(rule, key, rewardGroupDisplayName(key));
+        facts.add(rewardFact("aui_reward_count", RewardConfigManager.getRewardMap(rule).getOrDefault(key, new RewardList()).size()));
+        if (rule == ERewardRule.PERSONAL_DATE_REWARD) {
+            RewardConfigManager.getRewardConfig().getPersonalDatePresets().stream().filter(preset -> key.equals(preset.getId())).findFirst().ifPresent(preset -> {
+                facts.add(rewardFact("personal_date_calendars", String.join(", ", preset.getCalendarIds())));
+                facts.add(rewardFact("personal_date_recurrence", SakuraComponent.get().transClient("word", "personal_date_recurrence_" + preset.getRecurrence().name().toLowerCase(java.util.Locale.ROOT))));
+                facts.add(rewardFact("personal_date_delivery", SakuraComponent.get().transClient("word", "personal_date_delivery_" + preset.getDeliveryMode().name().toLowerCase(java.util.Locale.ROOT))));
+                facts.add(rewardFact("personal_date_slots", preset.getMaxDateSlots()));
+                facts.add(rewardFact("personal_date_before", preset.getValidBeforeDays()));
+                facts.add(rewardFact("personal_date_after", preset.getValidAfterDays()));
+            });
+        } else if (rule == ERewardRule.LOTTERY_REWARD) {
+            LotteryPool pool = RewardConfigManager.getRewardConfig().getLotteryPools().stream().filter(value -> key.equals(value.getId())).findFirst().orElse(null);
+            if (pool != null) {
+                description = pool.getDescription();
+                facts.add(rewardFact("lottery_voucher_expression", pool.getVoucherExpression().isEmpty()
+                        ? SakuraComponent.get().transClient("word", "aui_free") : pool.getVoucherExpression()));
+                facts.add(rewardFact("lottery_limit_policy", SakuraComponent.get().transClient("word", "lottery_policy_" + pool.getLimitPolicy().name().toLowerCase(java.util.Locale.ROOT))));
+                facts.add(rewardFact("lottery_max_draws", pool.getMaxDraws()));
+                facts.add(rewardFact("lottery_cooldown_seconds", pool.getCooldownSeconds()));
+                facts.add(rewardFact("lottery_preview_mode", SakuraComponent.get().transClient("word", "lottery_preview_" + pool.getPreviewMode().name().toLowerCase(java.util.Locale.ROOT))));
+            }
+        }
+        return new RewardEditorUiSession.Detail(id, rewardGroupDisplayName(key), key, description, null, facts, rule != ERewardRule.BASE_REWARD, false);
     }
     private boolean rewardUiEnabled(RewardEditorUiSession.Action action) {
         if (action == RewardEditorUiSession.Action.SIDEBAR || action == RewardEditorUiSession.Action.HELP
@@ -271,7 +328,9 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
             if (!rewardSelection.isSelected(id)) rewardSelection.selectOnly(id);
             currRewardButton = id; openRewardActions(id); return;
         }
-        if (action == RewardEditorUiSession.EntryAction.SELECT) {
+        if (action == RewardEditorUiSession.EntryAction.TOGGLE) {
+            rewardSelection.select(id, new ArrayList<>(REWARD_BUTTONS.keySet()), true, false);
+        } else if (action == RewardEditorUiSession.EntryAction.SELECT) {
             if (group && !Screen.hasControlDown()) { toggleRewardGroup(key); rewardSelection.clear(); updateLayout(); }
             else {
                 long now = System.currentTimeMillis();

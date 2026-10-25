@@ -22,7 +22,7 @@ public class RewardEditorLayoutTest {
         throw new AssertionError("Missing control "+id);
     }
     private static Map<String,String> rule(String selector) throws Exception {
-        String css=new String(UiBoundaryChecks.ownResources("sakura_sign_in").get("sakura.css"),StandardCharsets.UTF_8);
+        String css=new String(UiBoundaryChecks.ownResources("sakura_sign_in").get("rewards.css"),StandardCharsets.UTF_8);
         var matcher=Pattern.compile(Pattern.quote(selector)+"\\s*\\{([^}]+)}").matcher(css);
         assertTrue("Missing scoped rule "+selector,matcher.find());
         Map<String,String> declarations=new LinkedHashMap<>();
@@ -32,20 +32,22 @@ public class RewardEditorLayoutTest {
         }
         return declarations;
     }
-    @Test public void titleAndActionsHaveIndependentHeaderRows() throws Exception {
+    @Test public void sharedHeaderKeepsTitleAndIconActionsIndependent() throws Exception {
         Element root=document(),title=id(root,"title"),help=id(root,"help");
         assertNotSame("Wide help must not compete with the title",title.getParentNode(),help.getParentNode());
-        assertSame(title.getParentNode(),help.getParentNode().getParentNode());
-        assertSame(help.getParentNode(),id(root,"sidebar").getParentNode());
+        assertSame(title.getParentNode().getParentNode(),help.getParentNode().getParentNode());
+        assertSame(help.getParentNode(),id(root,"download").getParentNode());
         assertSame(help.getParentNode(),id(root,"close").getParentNode());
+        assertEquals("more_panel",((Element)id(root,"sidebar").getParentNode()).getAttribute("id"));
     }
     @Test public void longToolLabelsStayWithinTheirFixedHeight() throws Exception {
         var buttons=rule(".rewards-page button");
         assertEquals("nowrap",buttons.get("white-space"));
         assertEquals("hidden",buttons.get("overflow"));
         assertEquals("ellipsis",buttons.get("text-overflow"));
-        assertEquals("0",rule(".reward-header-actions #help").get("min-width"));
-        assertEquals("column",rule(".rewards-page .header").get("flex-direction"));
+        assertEquals("0 0 13px",rule(".glyph").get("flex"));
+        assertEquals("flex",rule(".rewards-page .header").get("display"));
+        assertEquals("hidden",rule(".workspace").get("overflow"));
     }
     @Test public void everyExistingActionRetainsOneControlId() throws Exception {
         Element root=document();Set<String> expected=new HashSet<>(Set.of("close"));
