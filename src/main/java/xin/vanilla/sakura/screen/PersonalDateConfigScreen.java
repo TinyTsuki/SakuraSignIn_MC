@@ -48,6 +48,7 @@ public final class PersonalDateConfigScreen extends xin.vanilla.banira.client.gu
     private final java.util.Map<String, CollapsiblePanelWidget> dateSections = new java.util.LinkedHashMap<>();
     private PersonalDateUiSession personalSession;
     private Object uiConnection;
+    private final xin.vanilla.sakura.client.ui.PersonalDateDraftState draft;
 
     @Override public UiPageSession pageSession() {
         if (personalSession == null) {
@@ -76,6 +77,7 @@ public final class PersonalDateConfigScreen extends xin.vanilla.banira.client.gu
                 public void edit(String key) { withSlot(key, true); }
                 public void save() { savePlayerConfig(); }
                 public void commonConfig() { openBaniraPlayerConfig(); }
+                public boolean dirty() { return draft.dirty(slots); }
             }, this::uiConnected);
         }
         return personalSession;
@@ -106,6 +108,8 @@ public final class PersonalDateConfigScreen extends xin.vanilla.banira.client.gu
         super(SakuraSignIn.MODID, SakuraComponent.get().transClient("word", "personal_date_config"),
                 parent, null, BaniraThemes.seasonFor(SakuraSignIn.MODID));
         loadSlots();
+        for (PersonalDatePreset preset : activePresets()) for (int index = 0; index < preset.getMaxDateSlots(); index++) findOrCreate(preset, index);
+        draft = new xin.vanilla.sakura.client.ui.PersonalDateDraftState(slots);
     }
 
     @Override
@@ -235,6 +239,7 @@ public final class PersonalDateConfigScreen extends xin.vanilla.banira.client.gu
                 .filter(slot -> slot.getDay() > 0)
                 .collect(Collectors.toList());
         SakuraNetwork.sendToServer(new PersonalDateSlotUpdatePacket(selected));
+        draft.submitted(slots);
         SakuraClientNotifications.success(SakuraComponent.get().transClient(
                 "word", "personal_date_save_success"), SakuraNotificationTypes.REWARD);
     }

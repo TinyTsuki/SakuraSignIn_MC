@@ -74,6 +74,18 @@ public final class SignInCell extends BaseWidget {
         return result;
     }
 
+    public boolean uiDetailsVisible() { return showHover && tooltipPermissions().details; }
+
+    public java.util.List<xin.vanilla.sakura.client.ui.SignInUiSession.RewardLine> uiRewardLines() {
+        if (!uiDetailsVisible()) return java.util.List.of();
+        boolean probability = tooltipPermissions().probability;
+        String language = Minecraft.getInstance().options.languageCode;
+        return rewardList.stream().map(reward -> new xin.vanilla.sakura.client.ui.SignInUiSession.RewardLine(
+                reward.getName(language, true), probability ? SakuraComponent.get().transClient("format", "aui_probability_s",
+                reward.getProbability().multiply(java.math.BigDecimal.valueOf(100)).stripTrailingZeros().toPlainString())
+                : SakuraComponent.get().literal(""), RewardRenderer.uiIcon(reward))).toList();
+    }
+
     private LocalPlayerPermission tooltipPermissions() {
         net.minecraft.client.player.LocalPlayer player = Minecraft.getInstance().player;
         return new LocalPlayerPermission(player == null || player.hasPermissions(CommonConfig.get().permission().permissionRewardDetail()),

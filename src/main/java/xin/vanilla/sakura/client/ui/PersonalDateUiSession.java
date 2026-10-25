@@ -20,12 +20,14 @@ public final class PersonalDateUiSession implements UiPageSession {
         void edit(String key);
         void save();
         void commonConfig();
+        default boolean dirty() { return false; }
     }
     private final Port port;
     private final BooleanSupplier connection;
     private final List<AutoCloseable> bindings = new ArrayList<>();
     private UiView view;
     private String query = "";
+    private String section = "";
     private long generation, rowsRevision;
     private boolean closed;
     private final Map<String, Boolean> expanded = new HashMap<>();
@@ -45,17 +47,30 @@ public final class PersonalDateUiSession implements UiPageSession {
         if (next.nativeView()) return;
         long token = generation;
         next.text("title", SakuraComponent.get().transClient("word", "personal_date_config"));
+        next.gameElement("brand", SakuraUiPages.moduleIcon());
+        next.text("module_name", SakuraComponent.get().transClient("key", "categories"));
+        next.text("origin", SakuraComponent.get().transClient("word", "aui_player_configuration"));
+        next.text("category_title", SakuraComponent.get().transClient("word", "aui_categories"));
+        next.text("breadcrumb", SakuraComponent.get().transClient("word", "personal_date_config"));
         next.text("save", BaniraComponent.get().transClientAuto("config_editor_save"));
         next.text("common", SakuraComponent.get().transClient("word", "banira_player_config"));
         next.gameElement("close", UiGameElement.preset(PresetStyle.CLOSE));
         next.tooltip("close", BaniraComponent.get().transClientAuto("config_editor_close"));
         next.control("search", new UiControlSpec(UiControlSpec.Kind.TEXT, 32767, "", false));
         next.draft("search", query);
-        next.tooltip("search", BaniraComponent.get().transClientAuto("config_search_hint"));
+        next.text("search_hint", BaniraComponent.get().transClientAuto("config_editor_search_hint"));
+        next.tooltip("search", BaniraComponent.get().transClientAuto("config_editor_search_hint"));
+        next.gameElement("clear_search", UiGameElement.preset(PresetStyle.CLOSE));
+        next.tooltip("clear_search", BaniraComponent.get().transClientAuto("config_editor_search_hint"));
+        next.text("cancel", BaniraComponent.get().transClientAuto("config_editor_close"));
+        bindings.add(next.onAction("clear_search", () -> {
+            if (live(next, token)) { query(""); next.draft("search", ""); resetScroll(); refresh(); }
+        }));
         bindings.add(next.onDraft("search", value -> { if (live(next, token)) { query(value); if (next.state() != null) next.state().rowPosition(0); refresh(); } }));
-        bindings.add(next.onAction("save", () -> { if (live(next, token)) port.save(); }));
+        bindings.add(next.onAction("save", () -> { if (live(next, token)) { port.save(); refresh(); } }));
         bindings.add(next.onAction("common", () -> { if (live(next, token)) port.commonConfig(); }));
         bindings.add(next.onAction("close", () -> { if (view == next && generation == token) next.requestClose(); }));
+        bindings.add(next.onAction("cancel", () -> { if (view == next && generation == token) next.requestClose(); }));
         refresh();
     }
     private void refresh() {
@@ -64,15 +79,41 @@ public final class PersonalDateUiSession implements UiPageSession {
         long token = generation, rowToken = ++rowsRevision;
         ConfigSearchQuery search = ConfigSearchQuery.of(query);
         List<Entry> all = port.entries();
+        List<Entry> headers = all.stream().filter(Entry::header).toList();
+        if (!section.isEmpty() && headers.stream().noneMatch(header -> header.section().equals(section))) section = "";
+        owner.text("category_count", SakuraComponent.get().literal(String.valueOf(headers.size())));
+        owner.text("status", SakuraComponent.get().transClient("word", port.dirty() ? "aui_unsaved" : "aui_no_changes"));
+        owner.enabled("save", connection.getAsBoolean()); owner.enabled("common", connection.getAsBoolean());
+        owner.rows("categories", new UiRowLayout() {
+            public int rowHeight() { return 20; }
+            public String scrollerId() { return "category_content"; }
+            public boolean tracksPageScroll() { return false; }
+            public boolean textTools() { return true; }
+            public int size() { return headers.size() + 1; }
+            public String key(int index) { return index == 0 ? "all" : headers.get(index - 1).section(); }
+            public String rowClass(int index) { return "config-navigation" + (section.equals(index == 0 ? "" : headers.get(index - 1).section()) ? " config-selected" : ""); }
+            public void bind(UiView row, int index) {
+                String selected = index == 0 ? "" : headers.get(index - 1).section();
+                row.text("open", index == 0 ? SakuraComponent.get().transClient("word", "aui_all_dates") : SakuraComponent.get().literal(headers.get(index - 1).title()));
+                row.tooltip("open", index == 0 ? SakuraComponent.get().transClient("word", "aui_all_dates") : SakuraComponent.get().literal(headers.get(index - 1).title() + "\n" + selected));
+                row.onAction("open", () -> { if (live(owner, token) && rowsRevision == rowToken) { section = selected; resetScroll(); refresh(); } });
+            }
+        }, 32);
         Set<String> matches = new HashSet<>(), headerMatches = new HashSet<>();
         for (Entry entry : all) if (search.matches(entry.key(), entry.title(), entry.calendar(), entry.calendarId(), entry.date())) {
             matches.add(entry.section()); if (entry.header()) headerMatches.add(entry.section());
         }
-        List<Entry> entries = all.stream().filter(row -> row.header() ? matches.contains(row.section())
+        List<Entry> entries = all.stream().filter(row -> section.isEmpty() || section.equals(row.section())).filter(row -> row.header() ? matches.contains(row.section())
                 : (search.isEmpty() ? expanded(row.section()) : search.matches(row.key(), row.title(), row.calendar(), row.calendarId(), row.date())
                 || headerMatches.contains(row.section()))).toList();
         owner.text("empty", entries.isEmpty() ? SakuraComponent.get().transClient("word", "personal_date_no_presets") : SakuraComponent.get().literal(""));
-        owner.rows("fields", new UiRowProvider() {
+        owner.enabled("empty", entries.isEmpty());
+        long total = all.stream().filter(row -> !row.header()).count(), shown = entries.stream().filter(row -> !row.header()).count();
+        owner.text("entry_count", SakuraComponent.get().literal(shown + " / " + total));
+        owner.rows("fields", new UiRowLayout() {
+            public int rowHeight() { return 28; }
+            public boolean textTools() { return true; }
+            public String rowClass(int index) { return entries.get(index).header() ? "config-navigation date-group" : "date-slot"; }
             public int size() { return entries.size(); }
             public String key(int index) { return entries.get(index).key(); }
             public void bind(UiView row, int index) {
@@ -87,6 +128,7 @@ public final class PersonalDateUiSession implements UiPageSession {
                 }
                 String full = entry.title() + "\n" + entry.calendar() + "  " + entry.date();
                 row.text("label", SakuraComponent.get().literal(entry.title()));
+                row.text("detail", SakuraComponent.get().literal(entry.key()));
                 row.text("open", SakuraComponent.get().literal(entry.calendar()));
                 row.text("apply", SakuraComponent.get().literal(entry.date()));
                 for (String id : List.of("label", "open", "apply")) row.tooltip(id, SakuraComponent.get().literal(full));
@@ -95,6 +137,7 @@ public final class PersonalDateUiSession implements UiPageSession {
             }
         }, 120);
     }
+    private void resetScroll() { if (view.state() != null) { view.state().rowPosition(0); view.state().scrollOffset(0); } }
     public boolean requestClose() { if (view == null || closed) return false; view.requestClose(); return true; }
     @Override public void detach(UiDetachReason reason) {
         generation++; rowsRevision++; view = null;

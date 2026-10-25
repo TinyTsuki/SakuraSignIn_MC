@@ -17,7 +17,7 @@ public class SignInUiParityTest {
         xin.vanilla.sakura.test.BaniraTestPlatform.install();
     }
     static Component text(String text) { return SakuraComponent.get().literal(text); }
-    static final class Port implements SignInUiSession.Port {
+    static class Port implements SignInUiSession.Port {
         long revision;
         int moves, reads, refreshes, themes, keys, persists, dismissals, selectedTheme = -1;
         boolean tips, special, empty;

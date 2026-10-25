@@ -87,6 +87,7 @@ final class UiBoundaryChecks {
             byte[] bytes = entry.getValue();
             if (name.endsWith(".css")) {
                 css += bytes.length;
+                if (bytes.length > (shared ? 16384 : 4096)) errors.add("CSS budget");
                 if (!shared && name.endsWith("shared.css")) errors.add("Copied shared CSS");
             } else if (name.endsWith(".html")) {
                 markup += bytes.length;
@@ -104,12 +105,19 @@ final class UiBoundaryChecks {
                     try {
                         java.net.URI uri = new java.net.URI(target);
                         if (uri.isAbsolute() || target.startsWith("/") || target.contains("\\")
-                                || target.contains("..") && !target.equals("../banira_codex/shared.css") && !(shared && target.equals("../shared.css"))) errors.add("External UI reference");
+                                || target.contains("..") && !java.util.Set.of("../banira_codex/shared.css", "../banira_codex/ui/config.css", "../banira_codex/ui/player-config-editor.css").contains(target)
+                                && !(shared && target.equals("../shared.css"))) errors.add("External UI reference");
                     } catch (java.net.URISyntaxException failure) { errors.add("Invalid UI reference"); }
                 }
             }
         }
-        if (css > (shared ? 16384 : 4096)) errors.add("CSS budget");
+        if (css > 16384) errors.add("CSS budget");
+        if (!shared) for (var page : files.entrySet()) if (page.getKey().endsWith(".html")) {
+            var links = java.util.regex.Pattern.compile("href=\"([^\"]+\\.css)\"").matcher(new String(page.getValue(), StandardCharsets.UTF_8));
+            java.util.Set<String> loaded = new java.util.HashSet<>(); int pageCss = 0;
+            while (links.find()) if (loaded.add(links.group(1)) && files.containsKey(links.group(1))) pageCss += files.get(links.group(1)).length;
+            if (pageCss > 4096) errors.add("Page CSS budget");
+        }
         if (css + markup > 262144) errors.add("HTML/CSS budget");
         if (js > 0) errors.add("Unexpected page script");
         if (bitmap > 65536) errors.add("Bitmap budget");

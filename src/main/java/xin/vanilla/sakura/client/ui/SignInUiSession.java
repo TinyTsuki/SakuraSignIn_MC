@@ -11,6 +11,7 @@ import java.util.function.BooleanSupplier;
 
 public final class SignInUiSession implements UiPageSession {
     public record Cell(int date, Component day, Component tooltip, Texture icon) { }
+    public record RewardLine(Component name, Component probability, UiGameElement icon) { }
     public interface Port {
         long revision();
         void refresh();
@@ -27,6 +28,12 @@ public final class SignInUiSession implements UiPageSession {
         void theme(int index, boolean special);
         Texture themeIcon(int index);
         boolean key(int code, boolean pressed);
+        default List<Component> statistics() { return List.of(info(), empty(), empty()); }
+        default int today() { return 0; }
+        default Component status(int date) { return empty(); }
+        default boolean detailsVisible(int date) { return true; }
+        default List<RewardLine> rewards(int date) { return List.of(); }
+        default long detailRevision() { return 0; }
     }
     private final Port port;
     private final BooleanSupplier connection;
@@ -36,6 +43,8 @@ public final class SignInUiSession implements UiPageSession {
     private boolean closed;
     private int pressedTheme = -1;
     private List<Cell> cells = List.of();
+    private int selectedDate;
+    private long detailRevision = Long.MIN_VALUE;
 
     public SignInUiSession(Port port, BooleanSupplier connection) {
         this.port = Objects.requireNonNull(port); this.connection = Objects.requireNonNull(connection);
@@ -48,6 +57,10 @@ public final class SignInUiSession implements UiPageSession {
         if (next.nativeView()) return;
         port.reload();
         long token = generation;
+        next.gameElement("brand", SakuraUiPages.moduleIcon());
+        next.gameElement("close_icon", UiGameElement.preset(PresetStyle.CLOSE));
+        text("detail_heading", tr("aui_reward_details"));
+        text("cards_label", tr("aui_cards")); text("continuous_label", tr("aui_consecutive")); text("total_label", tr("aui_total"));
         action("previous-month", next, token, () -> port.move(-1, 0));
         action("next-month", next, token, () -> port.move(1, 0));
         action("previous-year", next, token, () -> port.move(0, -1));
@@ -81,10 +94,15 @@ public final class SignInUiSession implements UiPageSession {
         }
         for (int index = 0; index < 40; index++) {
             int position = index;
+            bindings.add(next.onPointer("day" + index, pointer -> {
+                if (pointer.kind() == UiPointer.Kind.MOVE && live(next, token) && !port.openingTips()
+                        && position < cells.size() && cells.get(position).date() != selectedDate
+                        && inside(next, "day" + position, pointer)) select(cells.get(position));
+            }));
             bindings.add(next.onAction("day" + index, () -> {
                 if (!live(next, token) || port.openingTips() || position >= cells.size()) return;
                 Cell selected = cells.get(position);
-                if (next.state() != null) next.state().selectedId(Integer.toString(selected.date()));
+                select(selected);
                 port.activate(selected.date()); refresh();
             }));
         }
@@ -105,14 +123,25 @@ public final class SignInUiSession implements UiPageSession {
     private void icon(String id, PresetStyle icon) { view.gameElement(id, UiGameElement.preset(icon)); }
     private void text(String id, Component text) { view.text(id, text); view.tooltip(id, text); }
     private static Component tr(String key) { return SakuraComponent.get().transClient("word", key); }
+    private static Component empty() { return SakuraComponent.get().literal(""); }
     private void refresh() {
         if (view == null || view.nativeView() || closed) return;
         long next = port.revision();
         if (next == revision) return;
         revision = next;
+        detailRevision = port.detailRevision();
         cells = List.copyOf(port.cells());
         if (cells.size() > 40) throw new IllegalArgumentException("Calendar cell budget");
-        text("title", port.title()); text("info", port.info()); text("tips", port.openingTips() ? port.tips() : SakuraComponent.get().literal(""));
+        view.gameElement("brand", SakuraUiPages.moduleIcon());
+        for (String name : List.of("not_signed", "unclaimed", "claimed")) {
+            view.gameElement("legend_" + name, UiGameElement.sprite(xin.vanilla.sakura.client.theme.SakuraThemeTextures.status(
+                    name.equals("not_signed") ? "not_signed_in" : name.equals("claimed") ? "rewarded" : "signed_in").texture()));
+            text("legend_" + name + "_label", tr("aui_" + name));
+        }
+        text("title", tr("aui_calendar")); text("month", port.title()); text("tips", port.tips());
+        view.enabled("tips_panel", port.openingTips());
+        List<Component> statistics = port.statistics();
+        text("cards", statistics.get(0)); text("continuous", statistics.get(1)); text("total", statistics.get(2));
         List<Component> weekdays = port.weekdays();
         for (int index = 0; index < 7; index++) text("weekday" + index, weekdays.get(index));
         view.enabled("tips-confirm", port.openingTips()); view.enabled("tips-disable", port.openingTips());
@@ -126,8 +155,41 @@ public final class SignInUiSession implements UiPageSession {
             text("day" + index, cell == null ? SakuraComponent.get().literal("") : cell.day());
             view.gameElement("status" + index, cell == null || cell.icon() == null ? null : UiGameElement.sprite(cell.icon()));
             view.enabled("day" + index, cell != null && !port.openingTips() && connection.getAsBoolean());
-            if (cell != null) view.tooltip("day" + index, cell.tooltip());
+            view.tooltip("day" + index, empty());
         }
+        Cell selection = cells.stream().filter(cell -> cell.date() == selectedDate).findFirst()
+                .orElseGet(() -> cells.stream().filter(cell -> cell.date() == port.today()).findFirst().orElse(cells.isEmpty() ? null : cells.get(0)));
+        if (selection == null) { selectedDate = 0; renderDetails(null); }
+        else select(selection);
+    }
+    private void select(Cell cell) {
+        if (selectedDate != cell.date() && view.state() != null) {
+            view.state().rowPosition(0); view.state().detailScroll(0);
+        }
+        selectedDate = cell.date();
+        if (view.state() != null) view.state().selectedId(Integer.toString(selectedDate));
+        renderDetails(cell);
+    }
+    private void renderDetails(Cell cell) {
+        text("detail_date", SakuraComponent.get().literal(cell == null ? "" : String.format(Locale.ROOT, "%02d / %02d", cell.date() / 100 % 100, cell.date() % 100)));
+        text("detail_status", cell == null ? empty() : port.status(cell.date()));
+        List<RewardLine> rewards = cell == null || !port.detailsVisible(cell.date()) ? List.of() : List.copyOf(port.rewards(cell.date()));
+        text("empty", cell != null && !port.detailsVisible(cell.date()) ? tr("aui_details_hidden") : rewards.isEmpty() ? tr("aui_no_rewards") : empty());
+        view.enabled("empty", rewards.isEmpty());
+        view.text("detail_count", SakuraComponent.get().literal(Integer.toString(rewards.size())));
+        int date = selectedDate;
+        view.rows("fields", new UiRowLayout() {
+            public int rowHeight() { return 32; }
+            public int size() { return rewards.size(); }
+            public String key(int index) { return date + ":reward:" + index; }
+            public String rowClass(int index) { return "signin-reward"; }
+            public void bind(UiView row, int index) {
+                RewardLine reward = rewards.get(index);
+                row.text("label", reward.name()); row.tooltip("label", reward.name());
+                row.text("detail", reward.probability()); row.tooltip("detail", reward.probability());
+                row.gameElement("icon", reward.icon()); row.tooltip("icon", reward.name());
+            }
+        }, 40);
     }
     @Override public boolean key(int key, int scan, int modifiers, boolean pressed) {
         if (view == null || view.nativeView() || closed || !connection.getAsBoolean()) return false;
@@ -137,7 +199,10 @@ public final class SignInUiSession implements UiPageSession {
     }
     @Override public void tick() {
         if (view == null || view.nativeView() || closed) return;
-        if (connection.getAsBoolean() && port.revision() != revision) { port.refresh(); refresh(); }
+        if (connection.getAsBoolean() && (port.revision() != revision || port.detailRevision() != detailRevision)) {
+            if (port.detailRevision() != detailRevision) revision = Long.MIN_VALUE;
+            port.refresh(); refresh();
+        }
     }
     public boolean requestClose() { if (view == null || closed) return false; view.requestClose(); return true; }
     @Override public void detach(UiDetachReason reason) {

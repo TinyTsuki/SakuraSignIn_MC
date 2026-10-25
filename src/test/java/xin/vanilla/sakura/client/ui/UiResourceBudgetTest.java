@@ -20,4 +20,12 @@ public class UiResourceBudgetTest {
         assertFalse(UiBoundaryChecks.resources(Map.of("shared.css", new byte[1]), false).isEmpty());
         assertFalse(UiBoundaryChecks.resources(Map.of("page.html", "<link href='../foreign/file.css'>".getBytes(StandardCharsets.UTF_8)), false).isEmpty());
     }
+    @Test public void independentPagesKeepSeparateFourKiBStyleBudgets() {
+        var a = new byte[3000]; var b = new byte[3000];
+        assertTrue(UiBoundaryChecks.resources(Map.of("a.css",a,"b.css",b,
+                "a.html","<link href=\"a.css\">".getBytes(StandardCharsets.UTF_8),
+                "b.html","<link href=\"b.css\">".getBytes(StandardCharsets.UTF_8)),false).isEmpty());
+        assertFalse(UiBoundaryChecks.resources(Map.of("a.css",a,"b.css",b,
+                "a.html","<link href=\"a.css\"><link href=\"b.css\">".getBytes(StandardCharsets.UTF_8)),false).isEmpty());
+    }
 }

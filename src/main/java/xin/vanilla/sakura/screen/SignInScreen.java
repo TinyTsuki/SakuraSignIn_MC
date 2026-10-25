@@ -109,7 +109,9 @@ public final class SignInScreen extends BaniraScreen implements UiPageSource {
                 public List<SignInUiSession.Cell> cells() {
                     return signInCells.stream().map(cell -> new SignInUiSession.Cell(
                             cell.getYear() * 10000 + cell.getMonth() * 100 + cell.getDay(),
-                            cell.uiDay(), cell.uiTooltip(), cell.uiStatusIcon())).toList();
+                            SakuraComponent.get().literal(cell.isShowText() ? Integer.toString(cell.getDay()) : "")
+                                    .underlined(cell.getYear() * 10000 + cell.getMonth() * 100 + cell.getDay() == DateUtils.toDateInt(SakuraClock.clientNow())),
+                            cell.uiTooltip(), cell.uiStatusIcon())).toList();
                 }
                 public Component title() {
                     Date date = SakuraClientState.getCalendarCurrentDate();
@@ -122,6 +124,31 @@ public final class SignInScreen extends BaniraScreen implements UiPageSource {
                     IPlayerSignInData data = SakuraPlayerData.get(player);
                     return SakuraComponent.get().transClient("format", "sign_in_info", data.getSignInCard(),
                             data.getContinuousSignInDays(), data.getTotalSignInDays());
+                }
+                public List<Component> statistics() {
+                    if (Minecraft.getInstance().player == null) return List.of(SakuraComponent.get().literal(""), SakuraComponent.get().literal(""), SakuraComponent.get().literal(""));
+                    IPlayerSignInData data = SakuraPlayerData.get(Minecraft.getInstance().player);
+                    return List.of(SakuraComponent.get().literal(String.valueOf(data.getSignInCard())),
+                            SakuraComponent.get().literal(String.valueOf(data.getContinuousSignInDays())),
+                            SakuraComponent.get().literal(String.valueOf(data.getTotalSignInDays())));
+                }
+                public int today() { return DateUtils.toDateInt(SakuraClock.clientNow()); }
+                private SignInCell cell(int date) {
+                    return signInCells.stream().filter(value -> value.getYear() * 10000 + value.getMonth() * 100 + value.getDay() == date).findFirst().orElse(null);
+                }
+                public Component status(int date) {
+                    SignInCell cell = cell(date);
+                    return cell == null ? SakuraComponent.get().literal("") : ESignInStatus.valueOf(cell.getStatus()).enumDescription();
+                }
+                public boolean detailsVisible(int date) { SignInCell cell = cell(date); return cell != null && cell.uiDetailsVisible(); }
+                public long detailRevision() {
+                    LocalPlayer player = Minecraft.getInstance().player;
+                    if (player == null) return -1;
+                    return (player.hasPermissions(CommonConfig.get().permission().permissionRewardDetail()) ? 1 : 0)
+                            | (player.hasPermissions(CommonConfig.get().permission().permissionRewardProbability()) ? 2 : 0);
+                }
+                public List<SignInUiSession.RewardLine> rewards(int date) {
+                    SignInCell cell = cell(date); return cell == null ? List.of() : cell.uiRewardLines();
                 }
                 public List<Component> weekdays() {
                     TextureCoordinate texture = SakuraClientState.getThemeTextureCoordinate();
