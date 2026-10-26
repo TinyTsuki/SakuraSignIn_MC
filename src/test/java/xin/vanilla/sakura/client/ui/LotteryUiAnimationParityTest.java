@@ -13,6 +13,33 @@ public class LotteryUiAnimationParityTest {
     @BeforeClass public static void bootstrap() { SignInUiParityTest.bootstrap(); }
     static LotteryRevealPacket packet() { return new LotteryRevealPacket(UUID.randomUUID() + "-1", UUID.randomUUID().toString(), "Daily",
             List.of(Reward.getDefault()), List.of(Reward.getDefault()), LotteryPreviewMode.ALL); }
+    @Test public void loopingStripKeepsCandidatesOnBothSidesAtStartAndFinish() {
+        for (double width : new double[]{110, 300, 536, 1200}) for (long time : new long[]{0, 2000, 6400, 6500, 6799}) {
+            var visible = LotteryRevealUiSession.frame(LotteryAnimationStyle.STRIP, time, width, 140, 12).stream()
+                    .filter(s -> s.x() >= 0 && s.x() + 16 <= width).sorted(Comparator.comparingDouble(LotteryRevealUiSession.Slot::x)).toList();
+            assertTrue("Left edge must retain a candidate", visible.get(0).x() <= 38);
+            assertTrue("Right edge must retain a candidate", visible.get(visible.size() - 1).x() + 16 >= width - 38);
+            for (int i = 1; i < visible.size(); i++) assertEquals(38, visible.get(i).x() - visible.get(i - 1).x(), 1);
+        }
+    }
+    @Test public void rectangularWheelRetainsClearanceIncludingNarrowAreas() {
+        for (double width : new double[]{80, 110, 180, 300, 536}) for (double height : new double[]{60, 90, 140, 188}) {
+            var slots = LotteryRevealUiSession.frame(LotteryAnimationStyle.ROULETTE, 6500, width, height, 12);
+            assertTrue(slots.size() > 0 && slots.size() <= 12);
+            assertTrue(slots.get(slots.size() - 1).active());
+            for (var s : slots) {
+                assertTrue(s.x() >= 3 && s.y() >= 3 && s.x() + 19 <= width && s.y() + 19 <= height);
+                for (var other : slots) if (s != other)
+                    assertTrue("Wheel icons and markers must not overlap", Math.abs(s.x() - other.x()) >= 28 || Math.abs(s.y() - other.y()) >= 28);
+            }
+        }
+    }
+    @Test public void nativeStripAndWheelUseTheSameFrameContract() throws Exception {
+        String source = java.nio.file.Files.readString(java.nio.file.Path.of("src/main/java/xin/vanilla/sakura/screen/LotteryRevealScreen.java"));
+        assertTrue(source.contains("LotteryRevealUiSession.frame(LotteryAnimationStyle.STRIP"));
+        assertTrue(source.contains("LotteryRevealUiSession.frame(LotteryAnimationStyle.ROULETTE"));
+        assertFalse(source.contains("Math.cos(angle)"));
+    }
     @Test public void fourModesUseOriginalGeometryDurationsAndDeterminedWinnerPositions() {
         var strip = LotteryRevealUiSession.frame(LotteryAnimationStyle.STRIP, 6500, 300, 140, 1);
         assertEquals(48, strip.size()); assertEquals(142, strip.get(43).x(), 0); assertTrue(strip.get(43).active());

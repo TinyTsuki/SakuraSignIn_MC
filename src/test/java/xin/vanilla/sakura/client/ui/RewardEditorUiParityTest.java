@@ -87,6 +87,29 @@ public class RewardEditorUiParityTest {
         assertEquals(0, port.scans); assertEquals(0, view.rows.size()); assertFalse(view.enabled.get("add"));
         view.actions.get("add").run(); assertEquals(0, port.commands);
     }
+    @Test public void primarySpritesFollowEnabledStateAndKeepOwnershipAcrossRefresh() {
+        Port port = new Port(2); var session = new RewardEditorUiSession(port, () -> true);
+        var view = new RecordingUiView(); session.bind(view);
+        assertTrue(view.icons.get("add_icon").option().texture()[0].location().getPath().endsWith("reward-add-primary.png"));
+        assertTrue(view.icons.get("upload_icon").option().texture()[0].location().getPath().endsWith("reward-upload-primary.png"));
+        port.redacted = true; port.revision++; session.tick();
+        assertFalse(view.icons.get("upload_icon").option().texture()[0].location().getPath().contains("-primary"));
+        port.redacted = false; port.revision++; session.tick();
+        assertTrue(view.icons.get("upload_icon").option().texture()[0].location().getPath().contains("-primary"));
+    }
+    @Test public void primaryPngsAreWhiteAndRetainOriginalAlpha() throws Exception {
+        String root = "src/main/resources/assets/apricityui/apricity/sakura_sign_in/icons/reward-";
+        for (String name : List.of("add", "upload")) {
+            assertTrue(Files.exists(Path.of(root + name + "-primary.png")));
+            var old = javax.imageio.ImageIO.read(Path.of(root + name + ".png").toFile());
+            var white = javax.imageio.ImageIO.read(Path.of(root + name + "-primary.png").toFile());
+            assertEquals(old.getWidth(), white.getWidth()); assertEquals(old.getHeight(), white.getHeight());
+            for (int y = 0; y < old.getHeight(); y++) for (int x = 0; x < old.getWidth(); x++) {
+                assertEquals(old.getRGB(x, y) >>> 24, white.getRGB(x, y) >>> 24);
+                if ((white.getRGB(x, y) >>> 24) != 0) assertEquals(0xffffff, white.getRGB(x, y) & 0xffffff);
+            }
+        }
+    }
     @Test public void everyActionHasBothTranslations() throws Exception {
         for (String language : new String[]{"en_us", "zh_cn"}) {
             com.google.gson.JsonObject json = com.google.gson.JsonParser.parseString(Files.readString(Path.of("src/main/resources/assets/sakura_sign_in/lang/" + language + ".json"), StandardCharsets.UTF_8)).getAsJsonObject();

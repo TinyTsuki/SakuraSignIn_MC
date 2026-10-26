@@ -124,18 +124,50 @@ public final class LotteryRevealUiSession implements UiPageSession {
         List<Slot> result = new ArrayList<>();
         if (style == LotteryAnimationStyle.STRIP) {
             double offset = (1 - Math.pow(1 - Math.min(1, elapsed / 6500D), 5)) * 43 * 38;
-            for (int i = 0; i < 48; i++) result.add(new Slot(i, Math.round(width / 2 + i * 38 - offset - 8), height / 2 - 8, 16, 16, true, i == 43));
+            double period = 48 * 38;
+            for (int i = 0; i < 48; i++) {
+                double distance = i * 38 - offset;
+                distance -= Math.floor((distance + period / 2) / period) * period;
+                result.add(new Slot(i, Math.round(width / 2 + distance - 8), height / 2 - 8, 16, 16, true, i == 43));
+            }
         } else if (style == LotteryAnimationStyle.CARDS) {
             int count = Math.min(7, Math.max(1, (int) width / 42)), active = Math.min(count - 1, (int) (elapsed / 520));
             for (int i = 0; i < count; i++) result.add(new Slot(i, (width - count * 42 + 8) / 2 + i * 42 + 9, height / 2 - 8, 16, 16, i <= active, i == active));
         } else if (style == LotteryAnimationStyle.ROULETTE) {
-            int count = Math.max(6, Math.min(12, previews)), winner = count - 1;
+            if (width < 24 || height < 24) return List.of();
+            int desired = Math.max(6, Math.min(12, previews));
+            int columns = 0, rows = 0;
+            double spanX = width - 24, spanY = height - 24;
+            for (int count = desired / 2 * 2; count >= 4 && columns == 0; count -= 2) {
+                double best = Double.POSITIVE_INFINITY;
+                for (int x = 2; x <= count / 2; x++) {
+                    int y = (count + 4) / 2 - x;
+                    if (y < 2 || (x - 1) * 32 > spanX || (y - 1) * 32 > spanY) continue;
+                    double score = Math.abs(Math.log((spanX / (x - 1)) / (spanY / (y - 1))));
+                    if (score < best) { best = score; columns = x; rows = y; }
+                }
+            }
+            List<double[]> positions = new ArrayList<>();
+            if (columns > 0) {
+                double dx = spanX / (columns - 1), dy = spanY / (rows - 1);
+                for (int x = 0; x < columns; x++) positions.add(new double[]{4 + x * dx, 4});
+                for (int y = 1; y < rows; y++) positions.add(new double[]{4 + spanX, 4 + y * dy});
+                for (int x = columns - 2; x >= 0; x--) positions.add(new double[]{4 + x * dx, 4 + spanY});
+                for (int y = rows - 2; y >= 1; y--) positions.add(new double[]{4, 4 + y * dy});
+            } else {
+                boolean horizontal = spanX >= spanY;
+                int count = Math.min(desired, 1 + (int) (Math.max(spanX, spanY) / 32));
+                for (int i = 0; i < count; i++) {
+                    double offset = (i - (count - 1) / 2D) * 32;
+                    positions.add(new double[]{width / 2 - 8 + (horizontal ? offset : 0), height / 2 - 8 + (horizontal ? 0 : offset)});
+                }
+            }
+            int count = positions.size(), winner = count - 1;
             double progress = Math.min(1, elapsed / 6500D), eased = 1 - Math.pow(1 - progress, 4);
             int active = progress >= 1 ? winner : (int) Math.floor(eased * (count * 7 + winner)) % count;
-            double rx = Math.max(0, Math.min(78, (width - 24) / 2)), ry = Math.max(0, Math.min(46, (height - 24) / 2));
             for (int i = 0; i < count; i++) {
-                double angle = Math.PI * 2 * i / count - Math.PI / 2;
-                result.add(new Slot(i, width / 2 + Math.round(Math.cos(angle) * rx) - 8, height / 2 + Math.round(Math.sin(angle) * ry) - 8, 16, 16, true, i == active));
+                double[] position = positions.get(i);
+                result.add(new Slot(i, position[0], position[1], 16, 16, true, i == active));
             }
         }
         return List.copyOf(result);

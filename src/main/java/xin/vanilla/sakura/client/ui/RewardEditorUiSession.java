@@ -105,7 +105,7 @@ public final class RewardEditorUiSession implements UiPageSession {
         }));
         bindings.add(next.onDraft("search", text -> { if (live(next, token)) { query(text); if (next.state() != null) next.state().rowPosition(0); refresh(); } }));
         for (Action action : Action.values()) {
-            next.gameElement(action.id + "_icon", icon(action.id));
+            next.gameElement(action.id + "_icon", actionIcon(action));
             next.text(action.id + "_label", tr(action.label));
             next.tooltip(action.id, tr(action.label));
             bindings.add(next.onAction(action.id, () -> {
@@ -159,6 +159,10 @@ public final class RewardEditorUiSession implements UiPageSession {
         return ICONS.computeIfAbsent(name, key -> UiGameElement.sprite(Texture.of(new ResourceLocation("apricityui",
                 "apricity/sakura_sign_in/icons/reward-" + key + ".png"), 32, 32)));
     }
+    private UiGameElement actionIcon(Action action) {
+        boolean primary = action == Action.ADD || action == Action.UPLOAD;
+        return icon(action.id + (primary && port.enabled(action) ? "-primary" : ""));
+    }
     private void chrome() {
         if (view == null) return;
         var bounds = view.bounds("workspace");
@@ -181,7 +185,7 @@ public final class RewardEditorUiSession implements UiPageSession {
             boolean menu = switch (action) { case CUT, MOVE, SORT, MERGE, CLEAR, SIDEBAR -> true; default -> false; };
             boolean visible = menu ? moreOpen && !blocked : !covered || action == Action.UPLOAD
                     || action == Action.DOWNLOAD || action == Action.FOLDER || action == Action.HELP;
-            view.gameElement(action.id + "_icon", visible ? icon(action.id) : null);
+            view.gameElement(action.id + "_icon", visible ? actionIcon(action) : null);
         }
         view.gameElement("more_icon", covered ? null : icon("more"));
         view.gameElement("details_icon", covered ? null : icon("details"));
@@ -242,6 +246,7 @@ public final class RewardEditorUiSession implements UiPageSession {
         owner.text("section", ruleName(port.rule())); owner.text("status", port.status());
         owner.text("count", SakuraComponent.get().literal(entries.stream().filter(entry -> !entry.group()).count() + " / "
                 + all.stream().filter(entry -> !entry.group()).count()));
+        chromeState = -1;
         inspector(all); chrome();
         navigationIds = entries.stream().filter(entry -> !entry.group()).map(Entry::id).toList();
         if (revealId != null && owner.state() != null) {

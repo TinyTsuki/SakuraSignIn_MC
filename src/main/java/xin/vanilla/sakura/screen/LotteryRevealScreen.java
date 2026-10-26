@@ -112,14 +112,12 @@ public final class LotteryRevealScreen extends BaniraScreen implements UiPageSou
 
     private void renderStrip(GuiGraphics stack,long elapsed) {
         LotteryLayout.Rect area=layout.content();
-        int winnerIndex=43,spacing=38,center=area.x()+area.width()/2;
-        List<Reward> sequence=sequence(48,winnerIndex);
-        double eased=1D-Math.pow(1D-Math.min(1D,elapsed/6500D),5D);
-        double offset=eased*winnerIndex*spacing;
+        int center=area.x()+area.width()/2;
+        List<Reward> sequence=sequence(48,43);
         int y=area.y()+area.height()/2-8;
-        for(int i=0;i<sequence.size();i++) {
-            int x=(int)Math.round(center+i*spacing-offset-8);
-            if(x>=area.x() && x+16<=area.right()) renderCandidate(stack,sequence.get(i),x,y);
+        for(var slot:LotteryRevealUiSession.frame(LotteryAnimationStyle.STRIP,elapsed,area.width(),area.height(),packet.getPreview().size())) {
+            int x=area.x()+(int)Math.round(slot.x());
+            if(x>=area.x() && x+16<=area.right()) renderCandidate(stack,sequence.get(slot.index()),x,y);
         }
         shape(stack,center-13,y-8,26,32,getEffectiveTheme().buttonBorderHover(),3,2);
     }
@@ -139,18 +137,12 @@ public final class LotteryRevealScreen extends BaniraScreen implements UiPageSou
 
     private void renderRoulette(GuiGraphics stack,long elapsed) {
         LotteryLayout.Rect area=layout.content();
-        int count=Math.max(6,Math.min(12,packet.getPreview().size())),winner=count-1;
-        List<Reward> values=sequence(count,winner);
-        double progress=Math.min(1D,elapsed/6500D),eased=1D-Math.pow(1D-progress,4D);
-        int active=(int)Math.floor(eased*(count*7+winner))%count;
-        if(progress>=1D) active=winner;
-        int centerX=area.x()+area.width()/2,centerY=area.y()+area.height()/2;
-        double radiusX=Math.min(78,(area.width()-24)/2D),radiusY=Math.min(46,(area.height()-24)/2D);
-        for(int i=0;i<count;i++) {
-            double angle=Math.PI*2D*i/count-Math.PI/2D;
-            int x=centerX+(int)Math.round(Math.cos(angle)*radiusX)-8,y=centerY+(int)Math.round(Math.sin(angle)*radiusY)-8;
-            if(i==active) shape(stack,x-4,y-4,24,24,getEffectiveTheme().buttonBorderHover(),4,2);
-            renderCandidate(stack,values.get(i),x,y);
+        var slots=LotteryRevealUiSession.frame(LotteryAnimationStyle.ROULETTE,elapsed,area.width(),area.height(),packet.getPreview().size());
+        List<Reward> values=sequence(slots.size(),slots.size()-1);
+        for(var slot:slots) {
+            int x=area.x()+(int)Math.round(slot.x()),y=area.y()+(int)Math.round(slot.y());
+            if(slot.active()) shape(stack,x-3,y-3,22,22,getEffectiveTheme().buttonBorderHover(),4,2);
+            renderCandidate(stack,values.get(slot.index()),x,y);
         }
     }
 
