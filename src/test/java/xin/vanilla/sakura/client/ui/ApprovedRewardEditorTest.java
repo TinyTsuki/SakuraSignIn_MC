@@ -116,4 +116,19 @@ public class ApprovedRewardEditorTest {
         view.pointers.get("workspace").accept(new UiPointer(UiPointer.Kind.DOWN, 20, 200, 0));
         assertFalse(view.enabled.get("more_panel")); assertEquals(0, port.commands);
     }
+    @Test public void rewardTextUsesTheAuiFontRasterizerAtTheCurrentPixelScale() throws Exception {
+        String css = Files.readString(Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in/rewards.css"), StandardCharsets.UTF_8);
+        assertTrue("Unset font families use Minecraft bitmap text at fractional sizes", css.contains(".rewards-page{font-family:sans-serif}"));
+    }
+    @Test public void fontRepairPreservesTheApprovedLayoutStylesExactly() throws Exception {
+        String css = Files.readString(Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in/rewards.css"), StandardCharsets.UTF_8);
+        String layout = css.replace(".rewards-page{font-family:sans-serif}", "").trim();
+        byte[] digest = java.security.MessageDigest.getInstance("SHA-256").digest(layout.getBytes(StandardCharsets.UTF_8));
+        assertEquals("C2C03C93919E39B474A7ABEF60DDA05788CFE812B4318AEDF23898DFFF808237", java.util.HexFormat.of().withUpperCase().formatHex(digest));
+    }
+    @Test public void rewardStylesStayWithinBudgetAfterWindowsCheckout() throws Exception {
+        String css = Files.readString(Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in/rewards.css"), StandardCharsets.UTF_8);
+        String windows = css.replace("\r\n", "\n").replace("\n", "\r\n");
+        assertTrue("CRLF checkouts retain the same 4KiB CSS budget", windows.getBytes(StandardCharsets.UTF_8).length <= 4096);
+    }
 }
