@@ -36,8 +36,8 @@ public class LotteryUiAnimationParityTest {
     }
     @Test public void nativeStripAndWheelUseTheSameFrameContract() throws Exception {
         String source = java.nio.file.Files.readString(java.nio.file.Path.of("src/main/java/xin/vanilla/sakura/screen/LotteryRevealScreen.java"));
-        assertTrue(source.contains("LotteryRevealUiSession.presentationFrame("));
-        assertFalse(source.contains("LotteryRevealUiSession.frame("));
+        assertTrue(source.contains("LotteryRevealUiSession.frame(LotteryAnimationStyle.STRIP"));
+        assertTrue(source.contains("LotteryRevealUiSession.frame(LotteryAnimationStyle.ROULETTE"));
         assertFalse(source.contains("Math.cos(angle)"));
     }
     @Test public void fourModesUseOriginalGeometryDurationsAndDeterminedWinnerPositions() {

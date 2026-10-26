@@ -5,7 +5,6 @@ import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.api.reward.client.SakuraRewardClient;
 import xin.vanilla.sakura.client.gui.RewardRenderer;
-import xin.vanilla.sakura.client.gui.lottery.LotteryRevealLayout;
 import xin.vanilla.sakura.data.lottery.LotteryAnimationStyle;
 import xin.vanilla.sakura.network.packet.LotteryRevealPacket;
 import xin.vanilla.sakura.reward.Reward;
@@ -47,7 +46,6 @@ public final class LotteryRevealUiSession implements UiPageSession {
         claimRequested = true; claim.run();
     }
     public boolean claimRequested() { return claimRequested; }
-    public boolean connected() { return connection.getAsBoolean(); }
     private boolean live(UiView owner, long token) { return !closed && view == owner && binding == token && connection.getAsBoolean(); }
     @Override public void bind(UiView next) {
         detach(UiDetachReason.RELOAD);
@@ -146,7 +144,7 @@ public final class LotteryRevealUiSession implements UiPageSession {
     private void bindResults() {
         ScreenCoordinate area = view.bounds("result_area");
         if (area == null || !Double.isFinite(area.width()) || area.width() <= 0) return;
-        int columns = LotteryRevealLayout.resultColumns(area.width(), winners.size());
+        int columns = winners.size() == 1 || area.width() < 240 ? 1 : area.width() < 360 ? 2 : 3;
         if (resultsShown && resultColumns == columns) return;
         if (view.state() != null) {
             double first = view.state().rowPosition() * Math.max(1, resultColumns);
@@ -159,7 +157,7 @@ public final class LotteryRevealUiSession implements UiPageSession {
             view.enabled("column" + column, column < columns);
             String id = column == 0 ? "fields" : column == 1 ? "fields_middle" : "fields_end";
             view.rows(id, new UiRowLayout() {
-                public int rowHeight() { return LotteryRevealLayout.ROW_HEIGHT; }
+                public int rowHeight() { return 60; }
                 public String rowClass(int row) { return "result-card"; }
                 public int size() { return offset >= columns ? 0 : (winners.size() + columns - 1 - offset) / columns; }
                 public String key(int row) { return packet.getOperationId() + ":" + (row * columns + offset); }
@@ -179,7 +177,7 @@ public final class LotteryRevealUiSession implements UiPageSession {
             }, 40);
         }
     }
-    public static String typeName(Reward reward) {
+    private static String typeName(Reward reward) {
         var extension = SakuraRewardClient.find(reward.getTypeId()).map(SakuraRewardClient.Registration::getExtension).orElse(null);
         return extension == null || extension.getTypeName() == null ? reward.getTypeId().toString() : extension.getTypeName().get().toString();
     }

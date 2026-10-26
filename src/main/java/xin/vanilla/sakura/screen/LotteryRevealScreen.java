@@ -38,7 +38,7 @@ public final class LotteryRevealScreen extends BaniraScreen implements UiPageSou
     private final LotteryRevealUiSession revealSession;
     private UiPageState revealPageState;
     private LotteryRevealLayout layout;
-    private ButtonWidget actionButton, closeButton;
+    private ButtonWidget actionButton;
     private ScrollbarWidget resultScrollbar;
     private int resultScrollRows;
 
@@ -73,11 +73,6 @@ public final class LotteryRevealScreen extends BaniraScreen implements UiPageSou
             else revealSession.skip();
         });
         addWidget(actionButton);
-        closeButton = new ButtonWidget(this);
-        closeButton.bounds(bounds(layout.close()));
-        closeButton.presetStyle(ButtonWidget.PresetStyle.CLOSE);
-        closeButton.onClick(button -> finish());
-        addWidget(closeButton);
         resultScrollbar = new ScrollbarWidget(this);
         resultScrollbar.orientation(EnumOrientation.VERTICAL).minValue(0).scrollStep(1).scrollOnFocus(false)
                 .onValueChanged(value -> resultScrollRows = (int) Math.round(value));
@@ -88,26 +83,22 @@ public final class LotteryRevealScreen extends BaniraScreen implements UiPageSou
     @Override
     protected void onRender(GuiGraphics stack, int mouseX, int mouseY, float partialTicks) {
         LotteryLayout.Rect panel = layout.panel(), content = layout.content();
-        shape(stack,panel.x(),panel.y(),panel.width(),panel.height(),getEffectiveTheme().panelBg(),4,0);
-        var brand = layout.brand();
-        xin.vanilla.sakura.client.theme.SakuraThemeTextures.get("icon.sign_in").draw(stack.pose(),brand.x(),brand.y(),brand.width(),brand.height());
+        shape(stack,panel.x(),panel.y(),panel.width(),panel.height(),getEffectiveTheme().panelBg(),8,0);
         fitted(stack,packet.getPoolName(),layout.title());
-        fitted(stack,"SAKURA SIGN-IN",layout.subtitle());
         long elapsed = revealSession.elapsed();
         boolean revealed = revealed();
         if (revealed) requestClaim();
-        actionButton.enabled(revealSession.connected()); closeButton.enabled(revealSession.connected());
         actionButton.text(SakuraComponent.get().transClient("word",revealed ? "confirm" : "lottery_skip_animation"));
-        fitted(stack,I18n.get("word.sakura_sign_in."+(revealed ? "aui_lottery_rewards" : "lottery_drawing")),layout.section());
-        fitted(stack,I18n.get("format.sakura_sign_in.aui_lottery_result_count_s",packet.getWinners().size()),layout.count());
-        if (revealSession.connected() && layout.close().contains(mouseX,mouseY)) tooltip(xin.vanilla.banira.BaniraComponent.get().transClientAuto("config_editor_close").toString());
         resultScrollbar.visible(false);
         AbstractGuiUtils.pushScissor(content.x(),content.y(),content.width(),content.height());
         try {
             if (revealed) renderResults(stack);
-            else renderAnimation(stack,elapsed);
-            if (!revealSession.connected()) fitted(stack,I18n.get("word.sakura_sign_in.aui_lottery_disconnected"),
-                    new LotteryLayout.Rect(content.x()+8,content.y(),Math.max(1,content.width()-16),12));
+            else switch (style) {
+                case CARDS: renderCards(stack,elapsed); break;
+                case ROULETTE: renderRoulette(stack,elapsed); break;
+                case INSTANT: renderResults(stack); break;
+                default: renderStrip(stack,elapsed); break;
+            }
         } finally { AbstractGuiUtils.popScissor(); }
         if (revealed) {
             List<Reward> winners = packet.getWinners();
@@ -119,65 +110,59 @@ public final class LotteryRevealScreen extends BaniraScreen implements UiPageSou
         renderWidgets(stack,partialTicks);
     }
 
-    private void renderAnimation(GuiGraphics stack,long elapsed) {
-        LotteryLayout.Rect area=layout.animation();
-        var slots=LotteryRevealUiSession.presentationFrame(style,elapsed,area.width(),area.height(),packet.getPreview().size());
-        List<Reward> values=sequence(slots.size(),style==LotteryAnimationStyle.STRIP?43:slots.size()-1);
+    private void renderStrip(GuiGraphics stack,long elapsed) {
+        LotteryLayout.Rect area=layout.content();
+        int center=area.x()+area.width()/2;
+        List<Reward> sequence=sequence(48,43);
+        int y=area.y()+area.height()/2-8;
+        for(var slot:LotteryRevealUiSession.frame(LotteryAnimationStyle.STRIP,elapsed,area.width(),area.height(),packet.getPreview().size())) {
+            int x=area.x()+(int)Math.round(slot.x());
+            if(x>=area.x() && x+16<=area.right()) renderCandidate(stack,sequence.get(slot.index()),x,y);
+        }
+        shape(stack,center-13,y-8,26,32,getEffectiveTheme().buttonBorderHover(),3,2);
+    }
+
+    private void renderCards(GuiGraphics stack,long elapsed) {
+        LotteryLayout.Rect area=layout.content();
+        int count=Math.min(7,Math.max(1,area.width()/42));
+        List<Reward> values=sequence(count,count-1);
+        int startX=area.x()+(area.width()-count*42+8)/2, y=area.y()+area.height()/2-27;
+        int active=Math.min(count-1,(int)(elapsed/520L));
+        for(int i=0;i<count;i++) {
+            int x=startX+i*42;
+            shape(stack,x,y,34,54,i<=active ? getEffectiveTheme().buttonBgHover():getEffectiveTheme().buttonBg(),5,1);
+            if(i<=active) renderCandidate(stack,values.get(i),x+9,y+19);
+        }
+    }
+
+    private void renderRoulette(GuiGraphics stack,long elapsed) {
+        LotteryLayout.Rect area=layout.content();
+        var slots=LotteryRevealUiSession.frame(LotteryAnimationStyle.ROULETTE,elapsed,area.width(),area.height(),packet.getPreview().size());
+        List<Reward> values=sequence(slots.size(),slots.size()-1);
         for(var slot:slots) {
             int x=area.x()+(int)Math.round(slot.x()),y=area.y()+(int)Math.round(slot.y());
-            if(x<area.x() || y<area.y() || x+16>area.right() || y+16>area.bottom()) continue;
-            surface(stack,new LotteryLayout.Rect(x-4,y-8,24,32),slot.face()?getEffectiveTheme().buttonBg():getEffectiveTheme().bgTertiary());
-            if(slot.active()) shape(stack,x-5,y-9,26,34,getEffectiveTheme().buttonBorderHover(),3,1);
-            if(slot.face()) renderCandidate(stack,values.get(slot.index()),x,y);
-            else stack.drawString(font,"?",x+5,y+4,getEffectiveTheme().textPrimary(),false);
+            if(slot.active()) shape(stack,x-3,y-3,22,22,getEffectiveTheme().buttonBorderHover(),4,2);
+            renderCandidate(stack,values.get(slot.index()),x,y);
         }
-        if(style==LotteryAnimationStyle.STRIP) shape(stack,area.x()+area.width()/2-16,area.y()+area.height()/2-20,32,40,getEffectiveTheme().buttonBorderHover(),3,1);
     }
 
     private void renderResults(GuiGraphics stack) {
         List<Reward> winners=packet.getWinners();
         LotteryLayout.Rect area=layout.content();
-        if(winners.size()==1) {
-            resultScrollRows=0;
-            var card=layout.single();surface(stack,card,getEffectiveTheme().buttonBg());
-            int size=Math.min(32,Math.max(16,card.height()-24));
-            renderIcon(stack,winners.get(0),card.x()+12,card.y()+(card.height()-size)/2,size);
-            rewardText(stack,winners.get(0),card,card.x()+size+22);
-            return;
-        }
-        int columns=layout.columns(),max=layout.maxScrollRows(winners.size());
+        int columns=Math.min(layout.columns(),Math.max(1,winners.size())),max=layout.maxScrollRows(winners.size());
         resultScrollRows=Math.max(0,Math.min(max,resultScrollRows));
         resultScrollbar.bounds(new ScreenCoordinate(area.right()-5,area.y(),5,area.height()));
         resultScrollbar.maxValue(max).visibleSize(layout.visibleRows()).visible(max>0);
         resultScrollbar.setValue(resultScrollRows);
-        int start=resultScrollRows*columns,end=Math.min(winners.size(),start+(layout.visibleRows()+1)*columns);
+        int start=resultScrollRows*columns,end=Math.min(winners.size(),start+layout.visibleRows()*columns);
+        int startX=area.x()+(area.width()-7-columns*22)/2;
         for(int i=start;i<end;i++) {
-            var card=layout.card(i-start);Reward reward=winners.get(i);
-            surface(stack,card,getEffectiveTheme().buttonBg());
-            renderIcon(stack,reward,card.x()+6,card.y()+18,20);
-            rewardText(stack,reward,card,card.x()+34);
-            String number=String.format(java.util.Locale.ROOT,"%02d",i+1);
-            stack.drawString(font,number,card.right()-6-font.width(number),card.y()+4,getEffectiveTheme().textSecondary(),false);
+            int local=i-start,x=startX+local%columns*22,y=area.y()+local/columns*22+2;
+            renderReward(stack,winners.get(i),x,y);
+            double mx=inputState.mouseX(),my=inputState.mouseY();
+            if(area.contains(mx,my) && mx>=x && mx<x+16 && my>=y && my<y+16)
+                tooltip(SakuraRewardClient.displayName(winners.get(i),Minecraft.getInstance().options.languageCode,true).toString());
         }
-    }
-
-    private void surface(GuiGraphics stack,LotteryLayout.Rect rect,int color) {
-        shape(stack,rect.x(),rect.y(),rect.width(),rect.height(),color,3,0);
-        shape(stack,rect.x(),rect.y(),rect.width(),rect.height(),getEffectiveTheme().border(),3,1);
-    }
-    private void renderIcon(GuiGraphics stack,Reward reward,int x,int y,int size) {
-        stack.pose().pushPose();
-        try { stack.pose().translate(x,y,0);stack.pose().scale(size/16F,size/16F,1);renderReward(stack,reward,0,0); }
-        finally { stack.pose().popPose(); }
-    }
-    private void rewardText(GuiGraphics stack,Reward reward,LotteryLayout.Rect card,int x) {
-        String name=SakuraRewardClient.displayName(reward,Minecraft.getInstance().options.languageCode,true).toString();
-        int width=Math.max(1,card.right()-x-22);
-        var lines=font.split(net.minecraft.network.chat.Component.literal(name),width);
-        for(int i=0;i<Math.min(2,lines.size());i++) stack.drawString(font,lines.get(i),x,card.y()+12+i*font.lineHeight,getEffectiveTheme().textPrimary(),false);
-        String type=LotteryRevealUiSession.typeName(reward);
-        stack.drawString(font,font.plainSubstrByWidth(type,Math.max(1,card.right()-x-6)),x,card.bottom()-14,getEffectiveTheme().textSecondary(),false);
-        if(layout.content().contains(inputState.mouseX(),inputState.mouseY()) && card.contains(inputState.mouseX(),inputState.mouseY())) tooltip(name+"\n"+type);
     }
 
     @Override protected void onMouseScrolled(MouseScrolledHandleArgs event) {
@@ -200,11 +185,10 @@ public final class LotteryRevealScreen extends BaniraScreen implements UiPageSou
     }
     private void renderReward(GuiGraphics stack,Reward reward,int x,int y) {
         RewardRenderer.renderCustomReward(stack,font,SakuraClientState.getThemeTexture(),
-                SakuraClientState.getThemeTextureCoordinate(),reward,x,y,false,false);
+                SakuraClientState.getThemeTextureCoordinate(),reward,x,y,true,false);
     }
     private boolean revealed() { return revealSession.revealed(); }
     @Override protected void onKeyPressed(KeyPressedHandleArgs event) {
-        if(!revealSession.connected()) return;
         if(event.key()==GLFWKey.GLFW_KEY_ESCAPE || event.key()==Minecraft.getInstance().options.keyInventory.getKey().getValue()) {
             if(revealed()) onClose(); else revealSession.skip();
             event.consumed(true);return;
@@ -215,12 +199,7 @@ public final class LotteryRevealScreen extends BaniraScreen implements UiPageSou
         revealSession.requestClaim();
     }
     @Override public void onClose() {
-        if(!revealSession.connected()) return;
         if(!revealed()) { revealSession.skip();return; }
-        finish();
-    }
-    private void finish() {
-        if(!revealSession.connected()) return;
         if(BaniraUi.closePage(this, UiCloseReason.USER_CLOSE)) return;
         if(revealSession.requestClose()) return;
         requestClaim();super.onClose();
