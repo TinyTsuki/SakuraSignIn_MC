@@ -453,5 +453,8 @@
   "word.sakura_sign_in.lottery_animation_button_cards": "翻牌",
   "word.sakura_sign_in.lottery_animation_button_roulette": "轮盘",
   "word.sakura_sign_in.lottery_animation_button_instant": "即时",
-  "format.sakura_sign_in.lottery_probability_display_s": "相对概率：%s"
+  "format.sakura_sign_in.lottery_probability_display_s": "相对概率：%s",
+  "word.sakura_sign_in.aui_lottery_rewards": "本次获得",
+  "word.sakura_sign_in.aui_lottery_disconnected": "连接已断开",
+  "format.sakura_sign_in.aui_lottery_result_count_s": "本次 %s 抽"
 }

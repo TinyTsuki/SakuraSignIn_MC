@@ -1,11 +1,66 @@
 <!DOCTYPE html>
-<html><head><meta name="aui-viewport" content="mode=gui" /><link rel="stylesheet" href="../banira_codex/shared.css"><link rel="stylesheet" href="lottery.css"></head>
-<body class="sakura-ui"><main id="window" class="page lottery">
-<header class="header"><div id="title" class="title"></div></header>
+<html><head><meta name="aui-viewport" content="mode=gui" /><link rel="stylesheet" href="../banira_codex/shared.css"><link rel="stylesheet" href="lottery-result.css"></head>
+<body class="sakura-ui"><main id="window" class="page result-page">
+<header class="header"><div id="brand" class="brand"></div><div class="heading"><div id="title" class="title"></div><div id="subtitle" class="subtitle"></div></div><button id="close" class="tool"></button></header>
+<div class="sectionbar"><div id="section"></div><div id="result_count"></div></div>
+<div id="connection" class="connection"></div>
+<section id="result_area" class="result-area">
 <section id="scene" class="scene">
-<div id="card0" class="lottery-card"></div><div id="card1" class="lottery-card"></div>
-<div id="card2" class="lottery-card"></div><div id="card3" class="lottery-card"></div>
-<div id="card4" class="lottery-card"></div><div id="card5" class="lottery-card"></div><div id="card6" class="lottery-card"></div>
+<div id="tile0" class="lottery-tile"></div>
+<div id="tile1" class="lottery-tile"></div>
+<div id="tile2" class="lottery-tile"></div>
+<div id="tile3" class="lottery-tile"></div>
+<div id="tile4" class="lottery-tile"></div>
+<div id="tile5" class="lottery-tile"></div>
+<div id="tile6" class="lottery-tile"></div>
+<div id="tile7" class="lottery-tile"></div>
+<div id="tile8" class="lottery-tile"></div>
+<div id="tile9" class="lottery-tile"></div>
+<div id="tile10" class="lottery-tile"></div>
+<div id="tile11" class="lottery-tile"></div>
+<div id="tile12" class="lottery-tile"></div>
+<div id="tile13" class="lottery-tile"></div>
+<div id="tile14" class="lottery-tile"></div>
+<div id="tile15" class="lottery-tile"></div>
+<div id="tile16" class="lottery-tile"></div>
+<div id="tile17" class="lottery-tile"></div>
+<div id="tile18" class="lottery-tile"></div>
+<div id="tile19" class="lottery-tile"></div>
+<div id="tile20" class="lottery-tile"></div>
+<div id="tile21" class="lottery-tile"></div>
+<div id="tile22" class="lottery-tile"></div>
+<div id="tile23" class="lottery-tile"></div>
+<div id="tile24" class="lottery-tile"></div>
+<div id="tile25" class="lottery-tile"></div>
+<div id="tile26" class="lottery-tile"></div>
+<div id="tile27" class="lottery-tile"></div>
+<div id="tile28" class="lottery-tile"></div>
+<div id="tile29" class="lottery-tile"></div>
+<div id="tile30" class="lottery-tile"></div>
+<div id="tile31" class="lottery-tile"></div>
+<div id="tile32" class="lottery-tile"></div>
+<div id="tile33" class="lottery-tile"></div>
+<div id="tile34" class="lottery-tile"></div>
+<div id="tile35" class="lottery-tile"></div>
+<div id="tile36" class="lottery-tile"></div>
+<div id="tile37" class="lottery-tile"></div>
+<div id="tile38" class="lottery-tile"></div>
+<div id="tile39" class="lottery-tile"></div>
+<div id="tile40" class="lottery-tile"></div>
+<div id="tile41" class="lottery-tile"></div>
+<div id="tile42" class="lottery-tile"></div>
+<div id="tile43" class="lottery-tile"></div>
+<div id="tile44" class="lottery-tile"></div>
+<div id="tile45" class="lottery-tile"></div>
+<div id="tile46" class="lottery-tile"></div>
+<div id="tile47" class="lottery-tile"></div>
+<div id="card0" class="lottery-card"></div>
+<div id="card1" class="lottery-card"></div>
+<div id="card2" class="lottery-card"></div>
+<div id="card3" class="lottery-card"></div>
+<div id="card4" class="lottery-card"></div>
+<div id="card5" class="lottery-card"></div>
+<div id="card6" class="lottery-card"></div>
 <div id="slot0" class="lottery-slot"></div>
 <div id="slot1" class="lottery-slot"></div>
 <div id="slot2" class="lottery-slot"></div>
@@ -55,6 +110,8 @@
 <div id="slot46" class="lottery-slot"></div>
 <div id="slot47" class="lottery-slot"></div>
 <div id="marker" class="lottery-marker" style="display:none"></div></section>
-<section id="content" class="content lottery-results"><div class="grid"><div id="fields"></div><div id="fields_middle"></div><div id="fields_end"></div></div></section>
-<div id="summary" class="paragraph status"></div><footer class="footer"><button id="action" class="primary"></button></footer>
+<section id="content" class="content result-content"><div class="result-columns"><div id="column0"><div id="fields"></div></div><div id="column1"><div id="fields_middle"></div></div><div id="column2"><div id="fields_end"></div></div></div></section>
+<section id="result_single" class="single-result"><div class="single-card"><div id="single_icon"></div><div class="single-text"><div id="single_name"></div><div id="single_type"></div></div></div></section>
+</section>
+<footer class="footer"><div id="summary"></div><button id="action" class="primary"></button></footer>
 </main></body></html>

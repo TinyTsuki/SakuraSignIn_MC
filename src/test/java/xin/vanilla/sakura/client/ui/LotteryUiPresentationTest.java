@@ -109,7 +109,7 @@ public class LotteryUiPresentationTest {
         assertTrue("Dedicated compact lottery stylesheet", Files.exists(root.resolve("lottery.css")));
         for (String name : List.of("lottery", "lottery-result")) {
             String html = Files.readString(root.resolve(name + ".html"), StandardCharsets.UTF_8);
-            assertTrue(html.contains("lottery.css")); assertTrue(html.contains("id=\"fields_middle\""));
+            assertTrue(html.contains("href=\"" + name + ".css\"")); assertTrue(html.contains("id=\"fields_middle\""));
             assertTrue(html.contains("id=\"fields_end\"")); assertFalse(html.contains("<script"));
             assertFalse(html.contains("edit-pool")); assertFalse(html.contains("scenario"));
         }
@@ -167,10 +167,14 @@ public class LotteryUiPresentationTest {
             session.detach(UiDetachReason.SWITCH);
         }
         long[] now = {0};
-        var result = new LotteryRevealUiSession(LotteryUiAnimationParityTest.packet(), LotteryAnimationStyle.STRIP,
+        var packet = LotteryUiAnimationParityTest.packet();
+        var many = new xin.vanilla.sakura.network.packet.LotteryRevealPacket(packet.getOperationId(), packet.getToken(), packet.getPoolName(),
+                Collections.nCopies(100, Reward.getDefault()), packet.getPreview(), LotteryPreviewMode.ALL);
+        var result = new LotteryRevealUiSession(many, LotteryAnimationStyle.STRIP,
                 () -> now[0], () -> true, () -> 69, () -> {});
         var view = new RecordingUiView(); view.state.rowPosition(18); result.bind(view);
-        assertEquals(6, view.state.rowPosition(), 0); result.detach(UiDetachReason.SWITCH);
+        assertEquals(18, view.state.rowPosition(), 0);
+        now[0] = 7000; result.tick(); assertEquals(6, view.state.rowPosition(), 0); result.detach(UiDetachReason.SWITCH);
         assertEquals(18, view.state.rowPosition(), 0);
     }
 }

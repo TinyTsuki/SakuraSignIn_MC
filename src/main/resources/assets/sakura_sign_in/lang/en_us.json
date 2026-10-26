@@ -453,5 +453,8 @@
   "word.sakura_sign_in.lottery_animation_button_cards": "Cards",
   "word.sakura_sign_in.lottery_animation_button_roulette": "Roulette",
   "word.sakura_sign_in.lottery_animation_button_instant": "Instant",
-  "format.sakura_sign_in.lottery_probability_display_s": "Relative probability: %s"
+  "format.sakura_sign_in.lottery_probability_display_s": "Relative probability: %s",
+  "word.sakura_sign_in.aui_lottery_rewards": "Your rewards",
+  "word.sakura_sign_in.aui_lottery_disconnected": "Disconnected",
+  "format.sakura_sign_in.aui_lottery_result_count_s": "%s draws"
 }

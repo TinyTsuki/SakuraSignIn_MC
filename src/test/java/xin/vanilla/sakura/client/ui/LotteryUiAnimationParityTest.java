@@ -94,9 +94,9 @@ public class LotteryUiAnimationParityTest {
     }
     @Test public void animationUsesFiniteRetainedSlotsAndResultsRemainVirtualized() {
         long[] clock = {0}; var session = new LotteryRevealUiSession(packet(), LotteryAnimationStyle.STRIP, () -> clock[0], () -> true, () -> 69, () -> {});
-        var view = new RecordingUiView(); session.bind(view); assertTrue(view.areas.size() <= 56); assertFalse(view.enabled.get("content"));
-        clock[0] = 6500; session.tick(); assertEquals(187, view.areas.get("marker").x(), 0);
-        clock[0] = 6800; session.tick(); assertEquals(40, view.limit); assertTrue(view.enabled.get("content")); assertFalse(view.enabled.get("scene"));
+        var view = new RecordingUiView(); session.bind(view); assertTrue(view.areas.size() <= 104); assertFalse(view.enabled.get("content"));
+        clock[0] = 6500; session.tick(); assertEquals(184, view.areas.get("marker").x(), 0);
+        clock[0] = 6800; session.tick(); assertEquals(40, view.limit); assertTrue(view.enabled.get("result_single")); assertFalse(view.enabled.get("content")); assertFalse(view.enabled.get("scene"));
         assertTrue(view.areas.get("slot43").width() == 0);
     }
     @Test public void revealedStableFramesDoNotRewriteTheDocument() {
@@ -117,7 +117,7 @@ public class LotteryUiAnimationParityTest {
         var session = new LotteryRevealUiSession(value, LotteryAnimationStyle.CARDS, () -> 0, () -> true, () -> 69, () -> {});
         var view = new RecordingUiView(); session.bind(view);
         assertNotNull("Card mode needs its original card surfaces", view.areas.get("card0"));
-        assertEquals(34, view.areas.get("card0").width(), 0); assertEquals(54, view.areas.get("card0").height(), 0);
+        assertEquals(24, view.areas.get("card0").width(), 0); assertEquals(32, view.areas.get("card0").height(), 0);
         assertTrue(view.enabled.get("card0")); assertFalse(view.enabled.get("card1"));
         assertNull(view.icons.get("slot0")); assertEquals("?", view.texts.get("slot0").toString());
         view.actions.get("action").run(); assertTrue(session.revealed()); assertEquals(1, view.rows.size());

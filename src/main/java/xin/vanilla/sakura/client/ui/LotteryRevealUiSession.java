@@ -26,7 +26,8 @@ public final class LotteryRevealUiSession implements UiPageSession {
     private UiView view;
     private long binding;
     private boolean skipped, claimRequested, closed, resultsShown;
-    private Boolean displayedReveal;
+    private Boolean displayedReveal, displayedConnection;
+    private int resultColumns;
 
     public LotteryRevealUiSession(LotteryRevealPacket packet, LotteryAnimationStyle style, LongSupplier millis,
                                   BooleanSupplier connection, IntSupplier inventoryKey, Runnable claim) {
@@ -51,12 +52,18 @@ public final class LotteryRevealUiSession implements UiPageSession {
         if (closed) return;
         view = Objects.requireNonNull(next);
         if (next.nativeView()) return;
-        LotteryUiRewards.enter(next);
         long token = binding;
+        next.gameElement("brand", SakuraUiPages.moduleIcon());
         next.text("title", SakuraComponent.get().literal(packet.getPoolName()));
         next.tooltip("title", SakuraComponent.get().literal(packet.getPoolName()));
+        next.text("subtitle", SakuraComponent.get().literal("SAKURA SIGN-IN · " + SakuraComponent.get().transClient("word", "lottery_result")));
+        next.text("result_count", SakuraComponent.get().transClient("format", "aui_lottery_result_count_s", winners.size()));
+        next.text("connection", SakuraComponent.get().transClient("word", "aui_lottery_disconnected"));
+        next.gameElement("close", UiGameElement.preset(xin.vanilla.banira.client.gui.widget.ButtonWidget.PresetStyle.CLOSE));
+        next.tooltip("close", xin.vanilla.banira.BaniraComponent.get().transClientAuto("config_editor_close"));
+        bindings.add(next.onAction("close", () -> { if (live(next, token)) next.requestClose(); }));
         bindings.add(next.onAction("action", () -> { if (live(next, token)) action(); }));
-        prepareIcons(); resultsShown = false; displayedReveal = null; draw();
+        prepareIcons(); resultsShown = false; resultColumns = 0; displayedReveal = null; displayedConnection = null; draw();
     }
     private void prepareIcons() {
         if (winnerIcons != null) return;
@@ -71,30 +78,45 @@ public final class LotteryRevealUiSession implements UiPageSession {
         else { skip(); draw(); }
     }
     private void draw() {
-        if (view == null || view.nativeView() || !connection.getAsBoolean()) return;
+        if (view == null || view.nativeView()) return;
+        boolean connected = connection.getAsBoolean();
+        if (displayedConnection == null || displayedConnection != connected) {
+            displayedConnection = connected;
+            view.enabled("action", connected); view.enabled("close", connected); view.enabled("connection", !connected);
+        }
+        if (!connected) return;
         boolean revealed = revealed();
         if (displayedReveal == null || displayedReveal != revealed) {
             displayedReveal = revealed;
             view.text("action", SakuraComponent.get().transClient("word", revealed ? "confirm" : "lottery_skip_animation"));
-            view.enabled("scene", !revealed); view.enabled("content", revealed);
+            view.enabled("scene", !revealed); view.enabled("content", revealed && winners.size() != 1);
+            view.enabled("result_single", revealed && winners.size() == 1);
+            view.text("section", SakuraComponent.get().transClient("word", revealed ? "aui_lottery_rewards" : "lottery_drawing"));
         }
         if (revealed) {
-            if (resultsShown) return;
-            resultsShown = true;
-            for (int i = 0; i < 48; i++) view.gameElement("slot" + i, null, new ScreenCoordinate(0, 0, 0, 0));
-            for (int i = 0; i < 7; i++) view.gameElement("card" + i, null, new ScreenCoordinate(0, 0, 0, 0));
-            view.gameElement("marker", null, new ScreenCoordinate(0, 0, 0, 0));
-            String summary = winners.size() == 1 ? SakuraComponent.get().translateClient("format", "lottery_won_s", name(winners.get(0)))
-                    : SakuraComponent.get().translateClient("format", "lottery_won_count_s", winners.size());
-            view.text("summary", SakuraComponent.get().literal(summary)); view.tooltip("summary", SakuraComponent.get().literal(summary));
-            UiView owner = view; long token = binding;
-            LotteryUiRewards.bind(view, winners, packet.getOperationId(), () -> live(owner, token),
-                    LotteryRevealUiSession::name, true, false, winnerIcons::get);
+            if (!resultsShown) {
+                for (int i = 0; i < 48; i++) {
+                    view.gameElement("slot" + i, null, new ScreenCoordinate(0, 0, 0, 0));
+                    view.gameElement("tile" + i, null, new ScreenCoordinate(0, 0, 0, 0));
+                }
+                for (int i = 0; i < 7; i++) view.gameElement("card" + i, null, new ScreenCoordinate(0, 0, 0, 0));
+                view.gameElement("marker", null, new ScreenCoordinate(0, 0, 0, 0));
+                String summary = winners.size() == 1 ? SakuraComponent.get().translateClient("format", "lottery_won_s", name(winners.get(0)))
+                        : SakuraComponent.get().translateClient("format", "lottery_won_count_s", winners.size());
+                view.text("summary", SakuraComponent.get().literal(summary)); view.tooltip("summary", SakuraComponent.get().literal(summary));
+                if (winners.size() == 1) {
+                    view.gameElement("single_icon", winnerIcons.get(0));
+                    view.text("single_name", SakuraComponent.get().literal(name(winners.get(0))));
+                    view.tooltip("single_name", SakuraComponent.get().literal(name(winners.get(0))));
+                    view.text("single_type", SakuraComponent.get().literal(typeName(winners.get(0))));
+                }
+            }
+            bindResults();
             return;
         }
         ScreenCoordinate area = view.bounds("scene");
         if (area == null || !Double.isFinite(area.width()) || !Double.isFinite(area.height()) || area.width() <= 0 || area.height() <= 0) return;
-        List<Slot> slots = frame(style, elapsed(), area.width(), area.height(), preview.size());
+        List<Slot> slots = presentationFrame(style, elapsed(), area.width(), area.height(), preview.size());
         int winner = style == LotteryAnimationStyle.STRIP ? 43 : slots.size() - 1;
         ScreenCoordinate marker = new ScreenCoordinate(0, 0, 0, 0);
         for (Slot slot : slots) {
@@ -102,21 +124,72 @@ public final class LotteryRevealUiSession implements UiPageSession {
             UiGameElement icon = !slot.face() ? hidden() : slot.index() == winner && packet.isPreviewVisible() ? winnerIcons.get(0) : candidateIcons.get(slot.index());
             view.gameElement("slot" + slot.index(), icon, visible ? new ScreenCoordinate(slot.x(), slot.y(), slot.width(), slot.height()) : new ScreenCoordinate(0, 0, 0, 0));
             view.text("slot" + slot.index(), SakuraComponent.get().literal(icon == null ? "?" : ""));
-            if (slot.active() && visible) marker = new ScreenCoordinate(slot.x() - 3, slot.y() - 3, slot.width() + 6, slot.height() + 6);
+            boolean tile = visible && style != LotteryAnimationStyle.CARDS;
+            view.gameElement("tile" + slot.index(), null, tile ? new ScreenCoordinate(slot.x() - 4, slot.y() - 8, 24, 32) : new ScreenCoordinate(0, 0, 0, 0));
+            if (slot.active() && visible) marker = new ScreenCoordinate(slot.x() - 5, slot.y() - 9, 26, 34);
         }
-        for (int i = slots.size(); i < 48; i++) view.gameElement("slot" + i, null, new ScreenCoordinate(0, 0, 0, 0));
+        for (int i = slots.size(); i < 48; i++) {
+            view.gameElement("slot" + i, null, new ScreenCoordinate(0, 0, 0, 0));
+            view.gameElement("tile" + i, null, new ScreenCoordinate(0, 0, 0, 0));
+        }
         for (int i = 0; i < 7; i++) {
             Slot card = style == LotteryAnimationStyle.CARDS && i < slots.size() ? slots.get(i) : null;
             view.gameElement("card" + i, null, card == null ? new ScreenCoordinate(0, 0, 0, 0)
-                    : new ScreenCoordinate(card.x() - 9, card.y() - 19, 34, 54));
+                    : new ScreenCoordinate(card.x() - 4, card.y() - 8, 24, 32));
             if (card != null) view.enabled("card" + i, card.face());
         }
-        if (style == LotteryAnimationStyle.STRIP) marker = new ScreenCoordinate(area.width() / 2 - 13, area.height() / 2 - 16, 26, 32);
+        if (style == LotteryAnimationStyle.STRIP) marker = new ScreenCoordinate(area.width() / 2 - 16, area.height() / 2 - 20, 32, 40);
         view.gameElement("marker", null, marker);
+    }
+    private void bindResults() {
+        ScreenCoordinate area = view.bounds("result_area");
+        if (area == null || !Double.isFinite(area.width()) || area.width() <= 0) return;
+        int columns = winners.size() == 1 || area.width() < 240 ? 1 : area.width() < 360 ? 2 : 3;
+        if (resultsShown && resultColumns == columns) return;
+        if (view.state() != null) {
+            double first = view.state().rowPosition() * Math.max(1, resultColumns);
+            view.state().rowPosition(first / columns);
+        }
+        resultColumns = columns; resultsShown = true;
+        UiView owner = view; long token = binding;
+        for (int column = 0; column < 3; column++) {
+            int offset = column;
+            view.enabled("column" + column, column < columns);
+            String id = column == 0 ? "fields" : column == 1 ? "fields_middle" : "fields_end";
+            view.rows(id, new UiRowLayout() {
+                public int rowHeight() { return 60; }
+                public String rowClass(int row) { return "result-card"; }
+                public int size() { return offset >= columns ? 0 : (winners.size() + columns - 1 - offset) / columns; }
+                public String key(int row) { return packet.getOperationId() + ":" + (row * columns + offset); }
+                public void bind(UiView cell, int row) {
+                    if (!live(owner, token) || columns != resultColumns) return;
+                    int index = row * columns + offset;
+                    Reward reward = winners.get(index);
+                    cell.text("card", SakuraComponent.get().literal(""));
+                    cell.gameElement("icon", winnerIcons.get(index));
+                    cell.text("label", SakuraComponent.get().literal(name(reward)));
+                    cell.text("type", SakuraComponent.get().literal(typeName(reward)));
+                    cell.text("index", SakuraComponent.get().literal(String.format(Locale.ROOT, "%02d", index + 1)));
+                    cell.tooltip("label", SakuraComponent.get().literal(name(reward)));
+                    cell.tooltip("type", SakuraComponent.get().literal(typeName(reward)));
+                    cell.tooltip("icon", SakuraComponent.get().literal(name(reward)));
+                }
+            }, 40);
+        }
+    }
+    private static String typeName(Reward reward) {
+        var extension = SakuraRewardClient.find(reward.getTypeId()).map(SakuraRewardClient.Registration::getExtension).orElse(null);
+        return extension == null || extension.getTypeName() == null ? reward.getTypeId().toString() : extension.getTypeName().get().toString();
     }
     private static String name(Reward reward) {
         var client = net.minecraft.client.Minecraft.getInstance();
         return SakuraRewardClient.displayName(reward, client == null ? "en_us" : client.options.languageCode, true).toString();
+    }
+    public static List<Slot> presentationFrame(LotteryAnimationStyle style, long elapsed, double width, double height, int previews) {
+        double px = style == LotteryAnimationStyle.ROULETTE ? Math.min(18, Math.max(0, (width - 32) / 2)) : 0;
+        double py = style == LotteryAnimationStyle.ROULETTE ? Math.min(18, Math.max(0, (height - 32) / 2)) : 0;
+        return frame(style, elapsed, width - px * 2, height - py * 2, previews).stream()
+                .map(s -> new Slot(s.index(), s.x() + px, s.y() + py, s.width(), s.height(), s.face(), style != LotteryAnimationStyle.STRIP && s.active())).toList();
     }
     public static List<Slot> frame(LotteryAnimationStyle style, long elapsed, double width, double height, int previews) {
         if (!Double.isFinite(width) || !Double.isFinite(height) || width <= 0 || height <= 0) return List.of();
@@ -173,8 +246,8 @@ public final class LotteryRevealUiSession implements UiPageSession {
         return List.copyOf(result);
     }
     @Override public void tick() {
-        if (view == null || view.nativeView() || closed || !connection.getAsBoolean()) return;
-        if (revealed()) requestClaim();
+        if (view == null || view.nativeView() || closed) return;
+        if (connection.getAsBoolean() && revealed()) requestClaim();
         draw();
     }
     @Override public boolean key(int key, int scan, int modifiers, boolean pressed) {
@@ -183,7 +256,9 @@ public final class LotteryRevealUiSession implements UiPageSession {
     }
     public boolean requestClose() { if (view == null || closed) return false; view.requestClose(); return true; }
     @Override public void detach(UiDetachReason reason) {
-        LotteryUiRewards.leave(view);
+        if (view != null && !view.nativeView() && view.state() != null && resultColumns > 0)
+            view.state().rowPosition(view.state().rowPosition() * resultColumns);
+        resultColumns = 0;
         binding++; view = null;
         for (AutoCloseable resource : bindings) try { resource.close(); } catch (Exception failure) { throw new IllegalStateException(failure); }
         bindings.clear();
