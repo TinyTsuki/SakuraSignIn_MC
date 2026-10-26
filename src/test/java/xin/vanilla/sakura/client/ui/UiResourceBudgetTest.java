@@ -28,4 +28,12 @@ public class UiResourceBudgetTest {
         assertFalse(UiBoundaryChecks.resources(Map.of("a.css",a,"b.css",b,
                 "a.html","<link href=\"a.css\"><link href=\"b.css\">".getBytes(StandardCharsets.UTF_8)),false).isEmpty());
     }
+    @Test public void everySakuraPageUsesItsOwnPrimaryColorFallback() throws Exception {
+        var files = UiBoundaryChecks.ownResources("sakura_sign_in"); int pages = 0;
+        for (var entry : files.entrySet()) if (entry.getKey().endsWith(".html")) {
+            pages++;
+            assertTrue(entry.getKey(), new String(entry.getValue(), StandardCharsets.UTF_8).contains("<body class=\"sakura-ui"));
+        }
+        assertEquals(5, pages);
+    }
 }
