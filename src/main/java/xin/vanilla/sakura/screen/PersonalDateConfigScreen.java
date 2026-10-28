@@ -1,27 +1,26 @@
 package xin.vanilla.sakura.screen;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.resources.language.I18n;
 import xin.vanilla.banira.api.client.theme.BaniraThemes;
+import xin.vanilla.banira.api.client.ui.*;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.CustomPlayerConfigEditScreen;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
-import xin.vanilla.banira.client.gui.widget.BaseWidget;
-import xin.vanilla.banira.client.gui.widget.ButtonWidget;
-import xin.vanilla.banira.client.gui.widget.CollapsiblePanelWidget;
-import xin.vanilla.banira.client.gui.widget.IWidget;
-import xin.vanilla.banira.client.gui.widget.LabelWidget;
+import xin.vanilla.banira.client.gui.widget.*;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.client.SakuraClientState;
+import xin.vanilla.sakura.client.gui.PersonalDateInputForm;
+import xin.vanilla.sakura.client.ui.PersonalDateUiSession;
+import xin.vanilla.sakura.client.ui.SakuraUiPages;
 import xin.vanilla.sakura.config.reward.RewardConfigManager;
 import xin.vanilla.sakura.data.personaldate.PersonalDatePreset;
 import xin.vanilla.sakura.data.personaldate.PersonalDateRecurrence;
@@ -30,10 +29,6 @@ import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.network.packet.PersonalDateSlotUpdatePacket;
 import xin.vanilla.sakura.notification.SakuraClientNotifications;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
-import xin.vanilla.banira.api.client.ui.*;
-import xin.vanilla.sakura.client.gui.PersonalDateInputForm;
-import xin.vanilla.sakura.client.ui.PersonalDateUiSession;
-import xin.vanilla.sakura.client.ui.SakuraUiPages;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -50,7 +45,8 @@ public final class PersonalDateConfigScreen extends xin.vanilla.banira.client.gu
     private Object uiConnection;
     private final xin.vanilla.sakura.client.ui.PersonalDateDraftState draft;
 
-    @Override public UiPageSession pageSession() {
+    @Override
+    public UiPageSession pageSession() {
         if (personalSession == null) {
             uiConnection = Minecraft.getInstance().getConnection();
             personalSession = new PersonalDateUiSession(new PersonalDateUiSession.Port() {
@@ -67,37 +63,81 @@ public final class PersonalDateConfigScreen extends xin.vanilla.banira.client.gu
                     }
                     return rows;
                 }
+
                 private void withSlot(String key, boolean edit) {
                     slots.stream().filter(slot -> slotKey(slot).equals(key)).findFirst().ifPresent(slot -> activePresets().stream()
                             .filter(preset -> preset.getId().equals(slot.getPresetId())).findFirst().ifPresent(preset -> {
-                                if (edit) openDateInput(preset, slot); else cycleCalendar(preset, slot);
+                                if (edit) openDateInput(preset, slot);
+                                else cycleCalendar(preset, slot);
                             }));
                 }
-                public void cycle(String key) { withSlot(key, false); }
-                public void edit(String key) { withSlot(key, true); }
-                public void save() { savePlayerConfig(); }
-                public void commonConfig() { openBaniraPlayerConfig(); }
-                public boolean dirty() { return draft.dirty(slots); }
+
+                public void cycle(String key) {
+                    withSlot(key, false);
+                }
+
+                public void edit(String key) {
+                    withSlot(key, true);
+                }
+
+                public void save() {
+                    savePlayerConfig();
+                }
+
+                public void commonConfig() {
+                    openBaniraPlayerConfig();
+                }
+
+                public boolean dirty() {
+                    return draft.dirty(slots);
+                }
             }, this::uiConnected);
         }
         return personalSession;
     }
-    private static String slotKey(PlayerPersonalDateSlot slot) { return slot.getPresetId() + ":" + slot.getSlotIndex(); }
+
+    private static String slotKey(PlayerPersonalDateSlot slot) {
+        return slot.getPresetId() + ":" + slot.getSlotIndex();
+    }
+
     private boolean uiConnected() {
         return uiConnection != null && uiConnection == Minecraft.getInstance().getConnection()
                 && Minecraft.getInstance().player != null;
     }
-    @Override public String uiSurfaceId() { return SakuraSignIn.MODID + ":personal-date"; }
-    @Override public UiPageSpec uiPage() { return SakuraUiPages.page("personal-date", this, pageSession()); }
-    @Override public void capturePageState(UiPageState state) {
-        pageSession(); personalSession.query(playerSearchQuery()); capturePlayerPageState(state);
+
+    @Override
+    public String uiSurfaceId() {
+        return SakuraSignIn.MODID + ":personal-date";
+    }
+
+    @Override
+    public UiPageSpec uiPage() {
+        return SakuraUiPages.page("personal-date", this, pageSession());
+    }
+
+    @Override
+    public void capturePageState(UiPageState state) {
+        pageSession();
+        personalSession.query(playerSearchQuery());
+        capturePlayerPageState(state);
         dateSections.forEach((id, section) -> personalSession.expanded(id, section.expanded()));
     }
-    @Override public void preparePageState(UiPageState state) {
-        pageSession(); playerSearchQuery(personalSession.query()); preparePlayerPageState(state);
+
+    @Override
+    public void preparePageState(UiPageState state) {
+        pageSession();
+        playerSearchQuery(personalSession.query());
+        preparePlayerPageState(state);
     }
-    @Override protected void onRemoved() { BaniraUi.screenRemoved(this); super.onRemoved(); }
-    @Override public void onClose() {
+
+    @Override
+    protected void onRemoved() {
+        BaniraUi.screenRemoved(this);
+        super.onRemoved();
+    }
+
+    @Override
+    public void onClose() {
         if (BaniraUi.closePage(this, UiCloseReason.USER_CLOSE)) return;
         if (personalSession != null && personalSession.requestClose()) return;
         if (personalSession != null) personalSession.close(UiCloseReason.USER_CLOSE);
@@ -108,7 +148,8 @@ public final class PersonalDateConfigScreen extends xin.vanilla.banira.client.gu
         super(SakuraSignIn.MODID, SakuraComponent.get().transClient("word", "personal_date_config"),
                 parent, null, BaniraThemes.seasonFor(SakuraSignIn.MODID));
         loadSlots();
-        for (PersonalDatePreset preset : activePresets()) for (int index = 0; index < preset.getMaxDateSlots(); index++) findOrCreate(preset, index);
+        for (PersonalDatePreset preset : activePresets())
+            for (int index = 0; index < preset.getMaxDateSlots(); index++) findOrCreate(preset, index);
         draft = new xin.vanilla.sakura.client.ui.PersonalDateDraftState(slots);
     }
 

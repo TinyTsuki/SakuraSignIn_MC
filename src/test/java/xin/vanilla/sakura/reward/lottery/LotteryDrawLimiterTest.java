@@ -10,12 +10,8 @@ import xin.vanilla.sakura.reward.RewardList;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Arrays;
-import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class LotteryDrawLimiterTest {
     private static final ZoneId ZONE = ZoneId.of("Asia/Shanghai");
@@ -57,7 +53,8 @@ public class LotteryDrawLimiterTest {
 
         Reward first = Reward.getDefault().setProbability(new java.math.BigDecimal("0.1"));
         Reward second = Reward.getDefault().setProbability(new java.math.BigDecimal("0.9"));
-        first.getContent().addProperty("selected", "first"); second.getContent().addProperty("selected", "second");
+        first.getContent().addProperty("selected", "first");
+        second.getContent().addProperty("selected", "second");
         pool.setRewards(new xin.vanilla.sakura.reward.RewardList(Arrays.asList(first, second)));
         xin.vanilla.sakura.data.lottery.LotteryOperation selected = xin.vanilla.sakura.data.lottery.LotteryOperation.prepare(
                 java.util.UUID.randomUUID(), new xin.vanilla.sakura.data.lottery.LotteryDrawRequest(java.util.UUID.randomUUID(),

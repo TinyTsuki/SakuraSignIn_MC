@@ -3,10 +3,13 @@ package xin.vanilla.sakura.data.lottery;
 import java.util.ArrayList;
 import java.util.List;
 
-/** 奖池配置的公共边界校验。 */
+/**
+ * 奖池配置的公共边界校验。
+ */
 public final class LotteryPoolValidator {
     public static final int MAX_DESCRIPTION = 2048;
     public static final int MAX_VOUCHER_EXPRESSION = 4096;
+
     private LotteryPoolValidator() {
     }
 

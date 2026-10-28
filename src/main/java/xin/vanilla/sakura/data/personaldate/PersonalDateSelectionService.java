@@ -1,12 +1,10 @@
 package xin.vanilla.sakura.data.personaldate;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-/** 客户端只能替换日期选择，领取游标始终以服务端旧值为准。 */
+/**
+ * 客户端只能替换日期选择，领取游标始终以服务端旧值为准。
+ */
 public final class PersonalDateSelectionService {
     public PersonalDateSelectionResult replace(List<PersonalDatePreset> presets,
                                                List<PlayerPersonalDateSlot> current,

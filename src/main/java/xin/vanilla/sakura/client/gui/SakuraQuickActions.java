@@ -2,27 +2,22 @@ package xin.vanilla.sakura.client.gui;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.Items;
 import xin.vanilla.banira.api.client.theme.BaniraThemes;
-import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.client.gui.ConfigEditorScreen;
-import xin.vanilla.banira.client.gui.CustomPlayerConfigEditScreen;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionContextMenuItem;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionRegistry;
 import xin.vanilla.banira.client.gui.quickaction.QuickIcon;
 import xin.vanilla.banira.common.config.ConfigHolder;
+import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.client.SakuraClientState;
 import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.event.ClientEventHandler;
-import xin.vanilla.sakura.screen.RewardOptionScreen;
 import xin.vanilla.sakura.screen.LotteryScreen;
 import xin.vanilla.sakura.screen.PersonalDateConfigScreen;
-import xin.vanilla.sakura.screen.coordinate.Coordinate;
+import xin.vanilla.sakura.screen.RewardOptionScreen;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
-import xin.vanilla.sakura.SakuraComponent;
 
 /**
  * 将 Sakura 的背包快捷入口注册到 Banira 通用快捷操作托盘。

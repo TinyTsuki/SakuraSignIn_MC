@@ -32,15 +32,18 @@ import java.util.function.BooleanSupplier;
 import static org.junit.Assert.*;
 
 public class PersonalDateInputFormTest {
-    @Rule public final UnboundConfigPlatform platform = new UnboundConfigPlatform();
+    @Rule
+    public final UnboundConfigPlatform platform = new UnboundConfigPlatform();
 
-    @BeforeClass public static void bootstrap() {
+    @BeforeClass
+    public static void bootstrap() {
         net.minecraft.SharedConstants.tryDetectVersion();
         Bootstrap.bootStrap();
         BaniraTestPlatform.install();
     }
 
-    @Test public void annualWidgetEnforcesTheOriginalFormatWithoutCalendarRangePolicy() throws Exception {
+    @Test
+    public void annualWidgetEnforcesTheOriginalFormatWithoutCalendarRangePolicy() throws Exception {
         InputFormScreen form = form(PersonalDateRecurrence.YEARLY, slot(), () -> true, new AtomicInteger());
         InputFormScreen.Widget widget = form.uiSession().args().getWidgets().get(0);
         assertEquals("[0-9]{1,2}/[0-9]{1,3}", widget.regex());
@@ -52,7 +55,8 @@ public class PersonalDateInputFormTest {
         }
     }
 
-    @Test public void monthlyWidgetRejectsSlashesAndKeepsThreeDigitDays() throws Exception {
+    @Test
+    public void monthlyWidgetRejectsSlashesAndKeepsThreeDigitDays() throws Exception {
         InputFormScreen form = form(PersonalDateRecurrence.MONTHLY, slot(), () -> true, new AtomicInteger());
         InputFormScreen.Widget widget = form.uiSession().args().getWidgets().get(0);
         assertEquals("[0-9]{1,3}", widget.regex());
@@ -62,39 +66,48 @@ public class PersonalDateInputFormTest {
         for (String valid : List.of("0", "6", "999", "001")) assertEquals("", validate(widget, valid));
     }
 
-    @Test public void annualMalformedSubmissionCanBeCorrectedOnceInTheSameForm() throws Exception {
+    @Test
+    public void annualMalformedSubmissionCanBeCorrectedOnceInTheSameForm() throws Exception {
         correctedSubmission(PersonalDateRecurrence.YEARLY, "10/", "10/9", 10, 9);
     }
 
-    @Test public void monthlySlashSubmissionCanBeCorrectedOnceInTheSameForm() throws Exception {
+    @Test
+    public void monthlySlashSubmissionCanBeCorrectedOnceInTheSameForm() throws Exception {
         correctedSubmission(PersonalDateRecurrence.MONTHLY, "6/", "6", 0, 6);
     }
 
-    @Test public void annualOverflowSubmissionCanBeCorrectedInTheSameForm() throws Exception {
+    @Test
+    public void annualOverflowSubmissionCanBeCorrectedInTheSameForm() throws Exception {
         correctedSubmission(PersonalDateRecurrence.YEARLY, "10/2147483648", "10/9", 10, 9);
     }
 
-    @Test public void rawAnnualMissingDayDoesNotMutateOrConsumeTheCallback() throws Exception {
+    @Test
+    public void rawAnnualMissingDayDoesNotMutateOrConsumeTheCallback() throws Exception {
         correctedCallback(PersonalDateRecurrence.YEARLY, "10/", "10/9", 10, 9);
     }
 
-    @Test public void rawMonthlySlashDoesNotMutateOrConsumeTheCallback() throws Exception {
+    @Test
+    public void rawMonthlySlashDoesNotMutateOrConsumeTheCallback() throws Exception {
         correctedCallback(PersonalDateRecurrence.MONTHLY, "6/", "6", 0, 6);
     }
 
-    @Test public void rawAnnualDayOverflowDoesNotPartiallyWriteTheMonth() throws Exception {
+    @Test
+    public void rawAnnualDayOverflowDoesNotPartiallyWriteTheMonth() throws Exception {
         correctedCallback(PersonalDateRecurrence.YEARLY, "10/2147483648", "10/9", 10, 9);
     }
 
-    @Test public void rawAnnualMonthOverflowDoesNotConsumeTheCallback() throws Exception {
+    @Test
+    public void rawAnnualMonthOverflowDoesNotConsumeTheCallback() throws Exception {
         correctedCallback(PersonalDateRecurrence.YEARLY, "2147483648/9", "10/9", 10, 9);
     }
 
-    @Test public void rawMonthlyOverflowDoesNotClearTheMonthOrConsumeTheCallback() throws Exception {
+    @Test
+    public void rawMonthlyOverflowDoesNotClearTheMonthOrConsumeTheCallback() throws Exception {
         correctedCallback(PersonalDateRecurrence.MONTHLY, "2147483648", "6", 0, 6);
     }
 
-    @Test public void acceptedDateFormatsDoNotAcquireGregorianRangeChecks() throws Exception {
+    @Test
+    public void acceptedDateFormatsDoNotAcquireGregorianRangeChecks() throws Exception {
         for (PersonalDateRecurrence recurrence : PersonalDateRecurrence.values()) {
             PlayerPersonalDateSlot slot = slot();
             AtomicInteger updates = new AtomicInteger();
@@ -105,7 +118,8 @@ public class PersonalDateInputFormTest {
         }
     }
 
-    @Test public void callbackFromTheOriginalConnectionCannotEditAfterReconnect() throws Exception {
+    @Test
+    public void callbackFromTheOriginalConnectionCannotEditAfterReconnect() throws Exception {
         Object original = new Object();
         AtomicReference<Object> current = new AtomicReference<>(original);
         PersonalDateUiSession parent = parent(() -> current.get() == original);
@@ -119,7 +133,8 @@ public class PersonalDateInputFormTest {
         assertEquals(0, updates.get());
     }
 
-    @Test public void closingAndReopeningAParentOnTheSameConnectionCannotReviveItsOldChild() throws Exception {
+    @Test
+    public void closingAndReopeningAParentOnTheSameConnectionCannotReviveItsOldChild() throws Exception {
         PersonalDateUiSession original = parent(() -> true);
         PlayerPersonalDateSlot slot = slot();
         CompoundTag before = slot.serializeNBT();
@@ -138,7 +153,8 @@ public class PersonalDateInputFormTest {
         assertApplied(slot, updates, 11, 8);
     }
 
-    @Test public void aDetachedParentStillAcceptsItsActiveChildResult() throws Exception {
+    @Test
+    public void aDetachedParentStillAcceptsItsActiveChildResult() throws Exception {
         PersonalDateUiSession parent = parent(() -> true);
         PlayerPersonalDateSlot slot = slot();
         AtomicInteger updates = new AtomicInteger();
@@ -150,7 +166,8 @@ public class PersonalDateInputFormTest {
         assertApplied(slot, updates, 10, 9);
     }
 
-    @Test public void invalidDraftAndCorrectionSurviveFormAndParentSuspension() throws Exception {
+    @Test
+    public void invalidDraftAndCorrectionSurviveFormAndParentSuspension() throws Exception {
         PersonalDateUiSession parent = parent(() -> true);
         PlayerPersonalDateSlot slot = slot();
         CompoundTag before = slot.serializeNBT();
@@ -175,7 +192,7 @@ public class PersonalDateInputFormTest {
     }
 
     private static void correctedSubmission(PersonalDateRecurrence recurrence, String invalid, String valid,
-                                             int month, int day) throws Exception {
+                                            int month, int day) throws Exception {
         PlayerPersonalDateSlot slot = slot();
         CompoundTag before = slot.serializeNBT();
         AtomicInteger updates = new AtomicInteger();
@@ -194,7 +211,7 @@ public class PersonalDateInputFormTest {
     }
 
     private static void correctedCallback(PersonalDateRecurrence recurrence, String invalid, String valid,
-                                           int month, int day) throws Exception {
+                                          int month, int day) throws Exception {
         PlayerPersonalDateSlot slot = slot();
         CompoundTag before = slot.serializeNBT();
         AtomicInteger updates = new AtomicInteger();
@@ -232,26 +249,46 @@ public class PersonalDateInputFormTest {
 
     private static PersonalDateUiSession parent(BooleanSupplier connected) {
         return new PersonalDateUiSession(new PersonalDateUiSession.Port() {
-            public List<PersonalDateUiSession.Entry> entries() { return Collections.emptyList(); }
-            public void cycle(String key) { throw new AssertionError("Unexpected calendar change"); }
-            public void edit(String key) { throw new AssertionError("Unexpected nested edit"); }
-            public void save() { throw new AssertionError("Date input must not upload"); }
-            public void commonConfig() { throw new AssertionError("Unexpected config navigation"); }
+            public List<PersonalDateUiSession.Entry> entries() {
+                return Collections.emptyList();
+            }
+
+            public void cycle(String key) {
+                throw new AssertionError("Unexpected calendar change");
+            }
+
+            public void edit(String key) {
+                throw new AssertionError("Unexpected nested edit");
+            }
+
+            public void save() {
+                throw new AssertionError("Date input must not upload");
+            }
+
+            public void commonConfig() {
+                throw new AssertionError("Unexpected config navigation");
+            }
         }, connected);
     }
 
     private static BooleanSupplier childGate(PersonalDateUiSession parent) {
         final Method method;
-        try { method = PersonalDateUiSession.class.getMethod("acceptsChildResult"); }
-        catch (NoSuchMethodException missing) { throw new AssertionError("Missing parent lifetime gate for child results", missing); }
+        try {
+            method = PersonalDateUiSession.class.getMethod("acceptsChildResult");
+        } catch (NoSuchMethodException missing) {
+            throw new AssertionError("Missing parent lifetime gate for child results", missing);
+        }
         return () -> {
-            try { return (Boolean) method.invoke(parent); }
-            catch (ReflectiveOperationException failure) { throw new AssertionError("Cannot evaluate parent lifetime", failure); }
+            try {
+                return (Boolean) method.invoke(parent);
+            } catch (ReflectiveOperationException failure) {
+                throw new AssertionError("Cannot evaluate parent lifetime", failure);
+            }
         };
     }
 
     private static InputFormScreen form(PersonalDateRecurrence recurrence, PlayerPersonalDateSlot slot,
-                                         BooleanSupplier acceptsResult, AtomicInteger updates) throws Exception {
+                                        BooleanSupplier acceptsResult, AtomicInteger updates) throws Exception {
         final Method factory;
         try {
             factory = Class.forName("xin.vanilla.sakura.client.gui.PersonalDateInputForm").getMethod("create",
@@ -262,7 +299,8 @@ public class PersonalDateInputFormTest {
         PersonalDatePreset preset = new PersonalDatePreset("birthday", "Birthday", recurrence,
                 Collections.singletonList(CalendarIds.GREGORIAN), 1, PersonalDateDeliveryMode.SIGN_IN,
                 0, 0, new RewardList());
-        Screen parent = new Screen(Component.literal("parent")) { };
+        Screen parent = new Screen(Component.literal("parent")) {
+        };
         try {
             Object screen = factory.invoke(null, parent, preset, slot, acceptsResult, (Runnable) updates::incrementAndGet);
             assertTrue("Date factory must return the actual shared input form", screen instanceof InputFormScreen);

@@ -2,11 +2,11 @@ package xin.vanilla.sakura.client.reward.builtin;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.util.NumberUtils;
@@ -21,7 +21,9 @@ import xin.vanilla.sakura.client.gui.ItemRewardSelectionFlow;
 import xin.vanilla.sakura.data.collection.StringList;
 import xin.vanilla.sakura.screen.StringInputScreen;
 
-/** 内置类型的界面适配，不参与公共奖励执行。 */
+/**
+ * 内置类型的界面适配，不参与公共奖励执行。
+ */
 final class BuiltInRewardEditors {
     private BuiltInRewardEditors() {
     }
@@ -59,20 +61,20 @@ final class BuiltInRewardEditors {
 
     static Screen positiveIntegerScreen(RewardEditContext<Integer> context, String titleKey) {
         return new StringInputScreen(parent(context),
-                        title(titleKey), hint(), "\\d*",
-                        String.valueOf(context.getInitialValue() == null
-                                ? 1 : context.getInitialValue()),
-                        values -> {
-                            StringList errors = new StringList();
-                            int value = NumberUtils.toInt(values.get(0));
-                            if (value > 0) {
-                                context.getSubmit().accept(value);
-                            } else {
-                                errors.add(SakuraComponent.get().transClient(
-                                        "format", "enter_value_s_error", values.get(0)).toString());
-                            }
-                            return errors;
-                        });
+                title(titleKey), hint(), "\\d*",
+                String.valueOf(context.getInitialValue() == null
+                        ? 1 : context.getInitialValue()),
+                values -> {
+                    StringList errors = new StringList();
+                    int value = NumberUtils.toInt(values.get(0));
+                    if (value > 0) {
+                        context.getSubmit().accept(value);
+                    } else {
+                        errors.add(SakuraComponent.get().transClient(
+                                "format", "enter_value_s_error", values.get(0)).toString());
+                    }
+                    return errors;
+                });
     }
 
     static RewardEditorProvider<Component> message() {
@@ -82,9 +84,9 @@ final class BuiltInRewardEditors {
 
     static Screen messageScreen(RewardEditContext<Component> context) {
         return new StringInputScreen(parent(context), title("enter_message"), hint(), "",
-                        context.getInitialValue() == null ? "" : context.getInitialValue().toString(),
-                        (java.util.function.Consumer<StringList>) values -> context.getSubmit().accept(
-                                SakuraComponent.get().literal(values.get(0))));
+                context.getInitialValue() == null ? "" : context.getInitialValue().toString(),
+                (java.util.function.Consumer<StringList>) values -> context.getSubmit().accept(
+                        SakuraComponent.get().literal(values.get(0))));
     }
 
     static RewardEditorProvider<String> command() {
@@ -94,17 +96,17 @@ final class BuiltInRewardEditors {
 
     static Screen commandScreen(RewardEditContext<String> context) {
         return new StringInputScreen(parent(context), title("enter_command"), hint(), "",
-                        context.getInitialValue() == null ? "" : context.getInitialValue(),
-                        values -> {
-                            StringList errors = new StringList();
-                            if (values.get(0).startsWith("/")) {
-                                context.getSubmit().accept(values.get(0));
-                            } else {
-                                errors.add(SakuraComponent.get().transClient(
-                                        "format", "enter_value_s_error", values.get(0)).toString());
-                            }
-                            return errors;
-                        });
+                context.getInitialValue() == null ? "" : context.getInitialValue(),
+                values -> {
+                    StringList errors = new StringList();
+                    if (values.get(0).startsWith("/")) {
+                        context.getSubmit().accept(values.get(0));
+                    } else {
+                        errors.add(SakuraComponent.get().transClient(
+                                "format", "enter_value_s_error", values.get(0)).toString());
+                    }
+                    return errors;
+                });
     }
 
     private static Screen parent(RewardEditContext<?> context) {

@@ -6,9 +6,8 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import com.mojang.blaze3d.platform.NativeImage;
-import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.client.data.FontDrawArgs;
+import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
@@ -16,11 +15,8 @@ import xin.vanilla.banira.client.gui.event.MouseDragEvent;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.widget.BaseWidget;
 import xin.vanilla.banira.client.gui.widget.TooltipWidget;
-import xin.vanilla.sakura.screen.coordinate.Coordinate;
-import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
-import xin.vanilla.banira.client.data.GLFWKey;
-import xin.vanilla.banira.client.util.TextureUtils;
+import xin.vanilla.sakura.screen.coordinate.Coordinate;
 
 import java.util.function.Consumer;
 

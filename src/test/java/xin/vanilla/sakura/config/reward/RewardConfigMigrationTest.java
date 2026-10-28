@@ -5,18 +5,16 @@ import com.google.gson.JsonParser;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import xin.vanilla.sakura.config.reward.RewardConfig;
-import xin.vanilla.sakura.enums.ERewardRule;
 import xin.vanilla.sakura.api.reward.SakuraRewardTypes;
-import xin.vanilla.sakura.network.data.RewardOptionSyncData;
-import xin.vanilla.sakura.network.packet.RewardOptionSyncPacket;
-import xin.vanilla.sakura.reward.Reward;
-import xin.vanilla.sakura.reward.RewardList;
-import xin.vanilla.sakura.config.reward.RewardConfigManager;
 import xin.vanilla.sakura.data.calendar.CalendarIds;
 import xin.vanilla.sakura.data.personaldate.PersonalDateDeliveryMode;
 import xin.vanilla.sakura.data.personaldate.PersonalDatePreset;
 import xin.vanilla.sakura.data.personaldate.PersonalDateRecurrence;
+import xin.vanilla.sakura.enums.ERewardRule;
+import xin.vanilla.sakura.network.data.RewardOptionSyncData;
+import xin.vanilla.sakura.network.packet.RewardOptionSyncPacket;
+import xin.vanilla.sakura.reward.Reward;
+import xin.vanilla.sakura.reward.RewardList;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,10 +28,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 public class RewardConfigMigrationTest {
     @Rule
@@ -92,7 +87,7 @@ public class RewardConfigMigrationTest {
                 + "\"content\":{\"item\":\"minecraft:apple\",\"count\":1}}],"
                 + "\"continuousRewards\":{},\"cycleRewards\":{},\"yearRewards\":{},"
                 + "\"monthRewards\":{},\"weekRewards\":{},\"dateTimeRewards\":{},"
-                + "\"cumulativeRewards\":{},\"randomRewards\":{},\"cdkRewards\":[]}" );
+                + "\"cumulativeRewards\":{},\"randomRewards\":{},\"cdkRewards\":[]}");
 
         Reward reward = document.getGroups().get(0).getRewards().get(0);
         assertEquals(SakuraRewardTypes.ITEM, reward.getTypeId());

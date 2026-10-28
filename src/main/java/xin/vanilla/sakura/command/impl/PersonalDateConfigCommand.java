@@ -12,17 +12,15 @@ import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.config.reward.RewardConfigManager;
 import xin.vanilla.sakura.data.IPlayerSignInData;
-import xin.vanilla.sakura.data.personaldate.PersonalDatePreset;
-import xin.vanilla.sakura.data.personaldate.PersonalDateRecurrence;
-import xin.vanilla.sakura.data.personaldate.PersonalDateSelectionResult;
-import xin.vanilla.sakura.data.personaldate.PersonalDateSelectionService;
-import xin.vanilla.sakura.data.personaldate.PlayerPersonalDateSlot;
+import xin.vanilla.sakura.data.personaldate.*;
 import xin.vanilla.sakura.message.SakuraMessages;
 
 import java.util.ArrayList;
 import java.util.List;
 
-/** 未安装客户端的玩家也可通过指令维护自己的个性化日期。 */
+/**
+ * 未安装客户端的玩家也可通过指令维护自己的个性化日期。
+ */
 final class PersonalDateConfigCommand {
     private static final PersonalDateSelectionService SERVICE = new PersonalDateSelectionService();
 
@@ -125,7 +123,7 @@ final class PersonalDateConfigCommand {
     }
 
     private static List<PlayerPersonalDateSlot> without(List<PlayerPersonalDateSlot> source,
-                                                         String presetId, int slotIndex) {
+                                                        String presetId, int slotIndex) {
         List<PlayerPersonalDateSlot> result = new ArrayList<>();
         for (PlayerPersonalDateSlot slot : source) {
             if (!presetId.equals(slot.getPresetId()) || slotIndex != slot.getSlotIndex()) {

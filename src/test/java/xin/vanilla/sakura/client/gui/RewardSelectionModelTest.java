@@ -4,9 +4,7 @@ import org.junit.Test;
 
 import java.util.Arrays;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * 验证奖励列表符合桌面界面常见的 Ctrl 与 Shift 多选语义。

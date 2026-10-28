@@ -4,16 +4,7 @@ import com.google.gson.JsonObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import xin.vanilla.sakura.api.reward.RewardAddPermission;
-import xin.vanilla.sakura.api.reward.RewardCodec;
-import xin.vanilla.sakura.api.reward.RewardDataException;
-import xin.vanilla.sakura.api.reward.RewardGrantResult;
-import xin.vanilla.sakura.api.reward.RewardGrantStatus;
-import xin.vanilla.sakura.api.reward.RewardRegistryTestSupport;
-import xin.vanilla.sakura.api.reward.RewardTypeDefinition;
-import xin.vanilla.sakura.api.reward.RewardTypeId;
-import xin.vanilla.sakura.api.reward.RewardValidator;
-import xin.vanilla.sakura.api.reward.SakuraRewards;
+import xin.vanilla.sakura.api.reward.*;
 
 import java.util.Arrays;
 import java.util.List;

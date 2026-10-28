@@ -2,13 +2,19 @@ package xin.vanilla.sakura.network.packet;
 
 import lombok.Getter;
 import xin.vanilla.banira.common.api.INetworkPacket;
-import xin.vanilla.banira.common.network.*;
+import xin.vanilla.banira.common.network.BaniraNetworkContext;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
+import xin.vanilla.sakura.data.lottery.LotteryPreviewMode;
+import xin.vanilla.sakura.data.lottery.LotteryProtocolLimits;
 import xin.vanilla.sakura.network.SakuraClientPacketHandlers;
 import xin.vanilla.sakura.network.lottery.LotteryPacketFields;
-import xin.vanilla.sakura.reward.*;
-import xin.vanilla.sakura.data.lottery.*;
-import java.util.*;
+import xin.vanilla.sakura.reward.Reward;
+import xin.vanilla.sakura.reward.RewardJsonCodec;
+
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 @Getter
 public final class LotteryRevealPacket implements INetworkPacket {
@@ -50,13 +56,20 @@ public final class LotteryRevealPacket implements INetworkPacket {
         preview = copy(values, !previewMode.showsProbabilities());
     }
 
-    public List<Reward> getWinners() { return copy(winners, false); }
-    public List<Reward> getPreview() { return copy(preview, false); }
+    public List<Reward> getWinners() {
+        return copy(winners, false);
+    }
+
+    public List<Reward> getPreview() {
+        return copy(preview, false);
+    }
 
     public void toBytes(BaniraPacketBuffer buffer) {
         checkBudget();
         LotteryPacketFields.Budget budget = budget();
-        buffer.writeUtf(operationId, 56); buffer.writeUtf(token, 36); buffer.writeUtf(poolName, 384);
+        buffer.writeUtf(operationId, 56);
+        buffer.writeUtf(token, 36);
+        buffer.writeUtf(poolName, 384);
         buffer.writeVarInt(winners.size());
         winners.forEach(reward -> LotteryPacketFields.writeReward(buffer, reward, budget));
         buffer.writeVarInt(preview.size());
@@ -72,22 +85,34 @@ public final class LotteryRevealPacket implements INetworkPacket {
         context.markHandled();
     }
 
-    public Reward getWinner() { return winners.get(0).clone(); }
-    public boolean isPreviewVisible() { return previewMode.showsItems(); }
+    public Reward getWinner() {
+        return winners.get(0).clone();
+    }
+
+    public boolean isPreviewVisible() {
+        return previewMode.showsItems();
+    }
 
     private LotteryPacketFields.Budget budget() {
         LotteryPacketFields.Budget budget = new LotteryPacketFields.Budget(LotteryProtocolLimits.MAX_REVEAL_BYTES);
-        budget.add(operationId); budget.add(token); budget.add(poolName); return budget;
+        budget.add(operationId);
+        budget.add(token);
+        budget.add(poolName);
+        return budget;
     }
+
     private void checkBudget() {
         LotteryPacketFields.Budget budget = budget();
         for (Reward reward : winners) check(reward, budget);
         for (Reward reward : preview) check(reward, budget);
     }
+
     private static void check(Reward reward, LotteryPacketFields.Budget budget) {
         String json = RewardJsonCodec.encode(reward).toString();
-        LotteryPacketFields.checkReward(json); budget.add(json);
+        LotteryPacketFields.checkReward(json);
+        budget.add(json);
     }
+
     private static List<Reward> copy(List<Reward> source, boolean hideProbability) {
         List<Reward> copy = new ArrayList<>();
         for (Reward reward : source) {

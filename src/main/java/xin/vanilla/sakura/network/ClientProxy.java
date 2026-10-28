@@ -1,33 +1,24 @@
 package xin.vanilla.sakura.network;
 
-import xin.vanilla.sakura.SakuraComponent;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.sakura.SakuraSignIn;
-import xin.vanilla.sakura.client.SakuraClientState;
+import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.api.SakuraPlayerData;
+import xin.vanilla.sakura.client.SakuraClientState;
+import xin.vanilla.sakura.config.reward.RewardConfigManager;
 import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.data.SignInRecord;
-import xin.vanilla.sakura.network.packet.AdvancementPacket;
-import xin.vanilla.sakura.network.packet.ClientConfigSyncPacket;
-import xin.vanilla.sakura.network.packet.PlayerDataSyncPacket;
-import xin.vanilla.sakura.network.packet.PlayerMonthSyncPacket;
-import xin.vanilla.sakura.network.month.MonthDataTransfer;
-import xin.vanilla.sakura.network.packet.RewardOptionSyncPacket;
-import xin.vanilla.sakura.network.packet.PersonalDatePresetSyncPacket;
-import xin.vanilla.sakura.network.packet.CommonConfigSnapshotPacket;
-import xin.vanilla.sakura.network.packet.LotteryPoolSyncPacket;
-import xin.vanilla.sakura.network.packet.LotteryRevealPacket;
 import xin.vanilla.sakura.data.lottery.LotteryPools;
-import xin.vanilla.sakura.screen.LotteryRevealScreen;
 import xin.vanilla.sakura.data.personaldate.PersonalDatePresets;
-import xin.vanilla.sakura.config.reward.RewardConfigManager;
+import xin.vanilla.sakura.network.month.MonthDataTransfer;
+import xin.vanilla.sakura.network.packet.*;
 import xin.vanilla.sakura.notification.SakuraClientNotifications;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
+import xin.vanilla.sakura.screen.LotteryRevealScreen;
 import xin.vanilla.sakura.screen.SignInScreen;
-import xin.vanilla.banira.common.data.Component;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -39,12 +30,22 @@ public class ClientProxy {
     private static final MonthDataTransfer.Receiver MONTHS = new MonthDataTransfer.Receiver(System::nanoTime);
     private static final xin.vanilla.sakura.network.lottery.LotteryPoolReceiver LOTTERY =
             new xin.vanilla.sakura.network.lottery.LotteryPoolReceiver(System::nanoTime);
-    public static void expireLotteryTransfers() { LOTTERY.expire(); }
-    public static void clearLotteryTransfers() { LOTTERY.clear(); }
 
-    public static void expireMonthTransfers() { MONTHS.expire(); }
+    public static void expireLotteryTransfers() {
+        LOTTERY.expire();
+    }
 
-    public static void clearMonthTransfers() { MONTHS.clear(); }
+    public static void clearLotteryTransfers() {
+        LOTTERY.clear();
+    }
+
+    public static void expireMonthTransfers() {
+        MONTHS.expire();
+    }
+
+    public static void clearMonthTransfers() {
+        MONTHS.clear();
+    }
 
     public static void handleSynPlayerData(PlayerDataSyncPacket packet) {
         LocalPlayer player = Minecraft.getInstance().player;
@@ -155,13 +156,18 @@ public class ClientProxy {
     }
 
     public static void handleLotteryPoolSync(LotteryPoolSyncPacket packet, Object origin) {
-        if (!currentConnection(origin) || packet.getGeneration() < SakuraClientState.getLotteryRequests().getGeneration()) return;
+        if (!currentConnection(origin) || packet.getGeneration() < SakuraClientState.getLotteryRequests().getGeneration())
+            return;
         LotteryPoolSyncPacket complete;
-        try { complete = LOTTERY.accept(origin, packet); }
-        catch (IllegalArgumentException failure) {
-            LOTTERY.remove(origin); LOGGER.warn("Rejected lottery snapshot", failure); return;
+        try {
+            complete = LOTTERY.accept(origin, packet);
+        } catch (IllegalArgumentException failure) {
+            LOTTERY.remove(origin);
+            LOGGER.warn("Rejected lottery snapshot", failure);
+            return;
         }
-        if (complete == null || !SakuraClientState.getLotteryRequests().observeGeneration(complete.getGeneration())) return;
+        if (complete == null || !SakuraClientState.getLotteryRequests().observeGeneration(complete.getGeneration()))
+            return;
         RewardConfigManager.getRewardConfig().setLotteryPools(
                 complete.getPools());
         RewardConfigManager.setRewardOptionDataChanged(true);

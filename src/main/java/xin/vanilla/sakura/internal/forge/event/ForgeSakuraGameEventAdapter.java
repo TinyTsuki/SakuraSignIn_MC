@@ -1,17 +1,16 @@
 package xin.vanilla.sakura.internal.forge.event;
 
-import xin.vanilla.sakura.data.time.SakuraClock;
-
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.server.ServerLifecycleHooks;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.server.ServerLifecycleHooks;
 import xin.vanilla.banira.common.util.BaniraScheduler;
+import xin.vanilla.banira.common.util.DateUtils;
 import xin.vanilla.banira.common.util.ReflectionUtils;
 import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.sakura.api.SakuraPlayerData;
@@ -19,16 +18,15 @@ import xin.vanilla.sakura.command.SignInCommand;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.data.migration.LegacyMigrationResult;
+import xin.vanilla.sakura.data.time.OnlineTimeRequirementResult;
+import xin.vanilla.sakura.data.time.SakuraClock;
+import xin.vanilla.sakura.data.time.SakuraOnlineTime;
 import xin.vanilla.sakura.enums.ESignInType;
 import xin.vanilla.sakura.network.packet.SignInPacket;
 import xin.vanilla.sakura.reward.RewardManager;
 import xin.vanilla.sakura.reward.personaldate.PersonalDateDeliveryResult;
 import xin.vanilla.sakura.reward.personaldate.PersonalDateOnlineCheckSchedule;
 import xin.vanilla.sakura.reward.personaldate.PersonalDateRewardDispatcher;
-import xin.vanilla.sakura.data.time.SakuraOnlineTime;
-import xin.vanilla.sakura.data.time.OnlineTimeRequirementResult;
-import xin.vanilla.banira.common.util.DateUtils;
-import xin.vanilla.sakura.util.SakuraUtils;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -61,8 +59,11 @@ public final class ForgeSakuraGameEventAdapter {
         MinecraftForge.EVENT_BUS.addListener((net.minecraftforge.event.server.ServerStoppedEvent event) -> {
             xin.vanilla.sakura.network.packet.LotteryPoolSyncPacket.clearServerTransfers();
             xin.vanilla.sakura.reward.lottery.PendingLotteryDraws.clear();
-            try { xin.vanilla.sakura.internal.forge.lottery.ForgeLotteryServices.stop(); }
-            catch (Exception failure) { LOGGER.error("Lottery operation flush failed", failure); }
+            try {
+                xin.vanilla.sakura.internal.forge.lottery.ForgeLotteryServices.stop();
+            } catch (Exception failure) {
+                LOGGER.error("Lottery operation flush failed", failure);
+            }
         });
     }
 

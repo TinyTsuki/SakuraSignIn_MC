@@ -2,24 +2,19 @@ package xin.vanilla.sakura.internal.dev;
 
 import com.electronwill.nightconfig.core.CommentedConfig;
 import com.electronwill.nightconfig.toml.TomlParser;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
+import com.google.gson.*;
 import net.minecraftforge.fml.ModList;
 import xin.vanilla.banira.BaniraCodex;
-import xin.vanilla.sakura.config.ClientConfig;
-import xin.vanilla.sakura.config.ClientConfigView;
-import xin.vanilla.sakura.config.CommonConfigView;
 import xin.vanilla.banira.api.Banira;
-import xin.vanilla.banira.api.BaniraDataPaths;
 import xin.vanilla.banira.api.BaniraConfigs;
+import xin.vanilla.banira.api.BaniraDataPaths;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.notification.NotificationBudget;
 import xin.vanilla.banira.common.util.MessageUtils;
+import xin.vanilla.sakura.config.ClientConfig;
+import xin.vanilla.sakura.config.ClientConfigView;
+import xin.vanilla.sakura.config.CommonConfigView;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -33,16 +28,20 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-/** Read-only config comparison; only the separate dev checkpoint is written. */
+/**
+ * Read-only config comparison; only the separate dev checkpoint is written.
+ */
 public final class SakuraNetworkSmokeConfigs {
     private static final class RetainedViews {
         static final CommonConfigView COMMON = CommonConfigView.get();
         static final ClientConfigView CLIENT = ClientConfigView.get();
     }
+
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Set<String> RUNTIME_PHASES = new HashSet<>();
 
-    private SakuraNetworkSmokeConfigs() { }
+    private SakuraNetworkSmokeConfigs() {
+    }
 
     public static void verifyLocal(Class<?> configClass) {
         if (!SakuraNetworkSmokeStatus.enabled()) throw new IllegalStateException("Smoke disabled");
@@ -164,7 +163,8 @@ public final class SakuraNetworkSmokeConfigs {
             if (!Files.isRegularFile(path)) throw new IllegalStateException("Banira mod file unavailable: " + path);
             byte[] bytes = Files.readAllBytes(path);
             StringBuilder hash = new StringBuilder();
-            for (byte b : MessageDigest.getInstance("SHA-256").digest(bytes)) hash.append(String.format("%02x", b & 255));
+            for (byte b : MessageDigest.getInstance("SHA-256").digest(bytes))
+                hash.append(String.format("%02x", b & 255));
             for (Class<?> type : new Class<?>[]{Component.class, MessageUtils.class, NotificationBudget.class}) {
                 // Forge modjar URLs are not file URIs; bind each class to the registered entrypoint.
                 String source = type.getProtectionDomain().getCodeSource().getLocation().toExternalForm();

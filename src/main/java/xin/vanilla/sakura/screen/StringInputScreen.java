@@ -4,9 +4,9 @@ import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.client.gui.InputFormScreen;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.component.TextList;
-import xin.vanilla.sakura.data.collection.StringList;
-import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.banira.common.util.StringUtils;
+import xin.vanilla.sakura.SakuraComponent;
+import xin.vanilla.sakura.data.collection.StringList;
 
 import java.util.function.Consumer;
 import java.util.function.Function;

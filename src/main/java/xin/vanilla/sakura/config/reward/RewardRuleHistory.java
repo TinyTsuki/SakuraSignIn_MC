@@ -5,15 +5,16 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import xin.vanilla.sakura.enums.ERewardRule;
-import xin.vanilla.sakura.reward.RewardList;
 import xin.vanilla.sakura.reward.RewardJsonCodec;
+import xin.vanilla.sakura.reward.RewardList;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 final class RewardRuleHistory {
-    private RewardRuleHistory() { }
+    private RewardRuleHistory() {
+    }
 
     static String encode(RewardConfig config, ERewardRule rule) throws IOException {
         RewardConfig scoped = new RewardConfig();
@@ -37,7 +38,8 @@ final class RewardRuleHistory {
                 return new Snapshot(rule, config, null);
             }
             Map<String, RewardList> rewards = new Gson().fromJson(json,
-                    new TypeToken<LinkedHashMap<String, RewardList>>() { }.getType());
+                    new TypeToken<LinkedHashMap<String, RewardList>>() {
+                    }.getType());
             if (rewards == null || rewards.containsValue(null)) throw new IOException("Invalid reward history");
             for (RewardList list : rewards.values()) {
                 list.forEach(RewardJsonCodec::encode);

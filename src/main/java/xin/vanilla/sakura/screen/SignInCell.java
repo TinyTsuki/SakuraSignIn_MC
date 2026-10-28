@@ -1,9 +1,7 @@
 package xin.vanilla.sakura.screen;
 
-import xin.vanilla.sakura.data.time.SakuraClock;
-
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -12,26 +10,27 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
+import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.gui.widget.BaseWidget;
+import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.util.DateUtils;
+import xin.vanilla.sakura.SakuraComponent;
+import xin.vanilla.sakura.client.gui.RewardRenderer;
+import xin.vanilla.sakura.client.theme.SakuraThemeTextures;
+import xin.vanilla.sakura.client.theme.ThemeTexture;
 import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.config.CommonConfig;
+import xin.vanilla.sakura.data.time.SakuraClock;
 import xin.vanilla.sakura.enums.ESignInStatus;
 import xin.vanilla.sakura.reward.Reward;
 import xin.vanilla.sakura.reward.RewardList;
-import xin.vanilla.sakura.client.gui.RewardRenderer;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
-import xin.vanilla.sakura.SakuraComponent;
-import xin.vanilla.banira.client.util.AbstractGuiUtils;
-import xin.vanilla.banira.common.util.DateUtils;
-import xin.vanilla.banira.client.data.GLFWKey;
-import xin.vanilla.sakura.client.theme.ThemeTexture;
-import xin.vanilla.sakura.client.theme.SakuraThemeTextures;
 
 import java.util.Date;
 import java.util.function.Consumer;
@@ -69,12 +68,15 @@ public final class SignInCell extends BaseWidget {
         String language = Minecraft.getInstance().options.languageCode;
         for (Reward reward : rewardList) {
             result.append("\n").append(reward.getName(language, true));
-            if (permissions.probability) result.append(" (" + reward.getProbability().stripTrailingZeros().toPlainString() + ")");
+            if (permissions.probability)
+                result.append(" (" + reward.getProbability().stripTrailingZeros().toPlainString() + ")");
         }
         return result;
     }
 
-    public boolean uiDetailsVisible() { return showHover && tooltipPermissions().details; }
+    public boolean uiDetailsVisible() {
+        return showHover && tooltipPermissions().details;
+    }
 
     public java.util.List<xin.vanilla.sakura.client.ui.SignInUiSession.RewardLine> uiRewardLines() {
         if (!uiDetailsVisible()) return java.util.List.of();
@@ -91,7 +93,9 @@ public final class SignInCell extends BaseWidget {
         return new LocalPlayerPermission(player == null || player.hasPermissions(CommonConfig.get().permission().permissionRewardDetail()),
                 player == null || player.hasPermissions(CommonConfig.get().permission().permissionRewardProbability()));
     }
-    private record LocalPlayerPermission(boolean details, boolean probability) { }
+
+    private record LocalPlayerPermission(boolean details, boolean probability) {
+    }
 
     private final ResourceLocation backgroundTexture;
     private final TextureCoordinate textureCoordinate;

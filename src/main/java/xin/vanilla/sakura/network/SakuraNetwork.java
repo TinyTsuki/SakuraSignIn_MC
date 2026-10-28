@@ -12,9 +12,9 @@ import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.config.reward.RewardConfigManager;
 import xin.vanilla.sakura.data.IPlayerSignInData;
-import xin.vanilla.sakura.network.packet.*;
 import xin.vanilla.sakura.data.calendar.SakuraCalendars;
 import xin.vanilla.sakura.enums.ERewardRule;
+import xin.vanilla.sakura.network.packet.*;
 import xin.vanilla.sakura.util.SakuraUtils;
 
 import java.time.YearMonth;
@@ -181,8 +181,8 @@ public final class SakuraNetwork {
                 SakuraUtils.getRewardPermissionLevel(ERewardRule.LOTTERY_REWARD));
         return new LotteryPoolSyncPacket(visible
                 ? xin.vanilla.sakura.data.lottery.LotteryPools.visibleCopy(
-                        RewardConfigManager.getRewardConfig().getLotteryPools(),
-                        player.hasPermissions(CommonConfig.get().permission().permissionEditReward()))
+                RewardConfigManager.getRewardConfig().getLotteryPools(),
+                player.hasPermissions(CommonConfig.get().permission().permissionEditReward()))
                 : java.util.Collections.emptyList(), RewardConfigManager.getLotteryGeneration());
     }
 }

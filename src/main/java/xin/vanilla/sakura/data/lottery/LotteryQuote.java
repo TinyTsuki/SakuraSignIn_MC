@@ -4,7 +4,8 @@ import lombok.Value;
 
 @Value
 public class LotteryQuote {
-    public enum Status { READY, STALE_GENERATION, FORBIDDEN, POOL_NOT_FOUND, PAYMENT_UNAVAILABLE }
+    public enum Status {READY, STALE_GENERATION, FORBIDDEN, POOL_NOT_FOUND, PAYMENT_UNAVAILABLE}
+
     LotteryQuoteRequest request;
     Status status;
     long generation;
@@ -24,9 +25,14 @@ public class LotteryQuote {
         } else if (availableCount != 0 || !"".equals(quoteToken)) {
             throw new IllegalArgumentException("Failed quote cannot authorize payment");
         }
-        this.request = request; this.status = status; this.generation = generation;
-        this.availableCount = availableCount; this.quoteToken = quoteToken;
+        this.request = request;
+        this.status = status;
+        this.generation = generation;
+        this.availableCount = availableCount;
+        this.quoteToken = quoteToken;
     }
 
-    public boolean isReady() { return status == Status.READY; }
+    public boolean isReady() {
+        return status == Status.READY;
+    }
 }

@@ -13,7 +13,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 
 public final class PersonalDateInputForm {
-    private PersonalDateInputForm() { }
+    private PersonalDateInputForm() {
+    }
 
     public static Screen create(Screen parent, PersonalDatePreset preset, PlayerPersonalDateSlot slot,
                                 BooleanSupplier acceptsResult, Runnable refresh) {

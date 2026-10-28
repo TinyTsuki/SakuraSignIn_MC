@@ -1,8 +1,8 @@
 package xin.vanilla.sakura.client.reward;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.sakura.api.reward.RewardTypeId;
@@ -79,7 +79,9 @@ public final class RewardEditorCoordinator {
     private static <T> Consumer<T> connectedOnce(Consumer<T> callback) {
         java.util.function.BooleanSupplier connected = connectionGuard();
         java.util.concurrent.atomic.AtomicBoolean submitted = new java.util.concurrent.atomic.AtomicBoolean();
-        return value -> { if (connected.getAsBoolean() && submitted.compareAndSet(false, true)) callback.accept(value); };
+        return value -> {
+            if (connected.getAsBoolean() && submitted.compareAndSet(false, true)) callback.accept(value);
+        };
     }
 
     @SuppressWarnings("unchecked")
@@ -167,7 +169,10 @@ public final class RewardEditorCoordinator {
         protected void initWidgets() {
             if (advanced) return;
             advanced = true;
-            if (!connected.getAsBoolean()) { Minecraft.getInstance().setScreen(null); return; }
+            if (!connected.getAsBoolean()) {
+                Minecraft.getInstance().setScreen(null);
+                return;
+            }
             if (submitted) {
                 submitted = false;
                 continuation.accept(value);
@@ -203,7 +208,10 @@ public final class RewardEditorCoordinator {
         protected void initWidgets() {
             if (advanced) return;
             advanced = true;
-            if (!connected.getAsBoolean()) { Minecraft.getInstance().setScreen(null); return; }
+            if (!connected.getAsBoolean()) {
+                Minecraft.getInstance().setScreen(null);
+                return;
+            }
             if (shouldContinue.getAsBoolean()) {
                 continuation.run();
             } else {

@@ -1,13 +1,15 @@
 package xin.vanilla.sakura.data.lottery;
 
-import xin.vanilla.sakura.reward.RewardList;
 import xin.vanilla.sakura.reward.Reward;
+import xin.vanilla.sakura.reward.RewardList;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/** 奖池复制和查找集中在一处，避免配置、网络与界面共享可变引用。 */
+/**
+ * 奖池复制和查找集中在一处，避免配置、网络与界面共享可变引用。
+ */
 public final class LotteryPools {
     private LotteryPools() {
     }
@@ -31,7 +33,9 @@ public final class LotteryPools {
         return result;
     }
 
-    /** 玩家可浏览奖池元数据，但管理员禁用详情时不下发奖励列表。 */
+    /**
+     * 玩家可浏览奖池元数据，但管理员禁用详情时不下发奖励列表。
+     */
     public static List<LotteryPool> visibleCopy(List<LotteryPool> pools, boolean editor) {
         List<LotteryPool> result = copy(pools);
         if (!editor) {

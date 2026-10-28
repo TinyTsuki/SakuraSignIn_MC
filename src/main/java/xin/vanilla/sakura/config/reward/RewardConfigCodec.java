@@ -1,37 +1,21 @@
 package xin.vanilla.sakura.config.reward;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonParser;
+import com.google.gson.*;
 import xin.vanilla.banira.common.data.KeyValue;
-import xin.vanilla.sakura.config.reward.RewardConfig;
-import xin.vanilla.sakura.enums.ERewardRule;
-import xin.vanilla.sakura.reward.Reward;
-import xin.vanilla.sakura.reward.RewardJsonCodec;
-import xin.vanilla.sakura.reward.RewardList;
+import xin.vanilla.sakura.data.lottery.*;
 import xin.vanilla.sakura.data.personaldate.PersonalDateDeliveryMode;
 import xin.vanilla.sakura.data.personaldate.PersonalDatePreset;
 import xin.vanilla.sakura.data.personaldate.PersonalDatePresetValidator;
 import xin.vanilla.sakura.data.personaldate.PersonalDateRecurrence;
-import xin.vanilla.sakura.data.lottery.LotteryLimitPolicy;
-import xin.vanilla.sakura.data.lottery.LotteryPool;
-import xin.vanilla.sakura.data.lottery.LotteryPoolValidator;
-import xin.vanilla.sakura.data.lottery.LotteryPools;
-import xin.vanilla.sakura.data.lottery.LotteryPreviewMode;
+import xin.vanilla.sakura.enums.ERewardRule;
+import xin.vanilla.sakura.reward.Reward;
+import xin.vanilla.sakura.reward.RewardJsonCodec;
+import xin.vanilla.sakura.reward.RewardList;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -303,7 +287,8 @@ public final class RewardConfigCodec {
         try {
             JsonObject wire = new JsonObject();
             wire.addProperty("schemaVersion", RewardConfigDocument.CURRENT_SCHEMA_VERSION);
-            wire.add("groups", new JsonArray()); wire.add("personalDatePresets", new JsonArray());
+            wire.add("groups", new JsonArray());
+            wire.add("personalDatePresets", new JsonArray());
             wire.addProperty("lotteryFormat", LOTTERY_FORMAT);
             wire.add("lotteryPools", lotteryArray(document.getLotteryPools()));
             xin.vanilla.sakura.data.lottery.LotteryProtocolLimits.json(gson.toJson(wire),

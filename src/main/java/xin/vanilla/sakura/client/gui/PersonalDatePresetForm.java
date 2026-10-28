@@ -4,7 +4,6 @@ import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.client.gui.InputFormScreen;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.widget.DropdownOption;
-import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.client.SakuraClientState;
@@ -22,7 +21,9 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-/** 个性化日期预设表单只让标识和名称自由输入，其余字段使用可解释选项。 */
+/**
+ * 个性化日期预设表单只让标识和名称自由输入，其余字段使用可解释选项。
+ */
 public final class PersonalDatePresetForm {
     private PersonalDatePresetForm() {
     }
@@ -111,7 +112,7 @@ public final class PersonalDatePresetForm {
     }
 
     private static InputFormScreen.Widget numberWidget(String name, String titleKey,
-                                                        int value, int min, int max) {
+                                                       int value, int min, int max) {
         return new InputFormScreen.Widget().name(name).title(text(titleKey))
                 .tooltip(text(titleKey + "_tooltip"))
                 .maxLength(String.valueOf(max).length()).regex("[0-9]+")

@@ -1,11 +1,7 @@
 package xin.vanilla.sakura.client.gui;
 
 import org.junit.Test;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.Handle;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.*;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -21,7 +17,8 @@ public class PersonalDateInputWiringTest {
     private static final String SESSION = "xin/vanilla/sakura/client/ui/PersonalDateUiSession";
     private static final String SLOT = "xin/vanilla/sakura/data/personaldate/PlayerPersonalDateSlot";
 
-    @Test public void screenDateActionDelegatesWithCapturedParentLifetime() throws Exception {
+    @Test
+    public void screenDateActionDelegatesWithCapturedParentLifetime() throws Exception {
         Calls open = methods(SCREEN).get("openDateInput");
         assertNotNull("Actual personal-date input entry point is missing", open);
         assertTrue("Actual openDateInput must use the validated date form",
@@ -31,7 +28,8 @@ public class PersonalDateInputWiringTest {
                         && handle.getName().equals("acceptsChildResult")));
     }
 
-    @Test public void actualDateCallbackParsesCompletelyBeforeClaimingOrMutatingSlot() throws Exception {
+    @Test
+    public void actualDateCallbackParsesCompletelyBeforeClaimingOrMutatingSlot() throws Exception {
         Map<String, Calls> screen = methods(SCREEN);
         Calls open = screen.get("openDateInput");
         assertNotNull(open);
@@ -42,14 +40,15 @@ public class PersonalDateInputWiringTest {
         List<Calls> callbacks = owner.values().stream().filter(calls ->
                 calls.invocations.stream().anyMatch(call -> call.owner.equals("java/util/concurrent/atomic/AtomicBoolean")
                         && call.name.equals("compareAndSet"))
-                && calls.invocations.stream().anyMatch(PersonalDateInputWiringTest::mutatesSlot)).toList();
+                        && calls.invocations.stream().anyMatch(PersonalDateInputWiringTest::mutatesSlot)).toList();
         assertEquals("Expected one actual date submission callback", 1, callbacks.size());
         List<Call> calls = callbacks.get(0).invocations;
         int lastParse = -1, claim = -1, firstMutation = -1;
         for (int index = 0; index < calls.size(); index++) {
             Call call = calls.get(index);
             if (call.owner.equals("java/lang/Integer") && call.name.equals("parseInt")) lastParse = index;
-            if (call.owner.equals("java/util/concurrent/atomic/AtomicBoolean") && call.name.equals("compareAndSet")) claim = index;
+            if (call.owner.equals("java/util/concurrent/atomic/AtomicBoolean") && call.name.equals("compareAndSet"))
+                claim = index;
             if (firstMutation < 0 && mutatesSlot(call)) firstMutation = index;
         }
         assertTrue("Date submission must parse numeric values before mutation", lastParse >= 0);
@@ -57,7 +56,8 @@ public class PersonalDateInputWiringTest {
         assertTrue("Slot mutation must follow complete parsing and the one-shot claim", claim < firstMutation);
     }
 
-    @Test public void nativeCloseFallbackClosesPersonalSessionBeforeTerminalSuperClose() throws Exception {
+    @Test
+    public void nativeCloseFallbackClosesPersonalSessionBeforeTerminalSuperClose() throws Exception {
         Calls close = methods(SCREEN).get("onClose");
         assertNotNull("Actual native close hook is missing", close);
         int request = -1, sessionClose = -1, terminalClose = -1;
@@ -74,7 +74,8 @@ public class PersonalDateInputWiringTest {
         assertTrue("Terminal session close must follow the active-view close request", request >= 0 && request < sessionClose);
     }
 
-    @Test public void removingTheViewForSuspensionDoesNotCloseThePersonalSession() throws Exception {
+    @Test
+    public void removingTheViewForSuspensionDoesNotCloseThePersonalSession() throws Exception {
         Calls removed = methods(SCREEN).get("onRemoved");
         assertNotNull("Actual native removal hook is missing", removed);
         assertTrue("Removal must still notify the shared UI owner", removed.invocations.stream()
@@ -97,18 +98,23 @@ public class PersonalDateInputWiringTest {
                 .getResourceAsStream(owner + ".class")) {
             assertNotNull("Actual production class is missing: " + owner, input);
             new ClassReader(input).accept(new ClassVisitor(Opcodes.ASM9) {
-                @Override public MethodVisitor visitMethod(int access, String name, String descriptor,
-                                                           String signature, String[] exceptions) {
+                @Override
+                public MethodVisitor visitMethod(int access, String name, String descriptor,
+                                                 String signature, String[] exceptions) {
                     Calls calls = new Calls();
                     methods.put(name, calls);
                     return new MethodVisitor(Opcodes.ASM9) {
-                        @Override public void visitMethodInsn(int opcode, String target, String method,
-                                                              String descriptor, boolean isInterface) {
+                        @Override
+                        public void visitMethodInsn(int opcode, String target, String method,
+                                                    String descriptor, boolean isInterface) {
                             calls.invocations.add(new Call(target, method, opcode));
                         }
-                        @Override public void visitInvokeDynamicInsn(String name, String descriptor,
-                                                                     Handle bootstrap, Object... arguments) {
-                            for (Object argument : arguments) if (argument instanceof Handle handle) calls.references.add(handle);
+
+                        @Override
+                        public void visitInvokeDynamicInsn(String name, String descriptor,
+                                                           Handle bootstrap, Object... arguments) {
+                            for (Object argument : arguments)
+                                if (argument instanceof Handle handle) calls.references.add(handle);
                         }
                     };
                 }
@@ -117,7 +123,9 @@ public class PersonalDateInputWiringTest {
         return methods;
     }
 
-    private record Call(String owner, String name, int opcode) { }
+    private record Call(String owner, String name, int opcode) {
+    }
+
     private static final class Calls {
         final List<Call> invocations = new ArrayList<>();
         final List<Handle> references = new ArrayList<>();

@@ -1,13 +1,11 @@
 package xin.vanilla.sakura.client.gui;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.Minecraft;
-import net.minecraft.resources.ResourceLocation;
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
+import net.minecraft.client.Minecraft;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
-import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
 import xin.vanilla.sakura.util.SakuraUtils;
 
 import java.util.concurrent.ThreadLocalRandom;

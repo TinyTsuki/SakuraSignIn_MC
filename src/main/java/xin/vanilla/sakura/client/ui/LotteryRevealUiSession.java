@@ -8,11 +8,19 @@ import xin.vanilla.sakura.client.gui.RewardRenderer;
 import xin.vanilla.sakura.data.lottery.LotteryAnimationStyle;
 import xin.vanilla.sakura.network.packet.LotteryRevealPacket;
 import xin.vanilla.sakura.reward.Reward;
-import java.util.*;
-import java.util.function.*;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.function.BooleanSupplier;
+import java.util.function.IntSupplier;
+import java.util.function.LongSupplier;
 
 public final class LotteryRevealUiSession implements UiPageSession {
-    public record Slot(int index, double x, double y, double width, double height, boolean face, boolean active) { }
+    public record Slot(int index, double x, double y, double width, double height, boolean face, boolean active) {
+    }
+
     private final LotteryRevealPacket packet;
     private final LotteryAnimationStyle style;
     private final LongSupplier millis;
@@ -31,23 +39,56 @@ public final class LotteryRevealUiSession implements UiPageSession {
 
     public LotteryRevealUiSession(LotteryRevealPacket packet, LotteryAnimationStyle style, LongSupplier millis,
                                   BooleanSupplier connection, IntSupplier inventoryKey, Runnable claim) {
-        this.packet = Objects.requireNonNull(packet); this.style = Objects.requireNonNull(style);
-        this.millis = Objects.requireNonNull(millis); this.connection = Objects.requireNonNull(connection);
-        this.inventoryKey = Objects.requireNonNull(inventoryKey); this.claim = Objects.requireNonNull(claim);
-        openedAt = millis.getAsLong(); winners = packet.getWinners(); preview = packet.getPreview();
+        this.packet = Objects.requireNonNull(packet);
+        this.style = Objects.requireNonNull(style);
+        this.millis = Objects.requireNonNull(millis);
+        this.connection = Objects.requireNonNull(connection);
+        this.inventoryKey = Objects.requireNonNull(inventoryKey);
+        this.claim = Objects.requireNonNull(claim);
+        openedAt = millis.getAsLong();
+        winners = packet.getWinners();
+        preview = packet.getPreview();
     }
-    public String operationId() { return packet.getOperationId(); }
-    public long elapsed() { return Math.max(0, millis.getAsLong() - openedAt); }
-    public static long duration(LotteryAnimationStyle style) { return style == LotteryAnimationStyle.INSTANT ? 0 : style == LotteryAnimationStyle.CARDS ? 4800 : 6800; }
-    public boolean revealed() { return skipped || elapsed() >= duration(style); }
-    public void skip() { if (!closed && connection.getAsBoolean()) { skipped = true; requestClaim(); } }
+
+    public String operationId() {
+        return packet.getOperationId();
+    }
+
+    public long elapsed() {
+        return Math.max(0, millis.getAsLong() - openedAt);
+    }
+
+    public static long duration(LotteryAnimationStyle style) {
+        return style == LotteryAnimationStyle.INSTANT ? 0 : style == LotteryAnimationStyle.CARDS ? 4800 : 6800;
+    }
+
+    public boolean revealed() {
+        return skipped || elapsed() >= duration(style);
+    }
+
+    public void skip() {
+        if (!closed && connection.getAsBoolean()) {
+            skipped = true;
+            requestClaim();
+        }
+    }
+
     public void requestClaim() {
         if (claimRequested || closed || !connection.getAsBoolean()) return;
-        claimRequested = true; claim.run();
+        claimRequested = true;
+        claim.run();
     }
-    public boolean claimRequested() { return claimRequested; }
-    private boolean live(UiView owner, long token) { return !closed && view == owner && binding == token && connection.getAsBoolean(); }
-    @Override public void bind(UiView next) {
+
+    public boolean claimRequested() {
+        return claimRequested;
+    }
+
+    private boolean live(UiView owner, long token) {
+        return !closed && view == owner && binding == token && connection.getAsBoolean();
+    }
+
+    @Override
+    public void bind(UiView next) {
         detach(UiDetachReason.RELOAD);
         if (closed) return;
         view = Objects.requireNonNull(next);
@@ -61,35 +102,57 @@ public final class LotteryRevealUiSession implements UiPageSession {
         next.text("connection", SakuraComponent.get().transClient("word", "aui_lottery_disconnected"));
         next.gameElement("close", UiGameElement.preset(xin.vanilla.banira.client.gui.widget.ButtonWidget.PresetStyle.CLOSE));
         next.tooltip("close", xin.vanilla.banira.BaniraComponent.get().transClientAuto("config_editor_close"));
-        bindings.add(next.onAction("close", () -> { if (live(next, token)) next.requestClose(); }));
-        bindings.add(next.onAction("action", () -> { if (live(next, token)) action(); }));
-        prepareIcons(); resultsShown = false; resultColumns = 0; displayedReveal = null; displayedConnection = null; draw();
+        bindings.add(next.onAction("close", () -> {
+            if (live(next, token)) next.requestClose();
+        }));
+        bindings.add(next.onAction("action", () -> {
+            if (live(next, token)) action();
+        }));
+        prepareIcons();
+        resultsShown = false;
+        resultColumns = 0;
+        displayedReveal = null;
+        displayedConnection = null;
+        draw();
     }
+
     private void prepareIcons() {
         if (winnerIcons != null) return;
         winnerIcons = winners.stream().map(RewardRenderer::uiIcon).toList();
         candidateIcons = new ArrayList<>();
-        for (int i = 0; i < 48; i++) candidateIcons.add(packet.isPreviewVisible() && !preview.isEmpty()
-                ? RewardRenderer.uiIcon(preview.get(i % preview.size())) : hidden());
+        for (int i = 0; i < 48; i++)
+            candidateIcons.add(packet.isPreviewVisible() && !preview.isEmpty()
+                    ? RewardRenderer.uiIcon(preview.get(i % preview.size())) : hidden());
     }
-    private static UiGameElement hidden() { return null; }
+
+    private static UiGameElement hidden() {
+        return null;
+    }
+
     private void action() {
         if (revealed()) view.requestClose();
-        else { skip(); draw(); }
+        else {
+            skip();
+            draw();
+        }
     }
+
     private void draw() {
         if (view == null || view.nativeView()) return;
         boolean connected = connection.getAsBoolean();
         if (displayedConnection == null || displayedConnection != connected) {
             displayedConnection = connected;
-            view.enabled("action", connected); view.enabled("close", connected); view.enabled("connection", !connected);
+            view.enabled("action", connected);
+            view.enabled("close", connected);
+            view.enabled("connection", !connected);
         }
         if (!connected) return;
         boolean revealed = revealed();
         if (displayedReveal == null || displayedReveal != revealed) {
             displayedReveal = revealed;
             view.text("action", SakuraComponent.get().transClient("word", revealed ? "confirm" : "lottery_skip_animation"));
-            view.enabled("scene", !revealed); view.enabled("content", revealed && winners.size() != 1);
+            view.enabled("scene", !revealed);
+            view.enabled("content", revealed && winners.size() != 1);
             view.enabled("result_single", revealed && winners.size() == 1);
             view.text("section", SakuraComponent.get().transClient("word", revealed ? "aui_lottery_rewards" : "lottery_drawing"));
         }
@@ -103,7 +166,8 @@ public final class LotteryRevealUiSession implements UiPageSession {
                 view.gameElement("marker", null, new ScreenCoordinate(0, 0, 0, 0));
                 String summary = winners.size() == 1 ? SakuraComponent.get().translateClient("format", "lottery_won_s", name(winners.get(0)))
                         : SakuraComponent.get().translateClient("format", "lottery_won_count_s", winners.size());
-                view.text("summary", SakuraComponent.get().literal(summary)); view.tooltip("summary", SakuraComponent.get().literal(summary));
+                view.text("summary", SakuraComponent.get().literal(summary));
+                view.tooltip("summary", SakuraComponent.get().literal(summary));
                 if (winners.size() == 1) {
                     view.gameElement("single_icon", winnerIcons.get(0));
                     view.text("single_name", SakuraComponent.get().literal(name(winners.get(0))));
@@ -115,7 +179,8 @@ public final class LotteryRevealUiSession implements UiPageSession {
             return;
         }
         ScreenCoordinate area = view.bounds("scene");
-        if (area == null || !Double.isFinite(area.width()) || !Double.isFinite(area.height()) || area.width() <= 0 || area.height() <= 0) return;
+        if (area == null || !Double.isFinite(area.width()) || !Double.isFinite(area.height()) || area.width() <= 0 || area.height() <= 0)
+            return;
         List<Slot> slots = presentationFrame(style, elapsed(), area.width(), area.height(), preview.size());
         int winner = style == LotteryAnimationStyle.STRIP ? 43 : slots.size() - 1;
         ScreenCoordinate marker = new ScreenCoordinate(0, 0, 0, 0);
@@ -138,9 +203,11 @@ public final class LotteryRevealUiSession implements UiPageSession {
                     : new ScreenCoordinate(card.x() - 4, card.y() - 8, 24, 32));
             if (card != null) view.enabled("card" + i, card.face());
         }
-        if (style == LotteryAnimationStyle.STRIP) marker = new ScreenCoordinate(area.width() / 2 - 16, area.height() / 2 - 20, 32, 40);
+        if (style == LotteryAnimationStyle.STRIP)
+            marker = new ScreenCoordinate(area.width() / 2 - 16, area.height() / 2 - 20, 32, 40);
         view.gameElement("marker", null, marker);
     }
+
     private void bindResults() {
         ScreenCoordinate area = view.bounds("result_area");
         if (area == null || !Double.isFinite(area.width()) || area.width() <= 0) return;
@@ -150,17 +217,31 @@ public final class LotteryRevealUiSession implements UiPageSession {
             double first = view.state().rowPosition() * Math.max(1, resultColumns);
             view.state().rowPosition(first / columns);
         }
-        resultColumns = columns; resultsShown = true;
-        UiView owner = view; long token = binding;
+        resultColumns = columns;
+        resultsShown = true;
+        UiView owner = view;
+        long token = binding;
         for (int column = 0; column < 3; column++) {
             int offset = column;
             view.enabled("column" + column, column < columns);
             String id = column == 0 ? "fields" : column == 1 ? "fields_middle" : "fields_end";
             view.rows(id, new UiRowLayout() {
-                public int rowHeight() { return 60; }
-                public String rowClass(int row) { return "result-card"; }
-                public int size() { return offset >= columns ? 0 : (winners.size() + columns - 1 - offset) / columns; }
-                public String key(int row) { return packet.getOperationId() + ":" + (row * columns + offset); }
+                public int rowHeight() {
+                    return 60;
+                }
+
+                public String rowClass(int row) {
+                    return "result-card";
+                }
+
+                public int size() {
+                    return offset >= columns ? 0 : (winners.size() + columns - 1 - offset) / columns;
+                }
+
+                public String key(int row) {
+                    return packet.getOperationId() + ":" + (row * columns + offset);
+                }
+
                 public void bind(UiView cell, int row) {
                     if (!live(owner, token) || columns != resultColumns) return;
                     int index = row * columns + offset;
@@ -177,20 +258,24 @@ public final class LotteryRevealUiSession implements UiPageSession {
             }, 40);
         }
     }
+
     private static String typeName(Reward reward) {
         var extension = SakuraRewardClient.find(reward.getTypeId()).map(SakuraRewardClient.Registration::getExtension).orElse(null);
         return extension == null || extension.getTypeName() == null ? reward.getTypeId().toString() : extension.getTypeName().get().toString();
     }
+
     private static String name(Reward reward) {
         var client = net.minecraft.client.Minecraft.getInstance();
         return SakuraRewardClient.displayName(reward, client == null ? "en_us" : client.options.languageCode, true).toString();
     }
+
     public static List<Slot> presentationFrame(LotteryAnimationStyle style, long elapsed, double width, double height, int previews) {
         double px = style == LotteryAnimationStyle.ROULETTE ? Math.min(18, Math.max(0, (width - 32) / 2)) : 0;
         double py = style == LotteryAnimationStyle.ROULETTE ? Math.min(18, Math.max(0, (height - 32) / 2)) : 0;
         return frame(style, elapsed, width - px * 2, height - py * 2, previews).stream()
                 .map(s -> new Slot(s.index(), s.x() + px, s.y() + py, s.width(), s.height(), s.face(), style != LotteryAnimationStyle.STRIP && s.active())).toList();
     }
+
     public static List<Slot> frame(LotteryAnimationStyle style, long elapsed, double width, double height, int previews) {
         if (!Double.isFinite(width) || !Double.isFinite(height) || width <= 0 || height <= 0) return List.of();
         elapsed = Math.max(0, elapsed);
@@ -205,7 +290,8 @@ public final class LotteryRevealUiSession implements UiPageSession {
             }
         } else if (style == LotteryAnimationStyle.CARDS) {
             int count = Math.min(7, Math.max(1, (int) width / 42)), active = Math.min(count - 1, (int) (elapsed / 520));
-            for (int i = 0; i < count; i++) result.add(new Slot(i, (width - count * 42 + 8) / 2 + i * 42 + 9, height / 2 - 8, 16, 16, i <= active, i == active));
+            for (int i = 0; i < count; i++)
+                result.add(new Slot(i, (width - count * 42 + 8) / 2 + i * 42 + 9, height / 2 - 8, 16, 16, i <= active, i == active));
         } else if (style == LotteryAnimationStyle.ROULETTE) {
             if (width < 24 || height < 24) return List.of();
             int desired = Math.max(6, Math.min(12, previews));
@@ -217,7 +303,11 @@ public final class LotteryRevealUiSession implements UiPageSession {
                     int y = (count + 4) / 2 - x;
                     if (y < 2 || (x - 1) * 32 > spanX || (y - 1) * 32 > spanY) continue;
                     double score = Math.abs(Math.log((spanX / (x - 1)) / (spanY / (y - 1))));
-                    if (score < best) { best = score; columns = x; rows = y; }
+                    if (score < best) {
+                        best = score;
+                        columns = x;
+                        rows = y;
+                    }
                 }
             }
             List<double[]> positions = new ArrayList<>();
@@ -245,27 +335,49 @@ public final class LotteryRevealUiSession implements UiPageSession {
         }
         return List.copyOf(result);
     }
-    @Override public void tick() {
+
+    @Override
+    public void tick() {
         if (view == null || view.nativeView() || closed) return;
         if (connection.getAsBoolean() && revealed()) requestClaim();
         draw();
     }
-    @Override public boolean key(int key, int scan, int modifiers, boolean pressed) {
-        if (view == null || view.nativeView() || closed || !connection.getAsBoolean() || !pressed || key != 256 && key != inventoryKey.getAsInt()) return false;
-        action(); return true;
+
+    @Override
+    public boolean key(int key, int scan, int modifiers, boolean pressed) {
+        if (view == null || view.nativeView() || closed || !connection.getAsBoolean() || !pressed || key != 256 && key != inventoryKey.getAsInt())
+            return false;
+        action();
+        return true;
     }
-    public boolean requestClose() { if (view == null || closed) return false; view.requestClose(); return true; }
-    @Override public void detach(UiDetachReason reason) {
+
+    public boolean requestClose() {
+        if (view == null || closed) return false;
+        view.requestClose();
+        return true;
+    }
+
+    @Override
+    public void detach(UiDetachReason reason) {
         if (view != null && !view.nativeView() && view.state() != null && resultColumns > 0)
             view.state().rowPosition(view.state().rowPosition() * resultColumns);
         resultColumns = 0;
-        binding++; view = null;
-        for (AutoCloseable resource : bindings) try { resource.close(); } catch (Exception failure) { throw new IllegalStateException(failure); }
+        binding++;
+        view = null;
+        for (AutoCloseable resource : bindings)
+            try {
+                resource.close();
+            } catch (Exception failure) {
+                throw new IllegalStateException(failure);
+            }
         bindings.clear();
     }
-    @Override public void close(UiCloseReason reason) {
+
+    @Override
+    public void close(UiCloseReason reason) {
         if (closed) return;
         if (reason != UiCloseReason.DISCONNECT) requestClaim();
-        detach(UiDetachReason.DISCONNECT); closed = true;
+        detach(UiDetachReason.DISCONNECT);
+        closed = true;
     }
 }

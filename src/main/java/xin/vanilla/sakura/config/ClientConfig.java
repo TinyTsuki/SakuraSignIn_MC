@@ -1,21 +1,21 @@
 package xin.vanilla.sakura.config;
 
 import xin.vanilla.banira.api.BaniraConfigs;
+import xin.vanilla.banira.api.client.theme.BaniraThemeMode;
+import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.common.config.ConfigData;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ConfigScope;
 import xin.vanilla.banira.common.config.annotation.Config;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
-import xin.vanilla.banira.api.client.theme.BaniraThemeMode;
 import xin.vanilla.sakura.SakuraSignIn;
-import xin.vanilla.banira.client.data.GLFWKey;
-import xin.vanilla.sakura.util.GLFWKeyHelper;
 import xin.vanilla.sakura.data.lottery.LotteryAnimationStyle;
+import xin.vanilla.sakura.util.GLFWKeyHelper;
 
-import java.util.Arrays;
 import java.util.ArrayList;
-import java.util.Locale;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * 仅客户端使用的显示与快捷键设置。
@@ -46,7 +46,9 @@ public class ClientConfig implements ConfigData {
         }
     }
 
-    /** 清理由旧开发配置遗留在日历翻页快捷键中的鼠标左键。 */
+    /**
+     * 清理由旧开发配置遗留在日历翻页快捷键中的鼠标左键。
+     */
     public static void sanitizeNavigationShortcuts() {
         ConfigHolder holder = BaniraConfigs.holder(ClientConfig.class);
         if (holder == null) return;

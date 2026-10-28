@@ -3,15 +3,25 @@ package xin.vanilla.sakura.network.packet;
 import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.api.BaniraNetwork;
 import xin.vanilla.banira.common.api.INetworkPacket;
-import xin.vanilla.banira.common.network.*;
+import xin.vanilla.banira.common.network.BaniraNetworkContext;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
+import xin.vanilla.banira.common.network.SplitPacket;
 import xin.vanilla.sakura.config.CommonConfig;
-import xin.vanilla.sakura.config.reward.*;
-import xin.vanilla.sakura.data.lottery.*;
+import xin.vanilla.sakura.config.reward.RewardConfig;
+import xin.vanilla.sakura.config.reward.RewardConfigCodec;
+import xin.vanilla.sakura.config.reward.RewardConfigDocument;
+import xin.vanilla.sakura.config.reward.RewardConfigManager;
+import xin.vanilla.sakura.data.lottery.LotteryPool;
+import xin.vanilla.sakura.data.lottery.LotteryPools;
+import xin.vanilla.sakura.data.lottery.LotteryProtocolLimits;
 import xin.vanilla.sakura.enums.ERewardRule;
-import xin.vanilla.sakura.network.*;
+import xin.vanilla.sakura.network.SakuraClientPacketHandlers;
+import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.network.lottery.LotteryPoolReceiver;
-import xin.vanilla.sakura.reward.*;
+import xin.vanilla.sakura.reward.RewardAddPermissionChecker;
+import xin.vanilla.sakura.reward.RewardRuleAddPermissionChecker;
 import xin.vanilla.sakura.util.SakuraUtils;
+
 import java.io.IOException;
 import java.util.*;
 
@@ -37,22 +47,33 @@ public final class LotteryPoolSyncPacket extends SplitPacket implements INetwork
         LotteryProtocolLimits.json(fragment, LotteryProtocolLimits.MAX_DOCUMENT_BYTES);
         this.generation = generation;
         this.pools = LotteryPools.copy(pools);
-        setId(UUID.randomUUID().toString()); setTotal(1); setSort(0);
+        setId(UUID.randomUUID().toString());
+        setTotal(1);
+        setSort(0);
     }
 
     public LotteryPoolSyncPacket(RewardConfig configuration, long generation) {
         if (generation < 0) throw new IllegalArgumentException("Invalid reward revision");
-        try { fragment = new RewardConfigCodec().encode(configuration); }
-        catch (IOException failure) { throw new IllegalArgumentException("Invalid reward snapshot", failure); }
+        try {
+            fragment = new RewardConfigCodec().encode(configuration);
+        } catch (IOException failure) {
+            throw new IllegalArgumentException("Invalid reward snapshot", failure);
+        }
         LotteryProtocolLimits.json(fragment, LotteryProtocolLimits.MAX_UPLOAD_BYTES);
-        this.generation = generation; configurationUpload = true;
-        setId(UUID.randomUUID().toString()); setTotal(1); setSort(0);
+        this.generation = generation;
+        configurationUpload = true;
+        setId(UUID.randomUUID().toString());
+        setTotal(1);
+        setSort(0);
     }
 
     private LotteryPoolSyncPacket(long generation, boolean upload, String fragment, String id, int total, int sort) {
         configurationUpload = upload;
-        this.generation = generation; this.fragment = fragment;
-        setId(id); setTotal(total); setSort(sort);
+        this.generation = generation;
+        this.fragment = fragment;
+        setId(id);
+        setTotal(total);
+        setSort(sort);
         if (!hasValidHeader()) throw new IllegalArgumentException("Invalid lottery fragment");
     }
 
@@ -75,9 +96,18 @@ public final class LotteryPoolSyncPacket extends SplitPacket implements INetwork
         return new Header(id, total, sort, generation, upload, buffer.readUtf(LotteryProtocolLimits.MAX_FRAGMENT_CHARS));
     }
 
-    public long getGeneration() { return generation; }
-    public String getFragment() { return fragment; }
-    public boolean isConfigurationUpload() { return configurationUpload; }
+    public long getGeneration() {
+        return generation;
+    }
+
+    public String getFragment() {
+        return fragment;
+    }
+
+    public boolean isConfigurationUpload() {
+        return configurationUpload;
+    }
+
     public int maximumBytes() {
         return configurationUpload ? LotteryProtocolLimits.MAX_UPLOAD_BYTES : LotteryProtocolLimits.MAX_DOCUMENT_BYTES;
     }
@@ -85,8 +115,11 @@ public final class LotteryPoolSyncPacket extends SplitPacket implements INetwork
     public RewardConfig getConfiguration() {
         if (!configurationUpload || getTotal() != 1) throw new IllegalStateException("Incomplete reward upload");
         LotteryProtocolLimits.json(fragment, LotteryProtocolLimits.MAX_UPLOAD_BYTES);
-        try { return new RewardConfigCodec().decode(fragment); }
-        catch (IOException failure) { throw new IllegalArgumentException("Invalid reward upload", failure); }
+        try {
+            return new RewardConfigCodec().decode(fragment);
+        } catch (IOException failure) {
+            throw new IllegalArgumentException("Invalid reward upload", failure);
+        }
     }
 
     public synchronized List<LotteryPool> getPools() {
@@ -117,23 +150,30 @@ public final class LotteryPoolSyncPacket extends SplitPacket implements INetwork
                     && getSort() >= 0 && getSort() < getTotal() && fragment != null
                     && fragment.length() <= LotteryProtocolLimits.MAX_FRAGMENT_CHARS
                     && LotteryProtocolLimits.bytes(fragment) <= LotteryProtocolLimits.MAX_FRAGMENT_BYTES;
-        } catch (IllegalArgumentException failure) { return false; }
+        } catch (IllegalArgumentException failure) {
+            return false;
+        }
     }
 
     public void toBytes(BaniraPacketBuffer buffer) {
         if (!hasValidHeader()) throw new IllegalArgumentException("Lottery snapshot must be split before encoding");
-        buffer.writeUtf(getId(), 36); buffer.writeInt(getTotal()); buffer.writeInt(getSort());
-        buffer.writeLong(generation); buffer.writeBoolean(configurationUpload);
+        buffer.writeUtf(getId(), 36);
+        buffer.writeInt(getTotal());
+        buffer.writeInt(getSort());
+        buffer.writeLong(generation);
+        buffer.writeBoolean(configurationUpload);
         buffer.writeUtf(fragment, LotteryProtocolLimits.MAX_FRAGMENT_BYTES);
     }
 
     public static void handle(LotteryPoolSyncPacket packet, BaniraNetworkContext context) {
         if (context.isClientSide()) {
-            if (packet.configurationUpload) { context.markHandled(); return; }
+            if (packet.configurationUpload) {
+                context.markHandled();
+                return;
+            }
             Object origin = context.connectionKey();
             if (origin != null) context.enqueueWork(() -> SakuraClientPacketHandlers.handle(packet, origin));
-        }
-        else if (context.isServerSide()) context.enqueueWork(() -> applyServerUpdate(packet, context));
+        } else if (context.isServerSide()) context.enqueueWork(() -> applyServerUpdate(packet, context));
         context.markHandled();
     }
 
@@ -144,7 +184,8 @@ public final class LotteryPoolSyncPacket extends SplitPacket implements INetwork
                 || !packet.configurationUpload && !sender.hasPermissions(SakuraUtils.getRewardPermissionLevel(ERewardRule.LOTTERY_REWARD))
                 || packet.generation != RewardConfigManager.getLotteryGeneration()) {
             SERVER.remove(sender.connection);
-            BaniraNetwork.sendToPlayer(new RewardOptionDataReceivedNotice(false), sender); return;
+            BaniraNetwork.sendToPlayer(new RewardOptionDataReceivedNotice(false), sender);
+            return;
         }
         try {
             LotteryPoolSyncPacket complete = SERVER.accept(sender.connection, packet);
@@ -177,13 +218,22 @@ public final class LotteryPoolSyncPacket extends SplitPacket implements INetwork
         }
     }
 
-    public static void expireServerTransfers() { SERVER.expire(); }
-    public static void clearServerTransfers() { SERVER.clear(); }
-    public static void removeServerTransfer(Object connection) { SERVER.remove(connection); }
+    public static void expireServerTransfers() {
+        SERVER.expire();
+    }
 
-    @Override public List<LotteryPoolSyncPacket> splitPacket() {
+    public static void clearServerTransfers() {
+        SERVER.clear();
+    }
+
+    public static void removeServerTransfer(Object connection) {
+        SERVER.remove(connection);
+    }
+
+    @Override
+    public List<LotteryPoolSyncPacket> splitPacket() {
         List<LotteryPoolSyncPacket> parts = new ArrayList<>();
-        for (int start = 0; start < fragment.length();) {
+        for (int start = 0; start < fragment.length(); ) {
             int end = Math.min(start + LotteryProtocolLimits.MAX_FRAGMENT_CHARS, fragment.length());
             if (end < fragment.length() && Character.isHighSurrogate(fragment.charAt(end - 1))) end--;
             parts.add(new LotteryPoolSyncPacket(generation, configurationUpload, fragment.substring(start, end), getId(), 1, 0));
@@ -191,11 +241,15 @@ public final class LotteryPoolSyncPacket extends SplitPacket implements INetwork
         }
         if (parts.size() > (configurationUpload ? LotteryProtocolLimits.MAX_UPLOAD_PARTS : LotteryProtocolLimits.MAX_PARTS))
             throw new IllegalArgumentException("Too many lottery fragments");
-        for (int i = 0; i < parts.size(); i++) { parts.get(i).setTotal(parts.size()); parts.get(i).setSort(i); }
+        for (int i = 0; i < parts.size(); i++) {
+            parts.get(i).setTotal(parts.size());
+            parts.get(i).setSort(i);
+        }
         return parts;
     }
 
-    @Override public LotteryPoolSyncPacket mergePackets(List<LotteryPoolSyncPacket> packets) {
+    @Override
+    public LotteryPoolSyncPacket mergePackets(List<LotteryPoolSyncPacket> packets) {
         if (packets == null || packets.isEmpty() || packets.size() > LotteryProtocolLimits.MAX_UPLOAD_PARTS)
             throw new IllegalArgumentException("Invalid lottery assembly");
         LotteryPoolSyncPacket first = packets.get(0);
@@ -216,19 +270,34 @@ public final class LotteryPoolSyncPacket extends SplitPacket implements INetwork
         LotteryPoolSyncPacket complete;
         if (first.configurationUpload) {
             LotteryProtocolLimits.json(document.toString(), LotteryProtocolLimits.MAX_UPLOAD_BYTES);
-            try { complete = new LotteryPoolSyncPacket(new RewardConfigCodec().decode(document.toString()), first.generation); }
-            catch (IOException failure) { throw new IllegalArgumentException("Invalid reward upload", failure); }
+            try {
+                complete = new LotteryPoolSyncPacket(new RewardConfigCodec().decode(document.toString()), first.generation);
+            } catch (IOException failure) {
+                throw new IllegalArgumentException("Invalid reward upload", failure);
+            }
         } else complete = new LotteryPoolSyncPacket(decode(document.toString()), first.generation);
-        complete.setId(first.getId()); return complete;
+        complete.setId(first.getId());
+        return complete;
     }
 
-    @Override public int getChunkSize() { return LotteryProtocolLimits.MAX_FRAGMENT_CHARS; }
+    @Override
+    public int getChunkSize() {
+        return LotteryProtocolLimits.MAX_FRAGMENT_CHARS;
+    }
 
     private static final class Header {
-        final String id, fragment; final int total, sort; final long generation; final boolean upload;
+        final String id, fragment;
+        final int total, sort;
+        final long generation;
+        final boolean upload;
+
         Header(String id, int total, int sort, long generation, boolean upload, String fragment) {
             this.upload = upload;
-            this.id = id; this.total = total; this.sort = sort; this.generation = generation; this.fragment = fragment;
+            this.id = id;
+            this.total = total;
+            this.sort = sort;
+            this.generation = generation;
+            this.fragment = fragment;
         }
     }
 }

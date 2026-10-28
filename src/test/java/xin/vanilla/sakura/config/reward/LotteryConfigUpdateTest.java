@@ -5,7 +5,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import xin.vanilla.sakura.data.lottery.*;
+import xin.vanilla.sakura.data.lottery.LotteryLimitPolicy;
+import xin.vanilla.sakura.data.lottery.LotteryPool;
 import xin.vanilla.sakura.reward.RewardList;
 
 import java.nio.file.Files;
@@ -15,23 +16,28 @@ import java.util.Collections;
 import static org.junit.Assert.*;
 
 public class LotteryConfigUpdateTest {
-    @Rule public TemporaryFolder temporary = new TemporaryFolder();
-    @Rule public xin.vanilla.sakura.test.UnboundConfigPlatform platform = new xin.vanilla.sakura.test.UnboundConfigPlatform();
+    @Rule
+    public TemporaryFolder temporary = new TemporaryFolder();
+    @Rule
+    public xin.vanilla.sakura.test.UnboundConfigPlatform platform = new xin.vanilla.sakura.test.UnboundConfigPlatform();
     private RewardConfig previous;
     private RewardConfig original;
 
-    @Before public void setup() {
+    @Before
+    public void setup() {
         previous = RewardConfigManager.getRewardConfig();
         original = new RewardConfig();
         original.getMonthRewards().put("1", new RewardList());
         RewardConfigManager.setRewardConfig(original);
     }
 
-    @After public void cleanup() {
+    @After
+    public void cleanup() {
         RewardConfigManager.setRewardConfig(previous);
     }
 
-    @Test public void successfulReplacementPersistsBeforePublishingAndIsIsolated() throws Exception {
+    @Test
+    public void successfulReplacementPersistsBeforePublishingAndIsIsolated() throws Exception {
         Path directory = temporary.newFolder("valid").toPath();
         RewardConfigRepository repository = new RewardConfigRepository(directory);
         repository.save(original);
@@ -50,7 +56,8 @@ public class LotteryConfigUpdateTest {
         assertTrue(original.getLotteryPools().isEmpty());
     }
 
-    @Test public void backupFailureKeepsOriginalAndGeneration() throws Exception {
+    @Test
+    public void backupFailureKeepsOriginalAndGeneration() throws Exception {
         Path directory = temporary.newFolder("blocked").toPath();
         Files.createDirectory(directory.resolve(RewardConfigRepository.REWARD_FILE_NAME));
         long before = RewardConfigManager.getLotteryGeneration();
@@ -65,7 +72,8 @@ public class LotteryConfigUpdateTest {
         }
     }
 
-    @Test public void actualSaveFailureKeepsOriginalAndGeneration() throws Exception {
+    @Test
+    public void actualSaveFailureKeepsOriginalAndGeneration() throws Exception {
         long before = RewardConfigManager.getLotteryGeneration();
         try {
             RewardConfigManager.replaceLotteryPools(Collections.singletonList(pool()), candidate -> {
@@ -82,7 +90,8 @@ public class LotteryConfigUpdateTest {
         }
     }
 
-    @Test public void replacementRebuildsOrdinaryRuntimeRelationsBeforeSaving() throws Exception {
+    @Test
+    public void replacementRebuildsOrdinaryRuntimeRelationsBeforeSaving() throws Exception {
         original.getContinuousRewards().put("1", new RewardList(Collections.singletonList(
                 xin.vanilla.sakura.reward.Reward.getDefault())));
         original.getCycleRewards().put("1", new RewardList(Collections.singletonList(
@@ -104,9 +113,11 @@ public class LotteryConfigUpdateTest {
                 current.getCycleRewardsRelation().get("1")));
     }
 
-    @Test public void staleRevisionCannotReplaceOrPersistPools() throws Exception {
+    @Test
+    public void staleRevisionCannotReplaceOrPersistPools() throws Exception {
         long stale = RewardConfigManager.getLotteryGeneration();
-        RewardConfigManager.replaceLotteryPools(Collections.singletonList(pool()), candidate -> { });
+        RewardConfigManager.replaceLotteryPools(Collections.singletonList(pool()), candidate -> {
+        });
         RewardConfig current = RewardConfigManager.getRewardConfig();
         Path directory = temporary.newFolder("stale").toPath();
         RewardConfigRepository repository = new RewardConfigRepository(directory);
@@ -118,7 +129,8 @@ public class LotteryConfigUpdateTest {
         assertArrayEquals(bytes, Files.readAllBytes(directory.resolve(RewardConfigRepository.REWARD_FILE_NAME)));
     }
 
-    @Test public void invalidUpdateKeepsFileAndGeneration() throws Exception {
+    @Test
+    public void invalidUpdateKeepsFileAndGeneration() throws Exception {
         Path directory = temporary.newFolder("invalid").toPath();
         RewardConfigRepository repository = new RewardConfigRepository(directory);
         repository.save(original);

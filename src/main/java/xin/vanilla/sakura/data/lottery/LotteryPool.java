@@ -4,7 +4,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import xin.vanilla.sakura.reward.RewardList;
 
-/** 服务端权威抽奖池，奖励概率在此处作为相对权重。 */
+/**
+ * 服务端权威抽奖池，奖励概率在此处作为相对权重。
+ */
 @Data
 @NoArgsConstructor
 public class LotteryPool {

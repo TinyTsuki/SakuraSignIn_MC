@@ -4,35 +4,30 @@ import net.minecraft.nbt.CompoundTag;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import xin.vanilla.banira.api.Banira;
 import xin.vanilla.banira.common.util.DateUtils;
+import xin.vanilla.banira.platform.BaniraPathService;
+import xin.vanilla.banira.platform.BaniraPlatform;
+import xin.vanilla.banira.platform.BaniraPlatforms;
+import xin.vanilla.banira.platform.BaniraPlayerDataService;
 import xin.vanilla.sakura.data.calendar.CalendarIds;
 import xin.vanilla.sakura.data.migration.PlayerSummaryStore;
 import xin.vanilla.sakura.data.personaldate.PlayerPersonalDateSlot;
 import xin.vanilla.sakura.data.player.PlayerSignInSummary;
 import xin.vanilla.sakura.internal.forge.migration.MonthlySignInHistoryRepository;
-import xin.vanilla.sakura.internal.forge.storage.AtomicNbtFiles;
 import xin.vanilla.sakura.internal.forge.player.ForgePlayerSignInDataService;
+import xin.vanilla.sakura.internal.forge.storage.AtomicNbtFiles;
 import xin.vanilla.sakura.test.BaniraTestPlatform;
-import xin.vanilla.banira.api.Banira;
-import xin.vanilla.banira.platform.BaniraPlatform;
-import xin.vanilla.banira.platform.BaniraPlatforms;
-import xin.vanilla.banira.platform.BaniraPathService;
-import xin.vanilla.banira.platform.BaniraPlayerDataService;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.lang.reflect.Proxy;
-import java.lang.reflect.Method;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Map;
-import java.util.Set;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -326,10 +321,16 @@ public class SignInDeletionTest {
         BaniraPlayerDataService players = (BaniraPlayerDataService) Proxy.newProxyInstance(getClass().getClassLoader(),
                 new Class<?>[]{BaniraPlayerDataService.class}, (proxy, method, args) -> {
                     switch (method.getName()) {
-                        case "getOrCreate": return root.getCompound((String) args[1]);
-                        case "put": root.put((String) args[1], (CompoundTag) args[2]); return null;
-                        case "flush": AtomicNbtFiles.write(world.resolve("playerdata").resolve(uuid + ".nbt"), root); return null;
-                        default: throw new UnsupportedOperationException(method.getName());
+                        case "getOrCreate":
+                            return root.getCompound((String) args[1]);
+                        case "put":
+                            root.put((String) args[1], (CompoundTag) args[2]);
+                            return null;
+                        case "flush":
+                            AtomicNbtFiles.write(world.resolve("playerdata").resolve(uuid + ".nbt"), root);
+                            return null;
+                        default:
+                            throw new UnsupportedOperationException(method.getName());
                     }
                 });
         BaniraPlatforms.install((BaniraPlatform) Proxy.newProxyInstance(getClass().getClassLoader(),
@@ -346,7 +347,8 @@ public class SignInDeletionTest {
         recovery.setAccessible(true);
         @SuppressWarnings("unchecked")
         Set<UUID> needed = (Set<UUID>) recovery.get(ForgePlayerSignInDataService.INSTANCE);
-        cache.put(uuid, stale); needed.add(uuid);
+        cache.put(uuid, stale);
+        needed.add(uuid);
         Method retry = ForgePlayerSignInDataService.class.getDeclaredMethod("recoverPending", UUID.class);
         retry.setAccessible(true);
         Path broken = world.resolve("sakura_sign_in/history").resolve(uuid.toString()).resolve("2026-09.nbt");

@@ -1,16 +1,14 @@
 package xin.vanilla.sakura.client.gui;
 
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
-import net.minecraft.resources.ResourceLocation;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import xin.vanilla.sakura.test.BaniraTestPlatform;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * 锁定 Banira 选择结果作为领域值原样交给注册表编辑器。

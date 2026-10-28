@@ -4,20 +4,22 @@ import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.banira.api.BaniraModPresence;
 import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.SakuraSignIn;
+import xin.vanilla.sakura.data.lottery.LotteryOperation;
 import xin.vanilla.sakura.message.SakuraMessages;
 import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.network.packet.LotteryRevealPacket;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
 import xin.vanilla.sakura.reward.Reward;
 import xin.vanilla.sakura.util.SakuraUtils;
-import xin.vanilla.sakura.data.lottery.LotteryOperation;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/** 将命令和客户端界面的抽奖请求汇入同一服务端响应流程。 */
+/**
+ * 将命令和客户端界面的抽奖请求汇入同一服务端响应流程。
+ */
 public final class LotteryDrawDispatcher {
     private LotteryDrawDispatcher() {
     }
@@ -28,16 +30,17 @@ public final class LotteryDrawDispatcher {
         if (!result.isSuccess()) notifyFailure(player, result);
         return result;
     }
+
     public static void completed(ServerPlayer player, LotteryOperation operation,
                                  LotteryDrawBatchResult result, boolean recovered) {
         if (!recovered) notifySuccess(player, result);
         if (BaniraModPresence.isRemoteClientInstalled(player, SakuraSignIn.MODID)) {
-                try {
-                    PendingLotteryDraws.Pending pending = PendingLotteryDraws.put(player.getUUID(), operation.getOperationId(), operation.getDisplayToken());
-                    sendReveal(player, pending, result);
-                } catch (IllegalArgumentException failure) {
-                    PendingLotteryDraws.remove(player.getUUID());
-                }
+            try {
+                PendingLotteryDraws.Pending pending = PendingLotteryDraws.put(player.getUUID(), operation.getOperationId(), operation.getDisplayToken());
+                sendReveal(player, pending, result);
+            } catch (IllegalArgumentException failure) {
+                PendingLotteryDraws.remove(player.getUUID());
+            }
         }
     }
 
@@ -47,7 +50,7 @@ public final class LotteryDrawDispatcher {
     }
 
     private static void sendReveal(ServerPlayer player, PendingLotteryDraws.Pending pending,
-                                    LotteryDrawBatchResult result) {
+                                   LotteryDrawBatchResult result) {
         SakuraNetwork.sendToPlayer(new LotteryRevealPacket(pending.getOperationId(), pending.getToken(),
                 result.getPool().getDisplayName(), result.getRewards(), preview(result),
                 result.getPool().getPreviewMode()), player);

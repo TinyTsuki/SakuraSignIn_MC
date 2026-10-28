@@ -1,27 +1,29 @@
 package xin.vanilla.sakura.reward.personaldate;
 
 import net.minecraft.server.level.ServerPlayer;
+import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.config.reward.RewardConfigManager;
 import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.data.personaldate.PersonalDateDeliveryMode;
-import xin.vanilla.sakura.reward.RewardManager;
-import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.data.personaldate.PersonalDatePreset;
 import xin.vanilla.sakura.data.personaldate.PersonalDateRewardSnapshot;
 import xin.vanilla.sakura.message.SakuraMessages;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
+import xin.vanilla.sakura.reward.RewardManager;
 import xin.vanilla.sakura.util.SakuraUtils;
-import xin.vanilla.banira.common.data.Component;
 
+import java.awt.*;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.ArrayList;
-import java.awt.Color;
 
-/** 服务端玩家实体与纯日期奖励服务之间的薄适配。 */
+/**
+ * 服务端玩家实体与纯日期奖励服务之间的薄适配。
+ */
 public final class PersonalDateRewardDispatcher {
     private static final PersonalDateRewardService SERVICE = new PersonalDateRewardService();
 
@@ -52,12 +54,12 @@ public final class PersonalDateRewardDispatcher {
                 data,
                 (reward, occurrence) -> {
                     boolean granted = RewardManager.giveRewardToPlayer(
-                        player,
-                        data,
-                        reward,
-                        Date.from(occurrence.getTargetDate().atStartOfDay(
-                                ZoneId.systemDefault()).toInstant()),
-                        "personal_date:" + occurrence.getPresetId());
+                            player,
+                            data,
+                            reward,
+                            Date.from(occurrence.getTargetDate().atStartOfDay(
+                                    ZoneId.systemDefault()).toInstant()),
+                            "personal_date:" + occurrence.getPresetId());
                     if (granted) {
                         String name = presets.stream().filter(preset -> preset.getId().equals(occurrence.getPresetId()))
                                 .map(PersonalDatePreset::getDisplayName).findFirst().orElse(occurrence.getPresetId());

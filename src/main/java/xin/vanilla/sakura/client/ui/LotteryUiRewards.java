@@ -1,15 +1,24 @@
 package xin.vanilla.sakura.client.ui;
 
-import xin.vanilla.banira.api.client.ui.*;
+import xin.vanilla.banira.api.client.ui.UiGameElement;
+import xin.vanilla.banira.api.client.ui.UiRowProvider;
+import xin.vanilla.banira.api.client.ui.UiView;
 import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.reward.Reward;
-import java.math.*;
-import java.util.*;
-import java.util.function.*;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.BooleanSupplier;
+import java.util.function.Function;
+import java.util.function.IntFunction;
 
 final class LotteryUiRewards {
     private static final List<String> COLUMNS = List.of("fields", "fields_middle", "fields_end");
-    private LotteryUiRewards() { }
+
+    private LotteryUiRewards() {
+    }
 
     static void enter(UiView view) {
         if (view != null && !view.nativeView() && view.state() != null)
@@ -29,8 +38,14 @@ final class LotteryUiRewards {
         for (int column = 0; column < COLUMNS.size(); column++) {
             int offset = column;
             view.rows(COLUMNS.get(column), new UiRowProvider() {
-                public int size() { return (rewards.size() + 2 - offset) / 3; }
-                public String key(int row) { return key + ":" + (row * 3 + offset); }
+                public int size() {
+                    return (rewards.size() + 2 - offset) / 3;
+                }
+
+                public String key(int row) {
+                    return key + ":" + (row * 3 + offset);
+                }
+
                 public void bind(UiView cell, int row) {
                     if (!live.getAsBoolean()) return;
                     int index = row * 3 + offset;
@@ -49,7 +64,9 @@ final class LotteryUiRewards {
                     cell.text("label", SakuraComponent.get().literal(label));
                     cell.text("detail", SakuraComponent.get().literal(detail));
                     var tooltip = SakuraComponent.get().literal(label + (tooltipDetail.isEmpty() ? "" : "\n" + tooltipDetail));
-                    cell.tooltip("label", tooltip); cell.tooltip("icon", tooltip); cell.tooltip("detail", tooltip);
+                    cell.tooltip("label", tooltip);
+                    cell.tooltip("icon", tooltip);
+                    cell.tooltip("detail", tooltip);
                 }
             }, 40);
         }

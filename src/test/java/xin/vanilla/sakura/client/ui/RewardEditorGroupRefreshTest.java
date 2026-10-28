@@ -15,13 +15,15 @@ public class RewardEditorGroupRefreshTest {
                 source.indexOf("private Screen getPersonalDatePresetInputScreen("));
     }
 
-    @Test public void cdkRenameRefreshesRowsBeforeReturningToParent() throws Exception {
+    @Test
+    public void cdkRenameRefreshesRowsBeforeReturningToParent() throws Exception {
         String body = groupEditor();
         body = body.substring(body.indexOf("if (rule == ERewardRule.CDK_REWARD)"), body.indexOf("ruleInputRegex(rule)"));
         assertTrue("CDK rename must rebuild rows before parent AUI binding", body.matches("(?s).*updateKeyName\\(.*?saveEditor\\(\\);\\s*updateLayout\\(\\);.*"));
     }
 
-    @Test public void ordinaryRenameRefreshesRowsBeforeReturningToParent() throws Exception {
+    @Test
+    public void ordinaryRenameRefreshesRowsBeforeReturningToParent() throws Exception {
         String body = groupEditor();
         body = body.substring(body.indexOf("ruleInputRegex(rule)"));
         assertTrue("Rule rename must rebuild rows before parent AUI binding", body.matches("(?s).*updateKeyName\\(.*?saveEditor\\(\\);\\s*updateLayout\\(\\);.*"));

@@ -16,7 +16,9 @@ import xin.vanilla.sakura.reward.RewardList;
 import java.util.Arrays;
 import java.util.function.Consumer;
 
-/** 奖池规则使用明确选项配置，避免玩家猜测策略枚举与数值含义。 */
+/**
+ * 奖池规则使用明确选项配置，避免玩家猜测策略枚举与数值含义。
+ */
 public final class LotteryPoolForm {
     private LotteryPoolForm() {
     }
@@ -86,7 +88,7 @@ public final class LotteryPoolForm {
                 existing == null ? LotteryLimitPolicy.DAILY.name()
                         : existing.getLimitPolicy().name(),
                 Arrays.stream(LotteryLimitPolicy.values()).map(policy -> option(
-                        policy.name(), "lottery_policy_" + policy.name().toLowerCase()))
+                                policy.name(), "lottery_policy_" + policy.name().toLowerCase()))
                         .toArray(DropdownOption[]::new)));
         args.addWidget(number("maxDraws", "lottery_max_draws",
                 "lottery_max_draws_tooltip",
@@ -97,7 +99,7 @@ public final class LotteryPoolForm {
         args.addWidget(dropdown("previewMode", "lottery_preview_mode",
                 (existing == null ? LotteryPreviewMode.ALL : existing.getPreviewMode()).name(),
                 Arrays.stream(LotteryPreviewMode.values()).map(mode -> option(
-                        mode.name(), "lottery_preview_" + mode.name().toLowerCase()))
+                                mode.name(), "lottery_preview_" + mode.name().toLowerCase()))
                         .toArray(DropdownOption[]::new)));
         args.setCallback(results -> {
             LotteryPool candidate = new LotteryPool(results.value("id"), results.value("name"),
@@ -118,7 +120,7 @@ public final class LotteryPoolForm {
     }
 
     private static Screen voucherItemForm(Screen parent, net.minecraft.world.item.ItemStack stack,
-                                           Consumer<String> selected) {
+                                          Consumer<String> selected) {
         Consumer<String> connectedSelected = connectedOnce(selected);
         InputFormScreen.Args args = new InputFormScreen.Args().setParentScreen(parent)
                 .setHeaderTitle(text("lottery_voucher_item"));
@@ -147,7 +149,8 @@ public final class LotteryPoolForm {
         var submitted = new java.util.concurrent.atomic.AtomicBoolean();
         return value -> {
             var current = net.minecraft.client.Minecraft.getInstance();
-            if (origin == (current == null ? null : current.getConnection()) && submitted.compareAndSet(false, true)) callback.accept(value);
+            if (origin == (current == null ? null : current.getConnection()) && submitted.compareAndSet(false, true))
+                callback.accept(value);
         };
     }
 
