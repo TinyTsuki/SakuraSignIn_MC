@@ -9,12 +9,16 @@ plugins {
 group = mod_group_id
 version = mod_version
 
+apply from: 'gradle/aui-validation-output.gradle'
+apply from: 'gradle/aui-artifact-check.gradle'
+
 base {
     archivesName = mod_id
 }
 
 java {
     toolchain.languageVersion = JavaLanguageVersion.of(21)
+    withSourcesJar()
 }
 
 runs {
@@ -114,12 +118,11 @@ apply from: 'gradle/network-smoke.gradle'
 apply from: 'gradle/spark-profile-report.gradle'
 
 def modsJarVersion = "${loader_type}-${minecraft_version}-${mod_version}"
-def modsDestinationDir = file("${projectDir}/builds/${mod_version}")
 
 tasks.named('jar', Jar).configure {
     archiveBaseName.set(mod_id)
     archiveVersion.set(modsJarVersion)
-    destinationDirectory.set(modsDestinationDir)
+    destinationDirectory.set(baniraDistributionDirectory)
     manifest {
         attributes([
                 'Implementation-Title'  : project.name,
@@ -147,13 +150,15 @@ afterEvaluate {
         }
         copy {
             from fatJar
-            into modsDestinationDir
+            into baniraDistributionDirectory
             rename { "${mod_id}-${modsJarVersion}-all.jar" }
         }
     }
     tasks.named('jarAll').configure { dependsOn fatTask }
     tasks.named('assemble').configure { dependsOn fatTask }
 }
+
+apply from: 'gradle/aui-validation-publication.gradle'
 
 // Keeps the development client FPS counter enabled without affecting published artifacts.
 def baniraDevFpsDefaultSettingsKey = 'extra_settings'

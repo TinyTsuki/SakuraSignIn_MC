@@ -1,0 +1,53 @@
+import org.gradle.api.tasks.bundling.AbstractArchiveTask
+
+def isNeoFormArchive = { archive ->
+    Class type = archive.class
+    while (type != null) {
+        if (type.name == 'net.neoforged.gradle.neoform.runtime.tasks.PackJar') return true
+        type = type.superclass
+    }
+    return false
+}
+
+def requestedRoot = providers.gradleProperty('banira.validationOutputRoot').orNull
+def validationRoot = null
+if (requestedRoot != null) {
+    def requestedFile = new File(requestedRoot)
+    if (!requestedFile.isAbsolute()) {
+        throw new GradleException('banira.validationOutputRoot must be absolute')
+    }
+    validationRoot = requestedFile.canonicalFile
+    def segments = validationRoot.path.replace('\\', '/').split('/')
+    if (segments.any { it.equalsIgnoreCase('builds') }
+            || validationRoot.parentFile == null || validationRoot == projectDir.canonicalFile) {
+        throw new GradleException('Unsafe validation output root')
+    }
+}
+
+ext.baniraDistributionDirectory = validationRoot ?: file("builds/${mod_version}")
+
+if (validationRoot != null) {
+    gradle.projectsEvaluated {
+        tasks.withType(AbstractArchiveTask).configureEach {
+            if (!isNeoFormArchive(it)) destinationDirectory.set(validationRoot)
+        }
+    }
+    gradle.taskGraph.whenReady { graph ->
+        graph.allTasks.findAll { it instanceof AbstractArchiveTask }.each { archive ->
+            def target = archive.archiveFile.get().asFile.canonicalFile
+            // NeoForm owns this tool intermediate via getOutput(), not destinationDirectory.
+            def root = isNeoFormArchive(archive)
+                    ? layout.buildDirectory.dir('neoForm').get().asFile.canonicalFile : validationRoot
+            if (!target.toPath().startsWith(root.toPath())) {
+                throw new GradleException("Archive escaped validation output root: ${archive.path}")
+            }
+        }
+        publishing.publications.each { publication ->
+            publication.artifacts.each { artifact ->
+                if (!artifact.file.canonicalFile.toPath().startsWith(validationRoot.toPath())) {
+                    throw new GradleException("Publication escaped validation output root: ${publication.name}")
+                }
+            }
+        }
+    }
+}

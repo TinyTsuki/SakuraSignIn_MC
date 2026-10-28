@@ -1,6 +1,8 @@
 package xin.vanilla.sakura.screen;
 
-/** 左侧规则列表使用普通内容边界，不允许空白区域过度滚动。 */
+/**
+ * 左侧规则列表使用普通内容边界，不允许空白区域过度滚动。
+ */
 final class RewardRuleListViewport {
     private RewardRuleListViewport() {
     }

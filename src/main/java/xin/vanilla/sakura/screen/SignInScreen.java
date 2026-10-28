@@ -1,36 +1,39 @@
 package xin.vanilla.sakura.screen;
 
-import xin.vanilla.sakura.data.time.SakuraClock;
-
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
-import xin.vanilla.banira.client.data.FontDrawArgs;
-import xin.vanilla.banira.client.data.ScreenCoordinate;
-import xin.vanilla.banira.client.data.ShapeDrawArgs;
+import xin.vanilla.banira.api.client.theme.BaniraThemes;
+import xin.vanilla.banira.api.client.ui.*;
+import xin.vanilla.banira.client.data.*;
 import xin.vanilla.banira.client.enums.EnumAlignment;
 import xin.vanilla.banira.client.gui.BaniraScreen;
-import xin.vanilla.banira.api.client.theme.BaniraThemes;
 import xin.vanilla.banira.client.gui.ConfirmDialogScreen;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.widget.BaseShapeWidget;
 import xin.vanilla.banira.client.gui.widget.ButtonWidget;
 import xin.vanilla.banira.client.gui.widget.LabelWidget;
 import xin.vanilla.banira.client.gui.widget.TooltipWidget;
-import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.IEnumDescribable;
+import xin.vanilla.banira.common.util.DateUtils;
+import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.SakuraSignIn;
+import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.client.SakuraClientBootstrap;
 import xin.vanilla.sakura.client.SakuraClientState;
-import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.client.gui.RewardOperationWidget;
+import xin.vanilla.sakura.client.theme.SakuraThemeTextures;
+import xin.vanilla.sakura.client.theme.ThemeTexture;
+import xin.vanilla.sakura.client.ui.SakuraUiPages;
+import xin.vanilla.sakura.client.ui.SignInUiSession;
 import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.data.IPlayerSignInData;
+import xin.vanilla.sakura.data.time.SakuraClock;
 import xin.vanilla.sakura.enums.ESignInStatus;
 import xin.vanilla.sakura.enums.ESignInType;
 import xin.vanilla.sakura.event.ClientEventHandler;
@@ -42,34 +45,16 @@ import xin.vanilla.sakura.reward.RewardList;
 import xin.vanilla.sakura.reward.RewardManager;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
-import xin.vanilla.sakura.SakuraComponent;
-import xin.vanilla.banira.common.util.DateUtils;
-import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.sakura.util.GLFWKeyHelper;
-import xin.vanilla.banira.common.util.StringUtils;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-import static xin.vanilla.sakura.screen.SignInScreen.OperationButtonType.DOWN_ARROW;
-import static xin.vanilla.sakura.screen.SignInScreen.OperationButtonType.INFO;
-import static xin.vanilla.sakura.screen.SignInScreen.OperationButtonType.LEFT_ARROW;
-import static xin.vanilla.sakura.screen.SignInScreen.OperationButtonType.RIGHT_ARROW;
-import static xin.vanilla.sakura.screen.SignInScreen.OperationButtonType.THEME_CHAOS_BUTTON;
-import static xin.vanilla.sakura.screen.SignInScreen.OperationButtonType.THEME_CLOVER_BUTTON;
-import static xin.vanilla.sakura.screen.SignInScreen.OperationButtonType.THEME_MAPLE_BUTTON;
-import static xin.vanilla.sakura.screen.SignInScreen.OperationButtonType.THEME_ORIGINAL_BUTTON;
-import static xin.vanilla.sakura.screen.SignInScreen.OperationButtonType.THEME_SAKURA_BUTTON;
-import static xin.vanilla.sakura.screen.SignInScreen.OperationButtonType.UP_ARROW;
+import static xin.vanilla.sakura.screen.SignInScreen.OperationButtonType.*;
 
 /**
  * 签到日历主界面。Sakura 只保留主题与签到业务，交互生命周期由 Banira 管理。
  */
-public final class SignInScreen extends BaniraScreen {
+public final class SignInScreen extends BaniraScreen implements UiPageSource {
     public static int lastOffset = 6;
     public static int nextOffset = 6;
 
@@ -88,6 +73,176 @@ public final class SignInScreen extends BaniraScreen {
     private int bgWidth;
     private int bgX;
     private int bgY;
+    private SignInUiSession pageSession;
+    private Object uiConnection;
+    private long localRevision;
+
+    @Override
+    public String uiSurfaceId() {
+        return SakuraSignIn.MODID + ":signin";
+    }
+
+    @Override
+    public UiPageSession pageSession() {
+        if (pageSession == null) {
+            uiConnection = Minecraft.getInstance().getConnection();
+            pageSession = new SignInUiSession(new SignInUiSession.Port() {
+                public long revision() {
+                    return localRevision + SakuraUiPages.signInRevision();
+                }
+
+                public void refresh() {
+                    refreshLayout();
+                }
+
+                public void reload() {
+                    ClientEventHandler.loadThemeTexture();
+                    refreshLayout();
+                }
+
+                public List<SignInUiSession.Cell> cells() {
+                    Date month = SakuraClientState.getCalendarCurrentDate();
+                    return xin.vanilla.sakura.client.ui.SignInCalendarGrid.complete(
+                            java.time.LocalDate.of(DateUtils.getYearPart(month), DateUtils.getMonthOfDate(month), 1),
+                            SakuraClientState.getThemeTextureCoordinate().getWeekStart(),
+                            signInCells.stream().map(cell -> new SignInUiSession.Cell(
+                            cell.getYear() * 10000 + cell.getMonth() * 100 + cell.getDay(),
+                            SakuraComponent.get().literal(cell.isShowText() ? Integer.toString(cell.getDay()) : "")
+                                    .underlined(cell.getYear() * 10000 + cell.getMonth() * 100 + cell.getDay() == DateUtils.toDateInt(SakuraClock.clientNow())),
+                            cell.uiTooltip(), cell.uiStatusIcon())).toList());
+                }
+
+                public Component title() {
+                    Date date = SakuraClientState.getCalendarCurrentDate();
+                    return SakuraComponent.get().literal(DateUtils.toLocalStringYear(date, Minecraft.getInstance().options.languageCode)
+                            + " " + DateUtils.toLocalStringMonth(date, Minecraft.getInstance().options.languageCode));
+                }
+
+                public Component info() {
+                    LocalPlayer player = Minecraft.getInstance().player;
+                    if (player == null) return SakuraComponent.get().literal("");
+                    IPlayerSignInData data = SakuraPlayerData.get(player);
+                    return SakuraComponent.get().transClient("format", "sign_in_info", data.getSignInCard(),
+                            data.getContinuousSignInDays(), data.getTotalSignInDays());
+                }
+
+                public List<Component> statistics() {
+                    if (Minecraft.getInstance().player == null)
+                        return List.of(SakuraComponent.get().literal(""), SakuraComponent.get().literal(""), SakuraComponent.get().literal(""));
+                    IPlayerSignInData data = SakuraPlayerData.get(Minecraft.getInstance().player);
+                    return List.of(SakuraComponent.get().literal(String.valueOf(data.getSignInCard())),
+                            SakuraComponent.get().literal(String.valueOf(data.getContinuousSignInDays())),
+                            SakuraComponent.get().literal(String.valueOf(data.getTotalSignInDays())));
+                }
+
+                public int today() {
+                    return DateUtils.toDateInt(SakuraClock.clientNow());
+                }
+
+                private SignInCell cell(int date) {
+                    return signInCells.stream().filter(value -> value.getYear() * 10000 + value.getMonth() * 100 + value.getDay() == date).findFirst().orElse(null);
+                }
+
+                public Component status(int date) {
+                    SignInCell cell = cell(date);
+                    return cell == null ? SakuraComponent.get().literal("") : ESignInStatus.valueOf(cell.getStatus()).enumDescription();
+                }
+
+                public boolean detailsVisible(int date) {
+                    SignInCell cell = cell(date);
+                    return cell != null && cell.uiDetailsVisible();
+                }
+
+                public long detailRevision() {
+                    LocalPlayer player = Minecraft.getInstance().player;
+                    if (player == null) return -1;
+                    return (player.hasPermissions(CommonConfig.get().permission().permissionRewardDetail()) ? 1 : 0)
+                            | (player.hasPermissions(CommonConfig.get().permission().permissionRewardProbability()) ? 2 : 0);
+                }
+
+                public List<SignInUiSession.RewardLine> rewards(int date) {
+                    SignInCell cell = cell(date);
+                    return cell == null ? List.of() : cell.uiRewardLines();
+                }
+
+                public List<Component> weekdays() {
+                    TextureCoordinate texture = SakuraClientState.getThemeTextureCoordinate();
+                    List<Component> result = new ArrayList<>();
+                    for (int index = 0; index < 7; index++) {
+                        int day = Math.floorMod(texture.getWeekStart() - 1 + index, 7) + 1;
+                        String name = DateUtils.toLocalStringWeek(DateUtils.getDate(2024, 1, day), Minecraft.getInstance().options.languageCode);
+                        result.add(SakuraComponent.get().literal(name));
+                    }
+                    return result;
+                }
+
+                public Component tips() {
+                    return SakuraComponent.get().transClient("word", "sign_in_screen_tips");
+                }
+
+                public boolean openingTips() {
+                    return showOpeningTips;
+                }
+
+                public void dismissTips(boolean persist) {
+                    dismissOpeningTips(persist);
+                    localRevision++;
+                }
+
+                public void move(int months, int years) {
+                    Date current = SakuraClientState.getCalendarCurrentDate();
+                    changeCalendar(years == 0 ? DateUtils.addMonth(current, months) : DateUtils.addYear(current, years));
+                    localRevision++;
+                }
+
+                public void activate(int date) {
+                    LocalPlayer player = Minecraft.getInstance().player;
+                    if (player == null) return;
+                    signInCells.stream().filter(cell -> cell.getYear() * 10000 + cell.getMonth() * 100 + cell.getDay() == date)
+                            .findFirst().ifPresent(cell -> handleSignIn(GLFWKey.GLFW_MOUSE_BUTTON_LEFT, cell, player));
+                    localRevision++;
+                }
+
+                public void theme(int index, boolean special) {
+                    selectBuiltInTheme(OperationButtonType.fromCode(100 + index), special);
+                    localRevision++;
+                }
+
+                public Texture themeIcon(int index) {
+                    return SakuraUiPages.themeIcon(SakuraClientState.getThemeTexture(), SakuraClientState.getThemeTextureCoordinate(),
+                            index, SakuraClientState.getActiveThemeId().equals(OperationButtonType.fromCode(100 + index).themeId));
+                }
+
+                public boolean key(int code, boolean pressed) {
+                    return handlePageKey(code, pressed);
+                }
+            }, this::uiConnected);
+        }
+        return pageSession;
+    }
+
+    private boolean uiConnected() {
+        return uiConnection != null && uiConnection == Minecraft.getInstance().getConnection()
+                && Minecraft.getInstance().player != null;
+    }
+
+    @Override
+    public UiPageSpec uiPage() {
+        return SakuraUiPages.page("signin", this, pageSession());
+    }
+
+    @Override
+    protected void onRemoved() {
+        BaniraUi.screenRemoved(this);
+        super.onRemoved();
+    }
+
+    @Override
+    public void onClose() {
+        if (BaniraUi.closePage(this, UiCloseReason.USER_CLOSE)) return;
+        if (pageSession != null && pageSession.requestClose()) return;
+        super.onClose();
+    }
 
     @Getter
     enum OperationButtonType implements IEnumDescribable {
@@ -154,12 +309,12 @@ public final class SignInScreen extends BaniraScreen {
 
     private void updateLayoutMetrics() {
         TextureCoordinate texture = SakuraClientState.getThemeTextureCoordinate();
-        aspectRatio = texture.getBgUV().getUWidth() / texture.getBgUV().getVHeight();
+        aspectRatio = texture.getWidth() / (double) texture.getHeight();
         bgHeight = Math.max(height - 20, 120);
         bgWidth = (int) Math.max(bgHeight * aspectRatio, 100);
         bgX = (width - bgWidth) / 2;
         bgY = 0;
-        scale = bgHeight / texture.getBgUV().getVHeight();
+        scale = bgHeight / (double) texture.getHeight();
     }
 
     private void refreshLayout() {
@@ -184,23 +339,23 @@ public final class SignInScreen extends BaniraScreen {
     private void createOperationWidgets() {
         TextureCoordinate texture = SakuraClientState.getThemeTextureCoordinate();
         registerOperation(createTextureOperation(LEFT_ARROW, texture.getLeftArrowCoordinate(),
-                texture.getArrowUV(), texture.getArrowHoverUV(), texture.getArrowTapUV())
+                SakuraThemeTextures.get("button.arrow.normal"), SakuraThemeTextures.get("button.arrow.hover"), SakuraThemeTextures.get("button.arrow.pressed"))
                 .setFlipHorizontal(true)
                 .setTooltip(Text.trans(SakuraSignIn.MODID, "format.sakura_sign_in.use_s_key", "←")));
         registerOperation(createTextureOperation(RIGHT_ARROW, texture.getRightArrowCoordinate(),
-                texture.getArrowUV(), texture.getArrowHoverUV(), texture.getArrowTapUV())
+                SakuraThemeTextures.get("button.arrow.normal"), SakuraThemeTextures.get("button.arrow.hover"), SakuraThemeTextures.get("button.arrow.pressed"))
                 .setTooltip(Text.trans(SakuraSignIn.MODID, "format.sakura_sign_in.use_s_key", "→")));
         registerOperation(createTextureOperation(UP_ARROW, texture.getUpArrowCoordinate(),
-                texture.getArrowUV(), texture.getArrowHoverUV(), texture.getArrowTapUV())
+                SakuraThemeTextures.get("button.arrow.normal"), SakuraThemeTextures.get("button.arrow.hover"), SakuraThemeTextures.get("button.arrow.pressed"))
                 .setRotatedAngle(270)
                 .setTooltip(Text.trans(SakuraSignIn.MODID, "format.sakura_sign_in.use_s_key", "↑")));
         registerOperation(createTextureOperation(DOWN_ARROW, texture.getDownArrowCoordinate(),
-                texture.getArrowUV(), texture.getArrowHoverUV(), texture.getArrowTapUV())
+                SakuraThemeTextures.get("button.arrow.normal"), SakuraThemeTextures.get("button.arrow.hover"), SakuraThemeTextures.get("button.arrow.pressed"))
                 .setRotatedAngle(90)
                 .setFlipVertical(true)
                 .setTooltip(Text.trans(SakuraSignIn.MODID, "format.sakura_sign_in.use_s_key", "↓")));
         registerOperation(createTextureOperation(INFO, texture.getSignInInfoCoordinate(),
-                texture.getSignInInfoUV(), texture.getSignInInfoUV(), texture.getSignInInfoUV()));
+                SakuraThemeTextures.get("icon.info"), SakuraThemeTextures.get("icon.info"), SakuraThemeTextures.get("icon.info")));
 
         registerThemeOperation(THEME_ORIGINAL_BUTTON);
         registerThemeOperation(THEME_SAKURA_BUTTON);
@@ -210,19 +365,17 @@ public final class SignInScreen extends BaniraScreen {
         operationWidgets.get(THEME_CHAOS_BUTTON.code)
                 .setTremblingAmplitude(3.5)
                 .setTooltip(Text.trans(SakuraSignIn.MODID,
-                        "word.sakura_sign_in.click_to_change_theme")
+                                "word.sakura_sign_in.click_to_change_theme")
                         .align(EnumAlignment.CENTER));
     }
 
     private RewardOperationWidget createTextureOperation(OperationButtonType type, Coordinate bounds,
-                                                         Coordinate normal, Coordinate hover,
-                                                         Coordinate pressed) {
-        RewardOperationWidget widget = new RewardOperationWidget(this, type.code, SakuraClientState.getThemeTexture())
-                .setNormal(copyCoordinate(normal))
-                .setHover(copyCoordinate(hover))
-                .setPressed(copyCoordinate(pressed))
-                .setTextureWidth(SakuraClientState.getThemeTextureCoordinate().getTotalWidth())
-                .setTextureHeight(SakuraClientState.getThemeTextureCoordinate().getTotalHeight())
+                                                         ThemeTexture normal, ThemeTexture hover,
+                                                         ThemeTexture pressed) {
+        RewardOperationWidget widget = new RewardOperationWidget(this, type.code, normal)
+                .setNormal(normal)
+                .setHover(hover)
+                .setPressed(pressed)
                 .setTransparentCheck(true)
                 .setBounds(bounds, bgX, bgY, scale);
         widget.setReleaseHandler(event -> handleOperation(widget, event.button()));
@@ -232,7 +385,9 @@ public final class SignInScreen extends BaniraScreen {
     private void registerThemeOperation(OperationButtonType type) {
         TextureCoordinate texture = SakuraClientState.getThemeTextureCoordinate();
         RewardOperationWidget widget = createTextureOperation(type, texture.getThemeCoordinate(),
-                texture.getThemeUV(), texture.getThemeHoverUV(), texture.getThemeTapUV())
+                SakuraThemeTextures.get("selector." + type.themeId + ".normal"),
+                SakuraThemeTextures.get("selector." + type.themeId + ".hover"),
+                SakuraThemeTextures.get("selector." + type.themeId + ".pressed"))
                 .setTooltip(Text.trans(SakuraSignIn.MODID,
                         "word.sakura_sign_in.click_to_change_theme"));
         registerOperation(widget);
@@ -241,18 +396,6 @@ public final class SignInScreen extends BaniraScreen {
     private void registerOperation(RewardOperationWidget widget) {
         operationWidgets.put(widget.getOperation(), widget);
         addWidget(widget);
-    }
-
-    private static Coordinate copyCoordinate(Coordinate source) {
-        return new Coordinate()
-                .setX(source.getX()).setY(source.getY())
-                .setWidth(source.getWidth()).setHeight(source.getHeight())
-                .setU0(source.getU0()).setV0(source.getV0())
-                .setUWidth(source.getUWidth()).setVHeight(source.getVHeight());
-    }
-
-    private static Coordinate offsetU(Coordinate source, double offset) {
-        return copyCoordinate(source).setU0(source.getU0() + offset);
     }
 
     private void createOpeningTipButtons() {
@@ -510,6 +653,8 @@ public final class SignInScreen extends BaniraScreen {
                     "word", "not_enough_sign_in_card"), SakuraNotificationTypes.SIGN_IN);
             return;
         }
+        Object connection = Minecraft.getInstance().getConnection();
+        java.util.concurrent.atomic.AtomicBoolean confirmed = new java.util.concurrent.atomic.AtomicBoolean();
         Minecraft.getInstance().setScreen(new ConfirmDialogScreen(
                 new ConfirmDialogScreen.Args()
                         .parentScreen(this)
@@ -517,6 +662,9 @@ public final class SignInScreen extends BaniraScreen {
                         .message(SakuraComponent.get().transClient("format", "confirm_make_up_sign_in",
                                 DateUtils.toString(cellDate)))
                         .onConfirm(() -> {
+                            if (connection == null || connection != Minecraft.getInstance().getConnection()
+                                    || player != Minecraft.getInstance().player || !confirmed.compareAndSet(false, true))
+                                return;
                             cell.setStatus(ClientConfig.get().display().autoRewarded()
                                     ? ESignInStatus.REWARDED.getCode()
                                     : ESignInStatus.SIGNED_IN.getCode());
@@ -549,14 +697,7 @@ public final class SignInScreen extends BaniraScreen {
     private void renderBackgroundTexture(PoseStack stack) {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        RenderSystem.setShaderTexture(0, SakuraClientState.getThemeTexture());
-        Coordinate uv = SakuraClientState.getThemeTextureCoordinate().getBgUV();
-        AbstractGuiUtils.blit(stack, SakuraClientState.getThemeTexture(),
-                bgX, bgY, bgWidth, bgHeight,
-                (float) uv.getU0(), (float) uv.getV0(),
-                (int) uv.getUWidth(), (int) uv.getVHeight(),
-                SakuraClientState.getThemeTextureCoordinate().getTotalWidth(),
-                SakuraClientState.getThemeTextureCoordinate().getTotalHeight());
+        SakuraThemeTextures.get("background.calendar").draw(stack, bgX, bgY, bgWidth, bgHeight);
         RenderSystem.disableBlend();
     }
 
@@ -616,13 +757,11 @@ public final class SignInScreen extends BaniraScreen {
                 continue;
             }
             int index = type.code - THEME_ORIGINAL_BUTTON.code;
-            double uOffset = index * texture.getThemeUV().getUWidth();
             boolean selected = SakuraClientState.getActiveThemeId().equals(type.themeId);
-            Coordinate normal = selected ? texture.getThemeTapUV() : texture.getThemeUV();
-            Coordinate hover = selected ? texture.getThemeTapUV() : texture.getThemeHoverUV();
-            widget.setNormal(offsetU(normal, uOffset))
-                    .setHover(offsetU(hover, uOffset))
-                    .setPressed(offsetU(texture.getThemeTapUV(), uOffset))
+            String prefix = "selector." + type.themeId;
+            widget.setNormal(SakuraThemeTextures.get(prefix + (selected ? ".pressed" : ".normal")))
+                    .setHover(SakuraThemeTextures.get(prefix + (selected ? ".pressed" : ".hover")))
+                    .setPressed(SakuraThemeTextures.get(prefix + ".pressed"))
                     .setBounds(new Coordinate()
                                     .setX(index * (texture.getThemeCoordinate().getWidth()
                                             + texture.getThemeHMargin()) + texture.getThemeCoordinate().getX())
@@ -706,9 +845,9 @@ public final class SignInScreen extends BaniraScreen {
                         && !inputState.isCtrlPressing()
                         && !inputState.isAltPressing()) {
                     TooltipWidget.drawPopupMessage(stack, FontDrawArgs.ofPopo(
-                            Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.how_to_sign_in")
-                                    .stack(stack).font(font).align(EnumAlignment.CENTER)
-                    ).x(inputState.mouseX()).y(inputState.mouseY()),
+                                    Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.how_to_sign_in")
+                                            .stack(stack).font(font).align(EnumAlignment.CENTER)
+                            ).x(inputState.mouseX()).y(inputState.mouseY()),
                             getEffectiveTheme(), season());
                 } else {
                     cell.renderTooltip(graphics, font);
@@ -723,7 +862,11 @@ public final class SignInScreen extends BaniraScreen {
 
     @Override
     protected void onKeyPressed(KeyPressedHandleArgs eventArgs) {
-        int keyCode = eventArgs.keyCode();
+        if (handlePageKey(eventArgs.keyCode(), true)) eventArgs.consumed(true);
+    }
+
+    private boolean handlePageKey(int keyCode, boolean pressed) {
+        if (!pressed) return handleCalendarKey(keyCode);
         if (keyCode == GLFWKey.GLFW_KEY_ESCAPE
                 || keyCode == SakuraClientBootstrap.getSignInKey().currentKey()
                 || keyCode == Minecraft.getInstance().options.keyInventory.getKey().getValue()) {
@@ -732,13 +875,18 @@ public final class SignInScreen extends BaniraScreen {
             } else {
                 onClose();
             }
-            eventArgs.consumed(true);
+            localRevision++;
+            return true;
         }
+        return false;
     }
 
     @Override
     protected void onKeyReleased(KeyReleasedHandleArgs eventArgs) {
-        int keyCode = eventArgs.keyCode();
+        if (handlePageKey(eventArgs.keyCode(), false)) eventArgs.consumed(true);
+    }
+
+    private boolean handleCalendarKey(int keyCode) {
         if (matchesKey(ClientConfig.get().signKeys().lastMonth(), keyCode)) {
             changeCalendar(DateUtils.addMonth(SakuraClientState.getCalendarCurrentDate(), -1));
         } else if (matchesKey(ClientConfig.get().signKeys().nextMonth(), keyCode)) {
@@ -748,9 +896,10 @@ public final class SignInScreen extends BaniraScreen {
         } else if (matchesKey(ClientConfig.get().signKeys().nextYear(), keyCode)) {
             changeCalendar(DateUtils.addYear(SakuraClientState.getCalendarCurrentDate(), 1));
         } else {
-            return;
+            return false;
         }
-        eventArgs.consumed(true);
+        localRevision++;
+        return true;
     }
 
     private boolean matchesKey(List<String> bindings, int keyCode) {

@@ -6,9 +6,8 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import com.mojang.blaze3d.platform.NativeImage;
-import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.client.data.FontDrawArgs;
+import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.component.Text;
@@ -16,11 +15,8 @@ import xin.vanilla.banira.client.gui.event.MouseDragEvent;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.widget.BaseWidget;
 import xin.vanilla.banira.client.gui.widget.TooltipWidget;
-import xin.vanilla.sakura.screen.coordinate.Coordinate;
-import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
-import xin.vanilla.banira.client.data.GLFWKey;
-import xin.vanilla.banira.client.util.TextureUtils;
+import xin.vanilla.sakura.screen.coordinate.Coordinate;
 
 import java.util.function.Consumer;
 
@@ -33,17 +29,11 @@ public final class RewardOperationWidget extends BaseWidget {
     private final int operation;
     private final Consumer<RenderContext> renderer;
     @Setter
-    private ResourceLocation texture;
+    private xin.vanilla.sakura.client.theme.ThemeTexture normal;
     @Setter
-    private Coordinate normal;
+    private xin.vanilla.sakura.client.theme.ThemeTexture hover;
     @Setter
-    private Coordinate hover;
-    @Setter
-    private Coordinate pressed;
-    @Setter
-    private int textureWidth;
-    @Setter
-    private int textureHeight;
+    private xin.vanilla.sakura.client.theme.ThemeTexture pressed;
     @Setter
     private boolean flipHorizontal;
     @Setter
@@ -83,9 +73,9 @@ public final class RewardOperationWidget extends BaseWidget {
         this.renderer = renderer;
     }
 
-    public RewardOperationWidget(BaniraScreen screen, int operation, ResourceLocation texture) {
+    public RewardOperationWidget(BaniraScreen screen, int operation, xin.vanilla.sakura.client.theme.ThemeTexture texture) {
         this(screen, operation, (Consumer<RenderContext>) null);
-        this.texture = texture;
+        this.normal = texture;
     }
 
     public boolean hovered() {
@@ -148,24 +138,19 @@ public final class RewardOperationWidget extends BaseWidget {
             renderer.accept(new RenderContext(graphics, this));
             return;
         }
-        if (texture == null || normal == null) {
+        if (normal == null) {
             return;
         }
 
-        Coordinate uv = mousePressed && pressed != null ? pressed : mouseInside && hover != null ? hover : normal;
+        xin.vanilla.sakura.client.theme.ThemeTexture texture = mousePressed && pressed != null ? pressed : mouseInside && hover != null ? hover : normal;
         Coordinate coordinate = new Coordinate()
                 .setX(realX()).setY(realY())
-                .setWidth(realWidth()).setHeight(realHeight())
-                .setU0(uv.getU0()).setV0(uv.getV0())
-                .setUWidth(uv.getUWidth()).setVHeight(uv.getVHeight());
-        TextureCoordinate textureCoordinate = new TextureCoordinate()
-                .setTotalWidth(textureWidth)
-                .setTotalHeight(textureHeight);
+                .setWidth(realWidth()).setHeight(realHeight());
         if (mouseInside && tremblingAmplitude > 0) {
-            TextureAnimationRenderer.drawTrembling(stack, texture, textureCoordinate,
+            TextureAnimationRenderer.drawTrembling(stack, texture,
                     coordinate, tremblingAmplitude);
         } else {
-            TextureAnimationRenderer.drawRotated(stack, texture, textureCoordinate,
+            TextureAnimationRenderer.drawRotated(stack, texture,
                     coordinate, rotatedAngle, flipHorizontal, flipVertical);
         }
 
@@ -194,21 +179,16 @@ public final class RewardOperationWidget extends BaseWidget {
                 || mouseY >= clipBounds.y() + clipBounds.height())) {
             return false;
         }
-        if (!super.isMouseInside(mouseX, mouseY) || !transparentCheck || texture == null) {
+        if (!super.isMouseInside(mouseX, mouseY) || !transparentCheck || normal == null) {
             return super.isMouseInside(mouseX, mouseY);
         }
-        Coordinate uv = hover != null ? hover : normal;
-        if (uv == null || realWidth() <= 0 || realHeight() <= 0) {
+        xin.vanilla.sakura.client.theme.ThemeTexture texture = hover != null ? hover : normal;
+        if (realWidth() <= 0 || realHeight() <= 0) {
             return true;
         }
-        int textureX = (int) (uv.getU0() + (mouseX - realX()) * uv.getUWidth() / realWidth());
-        int textureY = (int) (uv.getV0() + (mouseY - realY()) * uv.getVHeight() / realHeight());
-        NativeImage image = TextureUtils.getTextureImage(texture);
-        if (image == null || textureX < 0 || textureY < 0
-                || textureX >= image.getWidth() || textureY >= image.getHeight()) {
-            return true;
-        }
-        return ((image.getPixelRGBA(textureX, textureY) >>> 24) & 0xFF) > 0;
+        int textureX = (int) ((mouseX - realX()) * texture.width() / realWidth());
+        int textureY = (int) ((mouseY - realY()) * texture.height() / realHeight());
+        return texture.opaqueAt(textureX, textureY);
     }
 
     @Override

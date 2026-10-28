@@ -1,0 +1,19 @@
+def output = providers.gradleProperty('banira.validationOutputRoot').orNull
+if (output != null) {
+    def local = System.getProperty('maven.repo.local')
+    if (local == null || !new File(local).isAbsolute()
+            || new File(local).canonicalPath.replace('\\', '/').split('/').any { it.equalsIgnoreCase('builds') }) {
+        throw new GradleException('Validation publication requires an isolated absolute Maven root')
+    }
+    publishing {
+        publications {
+            auiValidation(MavenPublication) {
+                groupId = mod_group_id
+                artifactId = mod_id
+                version = "${loader_type}-${minecraft_version}-${mod_version}"
+                artifact(tasks.named('jar'))
+                artifact(tasks.named('sourcesJar'))
+            }
+        }
+    }
+}
