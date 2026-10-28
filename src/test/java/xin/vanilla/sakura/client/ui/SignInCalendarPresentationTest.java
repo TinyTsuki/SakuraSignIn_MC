@@ -84,4 +84,31 @@ public class SignInCalendarPresentationTest {
         assertEquals(true,view.enabled.get("day0"));view.actions.get("day0").run();
         assertEquals(List.of(20260927),port.requests);
     }
+
+    @Test
+    public void themeIconsHaveNoButtonBackgroundOrFrame() throws Exception {
+        String css = new String(UiBoundaryChecks.ownResources("sakura_sign_in").get("signin.css"), StandardCharsets.UTF_8);
+        int start = css.indexOf(".themes button{");
+        assertTrue(start >= 0);
+        String button = css.substring(start, css.indexOf('}', start));
+        assertTrue(button.contains("border:0"));
+        assertTrue(button.contains("background:transparent"));
+        assertTrue(button.contains("width:18px"));
+        assertTrue(button.contains("height:18px"));
+    }
+
+    @Test
+    public void themeStyleOverridesSharedHoverWithoutChangingTheActions() throws Exception {
+        String html = new String(UiBoundaryChecks.ownResources("sakura_sign_in").get("signin.html"), StandardCharsets.UTF_8);
+        assertTrue(html.indexOf("shared.css") < html.indexOf("signin.css"));
+        var port = new SignInUiParityTest.Port();
+        var view = new RecordingUiView();
+        new SignInUiSession(port, () -> true).bind(view);
+        for (int index = 0; index < 5; index++) {
+            assertNotNull(view.icons.get("theme" + index));
+            view.actions.get("theme" + index).run();
+            assertEquals(index, port.selectedTheme);
+        }
+        assertEquals(5, port.themes);
+    }
 }
