@@ -53,7 +53,17 @@ public class RewardEditorLayoutTest {
     public void searchSharesTheSectionTitleRow() throws Exception {
         Element root = document();
         assertSame(id(root, "section").getParentNode(), id(root, "search").getParentNode().getParentNode());
-        assertTrue(rule(".rewards-page .search").get("flex").contains("1"));
+        var search = rule(".rewards-page .search");
+        assertEquals("1", search.get("flex-grow"));
+        assertEquals("0", search.get("flex-basis"));
+        assertEquals("0", search.get("width"));
+    }
+
+    @Test
+    public void searchInputUsesRemainingWidthInsteadOfItsPercentageIntrinsicSize() throws Exception {
+        var input = rule("#search");
+        assertEquals("1", input.get("flex"));
+        assertEquals("0", input.get("width"));
     }
 
     @Test

@@ -207,7 +207,7 @@ public class ApprovedRewardEditorTest {
         String css = Files.readString(Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in/rewards.css"), StandardCharsets.UTF_8);
         String layout = css.replace(".rewards-page{font-family:sans-serif}", "").trim();
         byte[] digest = java.security.MessageDigest.getInstance("SHA-256").digest(layout.getBytes(StandardCharsets.UTF_8));
-        assertEquals("4FF874CBFF0761EFF41F1F634332181B725BB9602722D0B2C180489A0D8A704E", java.util.HexFormat.of().withUpperCase().formatHex(digest));
+        assertEquals("AEA4E5E015BF263E55E96B9DBED7E83EE0BA52CE8EB165473FB4F4BE229682E2", java.util.HexFormat.of().withUpperCase().formatHex(digest));
     }
 
     @Test
