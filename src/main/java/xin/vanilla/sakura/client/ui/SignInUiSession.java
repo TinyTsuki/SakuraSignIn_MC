@@ -13,7 +13,10 @@ import java.util.Objects;
 import java.util.function.BooleanSupplier;
 
 public final class SignInUiSession implements UiPageSession {
-    public record Cell(int date, Component day, Component tooltip, Texture icon) {
+    public record Cell(int date, Component day, Component tooltip, Texture icon, boolean currentMonth, boolean actionable) {
+        public Cell(int date, Component day, Component tooltip, Texture icon) {
+            this(date, day, tooltip, icon, true, true);
+        }
     }
 
     public record RewardLine(Component name, Component probability, UiGameElement icon) {
@@ -159,15 +162,15 @@ public final class SignInUiSession implements UiPageSession {
             }));
             next.tooltip("theme" + index, tr("click_to_change_theme"));
         }
-        for (int index = 0; index < 40; index++) {
+        for (int index = 0; index < 42; index++) {
             int position = index;
             bindings.add(next.onPointer("day" + index, pointer -> {
                 if (pointer.kind() == UiPointer.Kind.MOVE && live(next, token) && !port.openingTips()
-                        && position < cells.size() && cells.get(position).date() != selectedDate
+                        && position < cells.size() && cells.get(position).actionable() && cells.get(position).date() != selectedDate
                         && inside(next, "day" + position, pointer)) select(cells.get(position));
             }));
             bindings.add(next.onAction("day" + index, () -> {
-                if (!live(next, token) || port.openingTips() || position >= cells.size()) return;
+                if (!live(next, token) || port.openingTips() || position >= cells.size() || !cells.get(position).actionable()) return;
                 Cell selected = cells.get(position);
                 select(selected);
                 port.activate(selected.date());
@@ -218,7 +221,7 @@ public final class SignInUiSession implements UiPageSession {
         revision = next;
         detailRevision = port.detailRevision();
         cells = List.copyOf(port.cells());
-        if (cells.size() > 40) throw new IllegalArgumentException("Calendar cell budget");
+        if (cells.size() > 42) throw new IllegalArgumentException("Calendar cell budget");
         view.gameElement("brand", SakuraUiPages.moduleIcon());
         for (String name : List.of("not_signed", "unclaimed", "claimed")) {
             view.gameElement("legend_" + name, UiGameElement.sprite(xin.vanilla.sakura.client.theme.SakuraThemeTextures.status(
@@ -243,15 +246,20 @@ public final class SignInUiSession implements UiPageSession {
             view.gameElement("theme" + index, UiGameElement.sprite(port.themeIcon(index)));
             view.enabled("theme" + index, connection.getAsBoolean() && !port.openingTips());
         }
-        for (int index = 0; index < 40; index++) {
+        for (int index = 0; index < 42; index++) {
             Cell cell = index < cells.size() ? cells.get(index) : null;
-            text("day" + index, cell == null ? SakuraComponent.get().literal("") : cell.day());
+            for (String kind : List.of("current", "adjacent")) {
+                String id = "day" + index + "_" + kind;
+                text(id, cell == null ? empty() : cell.day());
+                view.enabled(id, cell != null && cell.currentMonth() == kind.equals("current"));
+            }
             view.gameElement("status" + index, cell == null || cell.icon() == null ? null : UiGameElement.sprite(cell.icon()));
-            view.enabled("day" + index, cell != null && !port.openingTips() && connection.getAsBoolean());
+            view.enabled("day" + index, cell != null && cell.actionable() && !port.openingTips() && connection.getAsBoolean());
             view.tooltip("day" + index, empty());
         }
         Cell selection = cells.stream().filter(cell -> cell.date() == selectedDate).findFirst()
-                .orElseGet(() -> cells.stream().filter(cell -> cell.date() == port.today()).findFirst().orElse(cells.isEmpty() ? null : cells.get(0)));
+                .orElseGet(() -> cells.stream().filter(cell -> cell.date() == port.today()).findFirst()
+                        .orElseGet(() -> cells.stream().filter(Cell::currentMonth).findFirst().orElse(cells.isEmpty() ? null : cells.get(0))));
         if (selection == null) {
             selectedDate = 0;
             renderDetails(null);

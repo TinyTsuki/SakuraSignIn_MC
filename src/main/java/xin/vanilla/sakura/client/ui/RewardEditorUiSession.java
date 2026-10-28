@@ -308,7 +308,7 @@ public final class RewardEditorUiSession implements UiPageSession {
         boolean covered = blocked || moreOpen;
         for (Action action : Action.values()) {
             boolean menu = switch (action) {
-                case CUT, MOVE, SORT, MERGE, CLEAR, SIDEBAR -> true;
+                case CUT, MOVE, SORT, MERGE, CLEAR -> true;
                 default -> false;
             };
             boolean visible = menu ? moreOpen && !blocked : !covered || action == Action.UPLOAD

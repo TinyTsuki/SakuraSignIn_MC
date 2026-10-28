@@ -46,7 +46,14 @@ public class RewardEditorLayoutTest {
         assertSame(title.getParentNode().getParentNode(), help.getParentNode().getParentNode());
         assertSame(help.getParentNode(), id(root, "download").getParentNode());
         assertSame(help.getParentNode(), id(root, "close").getParentNode());
-        assertEquals("more_panel", ((Element) id(root, "sidebar").getParentNode()).getAttribute("id"));
+        assertEquals("reward-tools", ((Element) id(root, "sidebar").getParentNode()).getAttribute("class"));
+    }
+
+    @Test
+    public void searchSharesTheSectionTitleRow() throws Exception {
+        Element root = document();
+        assertSame(id(root, "section").getParentNode(), id(root, "search").getParentNode().getParentNode());
+        assertTrue(rule(".rewards-page .search").get("flex").contains("1"));
     }
 
     @Test

@@ -101,11 +101,15 @@ public final class SignInScreen extends BaniraScreen implements UiPageSource {
                 }
 
                 public List<SignInUiSession.Cell> cells() {
-                    return signInCells.stream().map(cell -> new SignInUiSession.Cell(
+                    Date month = SakuraClientState.getCalendarCurrentDate();
+                    return xin.vanilla.sakura.client.ui.SignInCalendarGrid.complete(
+                            java.time.LocalDate.of(DateUtils.getYearPart(month), DateUtils.getMonthOfDate(month), 1),
+                            SakuraClientState.getThemeTextureCoordinate().getWeekStart(),
+                            signInCells.stream().map(cell -> new SignInUiSession.Cell(
                             cell.getYear() * 10000 + cell.getMonth() * 100 + cell.getDay(),
                             SakuraComponent.get().literal(cell.isShowText() ? Integer.toString(cell.getDay()) : "")
                                     .underlined(cell.getYear() * 10000 + cell.getMonth() * 100 + cell.getDay() == DateUtils.toDateInt(SakuraClock.clientNow())),
-                            cell.uiTooltip(), cell.uiStatusIcon())).toList();
+                            cell.uiTooltip(), cell.uiStatusIcon())).toList());
                 }
 
                 public Component title() {

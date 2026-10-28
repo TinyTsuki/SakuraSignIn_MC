@@ -203,11 +203,11 @@ public class ApprovedRewardEditorTest {
     }
 
     @Test
-    public void fontRepairPreservesTheApprovedLayoutStylesExactly() throws Exception {
+    public void approvedToolbarLayoutStylesRemainStable() throws Exception {
         String css = Files.readString(Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in/rewards.css"), StandardCharsets.UTF_8);
         String layout = css.replace(".rewards-page{font-family:sans-serif}", "").trim();
         byte[] digest = java.security.MessageDigest.getInstance("SHA-256").digest(layout.getBytes(StandardCharsets.UTF_8));
-        assertEquals("C2C03C93919E39B474A7ABEF60DDA05788CFE812B4318AEDF23898DFFF808237", java.util.HexFormat.of().withUpperCase().formatHex(digest));
+        assertEquals("5638B26BF960A1DF07D5363C07BF990BCB3A37A3453C4AF4C97D802F53D7579A", java.util.HexFormat.of().withUpperCase().formatHex(digest));
     }
 
     @Test
