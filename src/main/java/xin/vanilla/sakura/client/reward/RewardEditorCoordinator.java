@@ -1,9 +1,9 @@
 package xin.vanilla.sakura.client.reward;
 
 import net.minecraft.client.Minecraft;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import com.mojang.blaze3d.vertex.PoseStack;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.sakura.api.reward.RewardTypeId;
 import xin.vanilla.sakura.api.reward.client.RewardClientExtension;
@@ -32,7 +32,7 @@ public final class RewardEditorCoordinator {
         if (registration == null || registration.getExtension().getEditor() == null) {
             return false;
         }
-        return openCreateResolved(parent, registration, onSubmit);
+        return openCreateResolved(parent, registration, connectedOnce(onSubmit));
     }
 
     public static boolean openEdit(Screen parent, Reward reward,
@@ -45,7 +45,7 @@ public final class RewardEditorCoordinator {
         if (registration == null || registration.getExtension().getEditor() == null) {
             return false;
         }
-        return openEditResolved(parent, registration, reward, onSubmit);
+        return openEditResolved(parent, registration, reward, connectedOnce(onSubmit));
     }
 
     public static boolean openProbability(Screen parent, Reward reward,
@@ -57,7 +57,7 @@ public final class RewardEditorCoordinator {
                 parent,
                 reward.getProbability(),
                 probability -> reward.clone().setProbability(probability),
-                onSubmit
+                connectedOnce(onSubmit)
         ));
         return true;
     }
@@ -68,6 +68,20 @@ public final class RewardEditorCoordinator {
     public static Screen deferred(Screen parent, Runnable continuation,
                                   java.util.function.BooleanSupplier shouldContinue) {
         return new DeferredScreen(parent, continuation, shouldContinue);
+    }
+
+    private static java.util.function.BooleanSupplier connectionGuard() {
+        Minecraft client = Minecraft.getInstance();
+        Object connection = client == null ? null : client.getConnection();
+        return () -> client == null || client.getConnection() == connection;
+    }
+
+    private static <T> Consumer<T> connectedOnce(Consumer<T> callback) {
+        java.util.function.BooleanSupplier connected = connectionGuard();
+        java.util.concurrent.atomic.AtomicBoolean submitted = new java.util.concurrent.atomic.AtomicBoolean();
+        return value -> {
+            if (connected.getAsBoolean() && submitted.compareAndSet(false, true)) callback.accept(value);
+        };
     }
 
     @SuppressWarnings("unchecked")
@@ -129,6 +143,8 @@ public final class RewardEditorCoordinator {
         @Nullable
         private T value;
         private boolean submitted;
+        private boolean advanced;
+        private final java.util.function.BooleanSupplier connected = connectionGuard();
 
         private ValueTransitionScreen(Screen parent, Consumer<T> continuation) {
             super(Component.empty());
@@ -139,25 +155,36 @@ public final class RewardEditorCoordinator {
         }
 
         private void submit(T value) {
+            if (advanced || submitted) return;
             this.value = value;
             this.submitted = true;
         }
 
         private void cancel() {
+            if (advanced) return;
             this.submitted = false;
         }
 
         @Override
         protected void initWidgets() {
+            if (advanced) return;
+            advanced = true;
+            if (!connected.getAsBoolean()) {
+                Minecraft.getInstance().setScreen(null);
+                return;
+            }
             if (submitted) {
+                submitted = false;
                 continuation.accept(value);
+                value = null;
             } else {
                 Minecraft.getInstance().setScreen(parent);
             }
         }
 
         @Override
-        protected void onRender(PoseStack stack, float partialTicks) {
+        protected void onRender(PoseStack graphics, float partialTicks) {
+        int mouseX = (int) inputState.mouseX(), mouseY = (int) inputState.mouseY();
         }
     }
 
@@ -165,6 +192,8 @@ public final class RewardEditorCoordinator {
         private final Screen parent;
         private final Runnable continuation;
         private final java.util.function.BooleanSupplier shouldContinue;
+        private boolean advanced;
+        private final java.util.function.BooleanSupplier connected = connectionGuard();
 
         private DeferredScreen(Screen parent, Runnable continuation,
                                java.util.function.BooleanSupplier shouldContinue) {
@@ -178,6 +207,12 @@ public final class RewardEditorCoordinator {
 
         @Override
         protected void initWidgets() {
+            if (advanced) return;
+            advanced = true;
+            if (!connected.getAsBoolean()) {
+                Minecraft.getInstance().setScreen(null);
+                return;
+            }
             if (shouldContinue.getAsBoolean()) {
                 continuation.run();
             } else {
@@ -186,7 +221,8 @@ public final class RewardEditorCoordinator {
         }
 
         @Override
-        protected void onRender(PoseStack stack, float partialTicks) {
+        protected void onRender(PoseStack graphics, float partialTicks) {
+        int mouseX = (int) inputState.mouseX(), mouseY = (int) inputState.mouseY();
         }
     }
 }

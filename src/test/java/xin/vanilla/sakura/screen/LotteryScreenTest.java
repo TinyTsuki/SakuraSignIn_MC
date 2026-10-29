@@ -16,6 +16,7 @@ public class LotteryScreenTest {
         LotteryPool pool = new LotteryPool("pool", "Pool", LotteryLimitPolicy.COOLDOWN, 1, 600, new RewardList());
         assertEquals(Arrays.asList("1"), LotteryScreen.drawCounts(pool));
     }
+
     @Test
     public void finitePoolOffersPresetCountsExactMaximumAndAll() {
         LotteryPool pool = new LotteryPool("pool", "Pool", LotteryLimitPolicy.WEEKLY,

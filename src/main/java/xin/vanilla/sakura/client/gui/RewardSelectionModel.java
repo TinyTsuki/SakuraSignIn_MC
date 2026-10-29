@@ -1,10 +1,6 @@
 package xin.vanilla.sakura.client.gui;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.List;
+import java.util.*;
 
 /**
  * 奖励编辑器的选择状态，提供普通、Ctrl 切换与 Shift 连续区间选择。

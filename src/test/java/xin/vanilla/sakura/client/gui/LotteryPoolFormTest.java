@@ -4,11 +4,15 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.server.Bootstrap;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import org.junit.*;
-import xin.vanilla.banira.client.gui.InputFormScreen;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
 import xin.vanilla.banira.api.BaniraCosts;
+import xin.vanilla.banira.client.gui.InputFormScreen;
 import xin.vanilla.banira.common.util.ItemUtils;
-import xin.vanilla.sakura.data.lottery.*;
+import xin.vanilla.sakura.data.lottery.LotteryLimitPolicy;
+import xin.vanilla.sakura.data.lottery.LotteryPool;
+import xin.vanilla.sakura.data.lottery.LotteryPools;
 import xin.vanilla.sakura.reward.RewardList;
 import xin.vanilla.sakura.test.BaniraTestPlatform;
 
@@ -18,15 +22,19 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.Assert.*;
 
 public class LotteryPoolFormTest {
-    @Rule public xin.vanilla.sakura.test.UnboundConfigPlatform platform = new xin.vanilla.sakura.test.UnboundConfigPlatform();
-    @BeforeClass public static void bootstrap() {
+    @Rule
+    public xin.vanilla.sakura.test.UnboundConfigPlatform platform = new xin.vanilla.sakura.test.UnboundConfigPlatform();
+
+    @BeforeClass
+    public static void bootstrap() {
         net.minecraft.SharedConstants.tryDetectVersion();
         Bootstrap.bootStrap();
         BaniraTestPlatform.install();
         BaniraTestPlatform.register("minecraft:paper", Items.PAPER);
     }
 
-    @Test public void metadataFieldsRetainBoundsAndNewlines() throws Exception {
+    @Test
+    public void metadataFieldsRetainBoundsAndNewlines() throws Exception {
         LotteryPool pool = pool();
         pool.setDescription("First\nSecond");
         pool.setVoucherExpression("xpPoints(2)");
@@ -42,7 +50,8 @@ public class LotteryPoolFormTest {
                 .value("voucherExpression", 0, "System.exit(0)").curName("voucherExpression")).isEmpty());
     }
 
-    @Test public void submitPreservesMetadataAndDoesNotUploadInvalidExpression() throws Exception {
+    @Test
+    public void submitPreservesMetadataAndDoesNotUploadInvalidExpression() throws Exception {
         LotteryPool pool = pool();
         pool.setDescription("One\nTwo");
         pool.setVoucherExpression("xpPoints(2)");
@@ -61,7 +70,8 @@ public class LotteryPoolFormTest {
         assertNull(submitted.get());
     }
 
-    @Test public void selectedItemsUseNativeSpecificationsAndExplicitMatchMode() {
+    @Test
+    public void selectedItemsUseNativeSpecificationsAndExplicitMatchMode() {
         ItemStack paper = new ItemStack(Items.PAPER, 12);
         paper.getOrCreateTag().putString("label", "A\"B\\C");
         String exact = LotteryVoucherExpressions.item(paper, 2, true);
@@ -72,7 +82,25 @@ public class LotteryPoolFormTest {
         assertEquals(2, BaniraCosts.parse(exact).resource().amount());
     }
 
-    @Test public void editingSyncedPoolCopyKeepsItsLockedIdValid() throws Exception {
+    @Test
+    public void validPoolSubmissionIsConsumedOnlyOnceAcrossSharedViews() throws Exception {
+        java.util.concurrent.atomic.AtomicInteger submissions = new java.util.concurrent.atomic.AtomicInteger();
+        Screen parent = new Screen(net.minecraft.network.chat.Component.empty()) {
+        };
+        Screen screen = LotteryPoolForm.create(parent, pool(), value -> submissions.incrementAndGet());
+        Field field = InputFormScreen.class.getDeclaredField("args");
+        field.setAccessible(true);
+        InputFormScreen.Args args = (InputFormScreen.Args) field.get(screen);
+        InputFormScreen.Results results = new InputFormScreen.Results();
+        int index = 0;
+        for (var widget : args.getWidgets()) results.value(widget.name(), index++, widget.defaultValue());
+        args.getCallback().accept(results);
+        args.getCallback().accept(results);
+        assertEquals(1, submissions.get());
+    }
+
+    @Test
+    public void editingSyncedPoolCopyKeepsItsLockedIdValid() throws Exception {
         xin.vanilla.sakura.config.reward.RewardConfig previous =
                 xin.vanilla.sakura.config.reward.RewardConfigManager.getRewardConfig();
         try {
@@ -95,15 +123,78 @@ public class LotteryPoolFormTest {
         }
     }
 
+    @Test
+    public void invalidIdRetainsDraftUntilCorrectedOnce() {
+        correctedForm("bad/id", "Daily", "id", "new-pool");
+    }
+
+    @Test
+    public void whitespaceNameRetainsDraftUntilCorrectedOnce() {
+        correctedForm("new-pool", " \t ", "name", "Daily");
+    }
+
+    @Test
+    public void idValidatorRejectsInvalidSyntaxAndLength() throws Exception {
+        InputFormScreen.Widget id = widget(form(null, new AtomicReference<>()), "id");
+        for (String value : java.util.List.of("bad/id", "BAD", "x".repeat(65))) {
+            assertFalse(id.validator().apply(new InputFormScreen.Results().value("id", 0, value).curName("id")).isEmpty());
+        }
+        assertEquals("", id.validator().apply(new InputFormScreen.Results().value("id", 0, "new.pool-1").curName("id")));
+    }
+
+    @Test
+    public void callbackReportsInvalidCandidateInsteadOfSilentSuccess() throws Exception {
+        AtomicReference<LotteryPool> submitted = new AtomicReference<>();
+        InputFormScreen.Args args = form(pool(), submitted);
+        InputFormScreen.Results result = defaults(args).value("name", 1, "   ");
+        args.getCallback().accept(result);
+        assertNull(submitted.get());
+        assertNotNull("Invalid candidate must report failure", result.runningResult());
+        assertFalse(result.runningResult().isBlank());
+        args.getCallback().accept(defaults(args));
+        assertNotNull(submitted.get());
+    }
+
+    private static void correctedForm(String id, String name, String field, String correction) {
+        java.util.concurrent.atomic.AtomicInteger submissions = new java.util.concurrent.atomic.AtomicInteger();
+        Screen parent = new Screen(net.minecraft.network.chat.Component.literal("parent")) {
+        };
+        InputFormScreen form = (InputFormScreen) LotteryPoolForm.create(parent, null, value -> submissions.incrementAndGet());
+        var session = form.uiSession();
+        session.draft("id", id);
+        session.draft("name", name);
+        assertFalse("Invalid input must prevent submission", session.canSubmit());
+        assertFalse(session.submit());
+        assertFalse(session.finished());
+        assertEquals(0, submissions.get());
+        assertEquals(field.equals("id") ? id : name, session.draft(field));
+        session.draft(field, correction);
+        assertTrue(session.submit());
+        assertEquals(1, submissions.get());
+        assertFalse(session.submit());
+        assertEquals(1, submissions.get());
+    }
+
+    private static InputFormScreen.Results defaults(InputFormScreen.Args args) {
+        InputFormScreen.Results result = new InputFormScreen.Results();
+        int index = 0;
+        for (InputFormScreen.Widget widget : args.getWidgets())
+            result.value(widget.name(), index++, widget.defaultValue());
+        return result;
+    }
+
     private static LotteryPool pool() {
         return new LotteryPool("daily", "Daily", LotteryLimitPolicy.DAILY, 1, 0, new RewardList());
     }
+
     private static InputFormScreen.Widget widget(InputFormScreen.Args args, String name) {
         return args.getWidgets().stream().filter(widget -> name.equals(widget.name())).findFirst()
                 .orElseThrow(() -> new AssertionError("Missing field " + name));
     }
+
     private static InputFormScreen.Args form(LotteryPool pool, AtomicReference<LotteryPool> submit) throws Exception {
-        Screen parent = new Screen(net.minecraft.network.chat.Component.literal("parent")) {};
+        Screen parent = new Screen(net.minecraft.network.chat.Component.literal("parent")) {
+        };
         Screen screen = LotteryPoolForm.create(parent, pool, submit::set);
         Field field = InputFormScreen.class.getDeclaredField("args");
         field.setAccessible(true);
