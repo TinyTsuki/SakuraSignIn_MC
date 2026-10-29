@@ -11,6 +11,7 @@ buildscript {
 plugins {
     id 'eclipse'
     id 'idea'
+    id 'maven-publish'
     id 'net.minecraftforge.gradle' version '[6.0.16,6.2)'
 }
 
@@ -27,6 +28,7 @@ base {
 
 java {
     toolchain.languageVersion = JavaLanguageVersion.of(javaVer)
+    withSourcesJar()
 }
 
 minecraft {
@@ -289,3 +291,7 @@ sourceSets.each {
 }
 
 apply from: 'gradle/config-view-processor.gradle'
+
+apply from: 'gradle/aui-validation-output.gradle'
+apply from: 'gradle/aui-validation-publication.gradle'
+apply from: 'gradle/aui-artifact-check.gradle'

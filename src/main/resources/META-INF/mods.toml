@@ -63,3 +63,10 @@ mandatory = true
 versionRange = "${banira_version_range}"
 ordering = "AFTER"
 side = "BOTH"
+
+[[dependencies."${mod_id}"]]
+modId = "apricityui"
+mandatory = false
+versionRange = "[1.0.0,)"
+ordering = "AFTER"
+side = "CLIENT"

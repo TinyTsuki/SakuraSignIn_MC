@@ -1,0 +1,55 @@
+import org.gradle.api.tasks.bundling.AbstractArchiveTask
+
+def requestedRoot = providers.gradleProperty('banira.validationOutputRoot').orNull
+def validationRoot = null
+if (requestedRoot != null) {
+    def requestedFile = new File(requestedRoot)
+    if (!requestedFile.isAbsolute()) {
+        throw new GradleException('banira.validationOutputRoot must be absolute')
+    }
+    validationRoot = requestedFile.canonicalFile
+    def segments = validationRoot.path.replace('\\', '/').split('/')
+    if (segments.any { it.equalsIgnoreCase('builds') }
+            || validationRoot.parentFile == null || validationRoot == projectDir.canonicalFile) {
+        throw new GradleException('Unsafe validation output root')
+    }
+}
+
+ext.baniraDistributionDirectory = validationRoot ?: file("builds/${mod_version}")
+
+if (validationRoot != null) {
+    gradle.projectsEvaluated {
+        tasks.withType(AbstractArchiveTask).configureEach {
+            destinationDirectory.set(validationRoot)
+        }
+    }
+    gradle.taskGraph.whenReady { graph ->
+        def publicationTasks = graph.allTasks.findAll { it instanceof org.gradle.api.publish.maven.tasks.AbstractPublishToMaven }
+        if (!publicationTasks.empty) {
+            def localRoot = System.getProperty('maven.repo.local')
+            if (localRoot == null || !new File(localRoot).isAbsolute()
+                    || new File(localRoot).canonicalFile == new File(System.getProperty('user.home'), '.m2/repository').canonicalFile) {
+                throw new GradleException('Validation publication requires an explicit isolated maven.repo.local')
+            }
+            def isolatedMaven = new File(localRoot).canonicalFile
+            publicationTasks.findAll { it instanceof org.gradle.api.publish.maven.tasks.PublishToMavenRepository }.each { task ->
+                if (task.repository.url.scheme != 'file' || new File(task.repository.url).canonicalFile != isolatedMaven) {
+                    throw new GradleException("Validation publication escaped isolated Maven root: ${task.path}")
+                }
+            }
+        }
+        graph.allTasks.findAll { it instanceof AbstractArchiveTask }.each { archive ->
+            def target = archive.archiveFile.get().asFile.canonicalFile
+            if (!target.toPath().startsWith(validationRoot.toPath())) {
+                throw new GradleException("Archive escaped validation output root: ${archive.path}")
+            }
+        }
+        publishing.publications.each { publication ->
+            publication.artifacts.each { artifact ->
+                if (!artifact.file.canonicalFile.toPath().startsWith(validationRoot.toPath())) {
+                    throw new GradleException("Publication escaped validation output root: ${publication.name}")
+                }
+            }
+        }
+    }
+}
