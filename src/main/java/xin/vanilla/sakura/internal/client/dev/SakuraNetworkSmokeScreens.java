@@ -1,32 +1,34 @@
 package xin.vanilla.sakura.internal.client.dev;
 
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.widget.IWidget;
 import xin.vanilla.banira.common.util.DateUtils;
+import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.client.SakuraClientState;
 import xin.vanilla.sakura.client.gui.RewardListEntryWidget;
 import xin.vanilla.sakura.client.gui.RewardOperationWidget;
 import xin.vanilla.sakura.client.theme.BuiltInThemeCatalog;
 import xin.vanilla.sakura.config.ClientConfig;
-import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.data.time.SakuraClock;
+import xin.vanilla.sakura.event.ClientEventHandler;
 import xin.vanilla.sakura.internal.dev.SakuraNetworkSmokeStatus;
 import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.reward.RewardManager;
 import xin.vanilla.sakura.screen.RewardOptionScreen;
 import xin.vanilla.sakura.screen.SignInCell;
 import xin.vanilla.sakura.screen.SignInScreen;
-import xin.vanilla.sakura.event.ClientEventHandler;
 
 import java.util.Date;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 
-/** Dev-only render instrumentation. It does not move the OS cursor or replace Banira's screen-post flush. */
+/**
+ * Dev-only render instrumentation. It does not move the OS cursor or replace Banira's screen-post flush.
+ */
 final class SakuraNetworkSmokeScreens {
     private final Metrics calendarMetrics;
     private final Metrics rewardMetrics;
@@ -90,10 +92,10 @@ final class SakuraNetworkSmokeScreens {
             show(client, rewards, metrics);
             rewards.selectBaseRewards();
             // Drive the real scroll handler. A short reward list may clamp the offset to zero.
-            rewards.mouseScrolled(rewards.width / 2.0D, rewards.height / 2.0D, 0.0D,
-                    (pair & 1) == 0 ? -3.0D : 3.0D);
-            rewards.mouseScrolled(8.0D, rewards.getFont().lineHeight + 16.0D, 0.0D,
-                    (pair & 1) == 0 ? -1.0D : 1.0D);
+            rewards.mouseScrolled(rewards.width / 2.0D, rewards.height / 2.0D,
+                    0, (pair & 1) == 0 ? -3.0D : 3.0D);
+            rewards.mouseScrolled(8.0D, rewards.getFont().lineHeight + 16.0D,
+                    0, (pair & 1) == 0 ? -1.0D : 1.0D);
             scrollEvents += 2;
         }
         metrics.contentCycle = cycle;
@@ -131,7 +133,9 @@ final class SakuraNetworkSmokeScreens {
         ClientEventHandler.loadThemeTexture();
     }
 
-    /** SignInScreen is final. This dev BaniraScreen delegates its lifecycle without modifying production APIs. */
+    /**
+     * SignInScreen is final. This dev BaniraScreen delegates its lifecycle without modifying production APIs.
+     */
     private static final class CalendarView extends BaniraScreen {
         private final SignInScreen delegate;
         private final Metrics metrics;
@@ -205,8 +209,8 @@ final class SakuraNetworkSmokeScreens {
         }
 
         @Override
-        public boolean mouseScrolled(double x, double y, double deltaX, double deltaY) {
-            return delegate.mouseScrolled(x, y, deltaX, deltaY);
+        public boolean mouseScrolled(double x, double y, double horizontal, double vertical) {
+            return delegate.mouseScrolled(x, y, horizontal, vertical);
         }
 
         @Override

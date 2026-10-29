@@ -4,21 +4,22 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.resources.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.api.client.ui.UiGameElement;
+import xin.vanilla.banira.client.gui.widget.DropdownOption;
 import xin.vanilla.banira.client.gui.widget.EffectIconWidget;
 import xin.vanilla.banira.client.gui.widget.ItemWidget;
-import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.sakura.SakuraComponent;
+import xin.vanilla.sakura.SakuraLang;
 import xin.vanilla.sakura.api.reward.client.RewardRenderContext;
 import xin.vanilla.sakura.api.reward.client.SakuraRewardClient;
 import xin.vanilla.sakura.reward.Reward;
 import xin.vanilla.sakura.reward.RewardOperations;
-import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
 
 import java.math.BigDecimal;
@@ -32,6 +33,71 @@ public final class RewardRenderer {
     private static final int ICON_SIZE = 16;
 
     private RewardRenderer() {
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public static UiGameElement uiIcon(Reward reward) {
+        UiIconContext context = new UiIconContext(reward);
+        try {
+            SakuraRewardClient.Registration registration = SakuraRewardClient.find(reward.getTypeId()).orElse(null);
+            if (registration != null)
+                registration.getExtension().getPresentation().renderIcon(context, RewardOperations.decode(reward));
+        } catch (RuntimeException | LinkageError failure) {
+            LOGGER.warn("Reward icon failed for {}", reward.getTypeId(), failure);
+        }
+        return context.icon;
+    }
+
+    private static final class UiIconContext implements RewardRenderContext {
+        private final Reward reward;
+        private UiGameElement icon = UiGameElement.option(new DropdownOption("", new ItemStack(Items.BARRIER), null));
+
+        private UiIconContext(Reward reward) {
+            this.reward = reward;
+        }
+
+        public Reward reward() {
+            return reward;
+        }
+
+        public String languageCode() {
+            return SakuraLang.getClientLanguage();
+        }
+
+        public boolean withAmount() {
+            return true;
+        }
+
+        public int x() {
+            return 0;
+        }
+
+        public int y() {
+            return 0;
+        }
+
+        public int size() {
+            return ICON_SIZE;
+        }
+
+        public void drawItem(Object stack) {
+            if (stack instanceof ItemStack item) icon = UiGameElement.option(new DropdownOption("", item.copy(), null));
+        }
+
+        public void drawEffect(Object effect) {
+            if (effect instanceof MobEffectInstance value) icon = UiGameElement.effect(value);
+        }
+
+        public void drawBuiltInIcon(String id) {
+            if (java.util.Set.of("point", "level", "card", "message").contains(id))
+                icon = UiGameElement.sprite(xin.vanilla.sakura.client.theme.SakuraThemeTextures.get("reward." + id).texture());
+        }
+
+        public void drawAmount(String text) {
+        }
+
+        public void drawPlaceholder(String id) {
+        }
     }
 
     public static void renderCustomReward(GuiGraphics graphics,
@@ -121,12 +187,35 @@ public final class RewardRenderer {
             this.showAmount = showAmount;
         }
 
-        @Override public Reward reward() { return reward; }
-        @Override public String languageCode() { return Minecraft.getInstance().options.languageCode; }
-        @Override public boolean withAmount() { return showAmount; }
-        @Override public int x() { return x; }
-        @Override public int y() { return y; }
-        @Override public int size() { return ICON_SIZE; }
+        @Override
+        public Reward reward() {
+            return reward;
+        }
+
+        @Override
+        public String languageCode() {
+            return Minecraft.getInstance().options.languageCode;
+        }
+
+        @Override
+        public boolean withAmount() {
+            return showAmount;
+        }
+
+        @Override
+        public int x() {
+            return x;
+        }
+
+        @Override
+        public int y() {
+            return y;
+        }
+
+        @Override
+        public int size() {
+            return ICON_SIZE;
+        }
 
         @Override
         public void drawItem(Object itemStack) {
@@ -150,19 +239,11 @@ public final class RewardRenderer {
 
         @Override
         public void drawBuiltInIcon(String iconId) {
-            Coordinate uv;
-            switch (iconId) {
-                case "point": uv = coordinates.getPointUV(); break;
-                case "level": uv = coordinates.getLevelUV(); break;
-                case "card": uv = coordinates.getCardUV(); break;
-                case "message": uv = coordinates.getMessageUV(); break;
-                default:
-                    drawPlaceholder(reward.getTypeId().toString());
-                    return;
+            if (!java.util.Set.of("point", "level", "card", "message").contains(iconId)) {
+                drawPlaceholder(reward.getTypeId().toString());
+                return;
             }
-            AbstractGuiUtils.blit(stack, texture, x, y, ICON_SIZE, ICON_SIZE,
-                    uv.getU0(), uv.getV0(), (int) uv.getUWidth(), (int) uv.getVHeight(),
-                    coordinates.getTotalWidth(), coordinates.getTotalHeight());
+            xin.vanilla.sakura.client.theme.SakuraThemeTextures.get("reward." + iconId).draw(stack, x, y, ICON_SIZE, ICON_SIZE);
         }
 
         @Override

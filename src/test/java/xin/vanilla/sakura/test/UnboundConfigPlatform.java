@@ -21,6 +21,7 @@ public final class UnboundConfigPlatform extends ExternalResource {
         BaniraPlatforms.install((BaniraPlatform) Proxy.newProxyInstance(getClass().getClassLoader(),
                 new Class<?>[]{BaniraPlatform.class}, (proxy, method, args) -> {
                     if (method.getName().equals("configService")) return service;
+                    if (method.getName().equals("isClient")) return false;
                     return method.invoke(previous, args);
                 }));
     }

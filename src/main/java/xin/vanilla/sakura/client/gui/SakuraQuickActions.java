@@ -2,27 +2,22 @@ package xin.vanilla.sakura.client.gui;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.Items;
 import xin.vanilla.banira.api.client.theme.BaniraThemes;
-import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.client.gui.ConfigEditorScreen;
-import xin.vanilla.banira.client.gui.CustomPlayerConfigEditScreen;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionContextMenuItem;
 import xin.vanilla.banira.client.gui.quickaction.QuickActionRegistry;
 import xin.vanilla.banira.client.gui.quickaction.QuickIcon;
 import xin.vanilla.banira.common.config.ConfigHolder;
+import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.client.SakuraClientState;
 import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.event.ClientEventHandler;
-import xin.vanilla.sakura.screen.RewardOptionScreen;
 import xin.vanilla.sakura.screen.LotteryScreen;
 import xin.vanilla.sakura.screen.PersonalDateConfigScreen;
-import xin.vanilla.sakura.screen.coordinate.Coordinate;
+import xin.vanilla.sakura.screen.RewardOptionScreen;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
-import xin.vanilla.sakura.SakuraComponent;
 
 /**
  * 将 Sakura 的背包快捷入口注册到 Banira 通用快捷操作托盘。
@@ -35,7 +30,6 @@ public final class SakuraQuickActions {
     }
 
     public static void register() {
-        // Fabric 1.16 会在 Minecraft.options 创建前触发客户端 setup。
         if (Minecraft.getInstance().options == null) {
             return;
         }
@@ -49,7 +43,7 @@ public final class SakuraQuickActions {
         registry.unregister(SakuraSignIn.MODID + ":reward_option");
         registry.registerIcon(
                 SIGN_IN_ID,
-                icon(coordinates != null ? coordinates.getSignInBtnUV() : null, Items.CLOCK),
+                QuickIcon.resource(xin.vanilla.sakura.client.theme.SakuraThemeTextures.get("icon.sign_in").texture()),
                 SakuraComponent.get().transClient("key", "categories"),
                 context -> ClientEventHandler.openSignInScreen(context.currentScreen()),
                 new QuickActionContextMenuItem(
@@ -91,25 +85,9 @@ public final class SakuraQuickActions {
         Minecraft.getInstance().setScreen(new PersonalDateConfigScreen(parent));
     }
 
-    private static QuickIcon icon(Coordinate coordinate, Item fallback) {
-        TextureCoordinate textureCoordinate = SakuraClientState.getThemeTextureCoordinate();
-        if (SakuraClientState.getThemeTexture() == null || textureCoordinate == null || coordinate == null) {
-            return QuickIcon.item(fallback);
-        }
-        Texture texture = Texture.of(
-                        SakuraClientState.getThemeTexture(),
-                        textureCoordinate.getTotalWidth(),
-                        textureCoordinate.getTotalHeight())
-                .u0((int) coordinate.getU0())
-                .v0((int) coordinate.getV0())
-                .uWidth((int) coordinate.getUWidth())
-                .vHeight((int) coordinate.getVHeight());
-        return QuickIcon.resource(texture);
-    }
-
     private static String signature(TextureCoordinate coordinates) {
-        String texture = String.valueOf(SakuraClientState.getThemeTexture());
-        String signIn = coordinates != null ? String.valueOf(coordinates.getSignInBtnUV()) : "";
+        String texture = String.valueOf(xin.vanilla.sakura.client.theme.SakuraThemeTextures.current().getId());
+        String signIn = xin.vanilla.sakura.client.theme.SakuraThemeTextures.get("icon.sign_in").toString();
         return texture + "|" + signIn + "|" + Minecraft.getInstance().options.languageCode;
     }
 }

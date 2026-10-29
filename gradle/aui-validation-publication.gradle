@@ -1,0 +1,32 @@
+if (providers.gradleProperty('banira.validationOutputRoot').isPresent()) {
+    def local = System.getProperty('maven.repo.local')
+    if (local == null || !new File(local).isAbsolute()) {
+        throw new GradleException('Validation publication requires an explicit isolated maven.repo.local')
+    }
+    def target = new File(local).canonicalFile
+    if (target == new File(System.getProperty('user.home'), '.m2/repository').canonicalFile
+            || target.path.replace('\\', '/').split('/').any { it.equalsIgnoreCase('builds') }) {
+        throw new GradleException('Unsafe validation Maven root')
+    }
+    apply plugin: 'maven-publish'
+    publishing.publications.create('auiValidation', MavenPublication) {
+        groupId = project.mod_group_id
+        artifactId = project.mod_id
+        version = "${loader_type}-${minecraft_version}-${mod_version}"
+        artifact tasks.named('remapJar')
+        artifact tasks.named('sourcesJar')
+    }
+    tasks.withType(org.gradle.api.publish.tasks.GenerateModuleMetadata).configureEach { enabled = false }
+    gradle.projectsEvaluated {
+        publishing.publications.named('auiValidation').configure {
+            pom.withXml {
+                def root = asElement()
+                for (int i = root.childNodes.length - 1; i >= 0; i--) {
+                    def child = root.childNodes.item(i)
+                    if (child.nodeType == org.w3c.dom.Node.ELEMENT_NODE
+                            && (child.localName ?: child.nodeName) == 'dependencies') root.removeChild(child)
+                }
+            }
+        }
+    }
+}

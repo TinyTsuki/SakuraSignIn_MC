@@ -2,37 +2,36 @@ package xin.vanilla.sakura.internal.client.dev;
 
 import com.google.gson.JsonObject;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.BaniraEnvironment;
 import xin.vanilla.banira.client.gui.component.Text;
-import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.SakuraLang;
 import xin.vanilla.sakura.api.reward.RewardTypeId;
+import xin.vanilla.sakura.api.reward.SakuraRewardTypes;
 import xin.vanilla.sakura.client.SakuraClientState;
 import xin.vanilla.sakura.client.theme.BuiltInThemeCatalog;
 import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.config.reward.RewardConfigManager;
-import xin.vanilla.sakura.data.collection.StringList;
 import xin.vanilla.sakura.data.calendar.CalendarIds;
+import xin.vanilla.sakura.data.collection.StringList;
 import xin.vanilla.sakura.data.personaldate.PersonalDateDeliveryMode;
 import xin.vanilla.sakura.data.personaldate.PersonalDatePreset;
 import xin.vanilla.sakura.data.personaldate.PersonalDateRecurrence;
-import xin.vanilla.sakura.api.reward.SakuraRewardTypes;
 import xin.vanilla.sakura.event.ClientEventHandler;
 import xin.vanilla.sakura.reward.Reward;
 import xin.vanilla.sakura.reward.RewardOperations;
-import xin.vanilla.sakura.screen.RewardOptionScreen;
 import xin.vanilla.sakura.screen.PersonalDateConfigScreen;
+import xin.vanilla.sakura.screen.RewardOptionScreen;
 import xin.vanilla.sakura.screen.SignInScreen;
 import xin.vanilla.sakura.screen.StringInputScreen;
 
@@ -128,7 +127,9 @@ public final class SakuraUiSmokeRunner {
                         : rewardExtension ? "reward-extension" : "reward");
     }
 
-    /** 在资源加载完成后验证模组语言发现与客户端语言选择。 */
+    /**
+     * 在资源加载完成后验证模组语言发现与客户端语言选择。
+     */
     private static void tickLanguage() {
         if (opened) {
             if (languageExitTicks >= 0 && ++languageExitTicks >= 100) {
@@ -193,7 +194,9 @@ public final class SakuraUiSmokeRunner {
                         new xin.vanilla.sakura.reward.RewardList())));
     }
 
-    /** 显式烟测只替换内存中的基础奖励，不触发配置保存。 */
+    /**
+     * 显式烟测只替换内存中的基础奖励，不触发配置保存。
+     */
     private static void seedRewardExtensionSmokeData() {
         JsonObject unknownPayload = new JsonObject();
         unknownPayload.addProperty("amount", 64);
