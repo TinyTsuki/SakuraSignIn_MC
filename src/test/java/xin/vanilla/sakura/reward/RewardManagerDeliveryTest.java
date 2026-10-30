@@ -7,18 +7,18 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundChatPacket;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.network.chat.TextComponent;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.HoverEvent;
 import io.netty.buffer.Unpooled;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
@@ -74,6 +74,12 @@ public class RewardManagerDeliveryTest {
     private final List<NotificationToClient> packets = new ArrayList<>();
     private int packetAttempts;
     private int failPacketAt;
+
+    @BeforeClass
+    public static void bootstrapMinecraftRegistries() {
+        net.minecraft.SharedConstants.tryDetectVersion();
+        net.minecraft.server.Bootstrap.bootStrap();
+    }
 
     @Before
     public void setUp() throws Exception {
@@ -345,7 +351,7 @@ public class RewardManagerDeliveryTest {
         Component entry = SakuraComponent.get().literal("\u5956\u52b1\ud83c\udf38")
                 .color(java.awt.Color.GREEN.getRGB())
                 .clickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/sakura help"))
-                .hoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponent("hover detail")))
+                .hoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new net.minecraft.network.chat.TextComponent("hover detail")))
                 .languageCode("zh_cn");
         String originalPrefix = prefix.toJson().toString();
         String originalEntry = entry.toJson().toString();
@@ -460,7 +466,7 @@ public class RewardManagerDeliveryTest {
         configureItemAndPersonalDate();
         RewardConfigManager.getRewardConfig().getBaseRewards().clear();
         ItemStack cake = new ItemStack(Items.CAKE, 1);
-        cake.setHoverName(new TextComponent("birthday-cake"));
+        cake.setHoverName(new net.minecraft.network.chat.TextComponent("birthday-cake"));
         RewardConfigManager.getRewardConfig().getPersonalDatePresets().get(0)
                 .setRewards(new RewardList(Collections.singletonList(new Reward(cake, SakuraRewardTypes.ITEM))));
         inventory().full = true;
@@ -564,7 +570,7 @@ public class RewardManagerDeliveryTest {
         for (int index = 0; index < 256; index++) {
             String name = "reward-" + index + "-" + repeat("detail", 35);
             ItemStack item = new ItemStack(Items.APPLE, 1);
-            item.setHoverName(new TextComponent(name));
+            item.setHoverName(new net.minecraft.network.chat.TextComponent(name));
             RewardConfigManager.getRewardConfig().getBaseRewards().add(new Reward(item, SakuraRewardTypes.ITEM));
             names.add(name + "x1");
         }
@@ -572,7 +578,9 @@ public class RewardManagerDeliveryTest {
     }
 
     private static void collectNames(Component component, List<String> names) {
-        if (component.text().startsWith("reward-")) {
+        String name = component.original() instanceof net.minecraft.network.chat.Component original
+                ? original.getString() : component.text();
+        if (name.startsWith("reward-")) {
             assertEquals(java.awt.Color.GREEN.getRGB(), component.color().argb());
             names.add(component.toString(true));
             return;
@@ -720,7 +728,13 @@ public class RewardManagerDeliveryTest {
             String text;
             try {
                 packet.write(buffer);
-                text = new ClientboundChatPacket(buffer).getMessage().getString();
+                ClientboundChatPacket decoded = new ClientboundChatPacket(buffer);
+                assertNotEquals("Result messages must stay in chat", net.minecraft.network.chat.ChatType.GAME_INFO, decoded.getType());
+                assertEquals(packet.getType(), decoded.getType());
+                assertEquals(packet.getSender(), decoded.getSender());
+                assertEquals(net.minecraft.network.chat.Component.Serializer.toJson(packet.getMessage()),
+                        net.minecraft.network.chat.Component.Serializer.toJson(decoded.getMessage()));
+                text = decoded.getMessage().getString();
                 assertEquals(0, buffer.readableBytes());
             } finally {
                 buffer.release();

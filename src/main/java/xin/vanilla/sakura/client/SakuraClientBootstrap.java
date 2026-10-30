@@ -5,17 +5,17 @@ import xin.vanilla.banira.api.client.BaniraInput;
 import xin.vanilla.banira.api.client.BaniraKeyHandle;
 import xin.vanilla.banira.api.client.event.BaniraClientEvents;
 import xin.vanilla.banira.api.client.theme.BaniraThemes;
-import xin.vanilla.sakura.config.ClientConfig;
+import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.api.SakuraPlayerData;
+import xin.vanilla.sakura.api.reward.client.SakuraRewardClient;
+import xin.vanilla.sakura.client.reward.builtin.BuiltInRewardClientTypes;
+import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.event.ClientEventHandler;
+import xin.vanilla.sakura.internal.client.dev.SakuraNetworkSmokeClientRunner;
 import xin.vanilla.sakura.network.ClientProxy;
 import xin.vanilla.sakura.network.SakuraClientPacketHandlers;
 import xin.vanilla.sakura.notification.SakuraClientNotificationTypes;
-import xin.vanilla.sakura.api.reward.client.SakuraRewardClient;
-import xin.vanilla.sakura.client.reward.builtin.BuiltInRewardClientTypes;
-import xin.vanilla.banira.client.data.GLFWKey;
-import xin.vanilla.sakura.internal.client.dev.SakuraNetworkSmokeClientRunner;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -36,7 +36,6 @@ public final class SakuraClientBootstrap {
             return;
         }
 
-        ClientConfig.sanitizeNavigationShortcuts();
         BaniraThemes.register(SakuraSignIn.MODID,
                 () -> ClientConfig.get().display().interfaceThemeMode());
         BuiltInRewardClientTypes.register();
@@ -45,8 +44,6 @@ public final class SakuraClientBootstrap {
         BaniraKeyHandle rewardOptionKey = BaniraInput.registerKey(
                 SakuraSignIn.MODID, "reward_option", GLFWKey.GLFW_KEY_UNKNOWN);
 
-        xin.vanilla.sakura.config.reward.RewardConfigManager.configureClientScope(
-                () -> net.minecraft.client.Minecraft.getInstance().isSameThread());
         SakuraClientPacketHandlers.register(
                 ClientProxy::handleSynPlayerData,
                 ClientProxy::handleMonthData,
@@ -61,6 +58,10 @@ public final class SakuraClientBootstrap {
                 ClientProxy::handleRewardOptionUploadResult
         );
         BaniraClientEvents.ModLifecycle.onClientSetup(event -> {
+            // Forge 1.19+ 在配置加载完成前禁止读取配置值。
+            ClientConfig.sanitizeNavigationShortcuts();
+            xin.vanilla.sakura.config.reward.RewardConfigManager.configureClientScope(
+                    () -> net.minecraft.client.Minecraft.getInstance().isSameThread());
             SakuraClientNotificationTypes.register();
             ClientEventHandler.loadThemeTexture();
         });

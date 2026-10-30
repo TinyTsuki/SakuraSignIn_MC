@@ -1,44 +1,43 @@
 package xin.vanilla.sakura.client.gui;
 
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffectCategory;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.effect.MobEffects;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import xin.vanilla.sakura.test.BaniraTestPlatform;
 
-import java.lang.reflect.Field;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * 锁定 Banira 选择结果作为领域值原样交给注册表编辑器。
  */
 public class EffectRewardSelectionFlowTest {
+    @BeforeClass
+    public static void bootstrapMinecraftRegistries() {
+        net.minecraft.SharedConstants.tryDetectVersion();
+        net.minecraft.server.Bootstrap.bootStrap();
+    }
+
     @Test
     public void preservesEffectDurationAmplifierAndProbability() throws Exception {
-        ResourceLocation effectId = new ResourceLocation("sakura_sign_in", "test_effect");
-        MobEffect effect = new MobEffect(MobEffectCategory.BENEFICIAL, 0x7FB8FF) {
-        };
-        Field registryName = effect.getClass().getSuperclass().getSuperclass()
-                .getDeclaredField("registryName");
-        registryName.setAccessible(true);
-        registryName.set(effect, effectId);
+        ResourceLocation effectId = new ResourceLocation("minecraft", "luck");
+        MobEffect effect = MobEffects.LUCK;
         BaniraTestPlatform.install();
         BaniraTestPlatform.register(effectId.toString(), effect);
         MobEffectInstance selected = new MobEffectInstance(effect, 7200, 3);
 
         MobEffectInstance reward = EffectRewardSelectionFlow.copyValue(selected);
 
-        assertEquals(effectId, reward.getEffect().getRegistryName());
+        assertSame(effect, reward.getEffect());
         assertEquals(7200, reward.getDuration());
         assertEquals(3, reward.getAmplifier());
     }
 
     @Test
     public void suppliesPositiveDurationForIncompleteSelectorDefaults() throws Exception {
-        MobEffect effect = testEffect("incomplete_effect");
+        MobEffect effect = MobEffects.LUCK;
         MobEffectInstance reward = EffectRewardSelectionFlow.copyValue(
                 new MobEffectInstance(effect));
 
@@ -46,14 +45,4 @@ public class EffectRewardSelectionFlowTest {
         assertEquals(0, reward.getAmplifier());
     }
 
-    private static MobEffect testEffect(String path) throws Exception {
-        ResourceLocation effectId = new ResourceLocation("sakura_sign_in", path);
-        MobEffect effect = new MobEffect(MobEffectCategory.BENEFICIAL, 0x7FB8FF) {
-        };
-        Field registryName = effect.getClass().getSuperclass().getSuperclass()
-                .getDeclaredField("registryName");
-        registryName.setAccessible(true);
-        registryName.set(effect, effectId);
-        return effect;
-    }
 }

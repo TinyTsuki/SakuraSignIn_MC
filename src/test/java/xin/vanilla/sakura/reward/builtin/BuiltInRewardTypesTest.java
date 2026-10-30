@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -84,6 +85,32 @@ public class BuiltInRewardTypesTest {
                 () -> new CommandRewardCodec().decode(new JsonObject()));
         assertThrows(RewardDataException.class,
                 () -> new MessageRewardCodec().decode(new JsonObject()));
+    }
+
+    @Test
+    public void itemDescriptionPreservesTranslationUntilClientRendering() {
+        BuiltInRewardTypes.register();
+        Reward reward = new Reward(new ItemStack(Items.APPLE, 2), SakuraRewardTypes.ITEM);
+        var description = reward.getName("zh_cn", true);
+        JsonObject wire = description.toJson();
+        assertNotNull("Item names must retain the original component on the wire", wire.get("original"));
+        assertEquals("item.minecraft.apple", wire.getAsJsonObject("original").get("translate").getAsString());
+        assertEquals("x2", description.toVanilla().getSiblings().get(0).getString());
+        assertEquals(Items.APPLE.getDescriptionId(), ((net.minecraft.network.chat.TranslatableComponent)
+                description.toVanilla()).getKey());
+    }
+
+    @Test
+    public void itemDescriptionKeepsCustomStyledNameAndOptionalAmount() {
+        BuiltInRewardTypes.register();
+        ItemStack item = new ItemStack(Items.CAKE, 3);
+        var name = new net.minecraft.network.chat.TextComponent("Birthday cake")
+                .withStyle(net.minecraft.ChatFormatting.GOLD);
+        item.setHoverName(name);
+        var description = new Reward(item, SakuraRewardTypes.ITEM).getName("zh_cn", false);
+        assertEquals(net.minecraft.network.chat.Component.Serializer.toJsonTree(name),
+                description.toJson().get("original"));
+        assertEquals("Birthday cake", description.toVanilla().getString());
     }
 
     @Test
