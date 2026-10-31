@@ -7,6 +7,7 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.ResourceLocationArgument;
 import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.api.SakuraPlayerData;
@@ -38,7 +39,7 @@ final class PersonalDateConfigCommand {
                                     return builder.buildFuture();
                                 })
                                 .then(Commands.argument("slot", IntegerArgumentType.integer(1, 16))
-                                        .then(Commands.argument("calendar", StringArgumentType.word())
+                                        .then(Commands.argument("calendar", ResourceLocationArgument.id())
                                                 .suggests((context, builder) -> {
                                                     PersonalDatePreset preset = preset(StringArgumentType
                                                             .getString(context, "preset"));
@@ -84,7 +85,7 @@ final class PersonalDateConfigCommand {
         String presetId = StringArgumentType.getString(context, "preset");
         PersonalDatePreset preset = preset(presetId);
         int slotIndex = IntegerArgumentType.getInteger(context, "slot") - 1;
-        String calendar = StringArgumentType.getString(context, "calendar");
+        String calendar = ResourceLocationArgument.getId(context, "calendar").toString();
         int[] date = parseDate(preset, StringArgumentType.getString(context, "date"));
         if (preset == null || slotIndex >= preset.getMaxDateSlots() || date == null) {
             SakuraMessages.send(player, SakuraComponent.get().trans(player,
