@@ -35,6 +35,9 @@ public final class SakuraClientState {
     private static ResourceLocation themeTexture;
     @Getter
     @Setter
+    private static xin.vanilla.sakura.client.theme.BuiltInThemeDescriptor theme;
+    @Getter
+    @Setter
     private static TextureCoordinate themeTextureCoordinate;
     @Getter
     @Setter

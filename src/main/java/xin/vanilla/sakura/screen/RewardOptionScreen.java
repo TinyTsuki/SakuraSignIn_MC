@@ -1,119 +1,527 @@
 package xin.vanilla.sakura.screen;
 
-import xin.vanilla.sakura.data.time.SakuraClock;
-import xin.vanilla.sakura.data.personaldate.PersonalDatePreset;
-import xin.vanilla.sakura.data.personaldate.PersonalDateRecurrence;
-import xin.vanilla.sakura.data.personaldate.PersonalDateDeliveryMode;
-import xin.vanilla.sakura.data.personaldate.PersonalDatePresetValidator;
-
-import xin.vanilla.banira.client.gui.component.Text;
-import xin.vanilla.banira.common.data.Component;
-import xin.vanilla.banira.client.gui.component.TextList;
-import xin.vanilla.banira.client.data.ScreenCoordinate;
-import xin.vanilla.banira.client.data.ShapeDrawArgs;
-import xin.vanilla.banira.client.gui.BaniraScreen;
-import xin.vanilla.banira.api.client.theme.BaniraThemes;
-import xin.vanilla.banira.client.gui.ConfirmDialogScreen;
-import xin.vanilla.banira.client.gui.ReadOnlyTextScreen;
-import xin.vanilla.banira.api.client.BaniraInput;
-import xin.vanilla.banira.client.util.SystemUtils;
-import xin.vanilla.banira.client.gui.widget.BaseShapeWidget;
-import xin.vanilla.banira.client.gui.widget.LabelWidget;
-import xin.vanilla.banira.client.gui.widget.PopupOption;
-import xin.vanilla.banira.client.gui.event.MouseEvent;
-import xin.vanilla.banira.client.data.FontDrawArgs;
-import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
-import xin.vanilla.banira.client.util.AbstractGuiUtils;
-import xin.vanilla.banira.common.data.KeyValue;
-import xin.vanilla.banira.common.enums.IEnumDescribable;
-import xin.vanilla.banira.common.util.NumberUtils;
-import xin.vanilla.sakura.SakuraComponent;
-import xin.vanilla.sakura.SakuraLang;
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.VertexFormat;
+import net.minecraft.client.player.LocalPlayer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.opengl.GL11;
+import xin.vanilla.banira.api.client.theme.BaniraThemes;
+import xin.vanilla.banira.api.client.ui.*;
+import xin.vanilla.banira.client.data.FontDrawArgs;
+import xin.vanilla.banira.client.data.GLFWKey;
+import xin.vanilla.banira.client.data.ScreenCoordinate;
+import xin.vanilla.banira.client.data.ShapeDrawArgs;
+import xin.vanilla.banira.client.enums.EnumEllipsisPosition;
+import xin.vanilla.banira.client.gui.BaniraScreen;
+import xin.vanilla.banira.client.gui.ConfirmDialogScreen;
+import xin.vanilla.banira.client.gui.InputFormScreen;
+import xin.vanilla.banira.client.gui.ReadOnlyTextScreen;
+import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.client.gui.component.TextList;
+import xin.vanilla.banira.client.gui.event.MouseEvent;
+import xin.vanilla.banira.client.gui.widget.BaseShapeWidget;
+import xin.vanilla.banira.client.gui.widget.DropdownOption;
+import xin.vanilla.banira.client.gui.widget.LabelWidget;
+import xin.vanilla.banira.client.gui.widget.PopupOption;
+import xin.vanilla.banira.client.util.AbstractGuiUtils;
+import xin.vanilla.banira.client.util.SystemUtils;
+import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.data.KeyValue;
+import xin.vanilla.banira.common.enums.IEnumDescribable;
+import xin.vanilla.banira.common.util.CollectionUtils;
+import xin.vanilla.banira.common.util.DateUtils;
+import xin.vanilla.banira.common.util.NumberUtils;
+import xin.vanilla.banira.common.util.StringUtils;
+import xin.vanilla.sakura.SakuraComponent;
+import xin.vanilla.sakura.SakuraLang;
 import xin.vanilla.sakura.SakuraSignIn;
-import xin.vanilla.sakura.client.SakuraClientState;
-import xin.vanilla.sakura.client.gui.RewardListEntryWidget;
-import xin.vanilla.sakura.client.gui.RewardRuleTooltipFormatter;
-import xin.vanilla.sakura.client.gui.RewardSelectionIds;
-import xin.vanilla.sakura.client.gui.RewardKeyboardNavigator;
-import xin.vanilla.sakura.client.gui.RewardOperationWidget;
-import xin.vanilla.sakura.client.gui.RewardSelectionModel;
-import xin.vanilla.sakura.client.gui.RewardSemanticMatcher;
-import xin.vanilla.sakura.client.gui.RewardRenderer;
-import xin.vanilla.sakura.client.gui.RewardProbabilityInput;
-import xin.vanilla.sakura.client.reward.RewardEditorCoordinator;
 import xin.vanilla.sakura.api.reward.RewardTypeId;
 import xin.vanilla.sakura.api.reward.client.SakuraRewardClient;
-import xin.vanilla.sakura.config.*;
+import xin.vanilla.sakura.client.SakuraClientState;
+import xin.vanilla.sakura.client.data.RewardClipboardManager;
+import xin.vanilla.sakura.client.gui.*;
+import xin.vanilla.sakura.client.reward.RewardEditorCoordinator;
+import xin.vanilla.sakura.client.theme.SakuraThemeTextures;
+import xin.vanilla.sakura.client.theme.ThemeTexture;
+import xin.vanilla.sakura.client.ui.RewardEditorUiSession;
+import xin.vanilla.sakura.client.ui.SakuraUiPages;
+import xin.vanilla.sakura.config.ClientConfig;
+import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.config.reward.RewardConfig;
 import xin.vanilla.sakura.config.reward.RewardConfigManager;
 import xin.vanilla.sakura.data.collection.StringList;
+import xin.vanilla.sakura.data.lottery.LotteryPool;
+import xin.vanilla.sakura.data.personaldate.PersonalDatePreset;
+import xin.vanilla.sakura.data.time.SakuraClock;
 import xin.vanilla.sakura.enums.ERewardRule;
 import xin.vanilla.sakura.event.ClientEventHandler;
 import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.network.packet.DownloadRewardOptionNotice;
-import xin.vanilla.sakura.network.packet.PersonalDatePresetSyncPacket;
 import xin.vanilla.sakura.network.packet.LotteryPoolSyncPacket;
-import xin.vanilla.sakura.data.lottery.LotteryPool;
-import xin.vanilla.sakura.network.packet.RewardOptionSyncPacket;
 import xin.vanilla.sakura.notification.SakuraClientNotifications;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
 import xin.vanilla.sakura.reward.Reward;
-import xin.vanilla.sakura.reward.RewardManager;
-import xin.vanilla.sakura.client.data.RewardClipboardManager;
 import xin.vanilla.sakura.reward.RewardList;
-import xin.vanilla.sakura.screen.coordinate.Coordinate;
-import xin.vanilla.banira.common.util.CollectionUtils;
-import xin.vanilla.banira.common.util.DateUtils;
-import xin.vanilla.banira.client.data.GLFWKey;
+import xin.vanilla.sakura.reward.RewardManager;
 import xin.vanilla.sakura.util.GLFWKeyHelper;
 import xin.vanilla.sakura.util.SakuraUtils;
-import xin.vanilla.banira.common.util.StringUtils;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-public class RewardOptionScreen extends BaniraScreen {
-    private boolean editsPending;
-    private void saveEditor() {
-        RewardConfigManager.saveRewardOption(); editsPending = true;
+
+public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
+    private RewardEditorUiSession rewardUiSession;
+    private final Object uiConnection = Minecraft.getInstance() == null ? null : Minecraft.getInstance().getConnection();
+    private long uiRevision;
+    private UiPageState rewardPageState;
+    private boolean restoreRewardPage;
+    private String lastUiEntry;
+    private long lastUiClick;
+    private int uiClicks;
+    private boolean uiKeyNavigation;
+
+    @Override
+    public String uiSurfaceId() {
+        return SakuraSignIn.MODID + ":rewards";
     }
+
+    @Override
+    public UiPageSession pageSession() {
+        if (rewardUiSession == null) {
+            rewardUiSession = new RewardEditorUiSession(new RewardEditorUiSession.Port() {
+                public long revision() {
+                    return uiRevision + (RewardConfigManager.isRewardOptionDataChanged() ? 1 : 0);
+                }
+
+                public void refresh() {
+                    if (RewardConfigManager.isRewardOptionDataChanged()) updateLayout();
+                }
+
+                public List<RewardEditorUiSession.Entry> entries() {
+                    return rewardUiEntries();
+                }
+
+                public RewardEditorUiSession.Detail detail() {
+                    return rewardUiDetail();
+                }
+
+                public int ruleCount(int code) {
+                    ERewardRule rule = ERewardRule.valueOf(code);
+                    return rule == null || RewardConfigManager.isRuleRedacted(rule) ? -1
+                            : RewardConfigManager.getRewardMap(rule).values().stream().mapToInt(List::size).sum();
+                }
+
+                public Component status() {
+                    return SakuraComponent.get().transClient("word", editsPending ? "aui_saved_locally" : "aui_no_changes");
+                }
+
+                public Component probability(String id) {
+                    Reward reward = rewardAt(id);
+                    return SakuraComponent.get().literal(reward == null ? "" : RewardProbabilityInput.display(reward.getProbability()) + "%");
+                }
+
+                public int rule() {
+                    ERewardRule rule = currentRewardRule();
+                    return rule == null ? 0 : rule.getCode();
+                }
+
+                public void rule(int rule) {
+                    if (ERewardRule.valueOf(rule) != null) {
+                        currOpButton = 200 + rule;
+                        updateLayout();
+                    }
+                }
+
+                public boolean redacted() {
+                    return isCurrentRuleRedacted();
+                }
+
+                public boolean enabled(RewardEditorUiSession.Action action) {
+                    return rewardUiEnabled(action);
+                }
+
+                public boolean sidebarOpen() {
+                    return SakuraClientState.isRewardOptionBarOpened();
+                }
+
+                public void command(RewardEditorUiSession.Action action) {
+                    rewardUiCommand(action);
+                }
+
+                public void entry(String id, RewardEditorUiSession.EntryAction action) {
+                    rewardUiEntry(id, action);
+                }
+
+                public void suspend() {
+                    draggingRewardId = null;
+                    dragTargetGroupKey = null;
+                    clearHeldNavigation();
+                    popupOption.clear();
+                }
+
+                public void closed(UiCloseReason reason) {
+                    if (reason != UiCloseReason.DISCONNECT && rewardUiConnected()) onClosed();
+                }
+
+                public void tick() {
+                    uiKeyNavigation = true;
+                    try {
+                        repeatHeldNavigation();
+                    } finally {
+                        uiKeyNavigation = false;
+                    }
+                }
+
+                public boolean key(int key, int scan, int modifiers, boolean pressed) {
+                    uiKeyNavigation = true;
+                    try {
+                        if (pressed) {
+                            KeyPressedHandleArgs args = new KeyPressedHandleArgs().keyCode(key).scanCode(scan).modifiers(modifiers);
+                            onKeyPressed(args);
+                            return args.consumed();
+                        }
+                        KeyReleasedHandleArgs args = new KeyReleasedHandleArgs().keyCode(key).scanCode(scan).modifiers(modifiers);
+                        onKeyReleased(args);
+                        return args.consumed();
+                    } finally {
+                        uiKeyNavigation = false;
+                    }
+                }
+            }, this::rewardUiConnected);
+        }
+        return rewardUiSession;
+    }
+
+    private boolean rewardUiConnected() {
+        return uiConnection == Minecraft.getInstance().getConnection();
+    }
+
+    @Override
+    public UiPageSpec uiPage() {
+        return getClass() == RewardOptionScreen.class ? SakuraUiPages.page("rewards", this, pageSession()) : null;
+    }
+
+    @Override
+    protected void onRemoved() {
+        BaniraUi.screenRemoved(this);
+        super.onRemoved();
+    }
+
+    @Override
+    public void onClose() {
+        if (BaniraUi.closePage(this, UiCloseReason.USER_CLOSE)) return;
+        if (rewardUiSession != null && rewardUiSession.requestClose()) return;
+        super.onClose();
+    }
+
+    @Override
+    public void capturePageState(UiPageState state) {
+        rewardPageState = state;
+        if (state == null) return;
+        state.detailScroll(-ruleListOffset);
+        List<String> ids = new ArrayList<>(REWARD_BUTTONS.keySet());
+        for (int i = 0; i < ids.size(); i++) {
+            RewardListEntryWidget entry = REWARD_BUTTONS.get(ids.get(i));
+            if (entry.realY() + entry.realHeight() > 0) {
+                state.rowPosition(i);
+                state.scrollAnchor((currOpButton - 200) + ":" + ids.get(i));
+                break;
+            }
+        }
+        state.selectedId(currRewardButton == null ? "" : currRewardButton);
+    }
+
+    @Override
+    public void preparePageState(UiPageState state) {
+        rewardPageState = state;
+        restoreRewardPage = true;
+        if (state != null) ruleListOffset = -state.detailScroll();
+    }
+
+    private List<RewardEditorUiSession.Entry> rewardUiEntries() {
+        if (isCurrentRuleRedacted()) return List.of();
+        List<RewardEditorUiSession.Entry> entries = new ArrayList<>();
+        ERewardRule rule = currentRewardRule();
+        REWARD_BUTTONS.forEach((id, widget) -> {
+            boolean group = id.startsWith("标题,");
+            String key = group ? id.substring(3) : rewardGroupKey(id);
+            Reward reward = group ? null : rewardAt(id);
+            String label = group ? rewardGroupDisplayName(key) : SakuraRewardClient.displayName(reward, SakuraLang.getClientLanguage(), true).toString();
+            String detail = group ? RewardConfigManager.getRewardMap(rule).getOrDefault(key, new RewardList()).size() + ""
+                    : reward.getTypeId().toString();
+            String tooltip = group ? RewardRuleTooltipFormatter.describe(rule, key, label) : rewardItemTooltip(reward).content();
+            boolean editable = group ? rule != ERewardRule.BASE_REWARD
+                    : SakuraRewardClient.find(reward.getTypeId()).map(reg -> reg.getExtension().getEditor() != null).orElse(false);
+            entries.add(new RewardEditorUiSession.Entry(id, label, detail, tooltip,
+                    group ? null : RewardRenderer.uiIcon(reward), group, group && isRewardGroupCollapsed(key), rewardSelection.isSelected(id), editable));
+        });
+        return entries;
+    }
+
+    private static RewardEditorUiSession.Fact rewardFact(String key, Object value) {
+        return new RewardEditorUiSession.Fact(SakuraComponent.get().transClient("word", key),
+                SakuraComponent.get().literal(String.valueOf(value)));
+    }
+
+    private RewardEditorUiSession.Detail rewardUiDetail() {
+        if (isCurrentRuleRedacted() || currRewardButton == null || !rewardSelection.isSelected(currRewardButton)
+                || !REWARD_BUTTONS.containsKey(currRewardButton)) return null;
+        String id = currRewardButton;
+        boolean group = id.startsWith("标题,");
+        String key = group ? id.substring(3) : rewardGroupKey(id);
+        ERewardRule rule = currentRewardRule();
+        List<RewardEditorUiSession.Fact> facts = new ArrayList<>();
+        if (!group) {
+            Reward reward = rewardAt(id);
+            if (reward == null) return null;
+            facts.add(rewardFact("edit_probability", RewardProbabilityInput.display(reward.getProbability()) + "%"));
+            facts.add(rewardFact("aui_group", rewardGroupDisplayName(key)));
+            boolean editable = SakuraRewardClient.find(reward.getTypeId()).map(reg -> reg.getExtension().getEditor() != null).orElse(false);
+            return new RewardEditorUiSession.Detail(id, SakuraRewardClient.displayName(reward, SakuraLang.getClientLanguage(), true).toString(),
+                    reward.getTypeId().toString(), rewardItemTooltip(reward).content(), RewardRenderer.uiIcon(reward), facts, editable, true);
+        }
+        String description = RewardRuleTooltipFormatter.describe(rule, key, rewardGroupDisplayName(key));
+        facts.add(rewardFact("aui_reward_count", RewardConfigManager.getRewardMap(rule).getOrDefault(key, new RewardList()).size()));
+        if (rule == ERewardRule.PERSONAL_DATE_REWARD) {
+            RewardConfigManager.getRewardConfig().getPersonalDatePresets().stream().filter(preset -> key.equals(preset.getId())).findFirst().ifPresent(preset -> {
+                facts.add(rewardFact("personal_date_calendars", String.join(", ", preset.getCalendarIds())));
+                facts.add(rewardFact("personal_date_recurrence", SakuraComponent.get().transClient("word", "personal_date_recurrence_" + preset.getRecurrence().name().toLowerCase(java.util.Locale.ROOT))));
+                facts.add(rewardFact("personal_date_delivery", SakuraComponent.get().transClient("word", "personal_date_delivery_" + preset.getDeliveryMode().name().toLowerCase(java.util.Locale.ROOT))));
+                facts.add(rewardFact("personal_date_slots", preset.getMaxDateSlots()));
+                facts.add(rewardFact("personal_date_before", preset.getValidBeforeDays()));
+                facts.add(rewardFact("personal_date_after", preset.getValidAfterDays()));
+            });
+        } else if (rule == ERewardRule.LOTTERY_REWARD) {
+            LotteryPool pool = RewardConfigManager.getRewardConfig().getLotteryPools().stream().filter(value -> key.equals(value.getId())).findFirst().orElse(null);
+            if (pool != null) {
+                description = pool.getDescription();
+                facts.add(rewardFact("lottery_voucher_expression", pool.getVoucherExpression().isEmpty()
+                        ? SakuraComponent.get().transClient("word", "aui_free") : pool.getVoucherExpression()));
+                facts.add(rewardFact("lottery_limit_policy", SakuraComponent.get().transClient("word", "lottery_policy_" + pool.getLimitPolicy().name().toLowerCase(java.util.Locale.ROOT))));
+                facts.add(rewardFact("lottery_max_draws", pool.getMaxDraws()));
+                facts.add(rewardFact("lottery_cooldown_seconds", pool.getCooldownSeconds()));
+                facts.add(rewardFact("lottery_preview_mode", SakuraComponent.get().transClient("word", "lottery_preview_" + pool.getPreviewMode().name().toLowerCase(java.util.Locale.ROOT))));
+            }
+        }
+        return new RewardEditorUiSession.Detail(id, rewardGroupDisplayName(key), key, description, null, facts, rule != ERewardRule.BASE_REWARD, false);
+    }
+
+    private boolean rewardUiEnabled(RewardEditorUiSession.Action action) {
+        if (action == RewardEditorUiSession.Action.SIDEBAR || action == RewardEditorUiSession.Action.HELP
+                || action == RewardEditorUiSession.Action.FOLDER || action == RewardEditorUiSession.Action.DOWNLOAD)
+            return true;
+        if (action == RewardEditorUiSession.Action.UPLOAD) {
+            LocalPlayer player = Minecraft.getInstance().player;
+            return player != null && player.hasPermissions(CommonConfig.get().permission().permissionEditReward()) && SakuraClientState.isEnabled();
+        }
+        if (currentRewardRule() == null || isCurrentRuleRedacted()) return false;
+        if ((action == RewardEditorUiSession.Action.CUT || action == RewardEditorUiSession.Action.DELETE) && "标题,base".equals(currRewardButton))
+            return false;
+        if (action == RewardEditorUiSession.Action.CLEAR) return currentRewardRule().getCode() <= 10;
+        if (action == RewardEditorUiSession.Action.COPY || action == RewardEditorUiSession.Action.CUT || action == RewardEditorUiSession.Action.DELETE
+                || action == RewardEditorUiSession.Action.MOVE)
+            return currRewardButton != null && !"panel".equals(currRewardButton);
+        return true;
+    }
+
+    private void rewardUiCommand(RewardEditorUiSession.Action action) {
+        if (!rewardUiConnected() || !rewardUiEnabled(action)) return;
+        switch (action) {
+            case ADD:
+                chooseRewardType();
+                break;
+            case COPY:
+                editHandler.handleCopy();
+                break;
+            case CUT:
+                editHandler.handleCut();
+                break;
+            case PASTE:
+                if (currRewardButton == null) currRewardButton = "panel";
+                editHandler.handlePaste();
+                break;
+            case DELETE:
+                requestDeleteConfirmation();
+                break;
+            case UNDO:
+                editHandler.handleUndo();
+                break;
+            case REDO:
+                editHandler.handleRedo();
+                break;
+            case MOVE:
+                chooseRewardTarget();
+                break;
+            case CLEAR: {
+                int operation = currOpButton;
+                ERewardRule rule = currentRewardRule();
+                requestConfirmation("confirm_clear_reward_rule", () -> clearRewardRule(operation, rule));
+                break;
+            }
+            case SIDEBAR:
+                SakuraClientState.setRewardOptionBarOpened(!SakuraClientState.isRewardOptionBarOpened());
+                updateLayout();
+                break;
+            default:
+                OperationButtonType type = OperationButtonType.valueOf(action.name());
+                RewardOperationWidget widget = type == null ? null : OP_BUTTONS.get(type.getCode());
+                if (widget != null) {
+                    AtomicBoolean layout = new AtomicBoolean(), handled = new AtomicBoolean();
+                    handleOperation(new MouseEvent().button(0), widget, layout, handled);
+                    if (layout.get()) updateLayout();
+                }
+        }
+        uiRevision++;
+    }
+
+    private void chooseRewardType() {
+        List<DropdownOption> types = SakuraRewardClient.all().stream().filter(reg -> reg.getExtension().getEditor() != null)
+                .map(reg -> new DropdownOption(reg.getTypeId().toString(), reg.getExtension().getTypeName() == null
+                        ? reg.getTypeId().toString() : reg.getExtension().getTypeName().get().toString())).toList();
+        if (types.isEmpty()) return;
+        ERewardRule rule = currentRewardRule();
+        String group = currRewardButton == null || "panel".equals(currRewardButton) ? null
+                : currRewardButton.startsWith("标题,") ? currRewardButton.substring(3) : rewardGroupKey(currRewardButton);
+        String[] selected = {""};
+        Screen transition = RewardEditorCoordinator.deferred(this, () -> openCreateReward(rule, group, RewardTypeId.parse(selected[0])), () -> !selected[0].isEmpty());
+        Minecraft.getInstance().setScreen(new InputFormScreen(new InputFormScreen.Args().setParentScreen(transition)
+                .setTitle(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.ui_reward_add"))
+                .addWidget(new InputFormScreen.Widget().type(InputFormScreen.WidgetType.DROPDOWN).dropdownOptionEntries(types)
+                        .defaultValue(types.get(0).value()).title(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.reward_rule_type")))
+                .setCallback(result -> {
+                    if (rewardUiConnected()) selected[0] = result.firstValue();
+                })));
+    }
+
+    private void chooseRewardTarget() {
+        ERewardRule rule = currentRewardRule();
+        List<DropdownOption> targets = RewardConfigManager.getRewardMap(rule).keySet().stream()
+                .map(key -> new DropdownOption(key, rewardGroupDisplayName(key))).toList();
+        if (targets.isEmpty()) return;
+        Minecraft.getInstance().setScreen(new InputFormScreen(new InputFormScreen.Args().setParentScreen(this)
+                .setTitle(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.ui_reward_move"))
+                .addWidget(new InputFormScreen.Widget().type(InputFormScreen.WidgetType.DROPDOWN).dropdownOptionEntries(targets)
+                        .defaultValue(targets.get(0).value()).title(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.reward_rule_type")))
+                .setCallback(result -> {
+                    if (rewardUiConnected() && rule == currentRewardRule()) moveSelectedRewardsTo(result.firstValue());
+                })));
+    }
+
+    private void rewardUiEntry(String id, RewardEditorUiSession.EntryAction action) {
+        if (!rewardUiConnected() || isCurrentRuleRedacted() || !REWARD_BUTTONS.containsKey(id)) return;
+        boolean group = id.startsWith("标题,");
+        String key = group ? id.substring(3) : rewardGroupKey(id);
+        ERewardRule rule = currentRewardRule();
+        if (action == RewardEditorUiSession.EntryAction.CONTEXT) {
+            if (!rewardSelection.isSelected(id)) rewardSelection.selectOnly(id);
+            currRewardButton = id;
+            openRewardActions(id);
+            return;
+        }
+        if (action == RewardEditorUiSession.EntryAction.TOGGLE) {
+            rewardSelection.select(id, new ArrayList<>(REWARD_BUTTONS.keySet()), true, false);
+        } else if (action == RewardEditorUiSession.EntryAction.SELECT) {
+            if (group && !Screen.hasControlDown()) {
+                toggleRewardGroup(key);
+                rewardSelection.clear();
+                updateLayout();
+            } else {
+                long now = System.currentTimeMillis();
+                uiClicks = id.equals(lastUiEntry) && now - lastUiClick < 300 ? uiClicks + 1 : 1;
+                lastUiEntry = id;
+                lastUiClick = now;
+                if (!group && uiClicks == 2) selectSemanticRewards(id);
+                else if (!group && uiClicks == 3) selectGroupRewards(key);
+                else
+                    rewardSelection.select(id, new ArrayList<>(REWARD_BUTTONS.keySet()), Screen.hasControlDown(), Screen.hasShiftDown());
+            }
+        } else if (action == RewardEditorUiSession.EntryAction.GROUP_SELECT) {
+            if (group) toggleRewardGroupSelection(key);
+            else selectGroupRewards(key);
+        } else {
+            rewardSelection.selectOnly(id);
+            currRewardButton = id;
+            if (action == RewardEditorUiSession.EntryAction.EDIT) {
+                if (group) editRewardGroup(rule, key);
+                else editReward(rule, key, REWARD_BUTTONS.get(id).getOperation());
+            } else if (action == RewardEditorUiSession.EntryAction.PROBABILITY && !group)
+                editRewardProbability(rule, key, REWARD_BUTTONS.get(id).getOperation());
+            else if (action == RewardEditorUiSession.EntryAction.DELETE) requestDeleteConfirmation();
+        }
+        currRewardButton = rewardSelection.primary();
+        uiRevision++;
+    }
+
+    private void openRewardActions(String id) {
+        ERewardRule rule = currentRewardRule();
+        boolean group = id.startsWith("标题,"), base = "标题,base".equals(id);
+        Reward reward = group ? null : rewardAt(id);
+        List<DropdownOption> options = new ArrayList<>();
+        if (group ? !base : reward != null && SakuraRewardClient.find(reward.getTypeId()).map(reg -> reg.getExtension().getEditor() != null).orElse(false))
+            options.add(rewardActionOption("edit", "edit"));
+        if (!group) options.add(rewardActionOption("probability", "edit_probability"));
+        options.add(rewardActionOption("copy", "copy"));
+        if (!base) options.add(rewardActionOption("cut", "cut"));
+        options.add(rewardActionOption("paste", "paste"));
+        if (group) {
+            for (var registration : SakuraRewardClient.all()) {
+                if (registration.getExtension().getEditor() == null) continue;
+                Component label = registration.getExtension().getTypeName() == null ? SakuraComponent.get().literal(registration.getTypeId().toString())
+                        : registration.getExtension().getTypeName().get();
+                options.add(new DropdownOption(REWARD_TYPE_OPTION_PREFIX + registration.getTypeId(), label.toString()));
+            }
+            options.add(rewardActionOption("clear", "clear"));
+        }
+        if (!base) options.add(rewardActionOption("delete", "delete"));
+        String[] selected = {""};
+        Screen transition = RewardEditorCoordinator.deferred(this, () -> {
+            if (rewardUiConnected() && currentRewardRule() == rule && !isCurrentRuleRedacted() && REWARD_BUTTONS.containsKey(id)) {
+                handlePopupOption(0, "奖励按钮:" + id, selected[0], new AtomicBoolean());
+                uiRevision++;
+            }
+        }, () -> !selected[0].isEmpty());
+        Minecraft.getInstance().setScreen(new InputFormScreen(new InputFormScreen.Args().setParentScreen(transition)
+                .setTitle(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.reward_option_title"))
+                .addWidget(new InputFormScreen.Widget().type(InputFormScreen.WidgetType.DROPDOWN).dropdownOptionEntries(options)
+                        .defaultValue(options.get(0).value()).title(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.edit")))
+                .setCallback(result -> {
+                    if (rewardUiConnected()) selected[0] = result.firstValue();
+                })));
+    }
+
+    private static DropdownOption rewardActionOption(String id, String key) {
+        return new DropdownOption(id, SakuraComponent.get().transClient("word", key).toString());
+    }
+
+    private boolean editsPending;
+
+    private void saveEditor() {
+        RewardConfigManager.saveRewardOption();
+        editsPending = true;
+    }
+
     private boolean uploadEditorSnapshot() {
         LocalPlayer player = Minecraft.getInstance().player;
         long generation = SakuraClientState.getLotteryRequests().getGeneration();
         if (player == null || !SakuraClientState.isEnabled() || generation < 0
                 || !player.hasPermissions(CommonConfig.get().permission().permissionEditReward())) return false;
         SakuraNetwork.sendSplitToServer(new LotteryPoolSyncPacket(RewardConfigManager.getRewardConfig(), generation));
-        editsPending = false; return true;
+        editsPending = false;
+        return true;
     }
-    @Override protected void onClosed() {
+
+    @Override
+    protected void onClosed() {
         if (Minecraft.getInstance().isLocalServer() && editsPending) uploadEditorSnapshot();
         super.onClosed();
     }
@@ -262,27 +670,22 @@ public class RewardOptionScreen extends BaniraScreen {
         RenderSystem.defaultBlendFunc();
 
         // 绑定背景纹理
-        RenderSystem.setShaderTexture(0, SakuraClientState.getThemeTexture());
+        ThemeTexture background = SakuraThemeTextures.get("background.editor");
+        RenderSystem.setShaderTexture(0, background.location());
 
         // 获取屏幕宽高
         int screenWidth = super.width;
         int screenHeight = super.height;
 
         // 获取纹理指定区域的坐标和大小
-        float u0 = (float) SakuraClientState.getThemeTextureCoordinate().getOptionBgUV().getU0();
-        float v0 = (float) SakuraClientState.getThemeTextureCoordinate().getOptionBgUV().getV0();
-        float regionWidth = (float) SakuraClientState.getThemeTextureCoordinate().getOptionBgUV().getUWidth();
-        float regionHeight = (float) SakuraClientState.getThemeTextureCoordinate().getOptionBgUV().getVHeight();
-        if (regionWidth == 0) regionWidth = screenWidth;
-        if (regionHeight == 0) regionHeight = screenHeight;
-        int textureTotalWidth = SakuraClientState.getThemeTextureCoordinate().getTotalWidth();
-        int textureTotalHeight = SakuraClientState.getThemeTextureCoordinate().getTotalHeight();
+        float regionWidth = background.width();
+        float regionHeight = background.height();
 
         // 计算UV比例
-        float uMin = u0 / textureTotalWidth;
-        float vMin = v0 / textureTotalHeight;
-        float uMax = (u0 + regionWidth) / textureTotalWidth;
-        float vMax = (v0 + regionHeight) / textureTotalHeight;
+        float uMin = 0;
+        float vMin = 0;
+        float uMax = 1;
+        float vMax = 1;
 
         // 使用Tessellator绘制平铺的纹理片段
         Tesselator tessellator = Tesselator.getInstance();
@@ -439,7 +842,9 @@ public class RewardOptionScreen extends BaniraScreen {
         layout.bottomY(rewardLayoutY);
     }
 
-    /** 奖励悬浮提示只描述奖励本身，操作说明集中在首屏帮助。 */
+    /**
+     * 奖励悬浮提示只描述奖励本身，操作说明集中在首屏帮助。
+     */
     private Text rewardItemTooltip(Reward reward) {
         return Text.from(SakuraRewardClient.displayName(
                 reward, SakuraLang.getClientLanguage(), true).clone());
@@ -1021,8 +1426,7 @@ public class RewardOptionScreen extends BaniraScreen {
                             .paragraphs(paragraphs)
             ));
             flag.set(true);
-        }
-        else if (value.getOperation() == OperationButtonType.UPLOAD.getCode()) {
+        } else if (value.getOperation() == OperationButtonType.UPLOAD.getCode()) {
             if (uploadEditorSnapshot()) flag.set(true);
         }
         // 下载奖励配置
@@ -1413,6 +1817,7 @@ public class RewardOptionScreen extends BaniraScreen {
     private boolean openCreateReward(ERewardRule rule, String groupKey,
                                      RewardTypeId rewardType) {
         Consumer<Reward> save = reward -> {
+            if (!rewardUiConnected()) return;
             RewardConfigManager.addUndoRewardOption(rule);
             RewardConfigManager.clearRedoList();
             RewardConfigManager.addReward(rule, groupKeyForSave(rule, groupKey), reward);
@@ -1427,6 +1832,7 @@ public class RewardOptionScreen extends BaniraScreen {
         Screen transition = RewardEditorCoordinator.deferred(
                 this,
                 () -> RewardEditorCoordinator.openCreate(this, rewardType, reward -> {
+                    if (!rewardUiConnected()) return;
                     RewardConfigManager.addUndoRewardOption(rule);
                     RewardConfigManager.clearRedoList();
                     RewardConfigManager.addReward(rule, createdKey[0], reward);
@@ -1453,6 +1859,7 @@ public class RewardOptionScreen extends BaniraScreen {
     private boolean editReward(ERewardRule rule, String key, int index) {
         Reward reward = RewardConfigManager.getReward(rule, key, index);
         return RewardEditorCoordinator.openEdit(this, reward, updated -> {
+            if (!rewardUiConnected()) return;
             RewardConfigManager.addUndoRewardOption(rule);
             RewardConfigManager.clearRedoList();
             RewardConfigManager.updateReward(rule, key, index, updated);
@@ -1495,7 +1902,7 @@ public class RewardOptionScreen extends BaniraScreen {
                     new TextList(Text.trans(SakuraSignIn.MODID,
                             "word.sakura_sign_in.enter_something")),
                     new StringList("\\w*", "", "\\d*"),
-                    new StringList(split[0], split[1], split[3]),
+                    new StringList(split[0], split[1], split.length > 3 ? split[3] : "1"),
                     input -> {
                         StringList result = new StringList("", "", "");
                         if (!RewardConfigManager.validateKeyName(rule, input.get(0))) {
@@ -1519,6 +1926,7 @@ public class RewardOptionScreen extends BaniraScreen {
                                     String.format("%s|%s|-1|%d", input.get(0), input.get(1),
                                             NumberUtils.toInt(input.get(2), 1)));
                             saveEditor();
+                            updateLayout();
                         }
                         return result;
                     }));
@@ -1540,6 +1948,7 @@ public class RewardOptionScreen extends BaniraScreen {
                         RewardConfigManager.clearRedoList();
                         RewardConfigManager.updateKeyName(rule, key, normalized);
                         saveEditor();
+                        updateLayout();
                     } else {
                         result.add(SakuraComponent.get().transClient(
                                 "format", "reward_rule_s_error", input.get(0)).toString());
@@ -1552,6 +1961,7 @@ public class RewardOptionScreen extends BaniraScreen {
             Screen callbackScreen, PersonalDatePreset existing, String[] createdKey) {
         return xin.vanilla.sakura.client.gui.PersonalDatePresetForm.create(
                 callbackScreen, existing, candidate -> {
+                    if (!rewardUiConnected()) return;
                     RewardConfigManager.addUndoRewardOption(ERewardRule.PERSONAL_DATE_REWARD);
                     RewardConfigManager.clearRedoList();
                     if (existing == null) {
@@ -1572,6 +1982,7 @@ public class RewardOptionScreen extends BaniraScreen {
             Screen callbackScreen, LotteryPool existing, String[] createdKey) {
         return xin.vanilla.sakura.client.gui.LotteryPoolForm.create(
                 callbackScreen, existing, candidate -> {
+                    if (!rewardUiConnected()) return;
                     RewardConfigManager.addUndoRewardOption(ERewardRule.LOTTERY_REWARD);
                     RewardConfigManager.clearRedoList();
                     if (existing == null) {
@@ -1591,6 +2002,7 @@ public class RewardOptionScreen extends BaniraScreen {
     private boolean editRewardProbability(ERewardRule rule, String key, int index) {
         Reward reward = RewardConfigManager.getReward(rule, key, index).clone();
         return RewardEditorCoordinator.openProbability(this, reward, updated -> {
+            if (!rewardUiConnected()) return;
             RewardConfigManager.addUndoRewardOption(rule);
             RewardConfigManager.clearRedoList();
             RewardConfigManager.updateReward(rule, key, index, updated);
@@ -1599,7 +2011,9 @@ public class RewardOptionScreen extends BaniraScreen {
         });
     }
 
-    /** 奖励组与整个规则的破坏性操作使用可见确认页。 */
+    /**
+     * 奖励组与整个规则的破坏性操作使用可见确认页。
+     */
     private void requestConfirmation(String messageKey, Runnable action) {
         requestConfirmation(SakuraComponent.get().transClient("word", messageKey), action);
     }
@@ -1610,7 +2024,9 @@ public class RewardOptionScreen extends BaniraScreen {
                         .parentScreen(this)
                         .title(SakuraComponent.get().transClient("word", "confirm_operation"))
                         .message(message)
-                        .onConfirm(action)
+                        .onConfirm(() -> {
+                            if (rewardUiConnected()) action.run();
+                        })
         ));
     }
 
@@ -1711,6 +2127,7 @@ public class RewardOptionScreen extends BaniraScreen {
     }
 
     private void updateLayout() {
+        uiRevision++;
         this.leftBarWidth = SakuraClientState.isRewardOptionBarOpened() ? 100 : 20;
         this.lineItemCount = Math.max(1,
                 (super.width - leftBarWidth - leftMargin - rightMargin
@@ -2013,7 +2430,9 @@ public class RewardOptionScreen extends BaniraScreen {
             return false;
         }
 
-        /** 无选择目标时，基础奖励直接追加，其他规则沿用新建组表单。 */
+        /**
+         * 无选择目标时，基础奖励直接追加，其他规则沿用新建组表单。
+         */
         private boolean pasteWithoutSelection() {
             if (rule != ERewardRule.BASE_REWARD) {
                 return handlePaste(true);
@@ -2206,17 +2625,17 @@ public class RewardOptionScreen extends BaniraScreen {
                 .setDragHandler(event -> scrollRewardPanel(event.dragY()));
 
         registerOperation(createThemeIcon(OperationButtonType.OPEN,
-                        SakuraClientState.getThemeTextureCoordinate().getArrowUV(),
-                        SakuraClientState.getThemeTextureCoordinate().getArrowHoverUV(),
-                        SakuraClientState.getThemeTextureCoordinate().getArrowTapUV())
+                        SakuraThemeTextures.get("button.arrow.normal"),
+                        SakuraThemeTextures.get("button.arrow.hover"),
+                        SakuraThemeTextures.get("button.arrow.pressed"))
                         .setHoverTint(0)
                         .setVisualBounds(new ScreenCoordinate(4, (height - 16) / 2.0, 16, 16))
                         .setTooltip(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.open_sidebar")),
                 new ScreenCoordinate(0, 0, 20, height));
         registerOperation(createThemeIcon(OperationButtonType.CLOSE,
-                        SakuraClientState.getThemeTextureCoordinate().getArrowUV(),
-                        SakuraClientState.getThemeTextureCoordinate().getArrowHoverUV(),
-                        SakuraClientState.getThemeTextureCoordinate().getArrowTapUV())
+                        SakuraThemeTextures.get("button.arrow.normal"),
+                        SakuraThemeTextures.get("button.arrow.hover"),
+                        SakuraThemeTextures.get("button.arrow.pressed"))
                         .setFlipHorizontal(true)
                         .setHoverTint(0)
                         .setTooltip(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.close_sidebar")),
@@ -2259,6 +2678,13 @@ public class RewardOptionScreen extends BaniraScreen {
                         .setTooltip(Text.trans(SakuraSignIn.MODID, "word.sakura_sign_in.merge_same_rewards")),
                 new ScreenCoordinate(width - rightBarWidth + 1, 102, 18, 18));
         updateLayout();
+        if (restoreRewardPage && rewardPageState != null) {
+            restoreRewardPage = false;
+            String anchor = rewardPageState.scrollAnchor();
+            int separator = anchor.indexOf(':');
+            RewardListEntryWidget entry = REWARD_BUTTONS.get(separator < 0 ? anchor : anchor.substring(separator + 1));
+            if (entry != null) setYOffset(topMargin - entry.bounds().y());
+        }
     }
 
     private RewardOperationWidget createDrawnIcon(OperationButtonType type) {
@@ -2276,7 +2702,9 @@ public class RewardOptionScreen extends BaniraScreen {
         });
     }
 
-    /** 右侧工具栏使用无背景像素线条，避免小尺寸按钮出现厚重色块。 */
+    /**
+     * 右侧工具栏使用无背景像素线条，避免小尺寸按钮出现厚重色块。
+     */
     private void drawOperationIcon(PoseStack stack, OperationButtonType type,
                                    int x, int y, int width, int height, int color) {
         int left = x + (width - 12) / 2;
@@ -2345,18 +2773,16 @@ public class RewardOptionScreen extends BaniraScreen {
         AbstractGuiUtils.fill(stack, x, y, width, height, color);
     }
 
-    private RewardOperationWidget createThemeIcon(OperationButtonType type, Coordinate coordinate) {
+    private RewardOperationWidget createThemeIcon(OperationButtonType type, ThemeTexture coordinate) {
         return createThemeIcon(type, coordinate, coordinate, coordinate);
     }
 
-    private RewardOperationWidget createThemeIcon(OperationButtonType type, Coordinate normal,
-                                                   Coordinate hover, Coordinate pressed) {
-        return new RewardOperationWidget(this, type.getCode(), SakuraClientState.getThemeTexture())
+    private RewardOperationWidget createThemeIcon(OperationButtonType type, ThemeTexture normal,
+                                                  ThemeTexture hover, ThemeTexture pressed) {
+        return new RewardOperationWidget(this, type.getCode(), normal)
                 .setNormal(normal)
                 .setHover(hover)
                 .setPressed(pressed)
-                .setTextureWidth(SakuraClientState.getThemeTextureCoordinate().getTotalWidth())
-                .setTextureHeight(SakuraClientState.getThemeTextureCoordinate().getTotalHeight())
                 .setHoverTint(0xAA808080)
                 .setPressedTint(0xAAA0A0A0);
     }
@@ -2417,8 +2843,7 @@ public class RewardOptionScreen extends BaniraScreen {
                             .height(super.height - 8).radius(15).border(0)));
             tips.stack(matrixStack).font(super.font);
             drawWelcomeTips(matrixStack);
-        }
-        else this.prepareRewardList();
+        } else this.prepareRewardList();
 
         // 绘制左侧边栏列表背景
         AbstractGuiUtils.fill(matrixStack, 0, 0, leftBarWidth, super.height, 0xAA000000);
@@ -2484,7 +2909,9 @@ public class RewardOptionScreen extends BaniraScreen {
         return RewardConfigManager.isRuleRedacted(currentRewardRule());
     }
 
-    /** 无权限规则只展示占位页，客户端不持有其服务端奖励内容。 */
+    /**
+     * 无权限规则只展示占位页，客户端不持有其服务端奖励内容。
+     */
     private void renderPermissionDenied(GuiGraphics graphics) {
         PoseStack stack = graphics.pose();
         String message = SakuraComponent.get().transClient(
@@ -2537,7 +2964,9 @@ public class RewardOptionScreen extends BaniraScreen {
         repeatHeldNavigation();
     }
 
-    /** 重新构建当前奖励界面，并恢复默认垂直偏移。 */
+    /**
+     * 重新构建当前奖励界面，并恢复默认垂直偏移。
+     */
     private void refreshRewardScreen() {
         rewardSelection.clear();
         currRewardButton = null;
@@ -2569,7 +2998,7 @@ public class RewardOptionScreen extends BaniraScreen {
     }
 
     private void repeatHeldNavigation() {
-        if (heldNavigationKey < 0 || !BaniraInput.isKeyDown(heldNavigationKey)) {
+        if (heldNavigationKey < 0 || !inputState.isKeyPressed(heldNavigationKey)) {
             clearHeldNavigation();
             return;
         }
@@ -2591,25 +3020,30 @@ public class RewardOptionScreen extends BaniraScreen {
 
     private boolean moveRewardSelection(int keyCode) {
         RewardKeyboardNavigator.Direction direction = navigationDirection(keyCode);
+        if (uiKeyNavigation) direction = RewardEditorUiSession.listDirection(direction);
         if (direction == null || rewardSelection.primary() == null
                 || rewardSelection.primary().startsWith("标题")
                 || !popupOption.isEmpty() || draggingRewardId != null
                 || inputState.isCtrlPressing() || inputState.isShiftPressing()
-                || BaniraInput.isKeyDown(GLFWKey.GLFW_KEY_LEFT_ALT)
-                || BaniraInput.isKeyDown(GLFWKey.GLFW_KEY_RIGHT_ALT)) {
+                || inputState.isKeyPressed(GLFWKey.GLFW_KEY_LEFT_ALT)
+                || inputState.isKeyPressed(GLFWKey.GLFW_KEY_RIGHT_ALT)) {
             return false;
         }
         List<RewardKeyboardNavigator.Point> points = new ArrayList<>();
         List<String> orderedIds = new ArrayList<>();
-        REWARD_BUTTONS.forEach((id, widget) -> {
-            if (!id.startsWith("标题")) {
-                orderedIds.add(id);
-                points.add(new RewardKeyboardNavigator.Point(
-                        id,
-                        widget.realX() + widget.realWidth() / 2.0,
-                        widget.realY() + widget.realHeight() / 2.0));
-            }
-        });
+        if (uiKeyNavigation && rewardUiSession != null) {
+            orderedIds.addAll(rewardUiSession.navigationIds());
+        } else {
+            REWARD_BUTTONS.forEach((id, widget) -> {
+                if (!id.startsWith("标题")) {
+                    orderedIds.add(id);
+                    points.add(new RewardKeyboardNavigator.Point(
+                            id,
+                            widget.realX() + widget.realWidth() / 2.0,
+                            widget.realY() + widget.realHeight() / 2.0));
+                }
+            });
+        }
         LinkedHashSet<String> moved = new LinkedHashSet<>();
         boolean changed = false;
         for (String selected : rewardSelection.selectedIds()) {
@@ -2632,6 +3066,8 @@ public class RewardOptionScreen extends BaniraScreen {
         rewardSelection.selectOnly(moved);
         currRewardButton = rewardSelection.primary();
         ensureRewardVisible(currRewardButton);
+        if (uiKeyNavigation && rewardUiSession != null) rewardUiSession.reveal(currRewardButton);
+        uiRevision++;
         return true;
     }
 
@@ -2694,17 +3130,17 @@ public class RewardOptionScreen extends BaniraScreen {
     private boolean matchesShortcut(List<String> bindings, int releasedKey) {
         int[] keys = {
                 releasedKey,
-                BaniraInput.isKeyDown(GLFWKey.GLFW_KEY_LEFT_CONTROL)
+                inputState.isKeyPressed(GLFWKey.GLFW_KEY_LEFT_CONTROL)
                         ? GLFWKey.GLFW_KEY_LEFT_CONTROL : GLFWKey.GLFW_KEY_UNKNOWN,
-                BaniraInput.isKeyDown(GLFWKey.GLFW_KEY_RIGHT_CONTROL)
+                inputState.isKeyPressed(GLFWKey.GLFW_KEY_RIGHT_CONTROL)
                         ? GLFWKey.GLFW_KEY_RIGHT_CONTROL : GLFWKey.GLFW_KEY_UNKNOWN,
-                BaniraInput.isKeyDown(GLFWKey.GLFW_KEY_LEFT_SHIFT)
+                inputState.isKeyPressed(GLFWKey.GLFW_KEY_LEFT_SHIFT)
                         ? GLFWKey.GLFW_KEY_LEFT_SHIFT : GLFWKey.GLFW_KEY_UNKNOWN,
-                BaniraInput.isKeyDown(GLFWKey.GLFW_KEY_RIGHT_SHIFT)
+                inputState.isKeyPressed(GLFWKey.GLFW_KEY_RIGHT_SHIFT)
                         ? GLFWKey.GLFW_KEY_RIGHT_SHIFT : GLFWKey.GLFW_KEY_UNKNOWN,
-                BaniraInput.isKeyDown(GLFWKey.GLFW_KEY_LEFT_ALT)
+                inputState.isKeyPressed(GLFWKey.GLFW_KEY_LEFT_ALT)
                         ? GLFWKey.GLFW_KEY_LEFT_ALT : GLFWKey.GLFW_KEY_UNKNOWN,
-                BaniraInput.isKeyDown(GLFWKey.GLFW_KEY_RIGHT_ALT)
+                inputState.isKeyPressed(GLFWKey.GLFW_KEY_RIGHT_ALT)
                         ? GLFWKey.GLFW_KEY_RIGHT_ALT : GLFWKey.GLFW_KEY_UNKNOWN
         };
         int[] pressed = Arrays.stream(keys)
