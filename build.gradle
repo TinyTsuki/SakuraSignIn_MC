@@ -1,8 +1,12 @@
 plugins {
     id 'fabric-loom' version '1.17.21'
+    id 'maven-publish'
 }
 
 def javaVer = 17
+
+apply from: 'gradle/aui-validation-output.gradle'
+apply from: 'gradle/aui-artifact-check.gradle'
 
 group = project.mod_group_id
 version = project.mod_version
@@ -89,7 +93,9 @@ tasks.register('prepareDevFpsOverlay') {
     doLast prepareBaniraDevFpsOverlay
 }
 
-prepareBaniraDevFpsOverlay()
+tasks.matching { it.name == 'runClient' }.configureEach {
+    doFirst { prepareBaniraDevFpsOverlay() }
+}
 processResources {
     inputs.property 'mod_id', project.mod_id
     inputs.property 'mod_name', project.mod_name
@@ -145,7 +151,7 @@ tasks.named('jar', Jar).configure {
 tasks.named('remapJar') {
     archiveBaseName.set(project.mod_id)
     archiveVersion.set("${loader_type}-${minecraft_version}-${mod_version}")
-    destinationDirectory.set(file("${projectDir}/builds/${mod_version}"))
+    destinationDirectory.set(baniraDistributionDirectory)
 }
 
 // Fabric 的正式产物由 Loom remapJar 生成；保留同名任务便于统一构建脚本调用。
@@ -163,3 +169,20 @@ apply from: 'gradle/spark-profile-report.gradle'
 apply from: 'gradle/config-view-processor.gradle'
 
 apply from: 'gradle/fabric-dev-runtime.gradle'
+
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) {
+            groupId = project.group
+            artifactId = base.archivesName.get()
+            version = "${loader_type}-${minecraft_version}-${mod_version}"
+            artifact tasks.named('remapJar')
+            artifact tasks.named('remapSourcesJar')
+        }
+    }
+    repositories { mavenLocal() }
+}
+
+tasks.withType(PublishToMavenLocal).configureEach {
+    dependsOn 'remapJar', 'remapSourcesJar'
+}

@@ -43,9 +43,10 @@ public class LotteryAnimationFrameTest {
     }
     @Test public void nativeRenderingKeepsItsOriginalCardsAndResults() throws Exception {
         String source=new String(Files.readAllBytes(Paths.get("src/main/java/xin/vanilla/sakura/screen/LotteryRevealScreen.java")),StandardCharsets.UTF_8);
-        assertTrue(source.contains("LotteryAnimationFrame.frame(LotteryAnimationStyle.STRIP"));
-        assertTrue(source.contains("LotteryAnimationFrame.frame(LotteryAnimationStyle.ROULETTE"));
-        assertTrue(source.contains("34,54"));assertTrue(source.contains("local%columns*22"));
+        assertTrue(source.contains("LotteryRevealUiSession.frame(LotteryAnimationStyle.STRIP"));
+        assertTrue(source.contains("LotteryRevealUiSession.frame(LotteryAnimationStyle.ROULETTE"));
+        String compact = source.replaceAll("\\s+", "");
+        assertTrue(compact.contains("34,54"));assertTrue(compact.contains("local%columns*22"));
         assertFalse(source.contains("Math.cos(angle)"));assertFalse(source.contains("closeButton"));
     }
 }

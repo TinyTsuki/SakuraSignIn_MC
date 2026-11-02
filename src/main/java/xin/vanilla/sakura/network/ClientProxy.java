@@ -93,6 +93,7 @@ public class ClientProxy {
     }
 
     private static void refreshOpenSignInScreen() {
+        xin.vanilla.sakura.client.ui.SakuraUiPages.signInChanged();
         if (Minecraft.getInstance().screen instanceof SignInScreen) {
             ((SignInScreen) Minecraft.getInstance().screen).refreshPlayerData();
         }
