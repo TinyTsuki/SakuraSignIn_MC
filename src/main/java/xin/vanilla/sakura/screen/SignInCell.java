@@ -1,36 +1,35 @@
 package xin.vanilla.sakura.screen;
 
-import xin.vanilla.sakura.data.time.SakuraClock;
-
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiComponent;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.resources.ResourceLocation;
+import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.gui.widget.BaseWidget;
+import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.util.DateUtils;
+import xin.vanilla.sakura.SakuraComponent;
+import xin.vanilla.sakura.client.gui.RewardRenderer;
+import xin.vanilla.sakura.client.theme.SakuraThemeTextures;
+import xin.vanilla.sakura.client.theme.ThemeTexture;
 import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.config.CommonConfig;
+import xin.vanilla.sakura.data.time.SakuraClock;
 import xin.vanilla.sakura.enums.ESignInStatus;
 import xin.vanilla.sakura.reward.Reward;
 import xin.vanilla.sakura.reward.RewardList;
-import xin.vanilla.sakura.client.gui.RewardRenderer;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
-import xin.vanilla.sakura.SakuraComponent;
-import xin.vanilla.banira.client.util.AbstractGuiUtils;
-import xin.vanilla.banira.common.util.DateUtils;
-import xin.vanilla.banira.client.data.GLFWKey;
 
 import java.util.Date;
 import java.util.function.Consumer;
@@ -43,6 +42,65 @@ import java.util.function.Consumer;
 @Accessors(chain = true)
 public final class SignInCell extends BaseWidget {
     public static final int TOOLTIP_MAX_VISIBLE_ITEMS = 5;
+
+    public Component uiDay() {
+        Date now = SakuraClock.clientNow();
+        int color = textureCoordinate.getTextColorDefault();
+        boolean currentMonth = year == DateUtils.getYearPart(now) && month == DateUtils.getMonthOfDate(now);
+        boolean today = currentMonth && day == DateUtils.getDayOfMonth(now);
+        if (today) color = textureCoordinate.getTextColorToday();
+        else if (currentMonth) color = textureCoordinate.getTextColorCurrent();
+        else if (status == ESignInStatus.CAN_REPAIR.getCode()) color = textureCoordinate.getTextColorCanRepair();
+        return SakuraComponent.get().literal(showText ? Integer.toString(day) : "").color(color).underlined(today);
+    }
+
+    public xin.vanilla.banira.client.data.Texture uiStatusIcon() {
+        if (!showIcon) return null;
+        return statusTexture().texture();
+    }
+
+    public Component uiTooltip() {
+        Component result = SakuraComponent.get().literal(DateUtils.toString(DateUtils.getDate(year, month, day)));
+        if (!showHover) return result;
+        LocalPlayerPermission permissions = tooltipPermissions();
+        if (!permissions.details) return result;
+        String language = Minecraft.getInstance().options.languageCode;
+        for (Reward reward : rewardList) {
+            result.append("\n").append(reward.getName(language, true));
+            if (permissions.probability)
+                result.append(" (" + reward.getProbability().stripTrailingZeros().toPlainString() + ")");
+        }
+        return result;
+    }
+
+    public boolean uiDetailsVisible() {
+        return showHover && tooltipPermissions().details;
+    }
+
+    public java.util.List<xin.vanilla.sakura.client.ui.SignInUiSession.RewardLine> uiRewardLines() {
+        if (!uiDetailsVisible()) return com.google.common.collect.ImmutableList.of();
+        boolean probability = tooltipPermissions().probability;
+        String language = Minecraft.getInstance().options.languageCode;
+        return rewardList.stream().map(reward -> new xin.vanilla.sakura.client.ui.SignInUiSession.RewardLine(
+                reward.getName(language, true), probability ? SakuraComponent.get().transClient("format", "aui_probability_s",
+                reward.getProbability().multiply(java.math.BigDecimal.valueOf(100)).stripTrailingZeros().toPlainString())
+                : SakuraComponent.get().literal(""), RewardRenderer.uiIcon(reward))).collect(java.util.stream.Collectors.toList());
+    }
+
+    private LocalPlayerPermission tooltipPermissions() {
+        net.minecraft.client.player.LocalPlayer player = Minecraft.getInstance().player;
+        return new LocalPlayerPermission(player == null || player.hasPermissions(CommonConfig.get().permission().permissionRewardDetail()),
+                player == null || player.hasPermissions(CommonConfig.get().permission().permissionRewardProbability()));
+    }
+
+    @lombok.Value
+    @lombok.experimental.Accessors(fluent = true)
+    @lombok.AllArgsConstructor
+    private static class LocalPlayerPermission {
+        boolean details;
+        boolean probability;
+
+    }
 
     private final ResourceLocation backgroundTexture;
     private final TextureCoordinate textureCoordinate;
@@ -81,7 +139,8 @@ public final class SignInCell extends BaseWidget {
     }
 
     @Override
-    public void render(PoseStack stack, float partialTicks) {
+    public void render(PoseStack graphics, float partialTicks) {
+        PoseStack stack = graphics;
         double x = absoluteX();
         double y = absoluteY();
         double width = bounds().width();
@@ -89,37 +148,29 @@ public final class SignInCell extends BaseWidget {
         Font font = screen.getFont();
 
         if (showIcon) {
-            Minecraft.getInstance().getTextureManager().bind(backgroundTexture);
             renderStatusIcon(stack, x, y, width, height);
         }
         if (showText) {
-            renderDay(stack, font, x, y, width);
+            renderDay(graphics, font, x, y, width);
         }
     }
 
     private void renderStatusIcon(PoseStack stack, double x, double y, double width, double height) {
         if (status == ESignInStatus.REWARDED.getCode()) {
-            Coordinate uv = textureCoordinate.getRewardedUV();
-            AbstractGuiUtils.blit(stack, backgroundTexture, (int) x, (int) y, (int) width, (int) height,
-                    (float) uv.getU0(), (float) uv.getV0(),
-                    (int) uv.getUWidth(), (int) uv.getVHeight(),
-                    textureCoordinate.getTotalWidth(), textureCoordinate.getTotalHeight());
+            statusTexture().draw(stack, (int) x, (int) y, (int) width, (int) height);
             return;
         }
 
-        Coordinate uv = status == ESignInStatus.SIGNED_IN.getCode()
-                || ClientConfig.get().display().autoRewarded()
-                ? textureCoordinate.getSignedInUV()
-                : textureCoordinate.getNotSignedInUV();
         updateAprilFoolsPosition(x, y, width, height);
-        float u0 = (float) (uv.getU0() + uv.getX());
-        float v0 = (float) (uv.getV0() + uv.getY());
         int hoverPadding = mouseInside ? 2 : 0;
-        AbstractGuiUtils.blit(stack, backgroundTexture,
+        statusTexture().draw(stack,
                 (int) iconX - hoverPadding, (int) iconY - hoverPadding,
-                (int) width + hoverPadding * 2, (int) height + hoverPadding * 2,
-                u0, v0, (int) uv.getUWidth(), (int) uv.getVHeight(),
-                textureCoordinate.getTotalWidth(), textureCoordinate.getTotalHeight());
+                (int) width + hoverPadding * 2, (int) height + hoverPadding * 2);
+    }
+
+    private ThemeTexture statusTexture() {
+        return SakuraThemeTextures.status(status == ESignInStatus.REWARDED.getCode() ? "rewarded"
+                : status == ESignInStatus.SIGNED_IN.getCode() || ClientConfig.get().display().autoRewarded() ? "signed_in" : "not_signed_in");
     }
 
     private void updateAprilFoolsPosition(double x, double y, double width, double height) {
@@ -140,7 +191,7 @@ public final class SignInCell extends BaseWidget {
         }
     }
 
-    private void renderDay(PoseStack stack, Font font, double x, double y, double width) {
+    private void renderDay(PoseStack graphics, Font font, double x, double y, double width) {
         Date date = SakuraClock.clientNow();
         int color = textureCoordinate.getTextColorDefault();
         Component dayComponent = SakuraComponent.get().literal(String.valueOf(day));
@@ -155,24 +206,25 @@ public final class SignInCell extends BaseWidget {
             color = textureCoordinate.getTextColorCanRepair();
         }
         float dayWidth = font.width(dayComponent.toString());
-        font.draw(stack, dayComponent.color(color).toVanilla(),
-                (float) (x + (width - dayWidth) / 2),
-                (float) (y + textureCoordinate.getDateOffset() * scale + 0.1f), color);
+        xin.vanilla.sakura.client.LegacyGuiText.draw(graphics, font, dayComponent.color(color).toVanilla(),
+                (int) (x + (width - dayWidth) / 2),
+                (int) (y + textureCoordinate.getDateOffset() * scale + 0.1f), color, false);
     }
 
     /**
      * 在 Screen 的延迟提示阶段绘制奖励详情，避免被弹出菜单或裁剪区域覆盖。
      */
-    public void renderTooltip(PoseStack stack, Font font, ItemRenderer itemRenderer) {
+    public void renderTooltip(PoseStack graphics, Font font) {
+        PoseStack stack = graphics;
         double x = absoluteX();
         double y = absoluteY();
         double width = bounds().width();
-        Coordinate tooltipUV = textureCoordinate.getTooltipUV();
+        ThemeTexture tooltipTexture = SakuraThemeTextures.get("background.tooltip");
         Coordinate cellCoordinate = textureCoordinate.getTooltipCellCoordinate();
         double margin = textureCoordinate.getTooltipCellHMargin();
         double tooltipWidth = margin + (itemIconSize + margin) * TOOLTIP_MAX_VISIBLE_ITEMS;
-        double tooltipHeight = tooltipWidth * tooltipUV.getVHeight() / tooltipUV.getUWidth();
-        double tooltipScale = tooltipWidth / tooltipUV.getUWidth();
+        double tooltipHeight = tooltipWidth * textureCoordinate.getTooltipHeight() / textureCoordinate.getTooltipWidth();
+        double tooltipScale = tooltipWidth / textureCoordinate.getTooltipWidth();
         double tooltipX = (x == iconX ? screen.inputState().mouseX() : iconX + width / 2) - tooltipWidth / 2;
         double tooltipY = (y == iconY ? screen.inputState().mouseY() : iconY - 2) - tooltipHeight - 1;
 
@@ -181,17 +233,12 @@ public final class SignInCell extends BaseWidget {
         stack.translate(0, 0, 200);
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        Minecraft.getInstance().getTextureManager().bind(backgroundTexture);
-        AbstractGuiUtils.blit(stack, backgroundTexture, (int) tooltipX, (int) tooltipY,
-                (int) tooltipWidth, (int) tooltipHeight,
-                (float) tooltipUV.getU0(), (float) tooltipUV.getV0(),
-                (int) tooltipUV.getUWidth(), (int) tooltipUV.getVHeight(),
-                textureCoordinate.getTotalWidth(), textureCoordinate.getTotalHeight());
+        tooltipTexture.draw(stack, (int) tooltipX, (int) tooltipY, (int) tooltipWidth, (int) tooltipHeight);
         RenderSystem.disableBlend();
 
         renderTooltipScrollBar(stack, tooltipX, tooltipY, tooltipScale);
-        renderTooltipRewards(stack, font, itemRenderer, tooltipX, tooltipY, tooltipScale, margin, cellCoordinate);
-        renderTooltipDate(stack, font, tooltipX, tooltipY, tooltipWidth, tooltipScale);
+        renderTooltipRewards(graphics, font, tooltipX, tooltipY, tooltipScale, margin, cellCoordinate);
+        renderTooltipDate(graphics, font, tooltipX, tooltipY, tooltipWidth, tooltipScale);
 
         stack.popPose();
         RenderSystem.enableDepthTest();
@@ -203,8 +250,8 @@ public final class SignInCell extends BaseWidget {
         double trackY = tooltipY + scroll.getY() * tooltipScale;
         double trackWidth = scroll.getWidth() * tooltipScale;
         double trackHeight = scroll.getHeight() * tooltipScale;
-        GuiComponent.fill(stack, (int) trackX, (int) trackY,
-                (int) (trackX + trackWidth), (int) (trackY + trackHeight), 0xCC232323);
+        AbstractGuiUtils.fill(stack, (int) trackX, (int) trackY,
+                (int) trackWidth, (int) trackHeight, 0xCC232323);
 
         double visibleScale = rewardList.size() > TOOLTIP_MAX_VISIBLE_ITEMS
                 ? (double) TOOLTIP_MAX_VISIBLE_ITEMS / rewardList.size() : 1;
@@ -213,11 +260,11 @@ public final class SignInCell extends BaseWidget {
                 : (1 - visibleScale) * trackWidth / hiddenItems;
         double thumbX = trackX + tooltipScrollOffset * offsetWidth;
         double thumbWidth = trackWidth * visibleScale;
-        GuiComponent.fill(stack, (int) thumbX + 1, (int) trackY,
-                (int) (thumbX + thumbWidth) - 1, (int) (trackY + trackHeight), 0xCCCCCCCC);
+        AbstractGuiUtils.fill(stack, (int) thumbX + 1, (int) trackY,
+                Math.max(0, (int) thumbWidth - 2), (int) trackHeight, 0xCCCCCCCC);
     }
 
-    private void renderTooltipRewards(PoseStack stack, Font font, ItemRenderer itemRenderer,
+    private void renderTooltipRewards(PoseStack graphics, Font font,
                                       double tooltipX, double tooltipY, double tooltipScale,
                                       double margin, Coordinate cellCoordinate) {
         boolean showProbability = Minecraft.getInstance().player == null
@@ -232,13 +279,13 @@ public final class SignInCell extends BaseWidget {
             double itemX = tooltipX + cellCoordinate.getX() * tooltipScale
                     + i * (itemIconSize + margin);
             double itemY = tooltipY + cellCoordinate.getY() * tooltipScale;
-            RewardRenderer.renderCustomReward(stack, itemRenderer, font,
+            RewardRenderer.renderCustomReward(graphics, Minecraft.getInstance().getItemRenderer(), font,
                     backgroundTexture, textureCoordinate, reward,
                     (int) itemX, (int) itemY, true, showProbability);
         }
     }
 
-    private void renderTooltipDate(PoseStack stack, Font font, double tooltipX,
+    private void renderTooltipDate(PoseStack graphics, Font font, double tooltipX,
                                    double tooltipY, double tooltipWidth, double tooltipScale) {
         Date date = DateUtils.getDate(year, month, day);
         String monthTitle = DateUtils.toLocalStringMonth(date, Minecraft.getInstance().options.languageCode);
@@ -246,7 +293,8 @@ public final class SignInCell extends BaseWidget {
         Component title = SakuraComponent.get().literal(monthTitle + " " + dayTitle);
         double titleX = tooltipX + (tooltipWidth - font.width(title.toString())) / 2;
         double titleY = tooltipY + textureCoordinate.getTooltipDateCoordinate().getY() * tooltipScale;
-        font.draw(stack, title.color(0xFFFFFFFF).toVanilla(), (int) titleX, (int) titleY, 0xFFFFFFFF);
+        xin.vanilla.sakura.client.LegacyGuiText.draw(graphics, font, title.color(0xFFFFFFFF).toVanilla(),
+                (int) titleX, (int) titleY, 0xFFFFFFFF, false);
     }
 
     @Override

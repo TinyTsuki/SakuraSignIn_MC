@@ -1,0 +1,29 @@
+import org.gradle.api.tasks.bundling.AbstractArchiveTask
+import org.gradle.api.publish.maven.tasks.GenerateMavenPom
+
+if (tasks.findByName('sourcesJar') == null) java.withSourcesJar()
+tasks.named('sourcesJar', Jar).configure {
+    archiveBaseName.set(mod_id)
+    archiveVersion.set("${loader_type}-${minecraft_version}-${mod_version}")
+}
+tasks.named('test', Test).configure {
+    filter { excludeTestsMatching '*UiArtifactBoundaryTest.formalArchivesContainOnlyProductFiles' }
+}
+tasks.register('uiArtifactTest', Test) {
+    dependsOn 'assemble', 'sourcesJar', 'testClasses'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    filter { includeTestsMatching '*UiArtifactBoundaryTest.formalArchivesContainOnlyProductFiles' }
+    inputs.files(tasks.withType(AbstractArchiveTask).collect { it.archiveFile })
+    outputs.upToDateWhen { false }
+    doFirst {
+        def archives = tasks.withType(AbstractArchiveTask).collect { it.archiveFile.get().asFile }.findAll { it.isFile() }.unique()
+        if (!archives) throw new GradleException('No formal UI artifact inputs')
+        systemProperty 'banira.ui.artifacts', archives.collect { it.absolutePath }.join(File.pathSeparator)
+        def poms = tasks.withType(GenerateMavenPom).collect { it.destination }.findAll { it.isFile() }
+        systemProperty 'banira.ui.poms', poms.collect { it.absolutePath }.join(File.pathSeparator)
+    }
+}
+plugins.withId('maven-publish') {
+    tasks.named('uiArtifactTest').configure { dependsOn tasks.withType(GenerateMavenPom) }
+}

@@ -16,13 +16,16 @@ import xin.vanilla.sakura.reward.RewardList;
 import java.util.Arrays;
 import java.util.function.Consumer;
 
-/** 奖池规则使用明确选项配置，避免玩家猜测策略枚举与数值含义。 */
+/**
+ * 奖池规则使用明确选项配置，避免玩家猜测策略枚举与数值含义。
+ */
 public final class LotteryPoolForm {
     private LotteryPoolForm() {
     }
 
     public static Screen create(Screen parent, LotteryPool existing,
                                 Consumer<LotteryPool> submit) {
+        Consumer<LotteryPool> connectedSubmit = connectedOnce(submit);
         InputFormScreen.Args args = new InputFormScreen.Args()
                 .setParentScreen(parent)
                 .setHeaderTitle(text("lottery_pool_title"));
@@ -34,6 +37,9 @@ public final class LotteryPoolForm {
                 .defaultValue(existing == null ? "" : existing.getId())
                 .validator(result -> {
                     String id = result.value();
+                    if (id == null || !id.matches("[a-z0-9_.-]{1,64}")) {
+                        return tr("input_format_invalid");
+                    }
                     if (existing != null) {
                         return existing.getId().equals(id) ? "" : tr("lottery_pool_id_locked");
                     }
@@ -46,7 +52,12 @@ public final class LotteryPoolForm {
                 .tooltip(text("lottery_pool_name_hint"))
                 .maxLength(96)
                 .regex(".{1,96}")
-                .defaultValue(existing == null ? "" : existing.getDisplayName()));
+                .defaultValue(existing == null ? "" : existing.getDisplayName())
+                .validator(result -> {
+                    String name = result.value();
+                    return name == null || name.trim().isEmpty() || name.length() > 96
+                            ? tr("input_format_invalid") : "";
+                }));
         args.addWidget(new InputFormScreen.Widget().name("description")
                 .title(text("lottery_pool_description")).hint(text("lottery_pool_description"))
                 .tooltip(text("lottery_pool_description"))
@@ -77,7 +88,7 @@ public final class LotteryPoolForm {
                 existing == null ? LotteryLimitPolicy.DAILY.name()
                         : existing.getLimitPolicy().name(),
                 Arrays.stream(LotteryLimitPolicy.values()).map(policy -> option(
-                        policy.name(), "lottery_policy_" + policy.name().toLowerCase()))
+                                policy.name(), "lottery_policy_" + policy.name().toLowerCase()))
                         .toArray(DropdownOption[]::new)));
         args.addWidget(number("maxDraws", "lottery_max_draws",
                 "lottery_max_draws_tooltip",
@@ -88,7 +99,7 @@ public final class LotteryPoolForm {
         args.addWidget(dropdown("previewMode", "lottery_preview_mode",
                 (existing == null ? LotteryPreviewMode.ALL : existing.getPreviewMode()).name(),
                 Arrays.stream(LotteryPreviewMode.values()).map(mode -> option(
-                        mode.name(), "lottery_preview_" + mode.name().toLowerCase()))
+                                mode.name(), "lottery_preview_" + mode.name().toLowerCase()))
                         .toArray(DropdownOption[]::new)));
         args.setCallback(results -> {
             LotteryPool candidate = new LotteryPool(results.value("id"), results.value("name"),
@@ -99,15 +110,18 @@ public final class LotteryPoolForm {
                     existing == null ? new RewardList() : existing.getRewards());
             candidate.setDescription(results.value("description"));
             candidate.setVoucherExpression(results.value("voucherExpression"));
-            if (LotteryPoolValidator.validate(candidate).isEmpty()) {
-                submit.accept(candidate);
+            if (!LotteryPoolValidator.validate(candidate).isEmpty()) {
+                results.runningResult(tr("input_format_invalid"));
+                return;
             }
+            connectedSubmit.accept(candidate);
         });
         return new InputFormScreen(args);
     }
 
     private static Screen voucherItemForm(Screen parent, net.minecraft.world.item.ItemStack stack,
-                                           Consumer<String> selected) {
+                                          Consumer<String> selected) {
+        Consumer<String> connectedSelected = connectedOnce(selected);
         InputFormScreen.Args args = new InputFormScreen.Args().setParentScreen(parent)
                 .setHeaderTitle(text("lottery_voucher_item"));
         args.addWidget(dropdown("match", "lottery_voucher_match", "ID",
@@ -124,9 +138,20 @@ public final class LotteryPoolForm {
                         return tr("lottery_number_range");
                     }
                 }));
-        args.setCallback(results -> selected.accept(LotteryVoucherExpressions.item(stack,
+        args.setCallback(results -> connectedSelected.accept(LotteryVoucherExpressions.item(stack,
                 Integer.parseInt(results.value("amount")), "EXACT".equals(results.value("match")))));
         return new InputFormScreen(args);
+    }
+
+    private static <T> Consumer<T> connectedOnce(Consumer<T> callback) {
+        lombok.var client = net.minecraft.client.Minecraft.getInstance();
+        Object origin = client == null ? null : client.getConnection();
+        lombok.var submitted = new java.util.concurrent.atomic.AtomicBoolean();
+        return value -> {
+            lombok.var current = net.minecraft.client.Minecraft.getInstance();
+            if (origin == (current == null ? null : current.getConnection()) && submitted.compareAndSet(false, true))
+                callback.accept(value);
+        };
     }
 
     private static InputFormScreen.Widget number(String name, String titleKey,
