@@ -17,11 +17,6 @@ public class Coordinate implements Serializable {
     public double width;
     public double height;
 
-    public double u0;
-    public double v0;
-    public double uWidth;
-    public double vHeight;
-
     public Coordinate(double x, double y) {
         this.x = x;
         this.y = y;

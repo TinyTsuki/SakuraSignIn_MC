@@ -1,0 +1,59 @@
+import org.gradle.api.tasks.bundling.AbstractArchiveTask
+
+def requestedRoot = providers.gradleProperty('banira.validationOutputRoot').orNull
+def validationRoot = null
+if (requestedRoot != null) {
+    def requestedFile = new File(requestedRoot)
+    if (!requestedFile.isAbsolute()) {
+        throw new GradleException('banira.validationOutputRoot must be absolute')
+    }
+    validationRoot = requestedFile.canonicalFile
+    def segments = validationRoot.path.replace('\\', '/').split('/')
+    if (segments.any { it.equalsIgnoreCase('builds') }
+            || validationRoot.parentFile == null || validationRoot == projectDir.canonicalFile) {
+        throw new GradleException('Unsafe validation output root')
+    }
+}
+
+ext.baniraDistributionDirectory = validationRoot ?: file("builds/${mod_version}")
+
+if (validationRoot != null) {
+    gradle.projectsEvaluated {
+        // Loom realizes remapSourcesJar by moving its source input to devlibs.
+        def archives = tasks.withType(AbstractArchiveTask).toList()
+        archives.each { archive ->
+            archive.destinationDirectory.set(archive.name == 'sourcesJar'
+                    ? new File(validationRoot, 'named-sources') : validationRoot)
+            archive.destinationDirectory.disallowChanges()
+        }
+    }
+    gradle.taskGraph.whenReady { graph ->
+        def publications = graph.allTasks.findAll { it instanceof org.gradle.api.publish.maven.tasks.AbstractPublishToMaven }
+        if (!publications.empty) {
+            def local = System.getProperty('maven.repo.local')
+            if (local == null || !new File(local).isAbsolute()
+                    || new File(local).canonicalFile == new File(System.getProperty('user.home'), '.m2/repository').canonicalFile)
+                throw new GradleException('Validation publication requires an explicit isolated maven.repo.local')
+            def isolated = new File(local).canonicalFile
+            publications.findAll { it instanceof org.gradle.api.publish.maven.tasks.PublishToMavenRepository }.each { task ->
+                def target = task.repository.url.scheme == 'file' ? new File(task.repository.url).canonicalFile : null
+                def contractTest = task.name == 'publishMavenJavaPublicationToPublicationContractRepository'
+                        && target == layout.buildDirectory.dir('publication-contract-repository').get().asFile.canonicalFile
+                if (target != isolated && !contractTest) throw new GradleException("Validation publication escaped isolated Maven root: ${task.path}")
+            }
+        }
+        graph.allTasks.findAll { it instanceof AbstractArchiveTask }.each { archive ->
+            def target = archive.archiveFile.get().asFile.canonicalFile
+            if (!target.toPath().startsWith(validationRoot.toPath())) {
+                throw new GradleException("Archive escaped validation output root: ${archive.path}")
+            }
+        }
+        publishing.publications.each { publication ->
+            publication.artifacts.each { artifact ->
+                if (!artifact.file.canonicalFile.toPath().startsWith(validationRoot.toPath())) {
+                    throw new GradleException("Publication escaped validation output root: ${publication.name}")
+                }
+            }
+        }
+    }
+}

@@ -1,9 +1,7 @@
 package xin.vanilla.sakura.screen;
 
-import xin.vanilla.sakura.data.time.SakuraClock;
-
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -13,24 +11,27 @@ import net.minecraft.client.gui.GuiComponent;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.resources.ResourceLocation;
+import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.event.MouseEvent;
 import xin.vanilla.banira.client.gui.event.MouseScrollEvent;
 import xin.vanilla.banira.client.gui.widget.BaseWidget;
+import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.common.util.DateUtils;
+import xin.vanilla.sakura.SakuraComponent;
+import xin.vanilla.sakura.client.gui.RewardRenderer;
+import xin.vanilla.sakura.client.theme.SakuraThemeTextures;
+import xin.vanilla.sakura.client.theme.ThemeTexture;
 import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.config.CommonConfig;
+import xin.vanilla.sakura.data.time.SakuraClock;
 import xin.vanilla.sakura.enums.ESignInStatus;
 import xin.vanilla.sakura.reward.Reward;
 import xin.vanilla.sakura.reward.RewardList;
-import xin.vanilla.sakura.client.gui.RewardRenderer;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
-import xin.vanilla.sakura.SakuraComponent;
-import xin.vanilla.banira.client.util.AbstractGuiUtils;
-import xin.vanilla.banira.common.util.DateUtils;
-import xin.vanilla.banira.client.data.GLFWKey;
 
 import java.util.Date;
 import java.util.function.Consumer;
@@ -43,6 +44,59 @@ import java.util.function.Consumer;
 @Accessors(chain = true)
 public final class SignInCell extends BaseWidget {
     public static final int TOOLTIP_MAX_VISIBLE_ITEMS = 5;
+
+    public Component uiDay() {
+        Date now = SakuraClock.clientNow();
+        int color = textureCoordinate.getTextColorDefault();
+        boolean currentMonth = year == DateUtils.getYearPart(now) && month == DateUtils.getMonthOfDate(now);
+        boolean today = currentMonth && day == DateUtils.getDayOfMonth(now);
+        if (today) color = textureCoordinate.getTextColorToday();
+        else if (currentMonth) color = textureCoordinate.getTextColorCurrent();
+        else if (status == ESignInStatus.CAN_REPAIR.getCode()) color = textureCoordinate.getTextColorCanRepair();
+        return SakuraComponent.get().literal(showText ? Integer.toString(day) : "").color(color).underlined(today);
+    }
+
+    public xin.vanilla.banira.client.data.Texture uiStatusIcon() {
+        if (!showIcon) return null;
+        return statusTexture().texture();
+    }
+
+    public Component uiTooltip() {
+        Component result = SakuraComponent.get().literal(DateUtils.toString(DateUtils.getDate(year, month, day)));
+        if (!showHover) return result;
+        LocalPlayerPermission permissions = tooltipPermissions();
+        if (!permissions.details) return result;
+        String language = Minecraft.getInstance().options.languageCode;
+        for (Reward reward : rewardList) {
+            result.append("\n").append(reward.getName(language, true));
+            if (permissions.probability)
+                result.append(" (" + reward.getProbability().stripTrailingZeros().toPlainString() + ")");
+        }
+        return result;
+    }
+
+    public boolean uiDetailsVisible() {
+        return showHover && tooltipPermissions().details;
+    }
+
+    public java.util.List<xin.vanilla.sakura.client.ui.SignInUiSession.RewardLine> uiRewardLines() {
+        if (!uiDetailsVisible()) return java.util.List.of();
+        boolean probability = tooltipPermissions().probability;
+        String language = Minecraft.getInstance().options.languageCode;
+        return rewardList.stream().map(reward -> new xin.vanilla.sakura.client.ui.SignInUiSession.RewardLine(
+                reward.getName(language, true), probability ? SakuraComponent.get().transClient("format", "aui_probability_s",
+                reward.getProbability().multiply(java.math.BigDecimal.valueOf(100)).stripTrailingZeros().toPlainString())
+                : SakuraComponent.get().literal(""), RewardRenderer.uiIcon(reward))).toList();
+    }
+
+    private LocalPlayerPermission tooltipPermissions() {
+        net.minecraft.client.player.LocalPlayer player = Minecraft.getInstance().player;
+        return new LocalPlayerPermission(player == null || player.hasPermissions(CommonConfig.get().permission().permissionRewardDetail()),
+                player == null || player.hasPermissions(CommonConfig.get().permission().permissionRewardProbability()));
+    }
+
+    private record LocalPlayerPermission(boolean details, boolean probability) {
+    }
 
     private final ResourceLocation backgroundTexture;
     private final TextureCoordinate textureCoordinate;
@@ -99,27 +153,20 @@ public final class SignInCell extends BaseWidget {
 
     private void renderStatusIcon(PoseStack stack, double x, double y, double width, double height) {
         if (status == ESignInStatus.REWARDED.getCode()) {
-            Coordinate uv = textureCoordinate.getRewardedUV();
-            AbstractGuiUtils.blit(stack, backgroundTexture, (int) x, (int) y, (int) width, (int) height,
-                    (float) uv.getU0(), (float) uv.getV0(),
-                    (int) uv.getUWidth(), (int) uv.getVHeight(),
-                    textureCoordinate.getTotalWidth(), textureCoordinate.getTotalHeight());
+            statusTexture().draw(stack, (int) x, (int) y, (int) width, (int) height);
             return;
         }
 
-        Coordinate uv = status == ESignInStatus.SIGNED_IN.getCode()
-                || ClientConfig.get().display().autoRewarded()
-                ? textureCoordinate.getSignedInUV()
-                : textureCoordinate.getNotSignedInUV();
         updateAprilFoolsPosition(x, y, width, height);
-        float u0 = (float) (uv.getU0() + uv.getX());
-        float v0 = (float) (uv.getV0() + uv.getY());
         int hoverPadding = mouseInside ? 2 : 0;
-        AbstractGuiUtils.blit(stack, backgroundTexture,
+        statusTexture().draw(stack,
                 (int) iconX - hoverPadding, (int) iconY - hoverPadding,
-                (int) width + hoverPadding * 2, (int) height + hoverPadding * 2,
-                u0, v0, (int) uv.getUWidth(), (int) uv.getVHeight(),
-                textureCoordinate.getTotalWidth(), textureCoordinate.getTotalHeight());
+                (int) width + hoverPadding * 2, (int) height + hoverPadding * 2);
+    }
+
+    private ThemeTexture statusTexture() {
+        return SakuraThemeTextures.status(status == ESignInStatus.REWARDED.getCode() ? "rewarded"
+                : status == ESignInStatus.SIGNED_IN.getCode() || ClientConfig.get().display().autoRewarded() ? "signed_in" : "not_signed_in");
     }
 
     private void updateAprilFoolsPosition(double x, double y, double width, double height) {
@@ -167,12 +214,12 @@ public final class SignInCell extends BaseWidget {
         double x = absoluteX();
         double y = absoluteY();
         double width = bounds().width();
-        Coordinate tooltipUV = textureCoordinate.getTooltipUV();
+        ThemeTexture tooltipTexture = SakuraThemeTextures.get("background.tooltip");
         Coordinate cellCoordinate = textureCoordinate.getTooltipCellCoordinate();
         double margin = textureCoordinate.getTooltipCellHMargin();
         double tooltipWidth = margin + (itemIconSize + margin) * TOOLTIP_MAX_VISIBLE_ITEMS;
-        double tooltipHeight = tooltipWidth * tooltipUV.getVHeight() / tooltipUV.getUWidth();
-        double tooltipScale = tooltipWidth / tooltipUV.getUWidth();
+        double tooltipHeight = tooltipWidth * textureCoordinate.getTooltipHeight() / textureCoordinate.getTooltipWidth();
+        double tooltipScale = tooltipWidth / textureCoordinate.getTooltipWidth();
         double tooltipX = (x == iconX ? screen.inputState().mouseX() : iconX + width / 2) - tooltipWidth / 2;
         double tooltipY = (y == iconY ? screen.inputState().mouseY() : iconY - 2) - tooltipHeight - 1;
 
@@ -181,12 +228,7 @@ public final class SignInCell extends BaseWidget {
         stack.translate(0, 0, 200);
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        RenderSystem.setShaderTexture(0, backgroundTexture);
-        AbstractGuiUtils.blit(stack, backgroundTexture, (int) tooltipX, (int) tooltipY,
-                (int) tooltipWidth, (int) tooltipHeight,
-                (float) tooltipUV.getU0(), (float) tooltipUV.getV0(),
-                (int) tooltipUV.getUWidth(), (int) tooltipUV.getVHeight(),
-                textureCoordinate.getTotalWidth(), textureCoordinate.getTotalHeight());
+        tooltipTexture.draw(stack, (int) tooltipX, (int) tooltipY, (int) tooltipWidth, (int) tooltipHeight);
         RenderSystem.disableBlend();
 
         renderTooltipScrollBar(stack, tooltipX, tooltipY, tooltipScale);
