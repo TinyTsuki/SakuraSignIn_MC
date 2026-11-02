@@ -158,7 +158,9 @@ tasks.register('prepareDevFpsOverlay') {
     doLast prepareBaniraDevFpsOverlay
 }
 
-prepareBaniraDevFpsOverlay()
+tasks.matching { it.name == 'runClient' }.configureEach {
+    dependsOn 'prepareDevFpsOverlay'
+}
 tasks.named('processResources', ProcessResources).configure {
     filteringCharset = 'UTF-8'
     var replaceProperties = [
