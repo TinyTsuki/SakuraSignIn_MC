@@ -36,7 +36,6 @@ public final class SakuraClientBootstrap {
             return;
         }
 
-        ClientConfig.sanitizeNavigationShortcuts();
         BaniraThemes.register(SakuraSignIn.MODID,
                 () -> ClientConfig.get().display().interfaceThemeMode());
         BuiltInRewardClientTypes.register();
@@ -45,8 +44,6 @@ public final class SakuraClientBootstrap {
         BaniraKeyHandle rewardOptionKey = BaniraInput.registerKey(
                 SakuraSignIn.MODID, "reward_option", GLFWKey.GLFW_KEY_UNKNOWN);
 
-        xin.vanilla.sakura.config.reward.RewardConfigManager.configureClientScope(
-                () -> net.minecraft.client.Minecraft.getInstance().isSameThread());
         SakuraClientPacketHandlers.register(
                 ClientProxy::handleSynPlayerData,
                 ClientProxy::handleMonthData,
@@ -61,6 +58,9 @@ public final class SakuraClientBootstrap {
                 ClientProxy::handleRewardOptionUploadResult
         );
         BaniraClientEvents.ModLifecycle.onClientSetup(event -> {
+            ClientConfig.sanitizeNavigationShortcuts();
+            xin.vanilla.sakura.config.reward.RewardConfigManager.configureClientScope(
+                    () -> net.minecraft.client.Minecraft.getInstance().isSameThread());
             SakuraClientNotificationTypes.register();
             ClientEventHandler.loadThemeTexture();
         });

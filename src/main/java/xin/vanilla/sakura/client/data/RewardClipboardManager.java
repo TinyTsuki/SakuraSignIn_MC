@@ -5,9 +5,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import lombok.NonNull;
 import net.minecraft.client.Minecraft;
+import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.sakura.reward.Reward;
 import xin.vanilla.sakura.reward.RewardList;
-import xin.vanilla.banira.common.util.StringUtils;
 
 public class RewardClipboardManager {
 

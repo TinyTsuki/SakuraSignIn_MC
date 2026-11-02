@@ -2,15 +2,17 @@ package xin.vanilla.sakura.client.reward.builtin;
 
 import lombok.Value;
 import net.minecraft.advancements.DisplayInfo;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.util.ResourceLocation;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.client.SakuraClientState;
 import xin.vanilla.sakura.network.data.AdvancementData;
 
-/** 将同步的进度展示数据转换为稳定的奖励图标与名称。 */
+/**
+ * 将同步的进度展示数据转换为稳定的奖励图标与名称。
+ */
 final class AdvancementPresentationResolver {
     private AdvancementPresentationResolver() {
     }
@@ -20,15 +22,14 @@ final class AdvancementPresentationResolver {
                 .filter(candidate -> candidate.getId().equals(id))
                 .findFirst().orElse(null);
         DisplayInfo display = data == null ? null : data.getDisplayInfo();
-        ItemStack icon = display == null ? ItemStack.EMPTY : AdvancementData.displayIcon(display);
-        if (icon.isEmpty()) {
+        if (display == null || display.getIcon().isEmpty()) {
             return new ResolvedDisplay(new ItemStack(Items.KNOWLEDGE_BOOK),
                     SakuraComponent.get().transClient("word", "reward_type_6"));
         }
-        Component name = AdvancementData.displayTitle(display) == null
+        Component name = display.getTitle() == null
                 ? SakuraComponent.get().transClient("word", "reward_type_6")
-                : SakuraComponent.get().object(AdvancementData.displayTitle(display));
-        return new ResolvedDisplay(icon, name);
+                : SakuraComponent.get().object(display.getTitle());
+        return new ResolvedDisplay(display.getIcon().copy(), name);
     }
 
     static ResourceLocation fallbackIconId() {

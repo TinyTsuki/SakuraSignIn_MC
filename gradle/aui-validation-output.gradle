@@ -1,0 +1,34 @@
+import org.gradle.api.tasks.bundling.AbstractArchiveTask
+
+def requestedRoot = providers.gradleProperty('banira.validationOutputRoot').orNull
+def validationRoot = null
+if (requestedRoot != null) {
+    def requestedFile = new File(requestedRoot)
+    if (!requestedFile.isAbsolute()) {
+        throw new GradleException('banira.validationOutputRoot must be absolute')
+    }
+    validationRoot = requestedFile.canonicalFile
+    def segments = validationRoot.path.replace('\\', '/').split('/')
+    if (segments.any { it.equalsIgnoreCase('builds') }
+            || validationRoot.parentFile == null || validationRoot == projectDir.canonicalFile) {
+        throw new GradleException('Unsafe validation output root')
+    }
+}
+
+ext.baniraDistributionDirectory = validationRoot ?: file("builds/${mod_version}")
+
+if (validationRoot != null) {
+    gradle.projectsEvaluated {
+        tasks.withType(AbstractArchiveTask).configureEach {
+            destinationDirectory.set(validationRoot)
+        }
+    }
+    gradle.taskGraph.whenReady { graph ->
+        graph.allTasks.findAll { it instanceof AbstractArchiveTask }.each { archive ->
+            def target = archive.archiveFile.get().asFile.canonicalFile
+            if (!target.toPath().startsWith(validationRoot.toPath())) {
+                throw new GradleException("Archive escaped validation output root: ${archive.path}")
+            }
+        }
+    }
+}

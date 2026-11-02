@@ -7,14 +7,18 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.PacketBuffer;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
+import net.minecraft.network.IPacket;
+import net.minecraft.network.play.server.SChatPacket;
+import net.minecraft.network.play.ServerPlayNetHandler;
 import net.minecraft.potion.EffectInstance;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.event.ClickEvent;
 import net.minecraft.util.text.event.HoverEvent;
 import io.netty.buffer.Unpooled;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
@@ -71,6 +75,11 @@ public class RewardManagerDeliveryTest {
     private int packetAttempts;
     private int failPacketAt;
 
+    @BeforeClass
+    public static void bootstrapMinecraftRegistries() {
+        net.minecraft.util.registry.Bootstrap.bootStrap();
+    }
+
     @Before
     public void setUp() throws Exception {
         BaniraTestPlatform.install();
@@ -108,6 +117,11 @@ public class RewardManagerDeliveryTest {
                 .invoke(field(unsafeClass, "theUnsafe").get(null), TestPlayer.class);
         player.events = events;
         field(PlayerEntity.class, "inventory").set(player, new CountingInventory(player));
+        field(ServerPlayerEntity.class, "chatVisibility").set(player, net.minecraft.entity.player.ChatVisibility.FULL);
+        RecordingConnection connection = (RecordingConnection) unsafeClass.getMethod("allocateInstance", Class.class)
+                .invoke(field(unsafeClass, "theUnsafe").get(null), RecordingConnection.class);
+        connection.owner = player;
+        player.connection = connection;
         SakuraOnlineTime.install(ignored -> 0);
         SakuraPlayerData.install((SakuraPlayerDataService) Proxy.newProxyInstance(
                 getClass().getClassLoader(), new Class<?>[]{SakuraPlayerDataService.class},
@@ -336,7 +350,7 @@ public class RewardManagerDeliveryTest {
         Component entry = SakuraComponent.get().literal("\u5956\u52b1\ud83c\udf38")
                 .color(java.awt.Color.GREEN.getRGB())
                 .clickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/sakura help"))
-                .hoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new StringTextComponent("hover detail")))
+                .hoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new net.minecraft.util.text.StringTextComponent("hover detail")))
                 .languageCode("zh_cn");
         String originalPrefix = prefix.toJson().toString();
         String originalEntry = entry.toJson().toString();
@@ -451,7 +465,7 @@ public class RewardManagerDeliveryTest {
         configureItemAndPersonalDate();
         RewardConfigManager.getRewardConfig().getBaseRewards().clear();
         ItemStack cake = new ItemStack(Items.CAKE, 1);
-        cake.setHoverName(new StringTextComponent("birthday-cake"));
+        cake.setHoverName(new net.minecraft.util.text.StringTextComponent("birthday-cake"));
         RewardConfigManager.getRewardConfig().getPersonalDatePresets().get(0)
                 .setRewards(new RewardList(Collections.singletonList(new Reward(cake, SakuraRewardTypes.ITEM))));
         inventory().full = true;
@@ -555,7 +569,7 @@ public class RewardManagerDeliveryTest {
         for (int index = 0; index < 256; index++) {
             String name = "reward-" + index + "-" + repeat("detail", 35);
             ItemStack item = new ItemStack(Items.APPLE, 1);
-            item.setHoverName(new StringTextComponent(name));
+            item.setHoverName(new net.minecraft.util.text.StringTextComponent(name));
             RewardConfigManager.getRewardConfig().getBaseRewards().add(new Reward(item, SakuraRewardTypes.ITEM));
             names.add(name + "x1");
         }
@@ -563,7 +577,9 @@ public class RewardManagerDeliveryTest {
     }
 
     private static void collectNames(Component component, List<String> names) {
-        if (component.text().startsWith("reward-")) {
+        String name = component.original() instanceof net.minecraft.util.text.ITextComponent
+                ? ((net.minecraft.util.text.ITextComponent) component.original()).getString() : component.text();
+        if (name.startsWith("reward-")) {
             assertEquals(java.awt.Color.GREEN.getRGB(), component.color().argb());
             names.add(component.toString(true));
             return;
@@ -704,8 +720,27 @@ public class RewardManagerDeliveryTest {
                         .invoke(field(unsafeClass, "theUnsafe").get(null), net.minecraft.entity.item.ItemEntity.class);
             } catch (Exception failure) { throw new IllegalStateException(failure); }
         }
-        @Override public void sendMessage(ITextComponent message, UUID sender) {
-            String text = message.getString();
+        @Override public boolean isLocalPlayer() { return false; }
+
+        private void submit(SChatPacket packet) {
+            PacketBuffer buffer = new PacketBuffer(Unpooled.buffer());
+            String text;
+            try {
+                packet.write(buffer);
+                SChatPacket decoded = new SChatPacket();
+                decoded.read(buffer);
+                assertNotEquals("Result messages must stay in chat", net.minecraft.util.text.ChatType.GAME_INFO, decoded.getType());
+                assertEquals(packet.getType(), decoded.getType());
+                assertEquals(packet.getSender(), decoded.getSender());
+                assertEquals(net.minecraft.util.text.ITextComponent.Serializer.toJson(packet.getMessage()),
+                        net.minecraft.util.text.ITextComponent.Serializer.toJson(decoded.getMessage()));
+                text = decoded.getMessage().getString();
+                assertEquals(0, buffer.readableBytes());
+            } catch (java.io.IOException failure) {
+                throw new IllegalStateException(failure);
+            } finally {
+                buffer.release();
+            }
             if (text.contains("message-body")) {
                 bodyAttempts++;
                 events.add("message");
@@ -717,6 +752,20 @@ public class RewardManagerDeliveryTest {
             }
             if (delivered == null) delivered = new ArrayList<>();
             delivered.add(text);
+        }
+    }
+
+    private static final class RecordingConnection extends ServerPlayNetHandler {
+        private TestPlayer owner;
+
+        private RecordingConnection() { super(null, null, null); }
+
+        @Override public void send(IPacket<?> packet) {
+            owner.submit((SChatPacket) packet);
+        }
+
+        @Override public void send(IPacket<?> packet, GenericFutureListener<? extends Future<? super Void>> listener) {
+            owner.submit((SChatPacket) packet);
         }
     }
 }

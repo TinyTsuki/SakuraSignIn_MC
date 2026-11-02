@@ -4,7 +4,6 @@ import net.minecraft.client.gui.screen.Screen;
 import xin.vanilla.banira.client.gui.InputFormScreen;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.client.gui.widget.DropdownOption;
-import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.client.SakuraClientState;
@@ -22,7 +21,9 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-/** 个性化日期预设表单只让标识和名称自由输入，其余字段使用可解释选项。 */
+/**
+ * 个性化日期预设表单只让标识和名称自由输入，其余字段使用可解释选项。
+ */
 public final class PersonalDatePresetForm {
     private PersonalDatePresetForm() {
     }
@@ -34,6 +35,9 @@ public final class PersonalDatePresetForm {
                 .setHeaderTitle(text("personal_date_preset_title"));
         args.addWidget(textWidget("id", "personal_date_preset_id",
                 existing == null ? "" : existing.getId(), "[a-z0-9_.-]{1,64}", value -> {
+                    if (value == null || !value.matches("[a-z0-9_.-]{1,64}")) {
+                        return tr("input_format_invalid");
+                    }
                     if (existing != null && !existing.getId().equals(value)) {
                         return tr("personal_date_preset_id_locked");
                     }
@@ -44,7 +48,9 @@ public final class PersonalDatePresetForm {
                     return duplicate ? tr("personal_date_preset_duplicate") : "";
                 }));
         args.addWidget(textWidget("name", "personal_date_preset_name",
-                existing == null ? "" : existing.getDisplayName(), ".{1,64}", value -> ""));
+                existing == null ? "" : existing.getDisplayName(), ".{1,64}", value ->
+                        value == null || value.trim().isEmpty() || value.length() > 64
+                                ? tr("input_format_invalid") : ""));
         args.addWidget(dropdown("recurrence", "personal_date_recurrence",
                 existing == null ? PersonalDateRecurrence.YEARLY.name()
                         : existing.getRecurrence().name(), false,
@@ -86,9 +92,11 @@ public final class PersonalDatePresetForm {
                     Integer.parseInt(results.value("before")),
                     Integer.parseInt(results.value("after")),
                     existing == null ? new RewardList() : existing.getRewards());
-            if (PersonalDatePresetValidator.validate(candidate).isEmpty()) {
-                submit.accept(candidate);
+            if (!PersonalDatePresetValidator.validate(candidate).isEmpty()) {
+                results.runningResult(tr("personal_date_preset_invalid"));
+                return;
             }
+            submit.accept(candidate);
         });
         return new InputFormScreen(args);
     }
@@ -104,7 +112,7 @@ public final class PersonalDatePresetForm {
     }
 
     private static InputFormScreen.Widget numberWidget(String name, String titleKey,
-                                                        int value, int min, int max) {
+                                                       int value, int min, int max) {
         return new InputFormScreen.Widget().name(name).title(text(titleKey))
                 .tooltip(text(titleKey + "_tooltip"))
                 .maxLength(String.valueOf(max).length()).regex("[0-9]+")

@@ -1,0 +1,11 @@
+// Mixin's processor deletes its temporary outputs before an incremental no-source compile.
+tasks.named('compileJava', JavaCompile).configure {
+    options.incremental = false
+    def refmap = new File(temporaryDir, "${mod_id}.refmap.json")
+    def generated = new File(temporaryDir, 'compileJava-refmap.json')
+    outputs.files(refmap, generated,
+            new File(temporaryDir, 'compileJava-mappings.tsrg'))
+    doLast {
+        if (!generated.isFile()) throw new GradleException('Missing generated Mixin refmap')
+    }
+}

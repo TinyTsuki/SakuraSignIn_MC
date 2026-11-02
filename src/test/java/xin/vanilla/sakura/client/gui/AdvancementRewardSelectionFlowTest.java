@@ -2,6 +2,7 @@ package xin.vanilla.sakura.client.gui;
 
 import net.minecraft.util.ResourceLocation;
 import org.junit.Test;
+
 import static org.junit.Assert.assertEquals;
 
 /**

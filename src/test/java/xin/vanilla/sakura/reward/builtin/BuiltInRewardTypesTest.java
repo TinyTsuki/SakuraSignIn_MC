@@ -7,6 +7,7 @@ import net.minecraft.potion.EffectInstance;
 import net.minecraft.potion.Effects;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import xin.vanilla.sakura.api.reward.RewardDataException;
 import xin.vanilla.sakura.api.reward.RewardRegistryTestSupport;
@@ -22,10 +23,15 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 public class BuiltInRewardTypesTest {
+    @BeforeClass
+    public static void bootstrapMinecraftRegistries() {
+        net.minecraft.util.registry.Bootstrap.bootStrap();
+    }
 
     @Before
     @After
@@ -78,6 +84,32 @@ public class BuiltInRewardTypesTest {
                 () -> new CommandRewardCodec().decode(new JsonObject()));
         assertThrows(RewardDataException.class,
                 () -> new MessageRewardCodec().decode(new JsonObject()));
+    }
+
+    @Test
+    public void itemDescriptionPreservesTranslationUntilClientRendering() {
+        BuiltInRewardTypes.register();
+        Reward reward = new Reward(new ItemStack(Items.APPLE, 2), SakuraRewardTypes.ITEM);
+        lombok.var description = reward.getName("zh_cn", true);
+        JsonObject wire = description.toJson();
+        assertNotNull("Item names must retain the original component on the wire", wire.get("original"));
+        assertEquals("item.minecraft.apple", wire.getAsJsonObject("original").get("translate").getAsString());
+        assertEquals("x2", description.toVanilla().getSiblings().get(0).getString());
+        assertEquals(Items.APPLE.getDescriptionId(), ((net.minecraft.util.text.TranslationTextComponent)
+                description.toVanilla()).getKey());
+    }
+
+    @Test
+    public void itemDescriptionKeepsCustomStyledNameAndOptionalAmount() {
+        BuiltInRewardTypes.register();
+        ItemStack item = new ItemStack(Items.CAKE, 3);
+        lombok.var name = new net.minecraft.util.text.StringTextComponent("Birthday cake")
+                .withStyle(net.minecraft.util.text.TextFormatting.GOLD);
+        item.setHoverName(name);
+        lombok.var description = new Reward(item, SakuraRewardTypes.ITEM).getName("zh_cn", false);
+        assertEquals(net.minecraft.util.text.ITextComponent.Serializer.toJsonTree(name),
+                description.toJson().get("original"));
+        assertEquals("Birthday cake", description.toVanilla().getString());
     }
 
     @Test

@@ -1,24 +1,36 @@
 package xin.vanilla.sakura.client.theme;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-import net.minecraft.util.ResourceLocation;
 import xin.vanilla.sakura.screen.coordinate.TextureCoordinate;
 
-/**
- * 内置主题的纹理与布局描述，数据来源于打包的 UTF-8 JSON。
- */
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 @Getter
-@NoArgsConstructor
-@AllArgsConstructor
 public final class BuiltInThemeDescriptor {
     private int format;
     private String id;
-    private String texture;
-    private TextureCoordinate coordinates;
+    private String textureRoot;
+    private TextureCoordinate layout;
+    private Map<String, String> textures;
+    private transient Map<String, ThemeTexture> resolved;
 
-    public ResourceLocation textureLocation() {
-        return new ResourceLocation(texture);
+    void resolve(Map<String, ThemeTexture> values) {
+        textures = Collections.unmodifiableMap(new LinkedHashMap<>(textures));
+        resolved = Collections.unmodifiableMap(new LinkedHashMap<>(values));
+    }
+
+    BuiltInThemeDescriptor isolatePackagedTextures() {
+        Map<String, ThemeTexture> isolated = new LinkedHashMap<>();
+        resolved.forEach((key, value) -> isolated.put(key, value.isolated()));
+        resolve(isolated);
+        return this;
+    }
+
+    public ThemeTexture texture(String key) {
+        ThemeTexture result = resolved == null ? null : resolved.get(key);
+        if (result == null) throw new IllegalArgumentException("Missing theme texture: " + key);
+        return result;
     }
 }
