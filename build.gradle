@@ -179,7 +179,9 @@ tasks.register('prepareDevFpsOverlay') {
     doLast prepareBaniraDevFpsOverlay
 }
 
-prepareBaniraDevFpsOverlay()
+tasks.matching { it.name == 'runClient' }.configureEach {
+    dependsOn 'prepareDevFpsOverlay'
+}
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
