@@ -80,7 +80,9 @@ public class Fabric20UiPortTest {
         assertTrue(build.contains("id 'maven-publish'"));
         assertTrue(build.contains("destinationDirectory.set(baniraDistributionDirectory)"));
         assertTrue(build.contains("artifact tasks.named('remapSourcesJar')"));
-        assertTrue(build.contains("if (providers.gradleProperty('banira.validationOutputRoot').orNull == null) prepareBaniraDevFpsOverlay()"));
+        assertTrue(build.contains("tasks.named('runClient').configure { dependsOn 'prepareDevFpsOverlay' }"));
+        assertTrue(build.contains("doLast prepareBaniraDevFpsOverlay"));
+        assertFalse(build.contains("orNull == null) prepareBaniraDevFpsOverlay()"));
         String isolation = Files.readString(Path.of("gradle/aui-validation-output.gradle"));
         assertTrue(isolation.contains("disallowChanges()"));
         assertTrue(isolation.contains("Publication escaped validation output root"));
