@@ -114,6 +114,7 @@ public final class ConfigBaselineFixture implements ConfigValueStore {
                         new Class<?>[]{xin.vanilla.banira.platform.BaniraPlatform.class},
                         (proxy, method, args) -> {
                             if (method.getName().equals("configService")) return service;
+                            if (method.getName().equals("isClient")) return false;
                             throw new UnsupportedOperationException(method.toString());
                         }));
     }

@@ -70,7 +70,7 @@ public final class BuiltInRewardTypes {
                         ? Collections.singletonList(new RewardViolation("item", "non_empty"))
                         : Collections.emptyList())
                 .describer((language, value, withAmount) -> SakuraComponent.get()
-                        .literal(value.getHoverName().getString())
+                        .object(value.getHoverName().copy())
                         .append(withAmount ? "x" + value.getCount() : ""))
                 .merger(new RewardMerger<ItemStack>() {
                     @Override
