@@ -108,7 +108,7 @@ public final class CardCommand {
         SakuraMessages.send(source, SakuraComponent.get().trans(
                 source,
                 "format", "set_player_s_sign_in_card_d",
-                target.getDisplayName().getString(),
+                target.getDisplayName(),
                 SakuraPlayerData.get(target).getSignInCard()
         ));
         return 1;
