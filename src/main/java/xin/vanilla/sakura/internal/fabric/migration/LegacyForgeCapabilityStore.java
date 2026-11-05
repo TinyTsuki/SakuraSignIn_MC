@@ -33,10 +33,7 @@ public final class LegacyForgeCapabilityStore implements LegacyCapabilityStore {
             return Optional.empty();
         }
         CompoundTag root = AtomicNbtFiles.read(playerFile);
-        CompoundTag forgeCaps = root.getCompound("ForgeCaps");
-        return forgeCaps.contains(CAPABILITY_KEY, 10)
-                ? Optional.of(forgeCaps.getCompound(CAPABILITY_KEY).copy())
-                : Optional.empty();
+        return root.getCompound("ForgeCaps").flatMap(tag -> tag.getCompound(CAPABILITY_KEY)).map(CompoundTag::copy);
     }
 
     @Override
@@ -70,16 +67,16 @@ public final class LegacyForgeCapabilityStore implements LegacyCapabilityStore {
     public void removeAndVerify(UUID playerUuid, CompoundTag expectedCapability) throws IOException {
         Path playerFile = playerFile(playerUuid);
         CompoundTag root = AtomicNbtFiles.read(playerFile);
-        CompoundTag forgeCaps = root.getCompound("ForgeCaps");
-        if (!forgeCaps.contains(CAPABILITY_KEY, 10)) {
+        Optional<CompoundTag> capability = root.getCompound("ForgeCaps").flatMap(tag -> tag.getCompound(CAPABILITY_KEY));
+        if (capability.isEmpty()) {
             return;
         }
-        if (!expectedCapability.equals(forgeCaps.getCompound(CAPABILITY_KEY))) {
+        if (!expectedCapability.equals(capability.get())) {
             throw new IOException("Legacy Capability changed during migration: " + playerUuid);
         }
 
         CompoundTag rewritten = root.copy();
-        rewritten.getCompound("ForgeCaps").remove(CAPABILITY_KEY);
+        rewritten.getCompound("ForgeCaps").orElseThrow().remove(CAPABILITY_KEY);
         replacePlayerFileWithRollback(playerFile, root, rewritten, playerUuid);
     }
 
@@ -119,7 +116,7 @@ public final class LegacyForgeCapabilityStore implements LegacyCapabilityStore {
             Files.move(replacement, playerFile,
                     StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
             CompoundTag verified = AtomicNbtFiles.read(playerFile);
-            if (verified.getCompound("ForgeCaps").contains(CAPABILITY_KEY, 10)) {
+            if (verified.getCompound("ForgeCaps").flatMap(tag -> tag.getCompound(CAPABILITY_KEY)).isPresent()) {
                 throw new IOException("Legacy Capability removal verification failed: " + playerUuid);
             }
             Files.deleteIfExists(rollback);

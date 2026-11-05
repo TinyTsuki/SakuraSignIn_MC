@@ -1,7 +1,7 @@
 package xin.vanilla.sakura.client.gui;
 
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import xin.vanilla.banira.client.gui.AdvancementSelectScreen;
 
 import java.util.Objects;
@@ -16,8 +16,8 @@ public final class AdvancementRewardSelectionFlow {
 
     public static Screen create(
             Screen parent,
-            ResourceLocation defaultAdvancement,
-            Consumer<ResourceLocation> onSelected
+            Identifier defaultAdvancement,
+            Consumer<Identifier> onSelected
     ) {
         Objects.requireNonNull(parent);
         Objects.requireNonNull(defaultAdvancement);
@@ -27,12 +27,12 @@ public final class AdvancementRewardSelectionFlow {
                 .parentScreen(parent)
                 .defaultAdvancement(defaultAdvancement)
                 .closeAfterSubmit(true)
-                .onDataReceived((Consumer<ResourceLocation>) advancement ->
+                .onDataReceived((Consumer<Identifier>) advancement ->
                         onSelected.accept(copyValue(advancement)));
         return new AdvancementSelectScreen(args);
     }
 
-    static ResourceLocation copyValue(ResourceLocation advancement) {
-        return ResourceLocation.parse(advancement.toString());
+    static Identifier copyValue(Identifier advancement) {
+        return Identifier.parse(advancement.toString());
     }
 }

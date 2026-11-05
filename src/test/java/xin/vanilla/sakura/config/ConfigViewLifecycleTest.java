@@ -6,21 +6,38 @@ import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.config.ConfigValueStore;
 import xin.vanilla.banira.internal.fabric.config.FabricBaniraConfigService;
 import xin.vanilla.banira.platform.*;
+
 import java.lang.reflect.*;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+
 import static org.junit.Assert.*;
 
 public class ConfigViewLifecycleTest {
-    @Rule public TemporaryFolder temporary = new TemporaryFolder();
-    @Rule public org.junit.rules.ExternalResource platform = ConfigBaselineFixture.platformScope();
-    @BeforeClass public static void bootstrap() { net.minecraft.SharedConstants.tryDetectVersion(); net.minecraft.server.Bootstrap.bootStrap(); }
-    @Test public void retainedHistoryFollowRealFileReloadAndRebinding() throws Exception { verify(false); }
-    @Test public void retainedClientCategoryFollowsRealFileReloadAndRebinding() throws Exception { verify(true); }
+    @Rule
+    public TemporaryFolder temporary = new TemporaryFolder();
+    @Rule
+    public org.junit.rules.ExternalResource platform = ConfigBaselineFixture.platformScope();
 
-    @Test public void lotteryScopeStartsAfterClientSetup() throws Exception {
+    @BeforeClass
+    public static void bootstrap() {
+        xin.vanilla.sakura.test.NativeBootstrap.initialize();
+    }
+
+    @Test
+    public void retainedHistoryFollowRealFileReloadAndRebinding() throws Exception {
+        verify(false);
+    }
+
+    @Test
+    public void retainedClientCategoryFollowsRealFileReloadAndRebinding() throws Exception {
+        verify(true);
+    }
+
+    @Test
+    public void lotteryScopeStartsAfterClientSetup() throws Exception {
         String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
                 "src/main/java/xin/vanilla/sakura/client/SakuraClientBootstrap.java")), java.nio.charset.StandardCharsets.UTF_8);
         int setup = source.indexOf("ModLifecycle.onClientSetup");
@@ -72,7 +89,8 @@ public class ConfigViewLifecycleTest {
         assertEquals(saved, read.get());
     }
 
-    @Test public void generatedViewsRetainFluentAccessorsWithoutExposingRootFields() throws Exception {
+    @Test
+    public void generatedViewsRetainFluentAccessorsWithoutExposingRootFields() throws Exception {
         install(temporary.newFolder().toPath(), FabricBaniraConfigService.INSTANCE);
         FabricBaniraConfigService.INSTANCE.register(CommonConfig.class, "sakura_sign_in");
         FabricBaniraConfigService.INSTANCE.register(ClientConfig.class, "sakura_sign_in");
@@ -99,12 +117,14 @@ public class ConfigViewLifecycleTest {
     private static ConfigHolder holder(Class<?> type) {
         return (ConfigHolder) FabricBaniraConfigService.INSTANCE.handle(type);
     }
+
     private static ConfigValueStore disk(Path path, ConfigHolder holder) throws Exception {
         Class<?> type = Class.forName("xin.vanilla.banira.internal.fabric.config.FabricConfigValueStore");
         Constructor<?> constructor = type.getDeclaredConstructor(Path.class, List.class);
         constructor.setAccessible(true);
         return (ConfigValueStore) constructor.newInstance(path, holder.getDescriptors());
     }
+
     private static void install(Path directory, BaniraConfigService service) {
         BaniraPlatforms.install((BaniraPlatform) Proxy.newProxyInstance(
                 ConfigViewLifecycleTest.class.getClassLoader(), new Class<?>[]{BaniraPlatform.class},

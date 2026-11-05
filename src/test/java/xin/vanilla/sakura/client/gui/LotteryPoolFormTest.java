@@ -18,10 +18,15 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.Assert.*;
 
 public class LotteryPoolFormTest {
-    @Rule public xin.vanilla.sakura.test.UnboundConfigPlatform platform = new xin.vanilla.sakura.test.UnboundConfigPlatform();
-    @BeforeClass public static void bootstrap() throws Exception {
-        net.minecraft.SharedConstants.tryDetectVersion();
-        net.minecraft.server.Bootstrap.bootStrap();
+    @org.junit.Rule
+    public final xin.vanilla.sakura.test.NativeClientRule nativeClient = new xin.vanilla.sakura.test.NativeClientRule();
+
+    @Rule
+    public xin.vanilla.sakura.test.UnboundConfigPlatform platform = new xin.vanilla.sakura.test.UnboundConfigPlatform();
+
+    @BeforeClass
+    public static void bootstrap() throws Exception {
+        xin.vanilla.sakura.test.NativeBootstrap.initialize();
         BaniraTestPlatform.install();
         BaniraTestPlatform.register("minecraft:paper", Items.PAPER);
     }
@@ -30,11 +35,14 @@ public class LotteryPoolFormTest {
         return net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY);
     }
 
-    @Test public void exactVoucherBuilderAcceptsExplicitComponentRegistry() throws Exception {
+    @Test
+    public void exactVoucherBuilderAcceptsExplicitComponentRegistry() throws Exception {
         LotteryVoucherExpressions.class.getMethod("item", ItemStack.class, int.class,
                 boolean.class, net.minecraft.core.HolderLookup.Provider.class);
     }
-    @Test public void metadataFieldsRetainBoundsAndNewlines() throws Exception {
+
+    @Test
+    public void metadataFieldsRetainBoundsAndNewlines() throws Exception {
         LotteryPool pool = pool();
         pool.setDescription("First\nSecond");
         pool.setVoucherExpression("xpPoints(2)");
@@ -50,7 +58,8 @@ public class LotteryPoolFormTest {
                 .value("voucherExpression", 0, "System.exit(0)").curName("voucherExpression")).isEmpty());
     }
 
-    @Test public void submitPreservesMetadataAndDoesNotUploadInvalidExpression() throws Exception {
+    @Test
+    public void submitPreservesMetadataAndDoesNotUploadInvalidExpression() throws Exception {
         LotteryPool pool = pool();
         pool.setDescription("One\nTwo");
         pool.setVoucherExpression("xpPoints(2)");
@@ -69,24 +78,31 @@ public class LotteryPoolFormTest {
         assertNull(submitted.get());
     }
 
-    @Test public void exactVoucherRetainsNonCustomDataComponents() {
+    @Test
+    public void exactVoucherRetainsNonCustomDataComponents() {
         ItemStack paper = new ItemStack(Items.PAPER);
         paper.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, net.minecraft.network.chat.Component.literal("Named token"));
         assertTrue(LotteryVoucherExpressions.item(paper, 1, true, registries()).contains("custom_name"));
     }
 
-    @Test public void selectedItemsUseNativeSpecificationsAndExplicitMatchMode() {
+    @Test
+    public void selectedItemsUseNativeSpecificationsAndExplicitMatchMode() throws Exception {
         ItemStack paper = new ItemStack(Items.PAPER, 12);
         net.minecraft.world.item.component.CustomData.update(net.minecraft.core.component.DataComponents.CUSTOM_DATA, paper, tag -> tag.putString("label", "A\"B\\C"));
         String exact = LotteryVoucherExpressions.item(paper, 2, true, registries());
         String idOnly = LotteryVoucherExpressions.item(paper, 2, false);
-        assertEquals(new net.minecraft.commands.arguments.item.ItemInput(paper.getItemHolder(), paper.getComponentsPatch()).serialize(registries()), BaniraCosts.parse(exact).resource().specification());
+        var reader = new com.mojang.brigadier.StringReader(BaniraCosts.parse(exact).resource().specification());
+        var parsed = new net.minecraft.commands.arguments.item.ItemParser(registries()).parse(reader);
+        assertFalse(reader.canRead());
+        assertEquals(paper.typeHolder(), parsed.item());
+        assertEquals(paper.getComponentsPatch(), parsed.components());
         assertEquals("minecraft:paper", BaniraCosts.parse(idOnly).resource().specification());
         assertEquals(12, paper.getCount());
         assertEquals(2, BaniraCosts.parse(exact).resource().amount());
     }
 
-    @Test public void editingSyncedPoolCopyKeepsItsLockedIdValid() throws Exception {
+    @Test
+    public void editingSyncedPoolCopyKeepsItsLockedIdValid() throws Exception {
         xin.vanilla.sakura.config.reward.RewardConfig previous =
                 xin.vanilla.sakura.config.reward.RewardConfigManager.getRewardConfig();
         try {
@@ -187,12 +203,15 @@ public class LotteryPoolFormTest {
     private static LotteryPool pool() {
         return new LotteryPool("daily", "Daily", LotteryLimitPolicy.DAILY, 1, 0, new RewardList());
     }
+
     private static InputFormScreen.Widget widget(InputFormScreen.Args args, String name) {
         return args.getWidgets().stream().filter(widget -> name.equals(widget.name())).findFirst()
                 .orElseThrow(() -> new AssertionError("Missing field " + name));
     }
+
     private static InputFormScreen.Args form(LotteryPool pool, AtomicReference<LotteryPool> submit) throws Exception {
-        Screen parent = new Screen(net.minecraft.network.chat.Component.literal("parent")) {};
+        Screen parent = new Screen(net.minecraft.network.chat.Component.literal("parent")) {
+        };
         Screen screen = LotteryPoolForm.create(parent, pool, submit::set);
         Field field = InputFormScreen.class.getDeclaredField("args");
         field.setAccessible(true);

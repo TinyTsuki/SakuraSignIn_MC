@@ -1,6 +1,6 @@
 package xin.vanilla.sakura.client.theme;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -10,7 +10,7 @@ import java.util.function.Function;
  * Owns only synthetic packaged fallback textures; resource-pack textures remain Minecraft-owned.
  */
 final class ThemeTextureBindings {
-    private Set<ResourceLocation> active = Set.of();
+    private Set<Identifier> active = Set.of();
 
     static <I extends AutoCloseable, T> T transfer(I image, Function<I, T> construct) {
         try {
@@ -25,10 +25,10 @@ final class ThemeTextureBindings {
         }
     }
 
-    void replace(Collection<ThemeTexture> textures, Consumer<ThemeTexture> upload, Consumer<ResourceLocation> release) {
-        Map<ResourceLocation, ThemeTexture> next = new LinkedHashMap<>();
+    void replace(Collection<ThemeTexture> textures, Consumer<ThemeTexture> upload, Consumer<Identifier> release) {
+        Map<Identifier, ThemeTexture> next = new LinkedHashMap<>();
         for (var texture : textures) if (texture.requiresUpload()) next.put(texture.location(), texture);
-        List<ResourceLocation> added = new ArrayList<>();
+        List<Identifier> added = new ArrayList<>();
         try {
             for (var entry : next.entrySet())
                 if (!active.contains(entry.getKey())) {

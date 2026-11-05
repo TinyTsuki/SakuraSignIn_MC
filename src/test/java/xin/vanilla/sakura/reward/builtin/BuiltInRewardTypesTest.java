@@ -29,8 +29,7 @@ import static org.junit.Assert.assertTrue;
 public class BuiltInRewardTypesTest {
     @BeforeClass
     public static void bootstrapMinecraftRegistries() {
-        net.minecraft.SharedConstants.tryDetectVersion();
-        net.minecraft.server.Bootstrap.bootStrap();
+        xin.vanilla.sakura.test.NativeBootstrap.initialize();
     }
 
     @Before

@@ -1,8 +1,11 @@
 plugins {
-    id 'fabric-loom' version '1.17.21'
+    id 'net.fabricmc.fabric-loom' version '1.17.21'
 }
 
-def javaVer = 21
+def javaVer = 25
+if (JavaVersion.current() < JavaVersion.toVersion(javaVer)) {
+    throw new GradleException('Minecraft 26.1 requires a Java 25 or newer Gradle JVM')
+}
 
 group = project.mod_group_id
 version = project.mod_version
@@ -33,7 +36,7 @@ repositories {
     mavenLocal()
     maven {
         name = 'Terraformers Maven'
-        url = 'https://maven.terraformersmc.com/'
+        url = 'https://maven.terraformersmc.com/releases/'
     }
 }
 
@@ -48,26 +51,26 @@ repositories {
 }
 
 dependencies {
-    modRuntimeOnly "maven.modrinth:fabric-permissions-api:62DUD085"
-    modRuntimeOnly "maven.modrinth:sodium-extra:anDafurZ"
-    modRuntimeOnly "maven.modrinth:spark:cALUj9l1"
-    // Development runtime performance mod; not bundled into published artifacts.
-    modRuntimeOnly "maven.modrinth:AANobbMI:u1OEbNKx"
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    mappings loom.officialMojangMappings()
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    implementation("net.fabricmc:fabric-loader:${project.loader_version}") {
+        version { strictly(project.loader_version.toString()) }
+    }
+    implementation("net.fabricmc.fabric-api:fabric-api:${project.fabric_version}") {
+        version { strictly(project.fabric_version.toString()) }
+    }
+    implementation fabricApi.module('fabric-networking-api-v1', project.fabric_version)
+    implementation fabricApi.module('fabric-lifecycle-events-v1', project.fabric_version)
 
-    modImplementation(baniraCodexCoords) {
+    implementation(baniraCodexCoords) {
         changing = true
     }
-    modImplementation "com.terraformersmc:modmenu:${modmenu_version}"
+    compileOnly "com.terraformersmc:modmenu:${modmenu_version}"
 
     testImplementation 'junit:junit:4.13.2'
-    compileOnly 'org.projectlombok:lombok:1.18.34'
-    annotationProcessor 'org.projectlombok:lombok:1.18.34'
-    testCompileOnly 'org.projectlombok:lombok:1.18.34'
-    testAnnotationProcessor 'org.projectlombok:lombok:1.18.34'
+    compileOnly 'org.projectlombok:lombok:1.18.48'
+    annotationProcessor 'org.projectlombok:lombok:1.18.48'
+    testCompileOnly 'org.projectlombok:lombok:1.18.48'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.48'
     implementation 'com.google.code.findbugs:jsr305:3.0.2'
 }
 
@@ -87,6 +90,12 @@ def prepareBaniraDevFpsOverlay = {
 }
 
 tasks.register('prepareDevFpsOverlay') {
+    onlyIf { providers.gradleProperty('banira.devFpsOverlay').getOrElse('false').toBoolean() }
+    doFirst {
+        if (!project.baniraDevOptionalRuntimeProjects.contains('sodium-extra')) {
+            throw new GradleException('Development FPS overlay requires a verified exact-version sodium-extra pin')
+        }
+    }
     doLast prepareBaniraDevFpsOverlay
 }
 
@@ -145,19 +154,14 @@ tasks.named('jar', Jar).configure {
     }
 }
 
-tasks.named('remapJar') {
+tasks.named('jar') {
     archiveBaseName.set(project.mod_id)
     archiveVersion.set("${loader_type}-${minecraft_version}-${mod_version}")
     destinationDirectory.set(file("${projectDir}/builds/${mod_version}"))
 }
 
-// Fabric 的正式产物由 Loom remapJar 生成；保留同名任务便于统一构建脚本调用。
 tasks.register('jarAll') {
-    dependsOn 'remapJar'
-}
-
-tasks.named('assemble').configure {
-    dependsOn 'remapJar'
+    dependsOn 'jar'
 }
 
 apply from: 'gradle/network-smoke.gradle'

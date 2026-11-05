@@ -22,6 +22,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.Assert.*;
 
 public class BuiltInRewardUiFormTest {
+    @org.junit.Rule
+    public final xin.vanilla.sakura.test.NativeClientRule nativeClient = new xin.vanilla.sakura.test.NativeClientRule();
+
     @Rule
     public xin.vanilla.sakura.test.UnboundConfigPlatform platform = new xin.vanilla.sakura.test.UnboundConfigPlatform();
 
@@ -30,8 +33,10 @@ public class BuiltInRewardUiFormTest {
         xin.vanilla.sakura.client.ui.SignInUiParityTest.bootstrap();
     }
 
-    private static final Screen PARENT = new Screen(Component.empty()) {
-    };
+    private static Screen parent() {
+        return new Screen(Component.empty()) {
+        };
+    }
 
     private static InputFormScreen.Args args(Screen screen) throws Exception {
         assertNotNull(((UiPageSource) screen).uiPage());
@@ -57,7 +62,7 @@ public class BuiltInRewardUiFormTest {
     public void numericEditorsRestoreDefaultsRejectNonPositiveAndReturnIntegers() throws Exception {
         for (String title : new String[]{"enter_exp_point", "enter_exp_level", "enter_sign_in_card"}) {
             AtomicReference<Integer> submitted = new AtomicReference<>();
-            RewardEditContext<Integer> context = new RewardEditContext<>(PARENT, 37, submitted::set, () -> {
+            RewardEditContext<Integer> context = new RewardEditContext<>(parent(), 37, submitted::set, () -> {
             });
             InputFormScreen.Args args = args(form("positiveIntegerScreen", context, title));
             assertEquals("37", args.getWidgets().get(0).defaultValue());
@@ -68,7 +73,7 @@ public class BuiltInRewardUiFormTest {
             InputFormScreen.Results valid = new InputFormScreen.Results().value("field_0", 0, "12");
             args.getCallback().accept(valid);
             assertEquals(Integer.valueOf(12), submitted.get());
-            assertEquals("1", args(form("positiveIntegerScreen", new RewardEditContext<Integer>(PARENT, null, submitted::set, () -> {
+            assertEquals("1", args(form("positiveIntegerScreen", new RewardEditContext<Integer>(parent(), null, submitted::set, () -> {
             }), title)).getWidgets().get(0).defaultValue());
         }
     }
@@ -76,7 +81,7 @@ public class BuiltInRewardUiFormTest {
     @Test
     public void messageAndCommandKeepExactTextAndCommandValidation() throws Exception {
         AtomicReference<String> command = new AtomicReference<>();
-        InputFormScreen.Args args = args(form("commandScreen", new RewardEditContext<String>(PARENT, "/say old", command::set, () -> {
+        InputFormScreen.Args args = args(form("commandScreen", new RewardEditContext<String>(parent(), "/say old", command::set, () -> {
         })));
         assertEquals("/say old", args.getWidgets().get(0).defaultValue());
         InputFormScreen.Results invalid = new InputFormScreen.Results().value("field_0", 0, "say invalid");
@@ -87,7 +92,7 @@ public class BuiltInRewardUiFormTest {
         assertEquals("/say <literal>", command.get());
         AtomicReference<xin.vanilla.banira.common.data.Component> message = new AtomicReference<>();
         var initial = xin.vanilla.sakura.SakuraComponent.get().literal("old");
-        InputFormScreen.Args messageArgs = args(form("messageScreen", new RewardEditContext<>(PARENT, initial, message::set, () -> {
+        InputFormScreen.Args messageArgs = args(form("messageScreen", new RewardEditContext<>(parent(), initial, message::set, () -> {
         })));
         assertEquals(initial.toString(), messageArgs.getWidgets().get(0).defaultValue());
         messageArgs.getCallback().accept(new InputFormScreen.Results().value("field_0", 0, "<script>not executable</script>"));
@@ -97,7 +102,7 @@ public class BuiltInRewardUiFormTest {
     @Test
     public void threeSelectorsKeepSharedPagesAndCopiedInitialValues() throws Exception {
         var stack = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.DIAMOND, 7);
-        ItemSelectScreen item = (ItemSelectScreen) ItemRewardSelectionFlow.create(PARENT, stack, ignored -> {
+        ItemSelectScreen item = (ItemSelectScreen) ItemRewardSelectionFlow.create(parent(), stack, ignored -> {
         });
         assertNotNull(((UiPageSource) item).uiPage());
         Field itemArgs = ItemSelectScreen.class.getDeclaredField("args");
@@ -106,7 +111,7 @@ public class BuiltInRewardUiFormTest {
         assertNotSame(stack, copy);
         assertEquals(7, copy.getCount());
         var effect = new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.LUCK, 1234, 3, true, false, false);
-        EffectSelectScreen effects = (EffectSelectScreen) EffectRewardSelectionFlow.create(PARENT, effect, ignored -> {
+        EffectSelectScreen effects = (EffectSelectScreen) EffectRewardSelectionFlow.create(parent(), effect, ignored -> {
         });
         assertNotNull(((UiPageSource) effects).uiPage());
         Field effectArgs = EffectSelectScreen.class.getDeclaredField("args");
@@ -116,8 +121,8 @@ public class BuiltInRewardUiFormTest {
         assertEquals(1234, effectCopy.getDuration());
         assertEquals(3, effectCopy.getAmplifier());
         assertFalse(effectCopy.showIcon());
-        var id = net.minecraft.resources.ResourceLocation.parse("minecraft:story/root");
-        AdvancementSelectScreen advancement = (AdvancementSelectScreen) AdvancementRewardSelectionFlow.create(PARENT, id, ignored -> {
+        var id = net.minecraft.resources.Identifier.parse("minecraft:story/root");
+        AdvancementSelectScreen advancement = (AdvancementSelectScreen) AdvancementRewardSelectionFlow.create(parent(), id, ignored -> {
         });
         assertNotNull(((UiPageSource) advancement).uiPage());
         Field advancementArgs = AdvancementSelectScreen.class.getDeclaredField("args");

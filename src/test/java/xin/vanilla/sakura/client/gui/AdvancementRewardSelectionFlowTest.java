@@ -1,7 +1,8 @@
 package xin.vanilla.sakura.client.gui;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.junit.Test;
+
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -10,9 +11,9 @@ import static org.junit.Assert.assertEquals;
 public class AdvancementRewardSelectionFlowTest {
     @Test
     public void preservesAdvancementAndProbability() {
-        ResourceLocation selected = ResourceLocation.fromNamespaceAndPath("minecraft", "story/mine_stone");
+        Identifier selected = Identifier.fromNamespaceAndPath("minecraft", "story/mine_stone");
 
-        ResourceLocation reward = AdvancementRewardSelectionFlow.copyValue(selected);
+        Identifier reward = AdvancementRewardSelectionFlow.copyValue(selected);
 
         assertEquals(selected, reward);
     }

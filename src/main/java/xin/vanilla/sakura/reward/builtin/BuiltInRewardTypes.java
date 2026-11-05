@@ -1,10 +1,13 @@
 package xin.vanilla.sakura.reward.builtin;
 
+import net.minecraft.server.permissions.LevelBasedPermissionSet;
+import net.minecraft.server.permissions.PermissionLevel;
+
 import net.minecraft.advancements.Advancement;
 import net.minecraft.advancements.AdvancementProgress;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.core.registries.BuiltInRegistries;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.sakura.SakuraComponent;
@@ -105,7 +108,7 @@ public final class BuiltInRewardTypes {
                     @Override
                     public RewardMergeKey key(MobEffectInstance value) {
                         return RewardMergeKey.of(value.getEffect().unwrapKey()
-                                .map(key -> key.location().toString()).orElse("unknown")
+                                .map(key -> key.identifier().toString()).orElse("unknown")
                                 + ":" + value.getAmplifier());
                     }
 
@@ -146,7 +149,7 @@ public final class BuiltInRewardTypes {
         SakuraRewards.register(RewardTypeDefinition.builder(SakuraRewardTypes.ADVANCEMENT,
                         new AdvancementRewardCodec(), (context, value) -> {
                             net.minecraft.advancements.AdvancementHolder advancement =
-                                    context.player().server.getAdvancements().get(value);
+                                    context.player().level().getServer().getAdvancements().get(value);
                             if (advancement == null) {
                                 return RewardGrantResult.of(RewardGrantStatus.REJECTED, "unknown_advancement");
                             }
@@ -181,10 +184,11 @@ public final class BuiltInRewardTypes {
         SakuraRewards.register(RewardTypeDefinition.builder(SakuraRewardTypes.COMMAND,
                         new CommandRewardCodec(), (context, value) -> {
                             String command = value.replace("@s", context.player().getName().getString());
-                            net.minecraft.commands.Commands commands = context.player().server.getCommands();
+                            net.minecraft.commands.Commands commands = context.player().level().getServer().getCommands();
+                            var permission = PermissionLevel.byId(CommonConfig.get().permission().permissionCommandReward());
                             net.minecraft.commands.CommandSourceStack source = context.player()
                                     .createCommandSourceStack().withSuppressedOutput()
-                                    .withPermission(CommonConfig.get().permission().permissionCommandReward());
+                                    .withPermission(LevelBasedPermissionSet.forLevel(permission));
                             commands.performCommand(commands.getDispatcher().parse(command, source), command);
                             return RewardGrantResult.success();
                         })

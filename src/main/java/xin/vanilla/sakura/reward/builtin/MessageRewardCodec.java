@@ -48,22 +48,28 @@ public final class MessageRewardCodec implements RewardCodec<Component> {
                 .underlined(bool(json, "underlined")).strikethrough(bool(json, "strikethrough"))
                 .obfuscated(bool(json, "obfuscated"));
         if (json.has("clickEvent.action") && json.has("clickEvent.value")) {
-            result.clickEvent(new ClickEvent(clickAction(json.get("clickEvent.action").getAsString()),
+            result.clickEvent(clickEvent(json.get("clickEvent.action").getAsString(),
                     json.get("clickEvent.value").getAsString()));
         }
         if (json.has("hoverEvent")) {
             result.hoverEvent(HoverEvent.CODEC.parse(JsonOps.INSTANCE, json.get("hoverEvent")).getOrThrow());
         }
-        for (JsonElement child : array(json, "children")) result.getChildren().add(decodeLegacy(child.getAsJsonObject()));
+        for (JsonElement child : array(json, "children"))
+            result.getChildren().add(decodeLegacy(child.getAsJsonObject()));
         for (JsonElement arg : array(json, "args")) result.getArgs().add(decodeLegacy(arg.getAsJsonObject()));
         return result;
     }
 
-    private static ClickEvent.Action clickAction(String name) {
-        for (ClickEvent.Action action : ClickEvent.Action.values()) {
-            if (action.name().equalsIgnoreCase(name)) return action;
-        }
-        throw new IllegalArgumentException("Unknown click action: " + name);
+    private static ClickEvent clickEvent(String name, String value) {
+        return switch (name.toUpperCase(Locale.ROOT)) {
+            case "OPEN_URL" -> new ClickEvent.OpenUrl(java.net.URI.create(value));
+            case "OPEN_FILE" -> new ClickEvent.OpenFile(value);
+            case "RUN_COMMAND" -> new ClickEvent.RunCommand(value);
+            case "SUGGEST_COMMAND" -> new ClickEvent.SuggestCommand(value);
+            case "CHANGE_PAGE" -> new ClickEvent.ChangePage(Integer.parseInt(value));
+            case "COPY_TO_CLIPBOARD" -> new ClickEvent.CopyToClipboard(value);
+            default -> throw new IllegalArgumentException("Unknown click action: " + name);
+        };
     }
 
     private static String string(JsonObject json, String key, String fallback) {

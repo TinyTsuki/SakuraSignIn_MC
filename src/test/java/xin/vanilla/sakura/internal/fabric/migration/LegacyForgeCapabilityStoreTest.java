@@ -53,11 +53,10 @@ public class LegacyForgeCapabilityStoreTest {
 
         CompoundTag rewritten = NbtIo.readCompressed(
                 playerFile.toPath(), NbtAccounter.unlimitedHeap());
-        assertEquals("minecraft:overworld", rewritten.getString("Dimension"));
-        assertFalse(rewritten.getCompound("ForgeCaps").contains(
-                LegacyForgeCapabilityStore.CAPABILITY_KEY, 10
-        ));
-        assertEquals(other, rewritten.getCompound("ForgeCaps").getCompound("other_mod:data"));
+        assertEquals("minecraft:overworld", rewritten.getString("Dimension").orElseThrow());
+        assertTrue(rewritten.getCompound("ForgeCaps").orElseThrow()
+                .getCompound(LegacyForgeCapabilityStore.CAPABILITY_KEY).isEmpty());
+        assertEquals(other, rewritten.getCompound("ForgeCaps").orElseThrow().getCompound("other_mod:data").orElseThrow());
     }
 
     @Test

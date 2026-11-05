@@ -3,7 +3,7 @@ package xin.vanilla.sakura.reward.builtin;
 import com.google.gson.JsonObject;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.core.registries.BuiltInRegistries;
 import xin.vanilla.sakura.api.reward.RewardCodec;
 import xin.vanilla.sakura.api.reward.RewardDataException;
@@ -13,9 +13,9 @@ public final class EffectRewardCodec implements RewardCodec<MobEffectInstance> {
     public MobEffectInstance decode(JsonObject content) throws RewardDataException {
         try {
             String effectId = content.get("effect").getAsString();
-            ResourceLocation location = ResourceLocation.tryParse(effectId);
+            Identifier location = Identifier.tryParse(effectId);
             net.minecraft.core.Holder<MobEffect> effect = location == null ? null
-                    : BuiltInRegistries.MOB_EFFECT.getHolder(location).orElse(null);
+                    : BuiltInRegistries.MOB_EFFECT.get(location).orElse(null);
             if (effect == null) {
                 throw new RewardDataException("Unknown effect: " + effectId);
             }
@@ -34,8 +34,8 @@ public final class EffectRewardCodec implements RewardCodec<MobEffectInstance> {
 
     @Override
     public JsonObject encode(MobEffectInstance value) throws RewardDataException {
-        ResourceLocation effectId = value == null ? null
-                : value.getEffect().unwrapKey().map(key -> key.location()).orElse(null);
+        Identifier effectId = value == null ? null
+                : value.getEffect().unwrapKey().map(key -> key.identifier()).orElse(null);
         if (value == null || effectId == null || value.getDuration() <= 0) {
             throw new RewardDataException("MobEffect reward must contain a registered effect with positive duration");
         }

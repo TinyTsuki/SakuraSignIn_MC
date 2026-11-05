@@ -1,5 +1,6 @@
 package xin.vanilla.sakura.internal.fabric.migration;
 
+import xin.vanilla.sakura.util.SakuraNbt;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import lombok.Getter;
@@ -105,13 +106,13 @@ public final class MonthlySignInHistoryRepository implements SignInHistoryStore 
 
         List<SignInRecord> result = new ArrayList<>();
         for (Path file : files) {
-            ListTag records = AtomicNbtFiles.read(file).getList("records", 10);
+            ListTag records = SakuraNbt.compoundListOrEmpty(AtomicNbtFiles.read(file), "records");
             for (int i = 0; i < records.size(); i++) {
                 try {
-                    result.add(SignInRecord.readFromNBT(records.getCompound(i)));
+                    result.add(SignInRecord.readFromNBT(records.getCompoundOrEmpty(i)));
                 } catch (RuntimeException malformedRecord) {
-                    if (!records.getCompound(i).getBoolean("rewarded")
-                            && records.getCompound(i).contains("personalDateRewards")) {
+                    if (!records.getCompoundOrEmpty(i).getBooleanOr("rewarded", false)
+                            && records.getCompoundOrEmpty(i).contains("personalDateRewards")) {
                         throw new IOException("Unreadable pending personal date rewards in " + file, malformedRecord);
                     }
                     LOGGER.warn("Skipping unreadable sign-in history record in {}: {}",
@@ -151,11 +152,11 @@ public final class MonthlySignInHistoryRepository implements SignInHistoryStore 
                 continue;
             }
             if (policy == HistoryRetentionPolicy.DELETE_MONTH_FILE) {
-                ListTag pending = AtomicNbtFiles.read(file).getList("records", 10);
+                ListTag pending = SakuraNbt.compoundListOrEmpty(AtomicNbtFiles.read(file), "records");
                 boolean keep = false;
                 for (int i = 0; i < pending.size(); i++) {
-                    CompoundTag record = pending.getCompound(i);
-                    if (!record.getBoolean("rewarded") && record.contains("personalDateRewards")) {
+                    CompoundTag record = pending.getCompoundOrEmpty(i);
+                    if (!record.getBooleanOr("rewarded", false) && record.contains("personalDateRewards")) {
                         keep = true;
                         break;
                     }
@@ -181,12 +182,12 @@ public final class MonthlySignInHistoryRepository implements SignInHistoryStore 
 
     private static boolean stripRewardDetails(Path file) throws IOException {
         CompoundTag root = AtomicNbtFiles.read(file);
-        ListTag records = root.getList("records", 10);
+        ListTag records = SakuraNbt.compoundListOrEmpty(root, "records");
         boolean changed = false;
         for (int i = 0; i < records.size(); i++) {
-            CompoundTag record = records.getCompound(i);
+            CompoundTag record = records.getCompoundOrEmpty(i);
             // 未领取奖励仍依赖签到时保存的快照，不能参与压缩。
-            if (record.getBoolean("rewarded") && !"[]".equals(record.getString("rewardList"))) {
+            if (record.getBooleanOr("rewarded", false) && !"[]".equals(record.getStringOr("rewardList", ""))) {
                 record.putString("rewardList", "[]");
                 changed = true;
             }

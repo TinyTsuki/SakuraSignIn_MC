@@ -1,7 +1,9 @@
 package xin.vanilla.sakura.internal.client.dev;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.banira.client.gui.widget.IWidget;
@@ -156,7 +158,7 @@ final class SakuraNetworkSmokeScreens {
 
         @Override
         protected void init() {
-            delegate.init(minecraft, width, height);
+            delegate.init(width, height);
         }
 
         @Override
@@ -164,7 +166,7 @@ final class SakuraNetworkSmokeScreens {
         }
 
         @Override
-        protected void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+        protected void onRender(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
         }
 
         @Override
@@ -173,14 +175,14 @@ final class SakuraNetworkSmokeScreens {
             IPlayerSignInData data = SakuraPlayerData.get(minecraft.player);
             // The production packet handler refreshes only instanceof SignInScreen, so mirror that refresh here.
             if (data != lastSummary || data.getSignInRecords() != lastRecords) {
-                delegate.init(minecraft, width, height);
+                delegate.init(width, height);
                 lastSummary = data;
                 lastRecords = data.getSignInRecords();
             }
         }
 
         @Override
-        public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+        public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
             IWidget hovered = contentWidget(delegate, true);
             int x = hoverX(hovered, mouseX);
             int y = hoverY(hovered, mouseY);
@@ -188,7 +190,7 @@ final class SakuraNetworkSmokeScreens {
             delegate.runDevRenderAt(x, y, () -> {
                 long startedAt = System.nanoTime();
                 boolean sampledAtStart = metrics.sampling.getAsBoolean();
-                delegate.render(graphics, x, y, partialTicks);
+                delegate.extractRenderState(graphics, x, y, partialTicks);
                 metrics.render(System.nanoTime() - startedAt, hovered != null, sampledAtStart);
             });
         }
@@ -199,13 +201,13 @@ final class SakuraNetworkSmokeScreens {
         }
 
         @Override
-        public boolean mouseClicked(double x, double y, int button) {
-            return delegate.mouseClicked(x, y, button);
+        public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+            return delegate.mouseClicked(event, doubleClick);
         }
 
         @Override
-        public boolean mouseReleased(double x, double y, int button) {
-            return delegate.mouseReleased(x, y, button);
+        public boolean mouseReleased(MouseButtonEvent event) {
+            return delegate.mouseReleased(event);
         }
 
         @Override
@@ -214,13 +216,13 @@ final class SakuraNetworkSmokeScreens {
         }
 
         @Override
-        public boolean keyPressed(int key, int scan, int modifiers) {
-            return delegate.keyPressed(key, scan, modifiers);
+        public boolean keyPressed(KeyEvent event) {
+            return delegate.keyPressed(event);
         }
 
         @Override
-        public boolean keyReleased(int key, int scan, int modifiers) {
-            return delegate.keyReleased(key, scan, modifiers);
+        public boolean keyReleased(KeyEvent event) {
+            return delegate.keyReleased(event);
         }
     }
 
@@ -247,14 +249,14 @@ final class SakuraNetworkSmokeScreens {
         }
 
         @Override
-        public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+        public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
             IWidget hovered = contentWidget(this, false);
             int x = hoverX(hovered, mouseX);
             int y = hoverY(hovered, mouseY);
             runDevRenderAt(x, y, () -> {
                 long startedAt = System.nanoTime();
                 boolean sampledAtStart = metrics.sampling.getAsBoolean();
-                super.render(graphics, x, y, partialTicks);
+                super.extractRenderState(graphics, x, y, partialTicks);
                 metrics.render(System.nanoTime() - startedAt, hovered != null, sampledAtStart);
             });
         }

@@ -57,7 +57,7 @@ public final class SakuraMessages {
     }
 
     public static void broadcast(ServerPlayer sender, Component message) {
-        for (ServerPlayer player : sender.server.getPlayerList().getPlayers()) {
+        for (ServerPlayer player : sender.level().getServer().getPlayerList().getPlayers()) {
             send(player, message, SakuraNotificationTypes.ADMIN_BROADCAST);
         }
     }

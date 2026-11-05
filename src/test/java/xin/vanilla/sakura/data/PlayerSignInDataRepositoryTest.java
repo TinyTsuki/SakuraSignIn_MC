@@ -181,25 +181,25 @@ public class PlayerSignInDataRepositoryTest {
         legacy.save();
         assertEquals(PlayerSignInData.class, actual.repository.load(FIXTURE_UUID).getClass());
         assertEquivalent(actual, legacy);
-        assertEquals(4096, actual.summaries.stored.getInt("totalSignInDays"));
-        assertEquals(33, actual.summaries.stored.getInt("continuousSignInDays"));
+        assertEquals(4096, actual.summaries.stored.getIntOr("totalSignInDays", Integer.MIN_VALUE));
+        assertEquals(33, actual.summaries.stored.getIntOr("continuousSignInDays", Integer.MIN_VALUE));
         assertEquals(9, actual.histories.loadAll(FIXTURE_UUID).stream()
                 .map(record -> YearMonth.from(record.getCompensateTime().toInstant()
                         .atZone(java.time.ZoneId.systemDefault()))).distinct().count());
         assertEquals(RECORD_COUNT, actual.histories.loadAll(FIXTURE_UUID).size());
         assertTrue(actual.data.getMonthIndexes().get("2020-02").isRewarded(29));
-        CompoundTag migration = actual.summaries.stored.getCompound("migration");
-        assertTrue(migration.getBoolean("legacyCapabilityMigrated"));
+        CompoundTag migration = actual.summaries.stored.getCompound("migration").orElseThrow();
+        assertTrue(migration.getBooleanOr("legacyCapabilityMigrated", false));
         assertEquals("backups/sakura_sign_in/legacy-capability/original.nbt",
-                migration.getString("legacyCapabilityBackup"));
+                migration.getString("legacyCapabilityBackup").orElseThrow());
         assertArrayEquals(capabilityBytes, Files.readAllBytes(capabilityBackup));
-        ListTag slots = actual.summaries.stored.getList("personalDateSlots", 10);
+        ListTag slots = actual.summaries.stored.getListOrEmpty("personalDateSlots");
         assertEquals(2, slots.size());
-        assertEquals("YEARLY:2026", slots.getCompound(0).getCompound("claimedPeriodCursors")
-                .getString("YEARLY"));
-        assertEquals("MONTHLY:2026-10", slots.getCompound(0).getCompound("claimedPeriodCursors")
-                .getString("MONTHLY"));
-        assertEquals("removed", slots.getCompound(1).getString("presetId"));
+        assertEquals("YEARLY:2026", slots.getCompound(0).orElseThrow().getCompound("claimedPeriodCursors").orElseThrow()
+                .getString("YEARLY").orElseThrow());
+        assertEquals("MONTHLY:2026-10", slots.getCompound(0).orElseThrow().getCompound("claimedPeriodCursors").orElseThrow()
+                .getString("MONTHLY").orElseThrow());
+        assertEquals("removed", slots.getCompound(1).orElseThrow().getString("presetId").orElseThrow());
         CompoundTag after = actual.data.serializeNBT();
         before.remove("monthIndexes");
         after.remove("monthIndexes");
@@ -269,7 +269,7 @@ public class PlayerSignInDataRepositoryTest {
                 } else {
                     assertEquals(9, bytes.size());
                     assertEquals("[]", AtomicNbtFiles.read(historyFile(lane, "2025-09"))
-                            .getList("records", 10).getCompound(0).getString("rewardList"));
+                            .getListOrEmpty("records").getCompound(0).orElseThrow().getString("rewardList").orElseThrow());
                 }
             }
             assertEquivalent(actual, legacy);
@@ -283,13 +283,13 @@ public class PlayerSignInDataRepositoryTest {
         assertTrue(lane.repository.deleteDay(FIXTURE_UUID, lane.data,
                 LocalDate.of(2025, 1, 2), LocalDate.of(2025, 1, 3)));
         CompoundTag deletion = backup(lane, "");
-        assertEquals(31, deletion.getCompound("beforeHistory").getList("records", 10).size());
-        assertEquals(30, deletion.getCompound("afterHistory").getList("records", 10).size());
+        assertEquals(31, deletion.getCompound("beforeHistory").orElseThrow().getListOrEmpty("records").size());
+        assertEquals(30, deletion.getCompound("afterHistory").orElseThrow().getListOrEmpty("records").size());
         byte[] originalBackup = Files.readAllBytes(backupFile(lane, ""));
         assertEquals(1, lane.repository.resetPersonalDateClaims(FIXTURE_UUID, lane.data, "birthday", false));
         CompoundTag reset = backup(lane, "personalDateReset");
-        assertEquals("YEARLY:2026", reset.getCompound("beforeSummary")
-                .getList("personalDateSlots", 10).getCompound(0).getString("lastClaimedOccurrenceKey"));
+        assertEquals("YEARLY:2026", reset.getCompound("beforeSummary").orElseThrow()
+                .getListOrEmpty("personalDateSlots").getCompound(0).orElseThrow().getString("lastClaimedOccurrenceKey").orElseThrow());
         lane.save();
         PlayerSignInData loaded = lane.repository.load(FIXTURE_UUID);
         assertFalse(loaded.isSignedOn(DateUtils.format("2025-01-02 12:00:00")));
@@ -311,7 +311,7 @@ public class PlayerSignInDataRepositoryTest {
         CompoundTag reset = backup(lane, "personalDateReset");
         Path pending = lane.world.resolve("sakura_sign_in/deletions")
                 .resolve(FIXTURE_UUID.toString()).resolve("pending.nbt");
-        lane.summaries.stored = reset.getCompound("beforeSummary").copy();
+        lane.summaries.stored = reset.getCompound("beforeSummary").orElseThrow().copy();
         AtomicNbtFiles.write(pending, reset);
         lane.save();
         assertFalse(Files.exists(pending));
@@ -342,7 +342,7 @@ public class PlayerSignInDataRepositoryTest {
         assertEquals(calls + 1, lane.summaries.saveCalls);
         assertEquals(before, lane.summaries.stored);
         assertEquals(1, AtomicNbtFiles.read(historyFile(lane, "2025-10"))
-                .getList("records", 10).size());
+                .getListOrEmpty("records").size());
     }
 
     @Test
@@ -386,11 +386,11 @@ public class PlayerSignInDataRepositoryTest {
         }
         assertEquivalent(actual, legacy);
         assertEquals(Collections.singleton("unknown.nbt"), historyBytes(actual).keySet());
-        ListTag records = AtomicNbtFiles.read(historyFile(actual, "unknown")).getList("records", 10);
+        ListTag records = AtomicNbtFiles.read(historyFile(actual, "unknown")).getListOrEmpty("records");
         assertEquals(2, records.size());
         for (int i = 0; i < records.size(); i++) {
-            assertEquals("not a date", records.getCompound(i).getString("compensateTime"));
-            assertEquals("second", records.getCompound(i).getString("extensionPayload"));
+            assertEquals("not a date", records.getCompound(i).orElseThrow().getString("compensateTime").orElseThrow());
+            assertEquals("second", records.getCompound(i).orElseThrow().getString("extensionPayload").orElseThrow());
         }
         assertTrue(actual.data.getMonthIndexes().isEmpty());
     }
@@ -410,9 +410,9 @@ public class PlayerSignInDataRepositoryTest {
         assertEquals(Collections.singleton("2024-02.nbt"), historyBytes(lane).keySet());
         assertTrue(lane.data.getMonthIndexes().get("2024-02").isSigned(29));
         assertTrue(lane.data.getMonthIndexes().get("2024-02").isRewarded(29));
-        ListTag records = AtomicNbtFiles.read(historyFile(lane, "2024-02")).getList("records", 10);
-        assertEquals(first, records.getCompound(0));
-        assertEquals(second, records.getCompound(1));
+        ListTag records = AtomicNbtFiles.read(historyFile(lane, "2024-02")).getListOrEmpty("records");
+        assertEquals(first, records.getCompound(0).orElseThrow());
+        assertEquals(second, records.getCompound(1).orElseThrow());
     }
 
     @Test
@@ -439,21 +439,21 @@ public class PlayerSignInDataRepositoryTest {
         CompoundTag first = record.writeToNBT();
         CompoundTag second = record.writeToNBT();
         CompoundTag expected = second.copy();
-        ListTag firstSnapshots = first.getList("personalDateRewards", 10);
-        ListTag secondSnapshots = second.getList("personalDateRewards", 10);
+        ListTag firstSnapshots = first.getListOrEmpty("personalDateRewards");
+        ListTag secondSnapshots = second.getListOrEmpty("personalDateRewards");
         assertEquals(1, firstSnapshots.size());
         assertEquals(1, secondSnapshots.size());
         assertNotSame(first, second);
         assertNotSame(firstSnapshots, secondSnapshots);
-        assertNotSame(firstSnapshots.getCompound(0), secondSnapshots.getCompound(0));
-        firstSnapshots.getCompound(0).putString("rewards", "[]");
+        assertNotSame(firstSnapshots.getCompound(0).orElseThrow(), secondSnapshots.getCompound(0).orElseThrow());
+        firstSnapshots.getCompound(0).orElseThrow().putString("rewards", "[]");
         firstSnapshots.clear();
         assertEquals(expected, second);
         assertEquals(expected, record.writeToNBT());
         record.getPersonalDateRewards().get(0).getRewards().clear();
         assertEquals(expected, second);
-        assertEquals("[]", record.writeToNBT().getList("personalDateRewards", 10)
-                .getCompound(0).getString("rewards"));
+        assertEquals("[]", record.writeToNBT().getListOrEmpty("personalDateRewards")
+                .getCompound(0).orElseThrow().getString("rewards").orElseThrow());
         record.getPersonalDateRewards().clear();
         assertEquals(expected, second);
         assertFalse(record.writeToNBT().contains("personalDateRewards"));
@@ -483,7 +483,8 @@ public class PlayerSignInDataRepositoryTest {
         Map<String, byte[]> bytes = historyBytes(lane);
         Map<String, FileTime> times = historyTimes(lane);
         lane.data.getSignInRecords().add(new SignInRecord() {
-            @Override public CompoundTag writeToNBT() {
+            @Override
+            public CompoundTag writeToNBT() {
                 throw new IllegalArgumentException("record encoding failed");
             }
         });
@@ -619,7 +620,7 @@ public class PlayerSignInDataRepositoryTest {
                 + " maxRatio=" + MAX_SUMMARY_ALLOCATION_RATIO + " enforced=" + enforceTarget);
         if (enforceTarget) {
             assertTrue("Summary save must allocate at least 1% less than the same-window legacy reference; "
-                    + "paired median ratio=" + median + ", maximum=" + MAX_SUMMARY_ALLOCATION_RATIO,
+                            + "paired median ratio=" + median + ", maximum=" + MAX_SUMMARY_ALLOCATION_RATIO,
                     median <= MAX_SUMMARY_ALLOCATION_RATIO);
         }
     }
@@ -666,7 +667,7 @@ public class PlayerSignInDataRepositoryTest {
             SignInRecord record = record(LocalDate.of(2025, 1, 1).plusDays(i), i != 0);
             if (i == 0) {
                 CompoundTag pending = PersonalDatePendingSnapshotTest.record();
-                CompoundTag snapshot = pending.getList("personalDateRewards", 10).getCompound(0);
+                CompoundTag snapshot = pending.getListOrEmpty("personalDateRewards").getCompound(0).orElseThrow();
                 snapshot.putString("occurrenceKey", "YEARLY:2025");
                 snapshot.putString("targetDate", "2025-01-01");
                 record.setPersonalDateRewards(SignInRecord.readFromNBT(pending).getPersonalDateRewards());
@@ -790,7 +791,7 @@ public class PlayerSignInDataRepositoryTest {
         try (Stream<Path> paths = Files.list(directory)) {
             for (Path path : paths.filter(file -> file.getFileName().toString().startsWith("backup-"))
                     .collect(Collectors.toList())) {
-                if (operation.equals(AtomicNbtFiles.read(path).getString("operation"))) return path;
+                if (operation.equals(AtomicNbtFiles.read(path).getStringOr("operation", ""))) return path;
             }
         }
         throw new AssertionError("Missing backup for operation: " + operation);
@@ -802,7 +803,10 @@ public class PlayerSignInDataRepositoryTest {
 
     private static SignInRecord encodedRecord(CompoundTag encoded) {
         return new SignInRecord() {
-            @Override public CompoundTag writeToNBT() { return encoded; }
+            @Override
+            public CompoundTag writeToNBT() {
+                return encoded;
+            }
         };
     }
 
@@ -816,16 +820,21 @@ public class PlayerSignInDataRepositoryTest {
         state.setTotalDraws(7);
         CompoundTag lottery = state.serializeNBT();
         data.getMonthIndexes().put("alias", new MonthSignInIndex("caller-month") {
-            @Override public CompoundTag serializeNBT() { return index; }
+            @Override
+            public CompoundTag serializeNBT() {
+                return index;
+            }
         });
         data.getPersonalDateSlots().add(new PlayerPersonalDateSlot() {
-            @Override public CompoundTag serializeNBT() {
+            @Override
+            public CompoundTag serializeNBT() {
                 index.putInt("signedDays", 1 << 28);
                 return slot;
             }
         });
         data.getLotteryDrawStates().add(new LotteryDrawState() {
-            @Override public CompoundTag serializeNBT() {
+            @Override
+            public CompoundTag serializeNBT() {
                 slot.putString("lastClaimedOccurrenceKey", "YEARLY:2027");
                 return lottery;
             }
@@ -835,7 +844,8 @@ public class PlayerSignInDataRepositoryTest {
 
     private static SignInRecord sharedRecord(CompoundTag shared, String date, String payload) {
         return new SignInRecord() {
-            @Override public CompoundTag writeToNBT() {
+            @Override
+            public CompoundTag writeToNBT() {
                 shared.putString("compensateTime", date);
                 shared.putString("extensionPayload", payload);
                 return shared;
@@ -846,7 +856,8 @@ public class PlayerSignInDataRepositoryTest {
     private static final class SerializedOverride extends PlayerSignInData {
         private int serializations;
 
-        @Override public CompoundTag serializeNBT() {
+        @Override
+        public CompoundTag serializeNBT() {
             serializations++;
             CompoundTag tag = super.serializeNBT();
             tag.putInt("totalSignInDays", 777);

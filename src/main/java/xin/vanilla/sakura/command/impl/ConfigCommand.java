@@ -1,5 +1,6 @@
 package xin.vanilla.sakura.command.impl;
 
+import xin.vanilla.sakura.util.SakuraUtils;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.commands.CommandSourceStack;
@@ -26,7 +27,7 @@ public final class ConfigCommand {
 
     private static LiteralArgumentBuilder<CommandSourceStack> common() {
         return Commands.literal("common")
-                .requires(source -> source.hasPermission(
+                .requires(source -> SakuraUtils.hasNativePermission(source.permissions(),
                         CommonConfig.get().permission().permissionServerConfigSet()))
                 .then(Commands.argument("configKey", StringArgumentType.word())
                         .suggests((context, builder) -> {

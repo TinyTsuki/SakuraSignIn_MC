@@ -1,15 +1,15 @@
 package xin.vanilla.sakura.screen;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
+import xin.vanilla.sakura.util.SakuraUtils;
+import org.joml.Matrix3x2fStack;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.resources.Identifier;
 import xin.vanilla.banira.client.data.GLFWKey;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.BaniraScreen;
@@ -90,14 +90,14 @@ public final class SignInCell extends BaseWidget {
 
     private LocalPlayerPermission tooltipPermissions() {
         net.minecraft.client.player.LocalPlayer player = Minecraft.getInstance().player;
-        return new LocalPlayerPermission(player == null || player.hasPermissions(CommonConfig.get().permission().permissionRewardDetail()),
-                player == null || player.hasPermissions(CommonConfig.get().permission().permissionRewardProbability()));
+        return new LocalPlayerPermission(player == null || SakuraUtils.hasNativePermission(player.permissions(), CommonConfig.get().permission().permissionRewardDetail()),
+                player == null || SakuraUtils.hasNativePermission(player.permissions(), CommonConfig.get().permission().permissionRewardProbability()));
     }
 
     private record LocalPlayerPermission(boolean details, boolean probability) {
     }
 
-    private final ResourceLocation backgroundTexture;
+    private final Identifier backgroundTexture;
     private final TextureCoordinate textureCoordinate;
     private final double scale;
     private final RewardList rewardList;
@@ -115,7 +115,7 @@ public final class SignInCell extends BaseWidget {
     private double iconY;
     private Consumer<MouseEvent> releaseHandler;
 
-    public SignInCell(BaniraScreen screen, ResourceLocation resourceLocation,
+    public SignInCell(BaniraScreen screen, Identifier resourceLocation,
                       TextureCoordinate textureCoordinate, double x, double y,
                       double width, double height, double scale,
                       @NonNull RewardList rewardList,
@@ -134,8 +134,8 @@ public final class SignInCell extends BaseWidget {
     }
 
     @Override
-    public void render(GuiGraphics graphics, float partialTicks) {
-        PoseStack stack = graphics.pose();
+    public void render(GuiGraphicsExtractor graphics, float partialTicks) {
+        Matrix3x2fStack stack = graphics.pose();
         double x = absoluteX();
         double y = absoluteY();
         double width = bounds().width();
@@ -143,7 +143,6 @@ public final class SignInCell extends BaseWidget {
         Font font = screen.getFont();
 
         if (showIcon) {
-            RenderSystem.setShaderTexture(0, backgroundTexture);
             renderStatusIcon(stack, x, y, width, height);
         }
         if (showText) {
@@ -151,7 +150,7 @@ public final class SignInCell extends BaseWidget {
         }
     }
 
-    private void renderStatusIcon(PoseStack stack, double x, double y, double width, double height) {
+    private void renderStatusIcon(Matrix3x2fStack stack, double x, double y, double width, double height) {
         if (status == ESignInStatus.REWARDED.getCode()) {
             statusTexture().draw(stack, (int) x, (int) y, (int) width, (int) height);
             return;
@@ -187,7 +186,7 @@ public final class SignInCell extends BaseWidget {
         }
     }
 
-    private void renderDay(GuiGraphics graphics, Font font, double x, double y, double width) {
+    private void renderDay(GuiGraphicsExtractor graphics, Font font, double x, double y, double width) {
         Date date = SakuraClock.clientNow();
         int color = textureCoordinate.getTextColorDefault();
         Component dayComponent = SakuraComponent.get().literal(String.valueOf(day));
@@ -202,7 +201,7 @@ public final class SignInCell extends BaseWidget {
             color = textureCoordinate.getTextColorCanRepair();
         }
         float dayWidth = font.width(dayComponent.toString());
-        graphics.drawString(font, dayComponent.color(color).toVanilla(),
+        graphics.text(font, dayComponent.color(color).toVanilla(),
                 (int) (x + (width - dayWidth) / 2),
                 (int) (y + textureCoordinate.getDateOffset() * scale + 0.1f), color, false);
     }
@@ -210,8 +209,8 @@ public final class SignInCell extends BaseWidget {
     /**
      * 在 Screen 的延迟提示阶段绘制奖励详情，避免被弹出菜单或裁剪区域覆盖。
      */
-    public void renderTooltip(GuiGraphics graphics, Font font) {
-        PoseStack stack = graphics.pose();
+    public void renderTooltip(GuiGraphicsExtractor graphics, Font font) {
+        Matrix3x2fStack stack = graphics.pose();
         double x = absoluteX();
         double y = absoluteY();
         double width = bounds().width();
@@ -224,23 +223,16 @@ public final class SignInCell extends BaseWidget {
         double tooltipX = (x == iconX ? screen.inputState().mouseX() : iconX + width / 2) - tooltipWidth / 2;
         double tooltipY = (y == iconY ? screen.inputState().mouseY() : iconY - 2) - tooltipHeight - 1;
 
-        RenderSystem.disableDepthTest();
-        stack.pushPose();
-        stack.translate(0, 0, 200);
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
+        graphics.nextStratum();
         tooltipTexture.draw(stack, (int) tooltipX, (int) tooltipY, (int) tooltipWidth, (int) tooltipHeight);
-        RenderSystem.disableBlend();
 
         renderTooltipScrollBar(stack, tooltipX, tooltipY, tooltipScale);
         renderTooltipRewards(graphics, font, tooltipX, tooltipY, tooltipScale, margin, cellCoordinate);
         renderTooltipDate(graphics, font, tooltipX, tooltipY, tooltipWidth, tooltipScale);
 
-        stack.popPose();
-        RenderSystem.enableDepthTest();
     }
 
-    private void renderTooltipScrollBar(PoseStack stack, double tooltipX, double tooltipY, double tooltipScale) {
+    private void renderTooltipScrollBar(Matrix3x2fStack stack, double tooltipX, double tooltipY, double tooltipScale) {
         Coordinate scroll = textureCoordinate.getTooltipScrollCoordinate();
         double trackX = tooltipX + scroll.getX() * tooltipScale;
         double trackY = tooltipY + scroll.getY() * tooltipScale;
@@ -260,11 +252,11 @@ public final class SignInCell extends BaseWidget {
                 Math.max(0, (int) thumbWidth - 2), (int) trackHeight, 0xCCCCCCCC);
     }
 
-    private void renderTooltipRewards(GuiGraphics graphics, Font font,
+    private void renderTooltipRewards(GuiGraphicsExtractor graphics, Font font,
                                       double tooltipX, double tooltipY, double tooltipScale,
                                       double margin, Coordinate cellCoordinate) {
         boolean showProbability = Minecraft.getInstance().player == null
-                || Minecraft.getInstance().player.hasPermissions(
+                || SakuraUtils.hasNativePermission(Minecraft.getInstance().player.permissions(),
                 CommonConfig.get().permission().permissionRewardProbability());
         for (int i = 0; i < TOOLTIP_MAX_VISIBLE_ITEMS; i++) {
             int index = i + (rewardList.size() > TOOLTIP_MAX_VISIBLE_ITEMS ? tooltipScrollOffset : 0);
@@ -281,7 +273,7 @@ public final class SignInCell extends BaseWidget {
         }
     }
 
-    private void renderTooltipDate(GuiGraphics graphics, Font font, double tooltipX,
+    private void renderTooltipDate(GuiGraphicsExtractor graphics, Font font, double tooltipX,
                                    double tooltipY, double tooltipWidth, double tooltipScale) {
         Date date = DateUtils.getDate(year, month, day);
         String monthTitle = DateUtils.toLocalStringMonth(date, Minecraft.getInstance().options.languageCode);
@@ -289,7 +281,7 @@ public final class SignInCell extends BaseWidget {
         Component title = SakuraComponent.get().literal(monthTitle + " " + dayTitle);
         double titleX = tooltipX + (tooltipWidth - font.width(title.toString())) / 2;
         double titleY = tooltipY + textureCoordinate.getTooltipDateCoordinate().getY() * tooltipScale;
-        graphics.drawString(font, title.color(0xFFFFFFFF).toVanilla(),
+        graphics.text(font, title.color(0xFFFFFFFF).toVanilla(),
                 (int) titleX, (int) titleY, 0xFFFFFFFF, false);
     }
 

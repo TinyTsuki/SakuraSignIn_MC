@@ -1,10 +1,10 @@
 package xin.vanilla.sakura.screen;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
+import xin.vanilla.sakura.util.SakuraUtils;
+import org.joml.Matrix3x2fStack;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.player.LocalPlayer;
 import xin.vanilla.banira.api.client.theme.BaniraThemes;
 import xin.vanilla.banira.api.client.ui.*;
@@ -106,10 +106,10 @@ public final class SignInScreen extends BaniraScreen implements UiPageSource {
                             java.time.LocalDate.of(DateUtils.getYearPart(month), DateUtils.getMonthOfDate(month), 1),
                             SakuraClientState.getThemeTextureCoordinate().getWeekStart(),
                             signInCells.stream().map(cell -> new SignInUiSession.Cell(
-                            cell.getYear() * 10000 + cell.getMonth() * 100 + cell.getDay(),
-                            SakuraComponent.get().literal(cell.isShowText() ? Integer.toString(cell.getDay()) : "")
-                                    .underlined(cell.getYear() * 10000 + cell.getMonth() * 100 + cell.getDay() == DateUtils.toDateInt(SakuraClock.clientNow())),
-                            cell.uiTooltip(), cell.uiStatusIcon())).toList());
+                                    cell.getYear() * 10000 + cell.getMonth() * 100 + cell.getDay(),
+                                    SakuraComponent.get().literal(cell.isShowText() ? Integer.toString(cell.getDay()) : "")
+                                            .underlined(cell.getYear() * 10000 + cell.getMonth() * 100 + cell.getDay() == DateUtils.toDateInt(SakuraClock.clientNow())),
+                                    cell.uiTooltip(), cell.uiStatusIcon())).toList());
                 }
 
                 public Component title() {
@@ -156,8 +156,8 @@ public final class SignInScreen extends BaniraScreen implements UiPageSource {
                 public long detailRevision() {
                     LocalPlayer player = Minecraft.getInstance().player;
                     if (player == null) return -1;
-                    return (player.hasPermissions(CommonConfig.get().permission().permissionRewardDetail()) ? 1 : 0)
-                            | (player.hasPermissions(CommonConfig.get().permission().permissionRewardProbability()) ? 2 : 0);
+                    return (SakuraUtils.hasNativePermission(player.permissions(), CommonConfig.get().permission().permissionRewardDetail()) ? 1 : 0)
+                            | (SakuraUtils.hasNativePermission(player.permissions(), CommonConfig.get().permission().permissionRewardProbability()) ? 2 : 0);
                 }
 
                 public List<SignInUiSession.RewardLine> rewards(int date) {
@@ -452,7 +452,7 @@ public final class SignInScreen extends BaniraScreen implements UiPageSource {
             return;
         }
         IPlayerSignInData signInData = SakuraPlayerData.get(player);
-        Map<Integer, RewardList> monthRewards = player.hasPermissions(
+        Map<Integer, RewardList> monthRewards = SakuraUtils.hasNativePermission(player.permissions(),
                 CommonConfig.get().permission().permissionRewardDetail())
                 ? RewardManager.getMonthRewardList(current, signInData, lastOffset, nextOffset)
                 : new HashMap<>();
@@ -677,9 +677,8 @@ public final class SignInScreen extends BaniraScreen implements UiPageSource {
     }
 
     @Override
-    protected void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        PoseStack stack = graphics.pose();
-        renderBackground(graphics, mouseX, mouseY, partialTicks);
+    protected void onRender(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
+        Matrix3x2fStack stack = graphics.pose();
         renderBackgroundTexture(stack);
         renderCalendarTitle(graphics);
         updateOperationPresentation();
@@ -694,23 +693,20 @@ public final class SignInScreen extends BaniraScreen implements UiPageSource {
         }
     }
 
-    private void renderBackgroundTexture(PoseStack stack) {
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
+    private void renderBackgroundTexture(Matrix3x2fStack stack) {
         SakuraThemeTextures.get("background.calendar").draw(stack, bgX, bgY, bgWidth, bgHeight);
-        RenderSystem.disableBlend();
     }
 
-    private void renderCalendarTitle(GuiGraphics graphics) {
+    private void renderCalendarTitle(GuiGraphicsExtractor graphics) {
         TextureCoordinate texture = SakuraClientState.getThemeTextureCoordinate();
         double yearX = bgX + texture.getYearCoordinate().getX() * scale;
         double yearY = bgY + texture.getYearCoordinate().getY() * scale;
         double monthX = bgX + texture.getMonthCoordinate().getX() * scale;
         double monthY = bgY + texture.getMonthCoordinate().getY() * scale;
         String language = Minecraft.getInstance().options.languageCode;
-        graphics.drawString(font, DateUtils.toLocalStringYear(SakuraClientState.getCalendarCurrentDate(), language),
+        graphics.text(font, DateUtils.toLocalStringYear(SakuraClientState.getCalendarCurrentDate(), language),
                 (int) yearX, (int) yearY, texture.getTextColorDate(), false);
-        graphics.drawString(font, DateUtils.toLocalStringMonth(SakuraClientState.getCalendarCurrentDate(), language),
+        graphics.text(font, DateUtils.toLocalStringMonth(SakuraClientState.getCalendarCurrentDate(), language),
                 (int) monthX, (int) monthY, texture.getTextColorDate(), false);
     }
 
@@ -801,7 +797,7 @@ public final class SignInScreen extends BaniraScreen implements UiPageSource {
                 bgX, bgY, scale);
     }
 
-    private void renderOpeningTips(PoseStack stack) {
+    private void renderOpeningTips(Matrix3x2fStack stack) {
         ShapeDrawArgs.RectParams rect = new ShapeDrawArgs.RectParams()
                 .x(4).y(4).width(width - 8).height(height - 8).radius(15);
         BaseShapeWidget.drawShape(new ShapeDrawArgs()
@@ -828,13 +824,13 @@ public final class SignInScreen extends BaniraScreen implements UiPageSource {
         return text.content().split("\\n", -1).length * font.lineHeight;
     }
 
-    private void renderHoveredTooltips(GuiGraphics graphics) {
-        PoseStack stack = graphics.pose();
+    private void renderHoveredTooltips(GuiGraphicsExtractor graphics) {
+        Matrix3x2fStack stack = graphics.pose();
         if (!popupOption.isEmpty()) {
             return;
         }
         boolean showRewardDetail = Minecraft.getInstance().player == null
-                || Minecraft.getInstance().player.hasPermissions(
+                || SakuraUtils.hasNativePermission(Minecraft.getInstance().player.permissions(),
                 CommonConfig.get().permission().permissionRewardDetail());
         if (showRewardDetail) {
             for (SignInCell cell : signInCells) {
@@ -869,7 +865,8 @@ public final class SignInScreen extends BaniraScreen implements UiPageSource {
         if (!pressed) return handleCalendarKey(keyCode);
         if (keyCode == GLFWKey.GLFW_KEY_ESCAPE
                 || keyCode == SakuraClientBootstrap.getSignInKey().currentKey()
-                || Minecraft.getInstance().options.keyInventory.matches(keyCode, scanCode)) {
+                || Minecraft.getInstance().options.keyInventory.matches(
+                new net.minecraft.client.input.KeyEvent(keyCode, scanCode, currentKeyboardModifiers()))) {
             if (showOpeningTips) {
                 dismissOpeningTips(false);
             } else {

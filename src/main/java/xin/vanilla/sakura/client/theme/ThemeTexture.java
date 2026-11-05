@@ -1,7 +1,7 @@
 package xin.vanilla.sakura.client.theme;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.resources.ResourceLocation;
+import org.joml.Matrix3x2fStack;
+import net.minecraft.resources.Identifier;
 import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 
@@ -16,12 +16,12 @@ import java.util.HexFormat;
  * A validated complete PNG and its alpha hit mask.
  */
 public final class ThemeTexture {
-    private final ResourceLocation location;
+    private final Identifier location;
     private final int width, height;
     private final byte[] png, alpha;
     private final boolean isolated;
 
-    ThemeTexture(ResourceLocation location, BufferedImage image, byte[] png) {
+    ThemeTexture(Identifier location, BufferedImage image, byte[] png) {
         this.location = location;
         width = image.getWidth();
         height = image.getHeight();
@@ -32,7 +32,7 @@ public final class ThemeTexture {
             for (int x = 0; x < width; x++) alpha[y * width + x] = (byte) (image.getRGB(x, y) >>> 24);
     }
 
-    private ThemeTexture(ThemeTexture source, ResourceLocation location) {
+    private ThemeTexture(ThemeTexture source, Identifier location) {
         this.location = location;
         width = source.width;
         height = source.height;
@@ -44,13 +44,13 @@ public final class ThemeTexture {
     ThemeTexture isolated() {
         try {
             String sha = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(png));
-            return new ThemeTexture(this, ResourceLocation.fromNamespaceAndPath("sakura_sign_in", "runtime/themes/" + sha + ".png"));
+            return new ThemeTexture(this, Identifier.fromNamespaceAndPath("sakura_sign_in", "runtime/themes/" + sha + ".png"));
         } catch (NoSuchAlgorithmException error) {
             throw new IllegalStateException(error);
         }
     }
 
-    public ResourceLocation location() {
+    public Identifier location() {
         return location;
     }
 
@@ -78,7 +78,7 @@ public final class ThemeTexture {
         return Texture.of(location, width, height);
     }
 
-    public void draw(PoseStack stack, int x, int y, int w, int h) {
+    public void draw(Matrix3x2fStack stack, int x, int y, int w, int h) {
         AbstractGuiUtils.blit(stack, location, x, y, w, h, 0, 0, width, height, width, height);
     }
 }

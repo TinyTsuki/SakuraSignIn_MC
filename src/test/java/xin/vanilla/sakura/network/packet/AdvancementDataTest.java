@@ -3,8 +3,8 @@ package xin.vanilla.sakura.network.packet;
 import net.minecraft.advancements.AdvancementType;
 import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.item.ItemStackTemplate;
 import net.minecraft.world.item.Items;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -15,24 +15,25 @@ import java.util.Optional;
 
 import static org.junit.Assert.*;
 
-/** Pins the existing MC21 wire; native DisplayInfo getters are available on both sides. */
+/**
+ * Pins the existing wire layout while using the current native display type.
+ */
 public class AdvancementDataTest {
     @BeforeClass
     public static void bootstrapMinecraftRegistries() {
-        net.minecraft.SharedConstants.tryDetectVersion();
-        net.minecraft.server.Bootstrap.bootStrap();
+        xin.vanilla.sakura.test.NativeBootstrap.initialize();
     }
 
     @Test
     public void nativeDisplayMetadataKeepsTargetWireOrderAndOptionalBackground() {
         xin.vanilla.sakura.test.BaniraTestPlatform.install();
-        ResourceLocation id = ResourceLocation.parse("sakura_sign_in:test");
-        ResourceLocation background = ResourceLocation.parse(
+        Identifier id = Identifier.parse("sakura_sign_in:test");
+        Identifier background = Identifier.parse(
                 "minecraft:textures/gui/advancements/backgrounds/stone.png");
         for (boolean present : new boolean[]{false, true}) {
-            DisplayInfo display = new DisplayInfo(new ItemStack(Items.DIAMOND, 3),
+            DisplayInfo display = new DisplayInfo(new ItemStackTemplate(Items.DIAMOND, 3),
                     Component.literal("Title"), Component.literal("Description"),
-                    present ? Optional.of(background) : Optional.empty(),
+                    present ? Optional.of(new net.minecraft.core.ClientAsset.ResourceTexture(background)) : Optional.empty(),
                     AdvancementType.CHALLENGE, true, false, true);
             AdvancementData source = new AdvancementData(id, display);
             TestBaniraPacketBuffer wire = new TestBaniraPacketBuffer();
@@ -56,8 +57,8 @@ public class AdvancementDataTest {
             AdvancementData decoded = AdvancementData.readFromBuffer(buffer);
             assertEquals(id, decoded.getId());
             DisplayInfo restored = decoded.getDisplayInfo();
-            assertEquals(Items.DIAMOND, restored.getIcon().getItem());
-            assertEquals(3, restored.getIcon().getCount());
+            assertEquals(Items.DIAMOND, restored.getIcon().typeHolder().value());
+            assertEquals(3, restored.getIcon().count());
             assertEquals(display.getBackground(), restored.getBackground());
             assertEquals("Title", restored.getTitle().getString());
             assertEquals("Description", restored.getDescription().getString());

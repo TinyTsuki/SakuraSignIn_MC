@@ -1,7 +1,7 @@
 package xin.vanilla.sakura.screen;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.language.I18n;
 import xin.vanilla.banira.api.client.theme.BaniraThemes;
@@ -53,7 +53,7 @@ public final class LotteryRevealScreen extends BaniraScreen implements UiPageSou
         this.packet = packet;
         revealSession = new LotteryRevealUiSession(packet, style, () -> System.nanoTime() / 1_000_000,
                 () -> uiConnection == Minecraft.getInstance().getConnection(),
-                (key, scan) -> Minecraft.getInstance().options.keyInventory.matches(key, scan),
+                this::isInventoryKey,
                 () -> SakuraNetwork.sendToServer(new LotteryClaimPacket(packet.getOperationId(), packet.getToken())));
         previousScreen(parent);
         season(BaniraThemes.seasonFor(SakuraSignIn.MODID));
@@ -112,7 +112,7 @@ public final class LotteryRevealScreen extends BaniraScreen implements UiPageSou
     }
 
     @Override
-    protected void onRender(GuiGraphics stack, int mouseX, int mouseY, float partialTicks) {
+    protected void onRender(GuiGraphicsExtractor stack, int mouseX, int mouseY, float partialTicks) {
         LotteryLayout.Rect panel = layout.panel(), content = layout.content();
         shape(stack, panel.x(), panel.y(), panel.width(), panel.height(), getEffectiveTheme().panelBg(), 8, 0);
         fitted(stack, packet.getPoolName(), layout.title());
@@ -151,7 +151,7 @@ public final class LotteryRevealScreen extends BaniraScreen implements UiPageSou
         renderWidgets(stack, partialTicks);
     }
 
-    private void renderStrip(GuiGraphics stack, long elapsed) {
+    private void renderStrip(GuiGraphicsExtractor stack, long elapsed) {
         LotteryLayout.Rect area = layout.content();
         int center = area.x() + area.width() / 2;
         List<Reward> sequence = sequence(48, 43);
@@ -163,7 +163,7 @@ public final class LotteryRevealScreen extends BaniraScreen implements UiPageSou
         shape(stack, center - 13, y - 8, 26, 32, getEffectiveTheme().buttonBorderHover(), 3, 2);
     }
 
-    private void renderCards(GuiGraphics stack, long elapsed) {
+    private void renderCards(GuiGraphicsExtractor stack, long elapsed) {
         LotteryLayout.Rect area = layout.content();
         int count = Math.min(7, Math.max(1, area.width() / 42));
         List<Reward> values = sequence(count, count - 1);
@@ -176,7 +176,7 @@ public final class LotteryRevealScreen extends BaniraScreen implements UiPageSou
         }
     }
 
-    private void renderRoulette(GuiGraphics stack, long elapsed) {
+    private void renderRoulette(GuiGraphicsExtractor stack, long elapsed) {
         LotteryLayout.Rect area = layout.content();
         var slots = LotteryRevealUiSession.frame(LotteryAnimationStyle.ROULETTE, elapsed, area.width(), area.height(), packet.getPreview().size());
         List<Reward> values = sequence(slots.size(), slots.size() - 1);
@@ -187,7 +187,7 @@ public final class LotteryRevealScreen extends BaniraScreen implements UiPageSou
         }
     }
 
-    private void renderResults(GuiGraphics stack) {
+    private void renderResults(GuiGraphicsExtractor stack) {
         List<Reward> winners = packet.getWinners();
         LotteryLayout.Rect area = layout.content();
         int columns = Math.min(layout.columns(), Math.max(1, winners.size())), max = layout.maxScrollRows(winners.size());
@@ -221,14 +221,14 @@ public final class LotteryRevealScreen extends BaniraScreen implements UiPageSou
         return result;
     }
 
-    private void renderCandidate(GuiGraphics stack, Reward reward, int x, int y) {
+    private void renderCandidate(GuiGraphicsExtractor stack, Reward reward, int x, int y) {
         if (!packet.isPreviewVisible() || reward == null) {
             shape(stack, x, y, 16, 16, getEffectiveTheme().buttonBgHover(), 3, 1);
-            stack.drawString(font, "?", x + 5, y + 4, getEffectiveTheme().textPrimary(), false);
+            stack.text(font, "?", x + 5, y + 4, getEffectiveTheme().textPrimary(), false);
         } else renderReward(stack, reward, x, y);
     }
 
-    private void renderReward(GuiGraphics stack, Reward reward, int x, int y) {
+    private void renderReward(GuiGraphicsExtractor stack, Reward reward, int x, int y) {
         RewardRenderer.renderCustomReward(stack, font, SakuraClientState.getThemeTexture(),
                 SakuraClientState.getThemeTextureCoordinate(), reward, x, y, true, false);
     }
@@ -237,9 +237,14 @@ public final class LotteryRevealScreen extends BaniraScreen implements UiPageSou
         return revealSession.revealed();
     }
 
+    private boolean isInventoryKey(int key, int scan) {
+        return Minecraft.getInstance().options.keyInventory.matches(
+                new net.minecraft.client.input.KeyEvent(key, scan, currentKeyboardModifiers()));
+    }
+
     @Override
     protected void onKeyPressed(KeyPressedHandleArgs event) {
-        if (event.key() == GLFWKey.GLFW_KEY_ESCAPE || Minecraft.getInstance().options.keyInventory.matches(event.key(), event.scanCode())) {
+        if (event.key() == GLFWKey.GLFW_KEY_ESCAPE || isInventoryKey(event.key(), event.scanCode())) {
             if (revealed()) onClose();
             else revealSession.skip();
             event.consumed(true);
@@ -269,9 +274,9 @@ public final class LotteryRevealScreen extends BaniraScreen implements UiPageSou
         return bounds(layout.panel());
     }
 
-    private void fitted(GuiGraphics stack, String text, LotteryLayout.Rect area) {
+    private void fitted(GuiGraphicsExtractor stack, String text, LotteryLayout.Rect area) {
         String fitted = font.plainSubstrByWidth(text, area.width());
-        stack.drawString(font, fitted, (int) (area.x() + (area.width() - font.width(fitted)) / 2F), area.y(), getEffectiveTheme().textPrimary(), false);
+        stack.text(font, fitted, (int) (area.x() + (area.width() - font.width(fitted)) / 2F), area.y(), getEffectiveTheme().textPrimary(), false);
         if (!fitted.equals(text) && area.contains(inputState.mouseX(), inputState.mouseY())) tooltip(text);
     }
 
@@ -285,7 +290,7 @@ public final class LotteryRevealScreen extends BaniraScreen implements UiPageSou
         return new ScreenCoordinate(area.x(), area.y(), area.width(), area.height());
     }
 
-    private void shape(GuiGraphics stack, int x, int y, int width, int height, int color, int radius, int border) {
+    private void shape(GuiGraphicsExtractor stack, int x, int y, int width, int height, int color, int radius, int border) {
         BaseShapeWidget.drawShape(new ShapeDrawArgs().stack(stack.pose()).type(ShapeDrawArgs.ShapeType.RECT).color(color)
                 .rect(new ShapeDrawArgs.RectParams().x(x).y(y).width(width).height(height).radius(radius)
                         .cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE).border(border)));

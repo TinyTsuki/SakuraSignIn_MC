@@ -1,7 +1,7 @@
 package xin.vanilla.sakura.screen;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.util.FormattedCharSequence;
 import xin.vanilla.banira.api.client.theme.BaniraThemes;
@@ -286,10 +286,10 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
     }
 
     @Override
-    protected void onRender(GuiGraphics stack, int mouseX, int mouseY, float partialTicks) {
+    protected void onRender(GuiGraphicsExtractor stack, int mouseX, int mouseY, float partialTicks) {
         LotteryLayout.Rect panel = layout.panel();
         shape(stack, panel.x(), panel.y(), panel.width(), panel.height(), getEffectiveTheme().panelBg(), 8, 0);
-        stack.drawString(font, font.plainSubstrByWidth(getTitle().getString(), layout.title().width()),
+        stack.text(font, font.plainSubstrByWidth(getTitle().getString(), layout.title().width()),
                 layout.title().x(), layout.title().y(), getEffectiveTheme().textPrimary(), false);
         LotteryPool pool = selectedPool();
         if (pool == null) {
@@ -320,7 +320,7 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
         renderWidgets(stack, partialTicks);
     }
 
-    private void renderParagraph(GuiGraphics stack, LotteryLayout.Rect area,
+    private void renderParagraph(GuiGraphicsExtractor stack, LotteryLayout.Rect area,
                                  NotificationDetailViewport viewport, ScrollbarWidget scrollbar, String text, int color) {
         List<FormattedCharSequence> lines = font.split(net.minecraft.network.chat.Component.literal(text), area.width() - 9);
         viewport.layout(area.x(), area.y(), area.width() - 9, area.height(), font.lineHeight, lines.size());
@@ -331,7 +331,7 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
         AbstractGuiUtils.pushScissor(area.x(), area.y(), area.width() - 9, area.height());
         try {
             for (int i = viewport.firstLine(); i < viewport.lastLineExclusive(); i++)
-                stack.drawString(font, lines.get(i), area.x(), viewport.lineY(i), color, false);
+                stack.text(font, lines.get(i), area.x(), viewport.lineY(i), color, false);
         } finally {
             AbstractGuiUtils.popScissor();
         }
@@ -340,7 +340,7 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
         scrollbar.setValue(viewport.scrollRows());
     }
 
-    private void renderPreview(GuiGraphics stack, LotteryPool pool) {
+    private void renderPreview(GuiGraphicsExtractor stack, LotteryPool pool) {
         LotteryLayout.Rect area = layout.preview();
         LotteryPreviewMode mode = pool.getPreviewMode();
         List<Reward> rewards = pool.getRewards();
@@ -352,7 +352,7 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
             try {
                 List<FormattedCharSequence> lines = font.split(net.minecraft.network.chat.Component.literal(text), area.width());
                 for (int i = 0; i < lines.size() && i * font.lineHeight < area.height(); i++)
-                    stack.drawString(font, lines.get(i), area.x(), area.y() + i * font.lineHeight, getEffectiveTheme().textSecondary(), false);
+                    stack.text(font, lines.get(i), area.x(), area.y() + i * font.lineHeight, getEffectiveTheme().textSecondary(), false);
             } finally {
                 AbstractGuiUtils.popScissor();
             }
@@ -375,7 +375,7 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
                         SakuraClientState.getThemeTexture(), SakuraClientState.getThemeTextureCoordinate(), reward, x, y, true, true);
                 else {
                     shape(stack, x, y, 16, 16, getEffectiveTheme().buttonBgHover(), 3, 1);
-                    stack.drawString(font, "?", x + 5, y + 4, getEffectiveTheme().textPrimary(), false);
+                    stack.text(font, "?", x + 5, y + 4, getEffectiveTheme().textPrimary(), false);
                 }
                 deferRewardTooltip(stack, pool, reward, mode, x, y);
             }
@@ -403,7 +403,7 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
         return poolSelect.dropdownOpen() || countSelect.dropdownOpen() || animationSelect.dropdownOpen();
     }
 
-    private void deferRewardTooltip(GuiGraphics stack, LotteryPool pool, Reward reward,
+    private void deferRewardTooltip(GuiGraphicsExtractor stack, LotteryPool pool, Reward reward,
                                     LotteryPreviewMode mode, int x, int y) {
         double mx = inputState.mouseX(), my = inputState.mouseY();
         if (dropdownOpen() || !layout.preview().contains(mx, my) || mx < x || mx >= x + 18 || my < y || my >= y + 18)
@@ -421,7 +421,7 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
         if (!lines.isEmpty()) tooltip(stack, String.join("\n", lines));
     }
 
-    private void tooltip(GuiGraphics stack, String text) {
+    private void tooltip(GuiGraphicsExtractor stack, String text) {
         int mx = (int) inputState.mouseX(), my = (int) inputState.mouseY();
         addDeferredTooltipRender(s -> TooltipWidget.drawPopupMessage(s.pose(),
                 FontDrawArgs.ofPopo(Text.literal(text).stack(s.pose())).x(mx).y(my), getEffectiveTheme(), season()));
@@ -496,7 +496,7 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
         return new ScreenCoordinate(rect.x(), rect.y(), rect.width(), rect.height());
     }
 
-    private void shape(GuiGraphics stack, int x, int y, int width, int height, int color, int radius, int border) {
+    private void shape(GuiGraphicsExtractor stack, int x, int y, int width, int height, int color, int radius, int border) {
         BaseShapeWidget.drawShape(new ShapeDrawArgs().stack(stack.pose()).type(ShapeDrawArgs.ShapeType.RECT).color(color)
                 .rect(new ShapeDrawArgs.RectParams().x(x).y(y).width(width).height(height).radius(radius)
                         .cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE).border(border)));

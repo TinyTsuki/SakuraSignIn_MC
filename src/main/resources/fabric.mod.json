@@ -30,7 +30,8 @@
   ],
   "depends": {
     "fabricloader": ">=${loader_version}",
-    "fabric": "*",
+    "fabric-api": "*",
+    "java": ">=25",
     "minecraft": "${minecraft_version}",
     "banira_codex": "${banira_version_range}"
   }

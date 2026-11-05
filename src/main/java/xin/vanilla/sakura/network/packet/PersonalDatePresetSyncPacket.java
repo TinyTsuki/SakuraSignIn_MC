@@ -32,7 +32,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/** 个性化日期预设使用独立分包同步，并由服务端权威校验客户端修改。 */
+/**
+ * 个性化日期预设使用独立分包同步，并由服务端权威校验客户端修改。
+ */
 @Getter
 public final class PersonalDatePresetSyncPacket extends SplitPacket implements INetworkPacket,
         SplitPacket.MergeableSplitPacket<PersonalDatePresetSyncPacket>,
@@ -137,9 +139,9 @@ public final class PersonalDatePresetSyncPacket extends SplitPacket implements I
     private static void applyServerUpdate(PersonalDatePresetSyncPacket packet,
                                           BaniraNetworkContext context) {
         ServerPlayer sender = context.senderAs(ServerPlayer.class);
-        if (sender == null || !sender.hasPermissions(
+        if (sender == null || !SakuraUtils.hasNativePermission(sender.permissions(),
                 CommonConfig.get().permission().permissionEditReward())
-                || !sender.hasPermissions(SakuraUtils.getRewardPermissionLevel(
+                || !SakuraUtils.hasNativePermission(sender.permissions(), SakuraUtils.getRewardPermissionLevel(
                 ERewardRule.PERSONAL_DATE_REWARD))) {
             if (sender != null) {
                 BaniraNetwork.sendToPlayer(new RewardOptionDataReceivedNotice(false), sender);
@@ -169,7 +171,7 @@ public final class PersonalDatePresetSyncPacket extends SplitPacket implements I
             RewardConfigManager.backupRewardOption(false);
             authoritative.setPersonalDatePresets(PersonalDatePresets.copy(packet.presets));
             RewardConfigManager.saveRewardOption();
-            for (ServerPlayer player : sender.server.getPlayerList().getPlayers()) {
+            for (ServerPlayer player : sender.level().getServer().getPlayerList().getPlayers()) {
                 SakuraNetwork.sendSplitToPlayer(SakuraNetwork.personalDatePacket(player), player);
             }
             BaniraNetwork.sendToPlayer(new RewardOptionDataReceivedNotice(true), sender);

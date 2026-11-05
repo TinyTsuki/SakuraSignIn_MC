@@ -1,6 +1,6 @@
 package xin.vanilla.sakura.client.theme;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -30,8 +30,8 @@ public class ThemeTextureBindingsTest {
     @Test
     public void deduplicatesReusesAndReleasesOnlyOwnedTextures() {
         var bindings = new ThemeTextureBindings();
-        var uploaded = new ArrayList<ResourceLocation>();
-        var released = new ArrayList<ResourceLocation>();
+        var uploaded = new ArrayList<Identifier>();
+        var released = new ArrayList<Identifier>();
         var theme = BuiltInThemeCatalog.load("sakura");
         var first = theme.texture("background.calendar").isolated();
         var second = theme.texture("icon.info").isolated();
@@ -50,7 +50,7 @@ public class ThemeTextureBindingsTest {
     @Test
     public void failedUploadRollsBackNewTexturesAndKeepsPreviousOwnership() {
         var bindings = new ThemeTextureBindings();
-        var released = new ArrayList<ResourceLocation>();
+        var released = new ArrayList<Identifier>();
         var theme = BuiltInThemeCatalog.load("sakura");
         var old = theme.texture("background.calendar").isolated();
         var next = theme.texture("icon.info").isolated();

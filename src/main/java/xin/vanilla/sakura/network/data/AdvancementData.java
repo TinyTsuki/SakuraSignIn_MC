@@ -9,8 +9,10 @@ import net.minecraft.advancements.AdvancementType;
 import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemStackTemplate;
+import net.minecraft.core.ClientAsset;
 import net.minecraft.world.item.Items;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.network.chat.Component;
 import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
@@ -22,11 +24,11 @@ import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 @Accessors(chain = true)
 public class AdvancementData {
     @NonNull
-    private final ResourceLocation id;
+    private final Identifier id;
     @NonNull
     private final DisplayInfo displayInfo;
 
-    public AdvancementData(@NonNull ResourceLocation id, DisplayInfo displayInfo) {
+    public AdvancementData(@NonNull Identifier id, DisplayInfo displayInfo) {
         this.id = id;
         if (displayInfo == null) {
             this.displayInfo = emptyDisplayInfo();
@@ -43,10 +45,14 @@ public class AdvancementData {
 
     public static AdvancementData readFromBuffer(BaniraPacketBuffer buffer) {
         BaniraIdentifier identifier = buffer.readIdentifier();
-        ResourceLocation id = ResourceLocation.fromNamespaceAndPath(
+        Identifier id = Identifier.fromNamespaceAndPath(
                 identifier.getNamespace(), identifier.getPath());
-        ResourceLocation itemId = ResourceLocation.parse(buffer.readUtf());
-        ItemStack icon = new ItemStack(BuiltInRegistries.ITEM.get(itemId), buffer.readVarInt());
+        Identifier itemId = Identifier.parse(buffer.readUtf());
+        int count = buffer.readVarInt();
+        var item = BuiltInRegistries.ITEM.get(itemId);
+        ItemStackTemplate icon = item.isPresent()
+                ? new ItemStackTemplate(item.get(), count, net.minecraft.core.component.DataComponentPatch.EMPTY)
+                : new ItemStackTemplate(Items.AIR);
         Component title = Component.literal(buffer.readUtf());
         Component description = Component.literal(buffer.readUtf());
         String background = buffer.readUtf();
@@ -54,7 +60,7 @@ public class AdvancementData {
         return new AdvancementData(id, new DisplayInfo(
                 icon, title, description,
                 background.isEmpty() ? java.util.Optional.empty()
-                        : java.util.Optional.of(ResourceLocation.parse(background)),
+                        : java.util.Optional.of(new ClientAsset.ResourceTexture(Identifier.parse(background))),
                 type,
                 buffer.readBoolean(),
                 buffer.readBoolean(),
@@ -75,7 +81,7 @@ public class AdvancementData {
     }
 
     public static DisplayInfo createDisplayInfo(String title, String description, ItemStack itemStack) {
-        return new DisplayInfo(itemStack
+        return new DisplayInfo(itemStack.isEmpty() ? new ItemStackTemplate(Items.AIR) : ItemStackTemplate.fromNonEmptyStack(itemStack)
                 , SakuraComponent.get().literal(title).toVanilla(), SakuraComponent.get().literal(description).toVanilla()
                 , java.util.Optional.empty(), AdvancementType.TASK
                 , false, false, false);
@@ -83,11 +89,11 @@ public class AdvancementData {
 
     public void writeToBuffer(BaniraPacketBuffer buffer) {
         buffer.writeIdentifier(BaniraIdentifier.of(id.getNamespace(), id.getPath()));
-        buffer.writeUtf(BuiltInRegistries.ITEM.getKey(displayInfo.getIcon().getItem()).toString());
-        buffer.writeVarInt(displayInfo.getIcon().getCount());
+        buffer.writeUtf(displayInfo.getIcon().typeHolder().unwrapKey().orElseThrow().identifier().toString());
+        buffer.writeVarInt(displayInfo.getIcon().count());
         buffer.writeUtf(displayInfo.getTitle().getString());
         buffer.writeUtf(displayInfo.getDescription().getString());
-        buffer.writeUtf(displayInfo.getBackground().map(ResourceLocation::toString).orElse(""));
+        buffer.writeUtf(displayInfo.getBackground().map(asset -> asset.id().toString()).orElse(""));
         buffer.writeEnum(displayInfo.getType());
         buffer.writeBoolean(displayInfo.shouldShowToast());
         buffer.writeBoolean(displayInfo.shouldAnnounceChat());

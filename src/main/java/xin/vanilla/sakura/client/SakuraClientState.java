@@ -2,7 +2,7 @@ package xin.vanilla.sakura.client;
 
 import lombok.Getter;
 import lombok.Setter;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.banira.common.util.DateUtils;
 import xin.vanilla.sakura.network.data.AdvancementData;
@@ -31,7 +31,7 @@ public final class SakuraClientState {
     private static Date calendarCurrentDate;
     @Getter
     @Setter
-    private static ResourceLocation themeTexture;
+    private static Identifier themeTexture;
     @Getter
     @Setter
     private static xin.vanilla.sakura.client.theme.BuiltInThemeDescriptor theme;

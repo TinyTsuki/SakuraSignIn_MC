@@ -1,5 +1,6 @@
 package xin.vanilla.sakura.command.impl;
 
+import xin.vanilla.sakura.util.SakuraUtils;
 import xin.vanilla.sakura.SakuraComponent;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -26,7 +27,7 @@ public final class CardCommand {
         return Commands.literal(CommonConfig.get().command().commandCard())
                 .executes(context -> showOwn(context.getSource().getPlayerOrException()))
                 .then(Commands.literal("give")
-                        .requires(source -> source.hasPermission(2))
+                        .requires(source -> SakuraUtils.hasNativePermission(source.permissions(), 2))
                         .then(Commands.argument("num", IntegerArgumentType.integer())
                                 .suggests((context, builder) -> {
                                     builder.suggest(1);
@@ -44,7 +45,7 @@ public final class CardCommand {
                                                 IntegerArgumentType.getInteger(context, "num")
                                         )))))
                 .then(Commands.literal("set")
-                        .requires(source -> source.hasPermission(2))
+                        .requires(source -> SakuraUtils.hasNativePermission(source.permissions(), 2))
                         .then(Commands.argument("num", IntegerArgumentType.integer())
                                 .suggests((context, builder) -> {
                                     builder.suggest(0);
@@ -63,7 +64,7 @@ public final class CardCommand {
                                                 IntegerArgumentType.getInteger(context, "num")
                                         )))))
                 .then(Commands.literal("get")
-                        .requires(source -> source.hasPermission(2))
+                        .requires(source -> SakuraUtils.hasNativePermission(source.permissions(), 2))
                         .then(Commands.argument("player", EntityArgument.player())
                                 .executes(context -> showTarget(
                                         context.getSource().getPlayerOrException(),
@@ -77,7 +78,7 @@ public final class CardCommand {
                 : "server_not_enable_sign_in_card";
         Component message = CommonConfig.get().makeUp().signInCard()
                 ? SakuraComponent.get().trans(player, "format", key, SakuraPlayerData.get(player).getSignInCard()
-                )
+        )
                 : SakuraComponent.get().trans(player, "word", key);
         SakuraMessages.send(player, message);
         return 1;

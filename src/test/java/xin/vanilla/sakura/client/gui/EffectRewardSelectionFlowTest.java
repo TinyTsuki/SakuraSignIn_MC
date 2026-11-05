@@ -4,7 +4,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import xin.vanilla.sakura.test.BaniraTestPlatform;
@@ -19,13 +19,12 @@ import static org.junit.Assert.assertTrue;
 public class EffectRewardSelectionFlowTest {
     @BeforeClass
     public static void bootstrapMinecraftRegistries() {
-        net.minecraft.SharedConstants.tryDetectVersion();
-        net.minecraft.server.Bootstrap.bootStrap();
+        xin.vanilla.sakura.test.NativeBootstrap.initialize();
     }
 
     @Test
     public void preservesEffectDurationAmplifierAndProbability() throws Exception {
-        ResourceLocation effectId = ResourceLocation.fromNamespaceAndPath("minecraft", "luck");
+        Identifier effectId = Identifier.fromNamespaceAndPath("minecraft", "luck");
         Holder<MobEffect> effect = MobEffects.LUCK;
         BaniraTestPlatform.install();
         BaniraTestPlatform.register(effectId.toString(), effect.value());

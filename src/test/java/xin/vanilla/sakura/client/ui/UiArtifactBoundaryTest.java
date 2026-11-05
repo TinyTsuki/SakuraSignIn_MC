@@ -18,7 +18,7 @@ public class UiArtifactBoundaryTest {
     @Test
     public void ownedClassIsAllowedAndEmbeddedSdkRequiresMergedArchive() {
         var writer = new org.objectweb.asm.ClassWriter(0);
-        writer.visit(61, 1, "xin/vanilla/sakura/Example", null, "java/lang/Object", null);
+        writer.visit(org.objectweb.asm.Opcodes.V25, 1, "xin/vanilla/sakura/Example", null, "java/lang/Object", null);
         writer.visitEnd();
         assertTrue(violations(Map.of("xin/vanilla/sakura/Example.class", writer.toByteArray()), false).isEmpty());
         writer = new org.objectweb.asm.ClassWriter(0);
@@ -50,7 +50,8 @@ public class UiArtifactBoundaryTest {
 
     @Test
     public void futureClassesAndUnsafePathsAreRejected() {
-        byte[] header = {(byte) 0xca, (byte) 0xfe, (byte) 0xba, (byte) 0xbe, 0, 0, 0, 66};
+        byte[] header = {(byte) 0xca, (byte) 0xfe, (byte) 0xba, (byte) 0xbe, 0, 0, 0,
+                (byte) (org.objectweb.asm.Opcodes.V25 + 1)};
         assertFalse(violations(Map.of("xin/vanilla/sakura/Future.class", header), false).isEmpty());
         for (String path : List.of("../escape", "assets/../foreign", "C:/foreign"))
             assertFalse(violations(Map.of(path, new byte[0]), false).isEmpty());

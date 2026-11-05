@@ -33,7 +33,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-/** 在真实专服 tick 与客户端网络包之间验证签到、补签、奖励和持久化。 */
+/**
+ * 在真实专服 tick 与客户端网络包之间验证签到、补签、奖励和持久化。
+ */
 public final class SakuraNetworkSmokeServerRunner {
     private static final Logger LOGGER = LogManager.getLogger();
     private static boolean ready;
@@ -215,7 +217,7 @@ public final class SakuraNetworkSmokeServerRunner {
                 + " days=" + data.getTotalSignInDays() + " records=" + data.getSignInRecords().size());
         CommonConfig.save();
         xin.vanilla.sakura.internal.dev.SakuraNetworkSmokeConfigs.verify(false);
-        SakuraNetworkSmokeStatus.append("FINISHED phase-one" );
+        SakuraNetworkSmokeStatus.append("FINISHED phase-one");
         finished = true;
     }
 
@@ -260,12 +262,12 @@ public final class SakuraNetworkSmokeServerRunner {
                 + " days=" + data.getTotalSignInDays() + " records=" + data.getSignInRecords().size());
         SakuraNetworkSmokeStatus.append("PASS persisted-player-data");
         xin.vanilla.sakura.internal.dev.SakuraNetworkSmokeConfigs.verify(false);
-        SakuraNetworkSmokeStatus.append("FINISHED phase-two" );
+        SakuraNetworkSmokeStatus.append("FINISHED phase-two");
         finished = true;
     }
 
     private static MinecraftServer serverOf(ServerPlayer player) {
-        return player.getServer();
+        return player.level().getServer();
     }
 
     private static void assertAppleReward(ServerPlayer player, int minimum) {
@@ -274,7 +276,7 @@ public final class SakuraNetworkSmokeServerRunner {
 
     private static void assertItemReward(ServerPlayer player, net.minecraft.world.item.Item item, int minimum) {
         int count = 0;
-        for (ItemStack stack : player.getInventory().items) {
+        for (ItemStack stack : player.getInventory().getNonEquipmentItems()) {
             if (stack.getItem() == item) count += stack.getCount();
         }
         if (count < minimum) {
@@ -294,7 +296,9 @@ public final class SakuraNetworkSmokeServerRunner {
         }
     }
 
-    /** 旧 Spark 没有稳定的导出 facade；只用反射调用它自己的 sampler 与 protobuf 报告。 */
+    /**
+     * 旧 Spark 没有稳定的导出 facade；只用反射调用它自己的 sampler 与 protobuf 报告。
+     */
     private static final class ReflectiveSparkProfile {
         private static final String REPORT_PROPERTY = "sakura.networkSmoke.sparkReport";
         private final Object sampler;
@@ -372,7 +376,8 @@ public final class SakuraNetworkSmokeServerRunner {
             } catch (InterruptedException error) {
                 Thread.currentThread().interrupt();
                 throw new IllegalStateException("Interrupted writing Spark report", error);
-            } catch (ReflectiveOperationException | java.io.IOException | java.util.concurrent.ExecutionException error) {
+            } catch (ReflectiveOperationException | java.io.IOException |
+                     java.util.concurrent.ExecutionException error) {
                 throw new IllegalStateException("Unable to write Spark report", error);
             }
         }

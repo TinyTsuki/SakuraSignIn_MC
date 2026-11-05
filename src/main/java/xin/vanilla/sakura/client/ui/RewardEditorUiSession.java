@@ -1,6 +1,6 @@
 package xin.vanilla.sakura.client.ui;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.client.ui.*;
 import xin.vanilla.banira.client.data.Texture;
@@ -279,7 +279,7 @@ public final class RewardEditorUiSession implements UiPageSession {
     }
 
     private static UiGameElement icon(String name) {
-        return ICONS.computeIfAbsent(name, key -> UiGameElement.sprite(Texture.of(ResourceLocation.fromNamespaceAndPath("apricityui",
+        return ICONS.computeIfAbsent(name, key -> UiGameElement.sprite(Texture.of(Identifier.fromNamespaceAndPath("apricityui",
                 "apricity/sakura_sign_in/icons/reward-" + key + ".png"), 32, 32)));
     }
 

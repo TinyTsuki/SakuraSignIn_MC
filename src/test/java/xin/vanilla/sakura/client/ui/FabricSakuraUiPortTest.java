@@ -28,6 +28,7 @@ public class FabricSakuraUiPortTest {
         assertTrue(smoke.contains("runDevRenderAt("));
         assertFalse(smoke.contains("getDeclaredMethod(\"handleDrawScreenPre\""));
     }
+
     @Test
     public void allFiveOwnersUseThePublicSharedBoundary() throws Exception {
         for (String screen : new String[]{"SignInScreen", "PersonalDateConfigScreen", "RewardOptionScreen", "LotteryScreen", "LotteryRevealScreen"}) {
@@ -39,8 +40,8 @@ public class FabricSakuraUiPortTest {
     }
 
     @Test
-    public void copiedRenderersUsePublicMinecraft21Contracts() throws Exception {
-        int background = 0, factories = 0;
+    public void renderersUseSharedBackgroundAndPublicIdentifiers() throws Exception {
+        int factories = 0;
         for (String name : new String[]{"screen/SignInScreen", "client/ui/LotteryUiSession", "client/ui/RewardEditorUiSession",
                 "client/theme/BuiltInThemeCatalog", "client/theme/ThemeTexture"}) {
             var node = new ClassNode();
@@ -48,20 +49,18 @@ public class FabricSakuraUiPortTest {
                 assertNotNull(name, in);
                 new ClassReader(in).accept(node, 0);
             }
-            for (var method : node.methods) for (var instruction : method.instructions)
-                if (instruction instanceof MethodInsnNode call) {
-                    assertFalse(call.owner, call.owner.startsWith("net/minecraftforge/") || call.owner.startsWith("com/sighs/"));
-                    if (call.name.equals("renderBackground")) {
-                        assertEquals("(Lnet/minecraft/client/gui/GuiGraphics;IIF)V", call.desc);
-                        background++;
+            if (name.equals("screen/SignInScreen")) assertTrue(node.superName.endsWith("/BaniraScreen"));
+            for (var method : node.methods)
+                for (var instruction : method.instructions)
+                    if (instruction instanceof MethodInsnNode call) {
+                        assertFalse(call.owner, call.owner.startsWith("net/minecraftforge/") || call.owner.startsWith("com/sighs/"));
+                        assertFalse(call.name, call.name.equals("renderBackground") || call.name.equals("extractBackground"));
+                        if (call.owner.equals("net/minecraft/resources/Identifier")) {
+                            assertNotEquals("<init>", call.name);
+                            if (call.name.equals("parse") || call.name.equals("fromNamespaceAndPath")) factories++;
+                        }
                     }
-                    if (call.owner.equals("net/minecraft/resources/ResourceLocation")) {
-                        assertNotEquals("<init>", call.name);
-                        if (call.name.equals("parse") || call.name.equals("fromNamespaceAndPath")) factories++;
-                    }
-                }
         }
-        assertEquals(1, background);
         assertTrue(factories >= 6);
     }
 

@@ -1,6 +1,7 @@
 package xin.vanilla.sakura.command.impl;
 
-import com.mojang.authlib.GameProfile;
+import xin.vanilla.sakura.util.SakuraUtils;
+import net.minecraft.server.players.NameAndId;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
@@ -27,7 +28,7 @@ public final class ResetCommand {
     }
 
     public static LiteralArgumentBuilder<CommandSourceStack> build() {
-        return Commands.literal("reset").requires(source -> source.hasPermission(2))
+        return Commands.literal("reset").requires(source -> SakuraUtils.hasNativePermission(source.permissions(), 2))
                 .then(Commands.literal("personalDate")
                         .then(Commands.argument("player", GameProfileArgument.gameProfile())
                                 .then(Commands.argument("target", StringArgumentType.word())
@@ -55,33 +56,33 @@ public final class ResetCommand {
 
     private static int execute(CommandContext<CommandSourceStack> context, String preset, boolean all) throws CommandSyntaxException {
         CommandSourceStack source = context.getSource();
-        Collection<GameProfile> profiles = GameProfileArgument.getGameProfiles(context, "player");
+        Collection<NameAndId> profiles = GameProfileArgument.getGameProfiles(context, "player");
         if (profiles.size() != 1) {
             throw new SimpleCommandExceptionType(message(source, "word", "delete_one_player").toVanilla()).create();
         }
-        GameProfile profile = profiles.iterator().next();
+        NameAndId profile = profiles.iterator().next();
         int cleared;
         try {
-            cleared = SakuraPlayerData.resetPersonalDateClaims(profile.getId(), preset, all);
+            cleared = SakuraPlayerData.resetPersonalDateClaims(profile.id(), preset, all);
         } catch (IOException | RuntimeException failure) {
-            LOGGER.error("Unable to reset personal date claims for {} ({})", profile.getId(), preset, failure);
+            LOGGER.error("Unable to reset personal date claims for {} ({})", profile.id(), preset, failure);
             source.sendFailure(message(source, "word", "reset_personal_date_failed").toVanilla());
             return 0;
         }
         if (cleared == 0) {
-            source.sendFailure(message(source, "format", "reset_personal_date_empty", profile.getName(), preset).toVanilla());
+            source.sendFailure(message(source, "format", "reset_personal_date_empty", profile.name(), preset).toVanilla());
             return 0;
         }
-        ServerPlayer player = source.getServer().getPlayerList().getPlayer(profile.getId());
+        ServerPlayer player = source.getServer().getPlayerList().getPlayer(profile.id());
         if (player != null) {
             try {
                 SakuraPlayerData.sync(player);
             } catch (RuntimeException failure) {
-                LOGGER.warn("Personal date reset persisted, but synchronization failed for {}", profile.getId(), failure);
+                LOGGER.warn("Personal date reset persisted, but synchronization failed for {}", profile.id(), failure);
             }
         }
         source.sendSuccess(() -> message(source, "format", "reset_personal_date_success",
-                profile.getName(), preset, cleared).toVanilla(), true);
+                profile.name(), preset, cleared).toVanilla(), true);
         return cleared;
     }
 

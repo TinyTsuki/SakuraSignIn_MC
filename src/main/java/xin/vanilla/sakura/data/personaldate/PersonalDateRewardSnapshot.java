@@ -49,11 +49,13 @@ public class PersonalDateRewardSnapshot {
     }
 
     public static PersonalDateRewardSnapshot deserializeNBT(CompoundTag tag) {
-        RewardList rewards = RewardListJsonCodec.decodeLenient(tag.getString("rewards"),
-                failure -> { throw failure; });
-        return new PersonalDateRewardSnapshot(tag.getString("presetId"), tag.getString("presetName"),
-                tag.getInt("slotIndex"), tag.getString("calendarId"), tag.getString("occurrenceKey"),
-                LocalDate.parse(tag.getString("targetDate")), rewards);
+        RewardList rewards = RewardListJsonCodec.decodeLenient(tag.getStringOr("rewards", ""),
+                failure -> {
+                    throw failure;
+                });
+        return new PersonalDateRewardSnapshot(tag.getStringOr("presetId", ""), tag.getStringOr("presetName", ""),
+                tag.getIntOr("slotIndex", 0), tag.getStringOr("calendarId", ""), tag.getStringOr("occurrenceKey", ""),
+                LocalDate.parse(tag.getStringOr("targetDate", "")), rewards);
     }
 
     public PersonalDateRewardSnapshot copy() {

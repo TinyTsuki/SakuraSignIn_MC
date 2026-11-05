@@ -52,7 +52,7 @@ public final class FabricPlayerSignInDataService implements SakuraPlayerDataServ
     public IPlayerSignInData get(Object playerObject) {
         Player player = requirePlayer(playerObject);
         UUID playerUuid = player.getUUID();
-        if (player.getCommandSenderWorld().isClientSide) {
+        if (player.level().isClientSide()) {
             return clientCache.computeIfAbsent(playerUuid, ignored -> new PlayerSignInData());
         }
         try {

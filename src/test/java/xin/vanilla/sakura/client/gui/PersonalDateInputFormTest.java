@@ -32,13 +32,15 @@ import java.util.function.BooleanSupplier;
 import static org.junit.Assert.*;
 
 public class PersonalDateInputFormTest {
+    @org.junit.Rule
+    public final xin.vanilla.sakura.test.NativeClientRule nativeClient = new xin.vanilla.sakura.test.NativeClientRule();
+
     @Rule
     public final UnboundConfigPlatform platform = new UnboundConfigPlatform();
 
     @BeforeClass
     public static void bootstrap() {
-        net.minecraft.SharedConstants.tryDetectVersion();
-        Bootstrap.bootStrap();
+        xin.vanilla.sakura.test.NativeBootstrap.initialize();
         BaniraTestPlatform.install();
     }
 

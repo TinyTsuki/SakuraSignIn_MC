@@ -3,6 +3,7 @@ package xin.vanilla.sakura.data.personaldate;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import net.minecraft.nbt.CompoundTag;
+
 import java.util.Map;
 import java.util.LinkedHashMap;
 
@@ -98,15 +99,15 @@ public class PlayerPersonalDateSlot {
 
     public static PlayerPersonalDateSlot deserializeNBT(CompoundTag tag) {
         PlayerPersonalDateSlot slot = new PlayerPersonalDateSlot();
-        slot.presetId = tag.getString("presetId");
-        slot.slotIndex = tag.getInt("slotIndex");
-        slot.calendarId = tag.getString("calendarId");
-        slot.month = tag.getInt("month");
-        slot.day = tag.getInt("day");
-        slot.lastClaimedOccurrenceKey = tag.getString("lastClaimedOccurrenceKey");
-        CompoundTag cursors = tag.getCompound("claimedPeriodCursors");
+        slot.presetId = tag.getStringOr("presetId", "");
+        slot.slotIndex = tag.getIntOr("slotIndex", 0);
+        slot.calendarId = tag.getStringOr("calendarId", "");
+        slot.month = tag.getIntOr("month", 0);
+        slot.day = tag.getIntOr("day", 0);
+        slot.lastClaimedOccurrenceKey = tag.getStringOr("lastClaimedOccurrenceKey", "");
+        CompoundTag cursors = tag.getCompoundOrEmpty("claimedPeriodCursors");
         for (String period : new String[]{"YEARLY", "MONTHLY"}) {
-            String key = cursors.getString(period);
+            String key = cursors.getStringOr(period, "");
             if (key.startsWith(period + ":")) slot.remember(key);
         }
         slot.remember(slot.lastClaimedOccurrenceKey);

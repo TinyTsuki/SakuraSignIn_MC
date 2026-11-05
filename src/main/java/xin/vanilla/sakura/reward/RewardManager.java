@@ -1,5 +1,6 @@
 package xin.vanilla.sakura.reward;
 
+import xin.vanilla.sakura.util.SakuraUtils;
 import xin.vanilla.sakura.data.time.SakuraClock;
 
 import xin.vanilla.sakura.SakuraComponent;
@@ -54,6 +55,7 @@ public class RewardManager {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final Map<IPlayerSignInData, SignInRecordDateIndex> SIGN_IN_RECORD_INDEXES =
             Collections.synchronizedMap(new WeakHashMap<>());
+
     public static Component getRewardName(String languageCode, Reward reward, boolean withNum) {
         return RewardOperations.describe(languageCode, reward, withNum);
     }
@@ -446,8 +448,8 @@ public class RewardManager {
                     player, signInData, signInDay);
             if (!onlineTime.isAllowed()) {
                 SakuraMessages.send(player, SakuraComponent.get().trans(player, "format",
-                        "sign_in_online_time_required_ss",
-                        onlineTime.getMissingTotalSeconds(), onlineTime.getMissingTodaySeconds()),
+                                "sign_in_online_time_required_ss",
+                                onlineTime.getMissingTotalSeconds(), onlineTime.getMissingTodaySeconds()),
                         notificationType);
                 SakuraPlayerData.saveAndSync(player);
                 return;
@@ -488,7 +490,7 @@ public class RewardManager {
                 SakuraPlayerData.saveAndSync(player);
                 return;
             } else {
-                boolean showFailed = player.hasPermissions(CommonConfig.get().permission().permissionRewardFailedTips());
+                boolean showFailed = SakuraUtils.hasNativePermission(player.permissions(), CommonConfig.get().permission().permissionRewardFailedTips());
                 Component msg = SakuraComponent.get().trans(player, "word", "receive_reward_success");
                 List<Component> details = new ArrayList<>();
                 Optional<SignInRecord> storedRecord = signInData.getSignInRecords().stream()
@@ -538,7 +540,7 @@ public class RewardManager {
             }
             // 是否自动领取
             if (packet.isAutoRewarded()) {
-                boolean showFailed = player.hasPermissions(CommonConfig.get().permission().permissionRewardFailedTips());
+                boolean showFailed = SakuraUtils.hasNativePermission(player.permissions(), CommonConfig.get().permission().permissionRewardFailedTips());
                 Component msg = SakuraComponent.get().trans(player, "word", "receive_reward_success");
                 List<Component> details = new ArrayList<>();
                 rewardList.forEach(reward -> {
@@ -582,7 +584,7 @@ public class RewardManager {
     }
 
     private static List<Component> claimPersonalDateRewards(ServerPlayer player,
-                                                           IPlayerSignInData data, SignInRecord record) {
+                                                            IPlayerSignInData data, SignInRecord record) {
         List<Component> details = new ArrayList<>();
         for (PersonalDateRewardSnapshot snapshot : record.getPersonalDateRewards()) {
             for (Reward reward : snapshot.getRewards()) {
@@ -593,7 +595,7 @@ public class RewardManager {
                         Date.from(snapshot.getTargetDate().atStartOfDay(ZoneId.systemDefault()).toInstant()),
                         "personal_date:" + snapshot.getPresetId())) {
                     details.add(SakuraComponent.get().trans(player, "format", "personal_date_additional_rewards",
-                            snapshot.getPresetName()).append(reward.getName(SakuraUtils.getPlayerLanguage(player), true))
+                                    snapshot.getPresetName()).append(reward.getName(SakuraUtils.getPlayerLanguage(player), true))
                             .color(Color.GREEN.getRGB()));
                 }
             }
@@ -626,7 +628,9 @@ public class RewardManager {
         return grantReward(player, signInData, reward, sourceDate, sourceId);
     }
 
-    /** 已由外层规则完成抽取时跳过概率判定，避免同一奖励被随机两次。 */
+    /**
+     * 已由外层规则完成抽取时跳过概率判定，避免同一奖励被随机两次。
+     */
     public static boolean giveGuaranteedRewardToPlayer(ServerPlayer player,
                                                        IPlayerSignInData signInData,
                                                        Reward reward, Date sourceDate,

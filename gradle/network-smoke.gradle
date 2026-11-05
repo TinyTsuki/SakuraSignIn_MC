@@ -48,7 +48,7 @@ if (smokeChild) {
 
 def readUtf8 = { File file -> file.isFile() ? file.getText('UTF-8') : '' }
 def sparkRuntime = {
-    def candidates = configurations.runtimeClasspath.files + configurations.modRuntimeOnly.files
+    def candidates = configurations.runtimeClasspath.files
     candidates.find { candidate ->
         if (!candidate.isFile() || !candidate.name.toLowerCase().startsWith('spark-')) {
             false
@@ -173,7 +173,7 @@ tasks.register('networkSmoke') {
         }
         def sourceCommit = providers.exec { commandLine 'git', 'rev-parse', 'HEAD' }.standardOutput.asText.get().trim()
         def sourceStatus = providers.exec { commandLine 'git', 'status', '--porcelain', '--untracked-files=all' }.standardOutput.asText.get()
-        def runtimeHashes = (configurations.runtimeClasspath.files + configurations.modRuntimeOnly.files).findAll { it.isFile() &&
+        def runtimeHashes = configurations.runtimeClasspath.files.findAll { it.isFile() &&
                 (it.name.contains('banira_codex') || it.name.toLowerCase().startsWith('spark-')) }
                 .collectEntries { [(it.absolutePath): sha256(it)] }
         new File(evidence, 'source-state.json').setText(JsonOutput.prettyPrint(JsonOutput.toJson([

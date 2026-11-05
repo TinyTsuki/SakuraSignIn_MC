@@ -11,11 +11,11 @@ import static org.junit.Assert.*;
 
 public class FabricUiFollowupTest {
     @Test
-    public void validationPublishesTheRemappedSourceArtifact() throws Exception {
+    public void validationPublishesTheUnobfuscatedArchives() throws Exception {
         String script = Files.readString(Path.of("gradle/aui-validation-publication.gradle"), StandardCharsets.UTF_8);
-        assertTrue(script.contains("artifact tasks.named('remapJar')"));
-        assertTrue(script.contains("artifact tasks.named('remapSourcesJar')"));
-        assertFalse(script.contains("artifact tasks.named('sourcesJar')"));
+        assertTrue(script.contains("artifact tasks.named('jar')"));
+        assertTrue(script.contains("artifact tasks.named('sourcesJar')"));
+        assertFalse(script.contains("artifact tasks.named('remapJar')"));
     }
 
     @Test

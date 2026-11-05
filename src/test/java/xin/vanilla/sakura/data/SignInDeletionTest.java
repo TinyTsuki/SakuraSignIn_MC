@@ -83,7 +83,7 @@ public class SignInDeletionTest {
                 "birthday", 0, CalendarIds.CHINESE_LUNAR, 8, 2, "YEARLY:2026")));
         repository.save(uuid, data);
         summaries.stored.put("other_mod", new CompoundTag());
-        CompoundTag other = summaries.stored.getCompound("other_mod");
+        CompoundTag other = summaries.stored.getCompound("other_mod").orElseThrow();
         other.putInt("value", 42);
         assertTrue(delete(repository, data, today));
         PlayerSignInData loaded = repository.load(uuid);
@@ -91,7 +91,7 @@ public class SignInDeletionTest {
         assertEquals("zh_cn", loaded.getLanguage());
         assertEquals(400, loaded.getOnlineTimeBaselineTicks());
         assertEquals("YEARLY:2026", loaded.getPersonalDateSlots().get(0).getLastClaimedOccurrenceKey());
-        assertEquals(42, summaries.stored.getCompound("other_mod").getInt("value"));
+        assertEquals(42, summaries.stored.getCompound("other_mod").orElseThrow().getIntOr("value", Integer.MIN_VALUE));
     }
 
     @Test
@@ -169,8 +169,8 @@ public class SignInDeletionTest {
             Path backup = files.filter(path -> path.getFileName().toString().startsWith("backup-"))
                     .findFirst().orElseThrow(() -> new AssertionError("Missing backup"));
             CompoundTag root = AtomicNbtFiles.read(backup);
-            assertEquals(1, root.getCompound("beforeSummary").getInt("totalSignInDays"));
-            assertEquals(1, root.getCompound("beforeHistory").getList("records", 10).size());
+            assertEquals(1, root.getCompound("beforeSummary").orElseThrow().getIntOr("totalSignInDays", Integer.MIN_VALUE));
+            assertEquals(1, root.getCompound("beforeHistory").orElseThrow().getListOrEmpty("records").size());
         }
     }
 
@@ -222,7 +222,7 @@ public class SignInDeletionTest {
             journal = AtomicNbtFiles.read(files.filter(path -> path.getFileName().toString().startsWith("backup-"))
                     .findFirst().get());
         }
-        summaries.save(uuid, PlayerSignInSummary.deserializeNBT(journal.getCompound("beforeSummary")));
+        summaries.save(uuid, PlayerSignInSummary.deserializeNBT(journal.getCompound("beforeSummary").orElseThrow()));
         AtomicNbtFiles.write(directory.resolve("pending.nbt"), journal);
         assertFalse(repository.load(uuid).isSignedOn(date(9)));
         assertTrue(repository.load(uuid).getSignInRecords().isEmpty());
@@ -244,7 +244,7 @@ public class SignInDeletionTest {
         AtomicNbtFiles.write(month, original);
         assertTrue(delete(repository, data, today));
         assertTrue(repository.load(uuid).isSignedOn(otherDay));
-        assertEquals("unchanged", AtomicNbtFiles.read(month).getString("extension"));
+        assertEquals("unchanged", AtomicNbtFiles.read(month).getString("extension").orElseThrow());
         assertFalse(delete(repository, data, today));
     }
 
@@ -314,7 +314,7 @@ public class SignInDeletionTest {
         Path pending = directory.resolve("pending.nbt");
         AtomicNbtFiles.write(pending, journal);
         CompoundTag root = new CompoundTag();
-        root.put("sakura_sign_in", journal.getCompound("beforeSummary"));
+        root.put("sakura_sign_in", journal.getCompound("beforeSummary").orElseThrow());
         BaniraTestPlatform.install();
         BaniraPlatform previous = Banira.platform();
         BaniraPathService paths = (BaniraPathService) Proxy.newProxyInstance(getClass().getClassLoader(),
@@ -326,10 +326,16 @@ public class SignInDeletionTest {
         BaniraPlayerDataService players = (BaniraPlayerDataService) Proxy.newProxyInstance(getClass().getClassLoader(),
                 new Class<?>[]{BaniraPlayerDataService.class}, (proxy, method, args) -> {
                     switch (method.getName()) {
-                        case "getOrCreate": return root.getCompound((String) args[1]);
-                        case "put": root.put((String) args[1], (CompoundTag) args[2]); return null;
-                        case "flush": AtomicNbtFiles.write(world.resolve("playerdata").resolve(uuid + ".nbt"), root); return null;
-                        default: throw new UnsupportedOperationException(method.getName());
+                        case "getOrCreate":
+                            return root.getCompoundOrEmpty((String) args[1]);
+                        case "put":
+                            root.put((String) args[1], (CompoundTag) args[2]);
+                            return null;
+                        case "flush":
+                            AtomicNbtFiles.write(world.resolve("playerdata").resolve(uuid + ".nbt"), root);
+                            return null;
+                        default:
+                            throw new UnsupportedOperationException(method.getName());
                     }
                 });
         BaniraPlatforms.install((BaniraPlatform) Proxy.newProxyInstance(getClass().getClassLoader(),
@@ -346,7 +352,8 @@ public class SignInDeletionTest {
         recovery.setAccessible(true);
         @SuppressWarnings("unchecked")
         Set<UUID> needed = (Set<UUID>) recovery.get(FabricPlayerSignInDataService.INSTANCE);
-        cache.put(uuid, stale); needed.add(uuid);
+        cache.put(uuid, stale);
+        needed.add(uuid);
         Method retry = FabricPlayerSignInDataService.class.getDeclaredMethod("recoverPending", UUID.class);
         retry.setAccessible(true);
         Path broken = world.resolve("sakura_sign_in/history").resolve(uuid.toString()).resolve("2026-09.nbt");
@@ -367,7 +374,7 @@ public class SignInDeletionTest {
             Method persist = FabricPlayerSignInDataService.class.getDeclaredMethod("persist", UUID.class);
             persist.setAccessible(true);
             persist.invoke(FabricPlayerSignInDataService.INSTANCE, uuid);
-            assertEquals(0, root.getCompound("sakura_sign_in").getInt("totalSignInDays"));
+            assertEquals(0, root.getCompound("sakura_sign_in").orElseThrow().getIntOr("totalSignInDays", Integer.MIN_VALUE));
         } finally {
             Files.deleteIfExists(broken);
             cache.remove(uuid);
@@ -414,9 +421,7 @@ public class SignInDeletionTest {
 
         @Override
         public Optional<PlayerSignInSummary> load(UUID uuid) {
-            return stored.contains("sakura_sign_in", 10)
-                    ? Optional.of(PlayerSignInSummary.deserializeNBT(stored.getCompound("sakura_sign_in")))
-                    : Optional.empty();
+            return stored.getCompound("sakura_sign_in").map(PlayerSignInSummary::deserializeNBT);
         }
 
         @Override

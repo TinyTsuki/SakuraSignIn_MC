@@ -12,9 +12,4 @@ public class MinecraftClientMixin {
     private void sakura$allowMultiplayer(CallbackInfoReturnable<Boolean> callbackInfo) {
         callbackInfo.setReturnValue(true);
     }
-
-    @Inject(method = "getChatStatus", at = @At("HEAD"), cancellable = true)
-    private void sakura$allowChat(CallbackInfoReturnable<Minecraft.ChatStatus> callbackInfo) {
-        callbackInfo.setReturnValue(Minecraft.ChatStatus.ENABLED);
-    }
 }

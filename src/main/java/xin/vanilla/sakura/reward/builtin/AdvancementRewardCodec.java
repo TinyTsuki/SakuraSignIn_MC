@@ -1,22 +1,22 @@
 package xin.vanilla.sakura.reward.builtin;
 
 import com.google.gson.JsonObject;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import xin.vanilla.sakura.api.reward.RewardCodec;
 import xin.vanilla.sakura.api.reward.RewardDataException;
 
-public final class AdvancementRewardCodec implements RewardCodec<ResourceLocation> {
+public final class AdvancementRewardCodec implements RewardCodec<Identifier> {
     @Override
-    public ResourceLocation decode(JsonObject content) throws RewardDataException {
+    public Identifier decode(JsonObject content) throws RewardDataException {
         try {
-            return ResourceLocation.parse(content.get("advancement").getAsString());
+            return Identifier.parse(content.get("advancement").getAsString());
         } catch (Exception exception) {
             throw new RewardDataException("Invalid advancement reward", exception);
         }
     }
 
     @Override
-    public JsonObject encode(ResourceLocation value) throws RewardDataException {
+    public JsonObject encode(Identifier value) throws RewardDataException {
         if (value == null) {
             throw new RewardDataException("Advancement id cannot be null");
         }

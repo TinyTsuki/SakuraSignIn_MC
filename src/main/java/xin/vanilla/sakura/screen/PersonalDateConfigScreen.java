@@ -1,7 +1,7 @@
 package xin.vanilla.sakura.screen;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.resources.language.I18n;
@@ -320,7 +320,7 @@ public final class PersonalDateConfigScreen extends xin.vanilla.banira.client.gu
         }
 
         @Override
-        public void render(GuiGraphics graphics, float partialTicks) {
+        public void render(GuiGraphicsExtractor graphics, float partialTicks) {
             if (visible()) renderChildren(graphics, partialTicks);
         }
     }
