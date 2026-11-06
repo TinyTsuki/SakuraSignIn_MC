@@ -72,10 +72,10 @@ public final class LotteryLayout {
         int x = panel.x() + 12, innerWidth = panelWidth - 24;
         boolean narrow = innerWidth < 520;
         int footerY = panel.bottom() - 10 - (narrow ? 50 : 22);
-        Rect title = new Rect(x, top + 8, innerWidth - 22, 12);
+        Rect title = new Rect(x, top + 8, innerWidth - 22, 22);
         Rect close = new Rect(panel.right() - 22, top + 8, 10, 10);
-        Rect pool = new Rect(x, title.bottom() + 6, innerWidth, 22);
-        Rect info = new Rect(x, pool.bottom() + 6, innerWidth, height <= 300 ? 30 : 40);
+        Rect pool = new Rect(x, title.bottom() + 4, innerWidth, 22);
+        Rect info = new Rect(x, pool.bottom() + 6, innerWidth, 30);
         Rect description = new Rect(x, info.bottom() + 6, innerWidth, height <= 300 ? 27 : 56);
         Rect preview = new Rect(x, description.bottom() + 6, innerWidth, footerY - 6 - description.bottom() - 6);
         int singleWidth = narrow ? 70 : 96, batchWidth = singleWidth;
