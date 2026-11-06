@@ -18,8 +18,9 @@ public final class LotteryPaymentViewModel {
     private int count = 1;
     private int quoteCount = 1;
     private Integer intent;
-    private long generation = -1, lastRequestAt;
-    private boolean needsQuote;
+    private String intentFee;
+    private long generation = -1, lastRequestAt, receivedAt;
+    private boolean needsQuote, refreshing;
     private LotteryQuote seen;
 
     public LotteryPaymentViewModel(LotteryClientRequests requests, LongSupplier millis,
@@ -39,6 +40,7 @@ public final class LotteryPaymentViewModel {
         intent = null;
         seen = null;
         needsQuote = true;
+        refreshing = false;
     }
 
     public void tick() {
@@ -46,51 +48,58 @@ public final class LotteryPaymentViewModel {
             generation = requests.getGeneration();
             intent = null;
             seen = null;
+            summary = null;
+            refreshing = false;
             quoteCount = count;
             needsQuote = true;
         }
         if (poolId.isEmpty() || generation < 0 || isDrawing()) return;
         if (needsQuote) {
-            request(quoteCount);
+            request(quoteCount, false);
             return;
         }
         LotteryQuote quote = requests.getQuote();
         if (quote != null && quote != seen && quote.getRequest().getPoolId().equals(poolId)) {
             seen = quote;
+            receivedAt = millis.getAsLong();
             if (quote.isReady()) summary = quote.getPaymentSummary();
             if (intent != null) {
                 int requested = intent;
                 intent = null;
-                if (quote.isReady() && quote.getRequest().getCount() == requested) draw(requested);
+                if (quote.isReady() && quote.getRequest().getCount() == requested
+                        && intentFee.equals(quote.getPaymentSummary())) draw(requested);
             }
             if (!quote.isReady() && quote.getRequest().getCount() != 1) {
                 quoteCount = 1;
-                request(1);
+                request(1, false);
                 return;
             }
         }
         if (!isDrawing() && millis.getAsLong() - lastRequestAt >= REFRESH_MILLIS) {
             intent = null;
-            request(quoteCount);
+            request(quoteCount, quote != null && quote == seen);
         }
     }
 
-    private void request(int requested) {
+    private void request(int requested, boolean background) {
         LotteryQuoteRequest request = requests.request(poolId, requested);
         if (request != null) {
             needsQuote = false;
+            refreshing = background;
             lastRequestAt = millis.getAsLong();
             sendQuote.accept(request);
         }
     }
 
     public void click(int requested) {
-        if (!canDraw(requested) || intent != null) return;
+        if (!canOfferDraw(requested)) return;
         LotteryQuote quote = requests.getQuote();
-        if (quote.getRequest().getCount() == requested) draw(requested);
+        LotteryQuoteRequest pending = requests.getPending();
+        if (pending == null && quote.getRequest().getCount() == requested) draw(requested);
         else {
             intent = requested;
-            request(requested);
+            intentFee = quote.getPaymentSummary();
+            if (pending == null || pending.getCount() != requested) request(requested, false);
         }
     }
 
@@ -110,7 +119,25 @@ public final class LotteryPaymentViewModel {
         LotteryQuote quote = requests.getQuote();
         return !needsQuote && !isDrawing() && intent == null && requests.getPending() == null
                 && millis.getAsLong() - lastRequestAt < REFRESH_MILLIS
-                && quote != null && quote.isReady() && quote.getGeneration() == requests.getGeneration()
+                && permits(quote, requested);
+    }
+
+    public boolean canOfferDraw(int requested) {
+        return canDraw(requested) || isRefreshing() && permits(seen, requested);
+    }
+
+    public boolean isWaitingForQuote() {
+        return isPending() && !isRefreshing();
+    }
+
+    private boolean isRefreshing() {
+        return refreshing && !needsQuote && !isDrawing() && intent == null && requests.getPending() != null
+                && seen != null && seen == requests.getQuote() && seen.getGeneration() == requests.getGeneration()
+                && millis.getAsLong() - receivedAt < 2 * REFRESH_MILLIS;
+    }
+
+    private boolean permits(LotteryQuote quote, int requested) {
+        return quote != null && quote.isReady() && quote.getGeneration() == requests.getGeneration()
                 && quote.getRequest().getPoolId().equals(poolId)
                 && (quote.getRequest().getCount() == requested || requested == 1);
     }

@@ -260,8 +260,8 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
             configureCountOptions();
         }
         payment.tick();
-        singleDrawButton.enabled(payment.canDraw(1));
-        batchDrawButton.enabled(payment.canDraw(batchCount()));
+        singleDrawButton.enabled(payment.canOfferDraw(1));
+        batchDrawButton.enabled(payment.canOfferDraw(batchCount()));
         poolSelect.enabled(!payment.isDrawing());
         countSelect.enabled(!payment.isDrawing());
     }
@@ -307,7 +307,7 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
                     fee.isEmpty() ? SakuraComponent.get().translateClient("word", "lottery_free") : fee);
             LotteryQuote quote = payment.quote();
             String status = payment.isDrawing() ? SakuraComponent.get().translateClient("word", "lottery_drawing")
-                    : quote != null && !quote.isReady() && !payment.isPending()
+                    : quote != null && !quote.isReady() && !payment.isWaitingForQuote()
                     ? SakuraComponent.get().translateClient("word", "lottery_payment_unavailable") : "";
             renderParagraph(stack, layout.info(), infoViewport, infoScrollbar,
                     details + "\n" + cost + (status.isEmpty() ? "" : "\n" + status), getEffectiveTheme().textSecondary());
