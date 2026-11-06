@@ -111,7 +111,7 @@ public final class LotteryPoolForm {
         }
         args.addWidget(dropdown("animationStyle", "lottery_animation", existing == null ? "STRIP"
                         : existing.getAnimationStyle() == null ? "legacy" : existing.getAnimationStyle().name(),
-                animations.toArray(DropdownOption[]::new)));
+                animations.toArray(new DropdownOption[0])));
         args.setCallback(results -> {
             LotteryPool candidate = new LotteryPool(results.value("id"), results.value("name"),
                     LotteryLimitPolicy.valueOf(results.value("policy")),
@@ -198,7 +198,7 @@ public final class LotteryPoolForm {
             modes.add(option("texture", "lottery_artwork_texture"));
         }
         String storedPng = thumbnail ? artwork.thumbnail : artwork.poster;
-        args.addWidget(dropdown("mode", "lottery_artwork_source", artwork.source(thumbnail), modes.toArray(DropdownOption[]::new)));
+        args.addWidget(dropdown("mode", "lottery_artwork_source", artwork.source(thumbnail), modes.toArray(new DropdownOption[0])));
         if (!storedPng.isEmpty()) {
             args.addWidget(new InputFormScreen.Widget().name("savedPng").title(text("lottery_png_current"))
                     .defaultValue(pngDimensions(storedPng)).disabled(true)
@@ -259,7 +259,8 @@ public final class LotteryPoolForm {
                         artwork.main("", "", "");
                         break;
                     }
-                    default: throw new IllegalArgumentException("Unknown artwork source");
+                    default:
+                        throw new IllegalArgumentException("Unknown artwork source");
                 }
                 selected.accept(artwork.summary(thumbnail));
             } catch (java.io.IOException | IllegalArgumentException failure) {
@@ -311,11 +312,16 @@ public final class LotteryPoolForm {
 
         private String summary(boolean thumbnail) {
             switch (source(thumbnail)) {
-                case "png" : return pngDimensions(thumbnail ? this.thumbnail : poster);
-                case "item" : return tr("lottery_artwork_item") + " · " + itemName(item);
-                case "texture" : return tr("lottery_artwork_texture") + " · " + texture;
-                case "auto" : return tr("lottery_artwork_auto");
-                default : return tr("lottery_artwork_none");
+                case "png":
+                    return pngDimensions(thumbnail ? this.thumbnail : poster);
+                case "item":
+                    return tr("lottery_artwork_item") + " · " + itemName(item);
+                case "texture":
+                    return tr("lottery_artwork_texture") + " · " + texture;
+                case "auto":
+                    return tr("lottery_artwork_auto");
+                default:
+                    return tr("lottery_artwork_none");
             }
         }
 
@@ -369,8 +375,9 @@ public final class LotteryPoolForm {
                 String expression;
                 if ("free".equals(kind)) expression = "";
                 else if ("advanced".equals(kind)) expression = results.value("advanced");
-                else expression = LotteryVoucherExpressions.build(kind, results.value("score".equals(kind) ? "objective" : "item"),
-                        Integer.parseInt(results.value("amount")));
+                else
+                    expression = LotteryVoucherExpressions.build(kind, results.value("score".equals(kind) ? "objective" : "item"),
+                            Integer.parseInt(results.value("amount")));
                 String error = voucherError(expression);
                 if (!error.isEmpty()) {
                     results.runningResult(error);
@@ -409,12 +416,18 @@ public final class LotteryPoolForm {
             LotteryVoucherExpressions.Fields cost = LotteryVoucherExpressions.read(expression);
             String amount = " x" + cost.amount;
             switch (cost.kind) {
-                case "free": return tr("lottery_free");
-                case "item": return cost.specification + amount;
-                case "score": return tr("lottery_voucher_score") + ": " + cost.specification + amount;
-                case "xpPoints": return tr("lottery_voucher_points") + amount;
-                case "xpLevels": return tr("lottery_voucher_levels") + amount;
-                default: return tr("lottery_voucher_advanced");
+                case "free":
+                    return tr("lottery_free");
+                case "item":
+                    return cost.specification + amount;
+                case "score":
+                    return tr("lottery_voucher_score") + ": " + cost.specification + amount;
+                case "xpPoints":
+                    return tr("lottery_voucher_points") + amount;
+                case "xpLevels":
+                    return tr("lottery_voucher_levels") + amount;
+                default:
+                    return tr("lottery_voucher_advanced");
             }
         }
     }
