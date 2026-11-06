@@ -308,7 +308,7 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
             if (pool.getCooldownSeconds() > 0)
                 details += " \u00b7 " + SakuraComponent.get().translateClient("format", "lottery_interval_s", pool.getCooldownSeconds());
             font.draw(stack, font.plainSubstrByWidth(details, layout.title().width()),
-                layout.title().x(), layout.title().y() + 12, getEffectiveTheme().textSecondary());
+                    layout.title().x(), layout.title().y() + 12, getEffectiveTheme().textSecondary());
             String fee = payment.summary();
             String cost = fee == null ? SakuraComponent.get().translateClient("word", "lottery_quote_pending")
                     : SakuraComponent.get().translateClient("format", "lottery_cost_per_draw_s",
@@ -333,15 +333,15 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
             if (xin.vanilla.sakura.client.gui.lottery.LotteryArtwork.hasMain(pool)) {
                 int artworkWidth = Math.min(description.width() / 3, description.height() * 2);
                 if (artworkWidth > 0) {
-                    xin.vanilla.sakura.client.gui.lottery.LotteryArtwork.resolve(pool).render(stack,
-                            description.right() - artworkWidth, description.y(), artworkWidth, description.height(), 48);
+                    xin.vanilla.sakura.client.gui.lottery.LotteryArtwork.resolve(pool).render(stack, font,
+                            description.right() - artworkWidth, description.y(), artworkWidth, description.height());
                     description = new LotteryLayout.Rect(description.x(), description.y(), description.width() - artworkWidth - 6, description.height());
                 }
             }
             renderParagraph(stack, description, descriptionViewport, descriptionScrollbar,
                     pool.getDescription(), getEffectiveTheme().textPrimary());
             renderPreview(stack, pool);
-            if (!dropdownOpen() && layout.title().contains(mouseX, mouseY)
+            if (!dropdownOpen() && layout.title().contains(inputState.mouseX(), inputState.mouseY())
                     && (font.width(heading) > layout.title().width() || font.width(details) > layout.title().width()))
                 tooltip(stack, heading + "\n" + details);
         }
@@ -399,8 +399,9 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
             for (int i = start; i < end; i++) {
                 int local = i - start, x = area.x() + 4 + local % columns * 34, y = area.y() + 5 + local / columns * 34;
                 Reward reward = rewards.get(i);
-                if (mode.showsItems()) RewardRenderer.renderCustomReward(stack, Minecraft.getInstance().getItemRenderer(), font,
-                        SakuraClientState.getThemeTexture(), SakuraClientState.getThemeTextureCoordinate(), reward, x, y, true, true);
+                if (mode.showsItems())
+                    RewardRenderer.renderCustomReward(stack, Minecraft.getInstance().getItemRenderer(), font,
+                            SakuraClientState.getThemeTexture(), SakuraClientState.getThemeTextureCoordinate(), reward, x, y, true, true);
                 else {
                     shape(stack, x, y, 16, 16, getEffectiveTheme().buttonBgHover(), 3, 1);
                     font.draw(stack, "?", x + 5, y + 4, getEffectiveTheme().textPrimary());

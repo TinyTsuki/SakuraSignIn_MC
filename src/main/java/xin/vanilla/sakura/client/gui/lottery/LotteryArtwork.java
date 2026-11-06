@@ -1,8 +1,8 @@
 package xin.vanilla.sakura.client.gui.lottery;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.core.registries.BuiltInRegistries;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.gui.Font;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -30,9 +30,9 @@ public record LotteryArtwork(ResourceLocation texture, ItemStack item, int image
         Minecraft client = Minecraft.getInstance();
         if (texture != null && (client == null || client.getResourceManager().getResource(texture).isEmpty()))
             texture = null;
-        ResourceLocation itemId = pool == null || pool.getArtworkItem().isEmpty() ? null : ResourceLocation.tryParse(pool.getArtworkItem());
-        ItemStack item = itemId == null ? ItemStack.EMPTY : new ItemStack(BuiltInRegistries.ITEM.get(itemId));
-        return new LotteryArtwork(texture, item.isEmpty() ? new ItemStack(Items.CHERRY_SAPLING) : item, WIDTH, HEIGHT);
+        ItemStack item = pool == null || pool.getArtworkItem().isEmpty() ? ItemStack.EMPTY
+                : xin.vanilla.banira.common.util.ItemUtils.deserializeItemStack(pool.getArtworkItem());
+        return new LotteryArtwork(texture, item.isEmpty() ? new ItemStack(Items.OAK_SAPLING) : item, WIDTH, HEIGHT);
     }
 
     public static boolean hasMain(LotteryPool pool) {
@@ -47,24 +47,16 @@ public record LotteryArtwork(ResourceLocation texture, ItemStack item, int image
         return new DropdownOption(pool.getId(), pool.getDisplayName(), artwork.item, textures, tooltip);
     }
 
-    public void render(GuiGraphics graphics, int x, int y, int width, int height, int itemSize) {
+    public void render(PoseStack graphics, Font font, int x, int y, int width, int height) {
         if (texture != null) {
             int drawWidth = Math.min(width, height * imageWidth / imageHeight);
             int drawHeight = drawWidth * imageHeight / imageWidth;
-            graphics.blit(texture, x + (width - drawWidth) / 2, y + (height - drawHeight) / 2,
+            xin.vanilla.banira.client.util.AbstractGuiUtils.blitBlend(graphics, texture,
+                    x + (width - drawWidth) / 2, y + (height - drawHeight) / 2,
                     drawWidth, drawHeight, 0, 0, imageWidth, imageHeight, imageWidth, imageHeight);
             return;
         }
-        int size = Math.min(itemSize, Math.min(width, height));
-        if (size < 1) return;
-        var pose = graphics.pose();
-        pose.pushPose();
-        try {
-            pose.translate(x + (width - size) / 2.0, y + (height - size) / 2.0, 0);
-            pose.scale(size / 16.0F, size / 16.0F, 1);
-            graphics.renderItem(item, 0, 0);
-        } finally {
-            pose.popPose();
-        }
+        if (width >= 16 && height >= 16) xin.vanilla.banira.client.gui.widget.ItemWidget.renderItem(font, item,
+                x + (width - 16) / 2, y + (height - 16) / 2, false);
     }
 }

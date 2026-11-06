@@ -165,7 +165,7 @@ public final class LotteryPoolForm {
                         ? tr("input_format_invalid") : "")
                 .picker((screen, selected) -> ItemRewardSelectionFlow.create(screen, itemStack(selection.get()), stack -> {
                     if (stack.isEmpty()) return;
-                    String value = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
+                    String value = xin.vanilla.banira.common.util.ItemUtils.getItemRegistry(stack.getItem()).toString();
                     selection.set(value);
                     selected.accept(value);
                 }, false));
@@ -173,9 +173,7 @@ public final class LotteryPoolForm {
 
     private static net.minecraft.world.item.ItemStack itemStack(String id) {
         if (id.isBlank()) return net.minecraft.world.item.ItemStack.EMPTY;
-        var key = net.minecraft.resources.ResourceLocation.tryParse(id);
-        return key == null ? net.minecraft.world.item.ItemStack.EMPTY : net.minecraft.core.registries.BuiltInRegistries.ITEM
-                .getOptional(key).map(net.minecraft.world.item.ItemStack::new).orElse(net.minecraft.world.item.ItemStack.EMPTY);
+        return xin.vanilla.banira.common.util.ItemUtils.deserializeItemStack(id);
     }
 
     private static String itemName(String id) {
@@ -360,8 +358,9 @@ public final class LotteryPoolForm {
                 String expression;
                 if ("free".equals(kind)) expression = "";
                 else if ("advanced".equals(kind)) expression = results.value("advanced");
-                else expression = LotteryVoucherExpressions.build(kind, results.value("score".equals(kind) ? "objective" : "item"),
-                        Integer.parseInt(results.value("amount")));
+                else
+                    expression = LotteryVoucherExpressions.build(kind, results.value("score".equals(kind) ? "objective" : "item"),
+                            Integer.parseInt(results.value("amount")));
                 String error = voucherError(expression);
                 if (!error.isEmpty()) {
                     results.runningResult(error);
@@ -400,12 +399,18 @@ public final class LotteryPoolForm {
             LotteryVoucherExpressions.Fields cost = LotteryVoucherExpressions.read(expression);
             String amount = " x" + cost.amount;
             switch (cost.kind) {
-                case "free": return tr("lottery_free");
-                case "item": return cost.specification + amount;
-                case "score": return tr("lottery_voucher_score") + ": " + cost.specification + amount;
-                case "xpPoints": return tr("lottery_voucher_points") + amount;
-                case "xpLevels": return tr("lottery_voucher_levels") + amount;
-                default: return tr("lottery_voucher_advanced");
+                case "free":
+                    return tr("lottery_free");
+                case "item":
+                    return cost.specification + amount;
+                case "score":
+                    return tr("lottery_voucher_score") + ": " + cost.specification + amount;
+                case "xpPoints":
+                    return tr("lottery_voucher_points") + amount;
+                case "xpLevels":
+                    return tr("lottery_voucher_levels") + amount;
+                default:
+                    return tr("lottery_voucher_advanced");
             }
         }
     }
