@@ -46,7 +46,7 @@ public class LotteryPoolFormTest {
         InputFormScreen.Widget voucher = widget(args, "voucherExpression");
         assertTrue(voucher.pickerReadOnly());
         assertTrue(voucher.defaultValue().contains("2"));
-        Screen owner = new Screen(net.minecraft.network.chat.Component.empty()) {
+        Screen owner = new Screen(new net.minecraft.network.chat.TextComponent("")) {
         };
         InputFormScreen editor = (InputFormScreen) voucher.picker().apply(owner, ignored -> {
         });
@@ -88,7 +88,7 @@ public class LotteryPoolFormTest {
         pool.setArtworkTexture("test:textures/lottery/spring.png");
         AtomicReference<LotteryPool> submitted = new AtomicReference<>();
         InputFormScreen.Args args = form(pool, submitted);
-        Screen owner = new Screen(net.minecraft.network.chat.Component.empty()) {
+        Screen owner = new Screen(new net.minecraft.network.chat.TextComponent("")) {
         };
         var poster = widget(args, "poster");
         InputFormScreen editor = (InputFormScreen) poster.picker().apply(owner, ignored -> {
