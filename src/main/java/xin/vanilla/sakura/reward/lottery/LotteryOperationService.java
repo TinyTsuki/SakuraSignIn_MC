@@ -14,20 +14,32 @@ import java.util.*;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
-/** Level-owned, server-thread draw coordinator; billing belongs to Banira. */
+/**
+ * Level-owned, server-thread draw coordinator; billing belongs to Banira.
+ */
 public final class LotteryOperationService {
     public interface Runtime {
         UUID playerId(Object player);
+
         Object connection(Object player);
+
         boolean permitted(Object player);
+
         LotteryPool pool(String id);
+
         LotteryDrawState quota(Object player, String poolId);
+
         CostAccess costs(Object player);
+
         boolean canGrant(Object player, Reward reward);
+
         boolean grant(Object player, Reward reward, LotteryOperation operation);
+
         void saveQuota(Object player, LotteryDrawState state);
+
         void completed(Object player, LotteryOperation operation, LotteryDrawBatchResult result, boolean recovered);
     }
+
     private static final Logger LOGGER = LogManager.getLogger();
     private static final long QUOTE_NANOS = 10_000_000_000L;
     private final Thread owner = Thread.currentThread();
@@ -46,10 +58,14 @@ public final class LotteryOperationService {
     public LotteryOperationService(Runtime runtime, LotteryOperationRepository repository, LongSupplier clock,
                                    LongSupplier nanos, LongSupplier generation, LongSupplier seed,
                                    Supplier<String> tokens, ZoneId zone) {
-        this.runtime = Objects.requireNonNull(runtime); this.repository = Objects.requireNonNull(repository);
-        this.clock = Objects.requireNonNull(clock); this.nanos = Objects.requireNonNull(nanos);
-        this.generation = Objects.requireNonNull(generation); this.seed = Objects.requireNonNull(seed);
-        this.tokens = Objects.requireNonNull(tokens); this.zone = Objects.requireNonNull(zone);
+        this.runtime = Objects.requireNonNull(runtime);
+        this.repository = Objects.requireNonNull(repository);
+        this.clock = Objects.requireNonNull(clock);
+        this.nanos = Objects.requireNonNull(nanos);
+        this.generation = Objects.requireNonNull(generation);
+        this.seed = Objects.requireNonNull(seed);
+        this.tokens = Objects.requireNonNull(tokens);
+        this.zone = Objects.requireNonNull(zone);
         sessions = new CostQuoteSessions(nanos, generation, id -> {
             Binding binding = bindings.get(id);
             return binding != null && runtime.connection(binding.player) == binding.connection;
@@ -57,8 +73,10 @@ public final class LotteryOperationService {
     }
 
     public LotteryQuote quote(Object player, LotteryQuoteRequest request) {
-        requireOwner(); long revision = generation.getAsLong();
-        if (!live(player) || !runtime.permitted(player)) return rejected(request, LotteryQuote.Status.FORBIDDEN, revision);
+        requireOwner();
+        long revision = generation.getAsLong();
+        if (!live(player) || !runtime.permitted(player))
+            return rejected(request, LotteryQuote.Status.FORBIDDEN, revision);
         UUID id = runtime.playerId(player);
         if (!bind(player, request.getSession()) || sessions.accept(id, request.getSession(),
                 request.getRequestId(), request.getGeneration()).isFailure())
@@ -68,6 +86,8 @@ public final class LotteryOperationService {
         LotteryPool pool = runtime.pool(request.getPoolId());
         if (pool == null) return rejected(request, LotteryQuote.Status.POOL_NOT_FOUND, revision);
         try {
+            if (!isOpen(pool) || !pool.allowsCount(request.getCount()))
+                return rejected(request, LotteryQuote.Status.PAYMENT_UNAVAILABLE, revision);
             if (blocked.contains(id) || !repository.incomplete(id).isEmpty() || !hasRewards(pool))
                 return rejected(request, LotteryQuote.Status.PAYMENT_UNAVAILABLE, revision);
             LotteryPool snapshot = LotteryPools.copy(pool);
@@ -87,9 +107,11 @@ public final class LotteryOperationService {
     public LotteryDrawBatchResult draw(Object player, LotteryDrawRequest request) {
         requireOwner();
         if (!live(player) || !runtime.permitted(player)) return failed(LotteryDrawStatus.PAYMENT_UNAVAILABLE, null);
-        UUID id = runtime.playerId(player); Binding binding = bindings.get(id);
+        UUID id = runtime.playerId(player);
+        Binding binding = bindings.get(id);
         if (binding == null || binding.connection != runtime.connection(player)
-                || !binding.session.equals(request.getRequest().getSession())) return failed(LotteryDrawStatus.PAYMENT_UNAVAILABLE, null);
+                || !binding.session.equals(request.getRequest().getSession()))
+            return failed(LotteryDrawStatus.PAYMENT_UNAVAILABLE, null);
         binding.player = player;
         CostFailure accepted = sessions.accept(id, binding.session, request.getRequest().getRequestId(), request.getRequest().getGeneration());
         if (accepted.equals(CostFailure.RATE_LIMITED)) return failed(LotteryDrawStatus.PAYMENT_UNAVAILABLE, null);
@@ -103,9 +125,12 @@ public final class LotteryOperationService {
             if (accepted.isFailure() || ticket == null || !ticket.token.equals(request.getQuoteToken())
                     || !sameSelection(ticket.request, request.getRequest())
                     || nanos.getAsLong() - ticket.created >= QUOTE_NANOS
-                    || !ticket.pool.equals(runtime.pool(ticket.pool.getId()))) return failed(LotteryDrawStatus.PAYMENT_UNAVAILABLE, null);
+                    || !ticket.pool.equals(runtime.pool(ticket.pool.getId())))
+                return failed(LotteryDrawStatus.PAYMENT_UNAVAILABLE, null);
             return start(player, request, ticket.pool);
-        } catch (IOException | RuntimeException failure) { return unavailable(id, failure); }
+        } catch (IOException | RuntimeException failure) {
+            return unavailable(id, failure);
+        }
     }
 
     public LotteryDrawBatchResult commandDraw(Object player, String poolId, int count) {
@@ -119,53 +144,70 @@ public final class LotteryOperationService {
             long sequence = commandSequence = Math.incrementExact(commandSequence);
             LotteryDrawRequest request = new LotteryDrawRequest(commandSession, sequence, generation.getAsLong(), poolId, count, tokens.get());
             return start(player, request, LotteryPools.copy(pool));
-        } catch (IOException | RuntimeException failure) { return unavailable(id, failure); }
+        } catch (IOException | RuntimeException failure) {
+            return unavailable(id, failure);
+        }
     }
 
     private LotteryDrawBatchResult start(Object player, LotteryDrawRequest request, LotteryPool pool) throws IOException {
         UUID id = runtime.playerId(player);
-        if (blocked.contains(id) || !repository.incomplete(id).isEmpty()) return failed(LotteryDrawStatus.OPERATION_PENDING, pool);
+        if (blocked.contains(id) || !repository.incomplete(id).isEmpty())
+            return failed(LotteryDrawStatus.OPERATION_PENDING, pool);
+        if (!isOpen(pool) || !pool.allowsCount(request.getRequest().getCount()))
+            return failed(LotteryDrawStatus.PAYMENT_UNAVAILABLE, pool);
         if (!hasRewards(pool)) return failed(LotteryDrawStatus.EMPTY_POOL, pool);
         CostAccess access = runtime.costs(player);
         int available = capacity(player, pool, access), requested = request.getRequest().getCount();
         if (available < 1 || requested > available) return failed(LotteryDrawStatus.PAYMENT_UNAVAILABLE, pool);
         int count = requested == -1 ? available : requested;
-        LotteryOperation operation = LotteryOperation.prepare(id, request, pool, count, seed.getAsLong(), clock.getAsLong(),
+        LotteryOperation operation = LotteryOperation.prepare(id, request, LotteryPools.settlementCopy(pool), count, seed.getAsLong(), clock.getAsLong(),
                 tokens.get(), runtime.quota(player, pool.getId()), zone);
         repository.write(operation);
-        operation = operation.paying(); repository.write(operation);
+        operation = operation.paying();
+        repository.write(operation);
         Payment context = new Payment(player, operation, access, BaniraCosts.parse(pool.getVoucherExpression()));
         CostPaymentService<Payment> payments = new CostPaymentService<>(
                 value -> value.access.preview(value.requirement, value.operation.getCount()), this::identity,
                 new CostPaymentService.PaymentAccess<Payment>() {
                     public CostFailure validate(Payment value) {
                         LotteryOperation op = value.operation;
+                        LotteryPool current = runtime.pool(op.getPool().getId());
                         return live(value.player) && runtime.permitted(value.player)
                                 && generation.getAsLong() == op.getRequest().getRequest().getGeneration()
-                                && op.getPool().equals(runtime.pool(op.getPool().getId()))
+                                && op.getPool().equals(LotteryPools.settlementCopy(current)) && isOpen(current)
                                 && op.getQuotaBefore().equals(runtime.quota(value.player, op.getPool().getId()))
                                 ? CostFailure.NONE : CostFailure.CONFIGURATION_UNAVAILABLE;
                     }
+
                     public CostFailure pay(Payment value, CostPaymentPlan plan) {
                         try {
                             CostFailure checked = value.access.recheck(plan);
                             return checked.isFailure() ? checked : value.access.debit(plan);
-                        } catch (RuntimeException unknown) { LOGGER.error("Lottery resource debit uncertain", unknown); return CostFailure.UNCERTAIN; }
+                        } catch (RuntimeException unknown) {
+                            LOGGER.error("Lottery resource debit uncertain", unknown);
+                            return CostFailure.UNCERTAIN;
+                        }
                     }
+
                     public List<CostPaymentPlan.ResourceSnapshot> receipt(Payment value, CostPaymentPlan plan) {
                         CostPaymentPlan actual = value.access.receipt(plan);
                         if (!actual.isCommitted() || !actual.hasConfirmedSnapshots() || actual.recoveryFailure().isFailure())
                             throw new IllegalStateException("Unconfirmed lottery payment receipt");
                         return actual.snapshots();
                     }
-                    public void afterPayment(Payment value, CostPaymentPlan plan) { value.access.afterPayment(plan); }
+
+                    public void afterPayment(Payment value, CostPaymentPlan plan) {
+                        value.access.afterPayment(plan);
+                    }
                 });
         CostPaymentPlan paid = payments.commit(CostOperation.create(identity(context)), context);
         if (!paid.isCommitted()) {
             operation = paid.failure().equals(CostFailure.UNCERTAIN) ? operation.uncertain() : operation.rolledBack();
-            repository.write(operation); return result(operation);
+            repository.write(operation);
+            return result(operation);
         }
-        operation = operation.paid(paid); repository.write(operation);
+        operation = operation.paid(paid);
+        repository.write(operation);
         return finish(player, operation, false);
     }
 
@@ -180,57 +222,88 @@ public final class LotteryOperationService {
         if (blocked.contains(operation.getPlayerId())) return result(operation);
         if (operation.getStage() == LotteryOperation.Stage.PREPARED || operation.getStage() == LotteryOperation.Stage.PAYING
                 || operation.getStage() == LotteryOperation.Stage.GRANTING || operation.isRollbackPending()) {
-            operation = operation.recover(); repository.write(operation);
+            operation = operation.recover();
+            repository.write(operation);
         }
         if (operation.getStage() == LotteryOperation.Stage.UNCERTAIN) {
             if (operation.getGrantedCount() > 0) runtime.saveQuota(player, operation.getQuotaAfter());
             return result(operation);
         }
         if (operation.getStage() == LotteryOperation.Stage.PAID) {
-            operation = operation.selectRewards(); repository.write(operation);
+            operation = operation.selectRewards();
+            repository.write(operation);
             if (operation.getGrantedCount() > 0) runtime.saveQuota(player, operation.getQuotaAfter());
             while (operation.getGrantedCount() < operation.getCount()) {
                 if (!live(player) || !runtime.permitted(player)) return result(operation);
                 Reward reward = operation.getRewards().get(operation.getGrantedCount());
                 if (!runtime.canGrant(player, reward)) {
                     if (operation.getGrantedCount() == 0) {
-                        operation = operation.beginRollback(); repository.write(operation);
+                        operation = operation.beginRollback();
+                        repository.write(operation);
                         CostFailure restored;
-                        try { restored = runtime.costs(player).restore(operation.getReceipt()); }
-                        catch (RuntimeException unknown) { restored = CostFailure.UNCERTAIN; }
+                        try {
+                            restored = runtime.costs(player).restore(operation.getReceipt());
+                        } catch (RuntimeException unknown) {
+                            restored = CostFailure.UNCERTAIN;
+                        }
                         operation = restored.isFailure() ? operation.uncertain() : operation.rolledBack();
                         repository.write(operation);
-                    } else { operation = operation.uncertain(); repository.write(operation); }
+                    } else {
+                        operation = operation.uncertain();
+                        repository.write(operation);
+                    }
                     return result(operation);
                 }
-                operation = operation.granting(); repository.write(operation);
+                operation = operation.granting();
+                repository.write(operation);
                 boolean granted;
-                try { granted = runtime.grant(player, reward, operation); }
-                catch (RuntimeException unknown) { LOGGER.error("Lottery grant uncertain", unknown); granted = false; }
-                if (!granted) { operation = operation.uncertain(); repository.write(operation); return result(operation); }
-                operation = operation.grantSucceeded(); repository.write(operation);
+                try {
+                    granted = runtime.grant(player, reward, operation);
+                } catch (RuntimeException unknown) {
+                    LOGGER.error("Lottery grant uncertain", unknown);
+                    granted = false;
+                }
+                if (!granted) {
+                    operation = operation.uncertain();
+                    repository.write(operation);
+                    return result(operation);
+                }
+                operation = operation.grantSucceeded();
+                repository.write(operation);
                 runtime.saveQuota(player, operation.getQuotaAfter());
             }
-            operation = operation.complete(); repository.write(operation);
+            operation = operation.complete();
+            repository.write(operation);
         }
         LotteryDrawBatchResult result = result(operation);
         if (operation.getStage() == LotteryOperation.Stage.COMPLETED && !operation.isAcknowledged()) {
-            try { runtime.completed(player, operation, result, recovered); }
-            catch (RuntimeException followUp) { LOGGER.error("Lottery completion display failed for " + operation.getOperationId(), followUp); }
+            try {
+                runtime.completed(player, operation, result, recovered);
+            } catch (RuntimeException followUp) {
+                LOGGER.error("Lottery completion display failed for " + operation.getOperationId(), followUp);
+            }
         }
         return result;
     }
 
     public void acknowledge(Object player, String operationId, String token) {
-        requireOwner(); if (!live(player)) return; UUID id = runtime.playerId(player);
+        requireOwner();
+        if (!live(player)) return;
+        UUID id = runtime.playerId(player);
         try {
             LotteryOperation operation = repository.load(id, operationId);
             if (operation != null && operation.getStage() == LotteryOperation.Stage.COMPLETED
-                    && operation.getDisplayToken().equals(token) && !operation.isAcknowledged()) repository.write(operation.acknowledge());
-        } catch (IOException | RuntimeException failure) { unavailable(id, failure); }
+                    && operation.getDisplayToken().equals(token) && !operation.isAcknowledged())
+                repository.write(operation.acknowledge());
+        } catch (IOException | RuntimeException failure) {
+            unavailable(id, failure);
+        }
     }
+
     public void recover(Object player) {
-        requireOwner(); if (!live(player) || !runtime.permitted(player)) return; UUID id = runtime.playerId(player);
+        requireOwner();
+        if (!live(player) || !runtime.permitted(player)) return;
+        UUID id = runtime.playerId(player);
         if (blocked.contains(id)) return;
         try {
             Set<String> emitted = new HashSet<>();
@@ -243,62 +316,109 @@ public final class LotteryOperationService {
                 completed.sort(Comparator.comparingLong(LotteryOperation::getCreatedAt));
                 LotteryOperation latest = completed.get(completed.size() - 1);
                 if (!emitted.contains(latest.getOperationId())) {
-                    try { runtime.completed(player, latest, result(latest), true); }
-                    catch (RuntimeException followUp) { LOGGER.error("Lottery recovery display failed", followUp); }
+                    try {
+                        runtime.completed(player, latest, result(latest), true);
+                    } catch (RuntimeException followUp) {
+                        LOGGER.error("Lottery recovery display failed", followUp);
+                    }
                 }
             }
-        } catch (IOException | RuntimeException failure) { unavailable(id, failure); }
+        } catch (IOException | RuntimeException failure) {
+            unavailable(id, failure);
+        }
     }
+
     public void disconnect(UUID player) {
-        requireOwner(); sessions.close(player); bindings.remove(player); tickets.remove(player); blocked.remove(player);
+        requireOwner();
+        sessions.close(player);
+        bindings.remove(player);
+        tickets.remove(player);
+        blocked.remove(player);
     }
+
     public void close() throws IOException {
-        requireOwner(); sessions.clear(); bindings.clear(); tickets.clear(); repository.flush();
+        requireOwner();
+        sessions.clear();
+        bindings.clear();
+        tickets.clear();
+        repository.flush();
     }
 
     private boolean bind(Object player, UUID session) {
-        UUID id = runtime.playerId(player); Object connection = runtime.connection(player);
+        UUID id = runtime.playerId(player);
+        Object connection = runtime.connection(player);
         Binding binding = bindings.get(id);
-        if (binding != null && binding.connection != connection) { disconnect(id); binding = null; }
+        if (binding != null && binding.connection != connection) {
+            disconnect(id);
+            binding = null;
+        }
         if (binding == null) {
             if (bindings.size() >= 1024) return false;
-            bindings.put(id, new Binding(player, connection, session)); sessions.open(id, session); return true;
+            bindings.put(id, new Binding(player, connection, session));
+            sessions.open(id, session);
+            return true;
         }
         if (!binding.session.equals(session)) return false;
-        binding.player = player; return true;
+        binding.player = player;
+        return true;
     }
-    private boolean live(Object player) { return player != null && runtime.connection(player) != null; }
+
+    private boolean live(Object player) {
+        return player != null && runtime.connection(player) != null;
+    }
+
     private boolean hasRewards(LotteryPool pool) {
         return pool.getRewards().stream().anyMatch(reward -> reward != null && !reward.isDisabled()
                 && reward.getProbability().signum() > 0);
     }
+
+    private boolean isOpen(LotteryPool pool) {
+        return xin.vanilla.sakura.data.lottery.LotteryWindow.isOpen(pool, clock.getAsLong(), zone);
+    }
+
     private int capacity(Object player, LotteryPool pool, CostAccess access) {
         LotteryLimitResult limit = LotteryDrawLimiter.evaluate(pool, runtime.quota(player, pool.getId()), clock.getAsLong(), zone);
         if (!limit.isAllowed()) return 0;
         int upper = Math.min(100, limit.getRemainingDraws());
-        if (pool.getLimitPolicy() == LotteryLimitPolicy.COOLDOWN || pool.getCooldownSeconds() > 0) upper = Math.min(1, upper);
+        List<Integer> counts = pool.getDrawCounts();
+        if (counts != null)
+            upper = Math.min(upper, Collections.max(counts));
+        else if (pool.getLimitPolicy() == LotteryLimitPolicy.COOLDOWN || pool.getCooldownSeconds() > 0)
+            upper = Math.min(1, upper);
         CostRequirement requirement = BaniraCosts.parse(pool.getVoucherExpression());
         int lo = 0, hi = upper;
         while (lo < hi) {
             int mid = lo + (hi - lo + 1) / 2;
-            if (access.preview(requirement, mid).isSuccess()) lo = mid; else hi = mid - 1;
+            if (access.preview(requirement, mid).isSuccess()) lo = mid;
+            else hi = mid - 1;
         }
-        return lo;
+        if (counts == null) return lo;
+        int best = 0;
+        for (int count : counts) if (count <= lo) best = Math.max(best, count);
+        return best;
     }
+
     private LotteryQuote rejected(LotteryQuoteRequest request, LotteryQuote.Status status, long revision) {
         return new LotteryQuote(request, status, revision, 0, "", "");
     }
+
     private LotteryDrawBatchResult failed(LotteryDrawStatus status, LotteryPool pool) {
         return new LotteryDrawBatchResult(status, pool, Collections.emptyList(), 0, 0);
     }
+
     private LotteryDrawBatchResult unavailable(UUID id, Exception failure) {
-        blocked.add(id); tickets.remove(id); LOGGER.error("Lottery operation frozen for " + id, failure);
+        blocked.add(id);
+        tickets.remove(id);
+        LOGGER.error("Lottery operation frozen for " + id, failure);
         try {
             List<LotteryOperation> pending = repository.incomplete(id);
             if (pending.size() == 1) return result(pending.get(0));
-        } catch (IOException | RuntimeException unreadable) { failure.addSuppressed(unreadable); }
+        } catch (IOException | RuntimeException unreadable) {
+            failure.addSuppressed(unreadable);
+        }
         return failed(LotteryDrawStatus.OPERATION_PENDING, null);
     }
+
     private LotteryDrawBatchResult result(LotteryOperation operation) {
         LotteryDrawStatus status = operation.getStage() == LotteryOperation.Stage.COMPLETED ? LotteryDrawStatus.SUCCESS
                 : operation.getStage() == LotteryOperation.Stage.UNCERTAIN ? LotteryDrawStatus.OPERATION_UNCERTAIN
@@ -309,28 +429,55 @@ public final class LotteryOperationService {
                 operation.getCreatedAt(), ZoneId.of(operation.getZoneId()));
         return new LotteryDrawBatchResult(status, operation.getPool(), rewards, after.getRetryAfterSeconds(), after.getRemainingDraws());
     }
+
     private static boolean sameSelection(LotteryQuoteRequest quote, LotteryQuoteRequest draw) {
         return quote.getSession().equals(draw.getSession()) && quote.getGeneration() == draw.getGeneration()
                 && quote.getPoolId().equals(draw.getPoolId()) && quote.getCount() == draw.getCount()
                 && draw.getRequestId() > quote.getRequestId();
     }
+
     private static final class Payment {
-        final Object player; final LotteryOperation operation; final CostAccess access; final CostRequirement requirement;
+        final Object player;
+        final LotteryOperation operation;
+        final CostAccess access;
+        final CostRequirement requirement;
+
         Payment(Object player, LotteryOperation operation, CostAccess access, CostRequirement requirement) {
-            this.player = player; this.operation = operation; this.access = access; this.requirement = requirement;
+            this.player = player;
+            this.operation = operation;
+            this.access = access;
+            this.requirement = requirement;
         }
     }
+
     private void requireOwner() {
-        if (Thread.currentThread() != owner) throw new IllegalStateException("Lottery requires its owning server thread");
+        if (Thread.currentThread() != owner)
+            throw new IllegalStateException("Lottery requires its owning server thread");
     }
+
     private static final class Binding {
-        Object player; final Object connection; final UUID session;
-        Binding(Object player, Object connection, UUID session) { this.player = player; this.connection = connection; this.session = session; }
+        Object player;
+        final Object connection;
+        final UUID session;
+
+        Binding(Object player, Object connection, UUID session) {
+            this.player = player;
+            this.connection = connection;
+            this.session = session;
+        }
     }
+
     private static final class Ticket {
-        final LotteryQuoteRequest request; final String token; final LotteryPool pool; final long created;
+        final LotteryQuoteRequest request;
+        final String token;
+        final LotteryPool pool;
+        final long created;
+
         Ticket(LotteryQuoteRequest request, String token, LotteryPool pool, long created) {
-            this.request = request; this.token = token; this.pool = pool; this.created = created;
+            this.request = request;
+            this.token = token;
+            this.pool = pool;
+            this.created = created;
         }
     }
 }

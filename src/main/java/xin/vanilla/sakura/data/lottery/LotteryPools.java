@@ -7,7 +7,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/** 奖池复制和查找集中在一处，避免配置、网络与界面共享可变引用。 */
+/**
+ * 奖池复制和查找集中在一处，避免配置、网络与界面共享可变引用。
+ */
 public final class LotteryPools {
     private LotteryPools() {
     }
@@ -28,10 +30,27 @@ public final class LotteryPools {
                 new RewardList(pool.getRewards()).clone());
         result.setDescription(pool.getDescription());
         result.setVoucherExpression(pool.getVoucherExpression());
+        result.setDrawCounts(pool.getDrawCounts());
+        result.setStartDate(pool.getStartDate());
+        result.setEndDate(pool.getEndDate());
+        result.setThumbnailPng(pool.getThumbnailPng());
+        result.setPosterPng(pool.getPosterPng());
+        result.setArtworkItem(pool.getArtworkItem());
+        result.setArtworkTexture(pool.getArtworkTexture());
         return result;
     }
 
-    /** 玩家可浏览奖池元数据，但管理员禁用详情时不下发奖励列表。 */
+    public static LotteryPool settlementCopy(LotteryPool pool) {
+        if (pool == null) return null;
+        LotteryPool result = copy(pool);
+        result.setThumbnailPng("");
+        result.setPosterPng("");
+        return result;
+    }
+
+    /**
+     * 玩家可浏览奖池元数据，但管理员禁用详情时不下发奖励列表。
+     */
     public static List<LotteryPool> visibleCopy(List<LotteryPool> pools, boolean editor) {
         List<LotteryPool> result = copy(pools);
         if (!editor) {

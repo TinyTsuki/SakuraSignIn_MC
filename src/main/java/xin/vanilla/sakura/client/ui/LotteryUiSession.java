@@ -118,13 +118,14 @@ public final class LotteryUiSession implements UiPageSession {
             }));
         }
         bindings.add(next.onAction("single", () -> {
-            if (live(next, token)) {
+            if (live(next, token) && selectedPool != null && selectedPool.allowsCount(1)) {
                 port.payment().click(1);
                 status();
             }
         }));
         bindings.add(next.onAction("batch", () -> {
-            if (live(next, token)) {
+            if (live(next, token) && selectedPool != null && selectedPool.allowsCount(batchCount())
+                    && (selectedPool.getDrawCounts() == null || batchCount() != 1)) {
                 port.payment().click(batchCount());
                 status();
             }
@@ -141,7 +142,7 @@ public final class LotteryUiSession implements UiPageSession {
         generation = port.generation();
         List<LotteryPool> pools = port.pools();
         selectedPool = pools.stream().filter(pool -> pool.getId().equals(port.poolId())).findFirst().orElse(null);
-        select("pool", pools.stream().map(pool -> option(pool.getId(), pool.getDisplayName())).toList(), port.poolId());
+        select("pool", pools.stream().map(pool -> xin.vanilla.sakura.client.gui.lottery.LotteryArtwork.option(pool, null)).toList(), port.poolId());
         select("count", port.counts().stream().map(value -> option(value, "all".equals(value)
                 ? tr("lottery_draw_all_short").toString() : value)).toList(), port.count());
         select("animation", Arrays.stream(LotteryAnimationStyle.values()).map(style -> option(style.name(), style.enumDescription().toString())).toList(), port.animation().name());
@@ -217,7 +218,9 @@ public final class LotteryUiSession implements UiPageSession {
         };
         String text = state.isEmpty() ? "" : tr(state).toString();
         String available = ready ? String.valueOf(quote.getAvailableCount()) : "\u2014";
-        boolean single = pool != null && payment.canOfferDraw(1), batch = pool != null && payment.canOfferDraw(batchCount());
+        boolean single = pool != null && pool.allowsCount(1) && payment.canOfferDraw(1);
+        boolean batch = pool != null && pool.allowsCount(batchCount())
+                && (pool.getDrawCounts() == null || batchCount() != 1) && payment.canOfferDraw(batchCount());
         String stamp = List.of(text, cost, available, single, batch, payment.isDrawing()).toString();
         if (stamp.equals(displayedStatus)) return;
         displayedStatus = stamp;

@@ -100,6 +100,17 @@ public final class RewardConfigCodec {
             object.addProperty("maxDraws", pool.getMaxDraws());
             object.addProperty("cooldownSeconds", pool.getCooldownSeconds());
             object.addProperty("previewMode", pool.getPreviewMode().name());
+            if (pool.getDrawCounts() != null) {
+                JsonArray counts = new JsonArray();
+                pool.getDrawCounts().forEach(counts::add);
+                object.add("drawCounts", counts);
+            }
+            if (!pool.getStartDate().isEmpty()) object.addProperty("startDate", pool.getStartDate());
+            if (!pool.getEndDate().isEmpty()) object.addProperty("endDate", pool.getEndDate());
+            if (!pool.getThumbnailPng().isEmpty()) object.addProperty("thumbnailPng", pool.getThumbnailPng());
+            if (!pool.getPosterPng().isEmpty()) object.addProperty("posterPng", pool.getPosterPng());
+            if (!pool.getArtworkItem().isEmpty()) object.addProperty("artworkItem", pool.getArtworkItem());
+            if (!pool.getArtworkTexture().isEmpty()) object.addProperty("artworkTexture", pool.getArtworkTexture());
             JsonArray rewards = new JsonArray();
             pool.getRewards().forEach(reward -> {
                 JsonElement encoded = RewardJsonCodec.encode(reward);
@@ -290,12 +301,16 @@ public final class RewardConfigCodec {
         if (document.getLotteryPools().size() > 128) {
             throw new IOException("Too many lottery pools");
         }
+        long artworkPixels = 0;
         for (LotteryPool pool : document.getLotteryPools()) {
             List<String> errors = LotteryPoolValidator.validate(pool);
             if (!errors.isEmpty() || !lotteryIds.add(pool.getId())) {
                 throw new IOException("Invalid lottery pool "
                         + (pool == null ? "" : pool.getId()) + ": " + errors);
             }
+            artworkPixels += xin.vanilla.sakura.data.lottery.LotteryPng.inspect(pool.getThumbnailPng())
+                    + xin.vanilla.sakura.data.lottery.LotteryPng.inspect(pool.getPosterPng());
+            if (artworkPixels > 8_000_000) throw new IOException("Lottery artwork exceeds pixel budget");
             for (Reward reward : pool.getRewards()) {
                 validateReward(reward, pool.getId());
             }
@@ -303,7 +318,8 @@ public final class RewardConfigCodec {
         try {
             JsonObject wire = new JsonObject();
             wire.addProperty("schemaVersion", RewardConfigDocument.CURRENT_SCHEMA_VERSION);
-            wire.add("groups", new JsonArray()); wire.add("personalDatePresets", new JsonArray());
+            wire.add("groups", new JsonArray());
+            wire.add("personalDatePresets", new JsonArray());
             wire.addProperty("lotteryFormat", LOTTERY_FORMAT);
             wire.add("lotteryPools", lotteryArray(document.getLotteryPools()));
             xin.vanilla.sakura.data.lottery.LotteryProtocolLimits.json(gson.toJson(wire),
@@ -506,6 +522,25 @@ public final class RewardConfigCodec {
                 rewards
         );
         pool.setDescription(requiredString(object, "description"));
+        if (object.has("drawCounts")) {
+            JsonElement value = object.get("drawCounts");
+            if (!value.isJsonArray() || value.getAsJsonArray().size() > LotteryPoolValidator.MAX_DRAW_OPTIONS)
+                throw new IOException("Invalid lottery draw counts");
+            List<Integer> counts = new ArrayList<>();
+            for (JsonElement count : value.getAsJsonArray()) {
+                if (!count.isJsonPrimitive() || !count.getAsJsonPrimitive().isNumber()
+                        || !count.getAsString().matches("[1-9][0-9]{0,2}"))
+                    throw new IOException("Invalid lottery draw count");
+                counts.add(count.getAsInt());
+            }
+            pool.setDrawCounts(counts);
+        }
+        if (object.has("startDate")) pool.setStartDate(requiredString(object, "startDate"));
+        if (object.has("endDate")) pool.setEndDate(requiredString(object, "endDate"));
+        if (object.has("thumbnailPng")) pool.setThumbnailPng(requiredString(object, "thumbnailPng"));
+        if (object.has("posterPng")) pool.setPosterPng(requiredString(object, "posterPng"));
+        if (object.has("artworkItem")) pool.setArtworkItem(requiredString(object, "artworkItem"));
+        if (object.has("artworkTexture")) pool.setArtworkTexture(requiredString(object, "artworkTexture"));
         pool.setVoucherExpression(requiredString(object, "voucherExpression"));
         return pool;
     }

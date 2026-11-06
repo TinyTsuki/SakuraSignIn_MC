@@ -46,8 +46,10 @@ public class LotteryPoolFormTest {
         InputFormScreen.Widget voucher = widget(args, "voucherExpression");
         assertTrue(voucher.pickerReadOnly());
         assertTrue(voucher.defaultValue().contains("2"));
-        Screen owner = new Screen(net.minecraft.network.chat.Component.empty()) {};
-        InputFormScreen editor = (InputFormScreen) voucher.picker().apply(owner, ignored -> {});
+        Screen owner = new Screen(net.minecraft.network.chat.Component.empty()) {
+        };
+        InputFormScreen editor = (InputFormScreen) voucher.picker().apply(owner, ignored -> {
+        });
         assertEquals("xpPoints", editor.uiSession().draft("kind"));
         assertEquals("2", editor.uiSession().draft("amount"));
         assertEquals(2, editor.uiSession().visibleFieldCount());
@@ -56,7 +58,8 @@ public class LotteryPoolFormTest {
         editor.uiSession().draft("objective", "draws");
         editor.uiSession().draft("amount", "7");
         assertTrue(editor.uiSession().submit());
-        InputFormScreen reopened = (InputFormScreen) voucher.picker().apply(owner, ignored -> {});
+        InputFormScreen reopened = (InputFormScreen) voucher.picker().apply(owner, ignored -> {
+        });
         assertEquals("score", reopened.uiSession().draft("kind"));
         assertEquals("draws", reopened.uiSession().draft("objective"));
         assertEquals("7", reopened.uiSession().draft("amount"));
@@ -77,6 +80,37 @@ public class LotteryPoolFormTest {
         args.getCallback().accept(results);
         assertEquals(pool, submitted.get());
         assertEquals("xpPoints(2)", submitted.get().getVoucherExpression());
+    }
+
+    @Test
+    public void reopeningArtworkShowsOnlyTheSavedSourceAndPreservesItsValue() throws Exception {
+        LotteryPool pool = pool();
+        pool.setArtworkTexture("test:textures/lottery/spring.png");
+        AtomicReference<LotteryPool> submitted = new AtomicReference<>();
+        InputFormScreen.Args args = form(pool, submitted);
+        Screen owner = new Screen(net.minecraft.network.chat.Component.empty()) {
+        };
+        var poster = widget(args, "poster");
+        InputFormScreen editor = (InputFormScreen) poster.picker().apply(owner, ignored -> {
+        });
+        assertEquals("texture", editor.uiSession().draft("mode"));
+        assertEquals(pool.getArtworkTexture(), editor.uiSession().draft("texture"));
+        assertEquals(2, editor.uiSession().visibleFieldCount());
+        editor.uiSession().draft("mode", "none");
+        assertEquals(1, editor.uiSession().visibleFieldCount());
+        editor.uiSession().draft("mode", "texture");
+        assertEquals(pool.getArtworkTexture(), editor.uiSession().draft("texture"));
+        assertTrue(editor.uiSession().submit());
+
+        InputFormScreen thumbnail = (InputFormScreen) widget(args, "thumbnail").picker().apply(owner, ignored -> {
+        });
+        assertEquals("auto", thumbnail.uiSession().draft("mode"));
+        assertEquals(1, thumbnail.uiSession().visibleFieldCount());
+        InputFormScreen.Results results = new InputFormScreen.Results();
+        int index = 0;
+        for (var field : args.getWidgets()) results.value(field.name(), index++, field.defaultValue());
+        args.getCallback().accept(results);
+        assertEquals(pool, submitted.get());
     }
 
     @Test
