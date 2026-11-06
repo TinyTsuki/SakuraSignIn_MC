@@ -26,6 +26,46 @@ public class LotteryRewardConfigCodecTest {
                 new RewardConfigCodec().encode(source));
 
         assertEquals(source.getLotteryPools(), restored.getLotteryPools());
+        assertEquals(null, restored.getLotteryPools().get(0).getDrawCounts());
+        assertTrue(restored.getLotteryPools().get(0).allowsCount(-1));
+    }
+
+    @Test
+    public void preservesIndependentArtworkDatesAndExplicitDrawSizes() throws Exception {
+        RewardConfig source = ordinaryConfig();
+        LotteryPool pool = new LotteryPool("event", "Event", LotteryLimitPolicy.DAILY, 10, 0, new RewardList());
+        pool.setDrawCounts(java.util.Arrays.asList(1, 5, 10));
+        pool.setAnimationStyle(xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.ROULETTE);
+        pool.setStartDate("2026-11-06 13:30");
+        pool.setEndDate("2026-11-06 13:45");
+        pool.setThumbnailPng(png(0xffff0000));
+        pool.setPosterPng(png(0xff00ff00));
+        source.getLotteryPools().add(pool);
+
+        RewardConfigCodec codec = new RewardConfigCodec();
+        LotteryPool loaded = codec.decode(codec.encode(source)).getLotteryPools().get(0);
+        assertEquals(pool, loaded);
+        assertFalse(loaded.getPosterPng().equals(loaded.getThumbnailPng()));
+        assertTrue(loaded.allowsCount(5));
+        assertFalse(loaded.allowsCount(3));
+        assertFalse(loaded.allowsCount(-1));
+        assertEquals("", xin.vanilla.sakura.data.lottery.LotteryPools.settlementCopy(loaded).getPosterPng());
+
+        pool.setThumbnailPng("not a PNG");
+        try {
+            codec.encode(source);
+            fail("Invalid PNG accepted");
+        } catch (java.io.IOException expected) {
+            assertTrue(expected.getMessage().contains("invalid_artwork"));
+        }
+    }
+
+    private static String png(int color) throws Exception {
+        java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(1, 1, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        image.setRGB(0, 0, color);
+        java.io.ByteArrayOutputStream bytes = new java.io.ByteArrayOutputStream();
+        assertTrue(javax.imageio.ImageIO.write(image, "png", bytes));
+        return java.util.Base64.getEncoder().encodeToString(bytes.toByteArray());
     }
 
     @Test

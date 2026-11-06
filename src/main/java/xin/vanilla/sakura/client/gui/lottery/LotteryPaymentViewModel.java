@@ -16,6 +16,7 @@ public final class LotteryPaymentViewModel {
     private final Consumer<LotteryDrawRequest> sendDraw;
     private String poolId = "", summary;
     private int count = 1;
+    private int fallbackCount = 1;
     private int quoteCount = 1;
     private Integer intent;
     private String intentFee;
@@ -32,10 +33,15 @@ public final class LotteryPaymentViewModel {
     }
 
     public void select(String poolId, int count) {
-        if (this.poolId.equals(poolId) && this.count == count) return;
+        select(poolId, count, 1);
+    }
+
+    public void select(String poolId, int count, int fallbackCount) {
+        if (this.poolId.equals(poolId) && this.count == count && this.fallbackCount == fallbackCount) return;
         if (!this.poolId.equals(poolId)) summary = null;
         this.poolId = poolId;
         this.count = count;
+        this.fallbackCount = fallbackCount;
         quoteCount = count;
         intent = null;
         seen = null;
@@ -69,9 +75,10 @@ public final class LotteryPaymentViewModel {
                 if (quote.isReady() && quote.getRequest().getCount() == requested
                         && intentFee.equals(quote.getPaymentSummary())) draw(requested);
             }
-            if (!quote.isReady() && quote.getRequest().getCount() != 1) {
-                quoteCount = 1;
-                request(1, false);
+            if (quote.getStatus() == LotteryQuote.Status.PAYMENT_UNAVAILABLE
+                    && quote.getRequest().getCount() != fallbackCount) {
+                quoteCount = fallbackCount;
+                request(fallbackCount, false);
                 return;
             }
         }
@@ -139,7 +146,8 @@ public final class LotteryPaymentViewModel {
     private boolean permits(LotteryQuote quote, int requested) {
         return quote != null && quote.isReady() && quote.getGeneration() == requests.getGeneration()
                 && quote.getRequest().getPoolId().equals(poolId)
-                && (quote.getRequest().getCount() == requested || requested == 1);
+                && (quote.getRequest().getCount() == requested
+                || requested > 0 && requested <= quote.getAvailableCount());
     }
 
     public boolean isDrawing() {
@@ -156,5 +164,15 @@ public final class LotteryPaymentViewModel {
 
     public LotteryQuote quote() {
         return requests.getQuote();
+    }
+
+    public long windowMinutes() {
+        if (seen == null || seen != requests.getQuote() || seen.getGeneration() != requests.getGeneration()) return 0;
+        long remaining = seen.getRemainingWindowMillis() - Math.max(0, millis.getAsLong() - receivedAt);
+        return remaining <= 0 ? 0 : (remaining - 1) / 60_000 + 1;
+    }
+
+    public boolean opensNext() {
+        return windowMinutes() > 0 && seen.isOpensNext();
     }
 }

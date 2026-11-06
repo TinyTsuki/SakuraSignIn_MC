@@ -78,7 +78,7 @@ public final class LotteryPoolForm {
                         .toArray(DropdownOption[]::new)));
         args.addWidget(number("maxDraws", "lottery_max_draws",
                 "lottery_max_draws_tooltip",
-                existing == null ? 1 : existing.getMaxDraws(), 1, 10_000));
+                existing == null ? 10 : existing.getMaxDraws(), 1, 10_000));
         args.addWidget(number("cooldown", "lottery_cooldown_seconds",
                 "lottery_cooldown_tooltip",
                 existing == null ? 0 : existing.getCooldownSeconds(), 0, 31_536_000));
@@ -87,6 +87,31 @@ public final class LotteryPoolForm {
                 Arrays.stream(LotteryPreviewMode.values()).map(mode -> option(
                                 mode.name(), "lottery_preview_" + mode.name().toLowerCase()))
                         .toArray(DropdownOption[]::new)));
+        ArtworkDraft artwork = new ArtworkDraft(existing);
+        args.addWidget(new InputFormScreen.Widget().name("drawCounts").title(text("lottery_batch_count"))
+                .tooltip(text("lottery_draw_sizes_hint")).maxLength(64).allowEmpty(true)
+                .defaultValue(existing == null ? "1,10" : existing.getDrawCounts() == null ? ""
+                        : existing.getDrawCounts().stream().map(String::valueOf).collect(java.util.stream.Collectors.joining(",")))
+                .validator(result -> {
+                    try {
+                        if (!result.value().trim().isEmpty()) LotteryPoolValidator.parseDrawCounts(result.value());
+                        return "";
+                    } catch (IllegalArgumentException failure) {
+                        return tr("lottery_draw_sizes_invalid");
+                    }
+                }));
+        args.addWidget(date("startDate", "lottery_start_date", existing == null ? "" : existing.getStartDate()));
+        args.addWidget(date("endDate", "lottery_end_date", existing == null ? "" : existing.getEndDate()));
+        args.addWidget(artworkField("poster", "lottery_poster_png", artwork, false));
+        args.addWidget(artworkField("thumbnail", "lottery_thumbnail_png", artwork, true));
+        java.util.List<DropdownOption> animations = new java.util.ArrayList<DropdownOption>();
+        animations.add(option("legacy", "lottery_animation_legacy"));
+        for (xin.vanilla.sakura.data.lottery.LotteryAnimationStyle animation : xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.values()) {
+            animations.add(new DropdownOption(animation.name(), animation.enumDescription().toString()));
+        }
+        args.addWidget(dropdown("animationStyle", "lottery_animation", existing == null ? "STRIP"
+                        : existing.getAnimationStyle() == null ? "legacy" : existing.getAnimationStyle().name(),
+                animations.toArray(DropdownOption[]::new)));
         args.setCallback(results -> {
             LotteryPool candidate = new LotteryPool(results.value("id"), results.value("name"),
                     LotteryLimitPolicy.valueOf(results.value("policy")),
@@ -96,13 +121,210 @@ public final class LotteryPoolForm {
                     existing == null ? new RewardList() : existing.getRewards());
             candidate.setDescription(results.value("description"));
             candidate.setVoucherExpression(voucher.expression);
-            if (!LotteryPoolValidator.validate(candidate).isEmpty()) {
-                results.runningResult(tr("input_format_invalid"));
+            String counts = java.util.Objects.toString(results.value("drawCounts"), "");
+            if (!counts.trim().isEmpty()) {
+                try {
+                    candidate.setDrawCounts(LotteryPoolValidator.parseDrawCounts(counts));
+                } catch (IllegalArgumentException failure) {
+                    results.runningResult(tr("lottery_draw_sizes_invalid"));
+                    return;
+                }
+            }
+            candidate.setStartDate(java.util.Objects.toString(results.value("startDate"), "").trim());
+            candidate.setEndDate(java.util.Objects.toString(results.value("endDate"), "").trim());
+            candidate.setThumbnailPng(artwork.thumbnail);
+            candidate.setPosterPng(artwork.poster);
+            candidate.setArtworkItem(artwork.item);
+            candidate.setArtworkTexture(artwork.texture);
+            String animation = results.value("animationStyle");
+            if (animation != null && !"legacy".equals(animation))
+                candidate.setAnimationStyle(xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.valueOf(animation));
+            java.util.List<String> errors = LotteryPoolValidator.validate(candidate);
+            if (!errors.isEmpty()) {
+                results.runningResult(tr(errors.contains("invalid_dates") ? "lottery_date_invalid"
+                        : errors.contains("invalid_draw_modes") ? "lottery_draw_sizes_invalid" : "input_format_invalid"));
                 return;
             }
             connectedSubmit.accept(candidate);
         });
         return new InputFormScreen(args);
+    }
+
+    private static InputFormScreen.Widget date(String name, String title, String value) {
+        return new InputFormScreen.Widget().name(name).title(text(title)).tooltip(text("lottery_date_hint"))
+                .maxLength(16).allowEmpty(true).defaultValue(value)
+                .validator(result -> LotteryPoolValidator.validDate(result.value().trim()) ? "" : tr("lottery_date_invalid"));
+    }
+
+    private static InputFormScreen.Widget itemField(String name, String title, String initial) {
+        java.util.concurrent.atomic.AtomicReference<String> selection = new java.util.concurrent.atomic.AtomicReference<>(initial);
+        return new InputFormScreen.Widget().name(name).title(text(title))
+                .type(InputFormScreen.WidgetType.PICKER).pickerReadOnly(true)
+                .maxLength(LotteryPoolValidator.MAX_ARTWORK_ID).defaultValue(initial)
+                .validator(result -> result.value().trim().isEmpty() || !LotteryPoolValidator.isArtworkItem(result.value().trim())
+                        ? tr("input_format_invalid") : "")
+                .picker((screen, selected) -> ItemRewardSelectionFlow.create(screen, itemStack(selection.get()), stack -> {
+                    if (stack.isEmpty()) return;
+                    String value = xin.vanilla.banira.common.util.ItemUtils.getItemRegistry(stack.getItem()).toString();
+                    selection.set(value);
+                    selected.accept(value);
+                }, false));
+    }
+
+    private static net.minecraft.world.item.ItemStack itemStack(String id) {
+        if (id.trim().isEmpty()) return net.minecraft.world.item.ItemStack.EMPTY;
+        return xin.vanilla.banira.common.util.ItemUtils.deserializeItemStack(id);
+    }
+
+    private static String itemName(String id) {
+        return id;
+    }
+
+    private static InputFormScreen.Widget artworkField(String name, String title, ArtworkDraft artwork, boolean thumbnail) {
+        return new InputFormScreen.Widget().name(name).title(text(title))
+                .type(InputFormScreen.WidgetType.PICKER).pickerReadOnly(true)
+                .defaultValue(artwork.summary(thumbnail))
+                .picker((screen, selected) -> artworkPicker(screen, title, artwork, thumbnail, selected));
+    }
+
+    private static Screen artworkPicker(Screen parent, String title, ArtworkDraft artwork,
+                                        boolean thumbnail, Consumer<String> selected) {
+        InputFormScreen.Args args = new InputFormScreen.Args().setParentScreen(parent).setHeaderTitle(text(title));
+        java.util.List<DropdownOption> modes = new java.util.ArrayList<DropdownOption>();
+        modes.add(option(thumbnail ? "auto" : "none", thumbnail ? "lottery_artwork_auto" : "lottery_artwork_none"));
+        modes.add(option("png", "lottery_artwork_file"));
+        if (!thumbnail) {
+            modes.add(option("item", "lottery_artwork_item"));
+            modes.add(option("texture", "lottery_artwork_texture"));
+        }
+        String storedPng = thumbnail ? artwork.thumbnail : artwork.poster;
+        args.addWidget(dropdown("mode", "lottery_artwork_source", artwork.source(thumbnail), modes.toArray(DropdownOption[]::new)));
+        if (!storedPng.isEmpty()) {
+            args.addWidget(new InputFormScreen.Widget().name("savedPng").title(text("lottery_png_current"))
+                    .defaultValue(pngDimensions(storedPng)).disabled(true)
+                    .visibleWhen(result -> "png".equals(result.value("mode"))));
+        }
+        args.addWidget(new InputFormScreen.Widget().name("png")
+                .title(text(storedPng.isEmpty() ? "lottery_artwork_file" : "lottery_png_replace"))
+                .tooltip(text("lottery_png_hint")).type(InputFormScreen.WidgetType.FILE)
+                .fileFilter("png").allowEmpty(!storedPng.isEmpty()).maxLength(2048)
+                .visibleWhen(result -> "png".equals(result.value("mode"))));
+        if (!thumbnail) {
+            args.addWidget(itemField("item", "lottery_artwork_item", artwork.item)
+                    .visibleWhen(result -> "item".equals(result.value("mode"))));
+            args.addWidget(new InputFormScreen.Widget().name("texture").title(text("lottery_artwork_texture"))
+                    .tooltip(text("lottery_artwork_texture_hint"))
+                    .maxLength(LotteryPoolValidator.MAX_ARTWORK_ID).defaultValue(artwork.texture)
+                    .validator(result -> !result.value().trim().isEmpty() && LotteryPoolValidator.isArtworkTexture(result.value().trim())
+                            ? "" : tr("input_format_invalid"))
+                    .visibleWhen(result -> "texture".equals(result.value("mode"))));
+        }
+        args.setCallback(results -> {
+            try {
+                switch (results.value("mode")) {
+                    case "png": {
+                        String path = results.value("png");
+                        String png = path.trim().isEmpty() && !storedPng.isEmpty() ? storedPng : readImage(path);
+                        if (thumbnail) artwork.thumbnail = png;
+                        else artwork.main("", "", png);
+                        break;
+                    }
+                    case "item": {
+                        if (thumbnail) throw new IllegalArgumentException("Invalid thumbnail source");
+                        String item = results.value("item").trim();
+                        if (item.trim().isEmpty() || !LotteryPoolValidator.isArtworkItem(item)) {
+                            results.runningResult(tr("input_format_invalid"));
+                            return;
+                        }
+                        artwork.main(item, "", "");
+                        break;
+                    }
+                    case "texture": {
+                        if (thumbnail) throw new IllegalArgumentException("Invalid thumbnail source");
+                        String texture = results.value("texture").trim();
+                        if (texture.trim().isEmpty() || !LotteryPoolValidator.isArtworkTexture(texture)) {
+                            results.runningResult(tr("input_format_invalid"));
+                            return;
+                        }
+                        artwork.main("", texture, "");
+                        break;
+                    }
+                    case "auto": {
+                        if (!thumbnail) throw new IllegalArgumentException("Invalid poster source");
+                        artwork.thumbnail = "";
+                        break;
+                    }
+                    case "none": {
+                        if (thumbnail) throw new IllegalArgumentException("Invalid thumbnail source");
+                        artwork.main("", "", "");
+                        break;
+                    }
+                    default: throw new IllegalArgumentException("Unknown artwork source");
+                }
+                selected.accept(artwork.summary(thumbnail));
+            } catch (java.io.IOException | IllegalArgumentException failure) {
+                results.runningResult(tr("lottery_png_invalid"));
+            }
+        });
+        return new InputFormScreen(args);
+    }
+
+    private static String pngDimensions(String png) {
+        try {
+            java.nio.ByteBuffer header = java.nio.ByteBuffer.wrap(java.util.Base64.getDecoder().decode(png));
+            if (header.remaining() >= 24) return "PNG · " + header.getInt(16) + " × " + header.getInt(20);
+        } catch (IllegalArgumentException ignored) {
+        }
+        return tr("lottery_png_invalid");
+    }
+
+    private static String readImage(String path) throws java.io.IOException {
+        if (path.trim().isEmpty()) throw new IllegalArgumentException("Missing PNG path");
+        try (java.io.InputStream input = java.nio.file.Files.newInputStream(java.nio.file.Paths.get(path))) {
+            byte[] buffer = new byte[xin.vanilla.sakura.data.lottery.LotteryPng.MAX_BYTES + 1];
+            int length = 0;
+            while (length < buffer.length) {
+                int read = input.read(buffer, length, buffer.length - length);
+                if (read < 0) break;
+                length += read;
+            }
+            byte[] bytes = java.util.Arrays.copyOf(buffer, length);
+            xin.vanilla.sakura.data.lottery.LotteryPng.inspect(bytes);
+            return java.util.Base64.getEncoder().encodeToString(bytes);
+        }
+    }
+
+    private static final class ArtworkDraft {
+        private String item, texture, poster, thumbnail;
+
+        private ArtworkDraft(LotteryPool pool) {
+            main(pool == null ? "" : pool.getArtworkItem(), pool == null ? "" : pool.getArtworkTexture(),
+                    pool == null ? "" : pool.getPosterPng());
+            thumbnail = pool == null ? "" : pool.getThumbnailPng();
+        }
+
+        private void main(String item, String texture, String png) {
+            this.item = item;
+            this.texture = texture;
+            this.poster = png;
+        }
+
+        private String summary(boolean thumbnail) {
+            switch (source(thumbnail)) {
+                case "png" : return pngDimensions(thumbnail ? this.thumbnail : poster);
+                case "item" : return tr("lottery_artwork_item") + " · " + itemName(item);
+                case "texture" : return tr("lottery_artwork_texture") + " · " + texture;
+                case "auto" : return tr("lottery_artwork_auto");
+                default : return tr("lottery_artwork_none");
+            }
+        }
+
+        private String source(boolean thumbnail) {
+            if (thumbnail) return this.thumbnail.isEmpty() ? "auto" : "png";
+            if (!poster.isEmpty()) return "png";
+            if (!texture.isEmpty()) return "texture";
+            return item.isEmpty() ? "none" : "item";
+        }
     }
 
     private static Screen voucherPicker(Screen parent, VoucherDraft voucher, Consumer<String> selected) {
