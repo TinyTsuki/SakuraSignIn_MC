@@ -42,7 +42,8 @@ public final class LotteryDrawDispatcher {
         boolean queued = COMMANDS.offer(player.getUUID(), new QueuedDraw(player, pool, count,
                 xin.vanilla.sakura.config.reward.RewardConfigManager.getLotteryGeneration()), System.nanoTime());
         if (queued)
-            player.displayClientMessage(SakuraComponent.get().trans(player, "word", "lottery_drawing").toVanilla(), true);
+        if (queued) xin.vanilla.banira.common.util.MessageUtils.sendActionBarMessage(player,
+                SakuraComponent.get().trans(player, "word", "lottery_drawing"));
         return queued;
     }
 
