@@ -117,6 +117,7 @@ public class LotteryUiPresentationTest {
                 case FORBIDDEN -> "lottery_permission_denied";
                 case STALE_GENERATION -> "lottery_configuration_changed";
                 case POOL_NOT_FOUND -> "lottery_pool_not_found";
+                case POOL_CLOSED -> "lottery_pool_closed";
                 default -> "lottery_payment_unavailable";
             };
             assertEquals(translated(key), text(view, "info"));
