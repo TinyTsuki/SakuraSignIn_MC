@@ -1,6 +1,9 @@
 package xin.vanilla.sakura.client.gui.lottery;
 
 public final class LotteryLayout {
+    public record DrawControls(Rect billing, Rect single, Rect picker, Rect batch) {
+    }
+
     public static final class Rect {
         private final int x, y, width, height;
 
@@ -159,6 +162,19 @@ public final class LotteryLayout {
 
     public Rect billing() {
         return billing;
+    }
+
+    public DrawControls drawControls(boolean showPicker) {
+        if (!showPicker)
+            return new DrawControls(billing, single, new Rect(batch.x(), batch.y(), 0, batch.height()), batch);
+        int gap = 5;
+        int buttonWidth = Math.max(45, batch.width() - 12);
+        Rect draw = new Rect(batch.right() - buttonWidth, batch.y(), buttonWidth, batch.height());
+        // The picker reserves 33 pixels for the arrow and clear button before drawing its value.
+        Rect picker = new Rect(draw.x() - gap - 58, draw.y(), 58, draw.height());
+        Rect once = new Rect(picker.x() - gap - buttonWidth, draw.y(), buttonWidth, draw.height());
+        Rect cost = new Rect(billing.x(), billing.y(), Math.max(0, once.x() - billing.x() - 6), billing.height());
+        return new DrawControls(cost, once, picker, draw);
     }
 
     public Rect single() {

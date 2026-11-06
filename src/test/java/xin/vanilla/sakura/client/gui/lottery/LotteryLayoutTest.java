@@ -62,6 +62,28 @@ public class LotteryLayoutTest {
     }
 
     @Test
+    public void batchPickerFitsThreeDigitsAndBothButtonsWithoutCoveringBilling() {
+        for (int[] size : new int[][]{{320, 240}, {427, 240}, {854, 480}}) {
+            var layout = LotteryLayout.calculate(size[0], size[1], false);
+            var multiple = layout.drawControls(true);
+            var single = layout.drawControls(false);
+            assertEquals(58, multiple.picker().width());
+            assertTrue(multiple.billing().width() >= 90);
+            assertTrue(multiple.single().width() >= 60);
+            assertTrue(multiple.batch().width() >= 60);
+            assertTrue(multiple.billing().right() < multiple.single().x());
+            assertTrue(multiple.single().right() < multiple.picker().x());
+            assertTrue(multiple.picker().right() < multiple.batch().x());
+            for (var area : List.of(multiple.billing(), multiple.single(), multiple.picker(), multiple.batch()))
+                assertTrue(layout.footer().encloses(area));
+            assertEquals(layout.batch().right(), multiple.batch().right());
+            assertEquals(0, single.picker().width());
+            assertSame(layout.single(), single.single());
+            assertSame(layout.batch(), single.batch());
+        }
+    }
+
+    @Test
     public void viewportHitTestsExcludeRightBottomAndNeighboringTools() {
         LotteryLayout layout = LotteryLayout.calculate(320, 240);
         LotteryLayout.Rect view = layout.description();

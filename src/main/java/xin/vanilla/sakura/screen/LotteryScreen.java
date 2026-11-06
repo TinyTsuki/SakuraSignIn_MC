@@ -52,6 +52,7 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
     private final NotificationDetailViewport infoViewport = new NotificationDetailViewport();
     private final NotificationDetailViewport descriptionViewport = new NotificationDetailViewport();
     private LotteryLayout layout;
+    private LotteryLayout.Rect billingArea;
     private final List<ButtonWidget> poolButtons = new ArrayList<>();
     private List<LotteryPool> railPools = List.of();
     private List<LotteryArtwork> railArt = List.of();
@@ -373,7 +374,7 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
 
     private void renderBilling(GuiGraphics stack, LotteryPool pool, int mouseX, int mouseY) {
         var billing = LotteryUiSession.billing(payment, pool, displayedGeneration);
-        LotteryLayout.Rect area = layout.billing();
+        LotteryLayout.Rect area = billingArea;
         stack.drawString(font, font.plainSubstrByWidth(billing.cost(), area.width()), area.x(), area.y(), getEffectiveTheme().textPrimary(), false);
         stack.drawString(font, font.plainSubstrByWidth(billing.available(), area.width()), area.x(), area.y() + 9, getEffectiveTheme().textSecondary(), false);
         if (!billing.status().isEmpty())
@@ -501,17 +502,18 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
         poster = pool == null ? null : LotteryArtwork.resolve(pool);
         List<Integer> choices = pool == null ? List.of() : pool.getDrawCounts().stream().filter(count -> count > 1).toList();
         if (!choices.contains(selectedBatch)) selectedBatch = choices.isEmpty() ? 0 : choices.get(0);
-        batchPicker.visible(choices.size() > 1);
-        LotteryLayout.Rect area = layout.batch();
-        int pickerWidth = choices.size() > 1 ? 30 : 0;
-        if (pickerWidth > 0) {
-            batchPicker.bounds(new ScreenCoordinate(area.x(), area.y(), pickerWidth, area.height()));
+        boolean showPicker = choices.size() > 1;
+        batchPicker.visible(showPicker);
+        var controls = layout.drawControls(showPicker);
+        billingArea = controls.billing();
+        singleDrawButton.bounds(bounds(controls.single()));
+        batchDrawButton.bounds(bounds(controls.batch()));
+        if (showPicker) {
+            batchPicker.bounds(bounds(controls.picker()));
             batchPicker.optionEntries(choices.stream().map(count -> new DropdownOption(
                     String.valueOf(count), String.valueOf(count), net.minecraft.world.item.ItemStack.EMPTY, null, null)).toList());
             batchPicker.selectedValues(List.of(String.valueOf(selectedBatch)));
         }
-        int spacing = pickerWidth > 0 ? pickerWidth + 3 : 0;
-        batchDrawButton.bounds(new ScreenCoordinate(area.x() + spacing, area.y(), area.width() - spacing, area.height()));
     }
 
     private int batchCount() {
