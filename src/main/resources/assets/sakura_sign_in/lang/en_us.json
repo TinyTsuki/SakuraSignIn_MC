@@ -1,4 +1,11 @@
 {
+  "word.sakura_sign_in.lottery_voucher_source": "Cost type",
+  "word.sakura_sign_in.lottery_voucher_points": "Experience points",
+  "word.sakura_sign_in.lottery_voucher_levels": "Experience levels",
+  "word.sakura_sign_in.lottery_voucher_score": "Scoreboard points",
+  "word.sakura_sign_in.lottery_voucher_objective": "Scoreboard objective",
+  "word.sakura_sign_in.lottery_voucher_advanced": "Advanced expression",
+  "word.sakura_sign_in.lottery_voucher_advanced_tooltip": "Edit exact item matches or combined costs.",
   "word.sakura_sign_in.aui_saved_locally": "Saved locally",
   "word.sakura_sign_in.aui_more": "More actions",
   "word.sakura_sign_in.aui_select": "Select",

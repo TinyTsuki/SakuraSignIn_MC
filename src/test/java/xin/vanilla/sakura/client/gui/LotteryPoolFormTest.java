@@ -52,10 +52,22 @@ public class LotteryPoolFormTest {
         assertEquals(pool.getDescription(), description.defaultValue());
         assertTrue(description.allowEmpty());
         InputFormScreen.Widget voucher = widget(args, "voucherExpression");
-        assertEquals(4096, voucher.maxLength());
-        assertTrue(voucher.allowEmpty());
-        assertFalse(voucher.validator().apply(new InputFormScreen.Results()
-                .value("voucherExpression", 0, "System.exit(0)").curName("voucherExpression")).isEmpty());
+        assertTrue(voucher.pickerReadOnly());
+        assertTrue(voucher.defaultValue().contains("2"));
+        Screen owner = new Screen(net.minecraft.network.chat.Component.empty()) {};
+        InputFormScreen editor = (InputFormScreen) voucher.picker().apply(owner, ignored -> {});
+        assertEquals("xpPoints", editor.uiSession().draft("kind"));
+        assertEquals("2", editor.uiSession().draft("amount"));
+        assertEquals(2, editor.uiSession().visibleFieldCount());
+        editor.uiSession().draft("kind", "score");
+        assertEquals(3, editor.uiSession().visibleFieldCount());
+        editor.uiSession().draft("objective", "draws");
+        editor.uiSession().draft("amount", "7");
+        assertTrue(editor.uiSession().submit());
+        InputFormScreen reopened = (InputFormScreen) voucher.picker().apply(owner, ignored -> {});
+        assertEquals("score", reopened.uiSession().draft("kind"));
+        assertEquals("draws", reopened.uiSession().draft("objective"));
+        assertEquals("7", reopened.uiSession().draft("amount"));
     }
 
     @Test
@@ -72,10 +84,7 @@ public class LotteryPoolFormTest {
         }
         args.getCallback().accept(results);
         assertEquals(pool, submitted.get());
-        submitted.set(null);
-        results.value("voucherExpression", 0, "unknown(1)");
-        args.getCallback().accept(results);
-        assertNull(submitted.get());
+        assertEquals("xpPoints(2)", submitted.get().getVoucherExpression());
     }
 
     @Test

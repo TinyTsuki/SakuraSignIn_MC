@@ -1,4 +1,11 @@
 {
+  "word.sakura_sign_in.lottery_voucher_source": "费用类型",
+  "word.sakura_sign_in.lottery_voucher_points": "经验值",
+  "word.sakura_sign_in.lottery_voucher_levels": "经验等级",
+  "word.sakura_sign_in.lottery_voucher_score": "记分板分数",
+  "word.sakura_sign_in.lottery_voucher_objective": "记分项",
+  "word.sakura_sign_in.lottery_voucher_advanced": "高级表达式",
+  "word.sakura_sign_in.lottery_voucher_advanced_tooltip": "编辑精确物品匹配或组合费用。",
   "word.sakura_sign_in.aui_saved_locally": "已保存到本地",
   "word.sakura_sign_in.aui_more": "更多操作",
   "word.sakura_sign_in.aui_select": "选择",
