@@ -22,12 +22,13 @@ public class LotteryPaymentIntegrationTest {
     private final Runtime runtime = new Runtime();
     private final UUID session = UUID.randomUUID();
     private long nanos;
+    private long epochMillis = 1_791_600_000_000L;
     private int seeds;
     private FailingRepository repository;
 
     private LotteryOperationService service() {
         if (repository == null) repository = new FailingRepository(new ForgeLotteryOperationRepository(temporary.getRoot().toPath()));
-        return new LotteryOperationService(runtime, repository, () -> 1_791_600_000_000L,
+        return new LotteryOperationService(runtime, repository, () -> epochMillis,
                 () -> nanos, () -> 3L, () -> { seeds++; return 1L; }, () -> UUID.randomUUID().toString(), ZoneId.of("UTC"));
     }
     private LotteryQuote quote(LotteryOperationService service, int count) {
@@ -106,6 +107,34 @@ public class LotteryPaymentIntegrationTest {
         assertFalse(service.draw(actor, draw(quote)).isSuccess());
         assertEquals(3, actor.points); assertTrue(runtime.grants.isEmpty());
         assertEquals(0, runtime.state.getTotalDraws()); assertEquals(0, seeds);
+    }
+
+    @Test
+    public void closingAfterAReadyQuoteCannotDebitOrGrant() {
+        runtime.pool.setStartDate("2026-11-06 13:30");
+        runtime.pool.setEndDate("2026-11-06 13:45");
+        runtime.pool.setDrawCounts(java.util.Arrays.asList(1, 2));
+        epochMillis = java.time.Instant.parse("2026-11-06T13:44:59Z").toEpochMilli();
+        LotteryOperationService service = service();
+        LotteryQuote ready = quote(service, 2);
+        assertTrue(ready.isReady());
+        epochMillis = java.time.Instant.parse("2026-11-06T13:45:00Z").toEpochMilli();
+        assertFalse(service.draw(actor, draw(ready)).isSuccess());
+        assertFalse(service.commandDraw(actor, "daily", 2).isSuccess());
+        assertEquals(10, actor.points);
+        assertEquals(0, seeds);
+        assertTrue(runtime.grants.isEmpty());
+    }
+
+    @Test
+    public void explicitDrawSizesRejectLegacyAllAndUnauthorizedSizes() {
+        runtime.pool.setDrawCounts(java.util.Arrays.asList(2, 4));
+        LotteryOperationService service = service();
+        assertFalse(service.commandDraw(actor, "daily", -1).isSuccess());
+        assertFalse(service.commandDraw(actor, "daily", 1).isSuccess());
+        assertTrue(service.commandDraw(actor, "daily", 2).isSuccess());
+        assertEquals(6, actor.points);
+        assertEquals(2, runtime.grants.size());
     }
 
     @Test public void allUsesMinimumOfResourceCapacityAndQuota() throws Exception {

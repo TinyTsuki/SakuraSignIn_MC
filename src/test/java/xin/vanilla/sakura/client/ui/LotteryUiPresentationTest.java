@@ -117,6 +117,7 @@ public class LotteryUiPresentationTest {
 case FORBIDDEN: key = "lottery_permission_denied"; break;
 case STALE_GENERATION: key = "lottery_configuration_changed"; break;
 case POOL_NOT_FOUND: key = "lottery_pool_not_found"; break;
+case POOL_CLOSED: key = "lottery_pool_closed"; break;
 default: key = "lottery_payment_unavailable"; break;
 };
             assertEquals(translated(key), text(view, "info"));

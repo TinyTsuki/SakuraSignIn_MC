@@ -4,16 +4,29 @@ import lombok.Value;
 
 @Value
 public class LotteryQuote {
-    public enum Status { READY, STALE_GENERATION, FORBIDDEN, POOL_NOT_FOUND, PAYMENT_UNAVAILABLE }
+    public enum Status {READY, STALE_GENERATION, FORBIDDEN, POOL_NOT_FOUND, PAYMENT_UNAVAILABLE, POOL_CLOSED}
+
     LotteryQuoteRequest request;
     Status status;
     long generation;
     int availableCount;
     String paymentSummary;
     String quoteToken;
+    long remainingWindowMillis;
+    boolean opensNext;
 
     public LotteryQuote(LotteryQuoteRequest request, Status status, long generation, int availableCount,
                         String paymentSummary, String quoteToken) {
+        this(request, status, generation, availableCount, paymentSummary, quoteToken, 0, false);
+    }
+
+    public LotteryQuote(LotteryQuoteRequest request, Status status, long generation, int availableCount,
+                        String paymentSummary, String quoteToken, long remainingWindowMillis, boolean opensNext) {
+        if (remainingWindowMillis < 0 || (opensNext && (status != Status.POOL_CLOSED || remainingWindowMillis == 0))
+                || (!opensNext && remainingWindowMillis > 0 && status != Status.READY && status != Status.PAYMENT_UNAVAILABLE))
+            throw new IllegalArgumentException("Invalid lottery window");
+        this.remainingWindowMillis = remainingWindowMillis;
+        this.opensNext = opensNext;
         if (request == null || status == null || generation < 0 || availableCount < 0 || availableCount > 100)
             throw new IllegalArgumentException("Invalid lottery quote");
         this.paymentSummary = LotteryProtocolLimits.text(paymentSummary, 4096);
@@ -24,9 +37,14 @@ public class LotteryQuote {
         } else if (availableCount != 0 || !"".equals(quoteToken)) {
             throw new IllegalArgumentException("Failed quote cannot authorize payment");
         }
-        this.request = request; this.status = status; this.generation = generation;
-        this.availableCount = availableCount; this.quoteToken = quoteToken;
+        this.request = request;
+        this.status = status;
+        this.generation = generation;
+        this.availableCount = availableCount;
+        this.quoteToken = quoteToken;
     }
 
-    public boolean isReady() { return status == Status.READY; }
+    public boolean isReady() {
+        return status == Status.READY;
+    }
 }

@@ -4,7 +4,11 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import xin.vanilla.sakura.reward.RewardList;
 
-/** 服务端权威抽奖池，奖励概率在此处作为相对权重。 */
+import java.util.List;
+
+/**
+ * 服务端权威抽奖池，奖励概率在此处作为相对权重。
+ */
 @Data
 @NoArgsConstructor
 public class LotteryPool {
@@ -16,6 +20,14 @@ public class LotteryPool {
     private int maxDraws = 1;
     private int cooldownSeconds;
     private LotteryPreviewMode previewMode = LotteryPreviewMode.ALL;
+    private LotteryAnimationStyle animationStyle;
+    private List<Integer> drawCounts;
+    private String startDate = "";
+    private String endDate = "";
+    private String thumbnailPng = "";
+    private String posterPng = "";
+    private String artworkItem = "";
+    private String artworkTexture = "";
     private RewardList rewards = new RewardList();
 
     public LotteryPool(String id, String displayName, LotteryLimitPolicy limitPolicy,
@@ -33,5 +45,17 @@ public class LotteryPool {
                        RewardList rewards) {
         this(id, displayName, limitPolicy, maxDraws, cooldownSeconds, rewards);
         this.previewMode = previewMode == null ? LotteryPreviewMode.ALL : previewMode;
+    }
+
+    public void setDrawCounts(List<Integer> counts) {
+        drawCounts = counts == null ? null : java.util.Collections.unmodifiableList(new java.util.ArrayList<>(counts));
+    }
+
+    public List<Integer> getDrawCounts() {
+        return drawCounts == null ? null : java.util.Collections.unmodifiableList(new java.util.ArrayList<>(drawCounts));
+    }
+
+    public boolean allowsCount(int count) {
+        return drawCounts == null ? count == -1 || count >= 1 && count <= 100 : drawCounts.contains(count);
     }
 }

@@ -21,7 +21,7 @@ public class LotteryBinaryWireTest {
             new LotteryQuoteRequestPacket(request).toBytes(wire);
             assertEquals(request, new LotteryQuoteRequestPacket(wire).getRequest());
         }
-        LotteryQuote quote = new LotteryQuote(request, LotteryQuote.Status.READY, 7, 100, "paper", TOKEN);
+        LotteryQuote quote = new LotteryQuote(request, LotteryQuote.Status.READY, 7, 100, "paper", TOKEN, 70_000, false);
         try (Wire wire = new Wire()) {
             new LotteryQuotePacket(quote).toBytes(wire);
             assertEquals(quote, new LotteryQuotePacket(wire).getQuote());
