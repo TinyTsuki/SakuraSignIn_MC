@@ -119,14 +119,14 @@ public final class LotteryPoolForm {
         String item = "item".equals(current.kind) ? current.specification : "";
         java.util.concurrent.atomic.AtomicReference<String> selectedItem = new java.util.concurrent.atomic.AtomicReference<>(item);
         args.addWidget(new InputFormScreen.Widget().name("item").title(text("lottery_voucher_item"))
-                .type(InputFormScreen.WidgetType.PICKER).defaultValue(item)
+                .type(InputFormScreen.WidgetType.PICKER).pickerReadOnly(true).defaultValue(item)
                 .picker((screen, callback) -> ItemRewardSelectionFlow.create(screen, selectedItem.get().isEmpty() ? net.minecraft.world.item.ItemStack.EMPTY
                         : xin.vanilla.banira.common.util.ItemUtils.deserializeItemStack(selectedItem.get()), stack -> {
                     if (stack.isEmpty()) return;
                     String id = xin.vanilla.banira.common.util.ItemUtils.getItemRegistry(stack.getItem()).toString();
                     selectedItem.set(id);
                     callback.accept(id);
-                }))
+                }, false))
                 .visibleWhen(result -> "item".equals(result.value("kind"))));
         args.addWidget(new InputFormScreen.Widget().name("objective").title(text("lottery_voucher_objective"))
                 .maxLength(128).defaultValue("score".equals(current.kind) ? current.specification : "")
@@ -147,8 +147,9 @@ public final class LotteryPoolForm {
                 String expression;
                 if ("free".equals(kind)) expression = "";
                 else if ("advanced".equals(kind)) expression = results.value("advanced");
-                else expression = LotteryVoucherExpressions.build(kind, results.value("score".equals(kind) ? "objective" : "item"),
-                        Integer.parseInt(results.value("amount")));
+                else
+                    expression = LotteryVoucherExpressions.build(kind, results.value("score".equals(kind) ? "objective" : "item"),
+                            Integer.parseInt(results.value("amount")));
                 String error = voucherError(expression);
                 if (!error.isEmpty()) {
                     results.runningResult(error);
@@ -187,12 +188,18 @@ public final class LotteryPoolForm {
             LotteryVoucherExpressions.Fields cost = LotteryVoucherExpressions.read(expression);
             String amount = " x" + cost.amount;
             switch (cost.kind) {
-                case "free": return tr("lottery_free");
-                case "item": return cost.specification + amount;
-                case "score": return tr("lottery_voucher_score") + ": " + cost.specification + amount;
-                case "xpPoints": return tr("lottery_voucher_points") + amount;
-                case "xpLevels": return tr("lottery_voucher_levels") + amount;
-                default: return tr("lottery_voucher_advanced");
+                case "free":
+                    return tr("lottery_free");
+                case "item":
+                    return cost.specification + amount;
+                case "score":
+                    return tr("lottery_voucher_score") + ": " + cost.specification + amount;
+                case "xpPoints":
+                    return tr("lottery_voucher_points") + amount;
+                case "xpLevels":
+                    return tr("lottery_voucher_levels") + amount;
+                default:
+                    return tr("lottery_voucher_advanced");
             }
         }
     }
@@ -233,8 +240,10 @@ public final class LotteryPoolForm {
     }
 
     private static DropdownOption option(String value, String key) {
-        return new DropdownOption(value, tr(key), net.minecraft.world.item.ItemStack.EMPTY,
-                null, SakuraComponent.get().transClient("word", key + "_tooltip"));
+        String label = tr(key);
+        String description = tr(key + "_tooltip");
+        return new DropdownOption(value, label, net.minecraft.world.item.ItemStack.EMPTY, null,
+                SakuraComponent.get().literal(description.endsWith("." + key + "_tooltip") ? label : description));
     }
 
     private static Text text(String key) {
