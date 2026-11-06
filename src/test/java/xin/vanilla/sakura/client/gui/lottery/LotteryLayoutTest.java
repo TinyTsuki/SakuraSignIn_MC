@@ -47,6 +47,21 @@ public class LotteryLayoutTest {
     }
 
     @Test
+    public void hiddenCountdownReleasesItsSpaceWithoutMovingTheRailOrDrawControls() {
+        for (int[] size : new int[][]{{320, 240}, {427, 240}, {854, 480}}) {
+            var scheduled = LotteryLayout.calculate(size[0], size[1], true);
+            var unscheduled = LotteryLayout.calculate(size[0], size[1], false);
+            assertEquals(0, unscheduled.info().height());
+            assertEquals(unscheduled.stage().y() + 6, unscheduled.description().y());
+            assertEquals(24, scheduled.description().y() - unscheduled.description().y());
+            assertEquals(24, unscheduled.preview().height() - scheduled.preview().height());
+            assertEquals(scheduled.pool().y(), unscheduled.pool().y());
+            assertEquals(scheduled.single().y(), unscheduled.single().y());
+            assertEquals(scheduled.batch().y(), unscheduled.batch().y());
+        }
+    }
+
+    @Test
     public void viewportHitTestsExcludeRightBottomAndNeighboringTools() {
         LotteryLayout layout = LotteryLayout.calculate(320, 240);
         LotteryLayout.Rect view = layout.description();

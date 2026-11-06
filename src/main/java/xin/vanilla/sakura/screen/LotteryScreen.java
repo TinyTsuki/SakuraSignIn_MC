@@ -307,13 +307,21 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
 
     @Override
     protected void onRender(GuiGraphics stack, int mouseX, int mouseY, float partialTicks) {
+        LotteryPool pool = selectedPool();
+        String countdown = pool != null && (!pool.getStartDate().isBlank() || !pool.getEndDate().isBlank())
+                ? LotteryUiSession.countdown(payment) : "";
+        boolean showInfo = pool == null || !countdown.isEmpty();
+        if (showInfo != (layout.info().height() > 0)) {
+            layout = LotteryLayout.calculate(width, height, showInfo);
+            infoViewport.reset();
+            infoScrollbar.visible(false);
+        }
         LotteryLayout.Rect panel = layout.panel();
         shape(stack, panel.x(), panel.y(), panel.width(), panel.height(), getEffectiveTheme().panelBg(), 8, 0);
         LotteryLayout.Rect stage = layout.stage(), footer = layout.footer();
         shape(stack, stage.x(), stage.y(), stage.width(), stage.height(), STAGE_EDGE, 5, 0);
         shape(stack, stage.x() + 1, stage.y() + 1, stage.width() - 2, stage.height() - 2, STAGE_FILL, 4, 0);
         stack.fill(footer.x(), footer.y(), footer.right(), footer.y() + 1, STAGE_EDGE);
-        LotteryPool pool = selectedPool();
         renderPoolHeading(stack, pool);
         if (pool == null) {
             renderParagraph(stack, layout.info(), infoViewport, infoScrollbar,
@@ -324,7 +332,7 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
             LotteryLayout.Rect poster = layout.poster();
             if (this.poster != null) this.poster.render(stack, poster.x(), poster.y(),
                     poster.width(), poster.height(), Math.min(poster.width(), poster.height()) * 3 / 4);
-            renderParagraph(stack, layout.info(), infoViewport, infoScrollbar, LotteryUiSession.countdown(payment), STAGE_MUTED);
+            if (showInfo) renderParagraph(stack, layout.info(), infoViewport, infoScrollbar, countdown, STAGE_MUTED);
             renderParagraph(stack, layout.description(), descriptionViewport, descriptionScrollbar,
                     pool.getDescription(), STAGE_TEXT);
             LotteryLayout.Rect caption = layout.previewHeading();

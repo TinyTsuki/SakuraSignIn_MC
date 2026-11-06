@@ -72,6 +72,10 @@ public final class LotteryLayout {
     }
 
     public static LotteryLayout calculate(int width, int height) {
+        return calculate(width, height, true);
+    }
+
+    public static LotteryLayout calculate(int width, int height, boolean showInfo) {
         int panelWidth = Math.min(640, width - 16), panelHeight = Math.min(350, height - 16);
         int top = (height - panelHeight) / 2;
         Rect panel = new Rect((width - panelWidth) / 2, top, panelWidth, panelHeight);
@@ -84,8 +88,8 @@ public final class LotteryLayout {
         Rect pool = new Rect(x, bodyY, railWidth, bodyBottom - bodyY);
         Rect stage = new Rect(pool.right() + 6, bodyY, right - pool.right() - 6, bodyBottom - bodyY);
         int copyX = stage.x() + 8, textWidth = stage.width() * 43 / 100;
-        Rect info = new Rect(copyX, bodyY + 6, textWidth, 21);
-        Rect description = new Rect(copyX, info.bottom() + 3, textWidth, Math.min(44, Math.max(10, stage.height() / 6)));
+        Rect info = new Rect(copyX, bodyY + 6, textWidth, showInfo ? 21 : 0);
+        Rect description = new Rect(copyX, info.bottom() + (showInfo ? 3 : 0), textWidth, Math.min(44, Math.max(10, stage.height() / 6)));
         Rect previewHeading = new Rect(copyX, description.bottom() + 4, textWidth, 10);
         Rect preview = new Rect(copyX, previewHeading.bottom() + 2, textWidth, Math.max(0, bodyBottom - previewHeading.bottom() - 6));
         Rect poster = new Rect(copyX + textWidth + 5, bodyY + 5, right - copyX - textWidth - 10, stage.height() - 10);
