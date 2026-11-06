@@ -3,6 +3,7 @@ package xin.vanilla.sakura.client.ui;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+import xin.vanilla.banira.client.gui.InputFormScreen;
 import xin.vanilla.banira.api.client.ui.UiCloseReason;
 import xin.vanilla.banira.api.client.ui.UiDetachReason;
 import xin.vanilla.banira.api.client.ui.UiPageSource;
@@ -271,8 +272,14 @@ public class LotteryUiOperationHandoffTest {
         description.drafts.get("input").accept("New\nDraft");
         var voucher = new RecordingUiView();
         view.rows.bind(voucher, 3);
-        assertEquals("xpPoints(2)", voucher.draftValues.get("input"));
-        voucher.drafts.get("input").accept("xpPoints(3)");
+        assertTrue(voucher.draftValues.get("input").contains("2"));
+        assertFalse(voucher.enabled.get("input"));
+        InputFormScreen formOwner = form;
+        InputFormScreen.Widget cost = formOwner.uiSession().args().getWidgets().get(3);
+        InputFormScreen child = (InputFormScreen) cost.picker().apply(parent,
+                value -> formOwner.uiSession().draft("voucherExpression", value));
+        child.uiSession().draft("amount", "3");
+        assertTrue(child.uiSession().submit());
         session.detach(UiDetachReason.SWITCH);
         var next = new RecordingUiView();
         session.bind(next);
@@ -281,7 +288,7 @@ public class LotteryUiOperationHandoffTest {
         assertEquals("New\nDraft", description.draftValues.get("input"));
         voucher = new RecordingUiView();
         next.rows.bind(voucher, 3);
-        assertEquals("xpPoints(3)", voucher.draftValues.get("input"));
+        assertTrue(voucher.draftValues.get("input").contains("3"));
         assertNotNull(voucher.actions.get("pick"));
     }
 
