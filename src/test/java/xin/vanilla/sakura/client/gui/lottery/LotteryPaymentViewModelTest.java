@@ -181,4 +181,34 @@ public class LotteryPaymentViewModelTest {
         assertTrue(view.canDraw(1));
         assertFalse(view.canDraw(5));
     }
+
+    @Test
+    public void explicitBatchOnlyPoolNeverFallsBackToSingleDraw() {
+        LotteryPaymentViewModel view = model();
+        view.select("daily", 2, 2);
+        view.tick();
+        requests.accept(new LotteryQuote(quotes.get(0), LotteryQuote.Status.PAYMENT_UNAVAILABLE, 1, 0, "", ""));
+        view.tick();
+        assertEquals(1, quotes.size());
+        millis = 3000;
+        view.tick();
+        assertEquals(2, quotes.size());
+        assertEquals(2, quotes.get(1).getCount());
+    }
+
+    @Test
+    public void countdownUsesElapsedTimeAndNeverLeaksAcrossPools() {
+        LotteryPaymentViewModel view = model();
+        view.select("daily", 1);
+        view.tick();
+        requests.accept(new LotteryQuote(quotes.get(0), LotteryQuote.Status.POOL_CLOSED, 1, 0, "", "", 60_001, true));
+        view.tick();
+        assertEquals(2, view.windowMinutes());
+        assertTrue(view.opensNext());
+        assertFalse(view.canOfferDraw(1));
+        millis = 1;
+        assertEquals(1, view.windowMinutes());
+        view.select("other", 1);
+        assertEquals(0, view.windowMinutes());
+    }
 }
