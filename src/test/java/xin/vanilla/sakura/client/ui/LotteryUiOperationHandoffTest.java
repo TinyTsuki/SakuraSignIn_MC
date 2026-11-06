@@ -242,10 +242,16 @@ public class LotteryUiOperationHandoffTest {
         assertFalse(view.enabled.get("batch"));
         view.actions.get("batch").run();
         assertTrue(port.draws.isEmpty());
+        port.millis = 3000;
+        session.tick();
         port.accept();
         session.tick();
         assertTrue(view.enabled.get("single"));
         view.actions.get("single").run();
+        assertTrue(port.draws.isEmpty());
+        assertEquals(1, port.quotes.get(port.quotes.size() - 1).getCount());
+        port.accept();
+        session.tick();
         assertEquals(1, port.draws.size());
         assertFalse(view.enabled.get("pool"));
         assertFalse(view.enabled.get("count"));
@@ -258,14 +264,15 @@ public class LotteryUiOperationHandoffTest {
     @Test
     public void poolFormDraftsSurviveBackendHandoffWithEveryMetadataField() {
         LotteryPool pool = new Port().daily;
-        net.minecraft.client.gui.screens.Screen parent = new net.minecraft.client.gui.screens.Screen(new net.minecraft.network.chat.TextComponent("")) {
+        pool.setArtworkTexture("test:textures/lottery/spring.png");
+        net.minecraft.client.gui.screens.Screen parent = new net.minecraft.client.gui.screens.Screen(net.minecraft.network.chat.Component.empty()) {
         };
         var form = (xin.vanilla.banira.client.gui.InputFormScreen) xin.vanilla.sakura.client.gui.LotteryPoolForm.create(parent, pool, value -> {
         });
         var session = form.uiPage().session();
         var view = new RecordingUiView();
         session.bind(view);
-        assertEquals(8, view.rows.size());
+        assertEquals(14, view.rows.size());
         var description = new RecordingUiView();
         view.rows.bind(description, 2);
         assertEquals("Long\nDescription", description.draftValues.get("input"));
@@ -280,6 +287,20 @@ public class LotteryUiOperationHandoffTest {
                 value -> formOwner.uiSession().draft("voucherExpression", value));
         child.uiSession().draft("amount", "3");
         assertTrue(child.uiSession().submit());
+        var metadata = List.of("1,5,10", "2026-11-06 13:30", "2026-11-06 13:45");
+        for (int i = 0; i < metadata.size(); i++) {
+            var row = new RecordingUiView();
+            view.rows.bind(row, i + 8);
+            row.drafts.get("input").accept(metadata.get(i));
+        }
+        var mainArtwork = new RecordingUiView();
+        view.rows.bind(mainArtwork, 11);
+        String mainSummary = mainArtwork.draftValues.get("input");
+        assertTrue(mainSummary.contains(pool.getArtworkTexture()));
+        var thumbnail = new RecordingUiView();
+        view.rows.bind(thumbnail, 12);
+        String thumbnailSummary = thumbnail.draftValues.get("input");
+        assertNotNull(thumbnailSummary);
         session.detach(UiDetachReason.SWITCH);
         var next = new RecordingUiView();
         session.bind(next);
@@ -290,6 +311,19 @@ public class LotteryUiOperationHandoffTest {
         next.rows.bind(voucher, 3);
         assertTrue(voucher.draftValues.get("input").contains("3"));
         assertNotNull(voucher.actions.get("pick"));
+        for (int i = 0; i < metadata.size(); i++) {
+            var row = new RecordingUiView();
+            next.rows.bind(row, i + 8);
+            assertEquals(metadata.get(i), row.draftValues.get("input"));
+        }
+        mainArtwork = new RecordingUiView();
+        next.rows.bind(mainArtwork, 11);
+        assertEquals(mainSummary, mainArtwork.draftValues.get("input"));
+        assertNotNull(mainArtwork.actions.get("pick"));
+        thumbnail = new RecordingUiView();
+        next.rows.bind(thumbnail, 12);
+        assertEquals(thumbnailSummary, thumbnail.draftValues.get("input"));
+        assertNotNull(thumbnail.actions.get("pick"));
     }
 
     @Test

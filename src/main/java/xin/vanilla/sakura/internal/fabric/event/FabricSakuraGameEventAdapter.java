@@ -53,8 +53,12 @@ public final class FabricSakuraGameEventAdapter {
         net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             xin.vanilla.sakura.network.packet.LotteryPoolSyncPacket.clearServerTransfers();
             xin.vanilla.sakura.reward.lottery.PendingLotteryDraws.clear();
-            try { xin.vanilla.sakura.internal.fabric.lottery.FabricLotteryServices.stop(); }
-            catch (Exception failure) { LOGGER.error("Lottery operation flush failed", failure); }
+            xin.vanilla.sakura.reward.lottery.LotteryDrawDispatcher.clearCommands();
+            try {
+                xin.vanilla.sakura.internal.fabric.lottery.FabricLotteryServices.stop();
+            } catch (Exception failure) {
+                LOGGER.error("Lottery operation flush failed", failure);
+            }
         });
         CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) ->
                 SignInCommand.register(dispatcher));
@@ -71,12 +75,16 @@ public final class FabricSakuraGameEventAdapter {
         ServerTickEvents.END_SERVER_TICK.register(FabricSakuraGameEventAdapter::onServerTick);
     }
 
-    /** 数据按 UUID 缓存，重生时只复制语言并同步新玩家实体。 */
+    /**
+     * 数据按 UUID 缓存，重生时只复制语言并同步新玩家实体。
+     */
     private static void onPlayerCloned(ServerPlayer original, ServerPlayer replacement) {
         SakuraPlayerData.sync(replacement);
     }
 
-    /** 旧数据迁移失败时不得继续自动签到或删除旧数据。 */
+    /**
+     * 旧数据迁移失败时不得继续自动签到或删除旧数据。
+     */
     private static void onPlayerLoggedIn(ServerPlayer player) {
         try {
             LegacyMigrationResult result = SakuraPlayerData.migrateAndLoad(player);
@@ -139,6 +147,7 @@ public final class FabricSakuraGameEventAdapter {
     }
 
     private static void onServerTick(MinecraftServer server) {
+        xin.vanilla.sakura.reward.lottery.LotteryDrawDispatcher.tickCommands(server);
         xin.vanilla.sakura.network.packet.LotteryPoolSyncPacket.expireServerTransfers();
         Date now = RewardManager.getCompensateDate(SakuraClock.serverNow());
         LocalDate day = now.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
