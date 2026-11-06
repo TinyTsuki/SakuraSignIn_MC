@@ -39,12 +39,23 @@ public class ClientProxy {
     private static final MonthDataTransfer.Receiver MONTHS = new MonthDataTransfer.Receiver(System::nanoTime);
     private static final xin.vanilla.sakura.network.lottery.LotteryPoolReceiver LOTTERY =
             new xin.vanilla.sakura.network.lottery.LotteryPoolReceiver(System::nanoTime);
-    public static void expireLotteryTransfers() { LOTTERY.expire(); }
-    public static void clearLotteryTransfers() { LOTTERY.clear(); }
 
-    public static void expireMonthTransfers() { MONTHS.expire(); }
+    public static void expireLotteryTransfers() {
+        LOTTERY.expire();
+    }
 
-    public static void clearMonthTransfers() { MONTHS.clear(); }
+    public static void clearLotteryTransfers() {
+        LOTTERY.clear();
+        xin.vanilla.sakura.client.gui.lottery.LotteryArtworkCache.retain(java.util.List.of());
+    }
+
+    public static void expireMonthTransfers() {
+        MONTHS.expire();
+    }
+
+    public static void clearMonthTransfers() {
+        MONTHS.clear();
+    }
 
     public static void handleSynPlayerData(PlayerDataSyncPacket packet) {
         LocalPlayer player = Minecraft.getInstance().player;
@@ -155,15 +166,21 @@ public class ClientProxy {
     }
 
     public static void handleLotteryPoolSync(LotteryPoolSyncPacket packet, Object origin) {
-        if (!currentConnection(origin) || packet.getGeneration() < SakuraClientState.getLotteryRequests().getGeneration()) return;
+        if (!currentConnection(origin) || packet.getGeneration() < SakuraClientState.getLotteryRequests().getGeneration())
+            return;
         LotteryPoolSyncPacket complete;
-        try { complete = LOTTERY.accept(origin, packet); }
-        catch (IllegalArgumentException failure) {
-            LOTTERY.remove(origin); LOGGER.warn("Rejected lottery snapshot", failure); return;
+        try {
+            complete = LOTTERY.accept(origin, packet);
+        } catch (IllegalArgumentException failure) {
+            LOTTERY.remove(origin);
+            LOGGER.warn("Rejected lottery snapshot", failure);
+            return;
         }
-        if (complete == null || !SakuraClientState.getLotteryRequests().observeGeneration(complete.getGeneration())) return;
-        RewardConfigManager.getRewardConfig().setLotteryPools(
-                complete.getPools());
+        if (complete == null || !SakuraClientState.getLotteryRequests().observeGeneration(complete.getGeneration()))
+            return;
+        var pools = complete.getPools();
+        xin.vanilla.sakura.client.gui.lottery.LotteryArtworkCache.retain(pools);
+        RewardConfigManager.getRewardConfig().setLotteryPools(pools);
         RewardConfigManager.setRewardOptionDataChanged(true);
         RewardConfigManager.saveRewardOption();
     }

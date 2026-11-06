@@ -16,9 +16,11 @@ import java.util.Random;
 import java.util.UUID;
 import java.time.ZoneId;
 
-/** Immutable server-owned draw snapshot and write-ahead grant progress. */
+/**
+ * Immutable server-owned draw snapshot and write-ahead grant progress.
+ */
 public final class LotteryOperation {
-    public enum Stage { PREPARED, PAYING, PAID, GRANTING, COMPLETED, ROLLED_BACK, UNCERTAIN }
+    public enum Stage {PREPARED, PAYING, PAID, GRANTING, COMPLETED, ROLLED_BACK, UNCERTAIN}
 
     private final UUID playerId;
     private final LotteryDrawRequest request;
@@ -89,8 +91,9 @@ public final class LotteryOperation {
                 && stage != Stage.ROLLED_BACK && stage != Stage.UNCERTAIN))) invalidStage();
         if (count < 1 || count > 100 || createdAt < 0 || !pool.getId().equals(request.getRequest().getPoolId())
                 || (request.getRequest().getCount() != -1 && request.getRequest().getCount() != count)
-                || ((pool.getLimitPolicy() == LotteryLimitPolicy.COOLDOWN || pool.getCooldownSeconds() > 0)
-                    && count != 1) || eligible(pool).isEmpty()) {
+                || !pool.allowsCount(request.getRequest().getCount())
+                || (pool.getDrawCounts() == null && (pool.getLimitPolicy() == LotteryLimitPolicy.COOLDOWN
+                || pool.getCooldownSeconds() > 0) && count != 1) || eligible(pool).isEmpty()) {
             throw new IllegalArgumentException("Invalid lottery draw snapshot");
         }
         if (grantedCount < 0 || grantedCount > count || (!rewards.isEmpty() && rewards.size() != count)
@@ -127,13 +130,19 @@ public final class LotteryOperation {
         if (receipt == null && (!rewards.isEmpty() || grantedCount != 0)) invalidStage();
     }
 
-    private static void invalidStage() { throw new IllegalArgumentException("Invalid lottery operation stage"); }
+    private static void invalidStage() {
+        throw new IllegalArgumentException("Invalid lottery operation stage");
+    }
+
     private static boolean confirmed(CostPaymentPlan receipt) {
         return receipt != null && receipt.isSuccess() && receipt.isCommitted()
                 && receipt.hasConfirmedSnapshots() && !receipt.recoveryFailure().isFailure();
     }
 
-    public LotteryOperation paying() { require(Stage.PREPARED); return next(Stage.PAYING, 0, rewards, null); }
+    public LotteryOperation paying() {
+        require(Stage.PREPARED);
+        return next(Stage.PAYING, 0, rewards, null);
+    }
 
     public LotteryOperation paid(CostPaymentPlan receipt) {
         require(Stage.PAYING);
@@ -152,7 +161,8 @@ public final class LotteryOperation {
 
     public LotteryOperation granting() {
         require(Stage.PAID);
-        if (rollbackPending || rewards.isEmpty() || grantedCount == count) throw new IllegalStateException("Lottery grant is not pending");
+        if (rollbackPending || rewards.isEmpty() || grantedCount == count)
+            throw new IllegalStateException("Lottery grant is not pending");
         return next(Stage.GRANTING, grantedCount, rewards, receipt);
     }
 
@@ -177,7 +187,8 @@ public final class LotteryOperation {
     public LotteryOperation rolledBack() {
         if (grantedCount != 0 || (stage != Stage.PREPARED && stage != Stage.PAYING && stage != Stage.PAID))
             throw new IllegalStateException("Lottery operation cannot roll back");
-        if (stage == Stage.PAID && !rollbackPending) throw new IllegalStateException("Restoration intent not persisted");
+        if (stage == Stage.PAID && !rollbackPending)
+            throw new IllegalStateException("Restoration intent not persisted");
         return next(Stage.ROLLED_BACK, 0, rewards, receipt);
     }
 
@@ -203,6 +214,7 @@ public final class LotteryOperation {
     private void require(Stage expected) {
         if (stage != expected) throw new IllegalStateException("Expected lottery stage " + expected);
     }
+
     private LotteryOperation next(Stage next, int granted, List<String> selected, CostPaymentPlan payment) {
         return new LotteryOperation(playerId, request, poolSnapshot, count, seed, createdAt, displayToken,
                 next, granted, selected, payment, quotaBefore, zoneId, acknowledged, rollbackPending);
@@ -220,6 +232,7 @@ public final class LotteryOperation {
         }
         return result;
     }
+
     private List<String> selected(LotteryPool pool) {
         List<Reward> candidates = eligible(pool);
         BigDecimal total = BigDecimal.ZERO;
@@ -232,7 +245,10 @@ public final class LotteryOperation {
             BigDecimal cursor = BigDecimal.ZERO;
             for (Reward candidate : candidates) {
                 cursor = cursor.add(candidate.getProbability());
-                if (point.compareTo(cursor) < 0) { winner = candidate; break; }
+                if (point.compareTo(cursor) < 0) {
+                    winner = candidate;
+                    break;
+                }
             }
             Reward selected = RewardJsonCodec.decode(RewardJsonCodec.encode(winner));
             selected.setProbability(BigDecimal.ONE).setRewarded(false);
@@ -241,20 +257,62 @@ public final class LotteryOperation {
         return result;
     }
 
-    public UUID getPlayerId() { return playerId; }
-    public LotteryDrawRequest getRequest() { return request; }
-    public String getOperationId() { return request.getOperationId(); }
-    public int getCount() { return count; }
-    public long getSeed() { return seed; }
-    public long getCreatedAt() { return createdAt; }
-    public String getDisplayToken() { return displayToken; }
-    public Stage getStage() { return stage; }
-    public int getGrantedCount() { return grantedCount; }
-    public CostPaymentPlan getReceipt() { return receipt; }
-    public boolean isAcknowledged() { return acknowledged; }
-    public boolean isRollbackPending() { return rollbackPending; }
-    public String getZoneId() { return zoneId; }
-    public LotteryDrawState getQuotaBefore() { return copyState(quotaBefore); }
+    public UUID getPlayerId() {
+        return playerId;
+    }
+
+    public LotteryDrawRequest getRequest() {
+        return request;
+    }
+
+    public String getOperationId() {
+        return request.getOperationId();
+    }
+
+    public int getCount() {
+        return count;
+    }
+
+    public long getSeed() {
+        return seed;
+    }
+
+    public long getCreatedAt() {
+        return createdAt;
+    }
+
+    public String getDisplayToken() {
+        return displayToken;
+    }
+
+    public Stage getStage() {
+        return stage;
+    }
+
+    public int getGrantedCount() {
+        return grantedCount;
+    }
+
+    public CostPaymentPlan getReceipt() {
+        return receipt;
+    }
+
+    public boolean isAcknowledged() {
+        return acknowledged;
+    }
+
+    public boolean isRollbackPending() {
+        return rollbackPending;
+    }
+
+    public String getZoneId() {
+        return zoneId;
+    }
+
+    public LotteryDrawState getQuotaBefore() {
+        return copyState(quotaBefore);
+    }
+
     public LotteryDrawState getQuotaAfter() {
         LotteryDrawState result = getQuotaBefore();
         LotteryPool pool = getPool();
@@ -263,26 +321,42 @@ public final class LotteryOperation {
                     pool, result, createdAt, ZoneId.of(zoneId));
         return result;
     }
+
     private static LotteryDrawState copyState(LotteryDrawState source) {
         LotteryDrawState result = new LotteryDrawState(source.getPoolId());
-        result.setPeriodKey(source.getPeriodKey()); result.setPeriodDraws(source.getPeriodDraws());
-        result.setTotalDraws(source.getTotalDraws()); result.setLastDrawEpochMillis(source.getLastDrawEpochMillis());
+        result.setPeriodKey(source.getPeriodKey());
+        result.setPeriodDraws(source.getPeriodDraws());
+        result.setTotalDraws(source.getTotalDraws());
+        result.setLastDrawEpochMillis(source.getLastDrawEpochMillis());
         return result;
     }
-    public boolean isTerminal() { return stage == Stage.COMPLETED || stage == Stage.ROLLED_BACK; }
-    String poolSnapshot() { return poolSnapshot; }
-    List<String> rewardSnapshots() { return rewards; }
+
+    public boolean isTerminal() {
+        return stage == Stage.COMPLETED || stage == Stage.ROLLED_BACK;
+    }
+
+    String poolSnapshot() {
+        return poolSnapshot;
+    }
+
+    List<String> rewardSnapshots() {
+        return rewards;
+    }
 
     public LotteryPool getPool() {
         try {
             List<LotteryPool> pools = new RewardConfigCodec().decode(poolSnapshot).getLotteryPools();
             if (pools.size() != 1) throw new IllegalArgumentException("One lottery snapshot required");
             return pools.get(0);
-        } catch (IOException failure) { throw new IllegalArgumentException("Invalid lottery snapshot", failure); }
+        } catch (IOException failure) {
+            throw new IllegalArgumentException("Invalid lottery snapshot", failure);
+        }
     }
+
     public List<Reward> getRewards() {
         List<Reward> result = new ArrayList<>();
-        for (String reward : rewards) result.add(RewardJsonCodec.decode(new com.google.gson.JsonParser().parse(reward)));
+        for (String reward : rewards)
+            result.add(RewardJsonCodec.decode(new com.google.gson.JsonParser().parse(reward)));
         return result;
     }
 }
