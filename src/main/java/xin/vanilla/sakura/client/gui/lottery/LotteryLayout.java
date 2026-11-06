@@ -38,6 +38,12 @@ public final class LotteryLayout {
         int singleWidth = narrow ? 70 : 96, batchWidth = singleWidth;
         int animationWidth = narrow ? innerWidth : 164;
         int countWidth = innerWidth - singleWidth - batchWidth - (narrow ? 12 : animationWidth + 18);
+        if (countWidth < 58) {
+            int adjustment = Math.min(singleWidth - 45, (59 - countWidth) / 2);
+            singleWidth -= adjustment;
+            batchWidth -= adjustment;
+            countWidth += 2 * adjustment;
+        }
         Rect single = new Rect(x, footerY, singleWidth, 22);
         Rect count = new Rect(single.right() + 6, footerY, countWidth, 22);
         Rect batch = new Rect(count.right() + 6, footerY, batchWidth, 22);
