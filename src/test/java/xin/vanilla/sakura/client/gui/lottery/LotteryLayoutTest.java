@@ -9,6 +9,17 @@ import static org.junit.Assert.*;
 
 public class LotteryLayoutTest {
     @Test
+    public void compactCountPickerKeepsRoomForItsValueAndControls() {
+        for (int width : new int[]{224, 256, 320, 427, 854}) {
+            LotteryLayout layout = LotteryLayout.calculate(width, 240);
+            assertTrue(layout.count().width() >= 58);
+            assertTrue(layout.single().right() < layout.count().x());
+            assertTrue(layout.count().right() < layout.batch().x());
+            assertTrue(layout.panel().encloses(layout.batch()));
+        }
+    }
+
+    @Test
     public void informationDescriptionPreviewAndControlsAreDisjointAtAllSupportedSizes() {
         for (int[] size : new int[][]{{320, 240}, {427, 240}, {854, 480}, {1280, 720}}) {
             LotteryLayout layout = LotteryLayout.calculate(size[0], size[1]);
