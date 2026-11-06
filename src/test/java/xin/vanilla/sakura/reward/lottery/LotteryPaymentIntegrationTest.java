@@ -135,11 +135,11 @@ public class LotteryPaymentIntegrationTest {
     }
 
     @Test
-    public void allUsesMinimumOfResourceCapacityAndQuota() throws Exception {
+    public void fixedBatchUsesExactConfiguredSize() throws Exception {
         actor.points = 7;
         runtime.pool.setMaxDraws(2);
         LotteryOperationService service = service();
-        LotteryQuote quote = quote(service, -1);
+        LotteryQuote quote = quote(service, 2);
         assertEquals(2, quote.getAvailableCount());
         assertTrue(service.draw(actor, draw(quote)).isSuccess());
         assertEquals(3, actor.points);
@@ -157,15 +157,20 @@ public class LotteryPaymentIntegrationTest {
     }
 
     @Test
-    public void cooldownAllowsOnlyOneDrawInAllMode() throws Exception {
+    public void batchOnlyPoolRejectsOtherCountsAndCooldownAppliesAfterTheBatch() throws Exception {
         runtime.pool.setLimitPolicy(LotteryLimitPolicy.COOLDOWN);
         runtime.pool.setCooldownSeconds(10);
+        runtime.pool.setSingleDraw(false);
+        assertFalse(quote(service(), 1).isReady());
+        assertFalse(quote(service(), -1).isReady());
+        assertFalse(service().commandDraw(actor, "daily", 3).isSuccess());
+        assertEquals(10, actor.points);
         LotteryOperationService service = service();
-        LotteryQuote quote = quote(service, -1);
-        assertEquals(1, quote.getAvailableCount());
+        LotteryQuote quote = quote(service, 2);
         assertTrue(service.draw(actor, draw(quote)).isSuccess());
-        assertEquals(8, actor.points);
-        assertEquals(1, runtime.grants.size());
+        assertEquals(6, actor.points);
+        assertEquals(2, runtime.grants.size());
+        assertFalse(service.commandDraw(actor, "daily", 2).isSuccess());
     }
 
     @Test

@@ -17,6 +17,7 @@ public final class LotteryPaymentViewModel {
     private String poolId = "", summary;
     private int count = 1;
     private int quoteCount = 1;
+    private boolean singleAllowed = true;
     private Integer intent;
     private long generation = -1, lastRequestAt;
     private boolean needsQuote;
@@ -31,7 +32,12 @@ public final class LotteryPaymentViewModel {
     }
 
     public void select(String poolId, int count) {
-        if (this.poolId.equals(poolId) && this.count == count) return;
+        select(poolId, count, true);
+    }
+
+    public void select(String poolId, int count, boolean singleAllowed) {
+        if (this.poolId.equals(poolId) && this.count == count && this.singleAllowed == singleAllowed) return;
+        this.singleAllowed = singleAllowed;
         if (!this.poolId.equals(poolId)) summary = null;
         this.poolId = poolId;
         this.count = count;
@@ -63,7 +69,7 @@ public final class LotteryPaymentViewModel {
                 intent = null;
                 if (quote.isReady() && quote.getRequest().getCount() == requested) draw(requested);
             }
-            if (!quote.isReady() && quote.getRequest().getCount() != 1) {
+            if (singleAllowed && !quote.isReady() && quote.getRequest().getCount() != 1) {
                 quoteCount = 1;
                 request(1);
                 return;
@@ -112,7 +118,8 @@ public final class LotteryPaymentViewModel {
                 && millis.getAsLong() - lastRequestAt < REFRESH_MILLIS
                 && quote != null && quote.isReady() && quote.getGeneration() == requests.getGeneration()
                 && quote.getRequest().getPoolId().equals(poolId)
-                && (quote.getRequest().getCount() == requested || requested == 1);
+                && (requested == 1 ? singleAllowed : requested == count)
+                && (quote.getRequest().getCount() == requested || requested > 0 && requested <= quote.getAvailableCount());
     }
 
     public boolean isDrawing() {

@@ -105,10 +105,11 @@ public class LotteryUiPresentationTest {
         var view = new RecordingUiView();
         var session = new LotteryUiSession(port, () -> true);
         session.bind(view);
-        assertEquals(Set.of("fields", "fields_middle", "fields_end"), view.providers.keySet());
+        assertEquals(Set.of("pool_rows", "fields", "fields_middle", "fields_end"), view.providers.keySet());
         int[] sizes = {3, 3, 2};
         int column = 0;
-        for (var rows : view.providers.values()) {
+        for (String id : List.of("fields", "fields_middle", "fields_end")) {
+            var rows = view.providers.get(id);
             assertEquals(sizes[column], rows.size());
             for (int row = 0; row < rows.size(); row++) assertEquals("daily:" + (row * 3 + column), rows.key(row));
             column++;
@@ -156,33 +157,22 @@ public class LotteryUiPresentationTest {
     }
 
     @Test
-    public void fourActualAnimationButtonsUseSamePreferenceAndRejectRetiredCallbacks() {
+    public void batchOnlyPoolExposesItsConfiguredCountAndArtworkWithoutPlayerControls() {
         var port = new LotteryUiOperationHandoffTest.Port();
-        var view = new RecordingUiView();
-        var session = new LotteryUiSession(port, () -> true);
-        session.bind(view);
-        for (var style : LotteryAnimationStyle.values()) {
-            String id = "animation_" + style.name().toLowerCase(Locale.ROOT);
-            assertNotNull("Missing animation action: " + id, view.actions.get(id));
-            view.actions.get(id).run();
-            assertEquals(style, port.style);
-            assertFalse(view.enabled.get("animation_" + style.name().toLowerCase(Locale.ROOT)));
-        }
-        Runnable retired = view.actions.get("animation_strip");
-        session.detach(UiDetachReason.SWITCH);
-        retired.run();
-        assertEquals(LotteryAnimationStyle.INSTANT, port.style);
-    }
-
-    @Test
-    public void allCountUsesCompactLabelAndRetainsCompleteTooltip() {
-        var port = new LotteryUiOperationHandoffTest.Port();
-        port.count("all");
+        port.daily.setSingleDraw(false);
+        port.daily.setBatchSize(7);
         var view = new RecordingUiView();
         new LotteryUiSession(port, () -> true).bind(view);
-        var all = view.controls.get("count").options().stream().filter(option -> "all".equals(option.value())).findFirst().orElseThrow();
-        assertEquals(translated("lottery_draw_all_short"), all.displayLabel());
-        assertEquals(translated("lottery_draw_all"), view.tooltips.get("count").toString());
+        assertFalse(view.enabled.get("single_slot"));
+        assertTrue(view.enabled.get("batch_slot"));
+        assertTrue(text(view, "batch_label").contains("7"));
+        assertFalse(view.controls.containsKey("count"));
+        assertFalse(view.actions.containsKey("animation_strip"));
+        assertNotNull(view.icons.get("poster"));
+        var row = new RecordingUiView();
+        view.providers.get("pool_rows").bind(row, 0);
+        assertEquals("Daily", text(row, "label"));
+        assertNotNull(row.icons.get("icon"));
     }
 
     @Test
@@ -212,25 +202,19 @@ public class LotteryUiPresentationTest {
         for (String name : List.of("single", "batch"))
             assertFalse(html.contains("id=\"" + name + "_icon\""));
         String css = Files.readString(root.resolve("lottery.css"));
-        assertFalse("No side billing column", html.contains("<aside"));
-        assertTrue(html.indexOf("class=\"billing\"") > html.indexOf("id=\"content\""));
+        assertTrue(html.contains("class=\"notification-list pool-rail\""));
+        assertTrue(html.indexOf("class=\"billing footer\"") > html.indexOf("id=\"content\""));
         assertFalse(html.contains("quote_status"));
-        String billing = css.substring(css.indexOf(".billing{"), css.indexOf('}', css.indexOf(".billing{")));
-        assertTrue(billing.contains("flex-shrink:0"));
-        assertFalse(billing.contains("overflow-y:auto"));
+        assertTrue(html.contains("class=\"billing footer\""));
     }
 
     @Test
-    public void compactViewportReservesACompleteRewardRow() throws Exception {
+    public void compactViewportKeepsRailAndDetailsIndependentlyScrollable() throws Exception {
         String css = Files.readString(Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in/lottery.css"));
-        assertTrue(css.contains("max-height:12px"));
-        String description = css.substring(css.indexOf(".description{"), css.indexOf('}', css.indexOf(".description{")));
-        assertFalse("A fixed ten-pixel border box clips an eight-pixel AUI line", description.contains("height:10px"));
-        assertTrue(description.contains("padding:0 8px"));
-        assertTrue(css.contains("max-width:480px"));
-        assertTrue(css.contains("max-height:280px"));
-        assertTrue("Use the AUI font renderer explicitly", css.contains("font-family:default"));
-        assertTrue(css.contains(".status[disabled]"));
+        String html = Files.readString(Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in/lottery.html"));
+        assertTrue(html.contains("id=\"pool_scroll\" class=\"content\""));
+        assertTrue(html.contains("id=\"detail\" class=\"content\""));
+        assertTrue(css.contains("max-width:560px"));
     }
 
     @Test
@@ -242,8 +226,6 @@ public class LotteryUiPresentationTest {
         view.providers.get("fields").bind(cell, 0);
         assertEquals("100%", text(cell, "detail"));
         assertFalse(cell.tooltips.get("icon").toString().contains("%%"));
-        for (var style : LotteryAnimationStyle.values())
-            assertEquals(translated("lottery_animation_button_" + style.name().toLowerCase(Locale.ROOT)), text(view, "animation_" + style.name().toLowerCase(Locale.ROOT)));
         String css = Files.readString(Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in/lottery.css"));
         String labels = css.substring(css.indexOf(".grid .label,.grid .paragraph{"), css.indexOf('}', css.indexOf(".grid .label,.grid .paragraph{")));
         assertTrue(labels.contains("width:100%"));

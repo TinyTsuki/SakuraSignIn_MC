@@ -46,12 +46,13 @@ public class LotteryUiOperationHandoffTest {
 
         Port() {
             requests.observeGeneration(1);
+            daily.setBatchSize(5);
             daily.setDescription("Long\nDescription");
             daily.setVoucherExpression("xpPoints(2)");
         }
 
         public void prepare() {
-            payment.select(pool, "all".equals(count) ? -1 : Integer.parseInt(count));
+            payment.select(pool, daily.getBatchSize(), daily.isSingleDraw());
         }
 
         public List<LotteryPool> pools() {
@@ -207,20 +208,14 @@ public class LotteryUiOperationHandoffTest {
         RecordingUiView view = new RecordingUiView();
         session.bind(view);
         assertEquals("Long\nDescription", view.texts.get("description").toString());
-        assertEquals(List.of("5", "10", "12", "all"), view.controls.get("count").options().stream().map(option -> option.value()).toList());
-        assertEquals(4, view.controls.get("animation").options().size());
+        assertFalse(view.controls.containsKey("count"));
+        assertFalse(view.controls.containsKey("animation"));
         assertFalse(view.enabled.get("single"));
         session.tick();
         port.accept();
         session.tick();
         assertTrue(view.enabled.get("batch"));
         assertTrue(view.texts.get("fee").toString().contains("xpPoints(2)"));
-        for (LotteryAnimationStyle style : LotteryAnimationStyle.values()) {
-            view.changes.get("animation").accept(UiValue.text(style.name()));
-            assertEquals(style, port.style);
-        }
-        view.changes.get("count").accept(UiValue.text("12"));
-        assertEquals("12", port.count);
         int scans = port.scans;
         for (int i = 0; i < 100; i++) session.tick();
         assertEquals("Stable ticks must not rescan pools", scans, port.scans);
@@ -246,10 +241,7 @@ public class LotteryUiOperationHandoffTest {
         assertTrue(view.enabled.get("single"));
         view.actions.get("single").run();
         assertEquals(1, port.draws.size());
-        assertFalse(view.enabled.get("pool"));
-        assertFalse(view.enabled.get("count"));
-        view.changes.get("count").accept(UiValue.text("12"));
-        assertEquals("5", port.count);
+        assertFalse(view.changes.containsKey("count"));
         view.actions.get("single").run();
         assertEquals(1, port.draws.size());
     }
@@ -264,7 +256,7 @@ public class LotteryUiOperationHandoffTest {
         var session = form.uiPage().session();
         var view = new RecordingUiView();
         session.bind(view);
-        assertEquals(8, view.rows.size());
+        assertEquals(13, view.rows.size());
         var description = new RecordingUiView();
         view.rows.bind(description, 2);
         assertEquals("Long\nDescription", description.draftValues.get("input"));

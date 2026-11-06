@@ -1,6 +1,7 @@
 package xin.vanilla.sakura.config.reward;
 
 import org.junit.Test;
+import xin.vanilla.sakura.data.lottery.LotteryAnimationStyle;
 import xin.vanilla.sakura.data.lottery.LotteryLimitPolicy;
 import xin.vanilla.sakura.data.lottery.LotteryPool;
 import xin.vanilla.sakura.data.lottery.LotteryPreviewMode;
@@ -18,11 +19,37 @@ public class LotteryRewardConfigCodecTest {
         source.getLotteryPools().add(new LotteryPool("daily", "Daily Draw",
                 LotteryLimitPolicy.WEEKLY, 2, 30, LotteryPreviewMode.NONE,
                 new RewardList(Collections.singletonList(Reward.getDefault()))));
+        LotteryPool pool = source.getLotteryPools().get(0);
+        pool.setSingleDraw(false);
+        pool.setBatchSize(2);
+        pool.setAnimationStyle(LotteryAnimationStyle.CARDS);
+        pool.setArtworkItem("minecraft:cherry_sapling");
+        pool.setArtworkTexture("spring:textures/lottery/blossom.png");
 
         RewardConfig restored = new RewardConfigCodec().decode(
                 new RewardConfigCodec().encode(source));
 
         assertEquals(source.getLotteryPools(), restored.getLotteryPools());
+    }
+
+    @Test
+    public void oldPoolsDefaultToSingleWithNoArtworkAndInvalidModesAreRejected() throws Exception {
+        RewardConfigCodec codec = new RewardConfigCodec();
+        RewardConfig config = new RewardConfig();
+        config.getLotteryPools().add(new LotteryPool("daily", "Daily", LotteryLimitPolicy.DAILY, 2, 0, new RewardList()));
+        var root = com.google.gson.JsonParser.parseString(codec.encode(config)).getAsJsonObject();
+        var entry = root.getAsJsonArray("lotteryPools").get(0).getAsJsonObject();
+        for (String key : java.util.List.of("animationStyle", "singleDraw", "batchSize", "artworkItem", "artworkTexture"))
+            entry.remove(key);
+        LotteryPool restored = codec.decode(root.toString()).getLotteryPools().get(0);
+        assertTrue(restored.allowsCount(1));
+        assertFalse(restored.allowsCount(2));
+        assertEquals(LotteryAnimationStyle.STRIP, restored.getAnimationStyle());
+        entry.addProperty("singleDraw", false);
+        assertThrows(java.io.IOException.class, () -> codec.decode(root.toString()));
+        entry.addProperty("batchSize", 2);
+        entry.addProperty("artworkTexture", "spring:textures/lottery/../escape.png");
+        assertThrows(java.io.IOException.class, () -> codec.decode(root.toString()));
     }
 
     @Test

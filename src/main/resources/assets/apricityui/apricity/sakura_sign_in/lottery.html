@@ -1,14 +1,42 @@
 <!DOCTYPE html>
-<html><head><meta name="aui-viewport" content="mode=gui" /><link rel="stylesheet" href="../banira_codex/shared.css"><link rel="stylesheet" href="lottery.css"></head>
-<body class="sakura-ui"><main id="window" class="page lottery">
-<header class="header"><div id="brand" class="glyph"></div><div class="heading"><span id="title" class="title"></span><span class="label"> SAKURA SIGN IN</span></div><button id="close" class="tool"><div id="close_icon" class="glyph"></div></button></header>
-<section class="pool"><div id="pool_label" class="label"></div><input id="pool" readonly><div id="policy" class="label"></div></section>
-<section id="detail" class="description"><div id="description" class="label"></div></section>
-<div class="caption"><div id="preview_title" class="heading"></div><div id="preview_count" class="label"></div></div>
-<section id="content" class="content lottery-results"><div id="empty" class="label"></div><div class="grid"><div id="fields"></div><div id="fields_middle"></div><div id="fields_end"></div></div></section>
-<div id="info" class="paragraph status"></div>
-<section id="draw_bar" class="billing"><div class="fee-group"><div id="fee_label" class="label"></div><div id="fee" class="fee"></div></div>
-<div class="capacity"><div id="available_label" class="label"></div><div id="available"></div></div>
-<button id="single"><div id="single_label"></div></button><div class="count"><div id="count_label" class="label"></div><input id="count" readonly></div><button id="batch" class="primary"><div id="batch_label"></div></button></section>
-<footer class="footer modes"><div id="animation_label" class="label"></div><input id="animation" class="template" readonly><button id="animation_strip"></button><button id="animation_cards"></button><button id="animation_roulette"></button><button id="animation_instant"></button></footer>
-</main></body></html>
+<html>
+<head>
+  <meta name="aui-viewport" content="mode=gui">
+  <link rel="stylesheet" href="../banira_codex/shared.css">
+  <link rel="stylesheet" href="lottery.css">
+</head>
+<body class="sakura-ui">
+<main id="window" class="page lottery">
+  <header class="header notification-toolbar">
+    <div id="brand" class="glyph"></div><div id="title" class="title"></div>
+    <button id="close" class="tool"><div id="close_icon" class="glyph"></div></button>
+  </header>
+  <div class="notification-columns">
+    <aside class="notification-list pool-rail">
+      <div id="pool_label" class="label"></div>
+      <div id="pool_scroll" class="content"><div id="pool_rows"></div></div>
+    </aside>
+    <section class="notification-details pool-detail">
+      <div class="notification-columns feature">
+        <div class="notification-details pool-copy">
+          <div id="pool_name" class="pool-name"></div><div id="policy" class="label"></div>
+          <div id="detail" class="content"><div id="description"></div></div>
+        </div>
+        <div class="artwork"><div id="poster"></div></div>
+      </div>
+      <div class="notification-toolbar caption"><div id="preview_title"></div><div id="preview_count" class="label"></div></div>
+      <section id="content" class="content">
+        <div id="empty" class="label"></div>
+        <div class="editor grid"><div id="fields"></div><div id="fields_middle"></div><div id="fields_end"></div></div>
+      </section>
+    </section>
+  </div>
+  <footer id="draw_bar" class="billing footer">
+    <div class="fee-group"><div id="fee_label" class="label"></div><div id="fee" class="fee"></div><div id="info" class="status"></div></div>
+    <div class="capacity"><div id="available_label" class="label"></div><div id="available"></div></div>
+    <div id="single_slot"><button id="single"><div id="single_label"></div></button></div>
+    <div id="batch_slot"><button id="batch" class="primary"><div id="batch_label"></div></button></div>
+  </footer>
+</main>
+</body>
+</html>

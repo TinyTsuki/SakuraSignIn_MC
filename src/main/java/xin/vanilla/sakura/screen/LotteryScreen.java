@@ -21,27 +21,24 @@ import xin.vanilla.sakura.client.SakuraClientPreferences;
 import xin.vanilla.sakura.client.SakuraClientState;
 import xin.vanilla.sakura.client.gui.RewardRenderer;
 import xin.vanilla.sakura.client.gui.lottery.LotteryLayout;
+import xin.vanilla.sakura.client.gui.lottery.LotteryArtwork;
 import xin.vanilla.sakura.client.gui.lottery.LotteryPaymentViewModel;
 import xin.vanilla.sakura.client.ui.LotteryUiSession;
 import xin.vanilla.sakura.client.ui.SakuraUiPages;
-import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.config.reward.RewardConfigManager;
 import xin.vanilla.sakura.data.lottery.*;
 import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.network.packet.LotteryDrawRequestPacket;
 import xin.vanilla.sakura.network.packet.LotteryQuoteRequestPacket;
 import xin.vanilla.sakura.reward.Reward;
-import xin.vanilla.sakura.reward.lottery.LotteryRewardService;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public final class LotteryScreen extends BaniraScreen implements UiPageSource {
     private LotteryUiSession lotteryUiSession;
     private final Object uiConnection = Minecraft.getInstance() == null ? null : Minecraft.getInstance().getConnection();
-    private String selectedCount = "";
     private UiPageState lotteryPageState;
     private Double pendingDescriptionScroll;
     private final LotteryPaymentViewModel payment = new LotteryPaymentViewModel(
@@ -51,7 +48,11 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
     private final NotificationDetailViewport infoViewport = new NotificationDetailViewport();
     private final NotificationDetailViewport descriptionViewport = new NotificationDetailViewport();
     private LotteryLayout layout;
-    private DropdownSelectWidget poolSelect, countSelect, animationSelect;
+    private final List<ButtonWidget> poolButtons = new ArrayList<>();
+    private List<LotteryPool> railPools = List.of();
+    private List<LotteryArtwork> railArt = List.of();
+    private int poolOffset;
+    private ScrollbarWidget poolScrollbar;
     private ButtonWidget singleDrawButton, batchDrawButton;
     private String selectedPoolId = "";
     private int previewScrollRows;
@@ -94,34 +95,7 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
             }
 
             public void pool(String id) {
-                selectedPoolId = id;
-                SakuraClientPreferences.lastLotteryPoolId(id);
-                previewScrollRows = 0;
-                infoViewport.reset();
-                descriptionViewport.reset();
-                pendingDescriptionScroll = null;
-                prepareSelection();
-            }
-
-            public List<String> counts() {
-                return batchCounts();
-            }
-
-            public String count() {
-                return selectedCount;
-            }
-
-            public void count(String value) {
-                selectedCount = value;
-                selectPayment();
-            }
-
-            public LotteryAnimationStyle animation() {
-                return ClientConfig.get().display().lotteryAnimationStyle();
-            }
-
-            public void animation(LotteryAnimationStyle value) {
-                setAnimation(value);
+                selectPool(id);
             }
 
             public long generation() {
@@ -142,22 +116,18 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
     private void prepareSelection() {
         if (selectedPoolId.isEmpty()) selectedPoolId = SakuraClientPreferences.lastLotteryPoolId();
         validateSelection();
-        List<String> values = batchCounts();
-        if (!values.contains(selectedCount)) selectedCount = values.get(0);
         selectPayment();
     }
 
-    private List<String> batchCounts() {
-        List<String> values = drawCounts(selectedPool()).stream().filter(value -> !"1".equals(value)).collect(Collectors.toCollection(ArrayList::new));
-        if (values.isEmpty()) values.add("1");
-        return values;
-    }
-
-    private static void setAnimation(LotteryAnimationStyle style) {
-        if (style != ClientConfig.get().display().lotteryAnimationStyle()) {
-            ClientConfig.get().display().lotteryAnimationStyle(style);
-            ClientConfig.save();
-        }
+    private void selectPool(String id) {
+        if (payment.isDrawing() || selectedPoolId.equals(id)) return;
+        selectedPoolId = id;
+        SakuraClientPreferences.lastLotteryPoolId(id);
+        previewScrollRows = 0;
+        infoViewport.reset();
+        descriptionViewport.reset();
+        pendingDescriptionScroll = null;
+        prepareSelection();
     }
 
     @Override
@@ -182,17 +152,22 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
             previewScrollRows = (int) lotteryPageState.rowPosition() / Math.max(1, (layout.preview().width() - 10) / 34);
             pendingDescriptionScroll = lotteryPageState.detailScroll();
         }
-        poolSelect = dropdown(layout.pool());
+        poolButtons.clear();
+        for (int i = 0; i < layout.poolRows(); i++) {
+            int index = i;
+            ButtonWidget button = new ButtonWidget(this);
+            button.bounds(bounds(layout.poolRow(i)));
+            button.onClick(ignored -> {
+                int actual = poolOffset + index;
+                if (actual < railPools.size()) selectPool(railPools.get(actual).getId());
+            });
+            addWidget(button);
+            poolButtons.add(button);
+        }
+        poolScrollbar = scrollbar(value -> setPoolOffset((int) Math.round(value)));
+        LotteryLayout.Rect rail = layout.pool();
+        poolScrollbar.bounds(new ScreenCoordinate(rail.right() - 5, rail.y(), 5, rail.height()));
         refreshPoolOptions();
-        poolSelect.onSelectionChanged(values -> {
-            selectedPoolId = values.isEmpty() ? "" : values.get(0);
-            SakuraClientPreferences.lastLotteryPoolId(selectedPoolId);
-            previewScrollRows = 0;
-            infoViewport.reset();
-            descriptionViewport.reset();
-            pendingDescriptionScroll = null;
-            configureCountOptions();
-        });
 
         singleDrawButton = new ButtonWidget(this);
         singleDrawButton.bounds(bounds(layout.single()));
@@ -201,25 +176,12 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
         singleDrawButton.enabled(false);
         addWidget(singleDrawButton);
 
-        countSelect = dropdown(layout.count());
-        countSelect.onSelectionChanged(values -> {
-            selectedCount = values.isEmpty() ? "1" : values.get(0);
-            selectPayment();
-        });
         batchDrawButton = new ButtonWidget(this);
         batchDrawButton.bounds(bounds(layout.batch()));
         batchDrawButton.text(SakuraComponent.get().transClient("word", "lottery_batch_draw"));
         batchDrawButton.onClick(button -> payment.click(batchCount()));
         batchDrawButton.enabled(false);
         addWidget(batchDrawButton);
-
-        animationSelect = dropdown(layout.animation());
-        animationSelect.optionsEnum(LotteryAnimationStyle.class);
-        animationSelect.selectedValues(Collections.singletonList(ClientConfig.get().display().lotteryAnimationStyle().name()));
-        animationSelect.onSelectionChanged(values -> {
-            if (values.isEmpty()) return;
-            setAnimation(LotteryAnimationStyle.valueOf(values.get(0)));
-        });
 
         ButtonWidget closeButton = new ButtonWidget(this);
         closeButton.presetStyleClose().radius(3).padding(1);
@@ -229,16 +191,8 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
         previewScrollbar = scrollbar(value -> previewScrollRows = (int) Math.round(value));
         infoScrollbar = scrollbar(infoViewport::scrollTo);
         descriptionScrollbar = scrollbar(descriptionViewport::scrollTo);
-        configureCountOptions();
+        updateDrawButtons();
         displayedGeneration = SakuraClientState.getLotteryRequests().getGeneration();
-    }
-
-    private DropdownSelectWidget dropdown(LotteryLayout.Rect area) {
-        DropdownSelectWidget widget = new DropdownSelectWidget(this);
-        widget.inputMode(DropdownInputMode.SELECTION_ONLY);
-        widget.bounds(bounds(area));
-        addWidget(widget);
-        return widget;
     }
 
     private ScrollbarWidget scrollbar(java.util.function.Consumer<Double> changed) {
@@ -257,13 +211,26 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
             displayedGeneration = generation;
             validateSelection();
             refreshPoolOptions();
-            configureCountOptions();
+            selectPayment();
         }
         payment.tick();
-        singleDrawButton.enabled(payment.canDraw(1));
-        batchDrawButton.enabled(payment.canDraw(batchCount()));
-        poolSelect.enabled(!payment.isDrawing());
-        countSelect.enabled(!payment.isDrawing());
+        updateDrawButtons();
+    }
+
+    private void updateDrawButtons() {
+        LotteryPool pool = selectedPool();
+        boolean single = pool != null && pool.isSingleDraw();
+        int batch = pool == null ? 0 : pool.getBatchSize();
+        singleDrawButton.visible(single);
+        singleDrawButton.enabled(single && payment.canDraw(1));
+        batchDrawButton.visible(batch > 1);
+        batchDrawButton.enabled(batch > 1 && payment.canDraw(batch));
+        batchDrawButton.text(SakuraComponent.get().transClient("format", "lottery_draw_count_s", batch));
+        for (int i = 0; i < poolButtons.size(); i++) {
+            ButtonWidget button = poolButtons.get(i);
+            int actual = poolOffset + i;
+            button.enabled(actual < railPools.size() && !payment.isDrawing());
+        }
     }
 
     private void validateSelection() {
@@ -277,12 +244,34 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
     }
 
     private void refreshPoolOptions() {
-        poolSelect.optionEntries(pools().stream().map(pool -> new DropdownOption(
-                        pool.getId(), pool.getDisplayName(), net.minecraft.world.item.ItemStack.EMPTY, null,
-                        SakuraComponent.get().transClient("format", "lottery_pool_tooltip_sss",
-                                policyName(pool), pool.getMaxDraws(), pool.getCooldownSeconds())))
-                .collect(Collectors.toList()));
-        poolSelect.selectedValues(selectedPoolId.isEmpty() ? Collections.emptyList() : Collections.singletonList(selectedPoolId));
+        railPools = List.copyOf(pools());
+        railArt = railPools.stream().map(LotteryArtwork::resolve).toList();
+        int selected = 0;
+        for (int i = 0; i < railPools.size(); i++)
+            if (railPools.get(i).getId().equals(selectedPoolId)) selected = i;
+        setPoolOffset(Math.min(selected, Math.max(0, railPools.size() - poolButtons.size())));
+    }
+
+    private void setPoolOffset(int offset) {
+        int maximum = Math.max(0, railPools.size() - poolButtons.size());
+        poolOffset = Math.max(0, Math.min(offset, maximum));
+        poolScrollbar.maxValue(maximum).visibleSize(poolButtons.size()).visible(maximum > 0);
+        if ((int) Math.round(poolScrollbar.value()) != poolOffset) poolScrollbar.setValue(poolOffset);
+        for (int i = 0; i < poolButtons.size(); i++) poolButtons.get(i).visible(poolOffset + i < railPools.size());
+    }
+
+    private void drawPoolRail(GuiGraphics stack, double mouseX, double mouseY) {
+        for (int i = 0; i < poolButtons.size() && poolOffset + i < railPools.size(); i++) {
+            LotteryLayout.Rect row = layout.poolRow(i);
+            int index = poolOffset + i;
+            LotteryPool pool = railPools.get(index);
+            if (pool.getId().equals(selectedPoolId)) stack.fill(row.x(), row.y() + 2, row.x() + 2, row.bottom() - 2, getEffectiveTheme().textPrimary());
+            railArt.get(index).render(stack, row.x() + 5, row.y() + 3, 29, row.height() - 6, 17);
+            String title = pool.getDisplayName();
+            int room = row.width() - 41;
+            stack.drawString(font, font.plainSubstrByWidth(title, room), row.x() + 37, row.y() + 10, getEffectiveTheme().textPrimary(), false);
+            if (row.contains(mouseX, mouseY)) tooltip(stack, title);
+        }
     }
 
     @Override
@@ -298,6 +287,14 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
             previewScrollbar.visible(false);
             descriptionScrollbar.visible(false);
         } else {
+            LotteryLayout.Rect heading = layout.heading(), poster = layout.poster();
+            shape(stack, poster.x(), poster.y(), poster.width(), poster.height(), getEffectiveTheme().buttonBgHover(), 5, 0);
+            int index = railPools.indexOf(pool);
+            if (index >= 0) railArt.get(index).render(stack, poster.x() + 4, poster.y() + 4,
+                    poster.width() - 8, poster.height() - 8, 82);
+            stack.drawString(font, font.plainSubstrByWidth(pool.getDisplayName(), heading.width()),
+                    heading.x(), heading.y(), getEffectiveTheme().textPrimary(), false);
+            if (heading.contains(mouseX, mouseY)) tooltip(stack, pool.getDisplayName());
             String details = SakuraComponent.get().translateClient("format", "lottery_pool_details_sss",
                     policyName(pool), pool.getMaxDraws(), pool.getCooldownSeconds());
             String fee = payment.summary();
@@ -313,11 +310,9 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
             renderParagraph(stack, layout.description(), descriptionViewport, descriptionScrollbar,
                     pool.getDescription(), getEffectiveTheme().textPrimary());
             renderPreview(stack, pool);
-            if (!dropdownOpen() && layout.pool().contains(inputState.mouseX(), inputState.mouseY())
-                    && font.width(pool.getDisplayName()) > layout.pool().width() - 30)
-                tooltip(stack, pool.getDisplayName());
         }
         renderWidgets(stack, partialTicks);
+        drawPoolRail(stack, mouseX, mouseY);
     }
 
     private void renderParagraph(GuiGraphics stack, LotteryLayout.Rect area,
@@ -386,7 +381,11 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
 
     @Override
     protected void onMouseScrolled(MouseScrolledHandleArgs event) {
-        if (dropdownOpen()) return;
+        if (layout.pool().contains(event.mouseX(), event.mouseY())) {
+            setPoolOffset(poolOffset - (int) Math.signum(event.delta()));
+            event.consumed(true);
+            return;
+        }
         if (infoViewport.contains(event.mouseX(), event.mouseY())) {
             infoViewport.scrollBy(-event.delta());
             event.consumed(true);
@@ -399,14 +398,10 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
         }
     }
 
-    private boolean dropdownOpen() {
-        return poolSelect.dropdownOpen() || countSelect.dropdownOpen() || animationSelect.dropdownOpen();
-    }
-
     private void deferRewardTooltip(GuiGraphics stack, LotteryPool pool, Reward reward,
                                     LotteryPreviewMode mode, int x, int y) {
         double mx = inputState.mouseX(), my = inputState.mouseY();
-        if (dropdownOpen() || !layout.preview().contains(mx, my) || mx < x || mx >= x + 18 || my < y || my >= y + 18)
+        if (!layout.preview().contains(mx, my) || mx < x || mx >= x + 18 || my < y || my >= y + 18)
             return;
         List<String> lines = new ArrayList<>();
         if (mode.showsItems()) lines.add(xin.vanilla.sakura.api.reward.client.SakuraRewardClient.displayName(
@@ -427,38 +422,23 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
                 FontDrawArgs.ofPopo(Text.literal(text).stack(s.pose())).x(mx).y(my), getEffectiveTheme(), season()));
     }
 
-    private void configureCountOptions() {
-        if (countSelect == null) return;
-        List<String> values = batchCounts();
-        countSelect.optionEntries(values.stream().map(value -> new DropdownOption(value,
-                "all".equals(value) ? SakuraComponent.get().translateClient("word", "lottery_draw_all")
-                        : SakuraComponent.get().translateClient("format", "lottery_draw_count_s", value),
-                net.minecraft.world.item.ItemStack.EMPTY, null, null)).collect(Collectors.toList()));
-        selectedCount = values.contains(selectedCount) ? selectedCount : values.get(0);
-        countSelect.selectedValues(Collections.singletonList(selectedCount));
-        selectPayment();
-    }
-
     private int batchCount() {
-        String count = selectedCount.isEmpty() ? "1" : selectedCount;
-        return "all".equals(count) ? -1 : Integer.parseInt(count);
+        LotteryPool pool = selectedPool();
+        return pool == null ? 0 : pool.getBatchSize();
     }
 
     private void selectPayment() {
-        payment.select(selectedPoolId, batchCount());
+        LotteryPool pool = selectedPool();
+        if (pool == null) payment.select("", 1, false);
+        else payment.select(selectedPoolId, pool.getBatchSize() > 1 ? pool.getBatchSize() : 1, pool.isSingleDraw());
     }
 
     static List<String> drawCounts(LotteryPool pool) {
-        List<String> values = new ArrayList<>();
-        values.add("1");
-        if (pool == null) return values;
-        int max = pool.getLimitPolicy() == LotteryLimitPolicy.UNLIMITED ? LotteryRewardService.MAX_BATCH_DRAWS
-                : pool.getLimitPolicy() == LotteryLimitPolicy.COOLDOWN ? 1 : Math.min(pool.getMaxDraws(), LotteryRewardService.MAX_BATCH_DRAWS);
-        for (int count = 5; count <= max; count += 5) values.add(String.valueOf(count));
-        if (max > 1 && max % 5 != 0) values.add(String.valueOf(max));
-        if (max > 1 && pool.getLimitPolicy() != LotteryLimitPolicy.UNLIMITED && pool.getLimitPolicy() != LotteryLimitPolicy.COOLDOWN)
-            values.add("all");
-        return values;
+        if (pool == null) return List.of();
+        List<String> counts = new ArrayList<>();
+        if (pool.isSingleDraw()) counts.add("1");
+        if (pool.getBatchSize() > 1) counts.add(String.valueOf(pool.getBatchSize()));
+        return counts;
     }
 
     private LotteryPool selectedPool() {

@@ -18,6 +18,11 @@ public class LotteryPool {
     private int maxDraws = 1;
     private int cooldownSeconds;
     private LotteryPreviewMode previewMode = LotteryPreviewMode.ALL;
+    private LotteryAnimationStyle animationStyle = LotteryAnimationStyle.STRIP;
+    private boolean singleDraw = true;
+    private int batchSize;
+    private String artworkItem = "";
+    private String artworkTexture = "";
     private RewardList rewards = new RewardList();
 
     public LotteryPool(String id, String displayName, LotteryLimitPolicy limitPolicy,
@@ -35,5 +40,12 @@ public class LotteryPool {
                        RewardList rewards) {
         this(id, displayName, limitPolicy, maxDraws, cooldownSeconds, rewards);
         this.previewMode = previewMode == null ? LotteryPreviewMode.ALL : previewMode;
+    }
+    public boolean allowsCount(int count) {
+        return count == 1 ? singleDraw : batchSize >= 2 && count == batchSize;
+    }
+
+    public int defaultDrawCount() {
+        return singleDraw ? 1 : batchSize;
     }
 }

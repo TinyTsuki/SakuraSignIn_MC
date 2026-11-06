@@ -101,6 +101,26 @@ public final class LotteryPoolForm {
                 Arrays.stream(LotteryPreviewMode.values()).map(mode -> option(
                                 mode.name(), "lottery_preview_" + mode.name().toLowerCase()))
                         .toArray(DropdownOption[]::new)));
+        args.addWidget(dropdown("animationStyle", "lottery_animation",
+                (existing == null ? xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.STRIP : existing.getAnimationStyle()).name(),
+                Arrays.stream(xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.values()).map(style -> option(
+                                style.name(), "enum_lottery_animation_style_" + style.name().toLowerCase(java.util.Locale.ROOT)))
+                        .toArray(DropdownOption[]::new)));
+        args.addWidget(dropdown("singleDraw", "lottery_allow_single",
+                existing == null || existing.isSingleDraw() ? "true" : "false",
+                option("true", "lottery_single_enabled"), option("false", "lottery_single_disabled")));
+        args.addWidget(number("batchSize", "lottery_batch_count", "lottery_batch_rule_hint",
+                existing == null ? 0 : existing.getBatchSize(), 0, LotteryPoolValidator.MAX_BATCH_SIZE));
+        args.addWidget(new InputFormScreen.Widget().name("artworkItem").title(text("lottery_artwork_item"))
+                .type(InputFormScreen.WidgetType.PICKER).allowEmpty(true).maxLength(LotteryPoolValidator.MAX_ARTWORK_ID)
+                .defaultValue(existing == null ? "" : existing.getArtworkItem())
+                .picker((screen, selected) -> ItemRewardSelectionFlow.create(screen, net.minecraft.world.item.ItemStack.EMPTY,
+                        stack -> selected.accept(stack.isEmpty() ? "" : net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()).toString()), false))
+                .validator(result -> LotteryPoolValidator.isArtworkItem(result.value()) ? "" : tr("input_format_invalid")));
+        args.addWidget(new InputFormScreen.Widget().name("artworkTexture").title(text("lottery_artwork_texture"))
+                .tooltip(text("lottery_artwork_texture_hint")).allowEmpty(true).maxLength(LotteryPoolValidator.MAX_ARTWORK_ID)
+                .defaultValue(existing == null ? "" : existing.getArtworkTexture())
+                .validator(result -> LotteryPoolValidator.isArtworkTexture(result.value()) ? "" : tr("input_format_invalid")));
         args.setCallback(results -> {
             LotteryPool candidate = new LotteryPool(results.value("id"), results.value("name"),
                     LotteryLimitPolicy.valueOf(results.value("policy")),
@@ -110,7 +130,17 @@ public final class LotteryPoolForm {
                     existing == null ? new RewardList() : existing.getRewards());
             candidate.setDescription(results.value("description"));
             candidate.setVoucherExpression(results.value("voucherExpression"));
-            if (!LotteryPoolValidator.validate(candidate).isEmpty()) {
+            candidate.setAnimationStyle(xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.valueOf(results.value("animationStyle")));
+            candidate.setSingleDraw(Boolean.parseBoolean(results.value("singleDraw")));
+            candidate.setBatchSize(Integer.parseInt(results.value("batchSize")));
+            candidate.setArtworkItem(results.value("artworkItem"));
+            candidate.setArtworkTexture(results.value("artworkTexture"));
+            var errors = LotteryPoolValidator.validate(candidate);
+            if (errors.contains("invalid_draw_modes")) {
+                results.runningResult(tr("lottery_batch_rule_invalid"));
+                return;
+            }
+            if (!errors.isEmpty()) {
                 results.runningResult(tr("input_format_invalid"));
                 return;
             }

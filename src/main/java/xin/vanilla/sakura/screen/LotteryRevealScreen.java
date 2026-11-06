@@ -39,7 +39,7 @@ import java.util.List;
 
 public final class LotteryRevealScreen extends BaniraScreen implements UiPageSource {
     private final LotteryRevealPacket packet;
-    private final LotteryAnimationStyle style = ClientConfig.get().display().lotteryAnimationStyle();
+    private final LotteryAnimationStyle style;
     private final Object uiConnection = Minecraft.getInstance() == null ? null : Minecraft.getInstance().getConnection();
     private final LotteryRevealUiSession revealSession;
     private UiPageState revealPageState;
@@ -50,6 +50,7 @@ public final class LotteryRevealScreen extends BaniraScreen implements UiPageSou
 
     public LotteryRevealScreen(Screen parent, LotteryRevealPacket packet) {
         super(SakuraComponent.get().transClient("word", "lottery_result"));
+        this.style = packet.getAnimationStyle();
         this.packet = packet;
         revealSession = new LotteryRevealUiSession(packet, style, () -> System.nanoTime() / 1_000_000,
                 () -> uiConnection == Minecraft.getInstance().getConnection(),

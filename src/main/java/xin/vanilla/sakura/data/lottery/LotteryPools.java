@@ -29,6 +29,11 @@ public final class LotteryPools {
                 pool.getMaxDraws(), pool.getCooldownSeconds(), pool.getPreviewMode(),
                 new RewardList(pool.getRewards()).clone());
         result.setDescription(pool.getDescription());
+        result.setAnimationStyle(pool.getAnimationStyle());
+        result.setSingleDraw(pool.isSingleDraw());
+        result.setBatchSize(pool.getBatchSize());
+        result.setArtworkItem(pool.getArtworkItem());
+        result.setArtworkTexture(pool.getArtworkTexture());
         result.setVoucherExpression(pool.getVoucherExpression());
         return result;
     }

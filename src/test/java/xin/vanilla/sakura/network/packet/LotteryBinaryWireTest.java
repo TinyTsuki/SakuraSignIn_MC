@@ -89,10 +89,11 @@ public class LotteryBinaryWireTest {
     public void hiddenWeightsAreNotLeakedOrMutatedByReveal() {
         Reward reward = Reward.getDefault().setProbability(new BigDecimal("7"));
         LotteryRevealPacket packet = new LotteryRevealPacket(SESSION + "-1", TOKEN, "Daily",
-                Collections.singletonList(reward), Collections.singletonList(reward), LotteryPreviewMode.ITEMS_ONLY);
+                Collections.singletonList(reward), Collections.singletonList(reward), LotteryPreviewMode.ITEMS_ONLY, LotteryAnimationStyle.ROULETTE);
         try (Wire wire = new Wire()) {
             packet.toBytes(wire);
             LotteryRevealPacket decoded = new LotteryRevealPacket(wire);
+            assertEquals(LotteryAnimationStyle.ROULETTE, decoded.getAnimationStyle());
             assertEquals(BigDecimal.ONE, decoded.getWinner().getProbability());
             assertEquals(BigDecimal.ONE, decoded.getPreview().get(0).getProbability());
         }

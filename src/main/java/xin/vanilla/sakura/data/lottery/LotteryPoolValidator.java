@@ -10,6 +10,19 @@ public final class LotteryPoolValidator {
     public static final int MAX_DESCRIPTION = 2048;
     public static final int MAX_VOUCHER_EXPRESSION = 4096;
 
+    public static final int MAX_BATCH_SIZE = 100;
+    public static final int MAX_ARTWORK_ID = 128;
+
+    public static boolean isArtworkItem(String id) {
+        return id != null && id.length() <= MAX_ARTWORK_ID
+                && (id.isEmpty() || id.matches("[a-z0-9_.-]+:[a-z0-9_/-]+"));
+    }
+
+    public static boolean isArtworkTexture(String id) {
+        return id != null && id.length() <= MAX_ARTWORK_ID && (id.isEmpty()
+                || id.matches("[a-z0-9_.-]+:textures/lottery/(?:[a-z0-9_-]+/)*[a-z0-9_-]+[.]png"));
+    }
+
     private LotteryPoolValidator() {
     }
 
@@ -61,6 +74,15 @@ public final class LotteryPoolValidator {
         if (pool.getCooldownSeconds() < 0 || pool.getCooldownSeconds() > 31_536_000) {
             errors.add("invalid_cooldown");
         }
+        int batch = pool.getBatchSize();
+        if (batch < 0 || batch == 1 || batch > MAX_BATCH_SIZE || !pool.isSingleDraw() && batch == 0
+                || batch > pool.getMaxDraws() && pool.getLimitPolicy() != LotteryLimitPolicy.UNLIMITED
+                && pool.getLimitPolicy() != LotteryLimitPolicy.COOLDOWN) {
+            errors.add("invalid_draw_modes");
+        }
+        if (pool.getAnimationStyle() == null) errors.add("animation_required");
+        if (!isArtworkItem(pool.getArtworkItem()) || !isArtworkTexture(pool.getArtworkTexture()))
+            errors.add("invalid_artwork");
         if (pool.getRewards() == null || pool.getRewards().size() > 256) {
             errors.add("invalid_rewards");
         }

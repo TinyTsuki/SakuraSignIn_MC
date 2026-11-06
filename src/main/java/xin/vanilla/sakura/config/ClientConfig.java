@@ -9,7 +9,6 @@ import xin.vanilla.banira.common.config.ConfigScope;
 import xin.vanilla.banira.common.config.annotation.Config;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
 import xin.vanilla.sakura.SakuraSignIn;
-import xin.vanilla.sakura.data.lottery.LotteryAnimationStyle;
 import xin.vanilla.sakura.util.GLFWKeyHelper;
 
 import java.util.ArrayList;
@@ -95,10 +94,6 @@ public class ClientConfig implements ConfigData {
         private boolean autoRewarded = false;
         @ConfigEntry.Gui.Tooltip(zh_cn = "每次打开签到界面时显示操作提示", en_us = "Show instructions each time the sign-in screen is opened")
         private boolean showSignInScreenTips = true;
-        @ConfigEntry.Gui.Tooltip(
-                zh_cn = "领取抽奖奖励时使用的客户端动画\n不会影响服务端抽取结果",
-                en_us = "Client animation used when revealing lottery rewards\nDoes not affect the server result")
-        private LotteryAnimationStyle lotteryAnimationStyle = LotteryAnimationStyle.STRIP;
     }
 
     public static class RewardKeysCategory {

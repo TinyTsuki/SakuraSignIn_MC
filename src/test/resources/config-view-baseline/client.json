@@ -24,18 +24,6 @@
       "permissionKey": null,
       "keyChords": false
     },
-    "display.lotteryAnimationStyle": {
-      "type": "ENUM",
-      "default": "STRIP",
-      "min": null,
-      "max": null,
-      "precision": 2,
-      "enum": "xin.vanilla.sakura.data.lottery.LotteryAnimationStyle",
-      "permission": "INHERIT",
-      "permissionLevel": null,
-      "permissionKey": null,
-      "keyChords": false
-    },
     "display.showLastReward": {
       "type": "BOOLEAN",
       "default": false,
@@ -245,7 +233,6 @@
   "unbound": {
     "display.autoRewarded": false,
     "display.interfaceThemeMode": "SPRING",
-    "display.lotteryAnimationStyle": "STRIP",
     "display.showLastReward": false,
     "display.showNextReward": false,
     "display.showSignInScreenTips": true,
@@ -290,7 +277,6 @@
   "defaults": {
     "display.autoRewarded": false,
     "display.interfaceThemeMode": "SPRING",
-    "display.lotteryAnimationStyle": "STRIP",
     "display.showLastReward": false,
     "display.showNextReward": false,
     "display.showSignInScreenTips": true,
@@ -335,7 +321,6 @@
   "changed": {
     "display.autoRewarded": true,
     "display.interfaceThemeMode": "SUMMER",
-    "display.lotteryAnimationStyle": "CARDS",
     "display.showLastReward": true,
     "display.showNextReward": true,
     "display.showSignInScreenTips": false,

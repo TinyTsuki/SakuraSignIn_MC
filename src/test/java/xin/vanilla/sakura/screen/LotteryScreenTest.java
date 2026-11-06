@@ -12,27 +12,12 @@ import static org.junit.Assert.assertFalse;
 
 public class LotteryScreenTest {
     @Test
-    public void cooldownPoolOnlyOffersOneDraw() {
-        LotteryPool pool = new LotteryPool("pool", "Pool", LotteryLimitPolicy.COOLDOWN, 1, 600, new RewardList());
-        assertEquals(Arrays.asList("1"), LotteryScreen.drawCounts(pool));
-    }
-
-    @Test
-    public void finitePoolOffersPresetCountsExactMaximumAndAll() {
-        LotteryPool pool = new LotteryPool("pool", "Pool", LotteryLimitPolicy.WEEKLY,
-                12, 0, new RewardList());
-
-        assertEquals(Arrays.asList("1", "5", "10", "12", "all"),
-                LotteryScreen.drawCounts(pool));
-    }
-
-    @Test
-    public void unlimitedPoolDoesNotPretendToHaveACompleteAllDraw() {
-        LotteryPool pool = new LotteryPool("pool", "Pool", LotteryLimitPolicy.UNLIMITED,
-                1, 0, new RewardList());
-
-        assertFalse(LotteryScreen.drawCounts(pool).contains("all"));
-        assertEquals("100", LotteryScreen.drawCounts(pool)
-                .get(LotteryScreen.drawCounts(pool).size() - 1));
+    public void onlyConfiguredModesAppear() {
+        LotteryPool pool = new LotteryPool("pool", "Pool", LotteryLimitPolicy.WEEKLY, 100, 0, new RewardList());
+        assertEquals(java.util.List.of("1"), LotteryScreen.drawCounts(pool));
+        pool.setBatchSize(7);
+        assertEquals(java.util.List.of("1", "7"), LotteryScreen.drawCounts(pool));
+        pool.setSingleDraw(false);
+        assertEquals(java.util.List.of("7"), LotteryScreen.drawCounts(pool));
     }
 }

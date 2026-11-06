@@ -21,9 +21,18 @@ public final class LotteryRevealPacket implements INetworkPacket {
     private final String operationId, poolName, token;
     private final List<Reward> winners, preview;
     private final LotteryPreviewMode previewMode;
+    private final xin.vanilla.sakura.data.lottery.LotteryAnimationStyle animationStyle;
 
     public LotteryRevealPacket(String operationId, String token, String poolName, List<Reward> winners,
                                List<Reward> preview, LotteryPreviewMode previewMode) {
+        this(operationId, token, poolName, winners, preview, previewMode,
+                xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.STRIP);
+    }
+
+    public LotteryRevealPacket(String operationId, String token, String poolName, List<Reward> winners,
+                               List<Reward> preview, LotteryPreviewMode previewMode,
+                               xin.vanilla.sakura.data.lottery.LotteryAnimationStyle animationStyle) {
+        this.animationStyle = java.util.Objects.requireNonNull(animationStyle);
         this.operationId = LotteryProtocolLimits.operationId(operationId);
         this.token = LotteryProtocolLimits.token(token);
         this.poolName = LotteryProtocolLimits.text(poolName, 96);
@@ -54,6 +63,7 @@ public final class LotteryRevealPacket implements INetworkPacket {
         if (previewMode == null || !previewMode.showsItems() && !values.isEmpty())
             throw new IllegalArgumentException("Unexpected hidden lottery preview");
         preview = copy(values, !previewMode.showsProbabilities());
+        animationStyle = buffer.readEnum(xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.class);
     }
 
     public List<Reward> getWinners() {
@@ -75,6 +85,7 @@ public final class LotteryRevealPacket implements INetworkPacket {
         buffer.writeVarInt(preview.size());
         preview.forEach(reward -> LotteryPacketFields.writeReward(buffer, reward, budget));
         buffer.writeEnum(previewMode);
+        buffer.writeEnum(animationStyle);
     }
 
     public static void handle(LotteryRevealPacket packet, BaniraNetworkContext context) {

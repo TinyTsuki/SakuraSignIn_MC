@@ -53,7 +53,7 @@ public final class LotteryDrawDispatcher {
                                    LotteryDrawBatchResult result) {
         SakuraNetwork.sendToPlayer(new LotteryRevealPacket(pending.getOperationId(), pending.getToken(),
                 result.getPool().getDisplayName(), result.getRewards(), preview(result),
-                result.getPool().getPreviewMode()), player);
+                result.getPool().getPreviewMode(), result.getPool().getAnimationStyle()), player);
     }
 
     private static void notifySuccess(ServerPlayer player, LotteryDrawBatchResult result) {

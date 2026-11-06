@@ -84,6 +84,11 @@ public final class RewardConfigCodec {
             object.addProperty("maxDraws", pool.getMaxDraws());
             object.addProperty("cooldownSeconds", pool.getCooldownSeconds());
             object.addProperty("previewMode", pool.getPreviewMode().name());
+            object.addProperty("animationStyle", pool.getAnimationStyle().name());
+            object.addProperty("singleDraw", pool.isSingleDraw());
+            object.addProperty("batchSize", pool.getBatchSize());
+            object.addProperty("artworkItem", pool.getArtworkItem());
+            object.addProperty("artworkTexture", pool.getArtworkTexture());
             JsonArray rewards = new JsonArray();
             pool.getRewards().forEach(reward -> {
                 JsonElement encoded = RewardJsonCodec.encode(reward);
@@ -491,6 +496,22 @@ public final class RewardConfigCodec {
                 rewards
         );
         pool.setDescription(requiredString(object, "description"));
+        if (object.has("animationStyle")) pool.setAnimationStyle(
+                xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.valueOf(requiredString(object, "animationStyle")));
+        if (object.has("singleDraw")) {
+            JsonElement value = object.get("singleDraw");
+            if (!value.isJsonPrimitive() || !value.getAsJsonPrimitive().isBoolean())
+                throw new IOException("Invalid lottery single draw");
+            pool.setSingleDraw(value.getAsBoolean());
+        }
+        if (object.has("batchSize")) {
+            JsonElement value = object.get("batchSize");
+            if (!value.isJsonPrimitive() || !value.getAsJsonPrimitive().isNumber() || !value.getAsString().matches("[0-9]{1,3}"))
+                throw new IOException("Invalid lottery batch size");
+            pool.setBatchSize(value.getAsInt());
+        }
+        if (object.has("artworkItem")) pool.setArtworkItem(requiredString(object, "artworkItem"));
+        if (object.has("artworkTexture")) pool.setArtworkTexture(requiredString(object, "artworkTexture"));
         pool.setVoucherExpression(requiredString(object, "voucherExpression"));
         return pool;
     }

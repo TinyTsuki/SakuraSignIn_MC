@@ -36,12 +36,15 @@ public final class LotteryCommand {
                                 })
                                 .executes(context -> draw(
                                         context.getSource().getPlayerOrException(),
-                                        StringArgumentType.getString(context, "pool"), "1"))
+                                        StringArgumentType.getString(context, "pool"), null))
                                 .then(Commands.argument("count", StringArgumentType.word())
                                         .suggests((context, builder) -> {
-                                            for (String value : new String[]{"1", "5", "10", "15", "all"}) {
-                                                builder.suggest(value);
-                                            }
+                                            xin.vanilla.sakura.data.lottery.LotteryPools.find(
+                                                    RewardConfigManager.getRewardConfig().getLotteryPools(),
+                                                    StringArgumentType.getString(context, "pool")).ifPresent(pool -> {
+                                                if (pool.isSingleDraw()) builder.suggest(1);
+                                                if (pool.getBatchSize() > 1) builder.suggest(pool.getBatchSize());
+                                            });
                                             return builder.buildFuture();
                                         })
                                         .executes(context -> draw(
@@ -67,16 +70,17 @@ public final class LotteryCommand {
     }
 
     private static int draw(ServerPlayer player, String poolId, String countText) {
+        var pool = xin.vanilla.sakura.data.lottery.LotteryPools.find(RewardConfigManager.getRewardConfig().getLotteryPools(), poolId);
         int count;
         try {
-            count = "all".equalsIgnoreCase(countText) ? -1 : Integer.parseInt(countText);
+            count = countText == null ? pool.map(value -> value.defaultDrawCount()).orElse(1) : Integer.parseInt(countText);
         } catch (NumberFormatException ignored) {
             SakuraMessages.send(player, SakuraComponent.get().trans(
                     player, "word", "lottery_invalid_count"));
             return 0;
         }
-        if (count != -1 && (count < 1
-                || count > xin.vanilla.sakura.reward.lottery.LotteryRewardService.MAX_BATCH_DRAWS)) {
+        if (count < 1 || count > xin.vanilla.sakura.data.lottery.LotteryPoolValidator.MAX_BATCH_SIZE
+                || pool.isPresent() && !pool.get().allowsCount(count)) {
             SakuraMessages.send(player, SakuraComponent.get().trans(
                     player, "word", "lottery_invalid_count"));
             return 0;

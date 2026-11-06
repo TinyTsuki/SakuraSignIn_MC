@@ -86,8 +86,7 @@ public final class LotteryOperation {
                 && stage != Stage.ROLLED_BACK && stage != Stage.UNCERTAIN))) invalidStage();
         if (count < 1 || count > 100 || createdAt < 0 || !pool.getId().equals(request.getRequest().getPoolId())
                 || (request.getRequest().getCount() != -1 && request.getRequest().getCount() != count)
-                || ((pool.getLimitPolicy() == LotteryLimitPolicy.COOLDOWN || pool.getCooldownSeconds() > 0)
-                && count != 1) || eligible(pool).isEmpty()) {
+                || eligible(pool).isEmpty()) {
             throw new IllegalArgumentException("Invalid lottery draw snapshot");
         }
         if (grantedCount < 0 || grantedCount > count || (!rewards.isEmpty() && rewards.size() != count)

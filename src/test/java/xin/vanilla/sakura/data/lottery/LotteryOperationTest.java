@@ -28,6 +28,7 @@ public class LotteryOperationTest {
                 new RewardList(Arrays.asList(new Reward(one, SakuraRewardTypes.EXPERIENCE_POINT),
                         new Reward(two, SakuraRewardTypes.EXPERIENCE_POINT))));
         pool.setVoucherExpression("xpPoints(2)");
+        pool.setBatchSize(2);
         return pool;
     }
 

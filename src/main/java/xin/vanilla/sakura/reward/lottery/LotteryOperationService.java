@@ -89,8 +89,10 @@ public final class LotteryOperationService {
             if (blocked.contains(id) || !repository.incomplete(id).isEmpty() || !hasRewards(pool))
                 return rejected(request, LotteryQuote.Status.PAYMENT_UNAVAILABLE, revision);
             LotteryPool snapshot = LotteryPools.copy(pool);
+            if (!snapshot.allowsCount(request.getCount()))
+                return rejected(request, LotteryQuote.Status.PAYMENT_UNAVAILABLE, revision);
             int count = capacity(player, snapshot, runtime.costs(player));
-            if (count < 1 || request.getCount() > count)
+            if (request.getCount() > count)
                 return rejected(request, LotteryQuote.Status.PAYMENT_UNAVAILABLE, revision);
             String token = LotteryProtocolLimits.token(tokens.get());
             tickets.put(id, new Ticket(request, token, snapshot, nanos.getAsLong()));
@@ -133,7 +135,7 @@ public final class LotteryOperationService {
 
     public LotteryDrawBatchResult commandDraw(Object player, String poolId, int count) {
         requireOwner();
-        if (count != -1 && (count < 1 || count > 100)) return failed(LotteryDrawStatus.PAYMENT_UNAVAILABLE, null);
+        if (count < 1 || count > 100) return failed(LotteryDrawStatus.PAYMENT_UNAVAILABLE, null);
         if (!live(player) || !runtime.permitted(player)) return failed(LotteryDrawStatus.PAYMENT_UNAVAILABLE, null);
         UUID id = runtime.playerId(player);
         try {
@@ -152,10 +154,11 @@ public final class LotteryOperationService {
         if (blocked.contains(id) || !repository.incomplete(id).isEmpty())
             return failed(LotteryDrawStatus.OPERATION_PENDING, pool);
         if (!hasRewards(pool)) return failed(LotteryDrawStatus.EMPTY_POOL, pool);
+        if (!pool.allowsCount(request.getRequest().getCount())) return failed(LotteryDrawStatus.PAYMENT_UNAVAILABLE, pool);
         CostAccess access = runtime.costs(player);
         int available = capacity(player, pool, access), requested = request.getRequest().getCount();
         if (available < 1 || requested > available) return failed(LotteryDrawStatus.PAYMENT_UNAVAILABLE, pool);
-        int count = requested == -1 ? available : requested;
+        int count = requested;
         LotteryOperation operation = LotteryOperation.prepare(id, request, pool, count, seed.getAsLong(), clock.getAsLong(),
                 tokens.get(), runtime.quota(player, pool.getId()), zone);
         repository.write(operation);
@@ -371,8 +374,7 @@ public final class LotteryOperationService {
         LotteryLimitResult limit = LotteryDrawLimiter.evaluate(pool, runtime.quota(player, pool.getId()), clock.getAsLong(), zone);
         if (!limit.isAllowed()) return 0;
         int upper = Math.min(100, limit.getRemainingDraws());
-        if (pool.getLimitPolicy() == LotteryLimitPolicy.COOLDOWN || pool.getCooldownSeconds() > 0)
-            upper = Math.min(1, upper);
+        upper = Math.min(upper, Math.max(pool.defaultDrawCount(), pool.getBatchSize()));
         CostRequirement requirement = BaniraCosts.parse(pool.getVoucherExpression());
         int lo = 0, hi = upper;
         while (lo < hi) {
