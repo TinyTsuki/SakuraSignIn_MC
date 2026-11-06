@@ -205,10 +205,10 @@ public final class LotteryUiSession implements UiPageSession {
         String fee = payment.summary();
         String cost = pool == null || fee == null ? "\u2014" : fee.isEmpty() ? tr("lottery_free").toString() : fee;
         LotteryQuote quote = payment.quote();
-        boolean ready = !payment.isPending() && !payment.isDrawing() && quote != null && quote.isReady()
+        boolean ready = !payment.isWaitingForQuote() && !payment.isDrawing() && quote != null && quote.isReady()
                 && quote.getGeneration() == port.generation() && pool != null && quote.getRequest().getPoolId().equals(pool.getId());
         String state = pool == null ? "lottery_no_pools" : payment.isDrawing() ? "lottery_drawing"
-                : payment.isPending() || quote == null ? "lottery_quote_pending"
+                : payment.isWaitingForQuote() || quote == null ? "lottery_quote_pending"
                 : ready ? "" : switch (quote.getStatus()) {
             case FORBIDDEN -> "lottery_permission_denied";
             case STALE_GENERATION -> "lottery_configuration_changed";
@@ -217,7 +217,7 @@ public final class LotteryUiSession implements UiPageSession {
         };
         String text = state.isEmpty() ? "" : tr(state).toString();
         String available = ready ? String.valueOf(quote.getAvailableCount()) : "\u2014";
-        boolean single = pool != null && payment.canDraw(1), batch = pool != null && payment.canDraw(batchCount());
+        boolean single = pool != null && payment.canOfferDraw(1), batch = pool != null && payment.canOfferDraw(batchCount());
         String stamp = List.of(text, cost, available, single, batch, payment.isDrawing()).toString();
         if (stamp.equals(displayedStatus)) return;
         displayedStatus = stamp;
