@@ -1,6 +1,5 @@
 package xin.vanilla.sakura.client.gui.lottery;
 
-import net.minecraft.client.Minecraft;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.Font;
 import net.minecraft.resources.ResourceLocation;
@@ -27,8 +26,7 @@ public record LotteryArtwork(ResourceLocation texture, ItemStack item, int image
         if (uploaded != null)
             return new LotteryArtwork(uploaded.id(), ItemStack.EMPTY, uploaded.width(), uploaded.height());
         ResourceLocation texture = pool == null || pool.getArtworkTexture().isEmpty() ? null : ResourceLocation.tryParse(pool.getArtworkTexture());
-        Minecraft client = Minecraft.getInstance();
-        if (texture != null && (client == null || client.getResourceManager().getResource(texture).isEmpty()))
+        if (texture != null && !xin.vanilla.banira.client.util.TextureUtils.isTextureAvailable(texture))
             texture = null;
         ItemStack item = pool == null || pool.getArtworkItem().isEmpty() ? ItemStack.EMPTY
                 : xin.vanilla.banira.common.util.ItemUtils.deserializeItemStack(pool.getArtworkItem());

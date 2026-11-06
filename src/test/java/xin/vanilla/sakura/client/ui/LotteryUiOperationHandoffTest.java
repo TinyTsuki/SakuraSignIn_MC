@@ -265,7 +265,7 @@ public class LotteryUiOperationHandoffTest {
     public void poolFormDraftsSurviveBackendHandoffWithEveryMetadataField() {
         LotteryPool pool = new Port().daily;
         pool.setArtworkTexture("test:textures/lottery/spring.png");
-        net.minecraft.client.gui.screens.Screen parent = new net.minecraft.client.gui.screens.Screen(net.minecraft.network.chat.Component.empty()) {
+        net.minecraft.client.gui.screens.Screen parent = new net.minecraft.client.gui.screens.Screen(new net.minecraft.network.chat.TextComponent("")) {
         };
         var form = (xin.vanilla.banira.client.gui.InputFormScreen) xin.vanilla.sakura.client.gui.LotteryPoolForm.create(parent, pool, value -> {
         });
