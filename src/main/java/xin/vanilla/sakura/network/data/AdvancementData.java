@@ -23,6 +23,12 @@ import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 @Data
 @Accessors(chain = true)
 public class AdvancementData {
+    private static final String NO_ICON_ID = "minecraft:air";
+
+    private static final class EmptyIcon {
+        private static final ItemStackTemplate TEMPLATE = new ItemStackTemplate(Items.STRUCTURE_VOID);
+    }
+
     @NonNull
     private final Identifier id;
     @NonNull
@@ -50,9 +56,9 @@ public class AdvancementData {
         Identifier itemId = Identifier.parse(buffer.readUtf());
         int count = buffer.readVarInt();
         var item = BuiltInRegistries.ITEM.get(itemId);
-        ItemStackTemplate icon = item.isPresent()
+        ItemStackTemplate icon = count > 0 && item.isPresent() && item.get().value() != Items.AIR
                 ? new ItemStackTemplate(item.get(), count, net.minecraft.core.component.DataComponentPatch.EMPTY)
-                : new ItemStackTemplate(Items.AIR);
+                : EmptyIcon.TEMPLATE;
         Component title = Component.literal(buffer.readUtf());
         Component description = Component.literal(buffer.readUtf());
         String background = buffer.readUtf();
@@ -73,24 +79,31 @@ public class AdvancementData {
     }
 
     public static DisplayInfo createDisplayInfo(String title) {
-        return createDisplayInfo(title, "", new ItemStack(Items.AIR));
+        return createDisplayInfo(title, "", ItemStack.EMPTY);
     }
 
     public static DisplayInfo createDisplayInfo(String title, String description) {
-        return createDisplayInfo(title, description, new ItemStack(Items.AIR));
+        return createDisplayInfo(title, description, ItemStack.EMPTY);
     }
 
     public static DisplayInfo createDisplayInfo(String title, String description, ItemStack itemStack) {
-        return new DisplayInfo(itemStack.isEmpty() ? new ItemStackTemplate(Items.AIR) : ItemStackTemplate.fromNonEmptyStack(itemStack)
+        return new DisplayInfo(itemStack.isEmpty() ? EmptyIcon.TEMPLATE : ItemStackTemplate.fromNonEmptyStack(itemStack)
                 , SakuraComponent.get().literal(title).toVanilla(), SakuraComponent.get().literal(description).toVanilla()
                 , java.util.Optional.empty(), AdvancementType.TASK
                 , false, false, false);
     }
 
+    public ItemStack iconStack() {
+        ItemStackTemplate icon = displayInfo.getIcon();
+        return icon == EmptyIcon.TEMPLATE ? ItemStack.EMPTY : icon.create();
+    }
+
     public void writeToBuffer(BaniraPacketBuffer buffer) {
         buffer.writeIdentifier(BaniraIdentifier.of(id.getNamespace(), id.getPath()));
-        buffer.writeUtf(displayInfo.getIcon().typeHolder().unwrapKey().orElseThrow().identifier().toString());
-        buffer.writeVarInt(displayInfo.getIcon().count());
+        ItemStackTemplate icon = displayInfo.getIcon();
+        boolean missing = icon == EmptyIcon.TEMPLATE;
+        buffer.writeUtf(missing ? NO_ICON_ID : icon.typeHolder().unwrapKey().orElseThrow().identifier().toString());
+        buffer.writeVarInt(missing ? 0 : icon.count());
         buffer.writeUtf(displayInfo.getTitle().getString());
         buffer.writeUtf(displayInfo.getDescription().getString());
         buffer.writeUtf(displayInfo.getBackground().map(asset -> asset.id().toString()).orElse(""));
