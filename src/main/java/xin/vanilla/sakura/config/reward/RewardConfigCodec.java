@@ -85,8 +85,13 @@ public final class RewardConfigCodec {
             object.addProperty("cooldownSeconds", pool.getCooldownSeconds());
             object.addProperty("previewMode", pool.getPreviewMode().name());
             object.addProperty("animationStyle", pool.getAnimationStyle().name());
-            object.addProperty("singleDraw", pool.isSingleDraw());
-            object.addProperty("batchSize", pool.getBatchSize());
+            JsonArray counts = new JsonArray();
+            pool.getDrawCounts().forEach(counts::add);
+            object.add("drawCounts", counts);
+            if (!pool.getStartDate().isEmpty()) object.addProperty("startDate", pool.getStartDate());
+            if (!pool.getEndDate().isEmpty()) object.addProperty("endDate", pool.getEndDate());
+            if (!pool.getThumbnailPng().isEmpty()) object.addProperty("thumbnailPng", pool.getThumbnailPng());
+            if (!pool.getPosterPng().isEmpty()) object.addProperty("posterPng", pool.getPosterPng());
             object.addProperty("artworkItem", pool.getArtworkItem());
             object.addProperty("artworkTexture", pool.getArtworkTexture());
             JsonArray rewards = new JsonArray();
@@ -279,12 +284,16 @@ public final class RewardConfigCodec {
         if (document.getLotteryPools().size() > 128) {
             throw new IOException("Too many lottery pools");
         }
+        long artworkPixels = 0;
         for (LotteryPool pool : document.getLotteryPools()) {
             List<String> errors = LotteryPoolValidator.validate(pool);
             if (!errors.isEmpty() || !lotteryIds.add(pool.getId())) {
                 throw new IOException("Invalid lottery pool "
                         + (pool == null ? "" : pool.getId()) + ": " + errors);
             }
+            artworkPixels += xin.vanilla.sakura.data.lottery.LotteryPng.inspect(pool.getThumbnailPng())
+                    + xin.vanilla.sakura.data.lottery.LotteryPng.inspect(pool.getPosterPng());
+            if (artworkPixels > 8_000_000) throw new IOException("Lottery artwork exceeds pixel budget");
             for (Reward reward : pool.getRewards()) {
                 validateReward(reward, pool.getId());
             }
@@ -510,6 +519,22 @@ public final class RewardConfigCodec {
                 throw new IOException("Invalid lottery batch size");
             pool.setBatchSize(value.getAsInt());
         }
+        if (object.has("drawCounts")) {
+            JsonElement value = object.get("drawCounts");
+            if (!value.isJsonArray() || value.getAsJsonArray().size() > LotteryPoolValidator.MAX_DRAW_OPTIONS)
+                throw new IOException("Invalid lottery draw counts");
+            List<Integer> counts = new ArrayList<>();
+            for (JsonElement count : value.getAsJsonArray()) {
+                if (!count.isJsonPrimitive() || !count.getAsJsonPrimitive().isNumber() || !count.getAsString().matches("[1-9][0-9]{0,2}"))
+                    throw new IOException("Invalid lottery draw count");
+                counts.add(count.getAsInt());
+            }
+            pool.setDrawCounts(counts);
+        }
+        if (object.has("startDate")) pool.setStartDate(requiredString(object, "startDate"));
+        if (object.has("endDate")) pool.setEndDate(requiredString(object, "endDate"));
+        if (object.has("thumbnailPng")) pool.setThumbnailPng(requiredString(object, "thumbnailPng"));
+        if (object.has("posterPng")) pool.setPosterPng(requiredString(object, "posterPng"));
         if (object.has("artworkItem")) pool.setArtworkItem(requiredString(object, "artworkItem"));
         if (object.has("artworkTexture")) pool.setArtworkTexture(requiredString(object, "artworkTexture"));
         pool.setVoucherExpression(requiredString(object, "voucherExpression"));

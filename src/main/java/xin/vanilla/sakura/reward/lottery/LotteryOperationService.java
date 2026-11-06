@@ -85,6 +85,7 @@ public final class LotteryOperationService {
         tickets.remove(id);
         LotteryPool pool = runtime.pool(request.getPoolId());
         if (pool == null) return rejected(request, LotteryQuote.Status.POOL_NOT_FOUND, revision);
+        if (!isOpen(pool)) return rejected(request, LotteryQuote.Status.POOL_CLOSED, revision);
         try {
             if (blocked.contains(id) || !repository.incomplete(id).isEmpty() || !hasRewards(pool))
                 return rejected(request, LotteryQuote.Status.PAYMENT_UNAVAILABLE, revision);
@@ -153,13 +154,15 @@ public final class LotteryOperationService {
         UUID id = runtime.playerId(player);
         if (blocked.contains(id) || !repository.incomplete(id).isEmpty())
             return failed(LotteryDrawStatus.OPERATION_PENDING, pool);
+        if (!isOpen(pool)) return failed(LotteryDrawStatus.POOL_CLOSED, pool);
         if (!hasRewards(pool)) return failed(LotteryDrawStatus.EMPTY_POOL, pool);
-        if (!pool.allowsCount(request.getRequest().getCount())) return failed(LotteryDrawStatus.PAYMENT_UNAVAILABLE, pool);
+        if (!pool.allowsCount(request.getRequest().getCount()))
+            return failed(LotteryDrawStatus.PAYMENT_UNAVAILABLE, pool);
         CostAccess access = runtime.costs(player);
         int available = capacity(player, pool, access), requested = request.getRequest().getCount();
         if (available < 1 || requested > available) return failed(LotteryDrawStatus.PAYMENT_UNAVAILABLE, pool);
         int count = requested;
-        LotteryOperation operation = LotteryOperation.prepare(id, request, pool, count, seed.getAsLong(), clock.getAsLong(),
+        LotteryOperation operation = LotteryOperation.prepare(id, request, LotteryPools.settlementCopy(pool), count, seed.getAsLong(), clock.getAsLong(),
                 tokens.get(), runtime.quota(player, pool.getId()), zone);
         repository.write(operation);
         operation = operation.paying();
@@ -172,7 +175,7 @@ public final class LotteryOperationService {
                         LotteryOperation op = value.operation;
                         return live(value.player) && runtime.permitted(value.player)
                                 && generation.getAsLong() == op.getRequest().getRequest().getGeneration()
-                                && op.getPool().equals(runtime.pool(op.getPool().getId()))
+                                && op.getPool().equals(LotteryPools.settlementCopy(runtime.pool(op.getPool().getId())))
                                 && op.getQuotaBefore().equals(runtime.quota(value.player, op.getPool().getId()))
                                 ? CostFailure.NONE : CostFailure.CONFIGURATION_UNAVAILABLE;
                     }
@@ -284,18 +287,21 @@ public final class LotteryOperationService {
         return result;
     }
 
-    public void acknowledge(Object player, String operationId, String token) {
+    public LotteryOperation acknowledge(Object player, String operationId, String token) {
         requireOwner();
-        if (!live(player)) return;
+        if (!live(player)) return null;
         UUID id = runtime.playerId(player);
         try {
             LotteryOperation operation = repository.load(id, operationId);
             if (operation != null && operation.getStage() == LotteryOperation.Stage.COMPLETED
-                    && operation.getDisplayToken().equals(token) && !operation.isAcknowledged())
+                    && operation.getDisplayToken().equals(token) && !operation.isAcknowledged()) {
                 repository.write(operation.acknowledge());
+                return operation;
+            }
         } catch (IOException | RuntimeException failure) {
             unavailable(id, failure);
         }
+        return null;
     }
 
     public void recover(Object player) {
@@ -368,6 +374,10 @@ public final class LotteryOperationService {
     private boolean hasRewards(LotteryPool pool) {
         return pool.getRewards().stream().anyMatch(reward -> reward != null && !reward.isDisabled()
                 && reward.getProbability().signum() > 0);
+    }
+
+    private boolean isOpen(LotteryPool pool) {
+        return pool.isOpen(java.time.Instant.ofEpochMilli(clock.getAsLong()).atZone(zone).toLocalDate());
     }
 
     private int capacity(Object player, LotteryPool pool, CostAccess access) {

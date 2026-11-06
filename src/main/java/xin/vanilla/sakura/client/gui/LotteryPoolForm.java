@@ -66,11 +66,11 @@ public final class LotteryPoolForm {
                 .defaultValue(existing == null ? "" : existing.getDescription()));
         args.addWidget(new InputFormScreen.Widget().name("voucherExpression")
                 .title(text("lottery_voucher_expression")).hint(text("lottery_voucher_expression"))
-                .tooltip(text("lottery_voucher_item"))
+                .tooltip(text("lottery_voucher_expression_hint"))
                 .type(InputFormScreen.WidgetType.PICKER)
                 .picker((screen, selected) -> ItemRewardSelectionFlow.create(screen,
-                        net.minecraft.world.item.ItemStack.EMPTY, stack -> net.minecraft.client.Minecraft.getInstance()
-                                .setScreen(voucherItemForm(screen, stack, selected)), false))
+                        net.minecraft.world.item.ItemStack.EMPTY, stack ->
+                                selected.accept(LotteryVoucherExpressions.item(stack, Math.max(1, stack.getCount()), false))))
                 .maxLength(LotteryPoolValidator.MAX_VOUCHER_EXPRESSION).allowEmpty(true)
                 .defaultValue(existing == null ? "" : existing.getVoucherExpression())
                 .validator(result -> {
@@ -92,7 +92,7 @@ public final class LotteryPoolForm {
                         .toArray(DropdownOption[]::new)));
         args.addWidget(number("maxDraws", "lottery_max_draws",
                 "lottery_max_draws_tooltip",
-                existing == null ? 1 : existing.getMaxDraws(), 1, 10_000));
+                existing == null ? 10 : existing.getMaxDraws(), 1, 10_000));
         args.addWidget(number("cooldown", "lottery_cooldown_seconds",
                 "lottery_cooldown_tooltip",
                 existing == null ? 0 : existing.getCooldownSeconds(), 0, 31_536_000));
@@ -106,21 +106,32 @@ public final class LotteryPoolForm {
                 Arrays.stream(xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.values()).map(style -> option(
                                 style.name(), "enum_lottery_animation_style_" + style.name().toLowerCase(java.util.Locale.ROOT)))
                         .toArray(DropdownOption[]::new)));
-        args.addWidget(dropdown("singleDraw", "lottery_allow_single",
-                existing == null || existing.isSingleDraw() ? "true" : "false",
-                option("true", "lottery_single_enabled"), option("false", "lottery_single_disabled")));
-        args.addWidget(number("batchSize", "lottery_batch_count", "lottery_batch_rule_hint",
-                existing == null ? 0 : existing.getBatchSize(), 0, LotteryPoolValidator.MAX_BATCH_SIZE));
+        args.addWidget(new InputFormScreen.Widget().name("drawCounts").title(text("lottery_batch_count"))
+                .hint(text("lottery_draw_counts_hint")).tooltip(text("lottery_draw_counts_hint")).maxLength(64)
+                .defaultValue(existing == null ? "1,10" : existing.getDrawCounts().stream()
+                        .map(String::valueOf).collect(java.util.stream.Collectors.joining(",")))
+                .validator(result -> {
+                    try {
+                        LotteryPoolValidator.parseDrawCounts(result.value());
+                        return "";
+                    } catch (IllegalArgumentException failure) {
+                        return tr("lottery_draw_counts_invalid");
+                    }
+                }));
+        args.addWidget(date("startDate", "lottery_start_date", existing == null ? "" : existing.getStartDate()));
+        args.addWidget(date("endDate", "lottery_end_date", existing == null ? "" : existing.getEndDate()));
         args.addWidget(new InputFormScreen.Widget().name("artworkItem").title(text("lottery_artwork_item"))
                 .type(InputFormScreen.WidgetType.PICKER).allowEmpty(true).maxLength(LotteryPoolValidator.MAX_ARTWORK_ID)
                 .defaultValue(existing == null ? "" : existing.getArtworkItem())
                 .picker((screen, selected) -> ItemRewardSelectionFlow.create(screen, net.minecraft.world.item.ItemStack.EMPTY,
-                        stack -> selected.accept(stack.isEmpty() ? "" : net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()).toString()), false))
+                        stack -> selected.accept(stack.isEmpty() ? "" : net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()).toString())))
                 .validator(result -> LotteryPoolValidator.isArtworkItem(result.value()) ? "" : tr("input_format_invalid")));
         args.addWidget(new InputFormScreen.Widget().name("artworkTexture").title(text("lottery_artwork_texture"))
                 .tooltip(text("lottery_artwork_texture_hint")).allowEmpty(true).maxLength(LotteryPoolValidator.MAX_ARTWORK_ID)
                 .defaultValue(existing == null ? "" : existing.getArtworkTexture())
                 .validator(result -> LotteryPoolValidator.isArtworkTexture(result.value()) ? "" : tr("input_format_invalid")));
+        addImageField(args, "thumbnail", "lottery_thumbnail_png", existing == null ? "" : existing.getThumbnailPng());
+        addImageField(args, "poster", "lottery_poster_png", existing == null ? "" : existing.getPosterPng());
         args.setCallback(results -> {
             LotteryPool candidate = new LotteryPool(results.value("id"), results.value("name"),
                     LotteryLimitPolicy.valueOf(results.value("policy")),
@@ -131,13 +142,25 @@ public final class LotteryPoolForm {
             candidate.setDescription(results.value("description"));
             candidate.setVoucherExpression(results.value("voucherExpression"));
             candidate.setAnimationStyle(xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.valueOf(results.value("animationStyle")));
-            candidate.setSingleDraw(Boolean.parseBoolean(results.value("singleDraw")));
-            candidate.setBatchSize(Integer.parseInt(results.value("batchSize")));
+            candidate.setDrawCounts(LotteryPoolValidator.parseDrawCounts(results.value("drawCounts")));
+            candidate.setStartDate(results.value("startDate").trim());
+            candidate.setEndDate(results.value("endDate").trim());
+            try {
+                candidate.setThumbnailPng(image(results, "thumbnail", existing == null ? "" : existing.getThumbnailPng()));
+                candidate.setPosterPng(image(results, "poster", existing == null ? "" : existing.getPosterPng()));
+            } catch (java.io.IOException | IllegalArgumentException failure) {
+                results.runningResult(tr("lottery_png_invalid"));
+                return;
+            }
             candidate.setArtworkItem(results.value("artworkItem"));
             candidate.setArtworkTexture(results.value("artworkTexture"));
             var errors = LotteryPoolValidator.validate(candidate);
             if (errors.contains("invalid_draw_modes")) {
                 results.runningResult(tr("lottery_batch_rule_invalid"));
+                return;
+            }
+            if (errors.contains("invalid_dates")) {
+                results.runningResult(tr("lottery_date_invalid"));
                 return;
             }
             if (!errors.isEmpty()) {
@@ -149,28 +172,28 @@ public final class LotteryPoolForm {
         return new InputFormScreen(args);
     }
 
-    private static Screen voucherItemForm(Screen parent, net.minecraft.world.item.ItemStack stack,
-                                          Consumer<String> selected) {
-        Consumer<String> connectedSelected = connectedOnce(selected);
-        InputFormScreen.Args args = new InputFormScreen.Args().setParentScreen(parent)
-                .setHeaderTitle(text("lottery_voucher_item"));
-        args.addWidget(dropdown("match", "lottery_voucher_match", "ID",
-                option("ID", "lottery_voucher_match_id"),
-                option("EXACT", "lottery_voucher_match_exact")));
-        args.addWidget(new InputFormScreen.Widget().name("amount")
-                .title(text("lottery_voucher_amount")).hint(text("lottery_voucher_amount"))
-                .maxLength(10).regex("[0-9]{1,10}")
-                .defaultValue(String.valueOf(stack.getCount()))
-                .validator(result -> {
-                    try {
-                        return Integer.parseInt(result.value()) > 0 ? "" : tr("lottery_number_range");
-                    } catch (NumberFormatException failure) {
-                        return tr("lottery_number_range");
-                    }
-                }));
-        args.setCallback(results -> connectedSelected.accept(LotteryVoucherExpressions.item(stack,
-                Integer.parseInt(results.value("amount")), "EXACT".equals(results.value("match")))));
-        return new InputFormScreen(args);
+    private static InputFormScreen.Widget date(String name, String title, String value) {
+        return new InputFormScreen.Widget().name(name).title(text(title)).tooltip(text("lottery_date_hint"))
+                .maxLength(10).allowEmpty(true).defaultValue(value)
+                .validator(result -> LotteryPoolValidator.validDate(result.value().trim()) ? "" : tr("lottery_date_invalid"));
+    }
+
+    private static void addImageField(InputFormScreen.Args args, String name, String title, String current) {
+        args.addWidget(new InputFormScreen.Widget().name(name).title(text(title)).tooltip(text("lottery_png_hint"))
+                .type(InputFormScreen.WidgetType.FILE).fileFilter("png").allowEmpty(true).maxLength(2048).defaultValue(""));
+        if (!current.isEmpty()) args.addWidget(dropdown(name + "Existing", title, "keep",
+                option("keep", "lottery_png_keep"), option("remove", "lottery_png_remove")));
+    }
+
+    private static String image(InputFormScreen.Results values, String name, String current) throws java.io.IOException {
+        String path = values.value(name);
+        if (path.isBlank())
+            return !current.isEmpty() && "remove".equals(values.value(name + "Existing")) ? "" : current;
+        try (var input = java.nio.file.Files.newInputStream(java.nio.file.Path.of(path))) {
+            byte[] bytes = input.readNBytes(xin.vanilla.sakura.data.lottery.LotteryPng.MAX_BYTES + 1);
+            xin.vanilla.sakura.data.lottery.LotteryPng.inspect(bytes);
+            return java.util.Base64.getEncoder().encodeToString(bytes);
+        }
     }
 
     private static <T> Consumer<T> connectedOnce(Consumer<T> callback) {

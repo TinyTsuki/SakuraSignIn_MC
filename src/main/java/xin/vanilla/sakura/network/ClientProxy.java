@@ -37,6 +37,7 @@ public class ClientProxy {
 
     public static void clearLotteryTransfers() {
         LOTTERY.clear();
+        xin.vanilla.sakura.client.gui.lottery.LotteryArtworkCache.retain(java.util.List.of());
     }
 
     public static void expireMonthTransfers() {
@@ -168,8 +169,9 @@ public class ClientProxy {
         }
         if (complete == null || !SakuraClientState.getLotteryRequests().observeGeneration(complete.getGeneration()))
             return;
-        RewardConfigManager.getRewardConfig().setLotteryPools(
-                complete.getPools());
+        var pools = complete.getPools();
+        xin.vanilla.sakura.client.gui.lottery.LotteryArtworkCache.retain(pools);
+        RewardConfigManager.getRewardConfig().setLotteryPools(pools);
         RewardConfigManager.setRewardOptionDataChanged(true);
         RewardConfigManager.saveRewardOption();
     }

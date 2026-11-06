@@ -54,7 +54,8 @@ public class LotteryMetadataValidationTest {
     public void copiesMetadataWithoutSharingRewards() {
         LotteryPool original = pool("Line one\nLine two", "xpPoints(2)||score(\"coins\",3)");
         LotteryPool copy = LotteryPools.copy(original);
-        assertEquals(GSON.toJson(original), GSON.toJson(copy));
+        assertEquals(original, copy);
+        assertEquals(original.getDrawCounts(), copy.getDrawCounts());
         assertEquals("Line one\nLine two", GSON.toJsonTree(copy).getAsJsonObject()
                 .get("description").getAsString());
         assertEquals("xpPoints(2)||score(\"coins\",3)", GSON.toJsonTree(copy).getAsJsonObject()

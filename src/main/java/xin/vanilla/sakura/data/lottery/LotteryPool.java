@@ -19,8 +19,16 @@ public class LotteryPool {
     private int cooldownSeconds;
     private LotteryPreviewMode previewMode = LotteryPreviewMode.ALL;
     private LotteryAnimationStyle animationStyle = LotteryAnimationStyle.STRIP;
+    @lombok.EqualsAndHashCode.Exclude
     private boolean singleDraw = true;
+    @lombok.EqualsAndHashCode.Exclude
     private int batchSize;
+    @lombok.EqualsAndHashCode.Exclude
+    private java.util.List<Integer> drawCounts;
+    private String startDate = "";
+    private String endDate = "";
+    private String thumbnailPng = "";
+    private String posterPng = "";
     private String artworkItem = "";
     private String artworkTexture = "";
     private RewardList rewards = new RewardList();
@@ -41,11 +49,53 @@ public class LotteryPool {
         this(id, displayName, limitPolicy, maxDraws, cooldownSeconds, rewards);
         this.previewMode = previewMode == null ? LotteryPreviewMode.ALL : previewMode;
     }
+
+    @lombok.EqualsAndHashCode.Include
+    private java.util.List<Integer> effectiveCounts() {
+        return getDrawCounts();
+    }
+
+    public java.util.List<Integer> getDrawCounts() {
+        if (drawCounts != null) return drawCounts;
+        if (singleDraw) return batchSize > 1 ? java.util.List.of(1, batchSize) : java.util.List.of(1);
+        return batchSize > 1 ? java.util.List.of(batchSize) : java.util.List.of();
+    }
+
+    public void setDrawCounts(java.util.List<Integer> counts) {
+        drawCounts = java.util.List.copyOf(counts);
+        singleDraw = drawCounts.contains(1);
+        batchSize = drawCounts.stream().mapToInt(Integer::intValue).filter(count -> count > 1).max().orElse(0);
+    }
+
+    public boolean isSingleDraw() {
+        return getDrawCounts().contains(1);
+    }
+
+    public int getBatchSize() {
+        return drawCounts == null ? batchSize : drawCounts.stream().mapToInt(Integer::intValue)
+                .filter(count -> count > 1).max().orElse(0);
+    }
+
+    public void setSingleDraw(boolean allowed) {
+        drawCounts = null;
+        singleDraw = allowed;
+    }
+
+    public void setBatchSize(int count) {
+        drawCounts = null;
+        batchSize = count;
+    }
+
     public boolean allowsCount(int count) {
-        return count == 1 ? singleDraw : batchSize >= 2 && count == batchSize;
+        return getDrawCounts().contains(count);
     }
 
     public int defaultDrawCount() {
-        return singleDraw ? 1 : batchSize;
+        return getDrawCounts().stream().mapToInt(Integer::intValue).min().orElse(0);
+    }
+
+    public boolean isOpen(java.time.LocalDate day) {
+        return (startDate.isEmpty() || !day.isBefore(java.time.LocalDate.parse(startDate)))
+                && (endDate.isEmpty() || !day.isAfter(java.time.LocalDate.parse(endDate)));
     }
 }

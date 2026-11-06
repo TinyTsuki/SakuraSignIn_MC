@@ -23,6 +23,37 @@ public final class LotteryPoolValidator {
                 || id.matches("[a-z0-9_.-]+:textures/lottery/(?:[a-z0-9_-]+/)*[a-z0-9_-]+[.]png"));
     }
 
+    public static final int MAX_DRAW_OPTIONS = 12;
+
+    public static List<Integer> parseDrawCounts(String text) {
+        if (text == null || text.length() > 64) throw new IllegalArgumentException("Invalid draw counts");
+        List<Integer> counts = new ArrayList<>();
+        for (String part : text.split(",", -1)) {
+            String value = part.trim();
+            if (!value.matches("[1-9][0-9]{0,2}")) throw new IllegalArgumentException("Invalid draw count");
+            counts.add(Integer.parseInt(value));
+        }
+        validateCounts(counts);
+        return List.copyOf(counts);
+    }
+
+    public static void validateCounts(List<Integer> counts) {
+        if (counts.isEmpty() || counts.size() > MAX_DRAW_OPTIONS
+                || counts.stream().anyMatch(count -> count < 1 || count > MAX_BATCH_SIZE)
+                || new java.util.HashSet<>(counts).size() != counts.size())
+            throw new IllegalArgumentException("Invalid draw counts");
+    }
+
+    public static boolean validDate(String value) {
+        if (value == null) return false;
+        if (value.isEmpty()) return true;
+        try {
+            return value.matches("[0-9]{4}-[0-9]{2}-[0-9]{2}") && java.time.LocalDate.parse(value).getYear() > 0;
+        } catch (java.time.DateTimeException ignored) {
+            return false;
+        }
+    }
+
     private LotteryPoolValidator() {
     }
 
@@ -74,11 +105,22 @@ public final class LotteryPoolValidator {
         if (pool.getCooldownSeconds() < 0 || pool.getCooldownSeconds() > 31_536_000) {
             errors.add("invalid_cooldown");
         }
-        int batch = pool.getBatchSize();
-        if (batch < 0 || batch == 1 || batch > MAX_BATCH_SIZE || !pool.isSingleDraw() && batch == 0
-                || batch > pool.getMaxDraws() && pool.getLimitPolicy() != LotteryLimitPolicy.UNLIMITED
-                && pool.getLimitPolicy() != LotteryLimitPolicy.COOLDOWN) {
+        try {
+            validateCounts(pool.getDrawCounts());
+            if (pool.getLimitPolicy() != LotteryLimitPolicy.UNLIMITED && pool.getLimitPolicy() != LotteryLimitPolicy.COOLDOWN
+                    && pool.getDrawCounts().stream().anyMatch(count -> count > pool.getMaxDraws()))
+                errors.add("invalid_draw_modes");
+        } catch (IllegalArgumentException failure) {
             errors.add("invalid_draw_modes");
+        }
+        if (!validDate(pool.getStartDate()) || !validDate(pool.getEndDate())
+                || !pool.getStartDate().isEmpty() && !pool.getEndDate().isEmpty()
+                && pool.getStartDate().compareTo(pool.getEndDate()) > 0) errors.add("invalid_dates");
+        try {
+            LotteryPng.inspect(pool.getThumbnailPng());
+            LotteryPng.inspect(pool.getPosterPng());
+        } catch (IllegalArgumentException failure) {
+            errors.add("invalid_artwork");
         }
         if (pool.getAnimationStyle() == null) errors.add("animation_required");
         if (!isArtworkItem(pool.getArtworkItem()) || !isArtworkTexture(pool.getArtworkTexture()))

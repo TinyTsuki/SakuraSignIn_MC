@@ -17,19 +17,29 @@ public class LotteryRewardConfigCodecTest {
     public void roundTripKeepsPoolMetadataAndRewards() throws Exception {
         RewardConfig source = new RewardConfig();
         source.getLotteryPools().add(new LotteryPool("daily", "Daily Draw",
-                LotteryLimitPolicy.WEEKLY, 2, 30, LotteryPreviewMode.NONE,
+                LotteryLimitPolicy.WEEKLY, 10, 30, LotteryPreviewMode.NONE,
                 new RewardList(Collections.singletonList(Reward.getDefault()))));
         LotteryPool pool = source.getLotteryPools().get(0);
-        pool.setSingleDraw(false);
-        pool.setBatchSize(2);
+        pool.setDrawCounts(java.util.List.of(2, 5, 10));
+        pool.setStartDate("2026-10-01");
+        pool.setEndDate("2026-11-01");
         pool.setAnimationStyle(LotteryAnimationStyle.CARDS);
         pool.setArtworkItem("minecraft:cherry_sapling");
         pool.setArtworkTexture("spring:textures/lottery/blossom.png");
+        pool.setThumbnailPng(png(2));
+        pool.setPosterPng(png(4));
 
         RewardConfig restored = new RewardConfigCodec().decode(
                 new RewardConfigCodec().encode(source));
 
         assertEquals(source.getLotteryPools(), restored.getLotteryPools());
+    }
+
+    private static String png(int width) throws Exception {
+        var image = new java.awt.image.BufferedImage(width, 3, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        var output = new java.io.ByteArrayOutputStream();
+        assertTrue(javax.imageio.ImageIO.write(image, "png", output));
+        return java.util.Base64.getEncoder().encodeToString(output.toByteArray());
     }
 
     @Test
@@ -39,7 +49,7 @@ public class LotteryRewardConfigCodecTest {
         config.getLotteryPools().add(new LotteryPool("daily", "Daily", LotteryLimitPolicy.DAILY, 2, 0, new RewardList()));
         var root = com.google.gson.JsonParser.parseString(codec.encode(config)).getAsJsonObject();
         var entry = root.getAsJsonArray("lotteryPools").get(0).getAsJsonObject();
-        for (String key : java.util.List.of("animationStyle", "singleDraw", "batchSize", "artworkItem", "artworkTexture"))
+        for (String key : java.util.List.of("animationStyle", "drawCounts", "artworkItem", "artworkTexture"))
             entry.remove(key);
         LotteryPool restored = codec.decode(root.toString()).getLotteryPools().get(0);
         assertTrue(restored.allowsCount(1));

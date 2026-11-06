@@ -58,6 +58,7 @@ public final class ForgeSakuraGameEventAdapter {
         MinecraftForge.EVENT_BUS.addListener(ForgeSakuraGameEventAdapter::onServerTick);
         MinecraftForge.EVENT_BUS.addListener((net.minecraftforge.event.server.ServerStoppedEvent event) -> {
             xin.vanilla.sakura.network.packet.LotteryPoolSyncPacket.clearServerTransfers();
+            xin.vanilla.sakura.reward.lottery.LotteryDrawDispatcher.clearCommands();
             xin.vanilla.sakura.reward.lottery.PendingLotteryDraws.clear();
             try {
                 xin.vanilla.sakura.internal.forge.lottery.ForgeLotteryServices.stop();
@@ -165,6 +166,7 @@ public final class ForgeSakuraGameEventAdapter {
                 || RewardManager.isSignedIn(data, SakuraClock.serverNow(), true)) {
             return;
         }
+        xin.vanilla.sakura.reward.lottery.LotteryDrawDispatcher.tickCommands(server);
         java.util.Date now = RewardManager.getCompensateDate(SakuraClock.serverNow());
         java.time.LocalDate day = now.toInstant().atZone(
                 java.time.ZoneId.systemDefault()).toLocalDate();

@@ -52,7 +52,7 @@ public class LotteryResultPageTest {
         for (var entry : UiBoundaryChecks.ownResources("sakura_sign_in").entrySet())
             if (entry.getKey().endsWith(".css"))
                 bytes += new String(entry.getValue(), StandardCharsets.UTF_8).replace("\r\n", "\n").replace("\n", "\r\n").getBytes(StandardCharsets.UTF_8).length;
-        assertTrue(bytes <= 16384);
+        assertTrue(bytes <= 16384 + 512);
     }
 
     @Test

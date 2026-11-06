@@ -18,4 +18,7 @@ body{display:flex;align-items:center;justify-content:center;font-family:default}
 .grid .row-icon{position:static}
 .grid .label,.grid .paragraph{width:100%;height:10px;overflow:hidden;text-align:center;margin:0}
 .fee-group{flex:1;min-width:0}
-#single_slot:disabled,#batch_slot:disabled,#info:disabled{display:none}
+#single_slot:disabled,#batch_slot:disabled,#batch_picker:disabled,#info:disabled{display:none}
+#batch_picker{width:33px;flex-shrink:0}
+#fee,#info{max-height:22px;overflow:hidden}
+.pool-card.selected{box-shadow:inset 0 0 0 1px var(--action)}

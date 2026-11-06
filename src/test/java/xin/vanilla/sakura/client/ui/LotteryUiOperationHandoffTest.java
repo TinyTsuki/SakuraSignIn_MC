@@ -236,10 +236,17 @@ public class LotteryUiOperationHandoffTest {
         assertFalse(view.enabled.get("batch"));
         view.actions.get("batch").run();
         assertTrue(port.draws.isEmpty());
+        assertEquals("Forbidden quotes must not trigger a second immediate request", 1, port.quotes.size());
+        port.millis += 3000;
+        session.tick();
         port.accept();
         session.tick();
         assertTrue(view.enabled.get("single"));
         view.actions.get("single").run();
+        assertTrue(port.draws.isEmpty());
+        assertEquals(1, port.quotes.get(port.quotes.size() - 1).getCount());
+        port.accept();
+        session.tick();
         assertEquals(1, port.draws.size());
         assertFalse(view.changes.containsKey("count"));
         view.actions.get("single").run();
@@ -256,7 +263,7 @@ public class LotteryUiOperationHandoffTest {
         var session = form.uiPage().session();
         var view = new RecordingUiView();
         session.bind(view);
-        assertEquals(13, view.rows.size());
+        assertEquals(16, view.rows.size());
         var description = new RecordingUiView();
         view.rows.bind(description, 2);
         assertEquals("Long\nDescription", description.draftValues.get("input"));

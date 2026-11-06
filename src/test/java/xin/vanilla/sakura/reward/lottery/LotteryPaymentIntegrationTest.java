@@ -148,6 +148,27 @@ public class LotteryPaymentIntegrationTest {
     }
 
     @Test
+    public void datesAreAuthoritativeAndAcknowledgementCannotNotifyTwice() throws Exception {
+        runtime.pool.setStartDate("2026-10-11");
+        var service = service();
+        assertEquals(LotteryQuote.Status.POOL_CLOSED, quote(service, 2).getStatus());
+        assertFalse(service.commandDraw(actor, "daily", 2).isSuccess());
+        assertEquals(10, actor.points);
+        runtime.pool.setStartDate("2026-10-10");
+        runtime.pool.setEndDate("2026-10-10");
+        service = service();
+        var ready = quote(service, 2);
+        assertTrue(ready.isReady());
+        var request = draw(ready);
+        assertTrue(service.draw(actor, request).isSuccess());
+        var completed = repository.load(actor.id, request.getOperationId());
+        assertNull(service.acknowledge(actor, request.getOperationId(), UUID.randomUUID().toString()));
+        assertNotNull(service.acknowledge(actor, request.getOperationId(), completed.getDisplayToken()));
+        assertNull(service.acknowledge(actor, request.getOperationId(), completed.getDisplayToken()));
+        assertEquals(2, runtime.grants.size());
+    }
+
+    @Test
     public void insufficientQuotaNeverSilentlyTruncatesFixedRequest() throws Exception {
         runtime.pool.setMaxDraws(1);
         LotteryQuote quote = quote(service(), 2);

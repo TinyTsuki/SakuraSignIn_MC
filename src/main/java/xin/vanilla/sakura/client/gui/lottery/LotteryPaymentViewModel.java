@@ -17,7 +17,7 @@ public final class LotteryPaymentViewModel {
     private String poolId = "", summary;
     private int count = 1;
     private int quoteCount = 1;
-    private boolean singleAllowed = true;
+    private java.util.List<Integer> allowed = java.util.List.of(1);
     private Integer intent;
     private long generation = -1, lastRequestAt;
     private boolean needsQuote;
@@ -36,11 +36,15 @@ public final class LotteryPaymentViewModel {
     }
 
     public void select(String poolId, int count, boolean singleAllowed) {
-        if (this.poolId.equals(poolId) && this.count == count && this.singleAllowed == singleAllowed) return;
-        this.singleAllowed = singleAllowed;
+        select(poolId, singleAllowed && count != 1 ? java.util.List.of(count, 1) : java.util.List.of(count));
+    }
+
+    public void select(String poolId, java.util.List<Integer> counts) {
+        if (this.poolId.equals(poolId) && allowed.equals(counts)) return;
         if (!this.poolId.equals(poolId)) summary = null;
         this.poolId = poolId;
-        this.count = count;
+        allowed = java.util.List.copyOf(counts);
+        count = counts.isEmpty() ? 1 : counts.get(0);
         quoteCount = count;
         intent = null;
         seen = null;
@@ -69,9 +73,10 @@ public final class LotteryPaymentViewModel {
                 intent = null;
                 if (quote.isReady() && quote.getRequest().getCount() == requested) draw(requested);
             }
-            if (singleAllowed && !quote.isReady() && quote.getRequest().getCount() != 1) {
-                quoteCount = 1;
-                request(1);
+            int smallest = allowed.stream().mapToInt(Integer::intValue).min().orElse(count);
+            if (quote.getStatus() == LotteryQuote.Status.PAYMENT_UNAVAILABLE && quote.getRequest().getCount() != smallest) {
+                quoteCount = smallest;
+                request(smallest);
                 return;
             }
         }
@@ -118,7 +123,7 @@ public final class LotteryPaymentViewModel {
                 && millis.getAsLong() - lastRequestAt < REFRESH_MILLIS
                 && quote != null && quote.isReady() && quote.getGeneration() == requests.getGeneration()
                 && quote.getRequest().getPoolId().equals(poolId)
-                && (requested == 1 ? singleAllowed : requested == count)
+                && allowed.contains(requested)
                 && (quote.getRequest().getCount() == requested || requested > 0 && requested <= quote.getAvailableCount());
     }
 

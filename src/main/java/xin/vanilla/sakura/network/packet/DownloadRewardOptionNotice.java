@@ -11,6 +11,16 @@ import xin.vanilla.sakura.network.SakuraNetwork;
  * 通知服务器将奖励配置文件同步到指定客户端
  */
 public class DownloadRewardOptionNotice implements INetworkPacket {
+    private static final long INTERVAL = java.util.concurrent.TimeUnit.SECONDS.toNanos(3);
+    private static final java.util.Map<Object, Long> LAST_REQUEST = new java.util.WeakHashMap<>();
+
+    static synchronized boolean allow(Object connection, long now) {
+        if (connection == null) return false;
+        Long last = LAST_REQUEST.get(connection);
+        if (last != null && now - last < INTERVAL) return false;
+        LAST_REQUEST.put(connection, now);
+        return true;
+    }
 
     public DownloadRewardOptionNotice() {
     }
@@ -24,7 +34,7 @@ public class DownloadRewardOptionNotice implements INetworkPacket {
     public static void handle(DownloadRewardOptionNotice packet, BaniraNetworkContext ctx) {
         ctx.enqueueWork(() -> {
             ServerPlayer player = ctx.senderAs(ServerPlayer.class);
-            if (player != null) {
+            if (player != null && !player.hasDisconnected() && allow(player.connection, System.nanoTime())) {
                 SakuraNetwork.sendSplitToPlayer(RewardConfigManager.toSyncPacket(player), player);
                 SakuraNetwork.sendSplitToPlayer(SakuraNetwork.personalDatePacket(player), player);
                 SakuraNetwork.sendSplitToPlayer(SakuraNetwork.lotteryPoolPacket(player), player);

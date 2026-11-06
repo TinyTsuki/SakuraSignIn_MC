@@ -21,6 +21,42 @@ import java.util.stream.Collectors;
  * 将命令和客户端界面的抽奖请求汇入同一服务端响应流程。
  */
 public final class LotteryDrawDispatcher {
+    private static final long COMMAND_DELAY = java.util.concurrent.TimeUnit.SECONDS.toNanos(3);
+    private static final LotteryCommandQueue<QueuedDraw> COMMANDS = new LotteryCommandQueue<>(COMMAND_DELAY, 256);
+    private static final ThreadLocal<Boolean> COMMAND_SETTLEMENT = new ThreadLocal<>();
+
+    private record QueuedDraw(net.minecraft.server.MinecraftServer server, ServerPlayer player, String pool, int count,
+                              long generation) {
+    }
+
+    public static boolean enqueueCommand(ServerPlayer player, String pool, int count) {
+        boolean queued = COMMANDS.offer(player.getUUID(), new QueuedDraw(player.server, player, pool, count,
+                xin.vanilla.sakura.config.reward.RewardConfigManager.getLotteryGeneration()), System.nanoTime());
+        player.displayClientMessage(SakuraComponent.get().trans(player, "word", "lottery_drawing").toVanilla(), true);
+        return queued;
+    }
+
+    public static void tickCommands(net.minecraft.server.MinecraftServer server) {
+        QueuedDraw pending = COMMANDS.poll(System.nanoTime(), entry -> entry.server == server
+                && !entry.player.hasDisconnected()
+                && server.getPlayerList().getPlayer(entry.player.getUUID()) == entry.player);
+        if (pending == null) return;
+        if (pending.generation != xin.vanilla.sakura.config.reward.RewardConfigManager.getLotteryGeneration()) {
+            SakuraMessages.send(pending.player, SakuraComponent.get().trans(pending.player, "word", "lottery_configuration_changed"));
+            return;
+        }
+        COMMAND_SETTLEMENT.set(true);
+        try {
+            draw(pending.player, pending.pool, pending.count);
+        } finally {
+            COMMAND_SETTLEMENT.remove();
+        }
+    }
+
+    public static void clearCommands() {
+        COMMANDS.clear();
+    }
+
     private LotteryDrawDispatcher() {
     }
 
@@ -33,20 +69,29 @@ public final class LotteryDrawDispatcher {
 
     public static void completed(ServerPlayer player, LotteryOperation operation,
                                  LotteryDrawBatchResult result, boolean recovered) {
-        if (!recovered) notifySuccess(player, result);
-        if (BaniraModPresence.isRemoteClientInstalled(player, SakuraSignIn.MODID)) {
+        if (!Boolean.TRUE.equals(COMMAND_SETTLEMENT.get())
+                && BaniraModPresence.isRemoteClientInstalled(player, SakuraSignIn.MODID)) {
             try {
                 PendingLotteryDraws.Pending pending = PendingLotteryDraws.put(player.getUUID(), operation.getOperationId(), operation.getDisplayToken());
                 sendReveal(player, pending, result);
+                return;
             } catch (IllegalArgumentException failure) {
                 PendingLotteryDraws.remove(player.getUUID());
             }
         }
+        var service = LotteryRewardService.operations(player);
+        if (service != null && service.acknowledge(player, operation.getOperationId(), operation.getDisplayToken()) != null
+                && !recovered) notifySuccess(player, result.getRewards());
     }
 
     public static void acknowledge(ServerPlayer player, String operationId, String token) {
-        LotteryRewardService.operations(player).acknowledge(player, operationId, token);
-        PendingLotteryDraws.acknowledge(player.getUUID(), operationId, token);
+        var service = LotteryRewardService.operations(player);
+        if (service == null) return;
+        LotteryOperation completed = service.acknowledge(player, operationId, token);
+        if (completed != null) {
+            PendingLotteryDraws.acknowledge(player.getUUID(), operationId, token);
+            notifySuccess(player, completed.getRewards());
+        }
     }
 
     private static void sendReveal(ServerPlayer player, PendingLotteryDraws.Pending pending,
@@ -56,8 +101,8 @@ public final class LotteryDrawDispatcher {
                 result.getPool().getPreviewMode(), result.getPool().getAnimationStyle()), player);
     }
 
-    private static void notifySuccess(ServerPlayer player, LotteryDrawBatchResult result) {
-        String rewards = result.getRewards().stream().map(reward -> reward.getName(
+    private static void notifySuccess(ServerPlayer player, List<Reward> awarded) {
+        String rewards = awarded.stream().map(reward -> reward.getName(
                         SakuraUtils.getPlayerLanguage(player), true).toString())
                 .collect(Collectors.joining(", "));
         SakuraMessages.success(player, SakuraComponent.get().trans(player, "format",
@@ -85,6 +130,9 @@ public final class LotteryDrawDispatcher {
             case POOL_NOT_FOUND:
                 SakuraMessages.send(player, SakuraComponent.get().trans(
                         player, "word", "lottery_pool_not_found"));
+                break;
+            case POOL_CLOSED:
+                SakuraMessages.send(player, SakuraComponent.get().trans(player, "word", "lottery_pool_closed"));
                 break;
             case EMPTY_POOL:
                 SakuraMessages.send(player, SakuraComponent.get().trans(

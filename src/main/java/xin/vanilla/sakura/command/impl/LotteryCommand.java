@@ -42,8 +42,7 @@ public final class LotteryCommand {
                                             xin.vanilla.sakura.data.lottery.LotteryPools.find(
                                                     RewardConfigManager.getRewardConfig().getLotteryPools(),
                                                     StringArgumentType.getString(context, "pool")).ifPresent(pool -> {
-                                                if (pool.isSingleDraw()) builder.suggest(1);
-                                                if (pool.getBatchSize() > 1) builder.suggest(pool.getBatchSize());
+                                                pool.getDrawCounts().forEach(builder::suggest);
                                             });
                                             return builder.buildFuture();
                                         })
@@ -85,7 +84,6 @@ public final class LotteryCommand {
                     player, "word", "lottery_invalid_count"));
             return 0;
         }
-        LotteryDrawDispatcher.draw(player, poolId, count);
-        return 1;
+        return LotteryDrawDispatcher.enqueueCommand(player, poolId, count) ? 1 : 0;
     }
 }

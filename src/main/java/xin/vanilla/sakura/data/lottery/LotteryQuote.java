@@ -4,7 +4,7 @@ import lombok.Value;
 
 @Value
 public class LotteryQuote {
-    public enum Status {READY, STALE_GENERATION, FORBIDDEN, POOL_NOT_FOUND, PAYMENT_UNAVAILABLE}
+    public enum Status {READY, STALE_GENERATION, FORBIDDEN, POOL_NOT_FOUND, PAYMENT_UNAVAILABLE, POOL_CLOSED}
 
     LotteryQuoteRequest request;
     Status status;
