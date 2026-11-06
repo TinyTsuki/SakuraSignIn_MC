@@ -12,9 +12,20 @@ public class LotteryQuote {
     int availableCount;
     String paymentSummary;
     String quoteToken;
+    long remainingWindowMillis;
+    boolean opensNext;
 
     public LotteryQuote(LotteryQuoteRequest request, Status status, long generation, int availableCount,
                         String paymentSummary, String quoteToken) {
+        this(request, status, generation, availableCount, paymentSummary, quoteToken, 0, false);
+    }
+
+    public LotteryQuote(LotteryQuoteRequest request, Status status, long generation, int availableCount,
+                        String paymentSummary, String quoteToken, long remainingWindowMillis, boolean opensNext) {
+        if (remainingWindowMillis < 0 || (opensNext && status != Status.POOL_CLOSED))
+            throw new IllegalArgumentException("Invalid lottery window");
+        this.remainingWindowMillis = remainingWindowMillis;
+        this.opensNext = opensNext;
         if (request == null || status == null || generation < 0 || availableCount < 0 || availableCount > 100)
             throw new IllegalArgumentException("Invalid lottery quote");
         this.paymentSummary = LotteryProtocolLimits.text(paymentSummary, 4096);

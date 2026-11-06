@@ -170,6 +170,11 @@ public class LotteryUiPresentationTest {
         assertFalse(view.controls.containsKey("count"));
         assertFalse(view.actions.containsKey("animation_strip"));
         assertNotNull(view.icons.get("poster"));
+        assertFalse(view.enabled.get("details_panel"));
+        view.actions.get("details").run();
+        assertTrue(view.enabled.get("details_panel"));
+        view.actions.get("details_close").run();
+        assertFalse(view.enabled.get("details_panel"));
         var row = new RecordingUiView();
         view.providers.get("pool_rows").bind(row, 0);
         assertEquals("Daily", text(row, "label"));
@@ -204,7 +209,8 @@ public class LotteryUiPresentationTest {
             assertFalse(html.contains("id=\"" + name + "_icon\""));
         String css = Files.readString(root.resolve("lottery.css"));
         assertTrue(html.contains("class=\"notification-list pool-rail\""));
-        assertTrue(html.indexOf("class=\"billing footer\"") > html.indexOf("id=\"content\""));
+        assertTrue(html.indexOf("class=\"billing footer\"") > html.indexOf("class=\"notification-columns feature\""));
+        assertTrue(html.indexOf("id=\"content\"") > html.indexOf("id=\"details_panel\""));
         assertFalse(html.contains("quote_status"));
         assertTrue(html.contains("class=\"billing footer\""));
     }

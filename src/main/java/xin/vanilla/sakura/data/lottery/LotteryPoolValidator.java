@@ -48,7 +48,8 @@ public final class LotteryPoolValidator {
         if (value == null) return false;
         if (value.isEmpty()) return true;
         try {
-            return value.matches("[0-9]{4}-[0-9]{2}-[0-9]{2}") && java.time.LocalDate.parse(value).getYear() > 0;
+            return value.matches("[0-9]{4}-[0-9]{2}-[0-9]{2}( [0-9]{2}:[0-9]{2})?")
+                    && LotteryWindow.boundary(value, false).getYear() > 0;
         } catch (java.time.DateTimeException ignored) {
             return false;
         }
@@ -115,7 +116,7 @@ public final class LotteryPoolValidator {
         }
         if (!validDate(pool.getStartDate()) || !validDate(pool.getEndDate())
                 || !pool.getStartDate().isEmpty() && !pool.getEndDate().isEmpty()
-                && pool.getStartDate().compareTo(pool.getEndDate()) > 0) errors.add("invalid_dates");
+                && !LotteryWindow.boundary(pool.getStartDate(), false).isBefore(LotteryWindow.boundary(pool.getEndDate(), true))) errors.add("invalid_dates");
         try {
             LotteryPng.inspect(pool.getThumbnailPng());
             LotteryPng.inspect(pool.getPosterPng());

@@ -71,6 +71,18 @@ public class LotteryPoolFormTest {
     }
 
     @Test
+    public void buildsVoucherWithoutRequiringExpressionSyntax() {
+        assertEquals("banira:item", BaniraCosts.parse(LotteryVoucherExpressions.build("item", "minecraft:paper", "", 3)).resource().resourceId());
+        assertEquals("banira:xp_point", BaniraCosts.parse(LotteryVoucherExpressions.build("xpPoints", "", "", 3)).resource().resourceId());
+        assertEquals("banira:xp_level", BaniraCosts.parse(LotteryVoucherExpressions.build("xpLevels", "", "", 3)).resource().resourceId());
+        var score = BaniraCosts.parse(LotteryVoucherExpressions.build("score", "", "tokens", 3)).resource();
+        assertEquals("banira:score", score.resourceId());
+        assertEquals("tokens", score.specification());
+        assertEquals(3, score.amount());
+        assertThrows(IllegalArgumentException.class, () -> LotteryVoucherExpressions.build("item", "", "", 1));
+    }
+
+    @Test
     public void selectedItemsUseNativeSpecificationsAndExplicitMatchMode() {
         ItemStack paper = new ItemStack(Items.PAPER, 12);
         paper.getOrCreateTag().putString("label", "A\"B\\C");

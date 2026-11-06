@@ -25,6 +25,7 @@ public final class LotteryPoolForm {
 
     public static Screen create(Screen parent, LotteryPool existing,
                                 Consumer<LotteryPool> submit) {
+        ArtworkDraft artwork = new ArtworkDraft(existing);
         Consumer<LotteryPool> connectedSubmit = connectedOnce(submit);
         InputFormScreen.Args args = new InputFormScreen.Args()
                 .setParentScreen(parent)
@@ -68,9 +69,7 @@ public final class LotteryPoolForm {
                 .title(text("lottery_voucher_expression")).hint(text("lottery_voucher_expression"))
                 .tooltip(text("lottery_voucher_expression_hint"))
                 .type(InputFormScreen.WidgetType.PICKER)
-                .picker((screen, selected) -> ItemRewardSelectionFlow.create(screen,
-                        net.minecraft.world.item.ItemStack.EMPTY, stack ->
-                                selected.accept(LotteryVoucherExpressions.item(stack, Math.max(1, stack.getCount()), false))))
+                .picker(LotteryPoolForm::voucherPicker)
                 .maxLength(LotteryPoolValidator.MAX_VOUCHER_EXPRESSION).allowEmpty(true)
                 .defaultValue(existing == null ? "" : existing.getVoucherExpression())
                 .validator(result -> {
@@ -120,18 +119,8 @@ public final class LotteryPoolForm {
                 }));
         args.addWidget(date("startDate", "lottery_start_date", existing == null ? "" : existing.getStartDate()));
         args.addWidget(date("endDate", "lottery_end_date", existing == null ? "" : existing.getEndDate()));
-        args.addWidget(new InputFormScreen.Widget().name("artworkItem").title(text("lottery_artwork_item"))
-                .type(InputFormScreen.WidgetType.PICKER).allowEmpty(true).maxLength(LotteryPoolValidator.MAX_ARTWORK_ID)
-                .defaultValue(existing == null ? "" : existing.getArtworkItem())
-                .picker((screen, selected) -> ItemRewardSelectionFlow.create(screen, net.minecraft.world.item.ItemStack.EMPTY,
-                        stack -> selected.accept(stack.isEmpty() ? "" : net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()).toString())))
-                .validator(result -> LotteryPoolValidator.isArtworkItem(result.value()) ? "" : tr("input_format_invalid")));
-        args.addWidget(new InputFormScreen.Widget().name("artworkTexture").title(text("lottery_artwork_texture"))
-                .tooltip(text("lottery_artwork_texture_hint")).allowEmpty(true).maxLength(LotteryPoolValidator.MAX_ARTWORK_ID)
-                .defaultValue(existing == null ? "" : existing.getArtworkTexture())
-                .validator(result -> LotteryPoolValidator.isArtworkTexture(result.value()) ? "" : tr("input_format_invalid")));
-        addImageField(args, "thumbnail", "lottery_thumbnail_png", existing == null ? "" : existing.getThumbnailPng());
-        addImageField(args, "poster", "lottery_poster_png", existing == null ? "" : existing.getPosterPng());
+        args.addWidget(artworkField("poster", "lottery_poster_png", artwork, false));
+        args.addWidget(artworkField("thumbnail", "lottery_thumbnail_png", artwork, true));
         args.setCallback(results -> {
             LotteryPool candidate = new LotteryPool(results.value("id"), results.value("name"),
                     LotteryLimitPolicy.valueOf(results.value("policy")),
@@ -145,15 +134,10 @@ public final class LotteryPoolForm {
             candidate.setDrawCounts(LotteryPoolValidator.parseDrawCounts(results.value("drawCounts")));
             candidate.setStartDate(results.value("startDate").trim());
             candidate.setEndDate(results.value("endDate").trim());
-            try {
-                candidate.setThumbnailPng(image(results, "thumbnail", existing == null ? "" : existing.getThumbnailPng()));
-                candidate.setPosterPng(image(results, "poster", existing == null ? "" : existing.getPosterPng()));
-            } catch (java.io.IOException | IllegalArgumentException failure) {
-                results.runningResult(tr("lottery_png_invalid"));
-                return;
-            }
-            candidate.setArtworkItem(results.value("artworkItem"));
-            candidate.setArtworkTexture(results.value("artworkTexture"));
+            candidate.setThumbnailPng(artwork.thumbnail);
+            candidate.setPosterPng(artwork.poster);
+            candidate.setArtworkItem(artwork.item);
+            candidate.setArtworkTexture(artwork.texture);
             var errors = LotteryPoolValidator.validate(candidate);
             if (errors.contains("invalid_draw_modes")) {
                 results.runningResult(tr("lottery_batch_rule_invalid"));
@@ -174,25 +158,142 @@ public final class LotteryPoolForm {
 
     private static InputFormScreen.Widget date(String name, String title, String value) {
         return new InputFormScreen.Widget().name(name).title(text(title)).tooltip(text("lottery_date_hint"))
-                .maxLength(10).allowEmpty(true).defaultValue(value)
+                .maxLength(16).allowEmpty(true).defaultValue(value)
                 .validator(result -> LotteryPoolValidator.validDate(result.value().trim()) ? "" : tr("lottery_date_invalid"));
     }
 
-    private static void addImageField(InputFormScreen.Args args, String name, String title, String current) {
-        args.addWidget(new InputFormScreen.Widget().name(name).title(text(title)).tooltip(text("lottery_png_hint"))
-                .type(InputFormScreen.WidgetType.FILE).fileFilter("png").allowEmpty(true).maxLength(2048).defaultValue(""));
-        if (!current.isEmpty()) args.addWidget(dropdown(name + "Existing", title, "keep",
-                option("keep", "lottery_png_keep"), option("remove", "lottery_png_remove")));
+    private static Screen voucherPicker(Screen parent, Consumer<String> selected) {
+        var args = new InputFormScreen.Args().setParentScreen(parent)
+                .setHeaderTitle(text("lottery_voucher_builder"));
+        args.addWidget(dropdown("kind", "lottery_voucher_source", "item",
+                option("item", "lottery_voucher_item"), option("xpPoints", "lottery_voucher_points"),
+                option("xpLevels", "lottery_voucher_levels"), option("score", "lottery_voucher_score")));
+        args.addWidget(itemField("item", "lottery_voucher_item", ""));
+        args.addWidget(new InputFormScreen.Widget().name("objective").title(text("lottery_voucher_objective"))
+                .allowEmpty(true).maxLength(128));
+        args.addWidget(number("amount", "lottery_voucher_amount", "lottery_number_range", 1, 1, 999_999));
+        args.setCallback(results -> {
+            try {
+                selected.accept(LotteryVoucherExpressions.build(results.value("kind"), results.value("item"),
+                        results.value("objective"), Integer.parseInt(results.value("amount"))));
+            } catch (IllegalArgumentException failure) {
+                results.runningResult(tr("lottery_voucher_incomplete"));
+            }
+        });
+        return new InputFormScreen(args);
     }
 
-    private static String image(InputFormScreen.Results values, String name, String current) throws java.io.IOException {
-        String path = values.value(name);
-        if (path.isBlank())
-            return !current.isEmpty() && "remove".equals(values.value(name + "Existing")) ? "" : current;
+    private static InputFormScreen.Widget itemField(String name, String title, String initial) {
+        return new InputFormScreen.Widget().name(name).title(text(title))
+                .type(InputFormScreen.WidgetType.PICKER).allowEmpty(true)
+                .maxLength(LotteryPoolValidator.MAX_ARTWORK_ID).defaultValue(initial)
+                .picker((screen, selected) -> ItemRewardSelectionFlow.create(screen, net.minecraft.world.item.ItemStack.EMPTY,
+                        stack -> selected.accept(stack.isEmpty() ? "" : net.minecraft.core.registries.BuiltInRegistries.ITEM
+                                .getKey(stack.getItem()).toString())));
+    }
+
+    private static InputFormScreen.Widget artworkField(String name, String title, ArtworkDraft artwork, boolean thumbnail) {
+        return new InputFormScreen.Widget().name(name).title(text(title))
+                .type(InputFormScreen.WidgetType.PICKER).pickerReadOnly(true)
+                .defaultValue(artwork.summary(thumbnail))
+                .picker((screen, selected) -> artworkPicker(screen, title, artwork, thumbnail, selected));
+    }
+
+    private static Screen artworkPicker(Screen parent, String title, ArtworkDraft artwork,
+                                        boolean thumbnail, Consumer<String> selected) {
+        var args = new InputFormScreen.Args().setParentScreen(parent).setHeaderTitle(text(title));
+        var modes = new java.util.ArrayList<DropdownOption>();
+        modes.add(option("keep", "lottery_png_keep"));
+        modes.add(option("png", "lottery_artwork_file"));
+        if (!thumbnail) {
+            modes.add(option("item", "lottery_artwork_item"));
+            modes.add(option("texture", "lottery_artwork_texture"));
+        }
+        modes.add(option("clear", thumbnail ? "lottery_artwork_auto" : "lottery_png_remove"));
+        args.addWidget(dropdown("mode", "lottery_artwork_source", "keep", modes.toArray(DropdownOption[]::new)));
+        args.addWidget(new InputFormScreen.Widget().name("png").title(text("lottery_artwork_file"))
+                .tooltip(text("lottery_png_hint")).type(InputFormScreen.WidgetType.FILE)
+                .fileFilter("png").allowEmpty(true).maxLength(2048));
+        if (!thumbnail) {
+            args.addWidget(itemField("item", "lottery_artwork_item", artwork.item));
+            args.addWidget(new InputFormScreen.Widget().name("texture").title(text("lottery_artwork_texture"))
+                    .tooltip(text("lottery_artwork_texture_hint")).allowEmpty(true)
+                    .maxLength(LotteryPoolValidator.MAX_ARTWORK_ID).defaultValue(artwork.texture));
+        }
+        args.setCallback(results -> {
+            String mode = results.value("mode");
+            if (mode.equals("keep")) {
+                if (!results.value("png").isBlank()) mode = "png";
+                else if (!thumbnail && !results.value("item").equals(artwork.item)) mode = "item";
+                else if (!thumbnail && !results.value("texture").equals(artwork.texture)) mode = "texture";
+            }
+            try {
+                switch (mode) {
+                    case "png" -> {
+                        String png = readImage(results.value("png"));
+                        if (thumbnail) artwork.thumbnail = png;
+                        else artwork.main("", "", png);
+                    }
+                    case "item" -> {
+                        String item = results.value("item");
+                        if (item.isBlank() || !LotteryPoolValidator.isArtworkItem(item)) {
+                            results.runningResult(tr("input_format_invalid"));
+                            return;
+                        }
+                        artwork.main(item, "", "");
+                    }
+                    case "texture" -> {
+                        String texture = results.value("texture");
+                        if (texture.isBlank() || !LotteryPoolValidator.isArtworkTexture(texture)) {
+                            results.runningResult(tr("input_format_invalid"));
+                            return;
+                        }
+                        artwork.main("", texture, "");
+                    }
+                    case "clear" -> {
+                        if (thumbnail) artwork.thumbnail = "";
+                        else artwork.main("", "", "");
+                    }
+                    default -> { }
+                }
+                selected.accept(artwork.summary(thumbnail));
+            } catch (java.io.IOException | IllegalArgumentException failure) {
+                results.runningResult(tr("lottery_png_invalid"));
+            }
+        });
+        return new InputFormScreen(args);
+    }
+
+    private static String readImage(String path) throws java.io.IOException {
+        if (path.isBlank()) throw new IllegalArgumentException("Missing PNG path");
         try (var input = java.nio.file.Files.newInputStream(java.nio.file.Path.of(path))) {
             byte[] bytes = input.readNBytes(xin.vanilla.sakura.data.lottery.LotteryPng.MAX_BYTES + 1);
             xin.vanilla.sakura.data.lottery.LotteryPng.inspect(bytes);
             return java.util.Base64.getEncoder().encodeToString(bytes);
+        }
+    }
+
+    private static final class ArtworkDraft {
+        private String item, texture, poster, thumbnail;
+
+        private ArtworkDraft(LotteryPool pool) {
+            main(pool == null ? "" : pool.getArtworkItem(), pool == null ? "" : pool.getArtworkTexture(),
+                    pool == null ? "" : pool.getPosterPng());
+            thumbnail = pool == null ? "" : pool.getThumbnailPng();
+        }
+
+        private void main(String item, String texture, String png) {
+            this.item = item;
+            this.texture = texture;
+            this.poster = png;
+        }
+
+        private String summary(boolean thumbnail) {
+            if (thumbnail) return tr(this.thumbnail.isEmpty() ? "lottery_artwork_auto" : "lottery_artwork_custom");
+            if (!poster.isEmpty()) return tr("lottery_artwork_custom");
+            if (!texture.isEmpty()) return texture;
+            if (!item.isEmpty()) return item;
+            return tr("lottery_artwork_none");
         }
     }
 

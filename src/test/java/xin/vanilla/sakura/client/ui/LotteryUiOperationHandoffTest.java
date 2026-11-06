@@ -144,6 +144,8 @@ public class LotteryUiOperationHandoffTest {
             port.accept();
             session.tick();
             first.actions.get("single").run();
+            assertEquals(1, port.quotes.size());
+            first.actions.get("confirm_draw").run();
             assertEquals(2, port.quotes.size());
             assertTrue(port.draws.isEmpty());
             Runnable stale = first.actions.get("single");
@@ -183,6 +185,7 @@ public class LotteryUiOperationHandoffTest {
         session.tick();
         Runnable late = first.actions.get("single");
         late.run();
+        first.actions.get("confirm_draw").run();
         session.close(UiCloseReason.USER_CLOSE);
         port.accept();
         port.payment.tick();
@@ -199,6 +202,28 @@ public class LotteryUiOperationHandoffTest {
         connected[0] = false;
         first.actions.get("batch").run();
         assertTrue(current.draws.isEmpty());
+    }
+
+    @Test
+    public void drawConfirmationCanCancelAndOnlySubmitsOnce() {
+        Port port = new Port();
+        var session = new LotteryUiSession(port, () -> true);
+        var view = new RecordingUiView();
+        session.bind(view);
+        session.tick();
+        port.accept();
+        session.tick();
+        view.actions.get("batch").run();
+        assertTrue(view.enabled.get("confirm_panel"));
+        assertTrue(port.draws.isEmpty());
+        view.actions.get("confirm_cancel").run();
+        view.actions.get("confirm_draw").run();
+        assertTrue(port.draws.isEmpty());
+        view.actions.get("batch").run();
+        view.actions.get("confirm_draw").run();
+        view.actions.get("confirm_draw").run();
+        assertFalse(view.enabled.get("confirm_panel"));
+        assertEquals(1, port.draws.size());
     }
 
     @Test
@@ -243,6 +268,7 @@ public class LotteryUiOperationHandoffTest {
         session.tick();
         assertTrue(view.enabled.get("single"));
         view.actions.get("single").run();
+        view.actions.get("confirm_draw").run();
         assertTrue(port.draws.isEmpty());
         assertEquals(1, port.quotes.get(port.quotes.size() - 1).getCount());
         port.accept();
@@ -263,7 +289,7 @@ public class LotteryUiOperationHandoffTest {
         var session = form.uiPage().session();
         var view = new RecordingUiView();
         session.bind(view);
-        assertEquals(16, view.rows.size());
+        assertEquals(14, view.rows.size());
         var description = new RecordingUiView();
         view.rows.bind(description, 2);
         assertEquals("Long\nDescription", description.draftValues.get("input"));

@@ -13,7 +13,8 @@ public class LotteryLayoutTest {
         for (int[] size : new int[][]{{320, 240}, {427, 240}, {854, 480}, {1280, 720}}) {
             LotteryLayout layout = LotteryLayout.calculate(size[0], size[1]);
             List<LotteryLayout.Rect> areas = Arrays.asList(layout.title(), layout.pool(), layout.info(),
-                    layout.description(), layout.preview(), layout.heading(), layout.poster(), layout.single(), layout.batch(), layout.close());
+                    layout.description(), layout.previewHeading(), layout.preview(), layout.heading(), layout.poster(),
+                    layout.billing(), layout.single(), layout.batch(), layout.close());
             for (LotteryLayout.Rect area : areas) {
                 assertTrue(area.width() > 0 && area.height() > 0);
                 assertTrue(layout.panel().encloses(area));
@@ -25,6 +26,12 @@ public class LotteryLayoutTest {
             assertTrue(layout.single().width() >= 70);
             assertTrue(layout.batch().width() >= 70);
             assertTrue(layout.poolRows() >= 3);
+            assertTrue(layout.stage().encloses(layout.poster()));
+            assertTrue(layout.stage().encloses(layout.preview()));
+            assertTrue(layout.footer().encloses(layout.billing()));
+            assertTrue(layout.footer().encloses(layout.batch()));
+            assertTrue(layout.billing().right() < layout.single().x());
+            assertTrue(layout.poster().width() > layout.heading().width());
         }
     }
 

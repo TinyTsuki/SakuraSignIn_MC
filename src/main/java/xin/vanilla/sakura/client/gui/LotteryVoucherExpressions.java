@@ -11,6 +11,18 @@ public final class LotteryVoucherExpressions {
     private LotteryVoucherExpressions() {
     }
 
+    static String build(String kind, String item, String objective, int amount) {
+        if (amount < 1) throw new IllegalArgumentException("Invalid voucher amount");
+        String expression = switch (kind) {
+            case "item" -> "item(" + GSON.toJson(item.trim()) + "," + amount + ")";
+            case "xpPoints", "xpLevels" -> kind + "(" + amount + ")";
+            case "score" -> "score(" + GSON.toJson(objective.trim()) + "," + amount + ")";
+            default -> throw new IllegalArgumentException("Unknown voucher type");
+        };
+        BaniraCosts.parse(expression);
+        return expression;
+    }
+
     public static String item(ItemStack stack, int amount, boolean exact) {
         if (stack == null || stack.isEmpty() || amount < 1) {
             throw new IllegalArgumentException("Invalid item voucher");

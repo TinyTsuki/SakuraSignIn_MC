@@ -19,7 +19,7 @@ public final class LotteryQuotePacket implements INetworkPacket {
 
     public LotteryQuotePacket(BaniraPacketBuffer buffer) {
         this(new LotteryQuote(LotteryPacketFields.readRequest(buffer), buffer.readEnum(LotteryQuote.Status.class),
-                buffer.readLong(), buffer.readInt(), buffer.readUtf(4096), buffer.readUtf(36)));
+                buffer.readLong(), buffer.readInt(), buffer.readUtf(4096), buffer.readUtf(36), buffer.readLong(), buffer.readBoolean()));
     }
 
     public void toBytes(BaniraPacketBuffer buffer) {
@@ -29,6 +29,8 @@ public final class LotteryQuotePacket implements INetworkPacket {
         buffer.writeInt(quote.getAvailableCount());
         buffer.writeUtf(quote.getPaymentSummary(), 16_384);
         buffer.writeUtf(quote.getQuoteToken(), 36);
+        buffer.writeLong(quote.getRemainingWindowMillis());
+        buffer.writeBoolean(quote.isOpensNext());
     }
 
     public static void handle(LotteryQuotePacket packet, BaniraNetworkContext context) {

@@ -1,24 +1,44 @@
 body{display:flex;align-items:center;justify-content:center;font-family:default}
-.lottery{max-width:560px;max-height:330px;border-top:2px solid var(--action)}
+.lottery{position:relative;max-width:560px;max-height:350px;padding:0 6px 6px;background:var(--canvas);overflow:hidden}
+.lottery .header{height:30px;min-height:30px;padding:3px 4px;background:transparent;border-bottom:1px solid var(--line)}
 .glyph{width:16px;height:16px}
-.pool-rail{width:22%;min-width:62px;max-width:110px;padding:4px;background:var(--panel-soft)}
+.lottery-body{gap:6px;margin:6px 0}
+.pool-rail{width:20%;min-width:62px;max-width:108px;border:0}
 #pool_scroll,#detail{padding:0}
-.pool-card{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:4px}
+.pool-card{position:relative;border:1px solid var(--line);border-radius:4px;background:var(--panel-soft);overflow:hidden}
 .pool-card.selected{border-color:var(--action);background:var(--selected)}
-.pool-card .row-icon{left:4px;right:4px;width:auto;height:28px}
-.pool-card .label{position:absolute;left:0;right:0;top:0;height:100%;padding:29px 2px 0;text-align:center;cursor:pointer}
-.pool-detail{padding:6px}
-.feature{flex:0 0 52%;border:1px solid var(--line);background:var(--panel-soft);overflow:hidden}
-.pool-copy{padding:5px}
-.pool-name{font-size:14px;overflow:hidden;max-height:32px}
-.artwork{width:53%;padding:4px;background:var(--selected)}
+.pool-card:hover{border-color:var(--action)}
+.pool-card .row-icon{left:4px;right:4px;width:auto;height:29px}
+.pool-card .label{position:absolute;left:0;right:0;top:0;height:100%;padding:29px 2px 0;text-align:center;cursor:pointer;overflow:hidden;white-space:nowrap}
+.feature{position:relative;border:1px solid #826073;border-radius:5px;background:#3e2c3c;color:#fff3f5;overflow:hidden}
+.pool-copy{flex:0 0 40%;padding:8px 3px 5px 8px;overflow:hidden}
+.pool-name{font-size:19px;line-height:22px;max-height:46px;overflow:hidden;margin:3px 0}
+#policy,#time_label,#description{color:#ebcdd7}
+#time{margin-top:5px;border-left:2px solid var(--action);padding-left:5px;flex-shrink:0}
+#time:disabled,.featured-icon:disabled{display:none}
+#time_value{font-size:12px}
+#detail{flex:1;min-height:0;margin-top:4px;overflow-y:auto}
+.artwork{flex:1;min-width:0;padding:3px 5px 3px 0}
 #poster{width:100%;height:100%}
-.caption{justify-content:space-between}
+.feature-tools{display:flex;align-items:center;flex-wrap:wrap;gap:3px;min-height:23px;flex-shrink:0}
+.feature-tools button{min-width:0;min-height:18px;padding:2px 4px;color:#fff3f5;background:#53394e;border-color:#a67b91}
+.featured-icon{width:17px;height:19px;flex:0 0 17px;border:1px solid var(--line);border-radius:3px}
+.lottery .billing{display:flex;align-items:center;gap:5px;min-height:32px;padding:4px 3px;border-top:1px solid var(--line);background:transparent}
+.fee-group{flex:1;min-width:0}
+#fee,#info{max-height:22px;overflow:hidden}
+#fee_label,#available_label{color:var(--muted)}
+#single_slot:disabled,#batch_slot:disabled,#batch_picker:disabled,#info:disabled{display:none}
+#batch_slot{display:flex;gap:3px;align-items:center}
+#batch_picker{width:31px;flex-shrink:0}
+#single,#batch{min-width:42px}
+.lottery-modal{position:absolute;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:center;background:#171118a6;z-index:10}
+.lottery-modal:disabled{display:none}
+.lottery-dialog{display:flex;flex-direction:column;width:70%;max-height:86%;min-height:72px;padding:6px;border:1px solid var(--line);border-radius:5px;background:var(--panel)}
+.lottery-dialog .caption,.dialog-actions{display:flex;align-items:center;justify-content:space-between;gap:5px;flex-shrink:0}
+.dialog-actions{justify-content:flex-end;margin-top:5px}
+#details_panel .lottery-dialog{height:77%}
+#content{flex:1;min-height:0;overflow-y:auto}
+#confirm_fee{max-height:34px;overflow:hidden}
 .grid>div{width:33%;min-width:0}
 .grid .row-icon{position:static}
 .grid .label,.grid .paragraph{width:100%;height:10px;overflow:hidden;text-align:center;margin:0}
-.fee-group{flex:1;min-width:0}
-#single_slot:disabled,#batch_slot:disabled,#batch_picker:disabled,#info:disabled{display:none}
-#batch_picker{width:33px;flex-shrink:0}
-#fee,#info{max-height:22px;overflow:hidden}
-.pool-card.selected{box-shadow:inset 0 0 0 1px var(--action)}

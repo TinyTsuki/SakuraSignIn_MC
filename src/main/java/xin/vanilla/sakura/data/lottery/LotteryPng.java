@@ -4,14 +4,15 @@ import java.nio.ByteBuffer;
 import java.util.Base64;
 
 public final class LotteryPng {
-    public static final int MAX_BYTES = 96 * 1024;
+    public static final int MAX_BYTES = 256 * 1024;
+    public static final int MAX_SIDE = 1600;
     private static final long SIGNATURE = 0x89504e470d0a1a0aL;
 
     private LotteryPng() {
     }
 
     public static int inspect(String encoded) {
-        if (encoded == null || encoded.length() > MAX_BYTES * 4 / 3)
+        if (encoded == null || encoded.length() > ((MAX_BYTES + 2) / 3) * 4)
             throw new IllegalArgumentException("Lottery image is too large");
         return encoded.isEmpty() ? 0 : inspect(Base64.getDecoder().decode(encoded));
     }
@@ -23,8 +24,8 @@ public final class LotteryPng {
         if (header.getLong() != SIGNATURE || header.getInt() != 13 || header.getInt() != 0x49484452)
             throw new IllegalArgumentException("Expected PNG");
         int width = header.getInt(), height = header.getInt();
-        if (width < 1 || width > 1024 || height < 1 || height > 1024)
-            throw new IllegalArgumentException("Lottery image dimensions exceed 1024");
+        if (width < 1 || width > MAX_SIDE || height < 1 || height > MAX_SIDE)
+            throw new IllegalArgumentException("Invalid lottery image dimensions");
         header.position(8);
         boolean pixels = false;
         while (header.remaining() >= 12) {

@@ -37,8 +37,8 @@ public record LotteryArtwork(ResourceLocation texture, ItemStack item, int image
     }
 
     public UiGameElement element() {
-        if (texture != null) return UiGameElement.sprite(Texture.of(texture, imageWidth, imageHeight));
-        return UiGameElement.option(new DropdownOption("", "", item, null, null));
+        if (texture != null) return UiGameElement.artwork(new DropdownOption("", Texture.of(texture, imageWidth, imageHeight), null));
+        return UiGameElement.artwork(new DropdownOption("", "", item, null, null));
     }
 
     public void render(GuiGraphics graphics, int x, int y, int width, int height, int itemSize) {

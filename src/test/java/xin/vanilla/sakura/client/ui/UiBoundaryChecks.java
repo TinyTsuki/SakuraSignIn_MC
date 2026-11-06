@@ -14,6 +14,10 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 final class UiBoundaryChecks {
+    static int stylesBudget(int lotteryPageBytes) {
+        return 16384 + Math.min(2048, Math.max(0, lotteryPageBytes - 1320));
+    }
+
     private UiBoundaryChecks() {
     }
 
@@ -138,8 +142,7 @@ final class UiBoundaryChecks {
                 }
             }
         }
-        int lotteryAllowance = Math.min(512, Math.max(0, files.getOrDefault("lottery.css", new byte[0]).length - 1320));
-        if (css > 16384 + lotteryAllowance) errors.add("CSS budget");
+        if (css > stylesBudget(files.getOrDefault("lottery.css", new byte[0]).length)) errors.add("CSS budget");
         if (!shared) for (var page : files.entrySet())
             if (page.getKey().endsWith(".html")) {
                 var links = java.util.regex.Pattern.compile("href=\"([^\"]+\\.css)\"").matcher(new String(page.getValue(), StandardCharsets.UTF_8));

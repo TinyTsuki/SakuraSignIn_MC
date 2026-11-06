@@ -28,10 +28,16 @@ public class LotteryBinaryWireTest {
             new LotteryQuoteRequestPacket(request).toBytes(wire);
             assertEquals(request, new LotteryQuoteRequestPacket(wire).getRequest());
         }
-        LotteryQuote quote = new LotteryQuote(request, LotteryQuote.Status.READY, 7, 100, "paper", TOKEN);
+        LotteryQuote quote = new LotteryQuote(request, LotteryQuote.Status.READY, 7, 100, "paper", TOKEN, 90_000, false);
         try (Wire wire = new Wire()) {
             new LotteryQuotePacket(quote).toBytes(wire);
             assertEquals(quote, new LotteryQuotePacket(wire).getQuote());
+        }
+        try (Wire wire = new Wire()) {
+            LotteryQuote upcoming = new LotteryQuote(request, LotteryQuote.Status.POOL_CLOSED, 7,
+                    0, "", "", 120_000, true);
+            new LotteryQuotePacket(upcoming).toBytes(wire);
+            assertEquals(upcoming, new LotteryQuotePacket(wire).getQuote());
         }
         LotteryDrawRequest draw = new LotteryDrawRequest(SESSION, 6, 7, "daily", -1, TOKEN);
         try (Wire wire = new Wire()) {

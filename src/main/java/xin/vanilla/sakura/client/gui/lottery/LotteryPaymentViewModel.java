@@ -19,7 +19,7 @@ public final class LotteryPaymentViewModel {
     private int quoteCount = 1;
     private java.util.List<Integer> allowed = java.util.List.of(1);
     private Integer intent;
-    private long generation = -1, lastRequestAt;
+    private long generation = -1, lastRequestAt, windowSampleAt;
     private boolean needsQuote;
     private LotteryQuote seen;
 
@@ -67,6 +67,7 @@ public final class LotteryPaymentViewModel {
         LotteryQuote quote = requests.getQuote();
         if (quote != null && quote != seen && quote.getRequest().getPoolId().equals(poolId)) {
             seen = quote;
+            windowSampleAt = millis.getAsLong();
             if (quote.isReady()) summary = quote.getPaymentSummary();
             if (intent != null) {
                 int requested = intent;
@@ -137,6 +138,16 @@ public final class LotteryPaymentViewModel {
 
     public boolean isPending() {
         return needsQuote || intent != null || requests.getPending() != null;
+    }
+
+    public long windowMinutes() {
+        if (seen == null || seen.getRemainingWindowMillis() == 0) return 0;
+        long remaining = seen.getRemainingWindowMillis() - Math.max(0, millis.getAsLong() - windowSampleAt);
+        return remaining <= 0 ? 0 : (remaining - 1) / 60_000 + 1;
+    }
+
+    public boolean opensNext() {
+        return seen != null && seen.isOpensNext();
     }
 
     public LotteryQuote quote() {

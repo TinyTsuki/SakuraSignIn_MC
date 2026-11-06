@@ -95,7 +95,11 @@ public class LotteryPool {
     }
 
     public boolean isOpen(java.time.LocalDate day) {
-        return (startDate.isEmpty() || !day.isBefore(java.time.LocalDate.parse(startDate)))
-                && (endDate.isEmpty() || !day.isAfter(java.time.LocalDate.parse(endDate)));
+        return isOpen(day.atStartOfDay());
+    }
+
+    public boolean isOpen(java.time.LocalDateTime time) {
+        return (startDate.isEmpty() || !time.isBefore(LotteryWindow.boundary(startDate, false)))
+                && (endDate.isEmpty() || time.isBefore(LotteryWindow.boundary(endDate, true)));
     }
 }

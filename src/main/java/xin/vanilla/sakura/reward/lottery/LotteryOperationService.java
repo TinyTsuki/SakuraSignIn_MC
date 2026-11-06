@@ -85,23 +85,29 @@ public final class LotteryOperationService {
         tickets.remove(id);
         LotteryPool pool = runtime.pool(request.getPoolId());
         if (pool == null) return rejected(request, LotteryQuote.Status.POOL_NOT_FOUND, revision);
-        if (!isOpen(pool)) return rejected(request, LotteryQuote.Status.POOL_CLOSED, revision);
+        var window = xin.vanilla.sakura.data.lottery.LotteryWindow.at(pool, clock.getAsLong(), zone);
+        if (!window.open()) return new LotteryQuote(request, LotteryQuote.Status.POOL_CLOSED, revision,
+                0, "", "", window.remainingMillis(), window.opensNext());
         try {
             if (blocked.contains(id) || !repository.incomplete(id).isEmpty() || !hasRewards(pool))
-                return rejected(request, LotteryQuote.Status.PAYMENT_UNAVAILABLE, revision);
+                return new LotteryQuote(request, LotteryQuote.Status.PAYMENT_UNAVAILABLE, revision,
+                        0, "", "", window.remainingMillis(), false);
             LotteryPool snapshot = LotteryPools.copy(pool);
             if (!snapshot.allowsCount(request.getCount()))
-                return rejected(request, LotteryQuote.Status.PAYMENT_UNAVAILABLE, revision);
+                return new LotteryQuote(request, LotteryQuote.Status.PAYMENT_UNAVAILABLE, revision,
+                        0, "", "", window.remainingMillis(), false);
             int count = capacity(player, snapshot, runtime.costs(player));
             if (request.getCount() > count)
-                return rejected(request, LotteryQuote.Status.PAYMENT_UNAVAILABLE, revision);
+                return new LotteryQuote(request, LotteryQuote.Status.PAYMENT_UNAVAILABLE, revision,
+                        0, "", "", window.remainingMillis(), false);
             String token = LotteryProtocolLimits.token(tokens.get());
             tickets.put(id, new Ticket(request, token, snapshot, nanos.getAsLong()));
             return new LotteryQuote(request, LotteryQuote.Status.READY, revision, count,
-                    snapshot.getVoucherExpression(), token);
+                    snapshot.getVoucherExpression(), token, window.remainingMillis(), false);
         } catch (IOException | RuntimeException failure) {
             LOGGER.error("Lottery quote unavailable for " + id, failure);
-            return rejected(request, LotteryQuote.Status.PAYMENT_UNAVAILABLE, revision);
+            return new LotteryQuote(request, LotteryQuote.Status.PAYMENT_UNAVAILABLE, revision,
+                        0, "", "", window.remainingMillis(), false);
         }
     }
 
@@ -377,7 +383,7 @@ public final class LotteryOperationService {
     }
 
     private boolean isOpen(LotteryPool pool) {
-        return pool.isOpen(java.time.Instant.ofEpochMilli(clock.getAsLong()).atZone(zone).toLocalDate());
+        return xin.vanilla.sakura.data.lottery.LotteryWindow.at(pool, clock.getAsLong(), zone).open();
     }
 
     private int capacity(Object player, LotteryPool pool, CostAccess access) {
