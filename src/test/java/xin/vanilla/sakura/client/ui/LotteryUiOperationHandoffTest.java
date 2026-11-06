@@ -25,6 +25,9 @@ import java.util.UUID;
 import static org.junit.Assert.*;
 
 public class LotteryUiOperationHandoffTest {
+    @org.junit.Rule
+    public final xin.vanilla.sakura.test.NativeClientRule nativeClient = new xin.vanilla.sakura.test.NativeClientRule();
+
     @Rule
     public xin.vanilla.sakura.test.UnboundConfigPlatform platform = new xin.vanilla.sakura.test.UnboundConfigPlatform();
 

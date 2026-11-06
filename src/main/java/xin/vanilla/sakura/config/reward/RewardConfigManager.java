@@ -90,7 +90,8 @@ public class RewardConfigManager {
             throw new IllegalStateException("Invalid client reward snapshot", failure);
         }
         clientScope = java.util.Objects.requireNonNull(scope);
-        clientUndoList.clear(); clientRedoList.clear();
+        clientUndoList.clear();
+        clientRedoList.clear();
     }
 
     public static RewardConfig getRewardConfig() {
@@ -101,6 +102,7 @@ public class RewardConfigManager {
         if (clientScope.getAsBoolean()) clientRewardConfig = value;
         else rewardConfig = value;
     }
+
     @Getter
     private static volatile long lotteryGeneration;
     @Getter
@@ -242,13 +244,13 @@ public class RewardConfigManager {
     }
 
     static synchronized void replaceLotteryPools(List<LotteryPool> pools, long generation,
-                                                  RewardConfigRepository repository) throws IOException {
+                                                 RewardConfigRepository repository) throws IOException {
         if (generation != lotteryGeneration) throw new IOException("Stale lottery configuration revision");
         replaceLotteryPools(pools, repository);
     }
 
     static synchronized void replaceLotteryPools(List<LotteryPool> pools,
-                                                  RewardConfigRepository repository) throws IOException {
+                                                 RewardConfigRepository repository) throws IOException {
         replaceLotteryPools(pools, candidate -> {
             repository.backupCurrent("lottery-update");
             repository.save(candidate);
@@ -261,7 +263,7 @@ public class RewardConfigManager {
     }
 
     static synchronized void replaceLotteryPools(List<LotteryPool> pools,
-                                                  RewardConfigPersistence persistence) throws IOException {
+                                                 RewardConfigPersistence persistence) throws IOException {
         if (clientScope.getAsBoolean()) throw new IOException("Authoritative lottery update requires server scope");
         RewardConfig candidate = REWARD_CONFIG_CODEC.decode(REWARD_CONFIG_CODEC.encode(getRewardConfig()));
         candidate.setLotteryPools(pools);
@@ -283,22 +285,26 @@ public class RewardConfigManager {
         if (clientScope.getAsBoolean()) throw new IOException("Authoritative reward update requires server scope");
         RewardConfigRepository storage = repository();
         replaceRewardConfig(candidate, generation, value -> {
-            storage.backupCurrent("reward-upload"); storage.save(value);
+            storage.backupCurrent("reward-upload");
+            storage.save(value);
         });
     }
 
     static synchronized void replaceRewardConfig(RewardConfig candidate, long generation,
-                                                  RewardConfigPersistence persistence) throws IOException {
+                                                 RewardConfigPersistence persistence) throws IOException {
         if (clientScope.getAsBoolean() || generation != lotteryGeneration)
             throw new IOException("Stale or invalid reward update scope");
         RewardConfig validated = REWARD_CONFIG_CODEC.toRuntimeConfig(REWARD_CONFIG_CODEC.toDocument(candidate));
-        validated.refreshContinuousRewardsRelation(); validated.refreshCycleRewardsRelation();
+        validated.refreshContinuousRewardsRelation();
+        validated.refreshCycleRewardsRelation();
         persistence.save(validated);
-        rewardConfig = validated; lotteryGeneration++; rewardOptionDataChanged = true;
+        rewardConfig = validated;
+        lotteryGeneration++;
+        rewardOptionDataChanged = true;
     }
 
     public static RewardConfig mergeUpload(RewardConfig incoming, RewardConfig authoritative,
-                                          Predicate<ERewardRule> canView) throws IOException {
+                                           Predicate<ERewardRule> canView) throws IOException {
         RewardConfig result = REWARD_CONFIG_CODEC.toRuntimeConfig(REWARD_CONFIG_CODEC.toDocument(incoming));
         for (ERewardRule rule : ERewardRule.values()) {
             if (canView.test(rule)) continue;
@@ -328,9 +334,11 @@ public class RewardConfigManager {
     private static final Map<ERewardRule, ConcurrentLinkedDeque<String>> redoList = new ConcurrentHashMap<>();
     private static final Map<ERewardRule, ConcurrentLinkedDeque<String>> clientUndoList = new ConcurrentHashMap<>();
     private static final Map<ERewardRule, ConcurrentLinkedDeque<String>> clientRedoList = new ConcurrentHashMap<>();
+
     private static Map<ERewardRule, ConcurrentLinkedDeque<String>> undoHistory() {
         return clientScope.getAsBoolean() ? clientUndoList : undoList;
     }
+
     private static Map<ERewardRule, ConcurrentLinkedDeque<String>> redoHistory() {
         return clientScope.getAsBoolean() ? clientRedoList : redoList;
     }
@@ -399,7 +407,7 @@ public class RewardConfigManager {
     }
 
     private static Map<String, RewardList> takeHistoryRewards(ERewardRule rule, String direction,
-                                   Map<ERewardRule, ConcurrentLinkedDeque<String>> history) {
+                                                              Map<ERewardRule, ConcurrentLinkedDeque<String>> history) {
         ConcurrentLinkedDeque<String> entries = history.get(rule);
         String id = entries == null ? null : entries.peek();
         if (id == null) return new LinkedHashMap<>();
@@ -414,8 +422,8 @@ public class RewardConfigManager {
     }
 
     private static boolean restoreHistory(ERewardRule rule, String direction,
-                   Map<ERewardRule, ConcurrentLinkedDeque<String>> history, String oppositeDirection,
-                   Map<ERewardRule, ConcurrentLinkedDeque<String>> oppositeHistory) {
+                                          Map<ERewardRule, ConcurrentLinkedDeque<String>> history, String oppositeDirection,
+                                          Map<ERewardRule, ConcurrentLinkedDeque<String>> oppositeHistory) {
         ConcurrentLinkedDeque<String> entries = history.get(rule);
         String id = entries == null ? null : entries.peek();
         if (id == null) return false;
@@ -1532,11 +1540,11 @@ public class RewardConfigManager {
      */
     public static RewardOptionSyncPacket toSyncPacket(Player player) {
         return toSyncPacket(getRewardConfig(),
-                rule -> player.hasPermissions(SakuraUtils.getRewardPermissionLevel(rule)));
+                rule -> SakuraUtils.hasNativePermission(player.permissions(), SakuraUtils.getRewardPermissionLevel(rule)));
     }
 
     static RewardOptionSyncPacket toSyncPacket(RewardConfig config,
-                                                Predicate<ERewardRule> canView) {
+                                               Predicate<ERewardRule> canView) {
         List<RewardOptionSyncData> dataList = new ArrayList<>();
         for (ERewardRule rule : ERewardRule.values()) {
             // 如果对应查看权限不足则将数据置为空，并在服务端解析时不进行该数据的覆盖

@@ -1,5 +1,6 @@
 package xin.vanilla.sakura.data.migration;
 
+import xin.vanilla.sakura.util.SakuraNbt;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.nbt.ListTag;
@@ -24,36 +25,36 @@ public final class LegacyPlayerDataParser {
 
     public LegacyPlayerData parse(CompoundTag legacy) {
         PlayerSignInSummary summary = new PlayerSignInSummary();
-        summary.setTotalSignInDays(legacy.getInt("totalSignInDays"));
-        summary.setContinuousSignInDays(legacy.getInt("continuousSignInDays"));
-        summary.setLastSignInTime(legacy.getString("lastSignInTime"));
-        summary.setSignInCard(legacy.getInt("signInCard"));
-        summary.setAutoRewarded(legacy.getBoolean("autoRewarded"));
-        summary.setLanguage(legacy.contains("language", 8) ? legacy.getString("language") : "client");
-        summary.setCdkRecords(copyList(legacy.getList("cdkRecords", 10)));
-        summary.setOnlineTimeBaselineDate(legacy.getString("onlineTimeBaselineDate"));
-        summary.setOnlineTimeBaselineTicks(Math.max(0, legacy.getInt("onlineTimeBaselineTicks")));
-        ListTag lotteryStates = legacy.getList("lotteryDrawStates", 10);
+        summary.setTotalSignInDays(legacy.getIntOr("totalSignInDays", 0));
+        summary.setContinuousSignInDays(legacy.getIntOr("continuousSignInDays", 0));
+        summary.setLastSignInTime(legacy.getStringOr("lastSignInTime", ""));
+        summary.setSignInCard(legacy.getIntOr("signInCard", 0));
+        summary.setAutoRewarded(legacy.getBooleanOr("autoRewarded", false));
+        summary.setLanguage(legacy.getStringOr("language", "client"));
+        summary.setCdkRecords(copyList(SakuraNbt.compoundListOrEmpty(legacy, "cdkRecords")));
+        summary.setOnlineTimeBaselineDate(legacy.getStringOr("onlineTimeBaselineDate", ""));
+        summary.setOnlineTimeBaselineTicks(Math.max(0, legacy.getIntOr("onlineTimeBaselineTicks", 0)));
+        ListTag lotteryStates = SakuraNbt.compoundListOrEmpty(legacy, "lotteryDrawStates");
         for (int i = 0; i < lotteryStates.size(); i++) {
             summary.getLotteryDrawStates().add(
-                    LotteryDrawState.deserializeNBT(lotteryStates.getCompound(i)));
+                    LotteryDrawState.deserializeNBT(lotteryStates.getCompoundOrEmpty(i)));
         }
-        ListTag indexes = legacy.getList("monthIndexes", 10);
+        ListTag indexes = SakuraNbt.compoundListOrEmpty(legacy, "monthIndexes");
         for (int i = 0; i < indexes.size(); i++) {
-            MonthSignInIndex index = MonthSignInIndex.deserializeNBT(indexes.getCompound(i));
+            MonthSignInIndex index = MonthSignInIndex.deserializeNBT(indexes.getCompoundOrEmpty(i));
             summary.getMonthIndexes().put(index.getMonth(), index);
         }
-        ListTag slots = legacy.getList("personalDateSlots", 10);
+        ListTag slots = SakuraNbt.compoundListOrEmpty(legacy, "personalDateSlots");
         for (int i = 0; i < slots.size(); i++) {
             summary.getPersonalDateSlots().add(
-                    PlayerPersonalDateSlot.deserializeNBT(slots.getCompound(i)));
+                    PlayerPersonalDateSlot.deserializeNBT(slots.getCompoundOrEmpty(i)));
         }
 
         Map<String, List<CompoundTag>> recordsByMonth = new LinkedHashMap<>();
-        ListTag records = legacy.getList("signInRecords", 10);
+        ListTag records = SakuraNbt.compoundListOrEmpty(legacy, "signInRecords");
         for (int i = 0; i < records.size(); i++) {
-            CompoundTag record = records.getCompound(i);
-            LocalDate day = parseDay(record.getString("compensateTime"));
+            CompoundTag record = records.getCompoundOrEmpty(i);
+            LocalDate day = parseDay(record.getStringOr("compensateTime", ""));
             if (day == null) {
                 recordsByMonth.computeIfAbsent("unknown", key -> new ArrayList<>()).add(record.copy());
                 continue;
@@ -61,7 +62,7 @@ public final class LegacyPlayerDataParser {
             String month = String.format("%04d-%02d", day.getYear(), day.getMonthValue());
             summary.getMonthIndexes()
                     .computeIfAbsent(month, MonthSignInIndex::new)
-                    .markSigned(day.getDayOfMonth(), record.getBoolean("rewarded"));
+                    .markSigned(day.getDayOfMonth(), record.getBooleanOr("rewarded", false));
             recordsByMonth.computeIfAbsent(month, key -> new ArrayList<>()).add(record.copy());
         }
         return new LegacyPlayerData(summary, recordsByMonth);

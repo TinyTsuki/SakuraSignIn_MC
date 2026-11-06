@@ -13,7 +13,8 @@ import java.util.Objects;
 import java.util.function.BooleanSupplier;
 
 public final class SignInUiSession implements UiPageSession {
-    public record Cell(int date, Component day, Component tooltip, Texture icon, boolean currentMonth, boolean actionable) {
+    public record Cell(int date, Component day, Component tooltip, Texture icon, boolean currentMonth,
+                       boolean actionable) {
         public Cell(int date, Component day, Component tooltip, Texture icon) {
             this(date, day, tooltip, icon, true, true);
         }
@@ -53,7 +54,7 @@ public final class SignInUiSession implements UiPageSession {
 
         Texture themeIcon(int index);
 
-        boolean key(int code, boolean pressed);
+        boolean key(int code, int scan, boolean pressed);
 
         default List<Component> statistics() {
             return List.of(info(), empty(), empty());
@@ -170,7 +171,8 @@ public final class SignInUiSession implements UiPageSession {
                         && inside(next, "day" + position, pointer)) select(cells.get(position));
             }));
             bindings.add(next.onAction("day" + index, () -> {
-                if (!live(next, token) || port.openingTips() || position >= cells.size() || !cells.get(position).actionable()) return;
+                if (!live(next, token) || port.openingTips() || position >= cells.size() || !cells.get(position).actionable())
+                    return;
                 Cell selected = cells.get(position);
                 select(selected);
                 port.activate(selected.date());
@@ -316,7 +318,7 @@ public final class SignInUiSession implements UiPageSession {
     @Override
     public boolean key(int key, int scan, int modifiers, boolean pressed) {
         if (view == null || view.nativeView() || closed || !connection.getAsBoolean()) return false;
-        boolean handled = port.key(key, pressed);
+        boolean handled = port.key(key, scan, pressed);
         if (handled) refresh();
         return handled;
     }

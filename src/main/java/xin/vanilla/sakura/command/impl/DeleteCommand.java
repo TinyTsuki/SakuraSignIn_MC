@@ -1,6 +1,7 @@
 package xin.vanilla.sakura.command.impl;
 
-import com.mojang.authlib.GameProfile;
+import xin.vanilla.sakura.util.SakuraUtils;
+import net.minecraft.server.players.NameAndId;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
@@ -32,7 +33,7 @@ public final class DeleteCommand {
     }
 
     public static LiteralArgumentBuilder<CommandSourceStack> build() {
-        return Commands.literal("delete").requires(source -> source.hasPermission(2))
+        return Commands.literal("delete").requires(source -> SakuraUtils.hasNativePermission(source.permissions(), 2))
                 .then(Commands.argument("player", GameProfileArgument.gameProfile())
                         .executes(context -> execute(context, null))
                         .then(Commands.argument("date", StringArgumentType.greedyString())
@@ -43,33 +44,33 @@ public final class DeleteCommand {
     private static int execute(CommandContext<CommandSourceStack> context, String date)
             throws CommandSyntaxException {
         CommandSourceStack source = context.getSource();
-        Collection<GameProfile> profiles = GameProfileArgument.getGameProfiles(context, "player");
+        Collection<NameAndId> profiles = GameProfileArgument.getGameProfiles(context, "player");
         if (profiles.size() != 1) {
             throw new SimpleCommandExceptionType(message(source, "word", "delete_one_player").toVanilla()).create();
         }
-        GameProfile profile = profiles.iterator().next();
+        NameAndId profile = profiles.iterator().next();
         LocalDate current = currentDay();
         LocalDate day = date == null ? current : DeletionDateParser.parse(date, current);
         try {
-            if (!SakuraPlayerData.deleteDay(profile.getId(), day, current)) {
-                source.sendFailure(message(source, "format", "delete_sign_in_missing", profile.getName(), day.toString()).toVanilla());
+            if (!SakuraPlayerData.deleteDay(profile.id(), day, current)) {
+                source.sendFailure(message(source, "format", "delete_sign_in_missing", profile.name(), day.toString()).toVanilla());
                 return 0;
             }
         } catch (IOException | RuntimeException failure) {
-            LOGGER.error("Unable to delete sign-in day {} for {}", day, profile.getId(), failure);
+            LOGGER.error("Unable to delete sign-in day {} for {}", day, profile.id(), failure);
             source.sendFailure(message(source, "word", "delete_sign_in_failed").toVanilla());
             return 0;
         }
-        ServerPlayer player = source.getServer().getPlayerList().getPlayer(profile.getId());
+        ServerPlayer player = source.getServer().getPlayerList().getPlayer(profile.id());
         if (player != null) {
             try {
                 SakuraPlayerData.sync(player);
                 SakuraNetwork.syncMonth(player, YearMonth.from(day).toString());
             } catch (RuntimeException failure) {
-                LOGGER.warn("Deleted sign-in day persisted, but client sync failed for {}", profile.getId(), failure);
+                LOGGER.warn("Deleted sign-in day persisted, but client sync failed for {}", profile.id(), failure);
             }
         }
-        source.sendSuccess(() -> message(source, "format", "delete_sign_in_success", profile.getName(), day.toString()).toVanilla(), true);
+        source.sendSuccess(() -> message(source, "format", "delete_sign_in_success", profile.name(), day.toString()).toVanilla(), true);
         return 1;
     }
 

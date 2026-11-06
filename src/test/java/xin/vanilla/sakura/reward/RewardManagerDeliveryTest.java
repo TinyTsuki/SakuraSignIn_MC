@@ -11,7 +11,7 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.network.PacketSendListener;
+import io.netty.channel.ChannelFutureListener;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundSystemChatPacket;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
@@ -53,7 +53,9 @@ import xin.vanilla.sakura.test.BaniraTestPlatform;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Proxy;
+
 import com.google.gson.JsonParser;
+
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -61,7 +63,9 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 
-/** Exercises the public entry point and real reward/message executors, without a game server. */
+/**
+ * Exercises the public entry point and real reward/message executors, without a game server.
+ */
 public class RewardManagerDeliveryTest {
     private final List<String> events = new ArrayList<>();
     private PlayerSignInData data;
@@ -80,7 +84,7 @@ public class RewardManagerDeliveryTest {
 
     @BeforeClass
     public static void bootstrapMinecraftRegistries() {
-        xin.vanilla.sakura.test.NeoForgeUnitTestBootstrap.bootstrap();
+        xin.vanilla.sakura.test.NativeBootstrap.initialize();
     }
 
     @Before
@@ -130,11 +134,20 @@ public class RewardManagerDeliveryTest {
                 getClass().getClassLoader(), new Class<?>[]{SakuraPlayerDataService.class},
                 (proxy, method, args) -> {
                     switch (method.getName()) {
-                        case "get": return data;
-                        case "save": save(); break;
-                        case "sync": sync(); break;
-                        case "saveAndSync": save(); sync(); break;
-                        default: throw new UnsupportedOperationException(method.getName());
+                        case "get":
+                            return data;
+                        case "save":
+                            save();
+                            break;
+                        case "sync":
+                            sync();
+                            break;
+                        case "saveAndSync":
+                            save();
+                            sync();
+                            break;
+                        default:
+                            throw new UnsupportedOperationException(method.getName());
                     }
                     return null;
                 }));
@@ -359,15 +372,17 @@ public class RewardManagerDeliveryTest {
         assertEquals(3, packetAttempts);
         assertEquals(2, packets.size());
         List<String> received = new ArrayList<>();
-        for (NotificationToClient packet : packets) collectNames(SakuraComponent.get().deserialize(
-                new JsonParser().parse(packet.componentJson()).getAsJsonObject()), received);
+        for (NotificationToClient packet : packets)
+            collectNames(SakuraComponent.get().deserialize(
+                    new JsonParser().parse(packet.componentJson()).getAsJsonObject()), received);
         assertTrue(received.size() > 0 && received.size() < 256);
         data = reload();
         signIn(ESignInType.REWARD, today, true);
         assertEquals(256, inventory().items);
         List<String> afterRetry = new ArrayList<>();
-        for (NotificationToClient packet : packets) collectNames(SakuraComponent.get().deserialize(
-                new JsonParser().parse(packet.componentJson()).getAsJsonObject()), afterRetry);
+        for (NotificationToClient packet : packets)
+            collectNames(SakuraComponent.get().deserialize(
+                    new JsonParser().parse(packet.componentJson()).getAsJsonObject()), afterRetry);
         assertEquals(received, afterRetry);
     }
 
@@ -393,8 +408,8 @@ public class RewardManagerDeliveryTest {
         Component prefix = SakuraComponent.get().literal("prefix").languageCode("zh_cn");
         Component entry = SakuraComponent.get().literal("\u5956\u52b1\ud83c\udf38")
                 .color(java.awt.Color.GREEN.getRGB())
-                .clickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/sakura help"))
-                .hoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, net.minecraft.network.chat.Component.literal("hover detail")))
+                .clickEvent(new ClickEvent.SuggestCommand("/sakura help"))
+                .hoverEvent(new HoverEvent.ShowText(net.minecraft.network.chat.Component.literal("hover detail")))
                 .languageCode("zh_cn");
         String originalPrefix = prefix.toJson().toString();
         String originalEntry = entry.toJson().toString();
@@ -439,9 +454,10 @@ public class RewardManagerDeliveryTest {
         assertEquals(2, data.getSignInCard());
         assertEquals("", data.getPersonalDateSlots().get(0).getLastClaimedOccurrenceKey());
         assertTrue(packets.stream().noneMatch(packet -> packet.componentJson().contains("Birthday")));
-        assertEquals(1, saved.getList("signInRecords", 10).getCompound(0).getList("personalDateRewards", 10).size());
+        assertEquals(1, saved.getListOrEmpty("signInRecords").getCompound(0).orElseThrow().getListOrEmpty("personalDateRewards").size());
         data = reload();
-        packets.clear(); events.clear();
+        packets.clear();
+        events.clear();
         signIn(ESignInType.REWARD, today, true);
         assertEquals(3, data.getSignInCard());
         assertEquals(1, packets.size());
@@ -466,7 +482,8 @@ public class RewardManagerDeliveryTest {
         PlayerUtils.setRemoteClientModInstalled(player, "banira_codex", true);
         failPacketAt = 1;
         signIn(ESignInType.SIGN_IN, today, false);
-        packets.clear(); packetAttempts = 0;
+        packets.clear();
+        packetAttempts = 0;
         signIn(ESignInType.REWARD, today, true);
         assertTrue(packets.stream().noneMatch(packet -> packet.componentJson().contains("Birthday")));
         assertEquals(2, data.getSignInCard());
@@ -589,7 +606,7 @@ public class RewardManagerDeliveryTest {
         signIn(ESignInType.RE_SIGN_IN, DateUtils.addDay(today, -1), false);
         assertEquals(1, data.getSignInCard());
         assertEquals("", data.getPersonalDateSlots().get(0).getLastClaimedOccurrenceKey());
-        assertEquals(0, saved.getList("signInRecords", 10).getCompound(0).getList("personalDateRewards", 10).size());
+        assertEquals(0, saved.getListOrEmpty("signInRecords").getCompound(0).orElseThrow().getListOrEmpty("personalDateRewards").size());
     }
 
     @Test
@@ -644,11 +661,18 @@ public class RewardManagerDeliveryTest {
                 getClass().getClassLoader(), new Class<?>[]{BaniraPacketBuffer.class},
                 (proxy, method, args) -> {
                     switch (method.getName()) {
-                        case "writeUtf": nativeBuffer.writeUtf((String) args[0], (Integer) args[1]); return null;
-                        case "readUtf": return nativeBuffer.readUtf((Integer) args[0]);
-                        case "writeLong": nativeBuffer.writeLong((Long) args[0]); return null;
-                        case "readLong": return nativeBuffer.readLong();
-                        default: throw new UnsupportedOperationException(method.getName());
+                        case "writeUtf":
+                            nativeBuffer.writeUtf((String) args[0], (Integer) args[1]);
+                            return null;
+                        case "readUtf":
+                            return nativeBuffer.readUtf((Integer) args[0]);
+                        case "writeLong":
+                            nativeBuffer.writeLong((Long) args[0]);
+                            return null;
+                        case "readLong":
+                            return nativeBuffer.readLong();
+                        default:
+                            throw new UnsupportedOperationException(method.getName());
                     }
                 });
         try {
@@ -712,15 +736,31 @@ public class RewardManagerDeliveryTest {
 
     private RewardGrantContext context() {
         return new RewardGrantContext() {
-            public ServerPlayer player() { return player; }
-            public UUID playerId() { return player.getUUID(); }
-            public Date signInDate() { return today; }
-            public String sourceId() { return "test"; }
-            public void addSignInCards(int amount) { data.plusSignInCard(amount); }
+            public ServerPlayer player() {
+                return player;
+            }
+
+            public UUID playerId() {
+                return player.getUUID();
+            }
+
+            public Date signInDate() {
+                return today;
+            }
+
+            public String sourceId() {
+                return "test";
+            }
+
+            public void addSignInCards(int amount) {
+                data.plusSignInCard(amount);
+            }
         };
     }
 
-    private CountingInventory inventory() { return (CountingInventory) player.getInventory(); }
+    private CountingInventory inventory() {
+        return (CountingInventory) player.getInventory();
+    }
 
     private static Field field(Class<?> type, String name) throws Exception {
         Field field = type.getDeclaredField(name);
@@ -732,8 +772,14 @@ public class RewardManagerDeliveryTest {
         private int items;
         private boolean full;
         private final TestPlayer owner;
-        CountingInventory(TestPlayer owner) { super(owner); this.owner = owner; }
-        @Override public boolean add(ItemStack stack) {
+
+        CountingInventory(TestPlayer owner) {
+            super(owner, new net.minecraft.world.entity.EntityEquipment());
+            this.owner = owner;
+        }
+
+        @Override
+        public boolean add(ItemStack stack) {
             owner.events.add("item");
             if (full) return false;
             items += stack.getCount();
@@ -752,23 +798,47 @@ public class RewardManagerDeliveryTest {
         private int dropped;
         private boolean failDrop;
 
-        private TestPlayer() { super(null, null, null, null); }
-        @Override public RegistryAccess registryAccess() {
+        private TestPlayer() {
+            super(null, null, null, null);
+        }
+
+        @Override
+        public RegistryAccess registryAccess() {
             return RegistryAccess.fromRegistryOfRegistries(BuiltInRegistries.REGISTRY);
         }
-        @Override public UUID getUUID() { return new UUID(0, 1665); }
-        @Override public boolean hasPermissions(int level) { return true; }
-        @Override public Collection<MobEffectInstance> getActiveEffects() { return Collections.emptyList(); }
-        @Override public net.minecraft.world.entity.item.ItemEntity drop(ItemStack stack, boolean random) {
+
+        @Override
+        public UUID getUUID() {
+            return new UUID(0, 1665);
+        }
+
+        @Override
+        public net.minecraft.server.permissions.PermissionSet permissions() {
+            return net.minecraft.server.permissions.LevelBasedPermissionSet.OWNER;
+        }
+
+        @Override
+        public Collection<MobEffectInstance> getActiveEffects() {
+            return Collections.emptyList();
+        }
+
+        @Override
+        public net.minecraft.world.entity.item.ItemEntity drop(ItemStack stack, boolean random) {
             if (failDrop) return null;
             dropped += stack.getCount();
             try {
                 Class<?> unsafeClass = Class.forName("sun.misc.Unsafe");
                 return (net.minecraft.world.entity.item.ItemEntity) unsafeClass.getMethod("allocateInstance", Class.class)
                         .invoke(field(unsafeClass, "theUnsafe").get(null), net.minecraft.world.entity.item.ItemEntity.class);
-            } catch (Exception failure) { throw new IllegalStateException(failure); }
+            } catch (Exception failure) {
+                throw new IllegalStateException(failure);
+            }
         }
-        @Override public boolean isLocalPlayer() { return false; }
+
+        @Override
+        public boolean isLocalPlayer() {
+            return false;
+        }
 
         private void submit(ClientboundSystemChatPacket packet) {
             RegistryFriendlyByteBuf buffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), registryAccess());
@@ -778,8 +848,10 @@ public class RewardManagerDeliveryTest {
                 ClientboundSystemChatPacket decoded = ClientboundSystemChatPacket.STREAM_CODEC.decode(buffer);
                 assertFalse("Result messages must stay in chat", decoded.overlay());
                 assertEquals(packet.overlay(), decoded.overlay());
-                assertEquals(net.minecraft.network.chat.Component.Serializer.toJson(packet.content(), registryAccess()),
-                        net.minecraft.network.chat.Component.Serializer.toJson(decoded.content(), registryAccess()));
+                var codec = net.minecraft.network.chat.ComponentSerialization.CODEC;
+                var ops = registryAccess().createSerializationContext(com.mojang.serialization.JsonOps.INSTANCE);
+                assertEquals(codec.encodeStart(ops, packet.content()).getOrThrow(),
+                        codec.encodeStart(ops, decoded.content()).getOrThrow());
                 text = decoded.content().getString();
                 assertEquals(0, buffer.readableBytes());
             } finally {
@@ -802,13 +874,17 @@ public class RewardManagerDeliveryTest {
     private static final class RecordingConnection extends ServerGamePacketListenerImpl {
         private TestPlayer owner;
 
-        private RecordingConnection() { super(null, null, null, null); }
+        private RecordingConnection() {
+            super(null, null, null, null);
+        }
 
-        @Override public void send(Packet<?> packet) {
+        @Override
+        public void send(Packet<?> packet) {
             owner.submit((ClientboundSystemChatPacket) packet);
         }
 
-        @Override public void send(Packet<?> packet, PacketSendListener listener) {
+        @Override
+        public void send(Packet<?> packet, ChannelFutureListener listener) {
             owner.submit((ClientboundSystemChatPacket) packet);
         }
     }

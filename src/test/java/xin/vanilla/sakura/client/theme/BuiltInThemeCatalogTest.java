@@ -4,7 +4,7 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.junit.Test;
 
 import javax.imageio.ImageIO;
@@ -245,13 +245,13 @@ public class BuiltInThemeCatalogTest {
         }
     }
 
-    private static BufferedImage image(ResourceLocation path) throws IOException {
+    private static BufferedImage image(Identifier path) throws IOException {
         try (var in = packaged(path)) {
             return ImageIO.read(in);
         }
     }
 
-    private static InputStream packaged(ResourceLocation path) throws IOException {
+    private static InputStream packaged(Identifier path) throws IOException {
         return resource("assets/" + path.getNamespace() + "/" + path.getPath());
     }
 

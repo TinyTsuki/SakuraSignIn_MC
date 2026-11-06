@@ -66,7 +66,7 @@ public class LotteryResultPageTest {
     @Test
     public void headerAndSingleResultKeepOriginalClaimLifecycle() {
         int[] claims = {0};
-        var session = new LotteryRevealUiSession(packet(1), LotteryAnimationStyle.INSTANT, () -> 0, () -> true, () -> 69, () -> claims[0]++);
+        var session = new LotteryRevealUiSession(packet(1), LotteryAnimationStyle.INSTANT, () -> 0, () -> true, (key, scan) -> key == 69, () -> claims[0]++);
         var view = new RecordingUiView();
         session.bind(view);
         assertNotNull(view.icons.get("brand"));
@@ -84,7 +84,7 @@ public class LotteryResultPageTest {
 
     @Test
     public void hundredResultsKeepTheTailAndReadOnlyCardContent() {
-        var session = new LotteryRevealUiSession(packet(100), LotteryAnimationStyle.INSTANT, () -> 0, () -> true, () -> 69, () -> {
+        var session = new LotteryRevealUiSession(packet(100), LotteryAnimationStyle.INSTANT, () -> 0, () -> true, (key, scan) -> key == 69, () -> {
         });
         var view = new RecordingUiView();
         session.bind(view);
@@ -101,7 +101,7 @@ public class LotteryResultPageTest {
 
     @Test
     public void responsiveColumnsAndNativeHandoffPreserveScrollAnchor() {
-        var session = new LotteryRevealUiSession(packet(100), LotteryAnimationStyle.INSTANT, () -> 0, () -> true, () -> 69, () -> {
+        var session = new LotteryRevealUiSession(packet(100), LotteryAnimationStyle.INSTANT, () -> 0, () -> true, (key, scan) -> key == 69, () -> {
         });
         var view = new RecordingUiView();
         view.state.rowPosition(12);
@@ -125,7 +125,7 @@ public class LotteryResultPageTest {
     public void disconnectedActionsCannotClaimAndStaleCloseCannotReachNewView() {
         boolean[] connected = {true};
         int[] claims = {0};
-        var session = new LotteryRevealUiSession(packet(1), LotteryAnimationStyle.STRIP, () -> 0, () -> connected[0], () -> 69, () -> claims[0]++);
+        var session = new LotteryRevealUiSession(packet(1), LotteryAnimationStyle.STRIP, () -> 0, () -> connected[0], (key, scan) -> key == 69, () -> claims[0]++);
         var view = new RecordingUiView();
         session.bind(view);
         Runnable close = view.actions.get("close");

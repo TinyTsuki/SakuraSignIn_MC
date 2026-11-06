@@ -156,7 +156,7 @@ public final class SakuraNetwork {
         sendSplitToPlayer(lotteryPoolPacket(player), player);
         xin.vanilla.sakura.reward.lottery.LotteryRewardService.recover(player);
         sendSplitToPlayer(new AdvancementPacket(
-                player.server.getAdvancements().getAllAdvancements()
+                player.level().getServer().getAdvancements().getAllAdvancements()
         ), player);
     }
 
@@ -166,7 +166,7 @@ public final class SakuraNetwork {
     }
 
     public static PersonalDatePresetSyncPacket personalDatePacket(ServerPlayer player) {
-        boolean visible = player.hasPermissions(
+        boolean visible = SakuraUtils.hasNativePermission(player.permissions(),
                 SakuraUtils.getRewardPermissionLevel(ERewardRule.PERSONAL_DATE_REWARD));
         return new PersonalDatePresetSyncPacket(
                 visible ? RewardConfigManager.getRewardConfig().getPersonalDatePresets()
@@ -175,12 +175,12 @@ public final class SakuraNetwork {
     }
 
     public static LotteryPoolSyncPacket lotteryPoolPacket(ServerPlayer player) {
-        boolean visible = player.hasPermissions(
+        boolean visible = SakuraUtils.hasNativePermission(player.permissions(),
                 SakuraUtils.getRewardPermissionLevel(ERewardRule.LOTTERY_REWARD));
         return new LotteryPoolSyncPacket(visible
                 ? xin.vanilla.sakura.data.lottery.LotteryPools.visibleCopy(
-                        RewardConfigManager.getRewardConfig().getLotteryPools(),
-                        player.hasPermissions(CommonConfig.get().permission().permissionEditReward()))
+                RewardConfigManager.getRewardConfig().getLotteryPools(),
+                SakuraUtils.hasNativePermission(player.permissions(), CommonConfig.get().permission().permissionEditReward()))
                 : java.util.Collections.emptyList(), RewardConfigManager.getLotteryGeneration());
     }
 }

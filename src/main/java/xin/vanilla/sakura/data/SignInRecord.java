@@ -1,5 +1,6 @@
 package xin.vanilla.sakura.data;
 
+import xin.vanilla.sakura.util.SakuraNbt;
 import lombok.Data;
 import lombok.NonNull;
 import net.minecraft.nbt.CompoundTag;
@@ -79,23 +80,22 @@ public class SignInRecord implements Serializable, Cloneable {
     public static SignInRecord readFromNBT(CompoundTag tag) {
         SignInRecord record = new SignInRecord();
         // 读取简单字段
-        record.compensateTime = DateUtils.format(tag.getString("compensateTime"));
-        record.signInTime = DateUtils.format(tag.getString("signInTime"));
-        record.signInUUID = tag.getString("signInUUID");
-        record.rewarded = tag.getBoolean("rewarded");
+        record.compensateTime = DateUtils.format(tag.getStringOr("compensateTime", ""));
+        record.signInTime = DateUtils.format(tag.getStringOr("signInTime", ""));
+        record.signInUUID = tag.getStringOr("signInUUID", "");
+        record.rewarded = tag.getBooleanOr("rewarded", false);
 
         // 反序列化奖励列表
-        String rewardListString = tag.getString("rewardList");
+        String rewardListString = tag.getStringOr("rewardList", "");
         record.rewardList = RewardListJsonCodec.decodeLenient(rewardListString,
                 exception -> LOGGER.warn("Skipping malformed sign-in reward entry for {}",
                         record.signInTime, exception));
-        ListTag snapshots = tag.getList("personalDateRewards", 10);
-        if (tag.contains("personalDateRewards") && (!tag.contains("personalDateRewards", 9)
-                || snapshots.isEmpty())) {
+        ListTag snapshots = SakuraNbt.compoundListOrEmpty(tag, "personalDateRewards");
+        if (tag.contains("personalDateRewards") && snapshots.isEmpty()) {
             throw new IllegalArgumentException("Invalid pending personal date snapshot container");
         }
         for (int i = 0; i < snapshots.size(); i++) {
-            record.personalDateRewards.add(PersonalDateRewardSnapshot.deserializeNBT(snapshots.getCompound(i)));
+            record.personalDateRewards.add(PersonalDateRewardSnapshot.deserializeNBT(snapshots.getCompoundOrEmpty(i)));
         }
         return record;
     }

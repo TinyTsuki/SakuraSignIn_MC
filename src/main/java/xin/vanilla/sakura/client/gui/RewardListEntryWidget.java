@@ -1,11 +1,11 @@
 package xin.vanilla.sakura.client.gui;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import org.joml.Matrix3x2fStack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.client.data.FontDrawArgs;
 import xin.vanilla.banira.client.data.ScreenCoordinate;
@@ -101,11 +101,11 @@ public final class RewardListEntryWidget extends BaseWidget {
     }
 
     @Override
-    public void render(GuiGraphics graphics, float partialTicks) {
+    public void render(GuiGraphicsExtractor graphics, float partialTicks) {
         if (!visible() || !visibleInViewport()) {
             return;
         }
-        PoseStack stack = graphics.pose();
+        Matrix3x2fStack stack = graphics.pose();
         if (selected && drawSelectionOutline) {
             ShapeDrawArgs.RectParams rect = new ShapeDrawArgs.RectParams()
                     .x((float) realX() - 1)
@@ -125,12 +125,12 @@ public final class RewardListEntryWidget extends BaseWidget {
         }
     }
 
-    public void renderTooltip(GuiGraphics graphics, double mouseX, double mouseY) {
+    public void renderTooltip(GuiGraphicsExtractor graphics, double mouseX, double mouseY) {
         if (!visibleInViewport() || !mouseInside || tooltip == null || tooltip.content().isEmpty()
-                || (tooltipRequiresShift && !Screen.hasShiftDown())) {
+                || (tooltipRequiresShift && !screen.inputState().isShiftPressing())) {
             return;
         }
-        PoseStack stack = graphics.pose();
+        Matrix3x2fStack stack = graphics.pose();
         TooltipWidget.drawPopupMessage(stack, FontDrawArgs.ofPopo(
                 tooltip.clone().stack(stack).font(Minecraft.getInstance().font)
         ).x(mouseX).y(mouseY), screen.getEffectiveTheme(), screen.season());
@@ -233,11 +233,11 @@ public final class RewardListEntryWidget extends BaseWidget {
 
     @Getter
     public static final class RenderContext {
-        private final GuiGraphics graphics;
-        private final PoseStack stack;
+        private final GuiGraphicsExtractor graphics;
+        private final Matrix3x2fStack stack;
         private final RewardListEntryWidget entry;
 
-        private RenderContext(GuiGraphics graphics, RewardListEntryWidget entry) {
+        private RenderContext(GuiGraphicsExtractor graphics, RewardListEntryWidget entry) {
             this.graphics = graphics;
             this.stack = graphics.pose();
             this.entry = entry;

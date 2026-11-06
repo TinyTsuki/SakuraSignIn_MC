@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
-import java.util.function.IntSupplier;
+import java.util.function.BiPredicate;
 import java.util.function.LongSupplier;
 
 public final class LotteryRevealUiSession implements UiPageSession {
@@ -25,7 +25,7 @@ public final class LotteryRevealUiSession implements UiPageSession {
     private final LotteryAnimationStyle style;
     private final LongSupplier millis;
     private final BooleanSupplier connection;
-    private final IntSupplier inventoryKey;
+    private final BiPredicate<Integer, Integer> inventoryKey;
     private final Runnable claim;
     private final long openedAt;
     private final List<Reward> winners, preview;
@@ -38,7 +38,7 @@ public final class LotteryRevealUiSession implements UiPageSession {
     private int resultColumns;
 
     public LotteryRevealUiSession(LotteryRevealPacket packet, LotteryAnimationStyle style, LongSupplier millis,
-                                  BooleanSupplier connection, IntSupplier inventoryKey, Runnable claim) {
+                                  BooleanSupplier connection, BiPredicate<Integer, Integer> inventoryKey, Runnable claim) {
         this.packet = Objects.requireNonNull(packet);
         this.style = Objects.requireNonNull(style);
         this.millis = Objects.requireNonNull(millis);
@@ -345,7 +345,7 @@ public final class LotteryRevealUiSession implements UiPageSession {
 
     @Override
     public boolean key(int key, int scan, int modifiers, boolean pressed) {
-        if (view == null || view.nativeView() || closed || !connection.getAsBoolean() || !pressed || key != 256 && key != inventoryKey.getAsInt())
+        if (view == null || view.nativeView() || closed || !connection.getAsBoolean() || !pressed || key != 256 && !inventoryKey.test(key, scan))
             return false;
         action();
         return true;

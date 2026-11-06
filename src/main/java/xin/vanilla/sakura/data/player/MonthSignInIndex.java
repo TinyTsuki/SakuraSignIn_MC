@@ -51,9 +51,9 @@ public class MonthSignInIndex {
     }
 
     public static MonthSignInIndex deserializeNBT(CompoundTag tag) {
-        MonthSignInIndex index = new MonthSignInIndex(tag.getString("month"));
-        index.signedDays = tag.getInt("signedDays");
-        index.rewardedDays = tag.getInt("rewardedDays");
+        MonthSignInIndex index = new MonthSignInIndex(tag.getStringOr("month", ""));
+        index.signedDays = tag.getIntOr("signedDays", 0);
+        index.rewardedDays = tag.getIntOr("rewardedDays", 0);
         return index;
     }
 

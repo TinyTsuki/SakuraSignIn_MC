@@ -1,13 +1,12 @@
 package xin.vanilla.sakura.screen;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.*;
+import org.joml.Matrix3x2fStack;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
 import org.apache.logging.log4j.LogManager;
@@ -322,7 +321,7 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
             return true;
         if (action == RewardEditorUiSession.Action.UPLOAD) {
             LocalPlayer player = Minecraft.getInstance().player;
-            return player != null && player.hasPermissions(CommonConfig.get().permission().permissionEditReward()) && SakuraClientState.isEnabled();
+            return player != null && SakuraUtils.hasNativePermission(player.permissions(), CommonConfig.get().permission().permissionEditReward()) && SakuraClientState.isEnabled();
         }
         if (currentRewardRule() == null || isCurrentRuleRedacted()) return false;
         if ((action == RewardEditorUiSession.Action.CUT || action == RewardEditorUiSession.Action.DELETE) && "标题,base".equals(currRewardButton))
@@ -431,7 +430,7 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
         if (action == RewardEditorUiSession.EntryAction.TOGGLE) {
             rewardSelection.select(id, new ArrayList<>(REWARD_BUTTONS.keySet()), true, false);
         } else if (action == RewardEditorUiSession.EntryAction.SELECT) {
-            if (group && !Screen.hasControlDown()) {
+            if (group && !inputState.isCtrlPressing()) {
                 toggleRewardGroup(key);
                 rewardSelection.clear();
                 updateLayout();
@@ -443,7 +442,7 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
                 if (!group && uiClicks == 2) selectSemanticRewards(id);
                 else if (!group && uiClicks == 3) selectGroupRewards(key);
                 else
-                    rewardSelection.select(id, new ArrayList<>(REWARD_BUTTONS.keySet()), Screen.hasControlDown(), Screen.hasShiftDown());
+                    rewardSelection.select(id, new ArrayList<>(REWARD_BUTTONS.keySet()), inputState.isCtrlPressing(), inputState.isShiftPressing());
             }
         } else if (action == RewardEditorUiSession.EntryAction.GROUP_SELECT) {
             if (group) toggleRewardGroupSelection(key);
@@ -514,7 +513,8 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
         LocalPlayer player = Minecraft.getInstance().player;
         long generation = SakuraClientState.getLotteryRequests().getGeneration();
         if (player == null || !SakuraClientState.isEnabled() || generation < 0
-                || !player.hasPermissions(CommonConfig.get().permission().permissionEditReward())) return false;
+                || !SakuraUtils.hasNativePermission(player.permissions(), CommonConfig.get().permission().permissionEditReward()))
+            return false;
         SakuraNetwork.sendSplitToServer(new LotteryPoolSyncPacket(RewardConfigManager.getRewardConfig(), generation));
         editsPending = false;
         return true;
@@ -577,7 +577,7 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
      */
     private int lineItemCount;
     // 矩阵栈
-    private PoseStack ms;
+    private Matrix3x2fStack ms;
     private double rewardLayoutY;
     private double rewardContentHeight;
     // Y坐标偏移
@@ -664,14 +664,11 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
     /**
      * 绘制背景纹理
      */
-    private void renderBackgroundTexture(PoseStack matrixStack) {
+    private void renderBackgroundTexture(Matrix3x2fStack matrixStack) {
         // 启用混合模式以支持透明度
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
 
         // 绑定背景纹理
         ThemeTexture background = SakuraThemeTextures.get("background.editor");
-        RenderSystem.setShaderTexture(0, background.location());
 
         // 获取屏幕宽高
         int screenWidth = super.width;
@@ -690,7 +687,6 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
         }
 
         // 禁用混合模式
-        RenderSystem.disableBlend();
     }
 
     /**
@@ -729,7 +725,7 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
                     ? getEffectiveTheme().accentFocused()
                     : groupBorderColor();
             drawRewardGroupBorder(context.getStack(), x, y, width, panelHeight, borderColor);
-            context.getGraphics().drawString(super.font, collapsed ? "\u25B6" : "\u25BC",
+            context.getGraphics().text(super.font, collapsed ? "\u25B6" : "\u25BC",
                     x + 4, (int) (y + (height - super.font.lineHeight) / 2.0F),
                     getEffectiveTheme().buttonText(), false);
             drawLimitedText(context.getStack(), title,
@@ -814,7 +810,7 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
         return font.lineHeight + groupHeaderVerticalPadding * 2;
     }
 
-    private void drawRewardGroupBorder(PoseStack stack, int x, int y,
+    private void drawRewardGroupBorder(Matrix3x2fStack stack, int x, int y,
                                        int width, int height, int color) {
         BaseShapeWidget.drawShape(new ShapeDrawArgs()
                 .stack(stack)
@@ -825,7 +821,7 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
                         .radius(0).border(1)));
     }
 
-    private void drawLimitedText(PoseStack stack, String content, int x, int y,
+    private void drawLimitedText(Matrix3x2fStack stack, String content, int x, int y,
                                  int maxWidth, int color, boolean shadow) {
         LabelWidget.drawLimitedText(FontDrawArgs.of(Text.literal(content)
                         .stack(stack).font(font).color(color).shadow(shadow))
@@ -843,7 +839,7 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
         return text.content().split("\\n", -1).length * font.lineHeight;
     }
 
-    private void drawWelcomeTips(PoseStack stack) {
+    private void drawWelcomeTips(Matrix3x2fStack stack) {
         int availableWidth = Math.max(1,
                 width - leftBarWidth - rightBarWidth - 16);
         int textWidth = Math.min(multilineTextWidth(tips), availableWidth);
@@ -1014,7 +1010,7 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
         }
         LocalPlayer player = Minecraft.getInstance().player;
         if (player == null
-                || !player.hasPermissions(CommonConfig.get().permission().permissionEditReward())) {
+                || !SakuraUtils.hasNativePermission(player.permissions(), CommonConfig.get().permission().permissionEditReward())) {
             SakuraClientNotifications.warning(SakuraComponent.get().transClient(
                     "word", "no_permission_to_edit_reward"), SakuraNotificationTypes.REWARD);
             return;
@@ -1529,8 +1525,7 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
         }
     }
 
-    private void renderDraggedReward(GuiGraphics graphics) {
-        PoseStack stack = graphics.pose();
+    private void renderDraggedReward(GuiGraphicsExtractor graphics) {
         if (draggingRewardId == null) {
             return;
         }
@@ -1543,8 +1538,7 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
         int spacing = itemIconSize + 2;
         int startX = (int) dragMouseX - columns * spacing / 2;
         int startY = (int) dragMouseY - itemIconSize / 2;
-        stack.pushPose();
-        stack.translate(0, 0, 500);
+        graphics.nextStratum();
         int visualIndex = 0;
         for (String rewardId : selectedRewardIds()) {
             int separator = rewardId.lastIndexOf(',');
@@ -1566,7 +1560,6 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
                     rewards.get(index), x, y, true);
             visualIndex++;
         }
-        stack.popPose();
     }
 
     private List<String> selectableRewardIds() {
@@ -2051,7 +2044,7 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
             String content, ERewardRule rule) {
         return context -> {
             RewardOperationWidget widget = context.getWidget();
-            PoseStack stack = context.getStack();
+            Matrix3x2fStack stack = context.getStack();
             int realX = (int) widget.realX();
             int realY = (int) widget.realY();
             double realWidth = widget.realWidth();
@@ -2601,7 +2594,7 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
         }
 
         registerOperation(new RewardOperationWidget(this, OperationButtonType.OFFSET_Y.getCode(), context -> {
-            context.getGraphics().drawString(font, "OY:", width - rightBarWidth + 1,
+            context.getGraphics().text(font, "OY:", width - rightBarWidth + 1,
                     height - font.lineHeight * 2 - 2, 0xFFACACAC, false);
             drawLimitedText(context.getStack(), String.valueOf((int) yOffset),
                     width - rightBarWidth + 1, height - font.lineHeight - 2,
@@ -2653,7 +2646,7 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
     /**
      * 右侧工具栏使用无背景像素线条，避免小尺寸按钮出现厚重色块。
      */
-    private void drawOperationIcon(PoseStack stack, OperationButtonType type,
+    private void drawOperationIcon(Matrix3x2fStack stack, OperationButtonType type,
                                    int x, int y, int width, int height, int color) {
         int left = x + (width - 12) / 2;
         int top = y + (height - 12) / 2;
@@ -2698,7 +2691,7 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
         }
     }
 
-    private static void drawTransferArrow(PoseStack stack, int left, int top,
+    private static void drawTransferArrow(Matrix3x2fStack stack, int left, int top,
                                           boolean upload, int color) {
         float centerX = left + 6;
         float terminalY = top + 10;
@@ -2716,7 +2709,7 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
                 1.6F, color);
     }
 
-    private static void iconRect(PoseStack stack, int x, int y,
+    private static void iconRect(Matrix3x2fStack stack, int x, int y,
                                  int width, int height, int color) {
         AbstractGuiUtils.fill(stack, x, y, width, height, color);
     }
@@ -2754,8 +2747,8 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
     }
 
     @Override
-    protected void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        PoseStack matrixStack = graphics.pose();
+    protected void onRender(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
+        Matrix3x2fStack matrixStack = graphics.pose();
         this.ms = matrixStack;
         this.renderBackgroundTexture(matrixStack);
 
@@ -2842,7 +2835,7 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
 
         LocalPlayer player = Minecraft.getInstance().player;
         RewardOperationWidget upload = OP_BUTTONS.get(OperationButtonType.UPLOAD.getCode());
-        if (player != null && player.hasPermissions(CommonConfig.get().permission().permissionEditReward())) {
+        if (player != null && SakuraUtils.hasNativePermission(player.permissions(), CommonConfig.get().permission().permissionEditReward())) {
             upload.setTooltip(Text.trans(SakuraSignIn.MODID,
                             "word.sakura_sign_in.upload_reward_config"))
                     .setPressedTint(0xAAA0A0A0);
@@ -2860,21 +2853,21 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
     /**
      * 无权限规则只展示占位页，客户端不持有其服务端奖励内容。
      */
-    private void renderPermissionDenied(GuiGraphics graphics) {
-        PoseStack stack = graphics.pose();
+    private void renderPermissionDenied(GuiGraphicsExtractor graphics) {
+        Matrix3x2fStack stack = graphics.pose();
         String message = SakuraComponent.get().transClient(
                 "word", "reward_rule_permission_denied_page").toString();
         float scale = 1.5F;
         float centerX = leftBarWidth
                 + (width - leftBarWidth - rightBarWidth) / 2.0F;
         float centerY = height / 2.0F;
-        stack.pushPose();
-        stack.scale(scale, scale, 1.0F);
-        graphics.drawString(font, message,
+        stack.pushMatrix();
+        stack.scale(scale, scale);
+        graphics.text(font, message,
                 (int) (centerX / scale - font.width(message) / 2.0F),
                 (int) (centerY / scale - font.lineHeight / 2.0F),
                 getEffectiveTheme().buttonText(), false);
-        stack.popPose();
+        stack.popMatrix();
     }
 
     @Override

@@ -14,14 +14,16 @@ import xin.vanilla.sakura.message.SakuraMessages;
 import xin.vanilla.sakura.reward.lottery.LotteryDrawDispatcher;
 import xin.vanilla.sakura.util.SakuraUtils;
 
-/** 列出并领取服务端权威抽奖池。 */
+/**
+ * 列出并领取服务端权威抽奖池。
+ */
 public final class LotteryCommand {
     private LotteryCommand() {
     }
 
     public static LiteralArgumentBuilder<CommandSourceStack> build() {
         return Commands.literal(CommonConfig.get().command().commandLottery())
-                .requires(source -> source.hasPermission(
+                .requires(source -> SakuraUtils.hasNativePermission(source.permissions(),
                         SakuraUtils.getRewardPermissionLevel(ERewardRule.LOTTERY_REWARD)))
                 .then(Commands.literal("list").executes(context ->
                         list(context.getSource().getPlayerOrException())))

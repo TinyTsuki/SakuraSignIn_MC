@@ -275,7 +275,7 @@ public class LotteryUiPresentationTest {
         var many = new xin.vanilla.sakura.network.packet.LotteryRevealPacket(packet.getOperationId(), packet.getToken(), packet.getPoolName(),
                 Collections.nCopies(100, Reward.getDefault()), packet.getPreview(), LotteryPreviewMode.ALL);
         var result = new LotteryRevealUiSession(many, LotteryAnimationStyle.STRIP,
-                () -> now[0], () -> true, () -> 69, () -> {
+                () -> now[0], () -> true, (key, scan) -> key == 69, () -> {
         });
         var view = new RecordingUiView();
         view.state.rowPosition(18);

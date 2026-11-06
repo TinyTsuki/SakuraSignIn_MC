@@ -1,8 +1,6 @@
 package xin.vanilla.sakura.client.gui;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.math.Axis;
+import org.joml.Matrix3x2fStack;
 import net.minecraft.client.Minecraft;
 import xin.vanilla.banira.client.util.AbstractGuiUtils;
 import xin.vanilla.sakura.screen.coordinate.Coordinate;
@@ -17,7 +15,7 @@ final class TextureAnimationRenderer {
     private TextureAnimationRenderer() {
     }
 
-    static void drawRotated(PoseStack stack, xin.vanilla.sakura.client.theme.ThemeTexture texture,
+    static void drawRotated(Matrix3x2fStack stack, xin.vanilla.sakura.client.theme.ThemeTexture texture,
                             Coordinate coordinate,
                             double angle, boolean flipHorizontal,
                             boolean flipVertical) {
@@ -35,20 +33,19 @@ final class TextureAnimationRenderer {
             v += vHeight;
             vHeight = -vHeight;
         }
-        stack.pushPose();
-        stack.translate(coordinate.getX() + width / 2.0,
-                coordinate.getY() + height / 2.0, 0);
-        stack.mulPose(Axis.ZP.rotationDegrees((float) angle));
-        stack.translate(-width / 2.0, -height / 2.0, 0);
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        AbstractGuiUtils.blit(stack, texture.location(), 0, 0, width, height,
-                u, v, uWidth, vHeight, texture.width(), texture.height());
-        RenderSystem.disableBlend();
-        stack.popPose();
+        stack.pushMatrix();
+        try {
+            stack.translate((float) (coordinate.getX() + width / 2.0), (float) (coordinate.getY() + height / 2.0));
+            stack.rotate((float) Math.toRadians(angle));
+            stack.translate(-width / 2.0F, -height / 2.0F);
+            AbstractGuiUtils.blit(stack, texture.location(), 0, 0, width, height,
+                    u, v, uWidth, vHeight, texture.width(), texture.height());
+        } finally {
+            stack.popMatrix();
+        }
     }
 
-    static void drawTrembling(PoseStack stack, xin.vanilla.sakura.client.theme.ThemeTexture texture,
+    static void drawTrembling(Matrix3x2fStack stack, xin.vanilla.sakura.client.theme.ThemeTexture texture,
                               Coordinate coordinate,
                               double amplitude) {
         double x = coordinate.getX();
@@ -59,9 +56,6 @@ final class TextureAnimationRenderer {
             x += (random.nextDouble() - 0.5) * amplitude;
             y += (random.nextDouble() - 0.5) * amplitude;
         }
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
         texture.draw(stack, (int) x, (int) y, (int) coordinate.getWidth(), (int) coordinate.getHeight());
-        RenderSystem.disableBlend();
     }
 }

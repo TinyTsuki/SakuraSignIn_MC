@@ -18,7 +18,7 @@ public class PersonalDatePendingSnapshotTest {
     public void deferredSnapshotSurvivesRecordAndNetworkRoundTrip() throws Exception {
         CompoundTag tag = record();
         SignInRecord loaded = SignInRecord.readFromNBT(tag);
-        assertEquals(1, loaded.writeToNBT().getList("personalDateRewards", 10).size());
+        assertEquals(1, loaded.writeToNBT().getListOrEmpty("personalDateRewards").size());
         assertEquals(tag, loaded.writeToNBT());
         assertEquals(tag, PlayerMonthSyncPacket.decodeRecords("2026-10",
                 Collections.singletonList(tag.toString())).get(0).writeToNBT());
@@ -31,8 +31,8 @@ public class PersonalDatePendingSnapshotTest {
         List<PersonalDateRewardSnapshot> snapshots = copy.getPersonalDateRewards();
         RewardList rewards = snapshots.get(0).getRewards();
         rewards.get(0).setProbability(BigDecimal.ZERO);
-        assertTrue(original.writeToNBT().getList("personalDateRewards", 10).getCompound(0)
-                .getString("rewards").contains("\"probability\":1"));
+        assertTrue(original.writeToNBT().getListOrEmpty("personalDateRewards").getCompound(0).orElseThrow()
+                .getString("rewards").orElseThrow().contains("\"probability\":1"));
     }
 
     @Test
@@ -45,7 +45,7 @@ public class PersonalDatePendingSnapshotTest {
     @Test
     public void invalidPendingPayloadCannotSilentlyDisappear() {
         CompoundTag invalid = record();
-        invalid.getList("personalDateRewards", 10).getCompound(0).putString("rewards", "not json");
+        invalid.getListOrEmpty("personalDateRewards").getCompound(0).orElseThrow().putString("rewards", "not json");
         assertThrows(RuntimeException.class, () -> SignInRecord.readFromNBT(invalid));
     }
 

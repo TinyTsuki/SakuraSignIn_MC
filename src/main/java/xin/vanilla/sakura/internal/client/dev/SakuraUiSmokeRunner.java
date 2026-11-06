@@ -5,7 +5,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.ItemStack;
@@ -202,7 +202,7 @@ public final class SakuraUiSmokeRunner {
                 new Reward(5, SakuraRewardTypes.EXPERIENCE_POINT),
                 new Reward(2, SakuraRewardTypes.EXPERIENCE_LEVEL),
                 new Reward(1, SakuraRewardTypes.SIGN_IN_CARD),
-                new Reward(ResourceLocation.parse("minecraft:story/root"),
+                new Reward(Identifier.parse("minecraft:story/root"),
                         SakuraRewardTypes.ADVANCEMENT),
                 new Reward(SakuraComponent.get().literal("Smoke message"),
                         SakuraRewardTypes.MESSAGE),

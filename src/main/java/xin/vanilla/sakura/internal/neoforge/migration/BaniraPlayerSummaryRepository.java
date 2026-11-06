@@ -45,8 +45,7 @@ public final class BaniraPlayerSummaryRepository implements PlayerSummaryStore {
             throw new IOException("Banira player data was not written: " + playerFile);
         }
         CompoundTag root = AtomicNbtFiles.read(playerFile);
-        if (!root.contains(SakuraSignIn.MODID, 10)
-                || !serialized.equals(root.getCompound(SakuraSignIn.MODID))) {
+        if (root.getCompound(SakuraSignIn.MODID).filter(serialized::equals).isEmpty()) {
             throw new IOException("Banira player summary verification failed: " + playerUuid);
         }
     }

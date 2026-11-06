@@ -51,15 +51,19 @@ public class PlayerMonthSyncPacket implements INetworkPacket {
                 buffer.readUtf(MonthDataTransfer.MAX_PART_CHARS));
     }
 
-    public UUID getPlayerUUID() { return part.getPlayer(); }
+    public UUID getPlayerUUID() {
+        return part.getPlayer();
+    }
 
-    public String getMonth() { return part.getMonth(); }
+    public String getMonth() {
+        return part.getMonth();
+    }
 
     public static List<SignInRecord> decodeRecords(String month, List<String> serialized) {
         List<SignInRecord> records = new ArrayList<>(serialized.size());
         try {
             for (String value : serialized) {
-                net.minecraft.nbt.CompoundTag tag = TagParser.parseTag(value);
+                net.minecraft.nbt.CompoundTag tag = TagParser.parseCompoundFully(value);
                 SignInRecord record = SignInRecord.readFromNBT(tag);
                 if (!month.equals(monthOf(record)) || !tag.equals(record.writeToNBT())) {
                     throw new IllegalArgumentException("Inconsistent sign-in month record");

@@ -21,10 +21,7 @@ public class SignInUiParityTest {
 
     @BeforeClass
     public static void bootstrap() {
-        net.neoforged.fml.loading.LoadingModList.of(java.util.List.of(), java.util.List.of(),
-                java.util.List.of(), java.util.List.of(), java.util.Map.of());
-        net.minecraft.SharedConstants.tryDetectVersion();
-        net.minecraft.server.Bootstrap.bootStrap();
+        xin.vanilla.sakura.test.NativeBootstrap.initialize();
         xin.vanilla.sakura.test.BaniraTestPlatform.install();
     }
 
@@ -37,7 +34,7 @@ public class SignInUiParityTest {
         int moves, reads, refreshes, themes, keys, persists, dismissals, selectedTheme = -1;
         boolean tips, special, empty;
         final List<Integer> requests = new ArrayList<>();
-        final Texture texture = Texture.of(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("sakura_sign_in", "calendar.png"), 64, 64).uWidth(8).vHeight(8);
+        final Texture texture = Texture.of(net.minecraft.resources.Identifier.fromNamespaceAndPath("sakura_sign_in", "calendar.png"), 64, 64).uWidth(8).vHeight(8);
 
         public long revision() {
             return revision;
@@ -103,7 +100,7 @@ public class SignInUiParityTest {
             return texture;
         }
 
-        public boolean key(int code, boolean pressed) {
+        public boolean key(int code, int scan, boolean pressed) {
             keys++;
             return true;
         }

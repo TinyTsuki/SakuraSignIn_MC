@@ -58,9 +58,9 @@ public class MonthlySignInHistoryRetentionTest {
 
         assertEquals(1, result.getStrippedMonthFiles());
         assertEquals(0, result.getDeletedMonthFiles());
-        assertEquals("[]", firstRecord(worldData, uuid, "2024-01").getString("rewardList"));
+        assertEquals("[]", firstRecord(worldData, uuid, "2024-01").getString("rewardList").orElseThrow());
         assertEquals("[{\"type\":\"COMMAND\"}]",
-                firstRecord(worldData, uuid, "2024-06").getString("rewardList"));
+                firstRecord(worldData, uuid, "2024-06").getString("rewardList").orElseThrow());
     }
 
     @Test
@@ -79,7 +79,7 @@ public class MonthlySignInHistoryRetentionTest {
 
         assertEquals(0, result.getStrippedMonthFiles());
         assertEquals("[{\"type\":\"COMMAND\"}]",
-                firstRecord(worldData, uuid, "2024-01").getString("rewardList"));
+                firstRecord(worldData, uuid, "2024-01").getString("rewardList").orElseThrow());
     }
 
     @Test
@@ -144,8 +144,8 @@ public class MonthlySignInHistoryRetentionTest {
 
     private static CompoundTag firstRecord(Path worldData, UUID uuid, String month) throws IOException {
         return AtomicNbtFiles.read(historyFile(worldData, uuid, month))
-                .getList("records", 10)
-                .getCompound(0);
+                .getList("records").orElseThrow()
+                .getCompound(0).orElseThrow();
     }
 
     @Test
@@ -158,7 +158,7 @@ public class MonthlySignInHistoryRetentionTest {
         MonthlySignInHistoryRepository history = new MonthlySignInHistoryRepository(world);
         history.applyRetention(uuid, YearMonth.of(2026, 10), 1, HistoryRetentionPolicy.DELETE_MONTH_FILE);
         assertTrue(Files.exists(historyFile(world, uuid, "2026-01")));
-        assertEquals(1, firstRecord(world, uuid, "2026-01").getList("personalDateRewards", 10).size());
+        assertEquals(1, firstRecord(world, uuid, "2026-01").getList("personalDateRewards").orElseThrow().size());
         pending.putBoolean("rewarded", true);
         AtomicNbtFiles.write(historyFile(world, uuid, "2026-01"), monthRoot(uuid, "2026-01", pending));
         history.applyRetention(uuid, YearMonth.of(2026, 10), 1, HistoryRetentionPolicy.DELETE_MONTH_FILE);
@@ -170,7 +170,7 @@ public class MonthlySignInHistoryRetentionTest {
         Path world = temporaryFolder.newFolder("invalid-pending-date").toPath();
         UUID uuid = UUID.randomUUID();
         CompoundTag pending = xin.vanilla.sakura.data.PersonalDatePendingSnapshotTest.record();
-        pending.getList("personalDateRewards", 10).getCompound(0).putString("occurrenceKey", "");
+        pending.getList("personalDateRewards").orElseThrow().getCompound(0).orElseThrow().putString("occurrenceKey", "");
         AtomicNbtFiles.write(historyFile(world, uuid, "2026-10"), monthRoot(uuid, "2026-10", pending));
         assertThrows(IOException.class, () -> new MonthlySignInHistoryRepository(world).loadAll(uuid));
     }

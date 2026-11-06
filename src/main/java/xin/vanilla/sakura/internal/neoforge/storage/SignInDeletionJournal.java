@@ -1,5 +1,6 @@
 package xin.vanilla.sakura.internal.neoforge.storage;
 
+import xin.vanilla.sakura.util.SakuraNbt;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import xin.vanilla.sakura.data.migration.PlayerSummaryStore;
@@ -37,10 +38,10 @@ public final class SignInDeletionJournal {
         CompoundTag original = historyExisted ? AtomicNbtFiles.read(history) : emptyHistory(uuid, month);
         CompoundTag replacement = original.copy();
         ListTag kept = new ListTag();
-        ListTag records = original.getList("records", 10);
+        ListTag records = SakuraNbt.compoundListOrEmpty(original, "records");
         for (int i = 0; i < records.size(); i++) {
-            CompoundTag record = records.getCompound(i);
-            String date = record.getString("compensateTime");
+            CompoundTag record = records.getCompoundOrEmpty(i);
+            String date = record.getStringOr("compensateTime", "");
             if (!date.equals(day.toString()) && !date.startsWith(day + " ")) {
                 kept.add(record.copy());
             }
@@ -91,25 +92,26 @@ public final class SignInDeletionJournal {
         Path pending = pendingFile(uuid);
         if (!exists(pending)) return;
         CompoundTag journal = AtomicNbtFiles.read(pending);
-        String month = journal.getString("month");
-        String operation = journal.getString("operation");
+        String month = journal.getStringOr("month", "");
+        String operation = journal.getStringOr("operation", "");
         boolean summaryOnly = "personalDateReset".equals(operation);
         try {
             if (!operation.isEmpty() && !summaryOnly) {
                 throw new IllegalArgumentException("Unknown operation");
             }
             if (!summaryOnly) YearMonth.parse(month);
-            if (!uuid.toString().equals(journal.getString("playerUuid"))) {
+            if (!uuid.toString().equals(journal.getStringOr("playerUuid", ""))) {
                 throw new IllegalArgumentException("Player mismatch");
             }
             for (String side : new String[]{"before", "after"}) {
-                if (!PlayerSignInSummary.isCurrentSchema(journal.getCompound(side + "Summary"))) {
+                if (!PlayerSignInSummary.isCurrentSchema(journal.getCompoundOrEmpty(side + "Summary"))) {
                     throw new IllegalArgumentException("Missing summary snapshot");
                 }
                 if (!summaryOnly) {
-                    CompoundTag snapshot = journal.getCompound(side + "History");
-                    if (!uuid.toString().equals(snapshot.getString("playerUuid"))
-                            || !month.equals(snapshot.getString("month")) || !snapshot.contains("records", 9)) {
+                    CompoundTag snapshot = journal.getCompoundOrEmpty(side + "History");
+                    if (!uuid.toString().equals(snapshot.getStringOr("playerUuid", ""))
+                            || !month.equals(snapshot.getStringOr("month", ""))
+                            || snapshot.getList("records").filter(SakuraNbt::isCompoundList).isEmpty()) {
                         throw new IllegalArgumentException("Invalid history snapshot");
                     }
                 }
@@ -117,19 +119,19 @@ public final class SignInDeletionJournal {
         } catch (RuntimeException invalid) {
             throw new IOException("Invalid sign-in deletion journal: " + pending, invalid);
         }
-        boolean rollback = journal.getBoolean("rollback");
+        boolean rollback = journal.getBooleanOr("rollback", false);
         String side = rollback ? "before" : "after";
         if (!summaryOnly) {
             Path history = historyFile(uuid, month);
-            if (rollback && !journal.getBoolean("historyExisted")) {
+            if (rollback && !journal.getBooleanOr("historyExisted", false)) {
                 Files.deleteIfExists(history);
             } else {
-                writeVerified(history, journal.getCompound(side + "History"));
+                writeVerified(history, journal.getCompoundOrEmpty(side + "History"));
             }
         }
         try {
             summaries.saveAndVerify(uuid,
-                    PlayerSignInSummary.deserializeNBT(journal.getCompound(side + "Summary")));
+                    PlayerSignInSummary.deserializeNBT(journal.getCompoundOrEmpty(side + "Summary")));
         } catch (RuntimeException failure) {
             throw new IOException("Unable to persist sign-in deletion summary: " + uuid, failure);
         }

@@ -3,7 +3,7 @@ package xin.vanilla.sakura.client.reward.builtin;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.sakura.api.reward.RewardTypeId;
 import xin.vanilla.sakura.api.reward.SakuraRewardTypes;
@@ -37,15 +37,15 @@ public final class BuiltInRewardClientTypes {
         registerNumeric(SakuraRewardTypes.EXPERIENCE_POINT, 30, "point", "enter_exp_point");
         registerNumeric(SakuraRewardTypes.EXPERIENCE_LEVEL, 40, "level", "enter_exp_level");
         registerNumeric(SakuraRewardTypes.SIGN_IN_CARD, 50, "card", "enter_sign_in_card");
-        register(SakuraRewardTypes.ADVANCEMENT, 60, 6, new BasePresentation<ResourceLocation>() {
+        register(SakuraRewardTypes.ADVANCEMENT, 60, 6, new BasePresentation<Identifier>() {
             @Override
-            public void renderIcon(RewardRenderContext context, ResourceLocation value) {
+            public void renderIcon(RewardRenderContext context, Identifier value) {
                 context.drawItem(AdvancementPresentationResolver.resolve(value).getIcon());
             }
 
             @Override
             public xin.vanilla.banira.common.data.Component displayName(
-                    RewardDisplayContext context, ResourceLocation value) {
+                    RewardDisplayContext context, Identifier value) {
                 return AdvancementPresentationResolver.resolve(value).getName();
             }
         }, BuiltInRewardEditors.advancement());

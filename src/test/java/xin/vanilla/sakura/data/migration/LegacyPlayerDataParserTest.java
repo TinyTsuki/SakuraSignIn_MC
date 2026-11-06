@@ -41,7 +41,7 @@ public class LegacyPlayerDataParserTest {
 
         List<CompoundTag> januaryRecords = parsed.getRecordsByMonth().get("2024-01");
         assertEquals(1, januaryRecords.size());
-        assertEquals("[{\"type\":\"ITEM\"}]", januaryRecords.get(0).getString("rewardList"));
+        assertEquals("[{\"type\":\"ITEM\"}]", januaryRecords.get(0).getString("rewardList").orElseThrow());
         assertEquals(1, parsed.getRecordsByMonth().get("unknown").size());
     }
 

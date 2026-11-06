@@ -1,7 +1,7 @@
 package xin.vanilla.sakura.client.theme;
 
 import com.google.gson.*;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -39,7 +39,7 @@ public final class BuiltInThemeCatalog {
 
     @FunctionalInterface
     interface Resources {
-        InputStream open(ResourceLocation path) throws IOException;
+        InputStream open(Identifier path) throws IOException;
     }
 
     public static BuiltInThemeDescriptor load(String id) {
@@ -68,7 +68,7 @@ public final class BuiltInThemeCatalog {
         }
     }
 
-    private static InputStream packaged(ResourceLocation path) throws IOException {
+    private static InputStream packaged(Identifier path) throws IOException {
         InputStream input = BuiltInThemeCatalog.class.getClassLoader().getResourceAsStream("assets/" + path.getNamespace() + "/" + path.getPath());
         if (input == null) throw new IOException("Missing packaged theme resource: " + path);
         return input;
@@ -76,7 +76,7 @@ public final class BuiltInThemeCatalog {
 
     static BuiltInThemeDescriptor read(String id, Resources resources) throws IOException {
         JsonObject json;
-        try (InputStream in = resources.open(ResourceLocation.fromNamespaceAndPath(SakuraSignIn.MODID, "themes/" + id + ".json"))) {
+        try (InputStream in = resources.open(Identifier.fromNamespaceAndPath(SakuraSignIn.MODID, "themes/" + id + ".json"))) {
             json = JsonParser.parseString(new String(bounded(in, 65536), StandardCharsets.UTF_8)).getAsJsonObject();
         }
         rejectAtlasKeys(json);
@@ -88,7 +88,7 @@ public final class BuiltInThemeCatalog {
         BuiltInThemeDescriptor theme = GSON.fromJson(json, BuiltInThemeDescriptor.class);
         if (!id.equals(theme.getId()) || theme.getLayout() == null || theme.getTextures() == null || theme.getTextureRoot() == null)
             throw new JsonParseException("Incomplete theme descriptor");
-        ResourceLocation root = ResourceLocation.parse(theme.getTextureRoot());
+        Identifier root = Identifier.parse(theme.getTextureRoot());
         if (!root.getPath().startsWith("textures/") || !root.getPath().endsWith("/") || root.getPath().contains(".."))
             throw new JsonParseException("Invalid theme texture root");
         validateLayout(theme.getLayout());
@@ -96,7 +96,7 @@ public final class BuiltInThemeCatalog {
         if (!theme.getTextures().keySet().equals(expected))
             throw new JsonParseException("Incomplete or unknown theme texture keys");
         Map<String, ThemeTexture> resolved = new LinkedHashMap<>();
-        Map<ResourceLocation, ThemeTexture> cache = new HashMap<>();
+        Map<Identifier, ThemeTexture> cache = new HashMap<>();
         for (String key : expected) {
             JsonElement raw = json.getAsJsonObject("textures").get(key);
             if (raw == null || !raw.isJsonPrimitive() || !raw.getAsJsonPrimitive().isString())
@@ -104,7 +104,7 @@ public final class BuiltInThemeCatalog {
             String file = theme.getTextures().get(key);
             if (file == null || file.length() > 256 || !file.matches("[a-z0-9_/-]+\\.png") || file.startsWith("/") || file.contains(".."))
                 throw new JsonParseException("Invalid relative PNG filename: " + key);
-            ResourceLocation path = ResourceLocation.fromNamespaceAndPath(root.getNamespace(), root.getPath() + file);
+            Identifier path = Identifier.fromNamespaceAndPath(root.getNamespace(), root.getPath() + file);
             ThemeTexture texture = cache.get(path);
             if (texture == null) {
                 try (InputStream in = resources.open(path)) {
@@ -169,7 +169,7 @@ public final class BuiltInThemeCatalog {
         return result.toByteArray();
     }
 
-    private static ThemeTexture png(ResourceLocation path, byte[] bytes) throws IOException {
+    private static ThemeTexture png(Identifier path, byte[] bytes) throws IOException {
         if (bytes.length < 8 || new DataInputStream(new ByteArrayInputStream(bytes)).readLong() != 0x89504E470D0A1A0AL)
             throw new IOException("PNG required: " + path);
         try (MemoryCacheImageInputStream input = new MemoryCacheImageInputStream(new ByteArrayInputStream(bytes))) {

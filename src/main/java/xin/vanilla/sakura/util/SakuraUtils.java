@@ -26,6 +26,18 @@ import java.util.stream.Collectors;
 
 public class SakuraUtils {
 
+    public static boolean hasNativePermission(net.minecraft.server.permissions.PermissionSet permissions, int level) {
+        if (level <= 0) return true;
+        var permission = switch (level) {
+            case 1 -> net.minecraft.server.permissions.Permissions.COMMANDS_MODERATOR;
+            case 2 -> net.minecraft.server.permissions.Permissions.COMMANDS_GAMEMASTER;
+            case 3 -> net.minecraft.server.permissions.Permissions.COMMANDS_ADMIN;
+            case 4 -> net.minecraft.server.permissions.Permissions.COMMANDS_OWNER;
+            default -> null;
+        };
+        return permission != null && permissions.hasPermission(permission);
+    }
+
 
     public static String getCommandPrefix() {
         String commandPrefix = CommonConfig.get().command().commandPrefix();
@@ -136,9 +148,12 @@ public class SakuraUtils {
     public static List<ItemStack> getPlayerItemList(ServerPlayer player) {
         List<ItemStack> result = new ArrayList<>();
         if (player != null) {
-            result.addAll(player.getInventory().items);
-            result.addAll(player.getInventory().armor);
-            result.addAll(player.getInventory().offhand);
+            result.addAll(player.getInventory().getNonEquipmentItems());
+            for (var slot : List.of(net.minecraft.world.entity.EquipmentSlot.FEET, net.minecraft.world.entity.EquipmentSlot.LEGS,
+                    net.minecraft.world.entity.EquipmentSlot.CHEST, net.minecraft.world.entity.EquipmentSlot.HEAD,
+                    net.minecraft.world.entity.EquipmentSlot.OFFHAND)) {
+                result.add(player.getItemBySlot(slot));
+            }
             result = result.stream().filter(itemStack -> !itemStack.isEmpty() && itemStack.getItem() != Items.AIR).collect(Collectors.toList());
         }
         return result;
@@ -240,7 +255,7 @@ public class SakuraUtils {
             int skyLight = world.getBrightness(LightLayer.SKY, pos);
             int blockLight = world.getBrightness(LightLayer.BLOCK, pos);
             // 获取世界时间、天气和维度的影响
-            boolean isDay = world.isDay();
+            boolean isDay = world.isBrightOutside();
             boolean isRaining = world.isRaining();
             boolean isThundering = world.isThundering();
             boolean isUnderground = !world.canSeeSky(pos);
@@ -254,7 +269,8 @@ public class SakuraUtils {
                     } else {
                         // 夜晚地表
                         // 获取月相，0表示满月，4表示新月
-                        int moonPhase = world.getMoonPhase();
+                        int moonPhase = world.environmentAttributes()
+                                .getValue(net.minecraft.world.attribute.EnvironmentAttributes.MOON_PHASE, pos).index();
                         result = getMoonBrightness(moonPhase, isThundering, isRaining);
                     }
                 } else {

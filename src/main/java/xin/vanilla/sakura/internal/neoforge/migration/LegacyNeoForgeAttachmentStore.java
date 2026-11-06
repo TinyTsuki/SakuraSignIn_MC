@@ -34,10 +34,9 @@ public final class LegacyNeoForgeAttachmentStore implements LegacyCapabilityStor
             return Optional.empty();
         }
         CompoundTag root = AtomicNbtFiles.read(playerFile);
-        CompoundTag attachments = root.getCompound(ATTACHMENTS_KEY);
-        return attachments.contains(ATTACHMENT_KEY, 10)
-                ? Optional.of(attachments.getCompound(ATTACHMENT_KEY).copy())
-                : Optional.empty();
+        return root.getCompound(ATTACHMENTS_KEY)
+                .flatMap(attachments -> attachments.getCompound(ATTACHMENT_KEY))
+                .map(CompoundTag::copy);
     }
 
     @Override
@@ -71,16 +70,17 @@ public final class LegacyNeoForgeAttachmentStore implements LegacyCapabilityStor
     public void removeAndVerify(UUID playerUuid, CompoundTag expectedCapability) throws IOException {
         Path playerFile = playerFile(playerUuid);
         CompoundTag root = AtomicNbtFiles.read(playerFile);
-        CompoundTag attachments = root.getCompound(ATTACHMENTS_KEY);
-        if (!attachments.contains(ATTACHMENT_KEY, 10)) {
+        var existing = root.getCompound(ATTACHMENTS_KEY)
+                .flatMap(attachments -> attachments.getCompound(ATTACHMENT_KEY));
+        if (existing.isEmpty()) {
             return;
         }
-        if (!expectedCapability.equals(attachments.getCompound(ATTACHMENT_KEY))) {
+        if (!expectedCapability.equals(existing.orElseThrow())) {
             throw new IOException("Legacy Attachment changed during migration: " + playerUuid);
         }
 
         CompoundTag rewritten = root.copy();
-        CompoundTag rewrittenAttachments = rewritten.getCompound(ATTACHMENTS_KEY);
+        CompoundTag rewrittenAttachments = rewritten.getCompound(ATTACHMENTS_KEY).orElseThrow();
         rewrittenAttachments.remove(ATTACHMENT_KEY);
         if (rewrittenAttachments.isEmpty()) {
             rewritten.remove(ATTACHMENTS_KEY);
@@ -124,7 +124,7 @@ public final class LegacyNeoForgeAttachmentStore implements LegacyCapabilityStor
             Files.move(replacement, playerFile,
                     StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
             CompoundTag verified = AtomicNbtFiles.read(playerFile);
-            if (verified.getCompound(ATTACHMENTS_KEY).contains(ATTACHMENT_KEY, 10)) {
+            if (verified.getCompound(ATTACHMENTS_KEY).flatMap(attachments -> attachments.getCompound(ATTACHMENT_KEY)).isPresent()) {
                 throw new IOException("Legacy Attachment removal verification failed: " + playerUuid);
             }
             Files.deleteIfExists(rollback);

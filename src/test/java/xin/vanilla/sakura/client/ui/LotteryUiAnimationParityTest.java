@@ -99,7 +99,7 @@ public class LotteryUiAnimationParityTest {
             long[] clock = {0};
             int[] claims = {0};
             var packet = packet();
-            var session = new LotteryRevealUiSession(packet, style, () -> clock[0], () -> true, () -> 69, () -> claims[0]++);
+            var session = new LotteryRevealUiSession(packet, style, () -> clock[0], () -> true, (key, scan) -> key == 69, () -> claims[0]++);
             var view = new RecordingUiView();
             session.bind(view);
             assertEquals(0, claims[0]);
@@ -132,7 +132,7 @@ public class LotteryUiAnimationParityTest {
     @Test
     public void skipAndConfirmAreDistinctAndInventoryKeyNeverRepeatsClaim() {
         int[] claims = {0};
-        var session = new LotteryRevealUiSession(packet(), LotteryAnimationStyle.STRIP, () -> 0, () -> true, () -> 69, () -> claims[0]++);
+        var session = new LotteryRevealUiSession(packet(), LotteryAnimationStyle.STRIP, () -> 0, () -> true, (key, scan) -> key == 69 && scan == 18, () -> claims[0]++);
         var view = new RecordingUiView();
         session.bind(view);
         view.actions.get("action").run();
@@ -140,7 +140,8 @@ public class LotteryUiAnimationParityTest {
         assertEquals(0, view.closes);
         assertTrue(session.revealed());
         assertEquals(1, view.rows.size());
-        assertTrue(session.key(69, 0, 0, true));
+        assertFalse(session.key(69, 0, 0, true));
+        assertTrue(session.key(69, 18, 0, true));
         assertEquals(1, view.closes);
         session.close(UiCloseReason.USER_CLOSE);
         assertEquals(1, claims[0]);
@@ -151,7 +152,7 @@ public class LotteryUiAnimationParityTest {
         boolean[] connected = {true};
         int[] claims = {0};
         long[] clock = {0};
-        var session = new LotteryRevealUiSession(packet(), LotteryAnimationStyle.STRIP, () -> clock[0], () -> connected[0], () -> 69, () -> claims[0]++);
+        var session = new LotteryRevealUiSession(packet(), LotteryAnimationStyle.STRIP, () -> clock[0], () -> connected[0], (key, scan) -> key == 69, () -> claims[0]++);
         var view = new RecordingUiView();
         session.bind(view);
         Runnable stale = view.actions.get("action");
@@ -184,7 +185,7 @@ public class LotteryUiAnimationParityTest {
     @Test
     public void animationUsesFiniteRetainedSlotsAndResultsRemainVirtualized() {
         long[] clock = {0};
-        var session = new LotteryRevealUiSession(packet(), LotteryAnimationStyle.STRIP, () -> clock[0], () -> true, () -> 69, () -> {
+        var session = new LotteryRevealUiSession(packet(), LotteryAnimationStyle.STRIP, () -> clock[0], () -> true, (key, scan) -> key == 69, () -> {
         });
         var view = new RecordingUiView();
         session.bind(view);
@@ -204,7 +205,7 @@ public class LotteryUiAnimationParityTest {
 
     @Test
     public void revealedStableFramesDoNotRewriteTheDocument() {
-        var session = new LotteryRevealUiSession(packet(), LotteryAnimationStyle.INSTANT, () -> 0, () -> true, () -> 69, () -> {
+        var session = new LotteryRevealUiSession(packet(), LotteryAnimationStyle.INSTANT, () -> 0, () -> true, (key, scan) -> key == 69, () -> {
         });
         var view = new RecordingUiView();
         session.bind(view);
@@ -216,7 +217,7 @@ public class LotteryUiAnimationParityTest {
     @Test
     public void oldResultRowsCannotWriteIntoNewConnectionOrClosedView() {
         boolean[] connected = {true};
-        var session = new LotteryRevealUiSession(packet(), LotteryAnimationStyle.INSTANT, () -> 0, () -> connected[0], () -> 69, () -> {
+        var session = new LotteryRevealUiSession(packet(), LotteryAnimationStyle.INSTANT, () -> 0, () -> connected[0], (key, scan) -> key == 69, () -> {
         });
         var view = new RecordingUiView();
         session.bind(view);
@@ -235,7 +236,7 @@ public class LotteryUiAnimationParityTest {
     public void cardModeRetainsCardFacesWithoutExposingHiddenPreview() {
         var value = new LotteryRevealPacket(UUID.randomUUID() + "-1", UUID.randomUUID().toString(), "Hidden",
                 List.of(Reward.getDefault()), List.of(), LotteryPreviewMode.NONE);
-        var session = new LotteryRevealUiSession(value, LotteryAnimationStyle.CARDS, () -> 0, () -> true, () -> 69, () -> {
+        var session = new LotteryRevealUiSession(value, LotteryAnimationStyle.CARDS, () -> 0, () -> true, (key, scan) -> key == 69, () -> {
         });
         var view = new RecordingUiView();
         session.bind(view);

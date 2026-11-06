@@ -37,7 +37,7 @@ public final class SakuraSignIn {
     public SakuraSignIn(IEventBus modEventBus, ModContainer modContainer) {
         initializeCommon();
         NeoForgeSakuraEntrypoint.init();
-        if (FMLEnvironment.dist == Dist.CLIENT) {
+        if (FMLEnvironment.getDist() == Dist.CLIENT) {
             SakuraClientBootstrap.init();
         }
     }

@@ -1,5 +1,6 @@
 package xin.vanilla.sakura.data;
 
+import xin.vanilla.sakura.util.SakuraNbt;
 import lombok.NonNull;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.nbt.CompoundTag;
@@ -341,47 +342,47 @@ public class PlayerSignInData implements IPlayerSignInData {
     @Override
     public void deserializeNBT(CompoundTag nbt) {
         // 从NBT标签中读取玩家的分数和活跃状态，并更新到实例中
-        this.setTotalSignInDays(nbt.getInt("totalSignInDays"));
-        this.setContinuousSignInDays(nbt.getInt("continuousSignInDays"));
-        this.setLastSignInTime(DateUtils.format(nbt.getString("lastSignInTime")));
-        this.setSignInCard(nbt.getInt("signInCard"));
-        this.setAutoRewarded(nbt.getBoolean("autoRewarded"));
-        this.setLanguage(nbt.getString("language"));
+        this.setTotalSignInDays(nbt.getIntOr("totalSignInDays", 0));
+        this.setContinuousSignInDays(nbt.getIntOr("continuousSignInDays", 0));
+        this.setLastSignInTime(DateUtils.format(nbt.getStringOr("lastSignInTime", "")));
+        this.setSignInCard(nbt.getIntOr("signInCard", 0));
+        this.setAutoRewarded(nbt.getBooleanOr("autoRewarded", false));
+        this.setLanguage(nbt.getStringOr("language", ""));
         Map<String, MonthSignInIndex> indexes = new LinkedHashMap<>();
-        ListTag indexesNBT = nbt.getList("monthIndexes", 10);
+        ListTag indexesNBT = SakuraNbt.compoundListOrEmpty(nbt, "monthIndexes");
         for (int i = 0; i < indexesNBT.size(); i++) {
-            MonthSignInIndex index = MonthSignInIndex.deserializeNBT(indexesNBT.getCompound(i));
+            MonthSignInIndex index = MonthSignInIndex.deserializeNBT(indexesNBT.getCompoundOrEmpty(i));
             indexes.put(index.getMonth(), index);
         }
         this.setMonthIndexes(indexes);
 
         // 反序列化签到记录
-        ListTag recordsNBT = nbt.getList("signInRecords", 10); // 10 是 CompoundTag 的类型ID
+        ListTag recordsNBT = SakuraNbt.compoundListOrEmpty(nbt, "signInRecords"); // 10 是 CompoundTag 的类型ID
         List<SignInRecord> records = new ArrayList<>();
         for (int i = 0; i < recordsNBT.size(); i++) {
-            records.add(SignInRecord.readFromNBT(recordsNBT.getCompound(i)));
+            records.add(SignInRecord.readFromNBT(recordsNBT.getCompoundOrEmpty(i)));
         }
         this.setSignInRecords(records);
-        ListTag cdkRecordsNBT = nbt.getList("cdkRecords", 10); // 10 是 CompoundTag 的类型ID
+        ListTag cdkRecordsNBT = SakuraNbt.compoundListOrEmpty(nbt, "cdkRecords"); // 10 是 CompoundTag 的类型ID
         List<KeyValue<String, KeyValue<Date, Boolean>>> cdkRecords = new ArrayList<>();
         for (int i = 0; i < cdkRecordsNBT.size(); i++) {
-            CompoundTag cdkRecordNBT = cdkRecordsNBT.getCompound(i);
-            cdkRecords.add(new KeyValue<>(cdkRecordNBT.getString("key"), new KeyValue<>(DateUtils.format(cdkRecordNBT.getString("date")), cdkRecordNBT.getBoolean("value"))));
+            CompoundTag cdkRecordNBT = cdkRecordsNBT.getCompoundOrEmpty(i);
+            cdkRecords.add(new KeyValue<>(cdkRecordNBT.getStringOr("key", ""), new KeyValue<>(DateUtils.format(cdkRecordNBT.getStringOr("date", "")), cdkRecordNBT.getBooleanOr("value", false))));
         }
         this.setCdkRecords(cdkRecords);
 
         List<PlayerPersonalDateSlot> slots = new ArrayList<>();
-        ListTag slotsNBT = nbt.getList("personalDateSlots", 10);
+        ListTag slotsNBT = SakuraNbt.compoundListOrEmpty(nbt, "personalDateSlots");
         for (int i = 0; i < slotsNBT.size(); i++) {
-            slots.add(PlayerPersonalDateSlot.deserializeNBT(slotsNBT.getCompound(i)));
+            slots.add(PlayerPersonalDateSlot.deserializeNBT(slotsNBT.getCompoundOrEmpty(i)));
         }
         this.setPersonalDateSlots(slots);
-        this.setOnlineTimeBaselineDate(nbt.getString("onlineTimeBaselineDate"));
-        this.setOnlineTimeBaselineTicks(nbt.getInt("onlineTimeBaselineTicks"));
+        this.setOnlineTimeBaselineDate(nbt.getStringOr("onlineTimeBaselineDate", ""));
+        this.setOnlineTimeBaselineTicks(nbt.getIntOr("onlineTimeBaselineTicks", 0));
         List<LotteryDrawState> lotteryStates = new ArrayList<>();
-        ListTag lotteryStatesNBT = nbt.getList("lotteryDrawStates", 10);
+        ListTag lotteryStatesNBT = SakuraNbt.compoundListOrEmpty(nbt, "lotteryDrawStates");
         for (int i = 0; i < lotteryStatesNBT.size(); i++) {
-            lotteryStates.add(LotteryDrawState.deserializeNBT(lotteryStatesNBT.getCompound(i)));
+            lotteryStates.add(LotteryDrawState.deserializeNBT(lotteryStatesNBT.getCompoundOrEmpty(i)));
         }
         this.setLotteryDrawStates(lotteryStates);
     }

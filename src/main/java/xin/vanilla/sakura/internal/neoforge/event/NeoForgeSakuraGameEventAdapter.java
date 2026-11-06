@@ -56,8 +56,11 @@ public final class NeoForgeSakuraGameEventAdapter {
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) -> {
             xin.vanilla.sakura.network.packet.LotteryPoolSyncPacket.clearServerTransfers();
             xin.vanilla.sakura.reward.lottery.PendingLotteryDraws.clear();
-            try { xin.vanilla.sakura.internal.neoforge.lottery.NeoForgeLotteryServices.stop(); }
-            catch (Exception failure) { LOGGER.error("Lottery operation flush failed", failure); }
+            try {
+                xin.vanilla.sakura.internal.neoforge.lottery.NeoForgeLotteryServices.stop();
+            } catch (Exception failure) {
+                LOGGER.error("Lottery operation flush failed", failure);
+            }
         });
         NeoForge.EVENT_BUS.addListener(NeoForgeSakuraGameEventAdapter::onPlayerCloned);
         NeoForge.EVENT_BUS.addListener(NeoForgeSakuraGameEventAdapter::onPlayerLoggedIn);
@@ -137,7 +140,7 @@ public final class NeoForgeSakuraGameEventAdapter {
     }
 
     private static void waitForClientSettings(ServerPlayer player, int attempt) {
-        MinecraftServer server = player.getServer();
+        MinecraftServer server = player.level().getServer();
         if (server == null) {
             return;
         }

@@ -23,7 +23,8 @@ import java.util.UUID;
 import static org.junit.Assert.*;
 
 public class PersonalDateClaimResetTest {
-    @Rule public final TemporaryFolder temporary = new TemporaryFolder();
+    @Rule
+    public final TemporaryFolder temporary = new TemporaryFolder();
     private final UUID uuid = UUID.randomUUID();
     private final Store store = new Store();
 
@@ -90,9 +91,9 @@ public class PersonalDateClaimResetTest {
         assertArrayEquals(original, Files.readAllBytes(month));
         assertEquals(time, Files.getLastModifiedTime(month));
         CompoundTag backup = backup();
-        assertEquals("personalDateReset", backup.getString("operation"));
-        assertEquals("YEARLY:2026", backup.getCompound("beforeSummary")
-                .getList("personalDateSlots", 10).getCompound(0).getString("lastClaimedOccurrenceKey"));
+        assertEquals("personalDateReset", backup.getString("operation").orElseThrow());
+        assertEquals("YEARLY:2026", backup.getCompound("beforeSummary").orElseThrow()
+                .getListOrEmpty("personalDateSlots").getCompound(0).orElseThrow().getString("lastClaimedOccurrenceKey").orElseThrow());
         assertFalse(backup.contains("beforeHistory"));
     }
 
@@ -120,7 +121,7 @@ public class PersonalDateClaimResetTest {
         repo.save(uuid, data);
         assertEquals(1, reset(repo, data, "birthday"));
         CompoundTag backup = backup();
-        store.save(uuid, PlayerSignInSummary.deserializeNBT(backup.getCompound("beforeSummary")));
+        store.save(uuid, PlayerSignInSummary.deserializeNBT(backup.getCompound("beforeSummary").orElseThrow()));
         AtomicNbtFiles.write(temporary.getRoot().toPath().resolve("sakura_sign_in/deletions")
                 .resolve(uuid.toString()).resolve("pending.nbt"), backup);
         assertEquals("", repo.load(uuid).getPersonalDateSlots().get(0).getLastClaimedOccurrenceKey());
@@ -217,13 +218,21 @@ public class PersonalDateClaimResetTest {
     private static final class Store implements PlayerSummaryStore {
         private CompoundTag stored;
         private boolean failNext;
+
         public Optional<PlayerSignInSummary> load(UUID uuid) {
             return stored == null ? Optional.empty() : Optional.of(PlayerSignInSummary.deserializeNBT(stored));
         }
-        public void save(UUID uuid, PlayerSignInSummary summary) { stored = summary.serializeNBT(); }
+
+        public void save(UUID uuid, PlayerSignInSummary summary) {
+            stored = summary.serializeNBT();
+        }
+
         public void saveAndVerify(UUID uuid, PlayerSignInSummary summary) throws IOException {
             save(uuid, summary);
-            if (failNext) { failNext = false; throw new IOException("reset save failed"); }
+            if (failNext) {
+                failNext = false;
+                throw new IOException("reset save failed");
+            }
         }
     }
 }

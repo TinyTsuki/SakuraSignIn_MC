@@ -7,7 +7,7 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
-import net.minecraft.commands.arguments.ResourceLocationArgument;
+import net.minecraft.commands.arguments.IdentifierArgument;
 import net.minecraft.server.level.ServerPlayer;
 import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.api.SakuraPlayerData;
@@ -23,7 +23,9 @@ import xin.vanilla.sakura.message.SakuraMessages;
 import java.util.ArrayList;
 import java.util.List;
 
-/** 未安装客户端的玩家也可通过指令维护自己的个性化日期。 */
+/**
+ * 未安装客户端的玩家也可通过指令维护自己的个性化日期。
+ */
 final class PersonalDateConfigCommand {
     private static final PersonalDateSelectionService SERVICE = new PersonalDateSelectionService();
 
@@ -41,7 +43,7 @@ final class PersonalDateConfigCommand {
                                     return builder.buildFuture();
                                 })
                                 .then(Commands.argument("slot", IntegerArgumentType.integer(1, 16))
-                                        .then(Commands.argument("calendar", ResourceLocationArgument.id())
+                                        .then(Commands.argument("calendar", IdentifierArgument.id())
                                                 .suggests((context, builder) -> {
                                                     PersonalDatePreset preset = preset(StringArgumentType
                                                             .getString(context, "preset"));
@@ -87,7 +89,7 @@ final class PersonalDateConfigCommand {
         String presetId = StringArgumentType.getString(context, "preset");
         PersonalDatePreset preset = preset(presetId);
         int slotIndex = IntegerArgumentType.getInteger(context, "slot") - 1;
-        String calendar = ResourceLocationArgument.getId(context, "calendar").toString();
+        String calendar = IdentifierArgument.getId(context, "calendar").toString();
         int[] date = parseDate(preset, StringArgumentType.getString(context, "date"));
         if (preset == null || slotIndex >= preset.getMaxDateSlots() || date == null) {
             SakuraMessages.send(player, SakuraComponent.get().trans(player,
@@ -126,7 +128,7 @@ final class PersonalDateConfigCommand {
     }
 
     private static List<PlayerPersonalDateSlot> without(List<PlayerPersonalDateSlot> source,
-                                                         String presetId, int slotIndex) {
+                                                        String presetId, int slotIndex) {
         List<PlayerPersonalDateSlot> result = new ArrayList<>();
         for (PlayerPersonalDateSlot slot : source) {
             if (!presetId.equals(slot.getPresetId()) || slotIndex != slot.getSlotIndex()) {

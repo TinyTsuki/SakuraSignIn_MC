@@ -52,12 +52,10 @@ public class LegacyNeoForgeAttachmentStoreTest {
         store.removeAndVerify(uuid, loaded.get());
 
         CompoundTag rewritten = NbtIo.readCompressed(playerFile.toPath(), NbtAccounter.unlimitedHeap());
-        assertEquals("minecraft:overworld", rewritten.getString("Dimension"));
-        assertFalse(rewritten.getCompound(LegacyNeoForgeAttachmentStore.ATTACHMENTS_KEY).contains(
-                LegacyNeoForgeAttachmentStore.ATTACHMENT_KEY, 10
-        ));
-        assertEquals(other, rewritten.getCompound(
-                LegacyNeoForgeAttachmentStore.ATTACHMENTS_KEY).getCompound("other_mod:data"));
+        assertEquals("minecraft:overworld", rewritten.getString("Dimension").orElseThrow());
+        CompoundTag remaining = rewritten.getCompound(LegacyNeoForgeAttachmentStore.ATTACHMENTS_KEY).orElseThrow();
+        assertFalse(remaining.contains(LegacyNeoForgeAttachmentStore.ATTACHMENT_KEY));
+        assertEquals(other, remaining.getCompound("other_mod:data").orElseThrow());
     }
 
     @Test

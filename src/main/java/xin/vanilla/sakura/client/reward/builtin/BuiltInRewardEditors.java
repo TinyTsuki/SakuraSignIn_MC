@@ -2,7 +2,7 @@ package xin.vanilla.sakura.client.reward.builtin;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.ItemStack;
@@ -45,11 +45,11 @@ final class BuiltInRewardEditors {
                         context.getSubmit())));
     }
 
-    static RewardEditorProvider<ResourceLocation> advancement() {
+    static RewardEditorProvider<Identifier> advancement() {
         return StandardRewardEditors.custom(context -> Minecraft.getInstance().setScreen(
                 AdvancementRewardSelectionFlow.create(parent(context),
                         context.getInitialValue() == null
-                                ? ResourceLocation.parse("minecraft:story/root")
+                                ? Identifier.parse("minecraft:story/root")
                                 : context.getInitialValue(),
                         context.getSubmit())));
     }

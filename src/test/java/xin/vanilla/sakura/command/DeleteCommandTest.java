@@ -11,6 +11,7 @@ import org.junit.Test;
 
 import xin.vanilla.sakura.command.impl.DeleteCommand;
 import xin.vanilla.sakura.command.impl.ResetCommand;
+
 import java.time.LocalDate;
 
 import static org.junit.Assert.*;
@@ -22,9 +23,9 @@ public class DeleteCommandTest {
     public void requiresPermissionTwoAndDoesNotRequirePlayerEntity() throws Exception {
         CommandNode<CommandSourceStack> node = DeleteCommand.build().build();
         CommandSourceStack console = new CommandSourceStack(CommandSource.NULL, Vec3.ZERO, Vec2.ZERO,
-                null, 2, "Console", Component.literal("Console"), null, null);
+                null, net.minecraft.server.permissions.LevelBasedPermissionSet.GAMEMASTER, "Console", Component.literal("Console"), null, null);
         assertTrue(node.canUse(console));
-        assertFalse(node.canUse(console.withPermission(1)));
+        assertFalse(node.canUse(console.withPermission(net.minecraft.server.permissions.LevelBasedPermissionSet.MODERATOR)));
         assertNotNull(node.getChild("player").getCommand());
         assertNotNull(node.getChild("player").getChild("date").getCommand());
     }
@@ -40,9 +41,9 @@ public class DeleteCommandTest {
     public void claimResetRequiresPermissionTwoAndExplicitPreset() throws Exception {
         CommandNode<CommandSourceStack> node = ResetCommand.build().build();
         CommandSourceStack console = new CommandSourceStack(CommandSource.NULL, Vec3.ZERO, Vec2.ZERO,
-                null, 2, "Console", Component.literal("Console"), null, null);
+                null, net.minecraft.server.permissions.LevelBasedPermissionSet.GAMEMASTER, "Console", Component.literal("Console"), null, null);
         assertTrue(node.canUse(console));
-        assertFalse(node.canUse(console.withPermission(1)));
+        assertFalse(node.canUse(console.withPermission(net.minecraft.server.permissions.LevelBasedPermissionSet.MODERATOR)));
         assertNull(node.getChild("personalDate").getChild("player").getCommand());
         assertNotNull(node.getChild("personalDate").getChild("player").getChild("target").getCommand());
         assertNotNull(node.getChild("personalDate").getChild("player").getChild("preset")

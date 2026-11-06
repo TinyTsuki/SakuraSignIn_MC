@@ -23,7 +23,7 @@ import static org.junit.Assert.assertTrue;
 public class RewardSemanticMatcherTest {
     @BeforeClass
     public static void bootstrapMinecraftRegistries() {
-        NeoForgeUnitTestBootstrap.bootstrap();
+        xin.vanilla.sakura.test.NativeBootstrap.initialize();
     }
 
     @Before

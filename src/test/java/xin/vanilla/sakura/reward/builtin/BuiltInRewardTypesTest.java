@@ -30,7 +30,7 @@ import static org.junit.Assert.assertTrue;
 public class BuiltInRewardTypesTest {
     @BeforeClass
     public static void bootstrapMinecraftRegistries() {
-        NeoForgeUnitTestBootstrap.bootstrap();
+        xin.vanilla.sakura.test.NativeBootstrap.initialize();
     }
 
     @Before

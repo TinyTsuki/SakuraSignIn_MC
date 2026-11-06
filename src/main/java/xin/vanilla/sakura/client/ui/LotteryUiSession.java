@@ -195,7 +195,7 @@ public final class LotteryUiSession implements UiPageSession {
 
     private static UiGameElement icon(String name) {
         return UiGameElement.sprite(xin.vanilla.banira.client.data.Texture.of(
-                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("apricityui", "apricity/sakura_sign_in/icons/" + name + ".png"), 16, 16));
+                net.minecraft.resources.Identifier.fromNamespaceAndPath("apricityui", "apricity/sakura_sign_in/icons/" + name + ".png"), 16, 16));
     }
 
     private void status() {

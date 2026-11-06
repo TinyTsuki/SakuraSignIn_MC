@@ -1,5 +1,6 @@
 package xin.vanilla.sakura.data.player;
 
+import xin.vanilla.sakura.util.SakuraNbt;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import net.minecraft.nbt.CompoundTag;
@@ -10,6 +11,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.ArrayList;
 import java.util.List;
+
 import xin.vanilla.sakura.data.personaldate.PlayerPersonalDateSlot;
 import xin.vanilla.sakura.data.lottery.LotteryDrawState;
 
@@ -71,41 +73,41 @@ public class PlayerSignInSummary {
 
     public static PlayerSignInSummary deserializeNBT(CompoundTag tag) {
         PlayerSignInSummary summary = new PlayerSignInSummary();
-        summary.totalSignInDays = tag.getInt("totalSignInDays");
-        summary.continuousSignInDays = tag.getInt("continuousSignInDays");
-        summary.lastSignInTime = tag.getString("lastSignInTime");
-        summary.signInCard = tag.getInt("signInCard");
-        summary.autoRewarded = tag.getBoolean("autoRewarded");
-        summary.language = tag.contains("language", 8) ? tag.getString("language") : "client";
-        summary.cdkRecords = copyList(tag.getList("cdkRecords", 10));
+        summary.totalSignInDays = tag.getIntOr("totalSignInDays", 0);
+        summary.continuousSignInDays = tag.getIntOr("continuousSignInDays", 0);
+        summary.lastSignInTime = tag.getStringOr("lastSignInTime", "");
+        summary.signInCard = tag.getIntOr("signInCard", 0);
+        summary.autoRewarded = tag.getBooleanOr("autoRewarded", false);
+        summary.language = tag.getStringOr("language", "client");
+        summary.cdkRecords = copyList(SakuraNbt.compoundListOrEmpty(tag, "cdkRecords"));
 
-        ListTag indexes = tag.getList("monthIndexes", 10);
+        ListTag indexes = SakuraNbt.compoundListOrEmpty(tag, "monthIndexes");
         for (int i = 0; i < indexes.size(); i++) {
-            MonthSignInIndex index = MonthSignInIndex.deserializeNBT(indexes.getCompound(i));
+            MonthSignInIndex index = MonthSignInIndex.deserializeNBT(indexes.getCompoundOrEmpty(i));
             summary.monthIndexes.put(index.getMonth(), index);
         }
 
-        ListTag slots = tag.getList("personalDateSlots", 10);
+        ListTag slots = SakuraNbt.compoundListOrEmpty(tag, "personalDateSlots");
         for (int i = 0; i < slots.size(); i++) {
             summary.personalDateSlots.add(
-                    PlayerPersonalDateSlot.deserializeNBT(slots.getCompound(i)));
+                    PlayerPersonalDateSlot.deserializeNBT(slots.getCompoundOrEmpty(i)));
         }
-        summary.onlineTimeBaselineDate = tag.getString("onlineTimeBaselineDate");
-        summary.onlineTimeBaselineTicks = Math.max(0, tag.getInt("onlineTimeBaselineTicks"));
-        ListTag lotteryStates = tag.getList("lotteryDrawStates", 10);
+        summary.onlineTimeBaselineDate = tag.getStringOr("onlineTimeBaselineDate", "");
+        summary.onlineTimeBaselineTicks = Math.max(0, tag.getIntOr("onlineTimeBaselineTicks", 0));
+        ListTag lotteryStates = SakuraNbt.compoundListOrEmpty(tag, "lotteryDrawStates");
         for (int i = 0; i < lotteryStates.size(); i++) {
             summary.lotteryDrawStates.add(
-                    LotteryDrawState.deserializeNBT(lotteryStates.getCompound(i)));
+                    LotteryDrawState.deserializeNBT(lotteryStates.getCompoundOrEmpty(i)));
         }
 
-        CompoundTag migration = tag.getCompound("migration");
-        summary.legacyCapabilityMigrated = migration.getBoolean("legacyCapabilityMigrated");
-        summary.legacyCapabilityBackup = migration.getString("legacyCapabilityBackup");
+        CompoundTag migration = tag.getCompoundOrEmpty("migration");
+        summary.legacyCapabilityMigrated = migration.getBooleanOr("legacyCapabilityMigrated", false);
+        summary.legacyCapabilityBackup = migration.getStringOr("legacyCapabilityBackup", "");
         return summary;
     }
 
     public static boolean isCurrentSchema(CompoundTag tag) {
-        return tag.getInt("schemaVersion") == SCHEMA_VERSION;
+        return tag.getIntOr("schemaVersion", 0) == SCHEMA_VERSION;
     }
 
     private static ListTag copyList(ListTag source) {

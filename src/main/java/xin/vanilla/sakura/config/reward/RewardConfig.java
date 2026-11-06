@@ -160,11 +160,15 @@ public class RewardConfig implements Serializable {
      */
     private List<KeyValue<KeyValue<String, String>, KeyValue<RewardList, AtomicInteger>>> cdkRewards;
 
-    /** 由服务端命名并配置的个性化周期日期奖励。 */
+    /**
+     * 由服务端命名并配置的个性化周期日期奖励。
+     */
     @NonNull
     private List<PersonalDatePreset> personalDatePresets;
 
-    /** 可由玩家主动抽取的独立奖池。 */
+    /**
+     * 可由玩家主动抽取的独立奖池。
+     */
     @NonNull
     private List<LotteryPool> lotteryPools;
 
@@ -535,9 +539,9 @@ public class RewardConfig implements Serializable {
                             SakuraRewardTypes.EFFECT));
                 }});
                 put("7", new RewardList() {{
-                    add(new Reward(new MobEffectInstance(MobEffects.HEAL, 6000, 0),
+                    add(new Reward(new MobEffectInstance(MobEffects.INSTANT_HEALTH, 6000, 0),
                             SakuraRewardTypes.EFFECT));
-                    add(new Reward(new MobEffectInstance(MobEffects.JUMP, 6000, 0),
+                    add(new Reward(new MobEffectInstance(MobEffects.JUMP_BOOST, 6000, 0),
                             SakuraRewardTypes.EFFECT));
                     add(new Reward(new ItemStack(Items.ENCHANTED_GOLDEN_APPLE, 1),
                             SakuraRewardTypes.ITEM));
@@ -547,7 +551,7 @@ public class RewardConfig implements Serializable {
                 put("0000-10-06~1", new RewardList() {{
                     add(new Reward(new ItemStack(Items.EXPERIENCE_BOTTLE, 1),
                             SakuraRewardTypes.ITEM));
-                    add(new Reward(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 300, 1),
+                    add(new Reward(new MobEffectInstance(MobEffects.RESISTANCE, 300, 1),
                             SakuraRewardTypes.EFFECT));
                 }});
             }});

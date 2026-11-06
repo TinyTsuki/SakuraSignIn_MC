@@ -3,7 +3,7 @@ plugins {
     id 'eclipse'
     id 'idea'
     id 'maven-publish'
-    id 'net.neoforged.gradle.userdev' version '7.0.181'
+    id 'net.neoforged.gradle.userdev' version '7.1.39'
 }
 
 group = mod_group_id
@@ -16,9 +16,18 @@ base {
     archivesName = mod_id
 }
 
+def javaVer = 25
+if (JavaVersion.current() < JavaVersion.toVersion(javaVer)) {
+    throw new GradleException('Minecraft 26.1 requires a Java 25 or newer Gradle JVM')
+}
+
 java {
-    toolchain.languageVersion = JavaLanguageVersion.of(21)
+    toolchain.languageVersion = JavaLanguageVersion.of(javaVer)
     withSourcesJar()
+}
+
+if (providers.gradleProperty('banira.neoForgeDependencyRepo').isPresent()) {
+    minecraftArtifactCache.cacheDirectory.set(layout.projectDirectory.dir('.gradle/caches/minecraft'))
 }
 
 runs {
@@ -55,6 +64,24 @@ configurations.configureEach {
 
 repositories {
     mavenLocal()
+    def offlineSupplement = providers.gradleProperty('banira.neoForgeOfflineSupplement').orNull
+    if (offlineSupplement != null) {
+        named('Mojang LWJGL Free Type Repository') {
+            url = uri(offlineSupplement)
+        }
+    }
+    def verifiedRepository = providers.gradleProperty('banira.neoForgeDependencyRepo').orNull
+    if (verifiedRepository != null) {
+        def verified = maven {
+            url = uri(verifiedRepository)
+            metadataSources {
+                gradleMetadata()
+                mavenPom()
+            }
+        }
+        remove(verified)
+        addFirst(verified)
+    }
     mavenCentral()
 }
 
@@ -70,16 +97,13 @@ repositories {
 }
 
 dependencies {
-    runtimeOnly "maven.modrinth:spark:v5qtqRQi"
-    // Development runtime performance mod; not bundled into published artifacts.
-    runtimeOnly "maven.modrinth:embeddium:J7b96IEd"
     implementation "net.neoforged:neoforge:${neo_version}"
     testImplementation 'junit:junit:4.13.2'
 
-    compileOnly 'org.projectlombok:lombok:1.18.34'
-    annotationProcessor 'org.projectlombok:lombok:1.18.34'
-    testCompileOnly 'org.projectlombok:lombok:1.18.34'
-    testAnnotationProcessor 'org.projectlombok:lombok:1.18.34'
+    compileOnly 'org.projectlombok:lombok:1.18.48'
+    annotationProcessor 'org.projectlombok:lombok:1.18.48'
+    testCompileOnly 'org.projectlombok:lombok:1.18.48'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.48'
 
     implementation(baniraCodexCoords) {
         changing = true

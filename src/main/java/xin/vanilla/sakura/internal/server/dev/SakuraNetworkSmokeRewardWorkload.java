@@ -25,7 +25,9 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/** Real reward entry points against a bounded long-history player fixture. */
+/**
+ * Real reward entry points against a bounded long-history player fixture.
+ */
 final class SakuraNetworkSmokeRewardWorkload {
     static final int CYCLES = 20;
     static final int REWARDS_PER_CLAIM = Integer.getInteger("sakura.networkSmoke.rewardsPerClaim", 48);
@@ -38,7 +40,7 @@ final class SakuraNetworkSmokeRewardWorkload {
     SakuraNetworkSmokeRewardWorkload(Date now) {
         require(REWARDS_PER_CLAIM >= 3 && REWARDS_PER_CLAIM <= 512, "Invalid bounded reward count");
         firstDay = now.toInstant().atZone(ZoneId.systemDefault()).toLocalDate().plusDays(3);
-        for (String name : new String[] {"sign-in", "claim-rewards", "duplicate-claim",
+        for (String name : new String[]{"sign-in", "claim-rewards", "duplicate-claim",
                 "re-sign-in-rewards", "command-reward", "save-and-sync"}) {
             timings.put(name, new SakuraNetworkSmokeTimings(CYCLES));
         }
@@ -69,8 +71,9 @@ final class SakuraNetworkSmokeRewardWorkload {
 
     private static ItemStack identifiedItem(Item item, int count, Date day, int index) {
         ItemStack stack = new ItemStack(item, count);
-        if (day != null) stack.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, net.minecraft.network.chat.Component.literal(
-                "smoke-" + DateUtils.toDateInt(day) + "-" + (index % 12)));
+        if (day != null)
+            stack.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, net.minecraft.network.chat.Component.literal(
+                    "smoke-" + DateUtils.toDateInt(day) + "-" + (index % 12)));
         return stack;
     }
 
@@ -123,10 +126,21 @@ final class SakuraNetworkSmokeRewardWorkload {
         }
     }
 
-    boolean complete() { return cycles == CYCLES; }
-    int cycles() { return cycles; }
-    Date finalSignedDay() { return finalSignedDay; }
-    Date finalMakeUpDay() { return finalMakeUpDay; }
+    boolean complete() {
+        return cycles == CYCLES;
+    }
+
+    int cycles() {
+        return cycles;
+    }
+
+    Date finalSignedDay() {
+        return finalSignedDay;
+    }
+
+    Date finalMakeUpDay() {
+        return finalMakeUpDay;
+    }
 
     static void assertAllRecordedRewards(IPlayerSignInData data, Date lastSignedDay) {
         for (int cycle = 0; cycle < CYCLES; cycle++) {
@@ -180,15 +194,16 @@ final class SakuraNetworkSmokeRewardWorkload {
             Reward actual = record.getRewardList().get(index);
             Reward value = expected.get(index);
             require(actual.isRewarded() && value.getTypeId().equals(actual.getTypeId())
-                    && value.getContent().equals(actual.getContent())
-                    && value.getProbability().compareTo(actual.getProbability()) == 0,
+                            && value.getContent().equals(actual.getContent())
+                            && value.getProbability().compareTo(actual.getProbability()) == 0,
                     "Final history reward content or state was not persisted");
         }
     }
 
     private static int count(ServerPlayer player, Item item) {
         int total = 0;
-        for (ItemStack stack : player.getInventory().items) if (stack.getItem() == item) total += stack.getCount();
+        for (ItemStack stack : player.getInventory().getNonEquipmentItems())
+            if (stack.getItem() == item) total += stack.getCount();
         return total;
     }
 

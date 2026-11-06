@@ -1,10 +1,10 @@
 package xin.vanilla.sakura.client.gui;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import org.joml.Matrix3x2fStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -100,16 +100,16 @@ public final class RewardRenderer {
         }
     }
 
-    public static void renderCustomReward(GuiGraphics graphics,
-                                          Font font, ResourceLocation texture,
+    public static void renderCustomReward(GuiGraphicsExtractor graphics,
+                                          Font font, Identifier texture,
                                           TextureCoordinate coordinates, Reward reward,
                                           int x, int y, boolean showText) {
         renderCustomReward(graphics, font, texture, coordinates,
                 reward, x, y, showText, true);
     }
 
-    public static void renderCustomReward(GuiGraphics graphics,
-                                          Font font, ResourceLocation texture,
+    public static void renderCustomReward(GuiGraphicsExtractor graphics,
+                                          Font font, Identifier texture,
                                           TextureCoordinate coordinates, Reward reward,
                                           int x, int y, boolean showText,
                                           boolean showQuality) {
@@ -125,13 +125,9 @@ public final class RewardRenderer {
 
         if (showText && showQuality
                 && reward.getProbability().compareTo(BigDecimal.ONE) != 0) {
-            PoseStack stack = graphics.pose();
-            stack.pushPose();
-            stack.translate(0, 0, 250);
             int color = probabilityColor(reward.getProbability().doubleValue());
-            graphics.drawString(font, SakuraComponent.get().literal("?").color(color).toVanilla(),
+            graphics.text(font, SakuraComponent.get().literal("?").color(color).toVanilla(),
                     x - 1, y - 1, color, true);
-            stack.popPose();
         }
     }
 
@@ -162,18 +158,18 @@ public final class RewardRenderer {
     }
 
     private static final class NativeRenderContext implements RewardRenderContext {
-        private final GuiGraphics graphics;
-        private final PoseStack stack;
+        private final GuiGraphicsExtractor graphics;
+        private final Matrix3x2fStack stack;
         private final Font font;
-        private final ResourceLocation texture;
+        private final Identifier texture;
         private final TextureCoordinate coordinates;
         private final Reward reward;
         private final int x;
         private final int y;
         private final boolean showAmount;
 
-        private NativeRenderContext(GuiGraphics graphics,
-                                    Font font, ResourceLocation texture,
+        private NativeRenderContext(GuiGraphicsExtractor graphics,
+                                    Font font, Identifier texture,
                                     TextureCoordinate coordinates, Reward reward,
                                     int x, int y, boolean showAmount) {
             this.graphics = graphics;
@@ -250,7 +246,7 @@ public final class RewardRenderer {
         public void drawAmount(String text) {
             if (!showAmount || text == null) return;
             int width = font.width(text);
-            graphics.drawString(font, text, (int) (x + ICON_SIZE - width / 2.0F - 2),
+            graphics.text(font, text, (int) (x + ICON_SIZE - width / 2.0F - 2),
                     y + ICON_SIZE - font.lineHeight + 2, 0xFFFFFFFF, true);
         }
 

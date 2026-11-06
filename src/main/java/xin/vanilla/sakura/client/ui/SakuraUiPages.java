@@ -1,6 +1,6 @@
 package xin.vanilla.sakura.client.ui;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import xin.vanilla.banira.api.client.ui.UiGameElement;
 import xin.vanilla.banira.api.client.ui.UiPageSession;
 import xin.vanilla.banira.api.client.ui.UiPageSpec;
@@ -27,7 +27,7 @@ public final class SakuraUiPages {
         return UiGameElement.sprite(xin.vanilla.sakura.client.theme.SakuraThemeTextures.get("icon.sign_in").texture());
     }
 
-    public static Texture themeIcon(ResourceLocation atlas, TextureCoordinate texture, int index, boolean selected) {
+    public static Texture themeIcon(Identifier atlas, TextureCoordinate texture, int index, boolean selected) {
         if (index < 0 || index >= xin.vanilla.sakura.client.theme.BuiltInThemeCatalog.themeIds().size())
             throw new IllegalArgumentException("Invalid theme selector index");
         return xin.vanilla.sakura.client.theme.SakuraThemeTextures.get("selector."

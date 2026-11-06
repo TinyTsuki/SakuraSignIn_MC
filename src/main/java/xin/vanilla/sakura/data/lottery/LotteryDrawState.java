@@ -4,7 +4,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import net.minecraft.nbt.CompoundTag;
 
-/** 每名玩家按奖池持久化的领取计数。 */
+/**
+ * 每名玩家按奖池持久化的领取计数。
+ */
 @Data
 @NoArgsConstructor
 public class LotteryDrawState {
@@ -29,11 +31,11 @@ public class LotteryDrawState {
     }
 
     public static LotteryDrawState deserializeNBT(CompoundTag tag) {
-        LotteryDrawState state = new LotteryDrawState(tag.getString("poolId"));
-        state.periodKey = tag.getString("periodKey");
-        state.periodDraws = Math.max(0, tag.getInt("periodDraws"));
-        state.totalDraws = Math.max(0, tag.getInt("totalDraws"));
-        state.lastDrawEpochMillis = Math.max(0L, tag.getLong("lastDrawEpochMillis"));
+        LotteryDrawState state = new LotteryDrawState(tag.getStringOr("poolId", ""));
+        state.periodKey = tag.getStringOr("periodKey", "");
+        state.periodDraws = Math.max(0, tag.getIntOr("periodDraws", 0));
+        state.totalDraws = Math.max(0, tag.getIntOr("totalDraws", 0));
+        state.lastDrawEpochMillis = Math.max(0L, tag.getLongOr("lastDrawEpochMillis", 0L));
         return state;
     }
 }

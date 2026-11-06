@@ -1,5 +1,15 @@
 pluginManagement {
     repositories {
+        def verifiedRepository = providers.gradleProperty('banira.neoForgeDependencyRepo').orNull
+        if (verifiedRepository != null) {
+            maven {
+                url = uri(verifiedRepository)
+                metadataSources {
+                    gradleMetadata()
+                    mavenPom()
+                }
+            }
+        }
         mavenLocal()
         gradlePluginPortal()
         maven { url = 'https://maven.neoforged.net/releases' }

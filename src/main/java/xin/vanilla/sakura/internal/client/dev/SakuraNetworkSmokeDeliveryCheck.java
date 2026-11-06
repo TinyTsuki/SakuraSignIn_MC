@@ -19,7 +19,9 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
-/** Observes real network-delivered notifications and monthly records, without injecting client data. */
+/**
+ * Observes real network-delivered notifications and monthly records, without injecting client data.
+ */
 final class SakuraNetworkSmokeDeliveryCheck {
     private final long startedAt = System.currentTimeMillis();
     private final Set<Long> seen = new HashSet<>();
@@ -86,7 +88,7 @@ final class SakuraNetworkSmokeDeliveryCheck {
                     .filter(record -> DateUtils.toDateInt(record.getCompensateTime()) == DateUtils.toDateInt(date))
                     .findFirst().orElse(null);
             if (actual == null || !actual.isRewarded()) return false;
-            require(TagParser.parseTag(checkpoint.getProperty("pressureRecord." + pressureDay))
+            require(TagParser.parseCompoundFully(checkpoint.getProperty("pressureRecord." + pressureDay))
                     .equals(actual.writeToNBT()), "Monthly reward detail mismatch at pressure day " + pressureDay);
             pressureDay++;
             requested = false;

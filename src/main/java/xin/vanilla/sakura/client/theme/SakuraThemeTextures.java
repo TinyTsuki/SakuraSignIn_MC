@@ -13,7 +13,7 @@ public final class SakuraThemeTextures {
         BINDINGS.replace(theme.getResolved().values(), texture -> {
             try (var input = texture.openPng()) {
                 var dynamic = ThemeTextureBindings.transfer(com.mojang.blaze3d.platform.NativeImage.read(input),
-                        net.minecraft.client.renderer.texture.DynamicTexture::new);
+                        image -> new net.minecraft.client.renderer.texture.DynamicTexture(() -> texture.location().toString(), image));
                 try {
                     manager.register(texture.location(), dynamic);
                 } catch (RuntimeException | Error failure) {

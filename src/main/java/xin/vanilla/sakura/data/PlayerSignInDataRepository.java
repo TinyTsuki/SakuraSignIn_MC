@@ -28,6 +28,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+
 import xin.vanilla.sakura.data.personaldate.PlayerPersonalDateSlot;
 
 /**
@@ -148,13 +149,13 @@ public final class PlayerSignInDataRepository {
         summary.setContinuousSignInDays(data.getContinuousSignInDays());
         Map<String, List<CompoundTag>> recordsByMonth = new LinkedHashMap<>();
         for (CompoundTag record : records) {
-            Date date = DateUtils.format(record.getString("compensateTime"));
+            Date date = DateUtils.format(record.getStringOr("compensateTime", ""));
             String month = "unknown";
             if (date != null) {
                 LocalDate day = localDay(date);
                 month = String.format("%04d-%02d", day.getYear(), day.getMonthValue());
                 summary.getMonthIndexes().computeIfAbsent(month, MonthSignInIndex::new)
-                        .markSigned(day.getDayOfMonth(), record.getBoolean("rewarded"));
+                        .markSigned(day.getDayOfMonth(), record.getBooleanOr("rewarded", false));
             }
             // 内置记录编码产生独占 NBT，快照直接持有，无需再复制整个记录树。
             recordsByMonth.computeIfAbsent(month, key -> new ArrayList<>()).add(record);

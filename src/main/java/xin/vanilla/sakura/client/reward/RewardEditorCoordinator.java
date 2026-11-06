@@ -1,7 +1,7 @@
 package xin.vanilla.sakura.client.reward;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import xin.vanilla.banira.client.gui.BaniraScreen;
@@ -183,7 +183,7 @@ public final class RewardEditorCoordinator {
         }
 
         @Override
-        protected void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+        protected void onRender(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
         }
     }
 
@@ -220,7 +220,7 @@ public final class RewardEditorCoordinator {
         }
 
         @Override
-        protected void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+        protected void onRender(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
         }
     }
 }
