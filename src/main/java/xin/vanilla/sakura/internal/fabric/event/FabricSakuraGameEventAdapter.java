@@ -53,6 +53,7 @@ public final class FabricSakuraGameEventAdapter {
         net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             xin.vanilla.sakura.network.packet.LotteryPoolSyncPacket.clearServerTransfers();
             xin.vanilla.sakura.reward.lottery.PendingLotteryDraws.clear();
+            xin.vanilla.sakura.reward.lottery.LotteryDrawDispatcher.clearCommands();
             try {
                 xin.vanilla.sakura.internal.fabric.lottery.FabricLotteryServices.stop();
             } catch (Exception failure) {
@@ -146,6 +147,7 @@ public final class FabricSakuraGameEventAdapter {
     }
 
     private static void onServerTick(MinecraftServer server) {
+        xin.vanilla.sakura.reward.lottery.LotteryDrawDispatcher.tickCommands(server);
         xin.vanilla.sakura.network.packet.LotteryPoolSyncPacket.expireServerTransfers();
         Date now = RewardManager.getCompensateDate(SakuraClock.serverNow());
         LocalDate day = now.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
