@@ -56,12 +56,40 @@ public class LotteryUiPresentationTest {
         assertEquals("", text(view, "info"));
         assertEquals(Boolean.FALSE, view.enabled.get("info"));
         assertFalse(view.texts.containsKey("quote_status"));
+        int settledWrites = view.writes;
+        for (int cycle = 1; cycle <= 3; cycle++) {
+            port.millis = cycle * 3000L;
+            session.tick();
+            assertEquals("12", text(view, "available"));
+            assertTrue(view.enabled.get("batch"));
+            assertEquals(settledWrites, view.writes);
+            port.millis += 150;
+            port.accept();
+            session.tick();
+            assertEquals(settledWrites, view.writes);
+        }
+    }
+
+    @Test
+    public void drawClickedDuringRefreshWaitsForAMatchingFee() {
+        LotteryUiOperationHandoffTest.Port port = new LotteryUiOperationHandoffTest.Port();
+        RecordingUiView view = new RecordingUiView();
+        LotteryUiSession session = new LotteryUiSession(port, () -> true);
+        session.bind(view);
+        session.tick();
+        port.accept();
+        session.tick();
         port.millis = 3000;
         session.tick();
-        assertEquals("xpPoints(2)", text(view, "fee"));
-        assertEquals("\u2014", text(view, "available"));
-        assertFalse(view.enabled.get("batch"));
-        assertEquals(Boolean.TRUE, view.enabled.get("info"));
+        view.actions.get("batch").run();
+        assertTrue(port.draws.isEmpty());
+        xin.vanilla.sakura.data.lottery.LotteryQuoteRequest pending = port.quotes.get(port.quotes.size() - 1);
+        assertTrue(port.requests.accept(new LotteryQuote(pending, LotteryQuote.Status.READY, pending.getGeneration(),
+                12, "xpPoints(3)", java.util.UUID.randomUUID().toString())));
+        session.tick();
+        assertTrue(port.draws.isEmpty());
+        view.actions.get("batch").run();
+        assertEquals(1, port.draws.size());
     }
 
     @Test
