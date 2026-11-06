@@ -240,7 +240,7 @@ public class LotteryUiPresentationTest {
     @Test
     public void poolEditorOptionTooltipsAreAvailableInBothLanguages() throws Exception {
         var keys = new java.util.ArrayList<>(List.of("lottery_voucher_item", "lottery_voucher_points", "lottery_voucher_levels",
-                "lottery_voucher_score", "lottery_png_keep", "lottery_png_remove", "lottery_artwork_file", "lottery_artwork_auto",
+                "lottery_voucher_score", "lottery_voucher_advanced", "lottery_artwork_none", "lottery_artwork_file", "lottery_artwork_auto",
                 "lottery_artwork_item", "lottery_artwork_texture"));
         for (var style : xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.values())
             keys.add("enum_lottery_animation_style_" + style.name().toLowerCase(java.util.Locale.ROOT));

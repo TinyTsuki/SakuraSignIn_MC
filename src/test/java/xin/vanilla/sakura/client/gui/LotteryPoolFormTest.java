@@ -24,6 +24,8 @@ import static org.junit.Assert.*;
 public class LotteryPoolFormTest {
     @Rule
     public xin.vanilla.sakura.test.UnboundConfigPlatform platform = new xin.vanilla.sakura.test.UnboundConfigPlatform();
+    @Rule
+    public org.junit.rules.TemporaryFolder temp = new org.junit.rules.TemporaryFolder();
 
     @BeforeClass
     public static void bootstrap() {
@@ -44,10 +46,12 @@ public class LotteryPoolFormTest {
         assertEquals(pool.getDescription(), description.defaultValue());
         assertTrue(description.allowEmpty());
         InputFormScreen.Widget voucher = widget(args, "voucherExpression");
-        assertEquals(4096, voucher.maxLength());
-        assertTrue(voucher.allowEmpty());
-        assertFalse(voucher.validator().apply(new InputFormScreen.Results()
-                .value("voucherExpression", 0, "System.exit(0)").curName("voucherExpression")).isEmpty());
+        assertTrue(voucher.pickerReadOnly());
+        assertTrue(voucher.defaultValue().contains("2"));
+        var editor = child(voucher, ignored -> {
+        });
+        assertEquals("xpPoints", editor.uiSession().draft("kind"));
+        assertEquals("2", editor.uiSession().draft("amount"));
     }
 
     @Test
@@ -64,10 +68,10 @@ public class LotteryPoolFormTest {
         }
         args.getCallback().accept(results);
         assertEquals(pool, submitted.get());
-        submitted.set(null);
-        results.value("voucherExpression", 0, "unknown(1)");
-        args.getCallback().accept(results);
-        assertNull(submitted.get());
+        var editor = child(widget(args, "voucherExpression"), value -> fail("Invalid cost must not update the parent"));
+        editor.uiSession().draft("kind", "advanced");
+        editor.uiSession().draft("advanced", "unknown(1)");
+        assertFalse(editor.uiSession().submit());
     }
 
     @Test
@@ -80,6 +84,117 @@ public class LotteryPoolFormTest {
         assertEquals("tokens", score.specification());
         assertEquals(3, score.amount());
         assertThrows(IllegalArgumentException.class, () -> LotteryVoucherExpressions.build("item", "", "", 1));
+    }
+
+    @Test
+    public void vouchersReopenWithOnlyTheSelectedInputsAndPreserveAdvancedExpressions() throws Exception {
+        for (String expression : java.util.List.of("", "item(\"minecraft:paper\",3)", "xpPoints(7)", "xpLevels(8)",
+                "score(\"tokens\",9)", "itemExact(\"minecraft:paper\",2)", "xpPoints(2) && score(\"tokens\",1)")) {
+            LotteryPool pool = pool();
+            pool.setVoucherExpression(expression);
+            AtomicReference<LotteryPool> result = new AtomicReference<>();
+            var form = form(pool, result);
+            var editor = child(widget(form, "voucherExpression"), ignored -> {
+            });
+            var ui = editor.uiSession();
+            var expected = LotteryVoucherExpressions.read(expression);
+            assertEquals(expected.kind(), ui.draft("kind"));
+            assertEquals(switch (expected.kind()) {
+                        case "item", "score" -> 3;
+                        case "free" -> 1;
+                        default -> 2;
+                    },
+                    ui.visibleFieldCount());
+            boolean accepted = ui.submit();
+            assertTrue(expression + " (" + expected.kind() + "): " + ui.error() + " " + ui.errors(), accepted);
+            form.getCallback().accept(defaults(form));
+            assertEquals(expression, result.get().getVoucherExpression());
+        }
+    }
+
+    @Test
+    public void artworkShowsTheSavedSourceAndOnlyCommitsTheSelectedValue() throws Exception {
+        var pool = pool();
+        pool.setArtworkItem("minecraft:paper");
+        AtomicReference<LotteryPool> submitted = new AtomicReference<>();
+        var args = form(pool, submitted);
+        var parentValue = new AtomicReference<String>();
+        var editor = child(widget(args, "poster"), parentValue::set);
+        var ui = editor.uiSession();
+        assertEquals("item", ui.draft("mode"));
+        assertEquals("minecraft:paper", ui.draft("item"));
+        assertEquals(2, ui.visibleFieldCount());
+        ui.draft("mode", "png");
+        assertFalse(ui.canSubmit());
+        ui.draft("mode", "texture");
+        ui.draft("texture", "example:textures/lottery/spring.png");
+        ui.draft("png", "invalid.png");
+        assertTrue(ui.submit());
+        assertTrue(parentValue.get().contains("example:textures/lottery/spring.png"));
+        args.getCallback().accept(defaults(args));
+        assertEquals("", submitted.get().getArtworkItem());
+        assertEquals("", submitted.get().getPosterPng());
+        var reopened = child(widget(form(submitted.get(), new AtomicReference<>()), "poster"), ignored -> {
+        });
+        assertEquals("texture", reopened.uiSession().draft("mode"));
+        assertEquals("example:textures/lottery/spring.png", reopened.uiSession().draft("texture"));
+    }
+
+    @Test
+    public void savedPngReopensWithPreviewAndNeedsNoLocalPath() throws Exception {
+        var bytes = new java.io.ByteArrayOutputStream();
+        javax.imageio.ImageIO.write(new java.awt.image.BufferedImage(4, 2, java.awt.image.BufferedImage.TYPE_INT_ARGB), "png", bytes);
+        String png = java.util.Base64.getEncoder().encodeToString(bytes.toByteArray());
+        var pool = pool();
+        pool.setPosterPng(png);
+        pool.setThumbnailPng(png);
+        var submitted = new AtomicReference<LotteryPool>();
+        var form = form(pool, submitted);
+        for (String key : java.util.List.of("poster", "thumbnail")) {
+            assertTrue(widget(form, key).defaultValue().contains("4 × 2"));
+            var editor = child(widget(form, key), ignored -> {
+            });
+            var ui = editor.uiSession();
+            assertEquals("png", ui.draft("mode"));
+            assertEquals("PNG · 4 × 2", ui.draft("savedPng"));
+            assertNotNull(widget(ui.args(), "savedPng").preview());
+            assertEquals(3, ui.visibleFieldCount());
+            assertEquals("", ui.draft("png"));
+            assertTrue(ui.submit());
+        }
+        form.getCallback().accept(defaults(form));
+        assertEquals(png, submitted.get().getPosterPng());
+        assertEquals(png, submitted.get().getThumbnailPng());
+    }
+
+    @Test
+    public void invalidReplacementAndCancelDoNotEraseStoredArtwork() throws Exception {
+        var pool = pool();
+        pool.setArtworkItem("minecraft:paper");
+        var submitted = new AtomicReference<LotteryPool>();
+        var form = form(pool, submitted);
+        var cancelled = child(widget(form, "poster"), ignored -> fail("Cancel must not update artwork"));
+        cancelled.uiSession().draft("mode", "none");
+        cancelled.uiSession().close(xin.vanilla.banira.api.client.ui.UiCloseReason.CANCEL);
+
+        var file = temp.newFile("poster.png");
+        var editor = child(widget(form, "poster"), ignored -> {
+        });
+        editor.uiSession().draft("mode", "png");
+        editor.uiSession().draft("png", file.getAbsolutePath());
+        assertFalse(editor.uiSession().submit());
+        assertEquals("item", child(widget(form, "poster"), ignored -> {
+        }).uiSession().draft("mode"));
+
+        javax.imageio.ImageIO.write(new java.awt.image.BufferedImage(8, 6, java.awt.image.BufferedImage.TYPE_INT_ARGB), "png", file);
+        assertTrue(editor.uiSession().submit());
+        form.getCallback().accept(defaults(form));
+        assertEquals("", submitted.get().getArtworkItem());
+        var reopened = child(widget(form(submitted.get(), new AtomicReference<>()), "poster"), ignored -> {
+        });
+        assertEquals("png", reopened.uiSession().draft("mode"));
+        assertEquals("PNG · 8 × 6", reopened.uiSession().draft("savedPng"));
+        assertEquals("", reopened.uiSession().draft("png"));
     }
 
     @Test
@@ -211,5 +326,10 @@ public class LotteryPoolFormTest {
         Field field = InputFormScreen.class.getDeclaredField("args");
         field.setAccessible(true);
         return (InputFormScreen.Args) field.get(screen);
+    }
+
+    private static InputFormScreen child(InputFormScreen.Widget widget, java.util.function.Consumer<String> selected) {
+        return (InputFormScreen) widget.picker().apply(new Screen(net.minecraft.network.chat.Component.empty()) {
+        }, selected);
     }
 }

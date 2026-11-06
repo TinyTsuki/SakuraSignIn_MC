@@ -296,8 +296,16 @@ public class LotteryUiOperationHandoffTest {
         description.drafts.get("input").accept("New\nDraft");
         var voucher = new RecordingUiView();
         view.rows.bind(voucher, 3);
-        assertEquals("xpPoints(2)", voucher.draftValues.get("input"));
-        voucher.drafts.get("input").accept("xpPoints(3)");
+        assertTrue(voucher.draftValues.get("input").contains("2"));
+        assertFalse(voucher.enabled.get("input"));
+        voucher.drafts.get("input").accept("must not overwrite a picker summary");
+        var formSession = form.uiSession();
+        assertTrue(formSession.draft("voucherExpression").contains("2"));
+        var widget = formSession.args().getWidgets().get(3);
+        var editor = (xin.vanilla.banira.client.gui.InputFormScreen) widget.picker().apply(parent,
+                value -> formSession.draft("voucherExpression", value));
+        editor.uiSession().draft("amount", "3");
+        assertTrue(editor.uiSession().submit());
         session.detach(UiDetachReason.SWITCH);
         var next = new RecordingUiView();
         session.bind(next);
@@ -306,7 +314,7 @@ public class LotteryUiOperationHandoffTest {
         assertEquals("New\nDraft", description.draftValues.get("input"));
         voucher = new RecordingUiView();
         next.rows.bind(voucher, 3);
-        assertEquals("xpPoints(3)", voucher.draftValues.get("input"));
+        assertTrue(voucher.draftValues.get("input").contains("3"));
         assertNotNull(voucher.actions.get("pick"));
     }
 
