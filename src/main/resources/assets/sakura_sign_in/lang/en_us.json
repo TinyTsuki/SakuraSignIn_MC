@@ -1,4 +1,11 @@
 {
+  "word.sakura_sign_in.lottery_voucher_source": "Cost type",
+  "word.sakura_sign_in.lottery_voucher_points": "Experience points",
+  "word.sakura_sign_in.lottery_voucher_levels": "Experience levels",
+  "word.sakura_sign_in.lottery_voucher_score": "Scoreboard points",
+  "word.sakura_sign_in.lottery_voucher_objective": "Scoreboard objective",
+  "word.sakura_sign_in.lottery_voucher_advanced": "Advanced expression",
+  "word.sakura_sign_in.lottery_voucher_advanced_tooltip": "Edit exact item matches or combined costs.",
   "format.sakura_sign_in.personal_date_additional_rewards": "[%s] additional rewards: ",
   "word.sakura_sign_in.reset_personal_date_claims": "Clear personal date reward claims",
   "word.sakura_sign_in.reset_personal_date_failed": "Unable to clear personal date reward claims. Check the server log",
