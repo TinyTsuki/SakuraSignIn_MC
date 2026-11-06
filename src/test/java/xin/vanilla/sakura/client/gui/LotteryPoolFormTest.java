@@ -18,6 +18,38 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.Assert.*;
 
 public class LotteryPoolFormTest {
+
+    @Test
+    public void reopeningArtworkShowsOnlyTheSavedSourceAndPreservesItsValue() throws Exception {
+        LotteryPool pool = pool();
+        pool.setArtworkTexture("test:textures/lottery/spring.png");
+        AtomicReference<LotteryPool> submitted = new AtomicReference<>();
+        InputFormScreen.Args args = form(pool, submitted);
+        Screen owner = new Screen(net.minecraft.network.chat.Component.empty()) {
+        };
+        var poster = widget(args, "poster");
+        InputFormScreen editor = (InputFormScreen) poster.picker().apply(owner, ignored -> {
+        });
+        assertEquals("texture", editor.uiSession().draft("mode"));
+        assertEquals(pool.getArtworkTexture(), editor.uiSession().draft("texture"));
+        assertEquals(2, editor.uiSession().visibleFieldCount());
+        editor.uiSession().draft("mode", "none");
+        assertEquals(1, editor.uiSession().visibleFieldCount());
+        editor.uiSession().draft("mode", "texture");
+        assertEquals(pool.getArtworkTexture(), editor.uiSession().draft("texture"));
+        assertTrue(editor.uiSession().submit());
+
+        InputFormScreen thumbnail = (InputFormScreen) widget(args, "thumbnail").picker().apply(owner, ignored -> {
+        });
+        assertEquals("auto", thumbnail.uiSession().draft("mode"));
+        assertEquals(1, thumbnail.uiSession().visibleFieldCount());
+        InputFormScreen.Results results = new InputFormScreen.Results();
+        int index = 0;
+        for (var field : args.getWidgets()) results.value(field.name(), index++, field.defaultValue());
+        args.getCallback().accept(results);
+        assertEquals(pool, submitted.get());
+    }
+
     @Rule public xin.vanilla.sakura.test.UnboundConfigPlatform platform = new xin.vanilla.sakura.test.UnboundConfigPlatform();
     @BeforeClass public static void bootstrap() throws Exception {
         net.minecraft.SharedConstants.tryDetectVersion();
