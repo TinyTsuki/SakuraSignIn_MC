@@ -30,6 +30,7 @@ public final class LotteryPools {
                 new RewardList(pool.getRewards()).clone());
         result.setDescription(pool.getDescription());
         result.setVoucherExpression(pool.getVoucherExpression());
+        result.setAnimationStyle(pool.getAnimationStyle());
         result.setDrawCounts(pool.getDrawCounts());
         result.setStartDate(pool.getStartDate());
         result.setEndDate(pool.getEndDate());

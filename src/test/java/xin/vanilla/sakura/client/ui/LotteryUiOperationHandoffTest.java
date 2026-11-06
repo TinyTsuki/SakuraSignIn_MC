@@ -242,10 +242,16 @@ public class LotteryUiOperationHandoffTest {
         assertFalse(view.enabled.get("batch"));
         view.actions.get("batch").run();
         assertTrue(port.draws.isEmpty());
+        port.millis = 3000;
+        session.tick();
         port.accept();
         session.tick();
         assertTrue(view.enabled.get("single"));
         view.actions.get("single").run();
+        assertTrue(port.draws.isEmpty());
+        assertEquals(1, port.quotes.get(port.quotes.size() - 1).getCount());
+        port.accept();
+        session.tick();
         assertEquals(1, port.draws.size());
         assertFalse(view.enabled.get("pool"));
         assertFalse(view.enabled.get("count"));
@@ -253,6 +259,20 @@ public class LotteryUiOperationHandoffTest {
         assertEquals("5", port.count);
         view.actions.get("single").run();
         assertEquals(1, port.draws.size());
+    }
+
+    @Test
+    public void configuredAnimationCannotBeChangedByAnOldControl() {
+        Port port = new Port();
+        port.daily.setAnimationStyle(LotteryAnimationStyle.ROULETTE);
+        LotteryAnimationStyle original = port.style;
+        LotteryUiSession session = new LotteryUiSession(port, () -> true);
+        RecordingUiView view = new RecordingUiView();
+        session.bind(view);
+        assertFalse(view.enabled.get("animation"));
+        view.changes.get("animation").accept(UiValue.text("INSTANT"));
+        view.actions.get("animation_instant").run();
+        assertEquals(original, port.style);
     }
 
     @Test
@@ -266,7 +286,7 @@ public class LotteryUiOperationHandoffTest {
         var session = form.uiPage().session();
         var view = new RecordingUiView();
         session.bind(view);
-        assertEquals(13, view.rows.size());
+        assertEquals(14, view.rows.size());
         var description = new RecordingUiView();
         view.rows.bind(description, 2);
         assertEquals("Long\nDescription", description.draftValues.get("input"));

@@ -1,4 +1,8 @@
 {
+  "word.sakura_sign_in.lottery_animation_legacy": "玩家偏好",
+  "word.sakura_sign_in.lottery_pool_closed": "奖池当前未开放",
+  "word.sakura_sign_in.lottery_time_remaining": "剩余时间",
+  "format.sakura_sign_in.lottery_countdown_sss": "%s天%s时%s分",
   "word.sakura_sign_in.lottery_start_date": "开启时间",
   "word.sakura_sign_in.lottery_end_date": "结束时间",
   "word.sakura_sign_in.lottery_date_hint": "格式 YYYY-MM-DD HH:mm（服务端时间），可省略时分或留空。",

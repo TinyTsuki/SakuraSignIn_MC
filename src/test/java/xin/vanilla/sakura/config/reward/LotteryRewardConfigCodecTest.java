@@ -35,6 +35,7 @@ public class LotteryRewardConfigCodecTest {
         RewardConfig source = ordinaryConfig();
         LotteryPool pool = new LotteryPool("event", "Event", LotteryLimitPolicy.DAILY, 10, 0, new RewardList());
         pool.setDrawCounts(java.util.List.of(1, 5, 10));
+        pool.setAnimationStyle(xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.ROULETTE);
         pool.setStartDate("2026-11-06 13:30");
         pool.setEndDate("2026-11-06 13:45");
         pool.setThumbnailPng(png(0xffff0000));

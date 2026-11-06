@@ -86,22 +86,29 @@ public final class LotteryOperationService {
         LotteryPool pool = runtime.pool(request.getPoolId());
         if (pool == null) return rejected(request, LotteryQuote.Status.POOL_NOT_FOUND, revision);
         try {
-            if (!isOpen(pool) || !pool.allowsCount(request.getCount()))
-                return rejected(request, LotteryQuote.Status.PAYMENT_UNAVAILABLE, revision);
-            if (blocked.contains(id) || !repository.incomplete(id).isEmpty() || !hasRewards(pool))
-                return rejected(request, LotteryQuote.Status.PAYMENT_UNAVAILABLE, revision);
+            LotteryWindow window = LotteryWindow.at(pool, clock.getAsLong(), zone);
+            if (!window.open()) return new LotteryQuote(request, LotteryQuote.Status.POOL_CLOSED, revision,
+                    0, "", "", window.remainingMillis(), window.opensNext());
+            if (!pool.allowsCount(request.getCount()) || blocked.contains(id)
+                    || !repository.incomplete(id).isEmpty() || !hasRewards(pool))
+                return unavailableQuote(request, revision, window);
             LotteryPool snapshot = LotteryPools.copy(pool);
             int count = capacity(player, snapshot, runtime.costs(player));
             if (count < 1 || request.getCount() > count)
-                return rejected(request, LotteryQuote.Status.PAYMENT_UNAVAILABLE, revision);
+                return unavailableQuote(request, revision, window);
             String token = LotteryProtocolLimits.token(tokens.get());
             tickets.put(id, new Ticket(request, token, snapshot, nanos.getAsLong()));
             return new LotteryQuote(request, LotteryQuote.Status.READY, revision, count,
-                    snapshot.getVoucherExpression(), token);
+                    snapshot.getVoucherExpression(), token, window.remainingMillis(), false);
         } catch (IOException | RuntimeException failure) {
             LOGGER.error("Lottery quote unavailable for " + id, failure);
             return rejected(request, LotteryQuote.Status.PAYMENT_UNAVAILABLE, revision);
         }
+    }
+
+    private static LotteryQuote unavailableQuote(LotteryQuoteRequest request, long revision, LotteryWindow window) {
+        return new LotteryQuote(request, LotteryQuote.Status.PAYMENT_UNAVAILABLE, revision,
+                0, "", "", window.remainingMillis(), false);
     }
 
     public LotteryDrawBatchResult draw(Object player, LotteryDrawRequest request) {
@@ -153,7 +160,8 @@ public final class LotteryOperationService {
         UUID id = runtime.playerId(player);
         if (blocked.contains(id) || !repository.incomplete(id).isEmpty())
             return failed(LotteryDrawStatus.OPERATION_PENDING, pool);
-        if (!isOpen(pool) || !pool.allowsCount(request.getRequest().getCount()))
+        if (!isOpen(pool)) return failed(LotteryDrawStatus.POOL_CLOSED, pool);
+        if (!pool.allowsCount(request.getRequest().getCount()))
             return failed(LotteryDrawStatus.PAYMENT_UNAVAILABLE, pool);
         if (!hasRewards(pool)) return failed(LotteryDrawStatus.EMPTY_POOL, pool);
         CostAccess access = runtime.costs(player);
@@ -286,18 +294,21 @@ public final class LotteryOperationService {
         return result;
     }
 
-    public void acknowledge(Object player, String operationId, String token) {
+    public LotteryOperation acknowledge(Object player, String operationId, String token) {
         requireOwner();
-        if (!live(player)) return;
+        if (!live(player)) return null;
         UUID id = runtime.playerId(player);
         try {
             LotteryOperation operation = repository.load(id, operationId);
             if (operation != null && operation.getStage() == LotteryOperation.Stage.COMPLETED
-                    && operation.getDisplayToken().equals(token) && !operation.isAcknowledged())
+                    && operation.getDisplayToken().equals(token) && !operation.isAcknowledged()) {
                 repository.write(operation.acknowledge());
+                return operation;
+            }
         } catch (IOException | RuntimeException failure) {
             unavailable(id, failure);
         }
+        return null;
     }
 
     public void recover(Object player) {

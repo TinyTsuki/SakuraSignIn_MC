@@ -1,4 +1,8 @@
 {
+  "word.sakura_sign_in.lottery_animation_legacy": "Player preference",
+  "word.sakura_sign_in.lottery_pool_closed": "This pool is currently closed",
+  "word.sakura_sign_in.lottery_time_remaining": "Time remaining",
+  "format.sakura_sign_in.lottery_countdown_sss": "%sd %sh %sm",
   "word.sakura_sign_in.lottery_start_date": "Opens at",
   "word.sakura_sign_in.lottery_end_date": "Ends at",
   "word.sakura_sign_in.lottery_date_hint": "YYYY-MM-DD HH:mm (server time). Omit the time for a whole-day date, or leave blank.",

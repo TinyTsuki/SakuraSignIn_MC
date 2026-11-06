@@ -104,6 +104,14 @@ public final class LotteryPoolForm {
         args.addWidget(date("endDate", "lottery_end_date", existing == null ? "" : existing.getEndDate()));
         args.addWidget(artworkField("poster", "lottery_poster_png", artwork, false));
         args.addWidget(artworkField("thumbnail", "lottery_thumbnail_png", artwork, true));
+        var animations = new java.util.ArrayList<DropdownOption>();
+        animations.add(option("legacy", "lottery_animation_legacy"));
+        for (var animation : xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.values()) {
+            animations.add(new DropdownOption(animation.name(), animation.enumDescription().toString()));
+        }
+        args.addWidget(dropdown("animationStyle", "lottery_animation", existing == null ? "STRIP"
+                        : existing.getAnimationStyle() == null ? "legacy" : existing.getAnimationStyle().name(),
+                animations.toArray(DropdownOption[]::new)));
         args.setCallback(results -> {
             LotteryPool candidate = new LotteryPool(results.value("id"), results.value("name"),
                     LotteryLimitPolicy.valueOf(results.value("policy")),
@@ -128,6 +136,9 @@ public final class LotteryPoolForm {
             candidate.setPosterPng(artwork.poster);
             candidate.setArtworkItem(artwork.item);
             candidate.setArtworkTexture(artwork.texture);
+            String animation = results.value("animationStyle");
+            if (animation != null && !"legacy".equals(animation))
+                candidate.setAnimationStyle(xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.valueOf(animation));
             var errors = LotteryPoolValidator.validate(candidate);
             if (!errors.isEmpty()) {
                 results.runningResult(tr(errors.contains("invalid_dates") ? "lottery_date_invalid"

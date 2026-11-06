@@ -100,6 +100,7 @@ public final class RewardConfigCodec {
             object.addProperty("maxDraws", pool.getMaxDraws());
             object.addProperty("cooldownSeconds", pool.getCooldownSeconds());
             object.addProperty("previewMode", pool.getPreviewMode().name());
+            if (pool.getAnimationStyle() != null) object.addProperty("animationStyle", pool.getAnimationStyle().name());
             if (pool.getDrawCounts() != null) {
                 JsonArray counts = new JsonArray();
                 pool.getDrawCounts().forEach(counts::add);
@@ -522,6 +523,8 @@ public final class RewardConfigCodec {
                 rewards
         );
         pool.setDescription(requiredString(object, "description"));
+        if (object.has("animationStyle")) pool.setAnimationStyle(
+                xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.valueOf(requiredString(object, "animationStyle")));
         if (object.has("drawCounts")) {
             JsonElement value = object.get("drawCounts");
             if (!value.isJsonArray() || value.getAsJsonArray().size() > LotteryPoolValidator.MAX_DRAW_OPTIONS)

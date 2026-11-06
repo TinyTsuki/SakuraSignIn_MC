@@ -75,7 +75,8 @@ public final class LotteryPaymentViewModel {
                 if (quote.isReady() && quote.getRequest().getCount() == requested
                         && intentFee.equals(quote.getPaymentSummary())) draw(requested);
             }
-            if (!quote.isReady() && quote.getRequest().getCount() != fallbackCount) {
+            if (quote.getStatus() == LotteryQuote.Status.PAYMENT_UNAVAILABLE
+                    && quote.getRequest().getCount() != fallbackCount) {
                 quoteCount = fallbackCount;
                 request(fallbackCount, false);
                 return;
@@ -163,5 +164,15 @@ public final class LotteryPaymentViewModel {
 
     public LotteryQuote quote() {
         return requests.getQuote();
+    }
+
+    public long windowMinutes() {
+        if (seen == null || seen != requests.getQuote() || seen.getGeneration() != requests.getGeneration()) return 0;
+        long remaining = seen.getRemainingWindowMillis() - Math.max(0, millis.getAsLong() - receivedAt);
+        return remaining <= 0 ? 0 : (remaining - 1) / 60_000 + 1;
+    }
+
+    public boolean opensNext() {
+        return windowMinutes() > 0 && seen.isOpensNext();
     }
 }

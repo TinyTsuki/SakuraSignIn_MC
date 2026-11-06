@@ -20,6 +20,7 @@ public class LotteryPool {
     private int maxDraws = 1;
     private int cooldownSeconds;
     private LotteryPreviewMode previewMode = LotteryPreviewMode.ALL;
+    private LotteryAnimationStyle animationStyle;
     private List<Integer> drawCounts;
     private String startDate = "";
     private String endDate = "";

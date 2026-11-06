@@ -217,7 +217,7 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
         animationSelect.optionsEnum(LotteryAnimationStyle.class);
         animationSelect.selectedValues(Collections.singletonList(ClientConfig.get().display().lotteryAnimationStyle().name()));
         animationSelect.onSelectionChanged(values -> {
-            if (values.isEmpty()) return;
+            if (values.isEmpty() || selectedPool() != null && selectedPool().getAnimationStyle() != null) return;
             setAnimation(LotteryAnimationStyle.valueOf(values.get(0)));
         });
 
@@ -318,7 +318,13 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
                     + ": " + (ready ? String.valueOf(quote.getAvailableCount()) : "\u2014");
             String status = payment.isDrawing() ? SakuraComponent.get().translateClient("word", "lottery_drawing")
                     : quote != null && !quote.isReady() && !payment.isWaitingForQuote()
-                    ? SakuraComponent.get().translateClient("word", "lottery_payment_unavailable") : "";
+                    ? SakuraComponent.get().translateClient("word", quote.getStatus() == LotteryQuote.Status.POOL_CLOSED
+                    ? "lottery_pool_closed" : "lottery_payment_unavailable") : "";
+            String countdown = LotteryUiSession.countdown(payment);
+            if (!countdown.isEmpty()) {
+                status = status.isEmpty() || quote != null && quote.getStatus() == LotteryQuote.Status.POOL_CLOSED
+                        ? countdown : countdown + " · " + status;
+            }
             renderParagraph(stack, layout.info(), infoViewport, infoScrollbar,
                     cost + "\n" + available + (status.isEmpty() ? "" : "\n" + status), getEffectiveTheme().textSecondary());
             LotteryLayout.Rect description = layout.description();
@@ -449,6 +455,13 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
 
     private void configureCountOptions() {
         if (countSelect == null) return;
+        LotteryPool pool = selectedPool();
+        if (animationSelect != null) {
+            LotteryAnimationStyle style = pool == null ? null : pool.getAnimationStyle();
+            animationSelect.enabled(style == null);
+            animationSelect.selectedValues(Collections.singletonList((style == null
+                    ? ClientConfig.get().display().lotteryAnimationStyle() : style).name()));
+        }
         List<String> values = batchCounts();
         countSelect.optionEntries(values.stream().map(value -> new DropdownOption(value,
                 "all".equals(value) ? SakuraComponent.get().translateClient("word", "lottery_draw_all")
