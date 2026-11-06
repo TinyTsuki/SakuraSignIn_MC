@@ -41,7 +41,34 @@ public class LotteryPaymentViewModelTest {
         view.tick();
         assertEquals("xpPoints(2)", view.summary());
         assertFalse(view.canDraw(5));
+        assertTrue(view.canOfferDraw(5));
         assertEquals(2, quotes.size());
+        millis = 6000;
+        view.tick();
+        assertFalse(view.canOfferDraw(5));
+        assertFalse(view.isRefreshing());
+    }
+
+    @Test
+    public void confirmedDrawRejectsChangedFeeOnFreshCountSpecificQuote() {
+        LotteryPaymentViewModel view = model();
+        view.select("daily", 5);
+        view.tick();
+        requests.accept(ready(quotes.get(0)));
+        view.tick();
+        millis = 3000;
+        view.tick();
+        var background = quotes.get(1);
+        view.clickConfirmed(1, "xpPoints(2)");
+        assertEquals(3, quotes.size());
+        assertFalse(requests.accept(ready(background)));
+        assertTrue(draws.isEmpty());
+        var explicit = quotes.get(2);
+        assertEquals(1, explicit.getCount());
+        assertTrue(requests.accept(new LotteryQuote(explicit, LotteryQuote.Status.READY, 1, 10, "xpPoints(3)", UUID.randomUUID().toString())));
+        view.tick();
+        assertTrue(draws.isEmpty());
+        assertEquals("xpPoints(3)", view.summary());
     }
 
     @Test

@@ -87,7 +87,7 @@ public final class LotteryPoolForm {
                 existing == null ? LotteryLimitPolicy.DAILY.name()
                         : existing.getLimitPolicy().name(),
                 Arrays.stream(LotteryLimitPolicy.values()).map(policy -> option(
-                                policy.name(), "lottery_policy_" + policy.name().toLowerCase()))
+                                policy.name(), "lottery_policy_" + policy.name().toLowerCase(java.util.Locale.ROOT)))
                         .toArray(DropdownOption[]::new)));
         args.addWidget(number("maxDraws", "lottery_max_draws",
                 "lottery_max_draws_tooltip",
@@ -98,7 +98,7 @@ public final class LotteryPoolForm {
         args.addWidget(dropdown("previewMode", "lottery_preview_mode",
                 (existing == null ? LotteryPreviewMode.ALL : existing.getPreviewMode()).name(),
                 Arrays.stream(LotteryPreviewMode.values()).map(mode -> option(
-                                mode.name(), "lottery_preview_" + mode.name().toLowerCase()))
+                                mode.name(), "lottery_preview_" + mode.name().toLowerCase(java.util.Locale.ROOT)))
                         .toArray(DropdownOption[]::new)));
         args.addWidget(dropdown("animationStyle", "lottery_animation",
                 (existing == null ? xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.STRIP : existing.getAnimationStyle()).name(),
@@ -254,7 +254,8 @@ public final class LotteryPoolForm {
                         if (thumbnail) artwork.thumbnail = "";
                         else artwork.main("", "", "");
                     }
-                    default -> { }
+                    default -> {
+                    }
                 }
                 selected.accept(artwork.summary(thumbnail));
             } catch (java.io.IOException | IllegalArgumentException failure) {
@@ -333,8 +334,11 @@ public final class LotteryPoolForm {
     }
 
     private static DropdownOption option(String value, String key) {
+        String tooltipKey = key + "_tooltip";
+        String tooltip = tr(tooltipKey);
         return new DropdownOption(value, tr(key), net.minecraft.world.item.ItemStack.EMPTY,
-                null, SakuraComponent.get().transClient("word", key + "_tooltip"));
+                null, tooltip.equals(tooltipKey) || tooltip.equals("word.sakura_sign_in." + tooltipKey)
+                ? null : SakuraComponent.get().literal(tooltip));
     }
 
     private static Text text(String key) {

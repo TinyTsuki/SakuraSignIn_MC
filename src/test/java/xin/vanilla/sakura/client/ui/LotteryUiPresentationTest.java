@@ -39,29 +39,65 @@ public class LotteryUiPresentationTest {
     }
 
     @Test
-    public void quoteFeeStateAndCapacityAreIndependentAndRefreshKeepsConfirmedFee() {
+    public void identicalPeriodicQuotesLeaveTheAuiUntouched() {
         var port = new LotteryUiOperationHandoffTest.Port();
         var view = new RecordingUiView();
         var session = new LotteryUiSession(port, () -> true);
         session.bind(view);
-        assertEquals("\u2014", text(view, "fee"));
-        assertEquals("\u2014", text(view, "available"));
+        assertEquals(translated("lottery_cost_label") + ": \u2014", text(view, "fee"));
+        assertEquals(translated("lottery_available_count") + ": \u2014", text(view, "available"));
         session.tick();
         assertEquals(translated("lottery_quote_pending"), text(view, "info"));
         assertEquals(Boolean.TRUE, view.enabled.get("info"));
         port.accept();
         session.tick();
-        assertEquals("xpPoints(2)", text(view, "fee"));
-        assertEquals("12", text(view, "available"));
+        assertEquals(translated("lottery_cost_label") + ": xpPoints(2)", text(view, "fee"));
+        assertEquals(translated("lottery_available_count") + ": 12", text(view, "available"));
         assertEquals("", text(view, "info"));
         assertEquals(Boolean.FALSE, view.enabled.get("info"));
         assertFalse(view.texts.containsKey("quote_status"));
+        int settledWrites = view.writes;
+        for (int i = 1; i <= 3; i++) {
+            port.millis = 3000L * i;
+            session.tick();
+            assertEquals(i + 1, port.quotes.size());
+            assertTrue(view.enabled.get("batch"));
+            assertEquals(settledWrites, view.writes);
+            port.millis += 150;
+            port.accept();
+            session.tick();
+            assertEquals(settledWrites, view.writes);
+        }
+        port.millis = 12000;
+        session.tick();
+        var refresh = port.quotes.get(port.quotes.size() - 1);
+        assertTrue(port.requests.accept(new LotteryQuote(refresh, LotteryQuote.Status.READY, 1, 7, "xpPoints(3)", java.util.UUID.randomUUID().toString())));
+        session.tick();
+        assertEquals(translated("lottery_cost_label") + ": xpPoints(3)", text(view, "fee"));
+        assertEquals(translated("lottery_available_count") + ": 7", text(view, "available"));
+    }
+
+    @Test
+    public void auiConfirmationDuringRefreshWaitsForTheMatchingReply() {
+        var port = new LotteryUiOperationHandoffTest.Port();
+        var view = new RecordingUiView();
+        var session = new LotteryUiSession(port, () -> true);
+        session.bind(view);
+        session.tick();
+        port.accept();
+        session.tick();
         port.millis = 3000;
         session.tick();
-        assertEquals("xpPoints(2)", text(view, "fee"));
-        assertEquals("\u2014", text(view, "available"));
-        assertFalse(view.enabled.get("batch"));
-        assertEquals(Boolean.TRUE, view.enabled.get("info"));
+        view.actions.get("batch").run();
+        assertTrue(view.enabled.get("confirm_panel"));
+        view.actions.get("confirm_draw").run();
+        assertFalse(view.enabled.get("confirm_panel"));
+        assertEquals(2, port.quotes.size());
+        assertTrue(port.draws.isEmpty());
+        port.accept();
+        session.tick();
+        session.tick();
+        assertEquals(1, port.draws.size());
     }
 
     @Test
@@ -84,7 +120,7 @@ public class LotteryUiPresentationTest {
             }
             assertFalse(view.enabled.get("single"));
             assertFalse(view.enabled.get("batch"));
-            assertEquals("\u2014", text(view, "available"));
+            assertEquals(translated("lottery_available_count") + ": \u2014", text(view, "available"));
             String key = switch (status) {
                 case FORBIDDEN -> "lottery_permission_denied";
                 case STALE_GENERATION -> "lottery_configuration_changed";
@@ -100,21 +136,17 @@ public class LotteryUiPresentationTest {
     }
 
     @Test
-    public void threeVirtualColumnsRetainOrderTailAndHiddenProbabilityBoundaries() {
+    public void singleVirtualListRetainsOrderTailAndHiddenProbabilityBoundaries() {
         var port = new LotteryUiOperationHandoffTest.Port();
         for (int i = 1; i < 8; i++) port.daily.getRewards().add(Reward.getDefault());
         var view = new RecordingUiView();
         var session = new LotteryUiSession(port, () -> true);
         session.bind(view);
-        assertEquals(Set.of("pool_rows", "fields", "fields_middle", "fields_end"), view.providers.keySet());
-        int[] sizes = {3, 3, 2};
-        int column = 0;
-        for (String id : List.of("fields", "fields_middle", "fields_end")) {
-            var rows = view.providers.get(id);
-            assertEquals(sizes[column], rows.size());
-            for (int row = 0; row < rows.size(); row++) assertEquals("daily:" + (row * 3 + column), rows.key(row));
-            column++;
-        }
+        assertEquals(Set.of("pool_rows", "fields"), view.providers.keySet());
+        var rows = (xin.vanilla.banira.api.client.ui.UiRowLayout) view.providers.get("fields");
+        assertEquals("content", rows.scrollerId());
+        assertEquals(8, rows.size());
+        for (int row = 0; row < rows.size(); row++) assertEquals("daily:" + row, rows.key(row));
         var stale = view.rows;
         session.detach(UiDetachReason.SWITCH);
         var late = new RecordingUiView();
@@ -147,13 +179,13 @@ public class LotteryUiPresentationTest {
         session.bind(view);
         assertEquals("", text(view, "preview_count"));
         assertEquals(0, view.rows.size());
-        assertEquals(translated("lottery_available_count"), text(view, "available_label"));
+        assertEquals(translated("lottery_available_count") + ": \u2014", text(view, "available"));
         session.detach(UiDetachReason.RELOAD);
         port.pool = "missing";
         view = new RecordingUiView();
         session.bind(view);
         assertEquals("", text(view, "policy"));
-        assertEquals("\u2014", text(view, "fee"));
+        assertEquals(translated("lottery_cost_label") + ": \u2014", text(view, "fee"));
         assertFalse(view.enabled.get("single"));
     }
 
@@ -177,24 +209,49 @@ public class LotteryUiPresentationTest {
         assertFalse(view.enabled.get("details_panel"));
         var row = new RecordingUiView();
         view.providers.get("pool_rows").bind(row, 0);
+        assertEquals("Daily", text(view, "title"));
         assertEquals("Daily", text(row, "label"));
         assertNotNull(row.icons.get("icon"));
     }
 
     @Test
-    public void approvedTemplatesUseScopedGridAndNoPrototypeOrManagementCode() throws Exception {
+    public void approvedTemplatesKeepTheRewardViewportSeparateFromTheDialogHeader() throws Exception {
         Path root = Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in");
         assertTrue("Dedicated compact lottery stylesheet", Files.exists(root.resolve("lottery.css")));
         for (String name : List.of("lottery", "lottery-result")) {
             String html = Files.readString(root.resolve(name + ".html"), StandardCharsets.UTF_8);
             assertTrue(html.contains("href=\"" + name + ".css\""));
-            assertTrue(html.contains("id=\"fields_middle\""));
-            assertTrue(html.contains("id=\"fields_end\""));
+            assertTrue(html.contains("id=\"fields\""));
+            assertEquals(name.equals("lottery-result"), html.contains("id=\"fields_middle\""));
+            assertEquals(name.equals("lottery-result"), html.contains("id=\"fields_end\""));
+            if (name.equals("lottery")) {
+                assertTrue(html.indexOf("id=\"title\"") < html.indexOf("id=\"policy\""));
+                assertTrue(html.indexOf("id=\"policy\"") < html.indexOf("</header>"));
+                assertTrue(html.indexOf("id=\"details_close\"") < html.indexOf("id=\"content\""));
+                assertTrue(html.indexOf("id=\"content\"") < html.indexOf("id=\"fields\""));
+            }
             assertFalse(html.contains("<script"));
             assertFalse(html.contains("edit-pool"));
             assertFalse(html.contains("scenario"));
         }
         assertEquals(List.of(), UiBoundaryChecks.resources(UiBoundaryChecks.ownResources("sakura_sign_in"), false));
+    }
+
+    @Test
+    public void poolEditorOptionTooltipsAreAvailableInBothLanguages() throws Exception {
+        var keys = new java.util.ArrayList<>(List.of("lottery_voucher_item", "lottery_voucher_points", "lottery_voucher_levels",
+                "lottery_voucher_score", "lottery_png_keep", "lottery_png_remove", "lottery_artwork_file", "lottery_artwork_auto",
+                "lottery_artwork_item", "lottery_artwork_texture"));
+        for (var style : xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.values())
+            keys.add("enum_lottery_animation_style_" + style.name().toLowerCase(java.util.Locale.ROOT));
+        for (String locale : List.of("en_us", "zh_cn")) {
+            var language = com.google.gson.JsonParser.parseString(Files.readString(Path.of(
+                    "src/main/resources/assets/sakura_sign_in/lang/" + locale + ".json"), StandardCharsets.UTF_8)).getAsJsonObject();
+            for (String key : keys) {
+                String tooltip = "word.sakura_sign_in." + key + "_tooltip";
+                assertTrue(locale + ": " + tooltip, language.has(tooltip) && !language.get(tooltip).getAsString().isBlank());
+            }
+        }
     }
 
     @Test
@@ -225,7 +282,7 @@ public class LotteryUiPresentationTest {
     }
 
     @Test
-    public void compactCaptionsKeepPercentagesAndAnimationNamesWithinTheirColumns() throws Exception {
+    public void compactRowsKeepRewardNamesAndPercentagesTogether() throws Exception {
         var port = new LotteryUiOperationHandoffTest.Port();
         var view = new RecordingUiView();
         new LotteryUiSession(port, () -> true).bind(view);
@@ -234,20 +291,21 @@ public class LotteryUiPresentationTest {
         assertEquals("100%", text(cell, "detail"));
         assertFalse(cell.tooltips.get("icon").toString().contains("%%"));
         String css = Files.readString(Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in/lottery.css"));
-        String labels = css.substring(css.indexOf(".grid .label,.grid .paragraph{"), css.indexOf('}', css.indexOf(".grid .label,.grid .paragraph{")));
-        assertTrue(labels.contains("width:100%"));
+        assertTrue(css.contains("flex-direction:row"));
+        assertTrue(css.contains(".reward-row .label{flex:1;min-width:0}"));
+        assertTrue(css.contains(".reward-row .paragraph{flex-shrink:0"));
     }
 
     @Test
-    public void gridCoordinatesReturnToFlatRewardIndexesAcrossNativeAndRepeatedHandoffs() {
+    public void rewardIndexesSurviveRepeatedHandoffsAndTheResultGridStillConvertsCoordinates() {
         var port = new LotteryUiOperationHandoffTest.Port();
         var session = new LotteryUiSession(port, () -> true);
         for (int repeat = 0; repeat < 4; repeat++) {
             var view = new RecordingUiView();
             view.state.rowPosition(18);
             session.bind(view);
-            assertEquals(6, view.state.rowPosition(), 0);
-            view.state.rowPosition(5.5);
+            assertEquals(18, view.state.rowPosition(), 0);
+            view.state.rowPosition(16.5);
             session.detach(UiDetachReason.SWITCH);
             assertEquals(16.5, view.state.rowPosition(), 0);
             session.detach(UiDetachReason.RELOAD);

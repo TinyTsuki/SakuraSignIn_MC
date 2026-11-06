@@ -8,7 +8,8 @@
 <body class="sakura-ui">
 <main id="window" class="page lottery">
   <header class="header notification-toolbar">
-    <div id="brand" class="glyph"></div><div id="title" class="title"></div>
+    <div id="brand" class="glyph"></div>
+    <div class="lottery-heading"><div id="title" class="title"></div><div id="policy" class="label"></div></div>
     <button id="close" class="tool"><div id="close_icon" class="glyph"></div></button>
   </header>
   <div class="notification-columns lottery-body">
@@ -19,7 +20,6 @@
     <section class="notification-details pool-detail">
       <div class="notification-columns feature">
         <div class="notification-details pool-copy">
-          <div id="policy" class="label"></div><div id="pool_name" class="pool-name"></div>
           <div id="time"><div id="time_label" class="label"></div><div id="time_value"></div></div>
           <div id="detail" class="content"><div id="description"></div></div>
           <div class="feature-tools">
@@ -34,8 +34,7 @@
     </section>
   </div>
   <footer id="draw_bar" class="billing footer">
-    <div class="fee-group"><div id="fee_label" class="label"></div><div id="fee" class="label"></div><div id="info" class="label"></div></div>
-    <div class="capacity"><div id="available_label" class="label"></div><div id="available"></div></div>
+    <div class="fee-group"><div id="fee"></div><div id="available"></div><div id="info" class="label"></div></div>
     <div id="single_slot"><button id="single"><div id="single_label"></div></button></div>
     <div id="batch_slot" class="editor"><div id="batch_picker"><input id="batch_count" readonly></div><button id="batch" class="primary"><div id="batch_label"></div></button></div>
   </footer>
@@ -44,7 +43,7 @@
       <div class="caption"><div id="preview_title"></div><div id="preview_count" class="label"></div><button id="details_close"></button></div>
       <section id="content" class="content">
         <div id="empty" class="label"></div>
-        <div class="editor grid"><div id="fields"></div><div id="fields_middle"></div><div id="fields_end"></div></div>
+        <div id="fields"></div>
       </section>
     </section>
   </div>

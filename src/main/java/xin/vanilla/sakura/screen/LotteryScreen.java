@@ -293,8 +293,10 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
             LotteryPool pool = railPools.get(index);
             boolean active = pool.getId().equals(selectedPoolId);
             boolean hovered = row.contains(mouseX, mouseY) && !batchPicker.dropdownOpen();
-            shape(stack, row.x(), row.y(), row.width(), row.height(), active || hovered ? STAGE_EDGE : STAGE_FILL, 4, 0);
-            shape(stack, row.x() + 1, row.y() + 1, row.width() - 2, row.height() - 2, STAGE_FILL, 3, 0);
+            int border = active ? 2 : 1;
+            shape(stack, row.x(), row.y(), row.width(), row.height(), active ? 0xffffb7d2 : hovered ? STAGE_EDGE : STAGE_FILL, 4, 0);
+            shape(stack, row.x() + border, row.y() + border, row.width() - 2 * border, row.height() - 2 * border,
+                    active ? 0xff69445b : STAGE_FILL, 3, 0);
             railArt.get(index).render(stack, row.x() + 4, row.y() + 2, row.width() - 8, row.height() - 15, 24);
             String title = pool.getDisplayName();
             String label = font.plainSubstrByWidth(title, row.width() - 8);
@@ -311,65 +313,65 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
         shape(stack, stage.x(), stage.y(), stage.width(), stage.height(), STAGE_EDGE, 5, 0);
         shape(stack, stage.x() + 1, stage.y() + 1, stage.width() - 2, stage.height() - 2, STAGE_FILL, 4, 0);
         stack.fill(footer.x(), footer.y(), footer.right(), footer.y() + 1, STAGE_EDGE);
-        stack.drawString(font, font.plainSubstrByWidth(getTitle().getString(), layout.title().width()),
-                layout.title().x(), layout.title().y(), getEffectiveTheme().textPrimary(), false);
         LotteryPool pool = selectedPool();
+        renderPoolHeading(stack, pool);
         if (pool == null) {
             renderParagraph(stack, layout.info(), infoViewport, infoScrollbar,
                     SakuraComponent.get().translateClient("word", "lottery_no_pools"), STAGE_MUTED);
             previewScrollbar.visible(false);
             descriptionScrollbar.visible(false);
         } else {
-            LotteryLayout.Rect heading = layout.heading(), poster = layout.poster();
+            LotteryLayout.Rect poster = layout.poster();
             if (this.poster != null) this.poster.render(stack, poster.x(), poster.y(),
                     poster.width(), poster.height(), Math.min(poster.width(), poster.height()) * 3 / 4);
-            stack.pose().pushPose();
-            try {
-                stack.pose().translate(heading.x(), heading.y(), 0);
-                stack.pose().scale(1.4F, 1.4F, 1);
-                stack.drawString(font, font.plainSubstrByWidth(pool.getDisplayName(), (int) (heading.width() / 1.4F)),
-                        0, 0, STAGE_TEXT, false);
-            } finally {
-                stack.pose().popPose();
-            }
-            if (heading.contains(mouseX, mouseY)) tooltip(stack, pool.getDisplayName());
-            String details = SakuraComponent.get().translateClient("format", "lottery_pool_details_sss",
-                    policyName(pool), pool.getMaxDraws(), pool.getCooldownSeconds());
-            String schedule = LotteryUiSession.countdown(payment);
-            if (!schedule.isEmpty()) details += "\n" + schedule;
-            renderParagraph(stack, layout.info(), infoViewport, infoScrollbar, details, STAGE_MUTED);
+            renderParagraph(stack, layout.info(), infoViewport, infoScrollbar, LotteryUiSession.countdown(payment), STAGE_MUTED);
             renderParagraph(stack, layout.description(), descriptionViewport, descriptionScrollbar,
                     pool.getDescription(), STAGE_TEXT);
             LotteryLayout.Rect caption = layout.previewHeading();
             String previewTitle = SakuraComponent.get().translateClient("word", "lottery_candidates");
             stack.drawString(font, font.plainSubstrByWidth(previewTitle, caption.width()), caption.x(), caption.y(), STAGE_MUTED, false);
             renderPreview(stack, pool);
-            renderBilling(stack, mouseX, mouseY);
+            renderBilling(stack, pool, mouseX, mouseY);
         }
         renderWidgets(stack, partialTicks);
         drawPoolRail(stack, mouseX, mouseY);
     }
 
-    private void renderBilling(GuiGraphics stack, int mouseX, int mouseY) {
-        var text = SakuraComponent.get();
-        String fee = payment.summary();
-        String cost = text.translateClient("word", "lottery_cost_label") + ": "
-                + (fee == null ? "-" : fee.isEmpty() ? text.translateClient("word", "lottery_free") : fee);
-        LotteryQuote quote = payment.quote();
-        String status = payment.isDrawing() ? text.translateClient("word", "lottery_drawing")
-                : quote == null || payment.isPending() ? text.translateClient("word", "lottery_quote_pending")
-                : quote.isReady() ? text.translateClient("word", "lottery_available_count") + ": " + quote.getAvailableCount()
-                : text.translateClient("word", switch (quote.getStatus()) {
-                    case FORBIDDEN -> "lottery_permission_denied";
-                    case STALE_GENERATION -> "lottery_configuration_changed";
-                    case POOL_NOT_FOUND -> "lottery_pool_not_found";
-                    case POOL_CLOSED -> "lottery_pool_closed";
-                    default -> "lottery_payment_unavailable";
-                });
+    private void renderPoolHeading(GuiGraphics stack, LotteryPool pool) {
+        var title = pool == null ? getTitle() : net.minecraft.network.chat.Component.literal(pool.getDisplayName());
+        LotteryLayout.Rect area = layout.title();
+        float scale = 1.4F;
+        List<FormattedCharSequence> lines = font.split(title, (int) (area.width() / scale));
+        while (lines.size() * font.lineHeight * scale > area.height() && scale > .5F) {
+            scale -= .1F;
+            lines = font.split(title, (int) (area.width() / scale));
+        }
+        int titleHeight = (int) Math.ceil(lines.size() * font.lineHeight * scale);
+        stack.pose().pushPose();
+        try {
+            stack.pose().translate(area.x(), area.y(), 0);
+            stack.pose().scale(scale, scale, 1);
+            for (int i = 0; i < lines.size(); i++)
+                stack.drawString(font, lines.get(i), 0, i * font.lineHeight, getEffectiveTheme().textPrimary(), false);
+        } finally {
+            stack.pose().popPose();
+        }
+        if (pool != null) {
+            LotteryLayout.Rect policy = layout.policy();
+            stack.drawString(font, font.plainSubstrByWidth(LotteryUiSession.quota(pool), policy.width()),
+                    policy.x(), Math.min(policy.y(), area.y() + titleHeight + 1), getEffectiveTheme().textSecondary(), false);
+        }
+    }
+
+    private void renderBilling(GuiGraphics stack, LotteryPool pool, int mouseX, int mouseY) {
+        var billing = LotteryUiSession.billing(payment, pool, displayedGeneration);
         LotteryLayout.Rect area = layout.billing();
-        stack.drawString(font, font.plainSubstrByWidth(cost, area.width()), area.x(), area.y(), getEffectiveTheme().textPrimary(), false);
-        stack.drawString(font, font.plainSubstrByWidth(status, area.width()), area.x(), area.y() + 12, getEffectiveTheme().textSecondary(), false);
-        if (area.contains(mouseX, mouseY) && !batchPicker.dropdownOpen()) tooltip(stack, cost + "\n" + status);
+        stack.drawString(font, font.plainSubstrByWidth(billing.cost(), area.width()), area.x(), area.y(), getEffectiveTheme().textPrimary(), false);
+        stack.drawString(font, font.plainSubstrByWidth(billing.available(), area.width()), area.x(), area.y() + 9, getEffectiveTheme().textSecondary(), false);
+        if (!billing.status().isEmpty())
+            stack.drawString(font, font.plainSubstrByWidth(billing.status(), area.width()), area.x(), area.y() + 18, getEffectiveTheme().textSecondary(), false);
+        if (area.contains(mouseX, mouseY) && !batchPicker.dropdownOpen())
+            tooltip(stack, billing.cost() + "\n" + billing.available() + (billing.status().isEmpty() ? "" : "\n" + billing.status()));
     }
 
     private void renderParagraph(GuiGraphics stack, LotteryLayout.Rect area,
@@ -527,10 +529,6 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
 
     private static List<LotteryPool> pools() {
         return RewardConfigManager.getRewardConfig().getLotteryPools();
-    }
-
-    private static String policyName(LotteryPool pool) {
-        return SakuraComponent.get().translateClient("word", "lottery_policy_" + pool.getLimitPolicy().name().toLowerCase(Locale.ROOT));
     }
 
     @Override

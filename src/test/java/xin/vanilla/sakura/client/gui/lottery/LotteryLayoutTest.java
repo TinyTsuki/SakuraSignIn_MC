@@ -13,7 +13,7 @@ public class LotteryLayoutTest {
         for (int[] size : new int[][]{{320, 240}, {427, 240}, {854, 480}, {1280, 720}}) {
             LotteryLayout layout = LotteryLayout.calculate(size[0], size[1]);
             List<LotteryLayout.Rect> areas = Arrays.asList(layout.title(), layout.pool(), layout.info(),
-                    layout.description(), layout.previewHeading(), layout.preview(), layout.heading(), layout.poster(),
+                    layout.description(), layout.previewHeading(), layout.preview(), layout.policy(), layout.poster(),
                     layout.billing(), layout.single(), layout.batch(), layout.close());
             for (LotteryLayout.Rect area : areas) {
                 assertTrue(area.width() > 0 && area.height() > 0);
@@ -31,15 +31,17 @@ public class LotteryLayoutTest {
             assertTrue(layout.footer().encloses(layout.billing()));
             assertTrue(layout.footer().encloses(layout.batch()));
             assertTrue(layout.billing().right() < layout.single().x());
-            assertTrue(layout.poster().width() > layout.heading().width());
+            assertTrue(layout.title().width() > layout.stage().width());
+            assertTrue(layout.title().bottom() < layout.policy().y());
+            assertTrue(layout.policy().bottom() < layout.stage().y());
         }
     }
 
     @Test
     public void railAndPosterRemainBesidePoolInformationAtSmallSizes() {
         LotteryLayout layout = LotteryLayout.calculate(320, 240);
-        assertTrue(layout.pool().right() < layout.heading().x());
-        assertTrue(layout.poster().x() > layout.heading().right());
+        assertTrue(layout.pool().right() < layout.info().x());
+        assertTrue(layout.poster().x() > layout.info().right());
         assertEquals(layout.single().y(), layout.batch().y());
         for (int row = 0; row < layout.poolRows(); row++) assertTrue(layout.pool().encloses(layout.poolRow(row)));
     }

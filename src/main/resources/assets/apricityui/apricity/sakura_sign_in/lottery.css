@@ -1,6 +1,10 @@
 body{display:flex;align-items:center;justify-content:center;font-family:default}
-.lottery{position:relative;max-width:560px;max-height:350px;padding:0 6px 6px;background:var(--canvas);overflow:hidden}
-.lottery .header{height:30px;min-height:30px;padding:3px 4px;background:transparent;border-bottom:1px solid var(--line)}
+.lottery{position:relative;max-width:560px;max-height:350px;padding:0 6px 6px;overflow:hidden}
+.lottery .header{height:auto;min-height:30px;max-height:none;padding:3px 4px;background:transparent}
+.lottery-heading{flex:1;min-width:0}
+#title{font-size:14px}
+#policy{font-size:8px}
+#policy:disabled{display:none}
 .glyph{width:16px;height:16px}
 .lottery-body{gap:6px;margin:6px 0}
 .pool-rail{width:20%;min-width:62px;max-width:108px;border:0}
@@ -12,22 +16,22 @@ body{display:flex;align-items:center;justify-content:center;font-family:default}
 .pool-card .label{position:absolute;left:0;right:0;top:0;height:100%;padding:29px 2px 0;text-align:center;cursor:pointer;overflow:hidden;white-space:nowrap}
 .feature{position:relative;border:1px solid #826073;border-radius:5px;background:#3e2c3c;color:#fff3f5;overflow:hidden}
 .pool-copy{flex:0 0 40%;padding:8px 3px 5px 8px;overflow:hidden}
-.pool-name{font-size:19px;line-height:22px;max-height:46px;overflow:hidden;margin:3px 0}
-#policy,#time_label,#description{color:#ebcdd7}
+#time_label,#description{color:#ebcdd7}
 #time{margin-top:5px;border-left:2px solid var(--action);padding-left:5px;flex-shrink:0}
 #time:disabled,.featured-icon:disabled{display:none}
 #time_value{font-size:12px}
-#detail{flex:1;min-height:0;margin-top:4px;overflow-y:auto}
+#detail{margin-top:4px}
 .artwork{flex:1;min-width:0;padding:3px 5px 3px 0}
 #poster{width:100%;height:100%}
 .feature-tools{display:flex;align-items:center;flex-wrap:wrap;gap:3px;min-height:23px;flex-shrink:0}
 .feature-tools button{min-width:0;min-height:18px;padding:2px 4px;color:#fff3f5;background:#53394e;border-color:#a67b91}
 .featured-icon{width:17px;height:19px;flex:0 0 17px;border:1px solid var(--line);border-radius:3px}
-.lottery .billing{display:flex;align-items:center;gap:5px;min-height:32px;padding:4px 3px;border-top:1px solid var(--line);background:transparent}
-.fee-group{flex:1;min-width:0}
-#fee,#info{max-height:22px;overflow:hidden}
-#fee_label,#available_label{color:var(--muted)}
-#single_slot:disabled,#batch_slot:disabled,#batch_picker:disabled,#info:disabled{display:none}
+.lottery .billing{gap:5px;min-height:32px;padding:4px 3px;background:transparent}
+.fee-group{flex:1;min-width:0;font-size:8px}
+#fee,#available,#info{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#available,#info{color:var(--muted)}
+#info{min-height:10px}
+#single_slot:disabled,#batch_slot:disabled,#batch_picker:disabled{display:none}
 #batch_slot{display:flex;gap:3px;align-items:center}
 #batch_picker{width:31px;flex-shrink:0}
 #single,#batch{min-width:42px}
@@ -37,8 +41,8 @@ body{display:flex;align-items:center;justify-content:center;font-family:default}
 .lottery-dialog .caption,.dialog-actions{display:flex;align-items:center;justify-content:space-between;gap:5px;flex-shrink:0}
 .dialog-actions{justify-content:flex-end;margin-top:5px}
 #details_panel .lottery-dialog{height:77%}
-#content{flex:1;min-height:0;overflow-y:auto}
 #confirm_fee{max-height:34px;overflow:hidden}
-.grid>div{width:33%;min-width:0}
-.grid .row-icon{position:static}
-.grid .label,.grid .paragraph{width:100%;height:10px;overflow:hidden;text-align:center;margin:0}
+#fields .reward-row{position:relative;display:flex;flex-direction:row;align-items:center;gap:5px;padding:0 5px;border-bottom:1px solid var(--line);overflow:hidden}
+.reward-row .row-icon{position:static;width:20px;height:20px}
+.reward-row .label{flex:1;min-width:0}
+.reward-row .paragraph{flex-shrink:0;margin:0;color:var(--muted)}

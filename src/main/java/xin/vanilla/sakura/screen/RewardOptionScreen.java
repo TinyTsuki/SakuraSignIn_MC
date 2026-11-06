@@ -118,7 +118,7 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
                 public int ruleCount(int code) {
                     ERewardRule rule = ERewardRule.valueOf(code);
                     return rule == null || RewardConfigManager.isRuleRedacted(rule) ? -1
-                            : RewardConfigManager.getRewardMap(rule).values().stream().mapToInt(List::size).sum();
+                            : RewardConfigManager.getRewardMap(rule).size();
                 }
 
                 public Component status() {

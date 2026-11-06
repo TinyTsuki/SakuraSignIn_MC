@@ -50,15 +50,15 @@ public final class LotteryLayout {
 
     public static final int REWARD_STRIDE = 26;
     private static final int POOL_STRIDE = 44;
-    private final Rect panel, title, pool, stage, heading, poster, info, description, previewHeading, preview, footer, billing, single, batch, close;
+    private final Rect panel, title, pool, stage, policy, poster, info, description, previewHeading, preview, footer, billing, single, batch, close;
 
-    private LotteryLayout(Rect panel, Rect title, Rect pool, Rect stage, Rect heading, Rect poster, Rect info, Rect description,
+    private LotteryLayout(Rect panel, Rect title, Rect pool, Rect stage, Rect policy, Rect poster, Rect info, Rect description,
                           Rect previewHeading, Rect preview, Rect footer, Rect billing, Rect single, Rect batch, Rect close) {
         this.panel = panel;
         this.title = title;
         this.pool = pool;
         this.stage = stage;
-        this.heading = heading;
+        this.policy = policy;
         this.poster = poster;
         this.info = info;
         this.description = description;
@@ -76,15 +76,15 @@ public final class LotteryLayout {
         int top = (height - panelHeight) / 2;
         Rect panel = new Rect((width - panelWidth) / 2, top, panelWidth, panelHeight);
         int x = panel.x() + 8, right = panel.right() - 8;
-        int bodyY = top + 28, footerY = panel.bottom() - 36, bodyBottom = footerY - 5;
+        int bodyY = top + 53, footerY = panel.bottom() - 36, bodyBottom = footerY - 5;
         int railWidth = Math.max(58, Math.min(106, panelWidth / 5));
-        Rect title = new Rect(x, top + 10, panelWidth - 36, 12);
+        Rect title = new Rect(x, top + 6, panelWidth - 36, 32);
+        Rect policy = new Rect(x, title.bottom() + 1, title.width(), 10);
         Rect close = new Rect(right - 14, top + 7, 14, 14);
         Rect pool = new Rect(x, bodyY, railWidth, bodyBottom - bodyY);
         Rect stage = new Rect(pool.right() + 6, bodyY, right - pool.right() - 6, bodyBottom - bodyY);
         int copyX = stage.x() + 8, textWidth = stage.width() * 43 / 100;
-        Rect heading = new Rect(copyX, bodyY + 8, textWidth, 16);
-        Rect info = new Rect(copyX, heading.bottom() + 3, textWidth, stage.height() < 120 ? 20 : 37);
+        Rect info = new Rect(copyX, bodyY + 6, textWidth, 21);
         Rect description = new Rect(copyX, info.bottom() + 3, textWidth, Math.min(44, Math.max(10, stage.height() / 6)));
         Rect previewHeading = new Rect(copyX, description.bottom() + 4, textWidth, 10);
         Rect preview = new Rect(copyX, previewHeading.bottom() + 2, textWidth, Math.max(0, bodyBottom - previewHeading.bottom() - 6));
@@ -93,8 +93,8 @@ public final class LotteryLayout {
         int buttonWidth = Math.min(96, Math.max(45, footer.width() / 4));
         Rect batch = new Rect(right - buttonWidth, footerY + 5, buttonWidth, 22);
         Rect single = new Rect(batch.x() - 5 - buttonWidth, batch.y(), buttonWidth, 22);
-        Rect billing = new Rect(x + 3, footerY + 4, single.x() - x - 9, 26);
-        return new LotteryLayout(panel, title, pool, stage, heading, poster, info, description, previewHeading, preview, footer, billing, single, batch, close);
+        Rect billing = new Rect(x + 3, footerY + 3, single.x() - x - 9, 29);
+        return new LotteryLayout(panel, title, pool, stage, policy, poster, info, description, previewHeading, preview, footer, billing, single, batch, close);
     }
 
     public int poolRows() {
@@ -125,8 +125,8 @@ public final class LotteryLayout {
         return stage;
     }
 
-    public Rect heading() {
-        return heading;
+    public Rect policy() {
+        return policy;
     }
 
     public Rect poster() {
