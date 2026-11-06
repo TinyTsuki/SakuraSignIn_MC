@@ -290,33 +290,43 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
         int mouseX = (int) inputState.mouseX(), mouseY = (int) inputState.mouseY();
         LotteryLayout.Rect panel = layout.panel();
         shape(stack, panel.x(), panel.y(), panel.width(), panel.height(), getEffectiveTheme().panelBg(), 8, 0);
-        xin.vanilla.sakura.client.LegacyGuiText.draw(stack, font, font.plainSubstrByWidth(getTitle().getString(), layout.title().width()),
-                layout.title().x(), layout.title().y(), getEffectiveTheme().textPrimary(), false);
         LotteryPool pool = selectedPool();
+        String heading = pool == null ? getTitle().getString() : pool.getDisplayName();
+        xin.vanilla.sakura.client.LegacyGuiText.draw(stack, font, font.plainSubstrByWidth(heading, layout.title().width()),
+                layout.title().x(), layout.title().y(), getEffectiveTheme().textPrimary(), false);
         if (pool == null) {
             renderParagraph(stack, layout.info(), infoViewport, infoScrollbar,
                     SakuraComponent.get().translateClient("word", "lottery_no_pools"), getEffectiveTheme().textSecondary());
             previewScrollbar.visible(false);
             descriptionScrollbar.visible(false);
         } else {
-            String details = SakuraComponent.get().translateClient("format", "lottery_pool_details_sss",
-                    policyName(pool), pool.getMaxDraws(), pool.getCooldownSeconds());
+            String details = policyName(pool);
+            if (pool.getLimitPolicy() != LotteryLimitPolicy.UNLIMITED && pool.getLimitPolicy() != LotteryLimitPolicy.COOLDOWN)
+                details = SakuraComponent.get().translateClient("format", "lottery_policy_limit_ss", details, pool.getMaxDraws());
+            if (pool.getCooldownSeconds() > 0)
+                details += " \u00b7 " + SakuraComponent.get().translateClient("format", "lottery_interval_s", pool.getCooldownSeconds());
+            xin.vanilla.sakura.client.LegacyGuiText.draw(stack, font, font.plainSubstrByWidth(details, layout.title().width()),
+                layout.title().x(), layout.title().y() + 12, getEffectiveTheme().textSecondary(), false);
             String fee = payment.summary();
             String cost = fee == null ? SakuraComponent.get().translateClient("word", "lottery_quote_pending")
                     : SakuraComponent.get().translateClient("format", "lottery_cost_per_draw_s",
                     fee.isEmpty() ? SakuraComponent.get().translateClient("word", "lottery_free") : fee);
             LotteryQuote quote = payment.quote();
+            boolean ready = quote != null && quote.isReady() && !payment.isWaitingForQuote() && !payment.isDrawing()
+                    && quote.getGeneration() == displayedGeneration && pool.getId().equals(quote.getRequest().getPoolId());
+            String available = SakuraComponent.get().translateClient("word", "lottery_available_count")
+                    + ": " + (ready ? String.valueOf(quote.getAvailableCount()) : "\u2014");
             String status = payment.isDrawing() ? SakuraComponent.get().translateClient("word", "lottery_drawing")
                     : quote != null && !quote.isReady() && !payment.isWaitingForQuote()
                     ? SakuraComponent.get().translateClient("word", "lottery_payment_unavailable") : "";
             renderParagraph(stack, layout.info(), infoViewport, infoScrollbar,
-                    details + "\n" + cost + (status.isEmpty() ? "" : "\n" + status), getEffectiveTheme().textSecondary());
+                    cost + "\n" + available + (status.isEmpty() ? "" : "\n" + status), getEffectiveTheme().textSecondary());
             renderParagraph(stack, layout.description(), descriptionViewport, descriptionScrollbar,
                     pool.getDescription(), getEffectiveTheme().textPrimary());
             renderPreview(stack, pool);
-            if (!dropdownOpen() && layout.pool().contains(inputState.mouseX(), inputState.mouseY())
-                    && font.width(pool.getDisplayName()) > layout.pool().width() - 30)
-                tooltip(stack, pool.getDisplayName());
+            if (!dropdownOpen() && layout.title().contains(mouseX, mouseY)
+                    && (font.width(heading) > layout.title().width() || font.width(details) > layout.title().width()))
+                tooltip(stack, heading + "\n" + details);
         }
         renderWidgets(stack, partialTicks);
     }
