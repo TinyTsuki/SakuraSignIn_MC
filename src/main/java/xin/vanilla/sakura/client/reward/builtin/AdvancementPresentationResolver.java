@@ -22,7 +22,7 @@ final class AdvancementPresentationResolver {
                 .filter(candidate -> candidate.getId().equals(id))
                 .findFirst().orElse(null);
         DisplayInfo display = data == null ? null : data.getDisplayInfo();
-        ItemStack icon = display == null ? ItemStack.EMPTY : display.getIcon().create();
+        ItemStack icon = data == null ? ItemStack.EMPTY : data.iconStack();
         if (icon.isEmpty()) {
             return new ResolvedDisplay(new ItemStack(Items.KNOWLEDGE_BOOK),
                     SakuraComponent.get().transClient("word", "reward_type_6"));
