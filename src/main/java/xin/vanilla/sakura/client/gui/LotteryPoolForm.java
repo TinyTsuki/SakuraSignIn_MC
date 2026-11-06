@@ -64,26 +64,12 @@ public final class LotteryPoolForm {
                 .maxLength(LotteryPoolValidator.MAX_DESCRIPTION).allowEmpty(true)
                 .regex("[\\s\\S]{0,2048}")
                 .defaultValue(existing == null ? "" : existing.getDescription()));
+        VoucherDraft voucher = new VoucherDraft(existing == null ? "" : existing.getVoucherExpression());
         args.addWidget(new InputFormScreen.Widget().name("voucherExpression")
-                .title(text("lottery_voucher_expression")).hint(text("lottery_voucher_expression"))
-                .tooltip(text("lottery_voucher_item"))
-                .type(InputFormScreen.WidgetType.PICKER)
-                .picker((screen, selected) -> ItemRewardSelectionFlow.create(screen,
-                        net.minecraft.world.item.ItemStack.EMPTY, stack -> net.minecraft.client.Minecraft.getInstance()
-                                .setScreen(voucherItemForm(screen, stack, selected)), false))
-                .maxLength(LotteryPoolValidator.MAX_VOUCHER_EXPRESSION).allowEmpty(true)
-                .defaultValue(existing == null ? "" : existing.getVoucherExpression())
-                .validator(result -> {
-                    try {
-                        xin.vanilla.banira.api.BaniraCosts.parse(result.value());
-                        return "";
-                    } catch (xin.vanilla.banira.api.cost.CostExpressionException failure) {
-                        return SakuraComponent.get().transClient("format", "lottery_expression_error_ss",
-                                failure.line(), failure.column()).toString();
-                    } catch (IllegalArgumentException failure) {
-                        return tr("lottery_expression_invalid");
-                    }
-                }));
+                .title(text("lottery_cost_label")).type(InputFormScreen.WidgetType.PICKER)
+                .pickerReadOnly(true).defaultValue(voucher.summary())
+                .picker((screen, selected) -> voucherPicker(screen, voucher, selected))
+                .validator(result -> voucherError(voucher.expression)));
         args.addWidget(dropdown("policy", "lottery_limit_policy",
                 existing == null ? LotteryLimitPolicy.DAILY.name()
                         : existing.getLimitPolicy().name(),
@@ -109,7 +95,7 @@ public final class LotteryPoolForm {
                     LotteryPreviewMode.valueOf(results.value("previewMode")),
                     existing == null ? new RewardList() : existing.getRewards());
             candidate.setDescription(results.value("description"));
-            candidate.setVoucherExpression(results.value("voucherExpression"));
+            candidate.setVoucherExpression(voucher.expression);
             if (!LotteryPoolValidator.validate(candidate).isEmpty()) {
                 results.runningResult(tr("input_format_invalid"));
                 return;
@@ -119,28 +105,96 @@ public final class LotteryPoolForm {
         return new InputFormScreen(args);
     }
 
-    private static Screen voucherItemForm(Screen parent, net.minecraft.world.item.ItemStack stack,
-                                          Consumer<String> selected) {
-        Consumer<String> connectedSelected = connectedOnce(selected);
-        InputFormScreen.Args args = new InputFormScreen.Args().setParentScreen(parent)
-                .setHeaderTitle(text("lottery_voucher_item"));
-        args.addWidget(dropdown("match", "lottery_voucher_match", "ID",
-                option("ID", "lottery_voucher_match_id"),
-                option("EXACT", "lottery_voucher_match_exact")));
-        args.addWidget(new InputFormScreen.Widget().name("amount")
-                .title(text("lottery_voucher_amount")).hint(text("lottery_voucher_amount"))
-                .maxLength(10).regex("[0-9]{1,10}")
-                .defaultValue(String.valueOf(stack.getCount()))
-                .validator(result -> {
-                    try {
-                        return Integer.parseInt(result.value()) > 0 ? "" : tr("lottery_number_range");
-                    } catch (NumberFormatException failure) {
-                        return tr("lottery_number_range");
-                    }
+    private static Screen voucherPicker(Screen parent, VoucherDraft voucher, Consumer<String> selected) {
+        LotteryVoucherExpressions.Fields current = LotteryVoucherExpressions.read(voucher.expression);
+        Consumer<String> save = connectedOnce(expression -> {
+            voucher.expression = expression;
+            selected.accept(voucher.summary());
+        });
+        InputFormScreen.Args args = new InputFormScreen.Args().setParentScreen(parent).setHeaderTitle(text("lottery_cost_label"));
+        args.addWidget(dropdown("kind", "lottery_voucher_source", current.kind,
+                option("free", "lottery_free"), option("item", "lottery_voucher_item"),
+                option("xpPoints", "lottery_voucher_points"), option("xpLevels", "lottery_voucher_levels"),
+                option("score", "lottery_voucher_score"), option("advanced", "lottery_voucher_advanced")));
+        String item = "item".equals(current.kind) ? current.specification : "";
+        java.util.concurrent.atomic.AtomicReference<String> selectedItem = new java.util.concurrent.atomic.AtomicReference<>(item);
+        args.addWidget(new InputFormScreen.Widget().name("item").title(text("lottery_voucher_item"))
+                .type(InputFormScreen.WidgetType.PICKER).defaultValue(item)
+                .picker((screen, callback) -> ItemRewardSelectionFlow.create(screen, selectedItem.get().isEmpty() ? net.minecraft.world.item.ItemStack.EMPTY
+                        : xin.vanilla.banira.common.util.ItemUtils.deserializeItemStack(selectedItem.get()), stack -> {
+                    if (stack.isEmpty()) return;
+                    String id = xin.vanilla.banira.common.util.ItemUtils.getItemRegistry(stack.getItem()).toString();
+                    selectedItem.set(id);
+                    callback.accept(id);
+                }))
+                .visibleWhen(result -> "item".equals(result.value("kind"))));
+        args.addWidget(new InputFormScreen.Widget().name("objective").title(text("lottery_voucher_objective"))
+                .maxLength(128).defaultValue("score".equals(current.kind) ? current.specification : "")
+                .visibleWhen(result -> "score".equals(result.value("kind"))));
+        args.addWidget(number("amount", "lottery_voucher_amount", "lottery_number_range", current.amount, 1, Integer.MAX_VALUE)
+                .regex("[0-9]{1,10}").visibleWhen(result -> {
+                    String kind = result.value("kind");
+                    return "item".equals(kind) || "xpPoints".equals(kind) || "xpLevels".equals(kind) || "score".equals(kind);
                 }));
-        args.setCallback(results -> connectedSelected.accept(LotteryVoucherExpressions.item(stack,
-                Integer.parseInt(results.value("amount")), "EXACT".equals(results.value("match")))));
+        args.addWidget(new InputFormScreen.Widget().name("advanced").title(text("lottery_voucher_expression"))
+                .tooltip(text("lottery_voucher_advanced_tooltip"))
+                .maxLength(LotteryPoolValidator.MAX_VOUCHER_EXPRESSION).allowEmpty(true).defaultValue(voucher.expression)
+                .validator(result -> voucherError(result.value()))
+                .visibleWhen(result -> "advanced".equals(result.value("kind"))));
+        args.setCallback(results -> {
+            try {
+                String kind = results.value("kind");
+                String expression;
+                if ("free".equals(kind)) expression = "";
+                else if ("advanced".equals(kind)) expression = results.value("advanced");
+                else expression = LotteryVoucherExpressions.build(kind, results.value("score".equals(kind) ? "objective" : "item"),
+                        Integer.parseInt(results.value("amount")));
+                String error = voucherError(expression);
+                if (!error.isEmpty()) {
+                    results.runningResult(error);
+                    return;
+                }
+                if (!"advanced".equals(kind) && LotteryVoucherExpressions.read(expression).same(current))
+                    expression = voucher.expression;
+                save.accept(expression);
+            } catch (IllegalArgumentException invalid) {
+                results.runningResult(tr("input_format_invalid"));
+            }
+        });
         return new InputFormScreen(args);
+    }
+
+    private static String voucherError(String expression) {
+        try {
+            xin.vanilla.banira.api.BaniraCosts.parse(expression);
+            return "";
+        } catch (xin.vanilla.banira.api.cost.CostExpressionException failure) {
+            return SakuraComponent.get().transClient("format", "lottery_expression_error_ss",
+                    failure.line(), failure.column()).toString();
+        } catch (IllegalArgumentException failure) {
+            return tr("lottery_expression_invalid");
+        }
+    }
+
+    private static final class VoucherDraft {
+        private String expression;
+
+        VoucherDraft(String expression) {
+            this.expression = expression;
+        }
+
+        String summary() {
+            LotteryVoucherExpressions.Fields cost = LotteryVoucherExpressions.read(expression);
+            String amount = " x" + cost.amount;
+            switch (cost.kind) {
+                case "free": return tr("lottery_free");
+                case "item": return cost.specification + amount;
+                case "score": return tr("lottery_voucher_score") + ": " + cost.specification + amount;
+                case "xpPoints": return tr("lottery_voucher_points") + amount;
+                case "xpLevels": return tr("lottery_voucher_levels") + amount;
+                default: return tr("lottery_voucher_advanced");
+            }
+        }
     }
 
     private static <T> Consumer<T> connectedOnce(Consumer<T> callback) {
