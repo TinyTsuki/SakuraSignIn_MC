@@ -262,17 +262,29 @@ public class LotteryUiOperationHandoffTest {
     }
 
     @Test
-    public void configuredAnimationCannotBeChangedByAnOldControl() {
+    public void configuredAnimationHasNoPlayerOverrideAcrossRebind() {
         Port port = new Port();
         port.daily.setAnimationStyle(LotteryAnimationStyle.ROULETTE);
         LotteryAnimationStyle original = port.style;
         LotteryUiSession session = new LotteryUiSession(port, () -> true);
         RecordingUiView view = new RecordingUiView();
         session.bind(view);
-        assertFalse(view.enabled.get("animation"));
-        view.changes.get("animation").accept(UiValue.text("INSTANT"));
-        view.actions.get("animation_instant").run();
+        assertFalse(view.controls.containsKey("animation"));
+        assertFalse(view.changes.containsKey("animation"));
+        for (LotteryAnimationStyle style : LotteryAnimationStyle.values()) {
+            assertFalse(view.actions.containsKey("animation_" + style.name().toLowerCase(java.util.Locale.ROOT)));
+        }
+        session.tick();
+        port.accept();
+        session.tick();
+        RecordingUiView reopened = new RecordingUiView();
+        session.bind(reopened);
+        session.tick();
+        assertFalse(reopened.controls.containsKey("animation"));
+        assertFalse(reopened.changes.containsKey("animation"));
+        assertTrue(port.draws.isEmpty());
         assertEquals(original, port.style);
+        assertEquals(LotteryAnimationStyle.ROULETTE, port.daily.getAnimationStyle());
     }
 
     @Test
