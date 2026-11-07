@@ -1,6 +1,7 @@
 package xin.vanilla.sakura.test;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.Options;
 import net.minecraft.client.StringSplitter;
 import net.minecraft.client.gui.Font;
 import org.junit.rules.ExternalResource;
@@ -23,6 +24,11 @@ public final class NativeClientRule extends ExternalResource {
         Object unsafe = access.get(null);
         var allocate = type.getMethod("allocateInstance", Class.class);
         Minecraft client = (Minecraft) allocate.invoke(unsafe, Minecraft.class);
+        Options options = (Options) allocate.invoke(unsafe, Options.class);
+        options.languageCode = "en_us";
+        Field clientOptions = Minecraft.class.getDeclaredField("options");
+        clientOptions.setAccessible(true);
+        clientOptions.set(client, options);
         Font font = (Font) allocate.invoke(unsafe, Font.class);
         Field splitter = Font.class.getDeclaredField("splitter");
         splitter.setAccessible(true);
