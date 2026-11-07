@@ -1,0 +1,35 @@
+body{font-family:sans-serif;padding:6px}
+.lottery{--panel:#241d29;--panel-soft:#302534;--ink:#fff3ed;--muted:#dbc4cd;--line:#6d4c61;--action:#f3d7b4;--selected:#57384c;color:#fff3ed;background:#241d29;max-width:620px;max-height:370px;padding:0}
+.lottery .header{padding:7px 10px;min-height:40px;border-bottom:1px solid #6d4c61}
+.lottery .header .glyph{width:22px;height:22px}
+#title{font-size:17px;line-height:21px;font-weight:600;white-space:normal;max-height:44px;overflow:hidden}
+#policy{font-size:7px;color:#e3c2cb;margin-top:2px}
+.lottery-body{margin:0;gap:0;flex:1;min-height:0}
+.pool-rail{width:23%;max-width:130px;min-width:70px;padding:8px 6px;background:#1c1721;border-right:1px solid #6d4c61}
+#pool_label{font-size:7px;margin-bottom:5px;color:#dbc4cd}
+.pool-card{margin-bottom:4px;border-radius:3px;border-color:#644457;background:#302330}
+.pool-card.selected{border-color:#f3d7b4;background:#503247}
+.pool-card .row-icon{left:4px;top:5px;width:25px;height:25px;right:auto}
+.pool-card .label{padding:5px 3px 5px 34px;text-align:left;font-size:8px;white-space:normal;line-height:11px}
+.pool-detail{position:relative;padding:0;min-width:0}
+.feature{flex:1;position:relative;border:0;border-radius:0;background:#2b2130}
+.pool-copy{z-index:2;flex:0 0 54%;padding:12px 3px 9px 12px;background:linear-gradient(90deg,#291e2ef5,#291e2eaa,#291e2e00)}
+.artwork{position:absolute;left:29%;right:0;top:0;bottom:0;padding:5px;z-index:1}
+#description{font-size:9px;line-height:14px;color:#ead5db;white-space:pre-wrap}
+#detail{margin-top:0;min-height:0}
+#time{margin:0 0 7px;font-size:8px}
+#time:disabled{display:none}
+.feature-tools{margin-top:8px;gap:4px}
+.feature-tools button{font-size:8px;min-height:21px;background:#392739;color:#fff3ed;border-color:#9f7a8b}
+.featured-icon{border-color:#9f7a8b;background:#241b29}
+.lottery .billing{min-height:38px;padding:6px 9px;gap:5px;border-color:#6d4c61;background:#1c1721}
+.fee-group{display:flex;align-items:center;gap:9px;flex-wrap:wrap;color:#fff3ed}
+#fee_detail{display:flex;align-items:center;gap:3px}
+#fee_icon{width:14px;height:14px}
+#fee_icon:disabled{display:none}
+#info{flex-basis:100%;color:#dbc4cd;font-size:7px;min-height:0}
+.lottery #batch{background:#f3d7b4;color:#382534;border-color:#f3d7b4}
+.lottery #single{background:#372637;color:#fff3ed;border-color:#9f7a8b}
+.lottery-modal{z-index:20}
+.lottery-dialog{color:#fff3ed;background:#291f2d}
+.lottery{--canvas:#241d29;--accent:#f3d7b4;--focus:#f3d7b4;--action-hover:#e6c19a;--action-text:#382534}

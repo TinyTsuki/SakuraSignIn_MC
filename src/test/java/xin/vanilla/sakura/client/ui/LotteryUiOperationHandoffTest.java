@@ -240,7 +240,7 @@ public class LotteryUiOperationHandoffTest {
         port.accept();
         session.tick();
         assertTrue(view.enabled.get("batch"));
-        assertTrue(view.texts.get("fee").toString().contains("xpPoints(2)"));
+        assertTrue(view.texts.get("fee").toString().endsWith("\u00d72"));
         int scans = port.scans;
         for (int i = 0; i < 100; i++) session.tick();
         assertEquals("Stable ticks must not rescan pools", scans, port.scans);

@@ -25,6 +25,7 @@ import xin.vanilla.sakura.client.SakuraClientState;
 import xin.vanilla.sakura.client.gui.RewardRenderer;
 import xin.vanilla.sakura.client.gui.lottery.LotteryLayout;
 import xin.vanilla.sakura.client.gui.lottery.LotteryRevealLayout;
+import xin.vanilla.sakura.client.gui.lottery.LotteryMotion;
 import xin.vanilla.sakura.client.ui.LotteryRevealUiSession;
 import xin.vanilla.sakura.client.ui.SakuraUiPages;
 import xin.vanilla.sakura.config.ClientConfig;
@@ -125,20 +126,21 @@ public final class LotteryRevealScreen extends BaniraScreen implements UiPageSou
         AbstractGuiUtils.pushScissor(content.x(), content.y(), content.width(), content.height());
         try {
             if (revealed) renderResults(stack);
+            else if (style.illustrated()) renderMotion(stack, elapsed);
             else switch (style) {
-                case CARDS:
-                    renderCards(stack, elapsed);
-                    break;
-                case ROULETTE:
-                    renderRoulette(stack, elapsed);
-                    break;
-                case INSTANT:
-                    renderResults(stack);
-                    break;
-                default:
-                    renderStrip(stack, elapsed);
-                    break;
-            }
+                    case CARDS:
+                        renderCards(stack, elapsed);
+                        break;
+                    case ROULETTE:
+                        renderRoulette(stack, elapsed);
+                        break;
+                    case INSTANT:
+                        renderResults(stack);
+                        break;
+                    default:
+                        renderStrip(stack, elapsed);
+                        break;
+                }
         } finally {
             AbstractGuiUtils.popScissor();
         }
@@ -150,6 +152,39 @@ public final class LotteryRevealScreen extends BaniraScreen implements UiPageSou
             fitted(stack, label, layout.label());
         }
         renderWidgets(stack, partialTicks);
+    }
+
+    private void renderMotion(GuiGraphics stack, long elapsed) {
+        var area = layout.content();
+        var frame = LotteryMotion.frame(style, elapsed, packet.getWinners().size(), packet.getPreview().size(),
+                packet.getOperationId().hashCode(), area.width(), area.height());
+        double scale = Math.min(area.width() / 320D, area.height() / 180D);
+        int cx = area.x() + area.width() / 2, base = area.y() + area.height() / 2;
+        boolean shell = style == LotteryAnimationStyle.ENVELOPE || style == LotteryAnimationStyle.CHEST;
+        if (shell) {
+            shape(stack, cx - (int) (55 * scale), base, (int) (110 * scale), (int) (65 * scale), getEffectiveTheme().buttonBg(), 4, 1);
+            if (frame.light() && style == LotteryAnimationStyle.CHEST)
+                shape(stack, cx - (int) (50 * scale), base - 2, (int) (100 * scale), 3, 0x88FFD582, 1, 0);
+        }
+        var winners = packet.getWinners();
+        var candidates = packet.getPreview();
+        for (var card : frame.cards()) {
+            int x = area.x() + (int) card.x(), y = area.y() + (int) card.y();
+            shape(stack, x, y, Math.max(1, (int) card.width()), Math.max(1, (int) card.height()),
+                    card.matched() ? getEffectiveTheme().buttonBgHover() : getEffectiveTheme().buttonBg(), 3, 1);
+            if (!card.face()) {
+                if (card.width() > 10)
+                    stack.drawString(font, "?", x + (int) card.width() / 2 - 2, y + (int) card.height() / 2 - 4,
+                            getEffectiveTheme().textPrimary(), false);
+                continue;
+            }
+            Reward reward = card.reward() >= 0 ? winners.get(card.reward())
+                    : candidates.isEmpty() ? null : candidates.get(Math.floorMod(-1 - card.reward(), candidates.size()));
+            if (reward != null && (card.reward() >= 0 || packet.isPreviewVisible()))
+                renderReward(stack, reward, x + Math.max(0, (int) (card.width() - 16) / 2), y + Math.max(0, (int) (card.height() - 16) / 2));
+        }
+        if (shell)
+            shape(stack, cx - (int) (55 * scale), base + (int) (25 * scale), (int) (110 * scale), (int) (40 * scale), getEffectiveTheme().buttonBg(), 4, 1);
     }
 
     private void renderStrip(GuiGraphics stack, long elapsed) {

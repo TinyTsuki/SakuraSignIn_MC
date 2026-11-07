@@ -13,7 +13,8 @@ import java.util.Objects;
 import java.util.function.BooleanSupplier;
 
 public final class SignInUiSession implements UiPageSession {
-    public record Cell(int date, Component day, Component tooltip, Texture icon, boolean currentMonth, boolean actionable) {
+    public record Cell(int date, Component day, Component tooltip, Texture icon, boolean currentMonth,
+                       boolean actionable) {
         public Cell(int date, Component day, Component tooltip, Texture icon) {
             this(date, day, tooltip, icon, true, true);
         }
@@ -170,7 +171,8 @@ public final class SignInUiSession implements UiPageSession {
                         && inside(next, "day" + position, pointer)) select(cells.get(position));
             }));
             bindings.add(next.onAction("day" + index, () -> {
-                if (!live(next, token) || port.openingTips() || position >= cells.size() || !cells.get(position).actionable()) return;
+                if (!live(next, token) || port.openingTips() || position >= cells.size() || !cells.get(position).actionable())
+                    return;
                 Cell selected = cells.get(position);
                 select(selected);
                 port.activate(selected.date());
@@ -248,12 +250,13 @@ public final class SignInUiSession implements UiPageSession {
         }
         for (int index = 0; index < 42; index++) {
             Cell cell = index < cells.size() ? cells.get(index) : null;
+            view.enabled("selected" + index, false);
             for (String kind : List.of("current", "adjacent")) {
                 String id = "day" + index + "_" + kind;
                 text(id, cell == null ? empty() : cell.day());
                 view.enabled(id, cell != null && cell.currentMonth() == kind.equals("current"));
             }
-            view.gameElement("status" + index, cell == null || cell.icon() == null ? null : UiGameElement.sprite(cell.icon()));
+            view.gameElement("status" + index, port.openingTips() || cell == null || cell.icon() == null ? null : UiGameElement.sprite(cell.icon()));
             view.enabled("day" + index, cell != null && cell.actionable() && !port.openingTips() && connection.getAsBoolean());
             view.tooltip("day" + index, empty());
         }
@@ -272,6 +275,8 @@ public final class SignInUiSession implements UiPageSession {
             view.state().detailScroll(0);
         }
         selectedDate = cell.date();
+        for (int index = 0; index < 42; index++)
+            view.enabled("selected" + index, !port.openingTips() && index < cells.size() && cells.get(index).date() == selectedDate);
         if (view.state() != null) view.state().selectedId(Integer.toString(selectedDate));
         renderDetails(cell);
     }

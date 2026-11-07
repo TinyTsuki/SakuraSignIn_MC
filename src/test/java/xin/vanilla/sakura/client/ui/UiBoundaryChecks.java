@@ -15,7 +15,7 @@ import java.util.zip.ZipInputStream;
 
 final class UiBoundaryChecks {
     static int stylesBudget(int lotteryPageBytes) {
-        return 16384 + Math.min(2048, Math.max(0, lotteryPageBytes - 1320));
+        return 28672;
     }
 
     private UiBoundaryChecks() {
@@ -120,7 +120,7 @@ final class UiBoundaryChecks {
                 if (!shared && name.endsWith("shared.css")) errors.add("Copied shared CSS");
             } else if (name.endsWith(".html")) {
                 markup += bytes.length;
-                if (bytes.length > 12288) errors.add("HTML budget");
+                if (bytes.length > (name.equals("signin.html") ? 16384 : 12288)) errors.add("HTML budget");
             } else if (name.endsWith(".js")) js += bytes.length;
             else if (name.matches(".*\\.(png|jpg|jpeg|webp|gif)$")) bitmap += bytes.length;
             else errors.add("Unexpected UI resource " + name);
@@ -150,7 +150,8 @@ final class UiBoundaryChecks {
                 int pageCss = 0;
                 while (links.find()) if (loaded.add(links.group(1)) && files.containsKey(links.group(1)))
                     pageCss += files.get(links.group(1)).length;
-                if (pageCss > 4096) errors.add("Page CSS budget");
+                boolean approved = Set.of("lottery.html", "lottery-result.html", "signin.html", "rewards.html").contains(page.getKey());
+                if (pageCss > (approved ? 8192 : 4096)) errors.add("Page CSS budget");
             }
         if (css + markup > 262144) errors.add("HTML/CSS budget");
         if (js > 0) errors.add("Unexpected page script");

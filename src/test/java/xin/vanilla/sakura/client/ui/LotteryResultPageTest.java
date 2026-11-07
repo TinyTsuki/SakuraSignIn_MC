@@ -98,7 +98,8 @@ public class LotteryResultPageTest {
         assertEquals(60, ((UiRowLayout) view.rows).rowHeight());
         var row = new RecordingUiView();
         view.providers.get("fields").bind(row, 33);
-        assertEquals("100", row.texts.get("index").toString());
+        assertEquals("", row.texts.get("index").toString());
+        assertTrue(view.providers.get("fields").key(33).endsWith(":99"));
         assertNotNull(row.texts.get("type"));
         assertTrue(row.actions.isEmpty());
         assertEquals(40, view.limit);

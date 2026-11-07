@@ -38,21 +38,25 @@ public class LotteryUiPresentationTest {
         return SakuraComponent.get().transClient("word", key).toString();
     }
 
+    private static String remaining(String count) {
+        return SakuraComponent.get().translateClient("format", "lottery_remaining_s", count);
+    }
+
     @Test
     public void identicalPeriodicQuotesLeaveTheAuiUntouched() {
         var port = new LotteryUiOperationHandoffTest.Port();
         var view = new RecordingUiView();
         var session = new LotteryUiSession(port, () -> true);
         session.bind(view);
-        assertEquals(translated("lottery_cost_label") + ": \u2014", text(view, "fee"));
-        assertEquals(translated("lottery_available_count") + ": \u2014", text(view, "available"));
+        assertEquals("\u2014", text(view, "fee"));
+        assertEquals(remaining("\u2014"), text(view, "available"));
         session.tick();
         assertEquals(translated("lottery_quote_pending"), text(view, "info"));
         assertEquals(Boolean.TRUE, view.enabled.get("info"));
         port.accept();
         session.tick();
-        assertEquals(translated("lottery_cost_label") + ": xpPoints(2)", text(view, "fee"));
-        assertEquals(translated("lottery_available_count") + ": 12", text(view, "available"));
+        assertEquals(translated("lottery_voucher_points") + " \u00d72", text(view, "fee"));
+        assertEquals(remaining("12"), text(view, "available"));
         assertEquals("", text(view, "info"));
         assertEquals(Boolean.FALSE, view.enabled.get("info"));
         assertFalse(view.texts.containsKey("quote_status"));
@@ -73,8 +77,8 @@ public class LotteryUiPresentationTest {
         var refresh = port.quotes.get(port.quotes.size() - 1);
         assertTrue(port.requests.accept(new LotteryQuote(refresh, LotteryQuote.Status.READY, 1, 7, "xpPoints(3)", java.util.UUID.randomUUID().toString())));
         session.tick();
-        assertEquals(translated("lottery_cost_label") + ": xpPoints(3)", text(view, "fee"));
-        assertEquals(translated("lottery_available_count") + ": 7", text(view, "available"));
+        assertEquals(translated("lottery_voucher_points") + " \u00d73", text(view, "fee"));
+        assertEquals(remaining("7"), text(view, "available"));
     }
 
     @Test
@@ -120,7 +124,7 @@ public class LotteryUiPresentationTest {
             }
             assertFalse(view.enabled.get("single"));
             assertFalse(view.enabled.get("batch"));
-            assertEquals(translated("lottery_available_count") + ": \u2014", text(view, "available"));
+            assertEquals(remaining("\u2014"), text(view, "available"));
             String key = switch (status) {
                 case FORBIDDEN -> "lottery_permission_denied";
                 case STALE_GENERATION -> "lottery_configuration_changed";
@@ -179,13 +183,13 @@ public class LotteryUiPresentationTest {
         session.bind(view);
         assertEquals("", text(view, "preview_count"));
         assertEquals(0, view.rows.size());
-        assertEquals(translated("lottery_available_count") + ": \u2014", text(view, "available"));
+        assertEquals(remaining("\u2014"), text(view, "available"));
         session.detach(UiDetachReason.RELOAD);
         port.pool = "missing";
         view = new RecordingUiView();
         session.bind(view);
         assertEquals("", text(view, "policy"));
-        assertEquals(translated("lottery_cost_label") + ": \u2014", text(view, "fee"));
+        assertEquals("\u2014", text(view, "fee"));
         assertFalse(view.enabled.get("single"));
     }
 

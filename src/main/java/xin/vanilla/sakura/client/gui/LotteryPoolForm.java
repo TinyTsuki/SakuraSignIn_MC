@@ -89,8 +89,8 @@ public final class LotteryPoolForm {
                                 mode.name(), "lottery_preview_" + mode.name().toLowerCase(java.util.Locale.ROOT)))
                         .toArray(DropdownOption[]::new)));
         args.addWidget(dropdown("animationStyle", "lottery_animation",
-                (existing == null ? xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.STRIP : existing.getAnimationStyle()).name(),
-                Arrays.stream(xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.values()).map(style -> option(
+                (existing == null ? xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.ENVELOPE : existing.getAnimationStyle()).name(),
+                xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.editorChoices(existing == null ? null : existing.getAnimationStyle()).stream().map(style -> option(
                                 style.name(), "enum_lottery_animation_style_" + style.name().toLowerCase(java.util.Locale.ROOT)))
                         .toArray(DropdownOption[]::new)));
         args.addWidget(new InputFormScreen.Widget().name("drawCounts").title(text("lottery_batch_count"))

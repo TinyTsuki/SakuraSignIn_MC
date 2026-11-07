@@ -23,7 +23,8 @@ public final class RewardEditorUiSession implements UiPageSession {
         MERGE("merge", "merge_same_rewards", null), UPLOAD("upload", "upload_reward_config", PresetStyle.ARROW_UP),
         DOWNLOAD("download", "download_reward_config", PresetStyle.ARROW_DOWN), FOLDER("folder", "open_config_folder", null),
         HELP("help", "help_button", null), MOVE("move", "ui_reward_move", PresetStyle.MOVE),
-        CLEAR("clear", "clear", PresetStyle.MINUS), SIDEBAR("sidebar", "reward_rule_type", PresetStyle.SETTINGS);
+        CLEAR("clear", "clear", PresetStyle.MINUS), SIDEBAR("sidebar", "reward_rule_type", PresetStyle.SETTINGS),
+        ADD_GROUP("add_group", "aui_add_group", PresetStyle.PLUS);
         public final String id, label;
         public final PresetStyle icon;
 
@@ -34,7 +35,7 @@ public final class RewardEditorUiSession implements UiPageSession {
         }
     }
 
-    public enum EntryAction {SELECT, TOGGLE, GROUP_SELECT, CONTEXT, EDIT, PROBABILITY, DELETE}
+    public enum EntryAction {SELECT, TOGGLE, GROUP_SELECT, CONTEXT, EDIT, PROBABILITY, DELETE, FOCUS_GROUP}
 
     public record Entry(String id, String label, String detail, String tooltip, UiGameElement icon,
                         boolean group, boolean collapsed, boolean selected, boolean editable) {
@@ -88,6 +89,10 @@ public final class RewardEditorUiSession implements UiPageSession {
             return -1;
         }
 
+        default boolean groupNavigation() {
+            return false;
+        }
+
         default Component status() {
             return tr("aui_no_changes");
         }
@@ -101,6 +106,7 @@ public final class RewardEditorUiSession implements UiPageSession {
     private final BooleanSupplier connection;
     private final List<AutoCloseable> bindings = new ArrayList<>();
     private final Map<UiView, List<AutoCloseable>> rowBindings = new LinkedHashMap<>();
+    private final Map<UiView, List<AutoCloseable>> groupBindings = new LinkedHashMap<>();
     private final Map<UiView, Entry> rowEntries = new IdentityHashMap<>();
     private static final Map<String, UiGameElement> ICONS = new HashMap<>();
     private UiView view;
@@ -112,6 +118,8 @@ public final class RewardEditorUiSession implements UiPageSession {
     private boolean moreOpen, detailOpen, wide;
     private Detail selectedDetail;
     private int chromeState = -1;
+    private String selectedGroup = "";
+    private int selectedRule;
     private static final String[] RULE_KEYS = {"reward_base", "reward_continuous", "reward_cycle", "reward_year",
             "reward_month", "reward_week", "reward_time", "reward_cumulative", "reward_random", "reward_cdk",
             "reward_personal_date", "reward_lottery"};
@@ -191,6 +199,8 @@ public final class RewardEditorUiSession implements UiPageSession {
                 if (live(next, token) && (!detailBlocks() || outside) && port.enabled(action)) {
                     moreOpen = false;
                     clearFocus(next);
+                    if (action == Action.ADD && !selectedGroup.isEmpty())
+                        port.entry(selectedGroup, EntryAction.FOCUS_GROUP);
                     port.command(action);
                     if (live(next, token)) refresh();
                 }
@@ -219,6 +229,14 @@ public final class RewardEditorUiSession implements UiPageSession {
         next.text("detail_edit", tr("edit"));
         next.text("detail_probability", tr("edit_probability"));
         next.text("detail_add", tr("ui_reward_add"));
+        next.text("groups_heading", tr("aui_group"));
+        next.text("edit_group", tr("aui_edit_group"));
+        bindings.add(next.onAction("edit_group", () -> {
+            if (live(next, token) && !detailBlocks() && !selectedGroup.isEmpty() && !port.redacted()) {
+                port.entry(selectedGroup, EntryAction.EDIT);
+                if (live(next, token)) refresh();
+            }
+        }));
         next.gameElement("close_details", UiGameElement.preset(PresetStyle.CLOSE));
         bindings.add(next.onAction("more", () -> {
             if (live(next, token)) {
@@ -284,6 +302,7 @@ public final class RewardEditorUiSession implements UiPageSession {
     }
 
     private UiGameElement actionIcon(Action action) {
+        if (action == Action.ADD_GROUP) return icon("add");
         boolean primary = action == Action.ADD || action == Action.UPLOAD;
         return icon(action.id + (primary && port.enabled(action) ? "-primary" : ""));
     }
@@ -377,8 +396,31 @@ public final class RewardEditorUiSession implements UiPageSession {
         }
         owner.enabled("rules", port.sidebarOpen());
         ConfigSearchQuery search = ConfigSearchQuery.of(query);
-        List<Entry> all = port.redacted() ? List.of() : port.entries();
-        List<Entry> entries = all.stream().filter(entry -> search.matches(entry.id(), entry.label(), entry.detail(), entry.tooltip())).toList();
+        boolean grouped = port.groupNavigation() && !port.redacted();
+        List<Entry> all = port.redacted() ? List.of() : groupEntries(grouped);
+        List<Entry> groups = all.stream().filter(Entry::group).toList();
+        if (selectedRule != port.rule() || groups.stream().noneMatch(e -> e.id().equals(selectedGroup))) {
+            selectedRule = port.rule();
+            selectedGroup = groups.isEmpty() ? "" : groups.get(0).id();
+        }
+        owner.enabled("group_nav", grouped && port.rule() != 0);
+        owner.enabled("edit_group", grouped && groups.stream().anyMatch(e -> e.id().equals(selectedGroup) && e.editable()));
+        Map<String, String> groupFor = new HashMap<>();
+        String group = "";
+        for (Entry entry : all) {
+            if (entry.group()) group = entry.id();
+            else groupFor.put(entry.id(), group);
+        }
+        if (grouped) {
+            Detail detail = port.detail();
+            String focus = revealId != null ? revealId : detail == null ? "" : detail.id();
+            String focusedGroup = groups.stream().anyMatch(e -> e.id().equals(focus)) ? focus : groupFor.get(focus);
+            if (focusedGroup != null) selectedGroup = focusedGroup;
+            bindGroups(owner, token, rowsToken, groups);
+        }
+        List<Entry> entries = all.stream().filter(entry -> !grouped || !entry.group()
+                        && (selectedGroup.isEmpty() || selectedGroup.equals(groupFor.get(entry.id()))))
+                .filter(entry -> search.matches(entry.id(), entry.label(), entry.detail(), entry.tooltip())).toList();
         owner.text("section", ruleName(port.rule()));
         owner.text("status", port.status());
         owner.text("count", SakuraComponent.get().literal(entries.stream().filter(entry -> !entry.group()).count() + " / "
@@ -484,6 +526,68 @@ public final class RewardEditorUiSession implements UiPageSession {
         }, 120);
     }
 
+    private List<Entry> groupEntries(boolean grouped) {
+        List<Entry> entries = List.copyOf(port.entries());
+        if (!grouped) return entries;
+        Entry selected = entries.stream().filter(Entry::group).filter(e -> e.id().equals(selectedGroup))
+                .findFirst().orElseGet(() -> entries.stream().filter(Entry::group).findFirst().orElse(null));
+        if (selected != null && selected.collapsed()) {
+            port.entry(selected.id(), EntryAction.FOCUS_GROUP);
+            port.refresh();
+            revision = port.revision();
+            return port.redacted() ? List.of() : List.copyOf(port.entries());
+        }
+        return entries;
+    }
+
+    private void bindGroups(UiView owner, long token, long rowsToken, List<Entry> groups) {
+        owner.rows("groups", new UiRowLayout() {
+            public int size() {
+                return groups.size();
+            }
+
+            public int rowHeight() {
+                return 30;
+            }
+
+            public String scrollerId() {
+                return "group_scroll";
+            }
+
+            public boolean tracksPageScroll() {
+                return false;
+            }
+
+            public String key(int index) {
+                return groups.get(index).id();
+            }
+
+            public String rowClass(int index) {
+                return "reward-group-nav" + (groups.get(index).id().equals(selectedGroup) ? " group-current" : "");
+            }
+
+            public void bind(UiView row, int index) {
+                if (!live(owner, token) || rowRevision != rowsToken) return;
+                release(groupBindings.remove(row));
+                if (groupBindings.size() >= 40) release(groupBindings.remove(groupBindings.keySet().iterator().next()));
+                List<AutoCloseable> owned = new ArrayList<>();
+                groupBindings.put(row, owned);
+                Entry group = groups.get(index);
+                row.text("label", SakuraComponent.get().literal(group.label()));
+                row.text("detail", SakuraComponent.get().literal(group.detail()));
+                row.tooltip("label", SakuraComponent.get().literal(group.tooltip()));
+                owned.add(row.onAction("label", () -> {
+                    if (!live(owner, token) || rowRevision != rowsToken || detailBlocks() || groupBindings.get(row) != owned)
+                        return;
+                    selectedGroup = group.id();
+                    if (owner.state() != null) owner.state().rowPosition(0);
+                    port.entry(group.id(), EntryAction.FOCUS_GROUP);
+                    if (live(owner, token)) refresh();
+                }));
+            }
+        }, 40);
+    }
+
     private void bindEntry(UiView row, List<AutoCloseable> owned, String id, Entry entry, EntryAction action, UiView owner, long token, long rowsToken) {
         owned.add(row.onAction(id, () -> {
             if (!live(owner, token) || detailBlocks() || rowRevision != rowsToken || rowBindings.get(row) != owned || port.redacted())
@@ -550,6 +654,8 @@ public final class RewardEditorUiSession implements UiPageSession {
     }
 
     private void clearRows() {
+        for (List<AutoCloseable> owned : groupBindings.values()) release(owned);
+        groupBindings.clear();
         for (List<AutoCloseable> owned : rowBindings.values()) release(owned);
         rowBindings.clear();
         rowEntries.clear();

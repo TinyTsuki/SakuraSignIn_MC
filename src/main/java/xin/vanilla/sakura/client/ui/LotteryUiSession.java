@@ -5,6 +5,7 @@ import xin.vanilla.sakura.client.gui.lottery.LotteryArtwork;
 import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.client.gui.RewardRenderer;
 import xin.vanilla.sakura.client.gui.lottery.LotteryPaymentViewModel;
+import xin.vanilla.sakura.client.gui.lottery.LotteryFeePresentation;
 import xin.vanilla.sakura.data.lottery.*;
 import xin.vanilla.sakura.reward.Reward;
 
@@ -298,7 +299,7 @@ public final class LotteryUiSession implements UiPageSession {
         if (view == null || view.nativeView()) return;
         LotteryPaymentViewModel payment = port.payment();
         LotteryPool pool = selectedPool;
-        Billing billing = billing(payment, pool, port.generation());
+        Billing billing = billing(payment, pool, port.generation(), true);
         long minutes = payment.windowMinutes();
         String countdownLabel = minutes > 0 ? countdownLabel(payment) : "";
         String countdownTime = minutes > 0 ? countdownTime(minutes) : "";
@@ -314,8 +315,12 @@ public final class LotteryUiSession implements UiPageSession {
         view.text("info", literal(billing.status()));
         view.tooltip("info", literal(billing.status()));
         view.enabled("info", !billing.status().isEmpty());
-        view.text("fee", literal(billing.cost()));
-        view.tooltip("fee", literal(billing.cost()));
+        var fee = LotteryFeePresentation.of(pool == null ? null : payment.summary());
+        view.text("fee", literal(fee.text()));
+        view.tooltip("fee", literal(fee.tooltip()));
+        view.gameElement("fee_icon", fee.icon());
+        view.enabled("fee_icon", fee.icon() != null);
+        view.tooltip("fee_icon", literal(fee.tooltip()));
         view.text("available", literal(billing.available()));
         view.tooltip("available", literal(billing.available()));
         view.enabled("single", single);
@@ -336,6 +341,10 @@ public final class LotteryUiSession implements UiPageSession {
     }
 
     public static Billing billing(LotteryPaymentViewModel payment, LotteryPool pool, long generation) {
+        return billing(payment, pool, generation, false);
+    }
+
+    private static Billing billing(LotteryPaymentViewModel payment, LotteryPool pool, long generation, boolean compact) {
         String fee = payment.summary();
         String cost = pool == null || fee == null ? "\u2014" : fee.isEmpty() ? tr("lottery_free").toString() : fee;
         LotteryQuote quote = payment.quote();
@@ -352,7 +361,8 @@ public final class LotteryUiSession implements UiPageSession {
             default -> "lottery_payment_unavailable";
         };
         String available = ready ? String.valueOf(quote.getAvailableCount()) : "\u2014";
-        return new Billing(tr("lottery_cost_label") + ": " + cost, tr("lottery_available_count") + ": " + available,
+        return new Billing(compact ? cost : tr("lottery_cost_label") + ": " + cost,
+                compact ? SakuraComponent.get().translateClient("format", "lottery_remaining_s", available) : tr("lottery_available_count") + ": " + available,
                 state.isEmpty() ? "" : tr(state).toString());
     }
 
