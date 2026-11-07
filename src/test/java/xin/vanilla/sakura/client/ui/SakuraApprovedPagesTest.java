@@ -46,6 +46,28 @@ public class SakuraApprovedPagesTest {
     }
 
     @Test
+    public void rewardNavigationStaysBesideTheListAndEmptyDetailsHaveNoPlaceholder() throws Exception {
+        Path root = Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in");
+        String html = Files.readString(root.resolve("rewards.html"));
+        int workspace = html.indexOf("id=\"workspace\"");
+        int navigation = html.indexOf("id=\"reward_navigation\"");
+        assertTrue(workspace < navigation && navigation < html.indexOf("id=\"rules\""));
+        assertTrue(html.indexOf("id=\"group_nav\"") < html.indexOf("</nav>"));
+        assertTrue(html.indexOf("id=\"add\"") < html.indexOf("class=\"reward-tools\""));
+        assertTrue(html.contains("id=\"edit_group_icon\""));
+        String css = Files.readString(root.resolve("sakura-pages.css"));
+        assertFalse(css.contains("flex-wrap:wrap"));
+        assertTrue(css.contains(".detail-content{white-space:normal"));
+        var view = new RecordingUiView();
+        new RewardEditorUiSession(new RewardEditorUiParityTest.Port(1), () -> true).bind(view);
+        assertFalse(view.enabled.get("detail_icon"));
+        assertFalse(view.enabled.get("detail_subtitle"));
+        assertFalse(view.enabled.get("empty"));
+        assertNotNull(view.icons.get("edit_group_icon"));
+        assertFalse(view.texts.containsKey("edit_group"));
+    }
+
+    @Test
     public void engineOverlayUsesSolidPaintAndNarrowCalendarLabelsStayCompact() throws Exception {
         Path resources = Path.of("src/main/resources/assets");
         String css = Files.readString(resources.resolve("apricityui/apricity/sakura_sign_in/sakura-lottery.css"));

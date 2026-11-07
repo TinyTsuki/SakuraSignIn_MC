@@ -230,7 +230,7 @@ public final class RewardEditorUiSession implements UiPageSession {
         next.text("detail_probability", tr("edit_probability"));
         next.text("detail_add", tr("ui_reward_add"));
         next.text("groups_heading", tr("aui_group"));
-        next.text("edit_group", tr("aui_edit_group"));
+        next.tooltip("edit_group", tr("aui_edit_group"));
         bindings.add(next.onAction("edit_group", () -> {
             if (live(next, token) && !detailBlocks() && !selectedGroup.isEmpty() && !port.redacted()) {
                 port.entry(selectedGroup, EntryAction.EDIT);
@@ -336,6 +336,7 @@ public final class RewardEditorUiSession implements UiPageSession {
         }
         view.gameElement("more_icon", covered ? null : icon("more"));
         view.gameElement("details_icon", covered ? null : icon("details"));
+        view.gameElement("edit_group_icon", covered ? null : icon("edit"));
         rowEntries.forEach((row, entry) -> rowSprites(row, entry));
     }
 
@@ -363,6 +364,8 @@ public final class RewardEditorUiSession implements UiPageSession {
                         selected.icon(), List.of(), selected.editable(), !selected.group());
         }
         selectedDetail = detail;
+        view.enabled("detail_icon", detail != null && detail.icon() != null);
+        view.enabled("detail_subtitle", detail != null && detail.subtitle() != null && !detail.subtitle().isBlank());
         chromeState = -1;
         view.text("detail_title", detail == null ? ruleName(port.rule()) : SakuraComponent.get().literal(detail.title()));
         view.text("detail_subtitle", SakuraComponent.get().literal(detail == null ? "" : detail.subtitle()));
@@ -403,7 +406,9 @@ public final class RewardEditorUiSession implements UiPageSession {
             selectedRule = port.rule();
             selectedGroup = groups.isEmpty() ? "" : groups.get(0).id();
         }
-        owner.enabled("group_nav", grouped && port.rule() != 0);
+        boolean showGroups = grouped && port.rule() != 0 && (groups.size() > 1 || port.enabled(Action.ADD_GROUP));
+        owner.enabled("group_nav", showGroups);
+        owner.enabled("reward_navigation", port.sidebarOpen() || showGroups);
         owner.enabled("edit_group", grouped && groups.stream().anyMatch(e -> e.id().equals(selectedGroup) && e.editable()));
         Map<String, String> groupFor = new HashMap<>();
         String group = "";
@@ -439,6 +444,7 @@ public final class RewardEditorUiSession implements UiPageSession {
         }
         owner.text("empty", port.redacted() ? tr("reward_rule_permission_denied_page")
                 : port.rule() == 0 ? tr("reward_rule_type") : entries.isEmpty() ? tr("aui_no_rewards") : SakuraComponent.get().literal(""));
+        owner.enabled("empty", port.redacted() || port.rule() == 0 || entries.isEmpty());
         owner.rows("fields", new UiRowLayout() {
             public int rowHeight() {
                 return 28;
