@@ -297,6 +297,9 @@ public class LotteryUiPresentationTest {
         assertTrue(css.contains("flex-direction:row"));
         assertTrue(css.contains(".reward-row .label{flex:1;min-width:0}"));
         assertTrue(css.contains(".reward-row .paragraph{flex-shrink:0"));
+        String overlay = Files.readString(Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in/sakura-lottery.css"), StandardCharsets.UTF_8);
+        assertTrue(overlay.contains(".reward-row .paragraph{flex:none"));
+        assertTrue(overlay.contains("@media(max-width:480px)"));
     }
 
     @Test

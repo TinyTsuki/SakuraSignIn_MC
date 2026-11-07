@@ -3,6 +3,7 @@ package xin.vanilla.sakura.client.ui;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+import xin.vanilla.banira.client.gui.InputFormScreen;
 import xin.vanilla.banira.api.client.ui.UiCloseReason;
 import xin.vanilla.banira.api.client.ui.UiDetachReason;
 import xin.vanilla.banira.api.client.ui.UiPageSource;
@@ -52,7 +53,7 @@ public class LotteryUiOperationHandoffTest {
         }
 
         public void prepare() {
-            payment.select(pool, Integer.parseInt(count));
+            payment.select(pool, "all".equals(count) ? -1 : Integer.parseInt(count));
         }
 
         public List<LotteryPool> pools() {
@@ -280,8 +281,36 @@ public class LotteryUiOperationHandoffTest {
     }
 
     @Test
+    public void confirmedChangedFeeCannotDrawAfterAnyBackendHandoff() {
+        for (UiDetachReason reason : new UiDetachReason[]{UiDetachReason.SWITCH, UiDetachReason.RESIZE, UiDetachReason.RELOAD, UiDetachReason.FALLBACK}) {
+            Port port = new Port();
+            var session = new LotteryUiSession(port, () -> true);
+            var view = new RecordingUiView();
+            session.bind(view);
+            session.tick();
+            port.accept();
+            session.tick();
+            view.actions.get("single").run();
+            view.actions.get("confirm_draw").run();
+            var requested = port.quotes.get(port.quotes.size() - 1);
+            assertEquals(1, requested.getCount());
+            Runnable retired = view.actions.get("confirm_draw");
+            session.detach(reason);
+            session.bind(new RecordingUiView());
+            retired.run();
+            assertTrue(port.requests.accept(new LotteryQuote(requested, LotteryQuote.Status.READY,
+                    requested.getGeneration(), 12, "xpPoints(3)", UUID.randomUUID().toString())));
+            session.tick();
+            session.tick();
+            assertEquals("xpPoints(3)", port.payment.summary());
+            assertEquals(0, port.draws.size());
+        }
+    }
+
+    @Test
     public void poolFormDraftsSurviveBackendHandoffWithEveryMetadataField() {
         LotteryPool pool = new Port().daily;
+        pool.setArtworkTexture("test:textures/lottery/spring.png");
         net.minecraft.client.gui.screens.Screen parent = new net.minecraft.client.gui.screens.Screen(new net.minecraft.network.chat.TextComponent("")) {
         };
         var form = (xin.vanilla.banira.client.gui.InputFormScreen) xin.vanilla.sakura.client.gui.LotteryPoolForm.create(parent, pool, value -> {
@@ -298,14 +327,26 @@ public class LotteryUiOperationHandoffTest {
         view.rows.bind(voucher, 3);
         assertTrue(voucher.draftValues.get("input").contains("2"));
         assertFalse(voucher.enabled.get("input"));
-        voucher.drafts.get("input").accept("must not overwrite a picker summary");
-        var formSession = form.uiSession();
-        assertTrue(formSession.draft("voucherExpression").contains("2"));
-        var widget = formSession.args().getWidgets().get(3);
-        var editor = (xin.vanilla.banira.client.gui.InputFormScreen) widget.picker().apply(parent,
-                value -> formSession.draft("voucherExpression", value));
-        editor.uiSession().draft("amount", "3");
-        assertTrue(editor.uiSession().submit());
+        InputFormScreen formOwner = form;
+        InputFormScreen.Widget cost = formOwner.uiSession().args().getWidgets().get(3);
+        InputFormScreen child = (InputFormScreen) cost.picker().apply(parent,
+                value -> formOwner.uiSession().draft("voucherExpression", value));
+        child.uiSession().draft("amount", "3");
+        assertTrue(child.uiSession().submit());
+        var metadata = List.of("1,5,10", "2026-11-06 13:30", "2026-11-06 13:45");
+        for (int i = 0; i < metadata.size(); i++) {
+            var row = new RecordingUiView();
+            view.rows.bind(row, i + 8);
+            row.drafts.get("input").accept(metadata.get(i));
+        }
+        var mainArtwork = new RecordingUiView();
+        view.rows.bind(mainArtwork, 11);
+        String mainSummary = mainArtwork.draftValues.get("input");
+        assertTrue(mainSummary.contains(pool.getArtworkTexture()));
+        var thumbnail = new RecordingUiView();
+        view.rows.bind(thumbnail, 12);
+        String thumbnailSummary = thumbnail.draftValues.get("input");
+        assertNotNull(thumbnailSummary);
         session.detach(UiDetachReason.SWITCH);
         var next = new RecordingUiView();
         session.bind(next);
@@ -316,6 +357,19 @@ public class LotteryUiOperationHandoffTest {
         next.rows.bind(voucher, 3);
         assertTrue(voucher.draftValues.get("input").contains("3"));
         assertNotNull(voucher.actions.get("pick"));
+        for (int i = 0; i < metadata.size(); i++) {
+            var row = new RecordingUiView();
+            next.rows.bind(row, i + 8);
+            assertEquals(metadata.get(i), row.draftValues.get("input"));
+        }
+        mainArtwork = new RecordingUiView();
+        next.rows.bind(mainArtwork, 11);
+        assertEquals(mainSummary, mainArtwork.draftValues.get("input"));
+        assertNotNull(mainArtwork.actions.get("pick"));
+        thumbnail = new RecordingUiView();
+        next.rows.bind(thumbnail, 12);
+        assertEquals(thumbnailSummary, thumbnail.draftValues.get("input"));
+        assertNotNull(thumbnail.actions.get("pick"));
     }
 
     @Test
