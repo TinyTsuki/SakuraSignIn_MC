@@ -106,11 +106,11 @@ public final class LotteryPoolForm {
         args.addWidget(artworkField("thumbnail", "lottery_thumbnail_png", artwork, true));
         java.util.List<DropdownOption> animations = new java.util.ArrayList<DropdownOption>();
         animations.add(option("legacy", "lottery_animation_legacy"));
-        for (xin.vanilla.sakura.data.lottery.LotteryAnimationStyle animation : xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.values()) {
+        for (xin.vanilla.sakura.data.lottery.LotteryAnimationStyle animation : xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.editorChoices(existing == null ? null : existing.getAnimationStyle())) {
             animations.add(new DropdownOption(animation.name(), animation.enumDescription().toString()));
         }
-        args.addWidget(dropdown("animationStyle", "lottery_animation", existing == null ? "STRIP"
-                        : existing.getAnimationStyle() == null ? "legacy" : existing.getAnimationStyle().name(),
+        args.addWidget(dropdown("animationStyle", "lottery_animation", existing == null ? "ENVELOPE"
+                        : existing.getAnimationStyle() == null ? "legacy" : existing.getAnimationStyle().presentationStyle().name(),
                 animations.toArray(new DropdownOption[0])));
         args.setCallback(results -> {
             LotteryPool candidate = new LotteryPool(results.value("id"), results.value("name"),

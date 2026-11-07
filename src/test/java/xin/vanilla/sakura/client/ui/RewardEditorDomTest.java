@@ -58,6 +58,8 @@ public class RewardEditorDomTest {
                             return new ScreenCoordinate(0, 0, 400, 300);
                         case "clientHeight":
                             return 84d;
+                        case "scrollHeight":
+                            return Double.POSITIVE_INFINITY;
                         case "scrollTop":
                             return method.getReturnType() == double.class ? 0d : null;
                         case "focused":
@@ -78,20 +80,27 @@ public class RewardEditorDomTest {
     @Test
     public void actualDomAdapterRetainsProbabilityTextAndNoResetGlyph() {
         Map<String, Node> ids = new HashMap<>();
-        for (String id : com.google.common.collect.ImmutableList.of("fields", "content", "workspace", "body")) ids.put(id, new Node());
+        for (String id : com.google.common.collect.ImmutableList.of("fields", "content", "workspace", "body"))
+            ids.put(id, new Node());
         List<Node> created = new ArrayList<>();
         UiDomAccess access = (UiDomAccess) Proxy.newProxyInstance(UiDomAccess.class.getClassLoader(),
-                new Class<?>[]{UiDomAccess.class}, (self, method, args) -> { switch (method.getName()) {
-case "find": return ids.containsKey(args[0]) ? ids.get(args[0]).api : null;
-case "create": {
-                        Node node = new Node();
-                        created.add(node);
-                        return node.api;
+                new Class<?>[]{UiDomAccess.class}, (self, method, args) -> {
+                    switch (method.getName()) {
+                        case "find":
+                            return ids.containsKey(args[0]) ? ids.get(args[0]).api : null;
+                        case "create": {
+                            Node node = new Node();
+                            created.add(node);
+                            return node.api;
+                        }
+                        case "overlayRoot":
+                            return ids.get("body").api;
+                        case "current":
+                            return true;
+                        default:
+                            return null;
                     }
-case "overlayRoot": return ids.get("body").api;
-case "current": return true;
-default: return null;
-} });
+                });
         lombok.var session = new RewardEditorUiSession(new RewardEditorUiParityTest.Port(2), () -> true);
         lombok.var view = new UiDomView(new Object(), access);
         session.bind(view);

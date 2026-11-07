@@ -108,6 +108,55 @@ public class SignInUiParityTest {
     }
 
     @Test
+    public void claimedStatusStaysInDetailsAndNeverOccupiesDateCells() {
+        Port port = new Port() {
+            public int today() {
+                return 20261009;
+            }
+
+            public Component status(int date) {
+                return text("Rewards for this date have already been claimed");
+            }
+        };
+        SignInUiSession session = new SignInUiSession(port, () -> true);
+        RecordingUiView view = new RecordingUiView();
+        session.bind(view);
+        assertFalse(view.texts.get("day0_note").toVanilla().getString().isEmpty());
+        assertEquals("", view.texts.get("day1_note").toVanilla().getString());
+        assertEquals("", view.texts.get("day2_note").toVanilla().getString());
+        assertEquals("Rewards for this date have already been claimed", view.texts.get("detail_status").toVanilla().getString());
+        assertNotNull(view.icons.get("status1"));
+        assertTrue(port.requests.isEmpty());
+    }
+
+    @Test
+    public void calendarWheelRouteUsesRewardListAndObeysTipsDisconnectAndHandoff() {
+        Port port = new Port();
+        boolean[] connected = {true};
+        SignInUiSession session = new SignInUiSession(port, () -> connected[0]);
+        RecordingUiView view = new RecordingUiView();
+        session.bind(view);
+        lombok.var route = view.scrollRoutes.get("calendar");
+        assertEquals("content", view.scrollTargets.get("calendar"));
+        assertTrue(route.getAsBoolean());
+        port.tips = true;
+        assertFalse(route.getAsBoolean());
+        port.tips = false;
+        connected[0] = false;
+        assertFalse(route.getAsBoolean());
+        connected[0] = true;
+        assertTrue(route.getAsBoolean());
+        session.detach(UiDetachReason.SWITCH);
+        assertTrue(view.scrollRoutes.isEmpty());
+        assertFalse(route.getAsBoolean());
+        RecordingUiView nativeView = new RecordingUiView();
+        nativeView.nativeView = true;
+        session.bind(nativeView);
+        assertTrue(nativeView.scrollRoutes.isEmpty());
+        assertTrue(port.requests.isEmpty());
+    }
+
+    @Test
     public void explicitCalendarActionsKeepDateIdentityAndDoNotRepeatOnHandoff() {
         Port port = new Port();
         SignInUiSession session = new SignInUiSession(port, () -> true);
@@ -208,15 +257,18 @@ public class SignInUiParityTest {
         SignInUiSession session = new SignInUiSession(port, () -> true);
         RecordingUiView view = new RecordingUiView();
         session.bind(view);
-        for (Consumer<UiPointer> pointer : view.pointers.values()) pointer.accept(new UiPointer(UiPointer.Kind.UP, 10, 10, 1));
+        for (Consumer<UiPointer> pointer : view.pointers.values())
+            pointer.accept(new UiPointer(UiPointer.Kind.UP, 10, 10, 1));
         assertEquals("An unrelated global release must not select any theme", 0, port.themes);
         view.pointers.get("theme2").accept(new UiPointer(UiPointer.Kind.DOWN, 10, 10, 1));
-        for (Consumer<UiPointer> pointer : view.pointers.values()) pointer.accept(new UiPointer(UiPointer.Kind.UP, 10, 10, 1));
+        for (Consumer<UiPointer> pointer : view.pointers.values())
+            pointer.accept(new UiPointer(UiPointer.Kind.UP, 10, 10, 1));
         assertEquals(1, port.themes);
         assertEquals(2, port.selectedTheme);
         assertTrue(port.special);
         view.pointers.get("theme4").accept(new UiPointer(UiPointer.Kind.DOWN, 10, 10, 1));
-        for (Consumer<UiPointer> pointer : view.pointers.values()) pointer.accept(new UiPointer(UiPointer.Kind.UP, -1, -1, 1));
+        for (Consumer<UiPointer> pointer : view.pointers.values())
+            pointer.accept(new UiPointer(UiPointer.Kind.UP, -1, -1, 1));
         assertEquals(1, port.themes);
         Consumer<UiPointer> stale = view.pointers.get("theme3");
         stale.accept(new UiPointer(UiPointer.Kind.DOWN, 10, 10, 1));

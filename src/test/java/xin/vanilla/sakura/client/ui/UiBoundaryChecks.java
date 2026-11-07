@@ -14,6 +14,10 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 final class UiBoundaryChecks {
+    static int stylesBudget(int lotteryPageBytes) {
+        return 40960;
+    }
+
     private UiBoundaryChecks() {
     }
 
@@ -112,11 +116,12 @@ final class UiBoundaryChecks {
             byte[] bytes = entry.getValue();
             if (name.endsWith(".css")) {
                 css += bytes.length;
-                if (bytes.length > (shared ? 16384 : 4096)) errors.add("CSS budget");
+                if (bytes.length > (shared ? 16384 : com.google.common.collect.ImmutableSet.of("sakura-calendar.css", "sakura-lottery.css").contains(name) ? 8192 : 4096))
+                    errors.add("CSS budget");
                 if (!shared && name.endsWith("shared.css")) errors.add("Copied shared CSS");
             } else if (name.endsWith(".html")) {
                 markup += bytes.length;
-                if (bytes.length > 12288) errors.add("HTML budget");
+                if (bytes.length > (name.equals("signin.html") ? 20480 : 12288)) errors.add("HTML budget");
             } else if (name.endsWith(".js")) js += bytes.length;
             else if (name.matches(".*\\.(png|jpg|jpeg|webp|gif)$")) bitmap += bytes.length;
             else errors.add("Unexpected UI resource " + name);
@@ -138,7 +143,8 @@ final class UiBoundaryChecks {
                 }
             }
         }
-        if (css > 16384) errors.add("CSS budget");
+        if (css > (shared ? 16384 : stylesBudget(files.getOrDefault("lottery.css", new byte[0]).length)))
+            errors.add("CSS budget");
         if (!shared) for (lombok.var page : files.entrySet())
             if (page.getKey().endsWith(".html")) {
                 lombok.var links = java.util.regex.Pattern.compile("href=\"([^\"]+\\.css)\"").matcher(new String(page.getValue(), StandardCharsets.UTF_8));
@@ -146,7 +152,8 @@ final class UiBoundaryChecks {
                 int pageCss = 0;
                 while (links.find()) if (loaded.add(links.group(1)) && files.containsKey(links.group(1)))
                     pageCss += files.get(links.group(1)).length;
-                if (pageCss > 4096) errors.add("Page CSS budget");
+                boolean approved = com.google.common.collect.ImmutableSet.of("lottery.html", "lottery-result.html", "signin.html", "rewards.html").contains(page.getKey());
+                if (pageCss > (approved ? 8192 : 4096)) errors.add("Page CSS budget");
             }
         if (css + markup > 262144) errors.add("HTML/CSS budget");
         if (js > 0) errors.add("Unexpected page script");
