@@ -31,6 +31,28 @@ public class SignInCalendarPresentationTest {
     }
 
     @Test
+    public void calendarOnlyExplainsSignedAndClaimedMarksAndUnsignedDatesRemainActionable() throws Exception {
+        String html = new String(UiBoundaryChecks.ownResources("sakura_sign_in").get("signin.html"), StandardCharsets.UTF_8);
+        assertFalse(html.contains("legend_not_signed"));
+        var port = new SignInUiParityTest.Port() {
+            public boolean marked(int date) {
+                return date != 20261009;
+            }
+        };
+        var view = new RecordingUiView();
+        var session = new SignInUiSession(port, () -> true);
+        session.bind(view);
+        assertNull(view.icons.get("status0"));
+        assertNotNull(view.icons.get("status1"));
+        assertNotNull(view.icons.get("status2"));
+        assertFalse(view.icons.containsKey("legend_not_signed"));
+        assertNotNull(view.icons.get("legend_unclaimed"));
+        assertNotNull(view.icons.get("legend_claimed"));
+        view.actions.get("day0").run();
+        assertEquals(List.of(20261009), port.requests);
+    }
+
+    @Test
     public void sixFullWeeksIncludeBothAdjacentMonthsAndRetainExistingRewards() throws Exception {
         var original = new SignInUiSession.Cell(20261009, SignInUiParityTest.text("9"), SignInUiParityTest.text("Reward"), new SignInUiParityTest.Port().texture);
         var cells = grid(LocalDate.of(2026, 10, 1), 7, List.of(original));

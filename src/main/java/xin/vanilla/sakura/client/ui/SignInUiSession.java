@@ -246,9 +246,9 @@ public final class SignInUiSession implements UiPageSession {
         cells = List.copyOf(port.cells());
         if (cells.size() > 42) throw new IllegalArgumentException("Calendar cell budget");
         view.gameElement("brand", SakuraUiPages.moduleIcon());
-        for (String name : List.of("not_signed", "unclaimed", "claimed")) {
+        for (String name : List.of("unclaimed", "claimed")) {
             view.gameElement("legend_" + name, UiGameElement.sprite(xin.vanilla.sakura.client.theme.SakuraThemeTextures.status(
-                    name.equals("not_signed") ? "not_signed_in" : name.equals("claimed") ? "rewarded" : "signed_in").texture()));
+                    name.equals("claimed") ? "rewarded" : "signed_in").texture()));
             text("legend_" + name + "_label", tr("aui_" + name));
         }
         text("title", tr("aui_calendar"));
