@@ -124,6 +124,7 @@ public final class SignInUiSession implements UiPageSession {
         if (next.nativeView()) return;
         port.reload();
         long token = generation;
+        bindings.add(next.forwardScroll("calendar", "content", () -> live(next, token) && !port.openingTips()));
         next.gameElement("brand", SakuraUiPages.moduleIcon());
         next.gameElement("close_icon", UiGameElement.preset(PresetStyle.CLOSE));
         text("detail_heading", tr("aui_reward_details"));
@@ -282,7 +283,7 @@ public final class SignInUiSession implements UiPageSession {
             view.gameElement("status" + index, port.openingTips() || cell == null || !cell.currentMonth() || !port.marked(cell.date()) || cell.icon() == null ? null : UiGameElement.sprite(cell.icon()));
             view.enabled("day" + index + "_shade", cell != null && !cell.currentMonth());
             text("day" + index + "_note", cell == null || !cell.currentMonth() ? empty()
-                    : cell.date() == port.today() ? tr("aui_today") : port.marked(cell.date()) ? port.status(cell.date()) : empty());
+                    : cell.date() == port.today() ? tr("aui_today") : empty());
             view.enabled("day" + index, index < visibleCellCount(cells) && cell != null && cell.actionable() && !port.openingTips() && connection.getAsBoolean());
             view.tooltip("day" + index, empty());
         }
