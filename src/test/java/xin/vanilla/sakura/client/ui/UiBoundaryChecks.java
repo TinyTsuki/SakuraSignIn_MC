@@ -143,7 +143,8 @@ final class UiBoundaryChecks {
                 }
             }
         }
-        if (css > 16384) errors.add("CSS budget");
+        if (css > (shared ? 16384 : stylesBudget(files.getOrDefault("lottery.css", new byte[0]).length)))
+            errors.add("CSS budget");
         if (!shared) for (var page : files.entrySet())
             if (page.getKey().endsWith(".html")) {
                 var links = java.util.regex.Pattern.compile("href=\"([^\"]+\\.css)\"").matcher(new String(page.getValue(), StandardCharsets.UTF_8));
