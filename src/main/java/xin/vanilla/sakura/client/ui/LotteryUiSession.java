@@ -1,11 +1,11 @@
 package xin.vanilla.sakura.client.ui;
 
 import xin.vanilla.banira.api.client.ui.*;
-import xin.vanilla.banira.client.gui.widget.DropdownInputMode;
-import xin.vanilla.banira.client.gui.widget.DropdownOption;
+import xin.vanilla.sakura.client.gui.lottery.LotteryArtwork;
 import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.client.gui.RewardRenderer;
 import xin.vanilla.sakura.client.gui.lottery.LotteryPaymentViewModel;
+import xin.vanilla.sakura.client.gui.lottery.LotteryFeePresentation;
 import xin.vanilla.sakura.data.lottery.*;
 import xin.vanilla.sakura.reward.Reward;
 
@@ -22,15 +22,31 @@ public final class LotteryUiSession implements UiPageSession {
 
         void pool(String id);
 
-        List<String> counts();
+        default int batch() {
+            return "all".equals(count()) ? -1 : Integer.parseInt(count());
+        }
 
-        String count();
+        default void batch(int value) {
+            count(value == -1 ? "all" : Integer.toString(value));
+        }
 
-        void count(String value);
+        default List<String> counts() {
+            return List.of("5");
+        }
 
-        LotteryAnimationStyle animation();
+        default String count() {
+            return "5";
+        }
 
-        void animation(LotteryAnimationStyle value);
+        default void count(String value) {
+        }
+
+        default LotteryAnimationStyle animation() {
+            return LotteryAnimationStyle.STRIP;
+        }
+
+        default void animation(LotteryAnimationStyle value) {
+        }
 
         long generation();
 
@@ -48,6 +64,8 @@ public final class LotteryUiSession implements UiPageSession {
     private String displayedStatus;
     private LotteryPool selectedPool;
     private long rowsRevision;
+    private int confirmationCount;
+    private String confirmationFee;
 
     public LotteryUiSession(Port port, BooleanSupplier connection) {
         this.port = Objects.requireNonNull(port);
@@ -64,71 +82,59 @@ public final class LotteryUiSession implements UiPageSession {
         if (closed) return;
         view = Objects.requireNonNull(next);
         if (next.nativeView()) return;
-        LotteryUiRewards.enter(next);
         long token = binding;
-        next.text("title", tr("lottery_screen"));
         next.text("single_label", tr("lottery_single_draw"));
-        next.text("batch_label", tr("lottery_batch_draw"));
+        next.text("screen_title", tr("lottery_screen"));
         next.text("pool_label", tr("lottery_pool_selector"));
-        next.text("fee_label", tr("lottery_cost_label"));
-        next.text("available_label", tr("lottery_available_count"));
-        next.text("count_label", tr("lottery_batch_count"));
         next.text("preview_title", tr("lottery_candidates"));
-        next.text("animation_label", tr("lottery_animation"));
+        next.text("details", tr("lottery_preview_details"));
+        next.text("details_close", tr("confirm"));
+        next.text("confirm_title", tr("lottery_confirm_draw"));
+        next.text("confirm_cancel", tr("cancel"));
+        next.text("confirm_draw", tr("confirm"));
+        next.enabled("details_panel", false);
+        next.enabled("confirm_panel", false);
         next.gameElement("brand", SakuraUiPages.moduleIcon());
         next.gameElement("close_icon", icon("close"));
         next.tooltip("close", xin.vanilla.banira.BaniraComponent.get().transClientAuto("config_editor_close"));
-        next.tooltip("pool", tr("lottery_pool_title"));
-        next.tooltip("count", tr("lottery_max_draws"));
-        bindings.add(next.onValue("pool", value -> {
-            if (!live(next, token) || port.payment().isDrawing()) return;
-            String id = value.asText();
-            if (port.pools().stream().noneMatch(pool -> pool.getId().equals(id))) return;
-            port.pool(id);
-            if (next.state() != null) {
-                next.state().rowPosition(0);
-                next.state().detailScroll(0);
-            }
-            refresh();
-        }));
-        bindings.add(next.onValue("count", value -> {
-            if (live(next, token) && !port.payment().isDrawing() && port.counts().contains(value.asText())) {
-                port.count(value.asText());
-                refresh();
-            }
-        }));
-        bindings.add(next.onValue("animation", value -> {
-            if (!live(next, token) || fixedAnimation()) return;
-            for (LotteryAnimationStyle style : LotteryAnimationStyle.values())
-                if (style.name().equals(value.asText())) {
-                    port.animation(style);
-                    animation();
-                    break;
-                }
-        }));
-        for (LotteryAnimationStyle style : LotteryAnimationStyle.values()) {
-            String id = "animation_" + style.name().toLowerCase(Locale.ROOT);
-            next.text(id, tr("lottery_animation_button_" + style.name().toLowerCase(Locale.ROOT)));
-            next.tooltip(id, style.enumDescription());
-            bindings.add(next.onAction(id, () -> {
-                if (live(next, token) && !fixedAnimation()) {
-                    port.animation(style);
-                    animation();
-                }
-            }));
-        }
         bindings.add(next.onAction("single", () -> {
             if (live(next, token) && selectedPool != null && selectedPool.allowsCount(1)) {
-                port.payment().click(1);
-                status();
+                confirm(1);
+            }
+        }));
+        bindings.add(next.onValue("batch_count", value -> {
+            if (!live(next, token) || selectedPool == null || port.payment().isDrawing()) return;
+            for (int count : batches(selectedPool)) {
+                if ((count > 1 || count == -1) && countText(count).equals(value.asText())) {
+                    port.batch(count);
+                    updateBatchLabel();
+                    status();
+                    break;
+                }
             }
         }));
         bindings.add(next.onAction("batch", () -> {
-            if (live(next, token) && selectedPool != null && selectedPool.allowsCount(batchCount())
-                    && (selectedPool.getDrawCounts() == null || batchCount() != 1)) {
-                port.payment().click(batchCount());
-                status();
+            if (live(next, token) && selectedPool != null && batchCount() != 0) {
+                confirm(batchCount());
             }
+        }));
+        bindings.add(next.onAction("details", () -> {
+            if (live(next, token) && selectedPool != null && confirmationCount == 0)
+                next.enabled("details_panel", true);
+        }));
+        bindings.add(next.onAction("details_close", () -> {
+            if (live(next, token)) next.enabled("details_panel", false);
+        }));
+        bindings.add(next.onAction("confirm_cancel", () -> {
+            if (live(next, token)) dismissConfirmation();
+        }));
+        bindings.add(next.onAction("confirm_draw", () -> {
+            if (!live(next, token) || confirmationCount == 0) return;
+            int count = confirmationCount;
+            String fee = confirmationFee;
+            dismissConfirmation();
+            port.payment().clickConfirmed(count, fee);
+            status();
         }));
         bindings.add(next.onAction("close", () -> {
             if (live(next, token)) next.requestClose();
@@ -138,31 +144,47 @@ public final class LotteryUiSession implements UiPageSession {
 
     private void refresh() {
         if (view == null || view.nativeView() || closed || !connection.getAsBoolean()) return;
+        dismissConfirmation();
         port.prepare();
         generation = port.generation();
         List<LotteryPool> pools = port.pools();
         selectedPool = pools.stream().filter(pool -> pool.getId().equals(port.poolId())).findFirst().orElse(null);
-        select("pool", pools.stream().map(pool -> xin.vanilla.sakura.client.gui.lottery.LotteryArtwork.option(pool, null)).toList(), port.poolId());
-        select("count", port.counts().stream().map(value -> option(value, "all".equals(value)
-                ? tr("lottery_draw_all_short").toString() : value)).toList(), port.count());
-        select("animation", Arrays.stream(LotteryAnimationStyle.values()).map(style -> option(style.name(), style.enumDescription().toString())).toList(), port.animation().name());
-        animation();
         LotteryPool pool = selectedPool;
-        view.tooltip("pool", pool == null ? tr("lottery_pool_title") : literal(pool.getDisplayName()));
-        view.tooltip("count", literal("all".equals(port.count()) ? tr("lottery_draw_all").toString()
-                : SakuraComponent.get().translateClient("format", "lottery_draw_count_s", port.count())));
-        String policy = pool == null ? "" : SakuraComponent.get().translateClient("word", "lottery_policy_" + pool.getLimitPolicy().name().toLowerCase(Locale.ROOT));
-        if (pool != null && pool.getLimitPolicy() != LotteryLimitPolicy.UNLIMITED && pool.getLimitPolicy() != LotteryLimitPolicy.COOLDOWN)
-            policy = SakuraComponent.get().translateClient("format", "lottery_policy_limit_ss", policy, pool.getMaxDraws());
-        if (pool != null && pool.getCooldownSeconds() > 0)
-            policy += " · " + SakuraComponent.get().translateClient("format", "lottery_interval_s", pool.getCooldownSeconds());
+        var title = pool == null ? tr("lottery_screen") : literal(pool.getDisplayName());
+        view.text("title", title);
+        view.tooltip("title", title);
+        view.gameElement("poster", pool == null ? null : LotteryArtwork.resolve(pool).element());
+        view.enabled("single_slot", pool != null && pool.allowsCount(1));
+        view.enabled("batch_slot", pool != null && !batches(pool).isEmpty());
+        List<Integer> batches = batches(pool);
+        view.enabled("batch_picker", batches.size() > 1);
+        if (batches.size() > 1) {
+            var options = batches.stream().map(count -> new xin.vanilla.banira.client.gui.widget.DropdownOption(
+                    countText(count), count == -1 ? tr("lottery_draw_all_short").toString() : String.valueOf(count), net.minecraft.world.item.ItemStack.EMPTY, null, null)).toList();
+            view.control("batch_count", new UiControlSpec(UiControlSpec.Kind.SELECT, 3, "", false, options,
+                    xin.vanilla.banira.client.gui.widget.DropdownInputMode.SELECTION_ONLY));
+            view.value("batch_count", UiValue.text(countText(batchCount())));
+        }
+        updateBatchLabel();
+        bindPools(List.copyOf(pools));
+        String policy = pool == null ? "" : quota(pool);
+        view.enabled("policy", pool != null);
         view.text("policy", literal(policy));
-        view.tooltip("policy", literal(policy));
+        String schedule = schedule(pool);
+        view.tooltip("policy", literal(schedule.isEmpty() ? policy : policy + "\n" + schedule));
         view.text("description", literal(pool == null ? "" : pool.getDescription()));
         view.tooltip("description", literal(pool == null ? "" : pool.getDescription()));
         view.text("empty", pool == null ? tr("lottery_no_pools") : pool.getPreviewMode() == LotteryPreviewMode.NONE
                 ? tr("lottery_rewards_hidden") : pool.getRewards().isEmpty() ? tr("lottery_pool_empty") : literal(""));
         List<Reward> rewards = pool == null || pool.getPreviewMode() == LotteryPreviewMode.NONE ? List.of() : List.copyOf(pool.getRewards());
+        view.enabled("details", pool != null);
+        for (int i = 0; i < 3; i++) {
+            String id = "featured_" + i;
+            boolean visible = pool != null && pool.getPreviewMode().showsItems() && i < rewards.size();
+            view.enabled(id, visible);
+            view.gameElement(id, visible ? RewardRenderer.uiIcon(rewards.get(i)) : null);
+            view.tooltip(id, literal(visible ? port.name(rewards.get(i)) : ""));
+        }
         view.text("preview_count", literal(pool == null || pool.getPreviewMode() == LotteryPreviewMode.NONE ? "" : String.valueOf(rewards.size())));
         UiView owner = view;
         long token = binding, rowsToken = ++rowsRevision;
@@ -174,30 +196,130 @@ public final class LotteryUiSession implements UiPageSession {
         status();
     }
 
-    private void select(String id, List<DropdownOption> options, String value) {
-        view.control(id, new UiControlSpec(UiControlSpec.Kind.SELECT, 32767, "", false, options, DropdownInputMode.SELECTION_ONLY));
-        view.value(id, UiValue.text(value));
-    }
+    private void bindPools(List<LotteryPool> pools) {
+        UiView owner = view;
+        long token = binding, revision = rowsRevision + 1;
+        view.rows("pool_rows", new UiRowLayout() {
+            @Override
+            public int size() {
+                return pools.size();
+            }
 
-    private static DropdownOption option(String value, String label) {
-        return new DropdownOption(value, label, net.minecraft.world.item.ItemStack.EMPTY, null, null);
+            @Override
+            public int rowHeight() {
+                return 35;
+            }
+
+            @Override
+            public String scrollerId() {
+                return "pool_scroll";
+            }
+
+            @Override
+            public boolean tracksPageScroll() {
+                return false;
+            }
+
+            @Override
+            public String key(int index) {
+                return pools.get(index).getId();
+            }
+
+            @Override
+            public String rowClass(int index) {
+                return pools.get(index).getId().equals(port.poolId()) ? "pool-card selected" : "pool-card";
+            }
+
+            @Override
+            public void bind(UiView row, int index) {
+                LotteryPool pool = pools.get(index);
+                row.gameElement("icon", LotteryArtwork.thumbnail(pool).element());
+                row.text("label", literal(pool.getDisplayName()));
+                row.text("detail", literal(quota(pool)));
+                row.tooltip("label", literal(pool.getDisplayName()));
+                row.onAction("label", () -> {
+                    if (!live(owner, token) || rowsRevision != revision || port.payment().isDrawing()
+                            || port.poolId().equals(pool.getId())) return;
+                    port.pool(pool.getId());
+                    if (owner.state() != null) {
+                        owner.state().rowPosition(0);
+                        owner.state().detailScroll(0);
+                    }
+                    refresh();
+                });
+            }
+        }, 20);
     }
 
     private int batchCount() {
-        return "all".equals(port.count()) ? -1 : Integer.parseInt(port.count());
+        if (selectedPool == null) return 0;
+        int current = port.batch();
+        return (current > 1 || current == -1) && selectedPool.allowsCount(current) ? current : batches(selectedPool).stream().findFirst().orElse(0);
     }
 
-    private void animation() {
-        LotteryAnimationStyle current = fixedAnimation() ? selectedPool.getAnimationStyle() : port.animation();
-        view.value("animation", UiValue.text(current.name()));
-        view.tooltip("animation", current.enumDescription());
-        view.enabled("animation", !fixedAnimation());
-        for (LotteryAnimationStyle style : LotteryAnimationStyle.values())
-            view.enabled("animation_" + style.name().toLowerCase(Locale.ROOT), !fixedAnimation() && style != current);
+    private List<Integer> batches(LotteryPool pool) {
+        if (pool == null) return List.of();
+        return pool.getDrawCounts() == null ? port.counts().stream().map(value -> "all".equals(value) ? -1 : Integer.parseInt(value))
+                .filter(value -> (value > 1 || value == -1) && pool.allowsCount(value)).distinct().toList()
+                : pool.getDrawCounts().stream().filter(count -> count > 1).toList();
     }
 
-    private boolean fixedAnimation() {
-        return selectedPool != null && selectedPool.getAnimationStyle() != null;
+    private static String countText(int count) {
+        return count == -1 ? "all" : Integer.toString(count);
+    }
+
+    private void confirm(int count) {
+        if (confirmationCount != 0 || !port.payment().canOfferDraw(count)) return;
+        String fee = port.payment().summary();
+        if (fee == null) return;
+        confirmationCount = count;
+        confirmationFee = fee;
+        view.enabled("details_panel", false);
+        view.text("confirm_draw_count", count == -1 ? tr("lottery_draw_all") : SakuraComponent.get().transClient("format", "lottery_draw_count_s", count));
+        view.text("confirm_fee", SakuraComponent.get().transClient("format", "lottery_cost_per_draw_s",
+                fee.isEmpty() ? tr("lottery_free").toString() : fee));
+        view.enabled("confirm_draw", true);
+        view.enabled("confirm_panel", true);
+        displayedStatus = null;
+        status();
+    }
+
+    private void dismissConfirmation() {
+        confirmationCount = 0;
+        confirmationFee = null;
+        view.enabled("confirm_panel", false);
+    }
+
+    private void updateBatchLabel() {
+        if (batchCount() == -1) view.text("batch_label", tr("lottery_draw_all"));
+        if (batchCount() > 1)
+            view.text("batch_label", SakuraComponent.get().transClient("format", "lottery_draw_count_s", batchCount()));
+    }
+
+    public static String schedule(LotteryPool pool) {
+        if (pool == null) return "";
+        var text = SakuraComponent.get();
+        if (!pool.getStartDate().isEmpty() && !pool.getEndDate().isEmpty())
+            return text.translateClient("format", "lottery_window_ss", pool.getStartDate(), pool.getEndDate());
+        if (!pool.getStartDate().isEmpty())
+            return text.translateClient("format", "lottery_from_s", pool.getStartDate());
+        if (!pool.getEndDate().isEmpty()) return text.translateClient("format", "lottery_until_s", pool.getEndDate());
+        return "";
+    }
+
+    public static String countdown(LotteryPaymentViewModel payment) {
+        long minutes = payment.windowMinutes();
+        if (minutes <= 0) return "";
+        return countdownLabel(payment) + "\n" + countdownTime(minutes);
+    }
+
+    private static String countdownLabel(LotteryPaymentViewModel payment) {
+        return tr(payment.opensNext() ? "lottery_start_date" : "lottery_time_remaining").toString();
+    }
+
+    private static String countdownTime(long minutes) {
+        return SakuraComponent.get().translateClient("format", "lottery_countdown_sss",
+                minutes / 1440, (minutes / 60) % 24, minutes % 60);
     }
 
     private static UiGameElement icon(String name) {
@@ -209,13 +331,60 @@ public final class LotteryUiSession implements UiPageSession {
         if (view == null || view.nativeView()) return;
         LotteryPaymentViewModel payment = port.payment();
         LotteryPool pool = selectedPool;
+        Billing billing = billing(payment, pool, port.generation(), true);
+        long minutes = payment.windowMinutes();
+        String countdownLabel = minutes > 0 ? countdownLabel(payment) : "";
+        String countdownTime = minutes > 0 ? countdownTime(minutes) : "";
+        boolean single = pool != null && pool.allowsCount(1) && payment.canOfferDraw(1);
+        boolean batch = pool != null && batchCount() != 0 && pool.allowsCount(batchCount()) && payment.canOfferDraw(batchCount());
+        String stamp = List.of(billing, single, batch, payment.isDrawing(), countdownLabel, countdownTime).toString();
+        if (stamp.equals(displayedStatus)) return;
+        displayedStatus = stamp;
+        view.enabled("time", minutes > 0);
+        view.enabled("confirm_draw", confirmationCount != 0 && payment.canOfferDraw(confirmationCount));
+        view.text("time_label", literal(countdownLabel));
+        view.text("time_value", literal(countdownTime));
+        view.text("info", literal(billing.status()));
+        view.tooltip("info", literal(billing.status()));
+        view.enabled("info", !billing.status().isEmpty());
+        var fee = LotteryFeePresentation.of(pool == null ? null : payment.summary());
+        view.text("fee", literal(fee.text()));
+        view.tooltip("fee", literal(fee.tooltip()));
+        view.gameElement("fee_icon", fee.icon());
+        view.enabled("fee_icon", fee.icon() != null);
+        view.tooltip("fee_icon", literal(fee.tooltip()));
+        view.text("available", literal(billing.available()));
+        view.tooltip("available", literal(billing.available()));
+        view.enabled("single", single);
+        view.enabled("batch", batch);
+    }
+
+    public static String quota(LotteryPool pool) {
+        var text = SakuraComponent.get();
+        String policy = text.translateClient("word", "lottery_policy_" + pool.getLimitPolicy().name().toLowerCase(Locale.ROOT));
+        if (pool.getLimitPolicy() != LotteryLimitPolicy.UNLIMITED && pool.getLimitPolicy() != LotteryLimitPolicy.COOLDOWN)
+            policy = text.translateClient("format", "lottery_policy_limit_ss", policy, pool.getMaxDraws());
+        if (pool.getCooldownSeconds() > 0)
+            policy += " · " + text.translateClient("format", "lottery_interval_s", pool.getCooldownSeconds());
+        return policy;
+    }
+
+    public record Billing(String cost, String available, String status) {
+    }
+
+    public static Billing billing(LotteryPaymentViewModel payment, LotteryPool pool, long generation) {
+        return billing(payment, pool, generation, false);
+    }
+
+    private static Billing billing(LotteryPaymentViewModel payment, LotteryPool pool, long generation, boolean compact) {
         String fee = payment.summary();
         String cost = pool == null || fee == null ? "\u2014" : fee.isEmpty() ? tr("lottery_free").toString() : fee;
         LotteryQuote quote = payment.quote();
-        boolean ready = !payment.isWaitingForQuote() && !payment.isDrawing() && quote != null && quote.isReady()
-                && quote.getGeneration() == port.generation() && pool != null && quote.getRequest().getPoolId().equals(pool.getId());
+        boolean waiting = payment.isPending() && !payment.isRefreshing();
+        boolean ready = !waiting && !payment.isDrawing() && quote != null && quote.isReady()
+                && quote.getGeneration() == generation && pool != null && quote.getRequest().getPoolId().equals(pool.getId());
         String state = pool == null ? "lottery_no_pools" : payment.isDrawing() ? "lottery_drawing"
-                : payment.isWaitingForQuote() || quote == null ? "lottery_quote_pending"
+                : waiting || quote == null ? "lottery_quote_pending"
                 : ready ? "" : switch (quote.getStatus()) {
             case FORBIDDEN -> "lottery_permission_denied";
             case STALE_GENERATION -> "lottery_configuration_changed";
@@ -223,34 +392,10 @@ public final class LotteryUiSession implements UiPageSession {
             case POOL_CLOSED -> "lottery_pool_closed";
             default -> "lottery_payment_unavailable";
         };
-        String countdown = countdown(payment);
-        String text = countdown.isEmpty() ? state.isEmpty() ? "" : tr(state).toString()
-                : state.isEmpty() || "lottery_pool_closed".equals(state) ? countdown : countdown + " · " + tr(state);
         String available = ready ? String.valueOf(quote.getAvailableCount()) : "\u2014";
-        boolean single = pool != null && pool.allowsCount(1) && payment.canOfferDraw(1);
-        boolean batch = pool != null && pool.allowsCount(batchCount())
-                && (pool.getDrawCounts() == null || batchCount() != 1) && payment.canOfferDraw(batchCount());
-        String stamp = List.of(text, cost, available, single, batch, payment.isDrawing()).toString();
-        if (stamp.equals(displayedStatus)) return;
-        displayedStatus = stamp;
-        view.text("info", literal(text));
-        view.tooltip("info", literal(text));
-        view.enabled("info", !text.isEmpty());
-        view.text("fee", literal(cost));
-        view.tooltip("fee", literal(cost));
-        view.text("available", literal(available));
-        view.enabled("single", single);
-        view.enabled("batch", batch);
-        view.enabled("pool", !payment.isDrawing());
-        view.enabled("count", !payment.isDrawing());
-    }
-
-    public static String countdown(LotteryPaymentViewModel payment) {
-        long minutes = payment.windowMinutes();
-        if (minutes == 0) return "";
-        return tr(payment.opensNext() ? "lottery_start_date" : "lottery_time_remaining") + ": "
-                + SakuraComponent.get().translateClient("format", "lottery_countdown_sss",
-                minutes / 1440, (minutes / 60) % 24, minutes % 60);
+        return new Billing(compact ? cost : tr("lottery_cost_label") + ": " + cost,
+                compact ? SakuraComponent.get().translateClient("format", "lottery_remaining_s", available) : tr("lottery_available_count") + ": " + available,
+                state.isEmpty() ? "" : tr(state).toString());
     }
 
     @Override
@@ -269,7 +414,8 @@ public final class LotteryUiSession implements UiPageSession {
 
     @Override
     public void detach(UiDetachReason reason) {
-        LotteryUiRewards.leave(view);
+        confirmationCount = 0;
+        confirmationFee = null;
         binding++;
         rowsRevision++;
         view = null;

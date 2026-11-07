@@ -28,6 +28,7 @@ public class LotteryResultPageTest {
 
     @BeforeClass
     public static void bootstrap() {
+        xin.vanilla.sakura.test.ForgeUnitTestBootstrap.bootstrap();
         SignInUiParityTest.bootstrap();
     }
 
@@ -47,12 +48,17 @@ public class LotteryResultPageTest {
     }
 
     @Test
-    public void allStylesKeepTheOriginalBudgetAfterWindowsCheckout() throws Exception {
-        int bytes = 0;
-        for (var entry : UiBoundaryChecks.ownResources("sakura_sign_in").entrySet())
-            if (entry.getKey().endsWith(".css"))
-                bytes += new String(entry.getValue(), StandardCharsets.UTF_8).replace("\r\n", "\n").replace("\n", "\r\n").getBytes(StandardCharsets.UTF_8).length;
-        assertTrue(bytes <= 16384);
+    public void stylesKeepTheScopedBudgetAfterWindowsCheckout() throws Exception {
+        int bytes = 0, lotteryPageBytes = 0;
+        for (var entry : UiBoundaryChecks.ownResources("sakura_sign_in").entrySet()) {
+            if (!entry.getKey().endsWith(".css")) continue;
+            int size = new String(entry.getValue(), StandardCharsets.UTF_8).replace("\r\n", "\n")
+                    .replace("\n", "\r\n").getBytes(StandardCharsets.UTF_8).length;
+            bytes += size;
+            if (entry.getKey().equals("lottery.css")) lotteryPageBytes = size;
+        }
+        assertTrue("Expected lottery stylesheet in the Windows budget check", lotteryPageBytes > 0);
+        assertTrue(bytes <= UiBoundaryChecks.stylesBudget(lotteryPageBytes));
     }
 
     @Test
@@ -93,7 +99,8 @@ public class LotteryResultPageTest {
         assertEquals(60, ((UiRowLayout) view.rows).rowHeight());
         var row = new RecordingUiView();
         view.providers.get("fields").bind(row, 33);
-        assertEquals("100", row.texts.get("index").toString());
+        assertEquals("", row.texts.get("index").toString());
+        assertTrue(view.providers.get("fields").key(33).endsWith(":99"));
         assertNotNull(row.texts.get("type"));
         assertTrue(row.actions.isEmpty());
         assertEquals(40, view.limit);

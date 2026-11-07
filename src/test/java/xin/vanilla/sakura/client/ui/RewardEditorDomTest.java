@@ -24,6 +24,7 @@ public class RewardEditorDomTest {
 
     @BeforeClass
     public static void bootstrap() {
+        xin.vanilla.sakura.test.ForgeUnitTestBootstrap.bootstrap();
         SignInUiParityTest.bootstrap();
     }
 
@@ -58,6 +59,8 @@ public class RewardEditorDomTest {
                             return new ScreenCoordinate(0, 0, 400, 300);
                         case "clientHeight":
                             return 84d;
+                        case "scrollHeight":
+                            return Double.POSITIVE_INFINITY;
                         case "scrollTop":
                             return method.getReturnType() == double.class ? 0d : null;
                         case "focused":
