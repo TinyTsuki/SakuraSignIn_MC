@@ -16,6 +16,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 public class SignInUiCellAtlasTest {
+    @org.junit.Rule
+    public final xin.vanilla.sakura.test.NativeClientRule nativeClient = new xin.vanilla.sakura.test.NativeClientRule();
+
     @Rule
     public xin.vanilla.sakura.test.UnboundConfigPlatform platform = new xin.vanilla.sakura.test.UnboundConfigPlatform();
 
@@ -57,8 +60,14 @@ public class SignInUiCellAtlasTest {
                 for (boolean variant : new boolean[]{false, true}) {
                     if (variant && !theme.getLayout().isSpecial()) continue;
                     SakuraClientState.setSpecialThemeVariant(variant);
-                    cell.setStatus(ESignInStatus.NOT_SIGNED_IN.getCode());
-                    assertTexture(cell.uiStatusIcon(), theme.texture("status.not_signed_in." + (variant ? "special" : "normal")));
+                    for (boolean autoRewarded : new boolean[]{false, true}) {
+                        ClientConfig.get().display().autoRewarded(autoRewarded);
+                        for (ESignInStatus status : new ESignInStatus[]{ESignInStatus.NO_ACTION, ESignInStatus.CAN_REPAIR, ESignInStatus.NOT_SIGNED_IN}) {
+                            cell.setStatus(status.getCode());
+                            assertNull("Unsigned dates must not acquire a status icon", cell.uiStatusIcon());
+                            org.junit.Assert.assertTrue("Hiding the mark must preserve the date click target", cell.isShowIcon());
+                        }
+                    }
                     cell.setStatus(ESignInStatus.SIGNED_IN.getCode());
                     assertTexture(cell.uiStatusIcon(), theme.texture("status.signed_in." + (variant ? "special" : "normal")));
                     cell.setStatus(ESignInStatus.REWARDED.getCode());

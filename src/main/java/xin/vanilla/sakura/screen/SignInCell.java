@@ -23,7 +23,6 @@ import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.client.gui.RewardRenderer;
 import xin.vanilla.sakura.client.theme.SakuraThemeTextures;
 import xin.vanilla.sakura.client.theme.ThemeTexture;
-import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.data.time.SakuraClock;
 import xin.vanilla.sakura.enums.ESignInStatus;
@@ -56,7 +55,7 @@ public final class SignInCell extends BaseWidget {
     }
 
     public xin.vanilla.banira.client.data.Texture uiStatusIcon() {
-        if (!showIcon) return null;
+        if (!showIcon || !hasStatusMark()) return null;
         return statusTexture().texture();
     }
 
@@ -142,7 +141,7 @@ public final class SignInCell extends BaseWidget {
         double height = bounds().height();
         Font font = screen.getFont();
 
-        if (showIcon) {
+        if (showIcon && hasStatusMark()) {
             renderStatusIcon(stack, x, y, width, height);
         }
         if (showText) {
@@ -163,9 +162,13 @@ public final class SignInCell extends BaseWidget {
                 (int) width + hoverPadding * 2, (int) height + hoverPadding * 2);
     }
 
+    private boolean hasStatusMark() {
+        return status == ESignInStatus.SIGNED_IN.getCode() || status == ESignInStatus.REWARDED.getCode();
+    }
+
     private ThemeTexture statusTexture() {
         return SakuraThemeTextures.status(status == ESignInStatus.REWARDED.getCode() ? "rewarded"
-                : status == ESignInStatus.SIGNED_IN.getCode() || ClientConfig.get().display().autoRewarded() ? "signed_in" : "not_signed_in");
+                : "signed_in");
     }
 
     private void updateAprilFoolsPosition(double x, double y, double width, double height) {

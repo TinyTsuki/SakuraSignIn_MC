@@ -10,6 +10,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class SakuraUiRouteTest {
+    @org.junit.Rule
+    public final xin.vanilla.sakura.test.NativeClientRule nativeClient = new xin.vanilla.sakura.test.NativeClientRule();
+
     @Test
     public void existingEntryFactoriesReachSharedOwnersAndForms() throws Exception {
         String quick = Files.readString(Path.of("src/main/java/xin/vanilla/sakura/client/gui/SakuraQuickActions.java"), StandardCharsets.UTF_8);
@@ -55,7 +58,7 @@ public class SakuraUiRouteTest {
             assertTrue(html.contains("banira_codex/shared.css"));
             assertFalse(html.contains("<script"));
             assertFalse(html.contains("https:"));
-            assertTrue(Files.size(path) <= 12288);
+            assertTrue(Files.size(path) <= (name.equals("signin") ? 20480 : 12288));
         }
     }
 

@@ -19,6 +19,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class RewardEditorDomTest {
+    @org.junit.Rule
+    public final xin.vanilla.sakura.test.NativeClientRule nativeClient = new xin.vanilla.sakura.test.NativeClientRule();
+
     @Rule
     public xin.vanilla.sakura.test.UnboundConfigPlatform platform = new xin.vanilla.sakura.test.UnboundConfigPlatform();
 
@@ -58,6 +61,8 @@ public class RewardEditorDomTest {
                             return new ScreenCoordinate(0, 0, 400, 300);
                         case "clientHeight":
                             return 84d;
+                        case "scrollHeight":
+                            return Double.POSITIVE_INFINITY;
                         case "scrollTop":
                             return method.getReturnType() == double.class ? 0d : null;
                         case "focused":

@@ -9,12 +9,15 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.BooleanSupplier;
 
 final class RecordingUiView implements UiView {
     final Map<String, Runnable> actions = new HashMap<>();
     final Map<String, Runnable> longActions = new HashMap<>();
     final Map<String, Consumer<String>> drafts = new HashMap<>();
     final Map<String, Consumer<UiPointer>> pointers = new HashMap<>();
+    final Map<String, BooleanSupplier> scrollRoutes = new HashMap<>();
+    final Map<String, String> scrollTargets = new HashMap<>();
     final Map<String, Component> texts = new HashMap<>(), tooltips = new HashMap<>();
     final Map<String, UiGameElement> icons = new HashMap<>();
     final Map<String, Boolean> enabled = new HashMap<>();
@@ -90,6 +93,15 @@ final class RecordingUiView implements UiView {
     public AutoCloseable onPointer(String id, Consumer<UiPointer> value) {
         pointers.put(id, value);
         return () -> pointers.remove(id, value);
+    }
+
+    public AutoCloseable forwardScroll(String source, String target, BooleanSupplier active) {
+        scrollRoutes.put(source, active);
+        scrollTargets.put(source, target);
+        return () -> {
+            scrollRoutes.remove(source, active);
+            scrollTargets.remove(source, target);
+        };
     }
 
     public void hudPosition(double x, double y) {
