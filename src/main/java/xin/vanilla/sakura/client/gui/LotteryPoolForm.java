@@ -64,26 +64,12 @@ public final class LotteryPoolForm {
                 .maxLength(LotteryPoolValidator.MAX_DESCRIPTION).allowEmpty(true)
                 .regex("[\\s\\S]{0,2048}")
                 .defaultValue(existing == null ? "" : existing.getDescription()));
+        VoucherDraft voucher = new VoucherDraft(existing == null ? "" : existing.getVoucherExpression());
         args.addWidget(new InputFormScreen.Widget().name("voucherExpression")
-                .title(text("lottery_voucher_expression")).hint(text("lottery_voucher_expression"))
-                .tooltip(text("lottery_voucher_item"))
-                .type(InputFormScreen.WidgetType.PICKER)
-                .picker((screen, selected) -> ItemRewardSelectionFlow.create(screen,
-                        net.minecraft.world.item.ItemStack.EMPTY, stack -> net.minecraft.client.Minecraft.getInstance()
-                                .setScreen(voucherItemForm(screen, stack, selected)), false))
-                .maxLength(LotteryPoolValidator.MAX_VOUCHER_EXPRESSION).allowEmpty(true)
-                .defaultValue(existing == null ? "" : existing.getVoucherExpression())
-                .validator(result -> {
-                    try {
-                        xin.vanilla.banira.api.BaniraCosts.parse(result.value());
-                        return "";
-                    } catch (xin.vanilla.banira.api.cost.CostExpressionException failure) {
-                        return SakuraComponent.get().transClient("format", "lottery_expression_error_ss",
-                                failure.line(), failure.column()).toString();
-                    } catch (IllegalArgumentException failure) {
-                        return tr("lottery_expression_invalid");
-                    }
-                }));
+                .title(text("lottery_cost_label")).type(InputFormScreen.WidgetType.PICKER)
+                .pickerReadOnly(true).defaultValue(voucher.summary())
+                .picker((screen, selected) -> voucherPicker(screen, voucher, selected))
+                .validator(result -> voucherError(voucher.expression)));
         args.addWidget(dropdown("policy", "lottery_limit_policy",
                 existing == null ? LotteryLimitPolicy.DAILY.name()
                         : existing.getLimitPolicy().name(),
@@ -92,7 +78,7 @@ public final class LotteryPoolForm {
                         .toArray(DropdownOption[]::new)));
         args.addWidget(number("maxDraws", "lottery_max_draws",
                 "lottery_max_draws_tooltip",
-                existing == null ? 1 : existing.getMaxDraws(), 1, 10_000));
+                existing == null ? 10 : existing.getMaxDraws(), 1, 10_000));
         args.addWidget(number("cooldown", "lottery_cooldown_seconds",
                 "lottery_cooldown_tooltip",
                 existing == null ? 0 : existing.getCooldownSeconds(), 0, 31_536_000));
@@ -101,6 +87,31 @@ public final class LotteryPoolForm {
                 Arrays.stream(LotteryPreviewMode.values()).map(mode -> option(
                                 mode.name(), "lottery_preview_" + mode.name().toLowerCase()))
                         .toArray(DropdownOption[]::new)));
+        ArtworkDraft artwork = new ArtworkDraft(existing);
+        args.addWidget(new InputFormScreen.Widget().name("drawCounts").title(text("lottery_batch_count"))
+                .tooltip(text("lottery_draw_sizes_hint")).maxLength(64).allowEmpty(true)
+                .defaultValue(existing == null ? "1,10" : existing.getDrawCounts() == null ? ""
+                        : existing.getDrawCounts().stream().map(String::valueOf).collect(java.util.stream.Collectors.joining(",")))
+                .validator(result -> {
+                    try {
+                        if (!result.value().isBlank()) LotteryPoolValidator.parseDrawCounts(result.value());
+                        return "";
+                    } catch (IllegalArgumentException failure) {
+                        return tr("lottery_draw_sizes_invalid");
+                    }
+                }));
+        args.addWidget(date("startDate", "lottery_start_date", existing == null ? "" : existing.getStartDate()));
+        args.addWidget(date("endDate", "lottery_end_date", existing == null ? "" : existing.getEndDate()));
+        args.addWidget(artworkField("poster", "lottery_poster_png", artwork, false));
+        args.addWidget(artworkField("thumbnail", "lottery_thumbnail_png", artwork, true));
+        var animations = new java.util.ArrayList<DropdownOption>();
+        animations.add(option("legacy", "lottery_animation_legacy"));
+        for (var animation : xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.values()) {
+            animations.add(new DropdownOption(animation.name(), animation.enumDescription().toString()));
+        }
+        args.addWidget(dropdown("animationStyle", "lottery_animation", existing == null ? "STRIP"
+                        : existing.getAnimationStyle() == null ? "legacy" : existing.getAnimationStyle().name(),
+                animations.toArray(DropdownOption[]::new)));
         args.setCallback(results -> {
             LotteryPool candidate = new LotteryPool(results.value("id"), results.value("name"),
                     LotteryLimitPolicy.valueOf(results.value("policy")),
@@ -109,9 +120,29 @@ public final class LotteryPoolForm {
                     LotteryPreviewMode.valueOf(results.value("previewMode")),
                     existing == null ? new RewardList() : existing.getRewards());
             candidate.setDescription(results.value("description"));
-            candidate.setVoucherExpression(results.value("voucherExpression"));
-            if (!LotteryPoolValidator.validate(candidate).isEmpty()) {
-                results.runningResult(tr("input_format_invalid"));
+            candidate.setVoucherExpression(voucher.expression);
+            String counts = java.util.Objects.toString(results.value("drawCounts"), "");
+            if (!counts.isBlank()) {
+                try {
+                    candidate.setDrawCounts(LotteryPoolValidator.parseDrawCounts(counts));
+                } catch (IllegalArgumentException failure) {
+                    results.runningResult(tr("lottery_draw_sizes_invalid"));
+                    return;
+                }
+            }
+            candidate.setStartDate(java.util.Objects.toString(results.value("startDate"), "").trim());
+            candidate.setEndDate(java.util.Objects.toString(results.value("endDate"), "").trim());
+            candidate.setThumbnailPng(artwork.thumbnail);
+            candidate.setPosterPng(artwork.poster);
+            candidate.setArtworkItem(artwork.item);
+            candidate.setArtworkTexture(artwork.texture);
+            String animation = results.value("animationStyle");
+            if (animation != null && !"legacy".equals(animation))
+                candidate.setAnimationStyle(xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.valueOf(animation));
+            var errors = LotteryPoolValidator.validate(candidate);
+            if (!errors.isEmpty()) {
+                results.runningResult(tr(errors.contains("invalid_dates") ? "lottery_date_invalid"
+                        : errors.contains("invalid_draw_modes") ? "lottery_draw_sizes_invalid" : "input_format_invalid"));
                 return;
             }
             connectedSubmit.accept(candidate);
@@ -119,28 +150,269 @@ public final class LotteryPoolForm {
         return new InputFormScreen(args);
     }
 
-    private static Screen voucherItemForm(Screen parent, net.minecraft.world.item.ItemStack stack,
-                                          Consumer<String> selected) {
-        Consumer<String> connectedSelected = connectedOnce(selected);
-        InputFormScreen.Args args = new InputFormScreen.Args().setParentScreen(parent)
-                .setHeaderTitle(text("lottery_voucher_item"));
-        args.addWidget(dropdown("match", "lottery_voucher_match", "ID",
-                option("ID", "lottery_voucher_match_id"),
-                option("EXACT", "lottery_voucher_match_exact")));
-        args.addWidget(new InputFormScreen.Widget().name("amount")
-                .title(text("lottery_voucher_amount")).hint(text("lottery_voucher_amount"))
-                .maxLength(10).regex("[0-9]{1,10}")
-                .defaultValue(String.valueOf(stack.getCount()))
-                .validator(result -> {
-                    try {
-                        return Integer.parseInt(result.value()) > 0 ? "" : tr("lottery_number_range");
-                    } catch (NumberFormatException failure) {
-                        return tr("lottery_number_range");
+    private static InputFormScreen.Widget date(String name, String title, String value) {
+        return new InputFormScreen.Widget().name(name).title(text(title)).tooltip(text("lottery_date_hint"))
+                .maxLength(16).allowEmpty(true).defaultValue(value)
+                .validator(result -> LotteryPoolValidator.validDate(result.value().trim()) ? "" : tr("lottery_date_invalid"));
+    }
+
+    private static InputFormScreen.Widget itemField(String name, String title, String initial) {
+        var selection = new java.util.concurrent.atomic.AtomicReference<>(initial);
+        return new InputFormScreen.Widget().name(name).title(text(title))
+                .type(InputFormScreen.WidgetType.PICKER).pickerReadOnly(true)
+                .maxLength(LotteryPoolValidator.MAX_ARTWORK_ID).defaultValue(initial)
+                .validator(result -> result.value().isBlank() || !LotteryPoolValidator.isArtworkItem(result.value().trim())
+                        ? tr("input_format_invalid") : "")
+                .picker((screen, selected) -> ItemRewardSelectionFlow.create(screen, itemStack(selection.get()), stack -> {
+                    if (stack.isEmpty()) return;
+                    String value = xin.vanilla.banira.common.util.ItemUtils.getItemRegistry(stack.getItem()).toString();
+                    selection.set(value);
+                    selected.accept(value);
+                }, false));
+    }
+
+    private static net.minecraft.world.item.ItemStack itemStack(String id) {
+        if (id.isBlank()) return net.minecraft.world.item.ItemStack.EMPTY;
+        return xin.vanilla.banira.common.util.ItemUtils.deserializeItemStack(id);
+    }
+
+    private static String itemName(String id) {
+        var stack = itemStack(id);
+        return stack.isEmpty() ? id : stack.getHoverName().getString();
+    }
+
+    private static InputFormScreen.Widget artworkField(String name, String title, ArtworkDraft artwork, boolean thumbnail) {
+        return new InputFormScreen.Widget().name(name).title(text(title))
+                .type(InputFormScreen.WidgetType.PICKER).pickerReadOnly(true)
+                .defaultValue(artwork.summary(thumbnail))
+                .picker((screen, selected) -> artworkPicker(screen, title, artwork, thumbnail, selected));
+    }
+
+    private static Screen artworkPicker(Screen parent, String title, ArtworkDraft artwork,
+                                        boolean thumbnail, Consumer<String> selected) {
+        var args = new InputFormScreen.Args().setParentScreen(parent).setHeaderTitle(text(title));
+        var modes = new java.util.ArrayList<DropdownOption>();
+        modes.add(option(thumbnail ? "auto" : "none", thumbnail ? "lottery_artwork_auto" : "lottery_artwork_none"));
+        modes.add(option("png", "lottery_artwork_file"));
+        if (!thumbnail) {
+            modes.add(option("item", "lottery_artwork_item"));
+            modes.add(option("texture", "lottery_artwork_texture"));
+        }
+        String storedPng = thumbnail ? artwork.thumbnail : artwork.poster;
+        args.addWidget(dropdown("mode", "lottery_artwork_source", artwork.source(thumbnail), modes.toArray(DropdownOption[]::new)));
+        if (!storedPng.isEmpty()) {
+            args.addWidget(new InputFormScreen.Widget().name("savedPng").title(text("lottery_png_current"))
+                    .defaultValue(pngDimensions(storedPng)).disabled(true)
+                    .visibleWhen(result -> "png".equals(result.value("mode"))));
+        }
+        args.addWidget(new InputFormScreen.Widget().name("png")
+                .title(text(storedPng.isEmpty() ? "lottery_artwork_file" : "lottery_png_replace"))
+                .tooltip(text("lottery_png_hint")).type(InputFormScreen.WidgetType.FILE)
+                .fileFilter("png").allowEmpty(!storedPng.isEmpty()).maxLength(2048)
+                .visibleWhen(result -> "png".equals(result.value("mode"))));
+        if (!thumbnail) {
+            args.addWidget(itemField("item", "lottery_artwork_item", artwork.item)
+                    .visibleWhen(result -> "item".equals(result.value("mode"))));
+            args.addWidget(new InputFormScreen.Widget().name("texture").title(text("lottery_artwork_texture"))
+                    .tooltip(text("lottery_artwork_texture_hint"))
+                    .maxLength(LotteryPoolValidator.MAX_ARTWORK_ID).defaultValue(artwork.texture)
+                    .validator(result -> !result.value().isBlank() && LotteryPoolValidator.isArtworkTexture(result.value().trim())
+                            ? "" : tr("input_format_invalid"))
+                    .visibleWhen(result -> "texture".equals(result.value("mode"))));
+        }
+        args.setCallback(results -> {
+            try {
+                switch (results.value("mode")) {
+                    case "png" -> {
+                        String path = results.value("png");
+                        String png = path.isBlank() && !storedPng.isEmpty() ? storedPng : readImage(path);
+                        if (thumbnail) artwork.thumbnail = png;
+                        else artwork.main("", "", png);
                     }
-                }));
-        args.setCallback(results -> connectedSelected.accept(LotteryVoucherExpressions.item(stack,
-                Integer.parseInt(results.value("amount")), "EXACT".equals(results.value("match")))));
+                    case "item" -> {
+                        if (thumbnail) throw new IllegalArgumentException("Invalid thumbnail source");
+                        String item = results.value("item").trim();
+                        if (item.isBlank() || !LotteryPoolValidator.isArtworkItem(item)) {
+                            results.runningResult(tr("input_format_invalid"));
+                            return;
+                        }
+                        artwork.main(item, "", "");
+                    }
+                    case "texture" -> {
+                        if (thumbnail) throw new IllegalArgumentException("Invalid thumbnail source");
+                        String texture = results.value("texture").trim();
+                        if (texture.isBlank() || !LotteryPoolValidator.isArtworkTexture(texture)) {
+                            results.runningResult(tr("input_format_invalid"));
+                            return;
+                        }
+                        artwork.main("", texture, "");
+                    }
+                    case "auto" -> {
+                        if (!thumbnail) throw new IllegalArgumentException("Invalid poster source");
+                        artwork.thumbnail = "";
+                    }
+                    case "none" -> {
+                        if (thumbnail) throw new IllegalArgumentException("Invalid thumbnail source");
+                        artwork.main("", "", "");
+                    }
+                    default -> throw new IllegalArgumentException("Unknown artwork source");
+                }
+                selected.accept(artwork.summary(thumbnail));
+            } catch (java.io.IOException | IllegalArgumentException failure) {
+                results.runningResult(tr("lottery_png_invalid"));
+            }
+        });
         return new InputFormScreen(args);
+    }
+
+    private static String pngDimensions(String png) {
+        try {
+            var header = java.nio.ByteBuffer.wrap(java.util.Base64.getDecoder().decode(png));
+            if (header.remaining() >= 24) return "PNG · " + header.getInt(16) + " × " + header.getInt(20);
+        } catch (IllegalArgumentException ignored) {
+        }
+        return tr("lottery_png_invalid");
+    }
+
+    private static String readImage(String path) throws java.io.IOException {
+        if (path.isBlank()) throw new IllegalArgumentException("Missing PNG path");
+        try (var input = java.nio.file.Files.newInputStream(java.nio.file.Path.of(path))) {
+            byte[] bytes = input.readNBytes(xin.vanilla.sakura.data.lottery.LotteryPng.MAX_BYTES + 1);
+            xin.vanilla.sakura.data.lottery.LotteryPng.inspect(bytes);
+            return java.util.Base64.getEncoder().encodeToString(bytes);
+        }
+    }
+
+    private static final class ArtworkDraft {
+        private String item, texture, poster, thumbnail;
+
+        private ArtworkDraft(LotteryPool pool) {
+            main(pool == null ? "" : pool.getArtworkItem(), pool == null ? "" : pool.getArtworkTexture(),
+                    pool == null ? "" : pool.getPosterPng());
+            thumbnail = pool == null ? "" : pool.getThumbnailPng();
+        }
+
+        private void main(String item, String texture, String png) {
+            this.item = item;
+            this.texture = texture;
+            this.poster = png;
+        }
+
+        private String summary(boolean thumbnail) {
+            return switch (source(thumbnail)) {
+                case "png" -> pngDimensions(thumbnail ? this.thumbnail : poster);
+                case "item" -> tr("lottery_artwork_item") + " · " + itemName(item);
+                case "texture" -> tr("lottery_artwork_texture") + " · " + texture;
+                case "auto" -> tr("lottery_artwork_auto");
+                default -> tr("lottery_artwork_none");
+            };
+        }
+
+        private String source(boolean thumbnail) {
+            if (thumbnail) return this.thumbnail.isEmpty() ? "auto" : "png";
+            if (!poster.isEmpty()) return "png";
+            if (!texture.isEmpty()) return "texture";
+            return item.isEmpty() ? "none" : "item";
+        }
+    }
+
+    private static Screen voucherPicker(Screen parent, VoucherDraft voucher, Consumer<String> selected) {
+        LotteryVoucherExpressions.Fields current = LotteryVoucherExpressions.read(voucher.expression);
+        Consumer<String> save = connectedOnce(expression -> {
+            voucher.expression = expression;
+            selected.accept(voucher.summary());
+        });
+        InputFormScreen.Args args = new InputFormScreen.Args().setParentScreen(parent).setHeaderTitle(text("lottery_cost_label"));
+        args.addWidget(dropdown("kind", "lottery_voucher_source", current.kind,
+                option("free", "lottery_free"), option("item", "lottery_voucher_item"),
+                option("xpPoints", "lottery_voucher_points"), option("xpLevels", "lottery_voucher_levels"),
+                option("score", "lottery_voucher_score"), option("advanced", "lottery_voucher_advanced")));
+        String item = "item".equals(current.kind) ? current.specification : "";
+        java.util.concurrent.atomic.AtomicReference<String> selectedItem = new java.util.concurrent.atomic.AtomicReference<>(item);
+        args.addWidget(new InputFormScreen.Widget().name("item").title(text("lottery_voucher_item"))
+                .type(InputFormScreen.WidgetType.PICKER).pickerReadOnly(true).defaultValue(item)
+                .picker((screen, callback) -> ItemRewardSelectionFlow.create(screen, selectedItem.get().isEmpty() ? net.minecraft.world.item.ItemStack.EMPTY
+                        : xin.vanilla.banira.common.util.ItemUtils.deserializeItemStack(selectedItem.get()), stack -> {
+                    if (stack.isEmpty()) return;
+                    String id = xin.vanilla.banira.common.util.ItemUtils.getItemRegistry(stack.getItem()).toString();
+                    selectedItem.set(id);
+                    callback.accept(id);
+                }, false))
+                .visibleWhen(result -> "item".equals(result.value("kind"))));
+        args.addWidget(new InputFormScreen.Widget().name("objective").title(text("lottery_voucher_objective"))
+                .maxLength(128).defaultValue("score".equals(current.kind) ? current.specification : "")
+                .visibleWhen(result -> "score".equals(result.value("kind"))));
+        args.addWidget(number("amount", "lottery_voucher_amount", "lottery_number_range", current.amount, 1, Integer.MAX_VALUE)
+                .regex("[0-9]{1,10}").visibleWhen(result -> {
+                    String kind = result.value("kind");
+                    return "item".equals(kind) || "xpPoints".equals(kind) || "xpLevels".equals(kind) || "score".equals(kind);
+                }));
+        args.addWidget(new InputFormScreen.Widget().name("advanced").title(text("lottery_voucher_expression"))
+                .tooltip(text("lottery_voucher_advanced_tooltip"))
+                .maxLength(LotteryPoolValidator.MAX_VOUCHER_EXPRESSION).allowEmpty(true).defaultValue(voucher.expression)
+                .validator(result -> voucherError(result.value()))
+                .visibleWhen(result -> "advanced".equals(result.value("kind"))));
+        args.setCallback(results -> {
+            try {
+                String kind = results.value("kind");
+                String expression;
+                if ("free".equals(kind)) expression = "";
+                else if ("advanced".equals(kind)) expression = results.value("advanced");
+                else
+                    expression = LotteryVoucherExpressions.build(kind, results.value("score".equals(kind) ? "objective" : "item"),
+                            Integer.parseInt(results.value("amount")));
+                String error = voucherError(expression);
+                if (!error.isEmpty()) {
+                    results.runningResult(error);
+                    return;
+                }
+                if (!"advanced".equals(kind) && LotteryVoucherExpressions.read(expression).same(current))
+                    expression = voucher.expression;
+                save.accept(expression);
+            } catch (IllegalArgumentException invalid) {
+                results.runningResult(tr("input_format_invalid"));
+            }
+        });
+        return new InputFormScreen(args);
+    }
+
+    private static String voucherError(String expression) {
+        try {
+            xin.vanilla.banira.api.BaniraCosts.parse(expression);
+            return "";
+        } catch (xin.vanilla.banira.api.cost.CostExpressionException failure) {
+            return SakuraComponent.get().transClient("format", "lottery_expression_error_ss",
+                    failure.line(), failure.column()).toString();
+        } catch (IllegalArgumentException failure) {
+            return tr("lottery_expression_invalid");
+        }
+    }
+
+    private static final class VoucherDraft {
+        private String expression;
+
+        VoucherDraft(String expression) {
+            this.expression = expression;
+        }
+
+        String summary() {
+            LotteryVoucherExpressions.Fields cost = LotteryVoucherExpressions.read(expression);
+            String amount = " x" + cost.amount;
+            switch (cost.kind) {
+                case "free":
+                    return tr("lottery_free");
+                case "item":
+                    return cost.specification + amount;
+                case "score":
+                    return tr("lottery_voucher_score") + ": " + cost.specification + amount;
+                case "xpPoints":
+                    return tr("lottery_voucher_points") + amount;
+                case "xpLevels":
+                    return tr("lottery_voucher_levels") + amount;
+                default:
+                    return tr("lottery_voucher_advanced");
+            }
+        }
     }
 
     private static <T> Consumer<T> connectedOnce(Consumer<T> callback) {
@@ -179,8 +451,10 @@ public final class LotteryPoolForm {
     }
 
     private static DropdownOption option(String value, String key) {
-        return new DropdownOption(value, tr(key), net.minecraft.world.item.ItemStack.EMPTY,
-                null, SakuraComponent.get().transClient("word", key + "_tooltip"));
+        String label = tr(key);
+        String description = tr(key + "_tooltip");
+        return new DropdownOption(value, label, net.minecraft.world.item.ItemStack.EMPTY, null,
+                SakuraComponent.get().literal(description.endsWith("." + key + "_tooltip") ? label : description));
     }
 
     private static Text text(String key) {

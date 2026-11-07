@@ -56,6 +56,7 @@ public final class NeoForgeSakuraGameEventAdapter {
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) -> {
             xin.vanilla.sakura.network.packet.LotteryPoolSyncPacket.clearServerTransfers();
             xin.vanilla.sakura.reward.lottery.PendingLotteryDraws.clear();
+            xin.vanilla.sakura.reward.lottery.LotteryDrawDispatcher.clearCommands();
             try {
                 xin.vanilla.sakura.internal.neoforge.lottery.NeoForgeLotteryServices.stop();
             } catch (Exception failure) {
@@ -189,6 +190,7 @@ public final class NeoForgeSakuraGameEventAdapter {
         if (server == null) {
             return;
         }
+        xin.vanilla.sakura.reward.lottery.LotteryDrawDispatcher.tickCommands(server);
         java.util.Date now = RewardManager.getCompensateDate(SakuraClock.serverNow());
         java.time.LocalDate day = now.toInstant().atZone(
                 java.time.ZoneId.systemDefault()).toLocalDate();

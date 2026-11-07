@@ -28,19 +28,25 @@ public final class LotteryPoolSyncPacket extends SplitPacket implements INetwork
     public LotteryPoolSyncPacket(List<LotteryPool> pools, long generation) {
         configurationUpload = false;
         if (generation < 0) throw new IllegalArgumentException("Invalid lottery revision");
-        try {
-            RewardConfigDocument document = new RewardConfigDocument();
-            document.setLotteryPools(pools);
-            fragment = new RewardConfigCodec().encodeDocument(document);
-        } catch (IOException | RuntimeException failure) {
-            throw new IllegalArgumentException("Invalid lottery snapshot", failure);
-        }
-        LotteryProtocolLimits.json(fragment, LotteryProtocolLimits.MAX_DOCUMENT_BYTES);
+        fragment = encodeSnapshot(pools);
         this.generation = generation;
         this.pools = LotteryPools.copy(pools);
         setId(UUID.randomUUID().toString());
         setTotal(1);
         setSort(0);
+    }
+
+    private static String encodeSnapshot(List<LotteryPool> pools) {
+        String json;
+        try {
+            RewardConfigDocument document = new RewardConfigDocument();
+            document.setLotteryPools(pools);
+            json = new RewardConfigCodec().encodeDocument(document);
+        } catch (IOException | RuntimeException failure) {
+            throw new IllegalArgumentException("Invalid lottery snapshot", failure);
+        }
+        LotteryProtocolLimits.json(json, LotteryProtocolLimits.MAX_DOCUMENT_BYTES);
+        return json;
     }
 
     public LotteryPoolSyncPacket(RewardConfig configuration, long generation) {
@@ -193,6 +199,7 @@ public final class LotteryPoolSyncPacket extends SplitPacket implements INetwork
             if (!RewardRuleAddPermissionChecker.canApply(sender, authoritative, candidate)
                     || !RewardAddPermissionChecker.canApply(sender, authoritative, candidate))
                 throw new IllegalArgumentException("Lottery reward permission denied");
+            encodeSnapshot(candidate.getLotteryPools());
             if (complete.configurationUpload) RewardConfigManager.replaceRewardConfig(candidate, complete.generation);
             else RewardConfigManager.replaceLotteryPools(candidate.getLotteryPools(), complete.generation);
             for (ServerPlayer player : sender.level().getServer().getPlayerList().getPlayers()) {

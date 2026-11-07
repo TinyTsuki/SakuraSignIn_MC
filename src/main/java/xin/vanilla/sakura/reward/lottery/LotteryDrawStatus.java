@@ -13,7 +13,8 @@ public enum LotteryDrawStatus implements IEnumDescribable {
     PAYMENT_UNAVAILABLE,
     OPERATION_PENDING,
     OPERATION_UNCERTAIN,
-    GRANT_FAILED;
+    GRANT_FAILED,
+    POOL_CLOSED;
 
     @Override
     public Component enumDescription() {
