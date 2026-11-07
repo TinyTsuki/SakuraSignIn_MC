@@ -170,4 +170,45 @@ public class LotteryMotionTest {
             assertEquals(45, card.y(), 0);
         }
     }
+
+    @Test
+    public void recordAdaptedFramesAndCardsKeepStructuralEqualityForStableSamples() {
+        for (LotteryAnimationStyle style : STYLES) {
+            LotteryMotion.Frame first = LotteryMotion.frame(style, 1750, 5, 12, 37, 320, 180);
+            LotteryMotion.Frame second = LotteryMotion.frame(style, 1750, 5, 12, 37, 320, 180);
+            assertNotSame(first, second);
+            assertEquals(first, second);
+            assertEquals(first.hashCode(), second.hashCode());
+            assertFalse(first.cards().isEmpty());
+            for (int i = 0; i < first.cards().size(); i++) {
+                assertNotSame(first.cards().get(i), second.cards().get(i));
+                assertEquals(first.cards().get(i), second.cards().get(i));
+                assertEquals(first.cards().get(i).hashCode(), second.cards().get(i).hashCode());
+            }
+        }
+    }
+
+    @Test
+    public void frameDefensivelyCopiesItsCardsAndExposesAnImmutableValueList() {
+        LotteryMotion.Card card = new LotteryMotion.Card(0, 10, 20, 30, 40, 0, true, false);
+        java.util.List<LotteryMotion.Card> mutable = new java.util.ArrayList<>();
+        mutable.add(card);
+        LotteryMotion.Frame frame = new LotteryMotion.Frame(mutable, true, false, .5);
+        mutable.clear();
+        assertEquals(1, frame.cards().size());
+        try {
+            frame.cards().clear();
+            fail("Frame cards must be immutable");
+        } catch (UnsupportedOperationException expected) {
+            assertEquals(1, frame.cards().size());
+        }
+        LotteryMotion.Card equalCard = new LotteryMotion.Card(0, 10, 20, 30, 40, 0, true, false);
+        LotteryMotion.Frame equalFrame = new LotteryMotion.Frame(java.util.Collections.singletonList(equalCard), true, false, .5);
+        assertEquals(card, equalCard);
+        assertEquals(frame, equalFrame);
+        assertEquals(frame.hashCode(), equalFrame.hashCode());
+        assertNotEquals(card, new LotteryMotion.Card(0, 10, 20, 30, 40, 0, true, true));
+        assertNotEquals(frame, new LotteryMotion.Frame(frame.cards(), false, false, .5));
+        assertNotEquals(frame, new LotteryMotion.Frame(frame.cards(), true, false, .75));
+    }
 }
