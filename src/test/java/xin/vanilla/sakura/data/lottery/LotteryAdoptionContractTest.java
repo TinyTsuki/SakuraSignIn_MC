@@ -28,15 +28,16 @@ public class LotteryAdoptionContractTest {
     @Test
     public void currentProtocolIncludesCorrelatedQuoteDrawAndOutcome() throws Exception {
         String source = new String(Files.readAllBytes(Paths.get("src/main/java/xin/vanilla/sakura/network/SakuraNetwork.java")), StandardCharsets.UTF_8);
-        assertTrue("Current lottery protocol missing", source.contains("\"sakura-9\""));
+        assertTrue("Current lottery protocol missing", source.contains("\"sakura-10\""));
         assertTrue(source.contains("LotteryQuotePacket.class"));
         assertTrue(source.contains("LotteryDrawOutcomePacket.class"));
     }
 
     @Test
-    public void expandedAnimationOrdinalsRequireProtocolNineAndKeepChannelOptional() throws Exception {
-        assertEquals("sakura-9", xin.vanilla.sakura.network.SakuraNetwork.PROTOCOL_VERSION);
+    public void nullableExpandedAnimationContractRequiresProtocolTenAndKeepsChannelOptional() throws Exception {
+        assertEquals("sakura-10", xin.vanilla.sakura.network.SakuraNetwork.PROTOCOL_VERSION);
         assertNotEquals("sakura-8", xin.vanilla.sakura.network.SakuraNetwork.PROTOCOL_VERSION);
+        assertNotEquals("sakura-9", xin.vanilla.sakura.network.SakuraNetwork.PROTOCOL_VERSION);
         assertEquals(9, LotteryAnimationStyle.values().length);
         assertEquals(0, LotteryAnimationStyle.STRIP.ordinal());
         assertEquals(1, LotteryAnimationStyle.CARDS.ordinal());
@@ -53,5 +54,12 @@ public class LotteryAdoptionContractTest {
         String registration = source.replaceAll("\\s+", "");
         assertTrue("Optional client protocol delegation changed", registration.contains(
                 "NetworkHandler.create(\"main_network\",BaniraIdentifier.of(SakuraSignIn.MODID,\"main_network\"),PROTOCOL_VERSION,true)"));
+        String reveal = new String(Files.readAllBytes(Paths.get(
+                "src/main/java/xin/vanilla/sakura/network/packet/LotteryRevealPacket.java")), StandardCharsets.UTF_8)
+                .replaceAll("\\s+", "");
+        assertTrue("Protocol ten retains the legacy null marker", reveal.contains(
+                "animationStyle=buffer.readBoolean()?buffer.readEnum(LotteryAnimationStyle.class):null;"));
+        assertTrue(reveal.contains("buffer.writeBoolean(animationStyle!=null);"));
+        assertTrue(reveal.contains("if(animationStyle!=null)buffer.writeEnum(animationStyle);"));
     }
 }
