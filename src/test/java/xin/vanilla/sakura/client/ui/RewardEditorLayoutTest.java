@@ -22,7 +22,8 @@ public class RewardEditorLayoutTest {
     private static Element id(Element root, String id) {
         lombok.var nodes = root.getElementsByTagName("*");
         for (int i = 0; i < nodes.getLength(); i++)
-            if (nodes.item(i) instanceof Element && id.equals(((Element) nodes.item(i)).getAttribute("id"))) return (Element) nodes.item(i);
+            if (nodes.item(i) instanceof Element && id.equals(((Element) nodes.item(i)).getAttribute("id")))
+                return (Element) nodes.item(i);
         throw new AssertionError("Missing control " + id);
     }
 
@@ -50,9 +51,9 @@ public class RewardEditorLayoutTest {
     }
 
     @Test
-    public void searchSharesTheSectionTitleRow() throws Exception {
+    public void searchSharesTheApprovedPageTitleRow() throws Exception {
         Element root = document();
-        assertSame(id(root, "section").getParentNode(), id(root, "search").getParentNode().getParentNode());
+        assertSame(id(root, "title").getParentNode().getParentNode(), id(root, "search").getParentNode().getParentNode());
         lombok.var search = rule(".rewards-page .search");
         assertEquals("1", search.get("flex-grow"));
         assertEquals("0", search.get("flex-basis"));

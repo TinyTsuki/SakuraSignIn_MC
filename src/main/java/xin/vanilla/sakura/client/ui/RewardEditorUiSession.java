@@ -23,7 +23,8 @@ public final class RewardEditorUiSession implements UiPageSession {
         MERGE("merge", "merge_same_rewards", null), UPLOAD("upload", "upload_reward_config", PresetStyle.ARROW_UP),
         DOWNLOAD("download", "download_reward_config", PresetStyle.ARROW_DOWN), FOLDER("folder", "open_config_folder", null),
         HELP("help", "help_button", null), MOVE("move", "ui_reward_move", PresetStyle.MOVE),
-        CLEAR("clear", "clear", PresetStyle.MINUS), SIDEBAR("sidebar", "reward_rule_type", PresetStyle.SETTINGS);
+        CLEAR("clear", "clear", PresetStyle.MINUS), SIDEBAR("sidebar", "reward_rule_type", PresetStyle.SETTINGS),
+        ADD_GROUP("add_group", "aui_add_group", PresetStyle.PLUS);
         public final String id, label;
         public final PresetStyle icon;
 
@@ -34,7 +35,7 @@ public final class RewardEditorUiSession implements UiPageSession {
         }
     }
 
-    public enum EntryAction {SELECT, TOGGLE, GROUP_SELECT, CONTEXT, EDIT, PROBABILITY, DELETE}
+    public enum EntryAction {SELECT, TOGGLE, GROUP_SELECT, CONTEXT, EDIT, PROBABILITY, DELETE, FOCUS_GROUP}
 
     @lombok.Value
     @lombok.experimental.Accessors(fluent = true)
@@ -74,7 +75,7 @@ public final class RewardEditorUiSession implements UiPageSession {
         boolean probability;
 
         public Detail(String id, String title, String subtitle, String description, UiGameElement icon,
-                         List<Fact> facts, boolean editable, boolean probability) {
+                      List<Fact> facts, boolean editable, boolean probability) {
             facts = com.google.common.collect.ImmutableList.copyOf(facts);
 
             this.id = id;
@@ -126,6 +127,10 @@ public final class RewardEditorUiSession implements UiPageSession {
             return -1;
         }
 
+        default boolean groupNavigation() {
+            return false;
+        }
+
         default Component status() {
             return tr("aui_no_changes");
         }
@@ -139,6 +144,7 @@ public final class RewardEditorUiSession implements UiPageSession {
     private final BooleanSupplier connection;
     private final List<AutoCloseable> bindings = new ArrayList<>();
     private final Map<UiView, List<AutoCloseable>> rowBindings = new LinkedHashMap<>();
+    private final Map<UiView, List<AutoCloseable>> groupBindings = new LinkedHashMap<>();
     private final Map<UiView, Entry> rowEntries = new IdentityHashMap<>();
     private static final Map<String, UiGameElement> ICONS = new HashMap<>();
     private UiView view;
@@ -150,6 +156,8 @@ public final class RewardEditorUiSession implements UiPageSession {
     private boolean moreOpen, detailOpen, wide;
     private Detail selectedDetail;
     private int chromeState = -1;
+    private String selectedGroup = "";
+    private int selectedRule;
     private static final String[] RULE_KEYS = {"reward_base", "reward_continuous", "reward_cycle", "reward_year",
             "reward_month", "reward_week", "reward_time", "reward_cumulative", "reward_random", "reward_cdk",
             "reward_personal_date", "reward_lottery"};
@@ -229,6 +237,8 @@ public final class RewardEditorUiSession implements UiPageSession {
                 if (live(next, token) && (!detailBlocks() || outside) && port.enabled(action)) {
                     moreOpen = false;
                     clearFocus(next);
+                    if (action == Action.ADD && !selectedGroup.isEmpty())
+                        port.entry(selectedGroup, EntryAction.FOCUS_GROUP);
                     port.command(action);
                     if (live(next, token)) refresh();
                 }
@@ -250,13 +260,22 @@ public final class RewardEditorUiSession implements UiPageSession {
         }
         next.gameElement("close", UiGameElement.preset(PresetStyle.CLOSE));
         next.gameElement("close_icon", UiGameElement.preset(PresetStyle.CLOSE));
-        for (String id : com.google.common.collect.ImmutableList.of("more", "details")) next.gameElement(id + "_icon", icon(id));
+        for (String id : com.google.common.collect.ImmutableList.of("more", "details"))
+            next.gameElement(id + "_icon", icon(id));
         next.tooltip("more", tr("aui_more"));
         next.tooltip("details", tr("aui_reward_details"));
         next.text("detail_heading", tr("aui_reward_details"));
         next.text("detail_edit", tr("edit"));
         next.text("detail_probability", tr("edit_probability"));
         next.text("detail_add", tr("ui_reward_add"));
+        next.text("groups_heading", tr("aui_group"));
+        next.tooltip("edit_group", tr("aui_edit_group"));
+        bindings.add(next.onAction("edit_group", () -> {
+            if (live(next, token) && !detailBlocks() && !selectedGroup.isEmpty() && !port.redacted()) {
+                port.entry(selectedGroup, EntryAction.EDIT);
+                if (live(next, token)) refresh();
+            }
+        }));
         next.gameElement("close_details", UiGameElement.preset(PresetStyle.CLOSE));
         bindings.add(next.onAction("more", () -> {
             if (live(next, token)) {
@@ -322,6 +341,7 @@ public final class RewardEditorUiSession implements UiPageSession {
     }
 
     private UiGameElement actionIcon(Action action) {
+        if (action == Action.ADD_GROUP) return icon("add");
         boolean primary = action == Action.ADD || action == Action.UPLOAD;
         return icon(action.id + (primary && port.enabled(action) ? "-primary" : ""));
     }
@@ -345,16 +365,27 @@ public final class RewardEditorUiSession implements UiPageSession {
         boolean blocked = !wide && detailOpen;
         boolean covered = blocked || moreOpen;
         for (Action action : Action.values()) {
-            boolean menu ; switch (action) {
-case CUT: case MOVE: case SORT: case MERGE: case CLEAR: menu = true; break;
-default: menu = false; break;
-};
+            boolean menu;
+            switch (action) {
+                case CUT:
+                case MOVE:
+                case SORT:
+                case MERGE:
+                case CLEAR:
+                    menu = true;
+                    break;
+                default:
+                    menu = false;
+                    break;
+            }
+            ;
             boolean visible = menu ? moreOpen && !blocked : !covered || action == Action.UPLOAD
                     || action == Action.DOWNLOAD || action == Action.FOLDER || action == Action.HELP;
             view.gameElement(action.id + "_icon", visible ? actionIcon(action) : null);
         }
         view.gameElement("more_icon", covered ? null : icon("more"));
         view.gameElement("details_icon", covered ? null : icon("details"));
+        view.gameElement("edit_group_icon", covered ? null : icon("edit"));
         rowEntries.forEach((row, entry) -> rowSprites(row, entry));
     }
 
@@ -382,6 +413,8 @@ default: menu = false; break;
                         selected.icon(), com.google.common.collect.ImmutableList.of(), selected.editable(), !selected.group());
         }
         selectedDetail = detail;
+        view.enabled("detail_icon", detail != null && detail.icon() != null);
+        view.enabled("detail_subtitle", detail != null && detail.subtitle() != null && !detail.subtitle().trim().isEmpty());
         chromeState = -1;
         view.text("detail_title", detail == null ? ruleName(port.rule()) : SakuraComponent.get().literal(detail.title()));
         view.text("detail_subtitle", SakuraComponent.get().literal(detail == null ? "" : detail.subtitle()));
@@ -415,8 +448,33 @@ default: menu = false; break;
         }
         owner.enabled("rules", port.sidebarOpen());
         ConfigSearchQuery search = ConfigSearchQuery.of(query);
-        List<Entry> all = port.redacted() ? com.google.common.collect.ImmutableList.of() : port.entries();
-        List<Entry> entries = all.stream().filter(entry -> search.matches(entry.id(), entry.label(), entry.detail(), entry.tooltip())).collect(java.util.stream.Collectors.toList());
+        boolean grouped = port.groupNavigation() && !port.redacted();
+        List<Entry> all = port.redacted() ? com.google.common.collect.ImmutableList.of() : groupEntries(grouped);
+        List<Entry> groups = all.stream().filter(Entry::group).collect(java.util.stream.Collectors.toList());
+        if (selectedRule != port.rule() || groups.stream().noneMatch(e -> e.id().equals(selectedGroup))) {
+            selectedRule = port.rule();
+            selectedGroup = groups.isEmpty() ? "" : groups.get(0).id();
+        }
+        boolean showGroups = grouped && port.rule() != 0 && (groups.size() > 1 || port.enabled(Action.ADD_GROUP));
+        owner.enabled("group_nav", showGroups);
+        owner.enabled("reward_navigation", port.sidebarOpen() || showGroups);
+        owner.enabled("edit_group", grouped && groups.stream().anyMatch(e -> e.id().equals(selectedGroup) && e.editable()));
+        Map<String, String> groupFor = new HashMap<>();
+        String group = "";
+        for (Entry entry : all) {
+            if (entry.group()) group = entry.id();
+            else groupFor.put(entry.id(), group);
+        }
+        if (grouped) {
+            Detail detail = port.detail();
+            String focus = revealId != null ? revealId : detail == null ? "" : detail.id();
+            String focusedGroup = groups.stream().anyMatch(e -> e.id().equals(focus)) ? focus : groupFor.get(focus);
+            if (focusedGroup != null) selectedGroup = focusedGroup;
+            bindGroups(owner, token, rowsToken, groups);
+        }
+        List<Entry> entries = all.stream().filter(entry -> !grouped || !entry.group()
+                        && (selectedGroup.isEmpty() || selectedGroup.equals(groupFor.get(entry.id()))))
+                .filter(entry -> search.matches(entry.id(), entry.label(), entry.detail(), entry.tooltip())).collect(java.util.stream.Collectors.toList());
         owner.text("section", ruleName(port.rule()));
         owner.text("status", port.status());
         owner.text("count", SakuraComponent.get().literal(entries.stream().filter(entry -> !entry.group()).count() + " / "
@@ -435,6 +493,7 @@ default: menu = false; break;
         }
         owner.text("empty", port.redacted() ? tr("reward_rule_permission_denied_page")
                 : port.rule() == 0 ? tr("reward_rule_type") : entries.isEmpty() ? tr("aui_no_rewards") : SakuraComponent.get().literal(""));
+        owner.enabled("empty", port.redacted() || port.rule() == 0 || entries.isEmpty());
         owner.rows("fields", new UiRowLayout() {
             public int rowHeight() {
                 return 28;
@@ -522,6 +581,68 @@ default: menu = false; break;
         }, 120);
     }
 
+    private List<Entry> groupEntries(boolean grouped) {
+        List<Entry> entries = com.google.common.collect.ImmutableList.copyOf(port.entries());
+        if (!grouped) return entries;
+        Entry selected = entries.stream().filter(Entry::group).filter(e -> e.id().equals(selectedGroup))
+                .findFirst().orElseGet(() -> entries.stream().filter(Entry::group).findFirst().orElse(null));
+        if (selected != null && selected.collapsed()) {
+            port.entry(selected.id(), EntryAction.FOCUS_GROUP);
+            port.refresh();
+            revision = port.revision();
+            return port.redacted() ? com.google.common.collect.ImmutableList.of() : com.google.common.collect.ImmutableList.copyOf(port.entries());
+        }
+        return entries;
+    }
+
+    private void bindGroups(UiView owner, long token, long rowsToken, List<Entry> groups) {
+        owner.rows("groups", new UiRowLayout() {
+            public int size() {
+                return groups.size();
+            }
+
+            public int rowHeight() {
+                return 30;
+            }
+
+            public String scrollerId() {
+                return "group_scroll";
+            }
+
+            public boolean tracksPageScroll() {
+                return false;
+            }
+
+            public String key(int index) {
+                return groups.get(index).id();
+            }
+
+            public String rowClass(int index) {
+                return "reward-group-nav" + (groups.get(index).id().equals(selectedGroup) ? " group-current" : "");
+            }
+
+            public void bind(UiView row, int index) {
+                if (!live(owner, token) || rowRevision != rowsToken) return;
+                release(groupBindings.remove(row));
+                if (groupBindings.size() >= 40) release(groupBindings.remove(groupBindings.keySet().iterator().next()));
+                List<AutoCloseable> owned = new ArrayList<>();
+                groupBindings.put(row, owned);
+                Entry group = groups.get(index);
+                row.text("label", SakuraComponent.get().literal(group.label()));
+                row.text("detail", SakuraComponent.get().literal(group.detail()));
+                row.tooltip("label", SakuraComponent.get().literal(group.tooltip()));
+                owned.add(row.onAction("label", () -> {
+                    if (!live(owner, token) || rowRevision != rowsToken || detailBlocks() || groupBindings.get(row) != owned)
+                        return;
+                    selectedGroup = group.id();
+                    if (owner.state() != null) owner.state().rowPosition(0);
+                    port.entry(group.id(), EntryAction.FOCUS_GROUP);
+                    if (live(owner, token)) refresh();
+                }));
+            }
+        }, 40);
+    }
+
     private void bindEntry(UiView row, List<AutoCloseable> owned, String id, Entry entry, EntryAction action, UiView owner, long token, long rowsToken) {
         owned.add(row.onAction(id, () -> {
             if (!live(owner, token) || detailBlocks() || rowRevision != rowsToken || rowBindings.get(row) != owned || port.redacted())
@@ -588,6 +709,8 @@ default: menu = false; break;
     }
 
     private void clearRows() {
+        for (List<AutoCloseable> owned : groupBindings.values()) release(owned);
+        groupBindings.clear();
         for (List<AutoCloseable> owned : rowBindings.values()) release(owned);
         rowBindings.clear();
         rowEntries.clear();

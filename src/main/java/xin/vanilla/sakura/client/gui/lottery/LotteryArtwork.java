@@ -21,6 +21,7 @@ public final class LotteryArtwork {
         this.imageWidth = imageWidth;
         this.imageHeight = imageHeight;
     }
+
     private static final int WIDTH = 512, HEIGHT = 288;
 
     public static LotteryArtwork resolve(LotteryPool pool) {
@@ -57,6 +58,12 @@ public final class LotteryArtwork {
         return new DropdownOption(pool.getId(), pool.getDisplayName(), artwork.item, textures, tooltip);
     }
 
+    public xin.vanilla.banira.api.client.ui.UiGameElement element() {
+        if (texture != null) return xin.vanilla.banira.api.client.ui.UiGameElement.artwork(
+                new DropdownOption("", Texture.of(texture, imageWidth, imageHeight), null));
+        return xin.vanilla.banira.api.client.ui.UiGameElement.artwork(new DropdownOption("", "", item, null, null));
+    }
+
     public void render(PoseStack graphics, Font font, int x, int y, int width, int height) {
         if (texture != null) {
             int drawWidth = Math.min(width, height * imageWidth / imageHeight);
@@ -66,7 +73,8 @@ public final class LotteryArtwork {
                     drawWidth, drawHeight, 0, 0, imageWidth, imageHeight, imageWidth, imageHeight);
             return;
         }
-        if (width >= 16 && height >= 16) xin.vanilla.banira.client.gui.widget.ItemWidget.renderItem(Minecraft.getInstance().getItemRenderer(), font, item,
-                x + (width - 16) / 2, y + (height - 16) / 2, false);
+        if (width >= 16 && height >= 16)
+            xin.vanilla.banira.client.gui.widget.ItemWidget.renderItem(Minecraft.getInstance().getItemRenderer(), font, item,
+                    x + (width - 16) / 2, y + (height - 16) / 2, false);
     }
 }
