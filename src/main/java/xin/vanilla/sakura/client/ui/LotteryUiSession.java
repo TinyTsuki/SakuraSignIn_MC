@@ -65,6 +65,7 @@ public final class LotteryUiSession implements UiPageSession {
         if (next.nativeView()) return;
         long token = binding;
         next.text("single_label", tr("lottery_single_draw"));
+        next.text("screen_title", tr("lottery_screen"));
         next.text("pool_label", tr("lottery_pool_selector"));
         next.text("preview_title", tr("lottery_candidates"));
         next.text("details", tr("lottery_preview_details"));
@@ -187,7 +188,7 @@ public final class LotteryUiSession implements UiPageSession {
 
             @Override
             public int rowHeight() {
-                return 46;
+                return 35;
             }
 
             @Override
@@ -215,6 +216,7 @@ public final class LotteryUiSession implements UiPageSession {
                 LotteryPool pool = pools.get(index);
                 row.gameElement("icon", LotteryArtwork.thumbnail(pool).element());
                 row.text("label", literal(pool.getDisplayName()));
+                row.text("detail", literal(quota(pool)));
                 row.tooltip("label", literal(pool.getDisplayName()));
                 row.onAction("label", () -> {
                     if (!live(owner, token) || rowsRevision != revision || port.payment().isDrawing()

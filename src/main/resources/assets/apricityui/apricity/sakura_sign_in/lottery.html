@@ -3,24 +3,25 @@
 <head>
   <meta name="aui-viewport" content="mode=gui">
   <link rel="stylesheet" href="../banira_codex/shared.css">
-  <link rel="stylesheet" href="lottery.css">
   <link rel="stylesheet" href="sakura-lottery.css">
 </head>
 <body class="sakura-ui">
 <main id="window" class="page lottery">
-  <header class="header notification-toolbar">
+  <header class="lottery-topbar">
     <div id="brand" class="glyph"></div>
-    <div class="lottery-heading"><div id="title" class="title"></div><div id="policy" class="label"></div></div>
+    <div id="screen_title"></div>
     <button id="close" class="tool"><div id="close_icon" class="glyph"></div></button>
   </header>
-  <div class="notification-columns lottery-body">
-    <aside class="notification-list pool-rail">
+  <div class="lottery-body">
+    <aside class="pool-rail">
       <div id="pool_label" class="label"></div>
       <div id="pool_scroll" class="content"><div id="pool_rows"></div></div>
     </aside>
-    <section class="notification-details pool-detail">
-      <div class="notification-columns feature">
-        <div class="notification-details pool-copy">
+    <section class="pool-detail">
+      <div class="feature">
+        <div class="pool-copy">
+          <div id="title" class="pool-title"></div>
+          <div id="policy" class="pool-policy"></div>
           <div id="time"><div id="time_label" class="label"></div><div id="time_value"></div></div>
           <div id="detail" class="content"><div id="description"></div></div>
           <div class="feature-tools">

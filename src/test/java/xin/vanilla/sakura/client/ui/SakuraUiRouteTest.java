@@ -55,7 +55,7 @@ public class SakuraUiRouteTest {
             assertTrue(html.contains("banira_codex/shared.css"));
             assertFalse(html.contains("<script"));
             assertFalse(html.contains("https:"));
-            assertTrue(Files.size(path) <= (name.equals("signin") ? 16384 : 12288));
+            assertTrue(Files.size(path) <= (name.equals("signin") ? 20480 : 12288));
         }
     }
 

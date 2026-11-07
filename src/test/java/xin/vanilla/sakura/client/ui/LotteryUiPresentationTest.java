@@ -224,13 +224,13 @@ public class LotteryUiPresentationTest {
         assertTrue("Dedicated compact lottery stylesheet", Files.exists(root.resolve("lottery.css")));
         for (String name : List.of("lottery", "lottery-result")) {
             String html = Files.readString(root.resolve(name + ".html"), StandardCharsets.UTF_8);
-            assertTrue(html.contains("href=\"" + name + ".css\""));
+            assertTrue(html.contains("href=\"" + (name.equals("lottery") ? "sakura-lottery" : name) + ".css\""));
             assertTrue(html.contains("id=\"fields\""));
             assertEquals(name.equals("lottery-result"), html.contains("id=\"fields_middle\""));
             assertEquals(name.equals("lottery-result"), html.contains("id=\"fields_end\""));
             if (name.equals("lottery")) {
                 assertTrue(html.indexOf("id=\"title\"") < html.indexOf("id=\"policy\""));
-                assertTrue(html.indexOf("id=\"policy\"") < html.indexOf("</header>"));
+                assertTrue(html.indexOf("id=\"policy\"") > html.indexOf("class=\"pool-copy\""));
                 assertTrue(html.indexOf("id=\"details_close\"") < html.indexOf("id=\"content\""));
                 assertTrue(html.indexOf("id=\"content\"") < html.indexOf("id=\"fields\""));
             }
@@ -269,8 +269,8 @@ public class LotteryUiPresentationTest {
         for (String name : List.of("single", "batch"))
             assertFalse(html.contains("id=\"" + name + "_icon\""));
         String css = Files.readString(root.resolve("lottery.css"));
-        assertTrue(html.contains("class=\"notification-list pool-rail\""));
-        assertTrue(html.indexOf("class=\"billing footer\"") > html.indexOf("class=\"notification-columns feature\""));
+        assertTrue(html.contains("class=\"pool-rail\""));
+        assertTrue(html.indexOf("class=\"billing footer\"") > html.indexOf("class=\"feature\""));
         assertTrue(html.indexOf("id=\"content\"") > html.indexOf("id=\"details_panel\""));
         assertFalse(html.contains("quote_status"));
         assertTrue(html.contains("class=\"billing footer\""));

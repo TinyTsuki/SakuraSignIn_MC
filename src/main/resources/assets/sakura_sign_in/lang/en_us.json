@@ -1,4 +1,9 @@
 {
+  "word.sakura_sign_in.aui_action_sign_in": "Sign in",
+  "word.sakura_sign_in.aui_action_claim": "Claim rewards",
+  "word.sakura_sign_in.aui_action_repair": "Make up",
+  "word.sakura_sign_in.aui_today": "Today",
+  "format.sakura_sign_in.aui_month_s": "Month %s",
   "word.sakura_sign_in.aui_add_group": "Add group",
   "word.sakura_sign_in.aui_edit_group": "Edit group",
   "format.sakura_sign_in.lottery_remaining_s": "%s draws remaining",

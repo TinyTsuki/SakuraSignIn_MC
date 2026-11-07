@@ -33,7 +33,7 @@ public class SakuraApprovedPagesTest {
         Path root = Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in");
         for (String page : List.of("signin", "rewards", "lottery")) {
             String html = Files.readString(root.resolve(page + ".html"));
-            assertTrue(html.contains(page.equals("lottery") ? "sakura-lottery.css" : "sakura-pages.css"));
+            assertTrue(html.contains(page.equals("lottery") ? "sakura-lottery.css" : page.equals("signin") ? "sakura-calendar.css" : "sakura-pages.css"));
             assertFalse(html.contains("<script"));
             assertFalse(html.contains("https:"));
         }
@@ -49,12 +49,96 @@ public class SakuraApprovedPagesTest {
     public void engineOverlayUsesSolidPaintAndNarrowCalendarLabelsStayCompact() throws Exception {
         Path resources = Path.of("src/main/resources/assets");
         String css = Files.readString(resources.resolve("apricityui/apricity/sakura_sign_in/sakura-lottery.css"));
-        assertTrue(css.contains("padding:12px 3px 9px 12px;background:#291e2e}"));
+        assertTrue(css.contains(".pool-title{flex:none;font-size:24px"));
         assertFalse(css.contains("linear-gradient("));
         assertFalse(css.contains("#291e2ef5"));
         var language = com.google.gson.JsonParser.parseString(Files.readString(resources.resolve("sakura_sign_in/lang/en_us.json"))).getAsJsonObject();
         assertEquals("Streak", language.get("word.sakura_sign_in.aui_consecutive").getAsString());
         assertEquals("Sign-ins", language.get("word.sakura_sign_in.aui_total").getAsString());
+    }
+
+    @Test
+    public void approvedCalendarUsesWholeWeeksAndDoesNotCompressDatesUnderStatusIcons() {
+        var cells = SignInCalendarGrid.complete(java.time.LocalDate.of(2026, 11, 1), 7, List.of());
+        assertEquals(35, SignInUiSession.visibleCellCount(cells));
+        assertEquals(42, SignInUiSession.visibleCellCount(SignInCalendarGrid.complete(java.time.LocalDate.of(2026, 8, 1), 7, List.of())));
+        assertEquals(28, SignInUiSession.visibleCellCount(SignInCalendarGrid.complete(java.time.LocalDate.of(2026, 2, 1), 7, List.of())));
+        var port = new SignInUiParityTest.Port() {
+            public List<SignInUiSession.Cell> cells() {
+                return cells;
+            }
+        };
+        var view = new RecordingUiView();
+        view.geometry.put("calendar", new xin.vanilla.banira.client.data.ScreenCoordinate(0, 0, 351, 150));
+        var session = new SignInUiSession(port, () -> true);
+        session.bind(view);
+        for (int i = 0; i < 35; i++) {
+            var area = view.areas.get("day" + i + "_slot");
+            assertEquals((i % 7) * 50, area.x(), 0);
+            assertEquals((i / 7) * 30, area.y(), 0);
+            assertEquals(50, area.width(), 0);
+            assertEquals(30, area.height(), 0);
+        }
+        for (int i = 35; i < 42; i++) assertEquals(0, view.areas.get("day" + i + "_slot").height(), 0);
+        view.geometry.put("calendar", new xin.vanilla.banira.client.data.ScreenCoordinate(0, 0, 701, 200));
+        session.tick();
+        assertEquals(100, view.areas.get("day1_slot").width(), 0);
+        assertEquals(40, view.areas.get("day7_slot").height(), 0);
+    }
+
+    @Test
+    public void changingMonthsCannotKeepOrActivateASelectedDateInAnOmittedWeek() {
+        java.time.LocalDate[] month = {java.time.LocalDate.of(2026, 12, 1)};
+        var original = new SignInUiSession.Cell(20261207, SignInUiParityTest.text("7"), SignInUiParityTest.text(""), null);
+        var port = new SignInUiParityTest.Port() {
+            public List<SignInUiSession.Cell> cells() {
+                return SignInCalendarGrid.complete(month[0], 7, List.of(original));
+            }
+        };
+        var view = new RecordingUiView();
+        var session = new SignInUiSession(port, () -> true);
+        session.bind(view);
+        view.actions.get("day8").run();
+        assertEquals("20261207", view.state.selectedId());
+        month[0] = java.time.LocalDate.of(2026, 11, 1);
+        port.revision++;
+        session.tick();
+        assertEquals("20261101", view.state.selectedId());
+        view.actions.get("day36").run();
+        assertEquals(List.of(20261207), port.requests);
+        assertFalse(view.enabled.get("day36"));
+    }
+
+    @Test
+    public void dateDetailButtonUsesTheExistingDateActionAndRejectsRetiredViews() {
+        var port = new SignInUiParityTest.Port();
+        var session = new SignInUiSession(port, () -> true);
+        var view = new RecordingUiView();
+        session.bind(view);
+        Runnable oldAction = view.actions.get("date_action");
+        oldAction.run();
+        assertEquals(List.of(20261009), port.requests);
+        session.detach(UiDetachReason.SWITCH);
+        oldAction.run();
+        assertEquals(1, port.requests.size());
+    }
+
+    @Test
+    public void twoRebuiltPagesDoNotLoadTheLegacyLayoutStyles() throws Exception {
+        Path root = Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in");
+        String calendar = Files.readString(root.resolve("signin.html"));
+        assertFalse(calendar.contains("href=\"signin.css\""));
+        assertFalse(calendar.contains("<footer"));
+        assertTrue(calendar.contains("id=\"date_action\""));
+        assertTrue(calendar.indexOf("calendar-stats") > calendar.indexOf("class=\"reward-sidebar\""));
+        String lottery = Files.readString(root.resolve("lottery.html"));
+        assertFalse(lottery.contains("href=\"lottery.css\""));
+        assertTrue(lottery.indexOf("id=\"title\"") > lottery.indexOf("class=\"pool-copy\""));
+        String calendarCss = Files.readString(root.resolve("sakura-calendar.css"));
+        String lotteryCss = Files.readString(root.resolve("sakura-lottery.css"));
+        assertTrue(calendarCss.contains("font-weight:600;color:#fff9f5"));
+        assertTrue(lotteryCss.contains("#single_label{color:#fff5ed;font-weight:600}"));
+        assertTrue(lotteryCss.contains("#batch_label{color:#3c2630;font-weight:600}"));
     }
 
     @Test

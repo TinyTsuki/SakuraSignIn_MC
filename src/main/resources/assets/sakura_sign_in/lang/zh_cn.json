@@ -1,4 +1,9 @@
 {
+  "word.sakura_sign_in.aui_action_sign_in": "签到",
+  "word.sakura_sign_in.aui_action_claim": "领取奖励",
+  "word.sakura_sign_in.aui_action_repair": "补签",
+  "word.sakura_sign_in.aui_today": "今天",
+  "format.sakura_sign_in.aui_month_s": "%s月",
   "word.sakura_sign_in.aui_add_group": "新增奖励组",
   "word.sakura_sign_in.aui_edit_group": "编辑奖励组",
   "format.sakura_sign_in.lottery_remaining_s": "剩余 %s 次",
