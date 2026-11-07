@@ -214,8 +214,11 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
         addWidget(batchDrawButton);
 
         animationSelect = dropdown(layout.animation());
-        animationSelect.optionsEnum(LotteryAnimationStyle.class);
-        animationSelect.selectedValues(Collections.singletonList(ClientConfig.get().display().lotteryAnimationStyle().name()));
+        animationSelect.optionEntries(Arrays.stream(LotteryAnimationStyle.values())
+                .filter(style -> style != LotteryAnimationStyle.CHEST)
+                .map(style -> new DropdownOption(style.name(), style.enumDescription().toString(),
+                        net.minecraft.world.item.ItemStack.EMPTY, null, null)).collect(Collectors.toList()));
+        animationSelect.selectedValues(Collections.singletonList(ClientConfig.get().display().lotteryAnimationStyle().presentationStyle().name()));
         animationSelect.onSelectionChanged(values -> {
             if (values.isEmpty() || selectedPool() != null && selectedPool().getAnimationStyle() != null) return;
             setAnimation(LotteryAnimationStyle.valueOf(values.get(0)));
@@ -306,7 +309,7 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
             if (pool.getCooldownSeconds() > 0)
                 details += " \u00b7 " + SakuraComponent.get().translateClient("format", "lottery_interval_s", pool.getCooldownSeconds());
             stack.drawString(font, font.plainSubstrByWidth(details, layout.title().width()),
-                layout.title().x(), layout.title().y() + 12, getEffectiveTheme().textSecondary(), false);
+                    layout.title().x(), layout.title().y() + 12, getEffectiveTheme().textSecondary(), false);
             String fee = payment.summary();
             String cost = fee == null ? SakuraComponent.get().translateClient("word", "lottery_quote_pending")
                     : SakuraComponent.get().translateClient("format", "lottery_cost_per_draw_s",
@@ -460,7 +463,7 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
             LotteryAnimationStyle style = pool == null ? null : pool.getAnimationStyle();
             animationSelect.enabled(style == null);
             animationSelect.selectedValues(Collections.singletonList((style == null
-                    ? ClientConfig.get().display().lotteryAnimationStyle() : style).name()));
+                    ? ClientConfig.get().display().lotteryAnimationStyle() : style).presentationStyle().name()));
         }
         List<String> values = batchCounts();
         countSelect.optionEntries(values.stream().map(value -> new DropdownOption(value,
