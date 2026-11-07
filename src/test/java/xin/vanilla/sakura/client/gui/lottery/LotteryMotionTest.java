@@ -59,7 +59,7 @@ public class LotteryMotionTest {
         for (int seed = 0; seed < 50; seed++) {
             long end = LotteryMotion.duration(LotteryAnimationStyle.BOUNCE, 1, seed);
             ends.add(end);
-            assertTrue(end <= 5000);
+            assertTrue(end <= 5360);
             var frame = LotteryMotion.frame(LotteryAnimationStyle.BOUNCE, end - 200, 1, 200, seed, 320, 180);
             assertEquals(5, frame.cards().size());
             assertEquals(1, frame.cards().stream().filter(c -> c.reward() == 0 && c.y() > 100).count());
@@ -134,6 +134,40 @@ public class LotteryMotionTest {
                     assertEquals(68 + card.slot() * 46, card.x() + card.width() / 2, .001);
                 }
             }
+        }
+    }
+
+    @Test
+    public void fanUsesOverlappingCardsAndLiftClearsTheDeck() {
+        var rest = LotteryMotion.frame(LotteryAnimationStyle.FAN, 0, 1, 12, 1, 320, 180);
+        assertEquals(25, rest.cards().get(1).x() - rest.cards().get(0).x(), 0);
+        assertTrue(rest.cards().get(0).x() + rest.cards().get(0).width() > rest.cards().get(1).x());
+        var lifted = LotteryMotion.frame(LotteryAnimationStyle.FAN, 3200, 1, 12, 1, 320, 180);
+        var selected = lifted.cards().stream().min(java.util.Comparator.comparingDouble(LotteryMotion.Card::y)).orElseThrow();
+        assertTrue(selected.y() + selected.height() < 65);
+    }
+
+    @Test
+    public void batchFlipHoldsTheCompletedRoundBeforeDealingAgain() {
+        var first = LotteryMotion.frame(LotteryAnimationStyle.FLIP, 2000, 5, 12, 1, 320, 180);
+        var held = LotteryMotion.frame(LotteryAnimationStyle.FLIP, 2700, 5, 12, 1, 320, 180);
+        assertEquals(first, held);
+        assertTrue(held.cards().get(4).face());
+        assertEquals(0, held.cards().get(4).reward());
+        var next = LotteryMotion.frame(LotteryAnimationStyle.FLIP, 2810, 5, 12, 1, 320, 180);
+        assertEquals(1, next.cards().get(4).reward());
+        assertFalse(next.cards().get(4).face());
+        assertEquals(13900, LotteryMotion.duration(LotteryAnimationStyle.FLIP, 5, 1));
+    }
+
+    @Test
+    public void bounceRoundFlipTakes320MillisecondsAndFinishesBeforeHopping() {
+        var halfway = LotteryMotion.frame(LotteryAnimationStyle.BOUNCE, 250 + 1110 + 160, 1, 12, 1, 320, 180);
+        assertTrue(halfway.cards().stream().allMatch(card -> card.width() < 3));
+        var open = LotteryMotion.frame(LotteryAnimationStyle.BOUNCE, 250 + 1110 + 320, 1, 12, 1, 320, 180);
+        for (var card : open.cards()) {
+            assertEquals(40, card.width(), 0);
+            assertEquals(45, card.y(), 0);
         }
     }
 }

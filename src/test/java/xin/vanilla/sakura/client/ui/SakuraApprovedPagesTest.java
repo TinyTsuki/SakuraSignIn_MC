@@ -73,6 +73,9 @@ public class SakuraApprovedPagesTest {
         assertTrue(css.contains("text-overflow:ellipsis"));
         String html = Files.readString(Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in/lottery-result.html"));
         assertFalse(html.contains("motion_chest"));
+        assertTrue(css.contains(".motion-envelope{position:absolute;inset:0;border:0;box-shadow:inset 0 0 0 2px"));
+        assertTrue(css.contains(".fan-left-outer{transform:rotate(-24deg)}"));
+        assertTrue(css.contains(".fan-back:disabled{transform:rotate(0deg);opacity:1;z-index:4}"));
     }
 
     @Test

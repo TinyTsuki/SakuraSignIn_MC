@@ -252,6 +252,8 @@ public final class LotteryRevealUiSession implements UiPageSession {
             ScreenCoordinate bounds = card == null ? new ScreenCoordinate(0, 0, 0, 0)
                     : new ScreenCoordinate(card.x(), card.y(), card.width(), card.height());
             boolean fanBack = style == LotteryAnimationStyle.FAN && card != null && !card.face();
+            double restingY = dy + (65 + Math.abs(i - (frame.cards().size() - 1) / 2D) * 5) * scale;
+            view.enabled("motion_fanback" + i, fanBack && card.y() >= restingY - 6 * scale);
             view.gameElement("motion_fanback" + i, null, fanBack ? bounds : new ScreenCoordinate(0, 0, 0, 0));
             view.gameElement("motion_card" + i, null, fanBack ? new ScreenCoordinate(0, 0, 0, 0) : bounds);
             view.enabled("motion_card" + i, card != null && card.face());

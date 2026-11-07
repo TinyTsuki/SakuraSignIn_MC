@@ -43,13 +43,17 @@ public final class LotteryMotion {
         return count == 1 ? 3500 : Math.max(150, Math.min(1800, 9000 / Math.max(1, count)));
     }
 
+    private static long flipRound(int count) {
+        return flipStep(count) + (count == 1 ? 0 : 800);
+    }
+
     public static long duration(LotteryAnimationStyle style, int count, int seed) {
         style = style.presentationStyle();
         return switch (style) {
             case ENVELOPE, CHEST -> 2200 + (Math.max(1, count) - 1) * extractStep(count);
             case FAN -> count == 1 ? 4600 : 1100 + count * fanStep(count);
-            case BOUNCE -> 250 + 3 * 950 + 180 + index(seed, 37, 5) * 135 + 900;
-            case FLIP -> 900 + count * flipStep(count);
+            case BOUNCE -> 250 + 3 * 1110 + 340 + index(seed, 37, 5) * 135 + 900;
+            case FLIP -> 900 + count * flipRound(count);
             case INSTANT -> 0;
             case CARDS -> 4800;
             default -> 6800;
@@ -97,23 +101,23 @@ public final class LotteryMotion {
                         ? Math.sin(Math.PI * considerPhase / 400) * 5 : 0;
                 int batchSize = count == 1 ? 5 : Math.min(5, count - batch);
                 double offset = i - (batchSize - 1) / 2D;
-                double baseX = 160 + offset * 42;
-                double center = count == 1 ? baseX + (160 - baseX) * lift : baseX + offset * 4 * stored;
-                double baseY = 65 + Math.abs(offset) * 3;
-                double y = baseY + (18 - baseY) * lift - consider + stored * 85;
+                double baseX = 160 + offset * 25;
+                double center = count == 1 ? baseX + (160 - baseX) * lift : baseX + offset * 18 * stored;
+                double baseY = 65 + Math.abs(offset) * 5;
+                double y = baseY + (4 - baseY) * lift - consider + stored * 85;
                 cards.add(new Card(i, center - cardWidth / 2, y, cardWidth, 60 - stored * 8, count == 1 ? 0 : winner, turn >= .5, false));
             }
         } else if (style == LotteryAnimationStyle.BOUNCE) {
-            int round = Math.max(0, Math.min(3, (int) ((t - 250) / 950)));
+            int round = Math.max(0, Math.min(3, (int) ((t - 250) / 1110)));
             int chosen = index(seed, 37, 5);
-            double local = t - 250 - round * 950;
+            double local = t - 250 - round * 1110;
             for (int i = 0; i < 5; i++) {
                 boolean winner = round == 3 && i == chosen;
-                double phase = local - 180 - i * 135;
+                double phase = local - 340 - i * 135;
                 double hop = phase < 0 || phase > 220 || round == 3 && i > chosen ? 0 : Math.sin(Math.PI * phase / 220) * 4.5;
                 double fall = winner ? Math.max(0, Math.min(1, (phase - 110) / 500)) : 0;
                 double drop = fall * fall;
-                double turn = round == 0 ? 1 : progress(local, 0, 160);
+                double turn = round == 0 ? 1 : progress(local, 0, 320);
                 double w = 40 * Math.max(.06, Math.abs(1 - 2 * turn));
                 double x = 48 + i * 46 + (40 - w) / 2;
                 double y = 45 - hop + drop * 72;
@@ -123,8 +127,9 @@ public final class LotteryMotion {
             }
         } else if (style == LotteryAnimationStyle.FLIP) {
             long span = flipStep(count);
-            int group = Math.max(0, Math.min(count - 1, (int) ((t - 200) / span)));
-            double local = t - 200 - group * span;
+            long round = flipRound(count);
+            int group = Math.max(0, Math.min(count - 1, (int) ((t - 200) / round)));
+            double local = t - 200 - group * round;
             double interval = count == 1 ? 500 : span * .14, lead = count == 1 ? 260 : span * .15;
             double turnLength = count == 1 ? 520 : Math.min(440, span * .2);
             int first = index(seed, group + 53, 4), second = (first + 1 + index(seed, group + 63, 3)) % 4;
