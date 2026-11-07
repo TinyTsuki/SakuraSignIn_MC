@@ -39,5 +39,8 @@ public class LotteryAdoptionContractTest {
         assertEquals(3, LotteryAnimationStyle.INSTANT.ordinal());
         assertEquals(7, LotteryAnimationStyle.CHEST.ordinal());
         assertEquals(8, LotteryAnimationStyle.FLIP.ordinal());
+        String reveal = new String(Files.readAllBytes(Paths.get("src/main/java/xin/vanilla/sakura/network/packet/LotteryRevealPacket.java")), StandardCharsets.UTF_8);
+        assertTrue(reveal.contains("animationStyle = buffer.readBoolean()"));
+        assertTrue(reveal.contains("buffer.writeBoolean(animationStyle != null)"));
     }
 }
