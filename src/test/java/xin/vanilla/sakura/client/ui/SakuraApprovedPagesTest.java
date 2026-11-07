@@ -46,6 +46,18 @@ public class SakuraApprovedPagesTest {
     }
 
     @Test
+    public void engineOverlayUsesSolidPaintAndNarrowCalendarLabelsStayCompact() throws Exception {
+        Path resources = Path.of("src/main/resources/assets");
+        String css = Files.readString(resources.resolve("apricityui/apricity/sakura_sign_in/sakura-lottery.css"));
+        assertTrue(css.contains("padding:12px 3px 9px 12px;background:#291e2e}"));
+        assertFalse(css.contains("linear-gradient("));
+        assertFalse(css.contains("#291e2ef5"));
+        var language = com.google.gson.JsonParser.parseString(Files.readString(resources.resolve("sakura_sign_in/lang/en_us.json"))).getAsJsonObject();
+        assertEquals("Streak", language.get("word.sakura_sign_in.aui_consecutive").getAsString());
+        assertEquals("Sign-ins", language.get("word.sakura_sign_in.aui_total").getAsString());
+    }
+
+    @Test
     public void physicalItemFeeUsesAnIconAndTheNameOnlyInTooltip() {
         xin.vanilla.sakura.test.BaniraTestPlatform.register("minecraft:diamond", net.minecraft.world.item.Items.DIAMOND);
         xin.vanilla.banira.common.util.ItemUtils.clearCache();

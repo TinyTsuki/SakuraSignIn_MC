@@ -13,7 +13,7 @@ body{font-family:sans-serif;padding:6px}
 .pool-card .label{padding:5px 3px 5px 34px;text-align:left;font-size:8px;white-space:normal;line-height:11px}
 .pool-detail{position:relative;padding:0;min-width:0}
 .feature{flex:1;position:relative;border:0;border-radius:0;background:#2b2130}
-.pool-copy{z-index:2;flex:0 0 54%;padding:12px 3px 9px 12px;background:linear-gradient(90deg,#291e2ef5,#291e2eaa,#291e2e00)}
+.pool-copy{z-index:2;flex:0 0 54%;padding:12px 3px 9px 12px;background:#291e2e}
 .artwork{position:absolute;left:29%;right:0;top:0;bottom:0;padding:5px;z-index:1}
 #description{font-size:9px;line-height:14px;color:#ead5db;white-space:pre-wrap}
 #detail{margin-top:0;min-height:0}
