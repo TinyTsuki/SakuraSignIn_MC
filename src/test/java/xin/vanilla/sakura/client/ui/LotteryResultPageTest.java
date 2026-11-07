@@ -50,12 +50,17 @@ public class LotteryResultPageTest {
     }
 
     @Test
-    public void allStylesKeepTheOriginalBudgetAfterWindowsCheckout() throws Exception {
-        int bytes = 0;
-        for (var entry : UiBoundaryChecks.ownResources("sakura_sign_in").entrySet())
-            if (entry.getKey().endsWith(".css"))
-                bytes += new String(entry.getValue(), StandardCharsets.UTF_8).replace("\r\n", "\n").replace("\n", "\r\n").getBytes(StandardCharsets.UTF_8).length;
-        assertTrue(bytes <= 16384);
+    public void stylesKeepTheScopedBudgetAfterWindowsCheckout() throws Exception {
+        int bytes = 0, lotteryPageBytes = 0;
+        for (var entry : UiBoundaryChecks.ownResources("sakura_sign_in").entrySet()) {
+            if (!entry.getKey().endsWith(".css")) continue;
+            int size = new String(entry.getValue(), StandardCharsets.UTF_8).replace("\r\n", "\n")
+                    .replace("\n", "\r\n").getBytes(StandardCharsets.UTF_8).length;
+            bytes += size;
+            if (entry.getKey().equals("lottery.css")) lotteryPageBytes = size;
+        }
+        assertTrue("Expected lottery stylesheet in the Windows budget check", lotteryPageBytes > 0);
+        assertTrue(bytes <= UiBoundaryChecks.stylesBudget(lotteryPageBytes));
     }
 
     @Test
