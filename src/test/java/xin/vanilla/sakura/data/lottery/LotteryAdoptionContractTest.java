@@ -28,8 +28,22 @@ public class LotteryAdoptionContractTest {
     @Test
     public void currentProtocolIncludesCorrelatedQuoteDrawAndOutcome() throws Exception {
         String source = new String(Files.readAllBytes(Paths.get("src/main/java/xin/vanilla/sakura/network/SakuraNetwork.java")), StandardCharsets.UTF_8);
-        assertTrue("Current lottery protocol missing", source.contains("\"sakura-8\""));
+        assertTrue("Current lottery protocol missing", source.contains("\"sakura-9\""));
         assertTrue(source.contains("LotteryQuotePacket.class"));
         assertTrue(source.contains("LotteryDrawOutcomePacket.class"));
+    }
+
+    @Test
+    public void exactProtocolRejectsSakura8PeersAndRetainsOptionalClients() throws Exception {
+        assertEquals("sakura-9", xin.vanilla.sakura.network.SakuraNetwork.PROTOCOL_VERSION);
+        java.util.function.Predicate<String> exactVersion = xin.vanilla.sakura.network.SakuraNetwork.PROTOCOL_VERSION::equals;
+        assertTrue(exactVersion.test("sakura-9"));
+        assertFalse(exactVersion.test("sakura-8"));
+        assertFalse(exactVersion.test("sakura-9-extra"));
+        assertFalse(exactVersion.test(null));
+        String source = new String(Files.readAllBytes(Paths.get("src/main/java/xin/vanilla/sakura/network/SakuraNetwork.java")), StandardCharsets.UTF_8);
+        assertTrue("Keep the exact marker and optional-client flag on the registered channel",
+                source.matches("(?s).*NetworkHandler\\.create\\(\\s*\"main_network\",.*?PROTOCOL_VERSION,\\s*true\\s*\\).*"));
+        assertTrue("Unmodded-client sync remains guarded", source.contains("BaniraModPresence.isRemoteClientInstalled(player, SakuraSignIn.MODID)"));
     }
 }
