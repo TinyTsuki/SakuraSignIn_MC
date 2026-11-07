@@ -7,6 +7,8 @@ import xin.vanilla.banira.api.client.ui.UiCloseReason;
 import xin.vanilla.banira.api.client.ui.UiDetachReason;
 import xin.vanilla.banira.api.client.ui.UiPageSource;
 import xin.vanilla.banira.api.client.ui.UiValue;
+import xin.vanilla.banira.client.gui.InputFormScreen;
+import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.client.gui.lottery.LotteryPaymentViewModel;
 import xin.vanilla.sakura.data.lottery.*;
 import xin.vanilla.sakura.network.LotteryClientRequests;
