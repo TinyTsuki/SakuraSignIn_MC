@@ -10,6 +10,16 @@ import static org.junit.Assert.*;
 
 public class UiResourceBudgetTest {
     @Test
+    public void approvedStyleBundleKeepsItsFiniteCeiling() {
+        assertEquals(40960, UiBoundaryChecks.stylesBudget(1));
+        var files = new java.util.TreeMap<String, byte[]>();
+        for (int i = 0; i < 10; i++) files.put("piece" + i + ".css", new byte[4096]);
+        assertTrue(UiBoundaryChecks.resources(files, false).isEmpty());
+        files.put("overflow.css", new byte[1]);
+        assertTrue(UiBoundaryChecks.resources(files, false).contains("CSS budget"));
+    }
+
+    @Test
     public void everyOwnedResourceUsesLocalSharedStylesAndStaysWithinBudget() throws Exception {
         Map<String, byte[]> files = UiBoundaryChecks.ownResources("sakura_sign_in");
         assertFalse(files.isEmpty());
