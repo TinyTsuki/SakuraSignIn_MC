@@ -1,14 +1,62 @@
 <!DOCTYPE html>
-<html><head><meta name="aui-viewport" content="mode=gui" /><link rel="stylesheet" href="../banira_codex/shared.css"><link rel="stylesheet" href="lottery.css"></head>
-<body class="sakura-ui"><main id="window" class="page lottery">
-<header class="header"><div id="brand" class="glyph"></div><div class="heading"><span id="title" class="title"></span><span class="label"> SAKURA SIGN IN</span></div><button id="close" class="tool"><div id="close_icon" class="glyph"></div></button></header>
-<section class="pool"><div id="pool_label" class="label"></div><input id="pool" readonly><div id="policy" class="label"></div></section>
-<section id="detail" class="description"><div id="description" class="label"></div></section>
-<div class="caption"><div id="preview_title" class="heading"></div><div id="preview_count" class="label"></div></div>
-<section id="content" class="content lottery-results"><div id="empty" class="label"></div><div class="grid"><div id="fields"></div><div id="fields_middle"></div><div id="fields_end"></div></div></section>
-<div id="info" class="paragraph status"></div>
-<section id="draw_bar" class="billing"><div class="fee-group"><div id="fee_label" class="label"></div><div id="fee" class="fee"></div></div>
-<div class="capacity"><div id="available_label" class="label"></div><div id="available"></div></div>
-<button id="single"><div id="single_label"></div></button><div class="count"><div id="count_label" class="label"></div><input id="count" readonly></div><button id="batch" class="primary"><div id="batch_label"></div></button></section>
-<footer class="footer modes"><div id="animation_label" class="label"></div><input id="animation" class="template" readonly><button id="animation_strip"></button><button id="animation_cards"></button><button id="animation_roulette"></button><button id="animation_instant"></button></footer>
-</main></body></html>
+<html>
+<head>
+  <meta name="aui-viewport" content="mode=gui">
+  <link rel="stylesheet" href="../banira_codex/shared.css">
+  <link rel="stylesheet" href="sakura-lottery.css">
+</head>
+<body class="sakura-ui">
+<main id="window" class="page lottery">
+  <header class="lottery-topbar">
+    <div id="brand" class="glyph"></div>
+    <div id="screen_title"></div>
+    <button id="close" class="tool"><div id="close_icon" class="glyph"></div></button>
+  </header>
+  <div class="lottery-body">
+    <aside class="pool-rail">
+      <div id="pool_label" class="label"></div>
+      <div id="pool_scroll" class="content"><div id="pool_rows"></div></div>
+    </aside>
+    <section class="pool-detail">
+      <div class="feature">
+        <div class="pool-copy">
+          <div id="title" class="pool-title"></div>
+          <div id="policy" class="pool-policy"></div>
+          <div id="time"><div id="time_label" class="label"></div><div id="time_value"></div></div>
+          <div id="detail" class="content"><div id="description"></div></div>
+          <div class="feature-tools">
+            <button id="details"></button>
+            <div id="featured_0" class="featured-icon"></div>
+            <div id="featured_1" class="featured-icon"></div>
+            <div id="featured_2" class="featured-icon"></div>
+          </div>
+        </div>
+        <div class="artwork"><div id="poster"></div></div>
+      </div>
+    </section>
+  </div>
+  <footer id="draw_bar" class="billing footer">
+    <div class="fee-group"><div id="available"></div><div id="fee_detail"><div id="fee_icon"></div><div id="fee"></div></div><div id="info" class="label"></div></div>
+    <div id="single_slot"><button id="single"><div id="single_label"></div></button></div>
+    <div id="batch_slot" class="editor"><div id="batch_picker"><input id="batch_count" readonly></div><button id="batch" class="primary"><div id="batch_label"></div></button></div>
+  </footer>
+  <div id="details_panel" class="lottery-modal" aria-modal="true" disabled>
+    <section class="lottery-dialog">
+      <div class="caption"><div id="preview_title"></div><div id="preview_count" class="label"></div><button id="details_close"></button></div>
+      <section id="content" class="content">
+        <div id="empty" class="label"></div>
+        <div id="fields"></div>
+      </section>
+    </section>
+  </div>
+  <div id="confirm_panel" class="lottery-modal" aria-modal="true" disabled>
+    <section class="lottery-dialog">
+      <div id="confirm_title" class="title"></div>
+      <div id="confirm_draw_count"></div>
+      <div id="confirm_fee" class="label"></div>
+      <div class="dialog-actions"><button id="confirm_cancel"></button><button id="confirm_draw" class="primary"></button></div>
+    </section>
+  </div>
+</main>
+</body>
+</html>

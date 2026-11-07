@@ -105,10 +105,10 @@ public final class SignInScreen extends BaniraScreen implements UiPageSource {
                             java.time.LocalDate.of(DateUtils.getYearPart(month), DateUtils.getMonthOfDate(month), 1),
                             SakuraClientState.getThemeTextureCoordinate().getWeekStart(),
                             signInCells.stream().map(cell -> new SignInUiSession.Cell(
-                            cell.getYear() * 10000 + cell.getMonth() * 100 + cell.getDay(),
-                            SakuraComponent.get().literal(cell.isShowText() ? Integer.toString(cell.getDay()) : "")
-                                    .underlined(cell.getYear() * 10000 + cell.getMonth() * 100 + cell.getDay() == DateUtils.toDateInt(SakuraClock.clientNow())),
-                            cell.uiTooltip(), cell.uiStatusIcon())).toList());
+                                    cell.getYear() * 10000 + cell.getMonth() * 100 + cell.getDay(),
+                                    SakuraComponent.get().literal(cell.isShowText() ? Integer.toString(cell.getDay()) : "")
+                                            .underlined(cell.getYear() * 10000 + cell.getMonth() * 100 + cell.getDay() == DateUtils.toDateInt(SakuraClock.clientNow())),
+                                    cell.uiTooltip(), cell.uiStatusIcon())).toList());
                 }
 
                 public Component title() {
@@ -145,6 +145,28 @@ public final class SignInScreen extends BaniraScreen implements UiPageSource {
                 public Component status(int date) {
                     SignInCell cell = cell(date);
                     return cell == null ? SakuraComponent.get().literal("") : ESignInStatus.valueOf(cell.getStatus()).enumDescription();
+                }
+
+                public boolean marked(int date) {
+                    SignInCell cell = cell(date);
+                    return cell != null && cell.getStatus() >= ESignInStatus.SIGNED_IN.getCode();
+                }
+
+                public boolean canActivate(int date) {
+                    SignInCell cell = cell(date);
+                    return cell != null && cell.getStatus() >= ESignInStatus.CAN_REPAIR.getCode()
+                            && cell.getStatus() < ESignInStatus.REWARDED.getCode();
+                }
+
+                public Component actionLabel(int date) {
+                    SignInCell cell = cell(date);
+                    String key = cell == null ? "aui_action_sign_in" : switch (ESignInStatus.valueOf(cell.getStatus())) {
+                        case SIGNED_IN -> "aui_action_claim";
+                        case REWARDED -> "aui_claimed";
+                        case CAN_REPAIR -> "aui_action_repair";
+                        default -> "aui_action_sign_in";
+                    };
+                    return SakuraComponent.get().transClient("word", key);
                 }
 
                 public boolean detailsVisible(int date) {
