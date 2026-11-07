@@ -155,6 +155,10 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
                     return SakuraClientState.isRewardOptionBarOpened();
                 }
 
+                public boolean groupNavigation() {
+                    return true;
+                }
+
                 public void command(RewardEditorUiSession.Action action) {
                     rewardUiCommand(action);
                 }
@@ -326,6 +330,7 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
             return player != null && player.hasPermissions(CommonConfig.get().permission().permissionEditReward()) && SakuraClientState.isEnabled();
         }
         if (currentRewardRule() == null || isCurrentRuleRedacted()) return false;
+        if (action == RewardEditorUiSession.Action.ADD_GROUP) return currentRewardRule() != ERewardRule.BASE_REWARD;
         if ((action == RewardEditorUiSession.Action.CUT || action == RewardEditorUiSession.Action.DELETE) && "标题,base".equals(currRewardButton))
             return false;
         if (action == RewardEditorUiSession.Action.CLEAR) return currentRewardRule().getCode() <= 10;
@@ -338,6 +343,9 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
     private void rewardUiCommand(RewardEditorUiSession.Action action) {
         if (!rewardUiConnected() || !rewardUiEnabled(action)) return;
         switch (action) {
+            case ADD_GROUP:
+                createRewardGroup();
+                break;
             case ADD:
                 chooseRewardType();
                 break;
@@ -385,6 +393,32 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
         uiRevision++;
     }
 
+    private void createRewardGroup() {
+        ERewardRule rule = currentRewardRule();
+        if (rule == null || rule == ERewardRule.BASE_REWARD || isCurrentRuleRedacted()) return;
+        String[] key = {""};
+        if (rule == ERewardRule.PERSONAL_DATE_REWARD || rule == ERewardRule.LOTTERY_REWARD) {
+            Minecraft.getInstance().setScreen(rule == ERewardRule.PERSONAL_DATE_REWARD
+                    ? getPersonalDatePresetInputScreen(this, null, key) : getLotteryPoolInputScreen(this, null, key));
+            return;
+        }
+        Screen transition = RewardEditorCoordinator.deferred(this, () -> {
+            if (!rewardUiConnected() || currentRewardRule() != rule || isCurrentRuleRedacted()) return;
+            var groups = new LinkedHashMap<>(RewardConfigManager.getRewardMap(rule));
+            if (groups.containsKey(key[0])) return;
+            RewardConfigManager.addUndoRewardOption(rule);
+            RewardConfigManager.clearRedoList();
+            groups.put(key[0], new RewardList());
+            RewardConfigManager.setRewardMap(RewardConfigManager.getRewardConfig(), rule, groups);
+            saveEditor();
+            updateLayout();
+            Minecraft.getInstance().setScreen(this);
+        }, () -> !key[0].isEmpty() && rewardUiConnected() && currentRewardRule() == rule && !isCurrentRuleRedacted()
+                && !RewardConfigManager.getRewardMap(rule).containsKey(key[0]));
+        Minecraft.getInstance().setScreen(rule == ERewardRule.CDK_REWARD
+                ? getCdkRuleKeyInputScreen(transition, rule, key) : getRuleKeyInputScreen(transition, rule, key));
+    }
+
     private void chooseRewardType() {
         List<DropdownOption> types = SakuraRewardClient.all().stream().filter(reg -> reg.getExtension().getEditor() != null)
                 .map(reg -> new DropdownOption(reg.getTypeId().toString(), reg.getExtension().getTypeName() == null
@@ -423,6 +457,15 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
         boolean group = id.startsWith("标题,");
         String key = group ? id.substring(3) : rewardGroupKey(id);
         ERewardRule rule = currentRewardRule();
+        if (action == RewardEditorUiSession.EntryAction.FOCUS_GROUP) {
+            if (!group) return;
+            if (isRewardGroupCollapsed(key)) toggleRewardGroup(key);
+            rewardSelection.selectOnly(id);
+            currRewardButton = id;
+            updateLayout();
+            uiRevision++;
+            return;
+        }
         if (action == RewardEditorUiSession.EntryAction.CONTEXT) {
             if (!rewardSelection.isSelected(id)) rewardSelection.selectOnly(id);
             currRewardButton = id;
@@ -2902,7 +2945,9 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
         return RewardConfigManager.isRuleRedacted(currentRewardRule());
     }
 
-    /** 无权限规则只展示占位页，客户端不持有其服务端奖励内容。 */
+    /**
+     * 无权限规则只展示占位页，客户端不持有其服务端奖励内容。
+     */
     private void renderPermissionDenied(PoseStack stack) {
         String message = SakuraComponent.get().transClient(
                 "word", "reward_rule_permission_denied_page").toString();
