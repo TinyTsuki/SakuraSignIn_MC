@@ -259,7 +259,7 @@ public class LotteryUiPresentationTest {
         for (lombok.var style : xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.values())
             keys.add("enum_lottery_animation_style_" + style.name().toLowerCase(java.util.Locale.ROOT));
         for (String locale : com.google.common.collect.ImmutableList.of("en_us", "zh_cn")) {
-            lombok.var language = com.google.gson.JsonParser.parseString(new String(Files.readAllBytes(java.nio.file.Paths.get(
+            com.google.gson.JsonObject language = new com.google.gson.JsonParser().parse(new String(Files.readAllBytes(java.nio.file.Paths.get(
                     "src/main/resources/assets/sakura_sign_in/lang/" + locale + ".json")), StandardCharsets.UTF_8)).getAsJsonObject();
             for (String key : keys) {
                 String tooltip = "word.sakura_sign_in." + key + "_tooltip";

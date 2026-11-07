@@ -107,7 +107,7 @@ public class SakuraApprovedPagesTest {
         assertTrue(css.contains(".pool-title{flex:none;font-size:24px"));
         assertFalse(css.contains("linear-gradient("));
         assertFalse(css.contains("#291e2ef5"));
-        lombok.var language = com.google.gson.JsonParser.parseString(new String(Files.readAllBytes(resources.resolve("sakura_sign_in/lang/en_us.json")), java.nio.charset.StandardCharsets.UTF_8)).getAsJsonObject();
+        com.google.gson.JsonObject language = new com.google.gson.JsonParser().parse(new String(Files.readAllBytes(resources.resolve("sakura_sign_in/lang/en_us.json")), java.nio.charset.StandardCharsets.UTF_8)).getAsJsonObject();
         assertEquals("Streak", language.get("word.sakura_sign_in.aui_consecutive").getAsString());
         assertEquals("Sign-ins", language.get("word.sakura_sign_in.aui_total").getAsString());
     }
