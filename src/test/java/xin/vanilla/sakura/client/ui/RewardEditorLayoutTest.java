@@ -50,9 +50,9 @@ public class RewardEditorLayoutTest {
     }
 
     @Test
-    public void searchSharesTheSectionTitleRow() throws Exception {
+    public void searchSharesTheApprovedPageTitleRow() throws Exception {
         Element root = document();
-        assertSame(id(root, "section").getParentNode(), id(root, "search").getParentNode().getParentNode());
+        assertSame(id(root, "title").getParentNode().getParentNode(), id(root, "search").getParentNode().getParentNode());
         var search = rule(".rewards-page .search");
         assertEquals("1", search.get("flex-grow"));
         assertEquals("0", search.get("flex-basis"));
