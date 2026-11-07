@@ -337,4 +337,61 @@ public class LotteryUiPresentationTest {
         result.detach(UiDetachReason.SWITCH);
         assertEquals(18, view.state.rowPosition(), 0);
     }
+
+    @Test
+    public void auiConfirmationDuringRefreshRejectsAChangedFeeWithoutDrawing() {
+        var port = new LotteryUiOperationHandoffTest.Port();
+        var view = new RecordingUiView();
+        var session = new LotteryUiSession(port, () -> true);
+        session.bind(view);
+        session.tick();
+        port.accept();
+        session.tick();
+        port.millis = 3000;
+        session.tick();
+        view.actions.get("batch").run();
+        assertTrue(view.enabled.get("confirm_panel"));
+        assertTrue(view.texts.get("confirm_fee").toString().contains("xpPoints(2)"));
+        view.actions.get("confirm_draw").run();
+        assertFalse(view.enabled.get("confirm_panel"));
+        assertTrue(port.draws.isEmpty());
+        var pending = port.quotes.get(port.quotes.size() - 1);
+        assertTrue(port.requests.accept(new LotteryQuote(pending, LotteryQuote.Status.READY, 1, 12,
+                "xpPoints(3)", java.util.UUID.randomUUID().toString())));
+        session.tick();
+        session.tick();
+        assertEquals(0, port.draws.size());
+        assertEquals(translated("lottery_voucher_points") + " \u00d73", text(view, "fee"));
+    }
+
+    @Test
+    public void baseLotteryStylesAndLinkedOverlayRetainDistinctContracts() throws Exception {
+        Path root = Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in");
+        String base = Files.readString(root.resolve("lottery.css"), StandardCharsets.UTF_8);
+        String overlay = Files.readString(root.resolve("sakura-lottery.css"), StandardCharsets.UTF_8);
+        assertTrue(base.contains("max-width:560px"));
+        assertTrue(base.contains(".reward-row .paragraph{flex-shrink:0"));
+        assertTrue(overlay.contains(".reward-row .paragraph{flex:none"));
+        assertTrue(overlay.contains("#pool_scroll{padding:0;flex:1;min-height:0}"));
+        assertTrue(overlay.contains("#detail{flex:0 1 auto;min-height:0;"));
+        var responsive = java.util.regex.Pattern.compile(
+                "@media\\s*\\(max-width:\\s*([0-9]+)px\\)\\s*\\{").matcher(overlay);
+        assertTrue(responsive.find());
+        assertTrue(Integer.parseInt(responsive.group(1)) > 0);
+        assertTrue(overlay.substring(responsive.end()).contains(".pool-title"));
+        var linked = new java.util.HashSet<String>();
+        for (String page : List.of("lottery", "lottery-result", "signin", "rewards")) {
+            String html = Files.readString(root.resolve(page + ".html"), StandardCharsets.UTF_8);
+            var styles = java.util.regex.Pattern.compile("href=\"([^\"]+\\.css)\"").matcher(html);
+            while (styles.find()) {
+                String stylesheet = styles.group(1);
+                if (stylesheet.equals("../banira_codex/shared.css")) continue;
+                assertFalse(stylesheet.contains(".."));
+                assertTrue(Files.isRegularFile(root.resolve(stylesheet)));
+                linked.add(stylesheet);
+            }
+        }
+        assertEquals(Set.of("sakura-lottery.css", "lottery-result.css", "sakura-motion.css",
+                "sakura-calendar.css", "rewards.css", "sakura-pages.css"), linked);
+    }
 }
