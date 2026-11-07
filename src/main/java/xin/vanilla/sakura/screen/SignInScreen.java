@@ -148,6 +148,28 @@ public final class SignInScreen extends BaniraScreen implements UiPageSource {
                     return cell == null ? SakuraComponent.get().literal("") : ESignInStatus.valueOf(cell.getStatus()).enumDescription();
                 }
 
+                public boolean marked(int date) {
+                    SignInCell cell = cell(date);
+                    return cell != null && cell.getStatus() >= ESignInStatus.SIGNED_IN.getCode();
+                }
+
+                public boolean canActivate(int date) {
+                    SignInCell cell = cell(date);
+                    return cell != null && cell.getStatus() >= ESignInStatus.CAN_REPAIR.getCode()
+                            && cell.getStatus() < ESignInStatus.REWARDED.getCode();
+                }
+
+                public Component actionLabel(int date) {
+                    SignInCell cell = cell(date);
+                    String key = cell == null ? "aui_action_sign_in" : switch (ESignInStatus.valueOf(cell.getStatus())) {
+                        case SIGNED_IN -> "aui_action_claim";
+                        case REWARDED -> "aui_claimed";
+                        case CAN_REPAIR -> "aui_action_repair";
+                        default -> "aui_action_sign_in";
+                    };
+                    return SakuraComponent.get().transClient("word", key);
+                }
+
                 public boolean detailsVisible(int date) {
                     SignInCell cell = cell(date);
                     return cell != null && cell.uiDetailsVisible();

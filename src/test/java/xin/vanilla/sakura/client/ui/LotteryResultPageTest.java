@@ -23,6 +23,9 @@ import java.util.UUID;
 import static org.junit.Assert.*;
 
 public class LotteryResultPageTest {
+    @org.junit.Rule
+    public final xin.vanilla.sakura.test.NativeClientRule nativeClient = new xin.vanilla.sakura.test.NativeClientRule();
+
     @Rule
     public xin.vanilla.sakura.test.UnboundConfigPlatform platform = new xin.vanilla.sakura.test.UnboundConfigPlatform();
 
@@ -93,7 +96,8 @@ public class LotteryResultPageTest {
         assertEquals(60, ((UiRowLayout) view.rows).rowHeight());
         var row = new RecordingUiView();
         view.providers.get("fields").bind(row, 33);
-        assertEquals("100", row.texts.get("index").toString());
+        assertEquals("", row.texts.get("index").toString());
+        assertTrue(view.providers.get("fields").key(33).endsWith(":99"));
         assertNotNull(row.texts.get("type"));
         assertTrue(row.actions.isEmpty());
         assertEquals(40, view.limit);

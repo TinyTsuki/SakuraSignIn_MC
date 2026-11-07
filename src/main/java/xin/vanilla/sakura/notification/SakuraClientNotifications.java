@@ -15,6 +15,7 @@ import javax.annotation.Nonnull;
 public final class SakuraClientNotifications {
 
     private static final long DEFAULT_DURATION_MS = 5000L;
+    private static final long SYNC_DURATION_MS = 2000L;
 
     private SakuraClientNotifications() {
     }
@@ -27,6 +28,10 @@ public final class SakuraClientNotifications {
         show(message, typeId, EnumNotificationStyle.SUCCESS);
     }
 
+    public static void syncSuccess(@Nonnull Component message, @Nonnull String typeId) {
+        show(message, typeId, EnumNotificationStyle.SUCCESS, SYNC_DURATION_MS);
+    }
+
     public static void warning(@Nonnull Component message, @Nonnull String typeId) {
         show(message, typeId, EnumNotificationStyle.WARNING);
     }
@@ -36,11 +41,15 @@ public final class SakuraClientNotifications {
     }
 
     private static void show(Component message, String typeId, EnumNotificationStyle style) {
+        show(message, typeId, style, DEFAULT_DURATION_MS);
+    }
+
+    private static void show(Component message, String typeId, EnumNotificationStyle style, long duration) {
         BaniraNotifications.show(NotificationData.of(
                 message,
                 EnumPosition.TOP_CENTER,
                 EnumMoveType.AUTO,
-                DEFAULT_DURATION_MS,
+                duration,
                 style,
                 typeId
         ).themed(true));
