@@ -114,7 +114,7 @@ public class ClientProxy {
             RewardConfigManager.setRewardConfig(candidate);
             RewardConfigManager.setRewardOptionDataChanged(true);
             RewardConfigManager.saveRewardOption();
-            SakuraClientNotifications.success(
+            SakuraClientNotifications.syncSuccess(
                     SakuraComponent.get().trans("word", "reward_option_download_success"),
                     SakuraNotificationTypes.REWARD
             );
@@ -139,7 +139,7 @@ public class ClientProxy {
 
     public static void handleCommonConfigSnapshot(CommonConfigSnapshotPacket packet) {
         packet.applyToClient();
-        SakuraClientNotifications.success(
+        SakuraClientNotifications.syncSuccess(
                 SakuraComponent.get().transClient("word", "common_config_sync_success"),
                 SakuraNotificationTypes.CONFIG
         );
