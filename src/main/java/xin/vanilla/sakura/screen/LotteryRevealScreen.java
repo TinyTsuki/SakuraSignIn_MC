@@ -51,7 +51,7 @@ public final class LotteryRevealScreen extends BaniraScreen implements UiPageSou
 
     public LotteryRevealScreen(Screen parent, LotteryRevealPacket packet) {
         super(SakuraComponent.get().transClient("word", "lottery_result"));
-        this.style = packet.getAnimationStyle();
+        this.style = packet.getAnimationStyle().presentationStyle();
         this.packet = packet;
         revealSession = new LotteryRevealUiSession(packet, style, () -> System.nanoTime() / 1_000_000,
                 () -> uiConnection == Minecraft.getInstance().getConnection(),
@@ -160,11 +160,9 @@ public final class LotteryRevealScreen extends BaniraScreen implements UiPageSou
                 packet.getOperationId().hashCode(), area.width(), area.height());
         double scale = Math.min(area.width() / 320D, area.height() / 180D);
         int cx = area.x() + area.width() / 2, base = area.y() + area.height() / 2;
-        boolean shell = style == LotteryAnimationStyle.ENVELOPE || style == LotteryAnimationStyle.CHEST;
+        boolean shell = style == LotteryAnimationStyle.ENVELOPE;
         if (shell) {
             shape(stack, cx - (int) (55 * scale), base, (int) (110 * scale), (int) (65 * scale), getEffectiveTheme().buttonBg(), 4, 1);
-            if (frame.light() && style == LotteryAnimationStyle.CHEST)
-                shape(stack, cx - (int) (50 * scale), base - 2, (int) (100 * scale), 3, 0x88FFD582, 1, 0);
         }
         var winners = packet.getWinners();
         var candidates = packet.getPreview();

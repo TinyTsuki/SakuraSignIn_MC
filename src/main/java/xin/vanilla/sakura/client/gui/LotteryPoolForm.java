@@ -89,7 +89,7 @@ public final class LotteryPoolForm {
                                 mode.name(), "lottery_preview_" + mode.name().toLowerCase(java.util.Locale.ROOT)))
                         .toArray(DropdownOption[]::new)));
         args.addWidget(dropdown("animationStyle", "lottery_animation",
-                (existing == null ? xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.ENVELOPE : existing.getAnimationStyle()).name(),
+                (existing == null ? xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.ENVELOPE : existing.getAnimationStyle().presentationStyle()).name(),
                 xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.editorChoices(existing == null ? null : existing.getAnimationStyle()).stream().map(style -> option(
                                 style.name(), "enum_lottery_animation_style_" + style.name().toLowerCase(java.util.Locale.ROOT)))
                         .toArray(DropdownOption[]::new)));

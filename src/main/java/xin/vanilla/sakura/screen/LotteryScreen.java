@@ -151,6 +151,7 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
     public void capturePageState(UiPageState state) {
         lotteryPageState = state;
         if (state != null && layout != null && font != null) {
+            state.listPosition("pool_rows", poolOffset);
             state.rowPosition(previewScrollRows * layout.rewardColumns());
             state.detailScroll(descriptionViewport.scrollRows() * font.lineHeight);
         }
@@ -166,6 +167,7 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
         layout = LotteryLayout.calculate(width, height);
         prepareSelection();
         if (lotteryPageState != null) {
+            poolOffset = (int) lotteryPageState.listPosition("pool_rows");
             previewScrollRows = (int) lotteryPageState.rowPosition() / layout.rewardColumns();
             pendingDescriptionScroll = lotteryPageState.detailScroll();
         }

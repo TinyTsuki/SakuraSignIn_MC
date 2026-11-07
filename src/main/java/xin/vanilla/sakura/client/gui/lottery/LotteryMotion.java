@@ -13,7 +13,7 @@ public final class LotteryMotion {
                        boolean face, boolean matched) {
     }
 
-    public record Frame(List<Card> cards, boolean open, boolean light) {
+    public record Frame(List<Card> cards, boolean open, boolean light, double opening) {
         public Frame {
             cards = List.copyOf(cards);
         }
@@ -36,7 +36,7 @@ public final class LotteryMotion {
     }
 
     private static long fanStep(int count) {
-        return Math.max(35, Math.min(820, 5200 / Math.max(1, count)));
+        return Math.max(60, Math.min(1050, 6500 / Math.max(1, count)));
     }
 
     private static long flipStep(int count) {
@@ -44,10 +44,11 @@ public final class LotteryMotion {
     }
 
     public static long duration(LotteryAnimationStyle style, int count, int seed) {
+        style = style.presentationStyle();
         return switch (style) {
             case ENVELOPE, CHEST -> 2200 + (Math.max(1, count) - 1) * extractStep(count);
-            case FAN -> count == 1 ? 4100 : 1100 + count * fanStep(count);
-            case BOUNCE -> 250 + 3 * 950 + 180 + index(seed, 37, 5) * 90 + 1300;
+            case FAN -> count == 1 ? 4600 : 1100 + count * fanStep(count);
+            case BOUNCE -> 250 + 3 * 950 + 180 + index(seed, 37, 5) * 135 + 900;
             case FLIP -> 900 + count * flipStep(count);
             case INSTANT -> 0;
             case CARDS -> 4800;
@@ -58,7 +59,8 @@ public final class LotteryMotion {
     public static Frame frame(LotteryAnimationStyle style, long elapsed, int count, int candidates, int seed,
                               double width, double height) {
         if (count < 1 || !Double.isFinite(width) || !Double.isFinite(height) || width <= 0 || height <= 0)
-            return new Frame(List.of(), false, false);
+            return new Frame(List.of(), false, false, 0);
+        style = style.presentationStyle();
         List<Card> cards = new ArrayList<>();
         double t = Math.max(0, elapsed);
         if (style == LotteryAnimationStyle.ENVELOPE || style == LotteryAnimationStyle.CHEST) {
@@ -77,24 +79,29 @@ public final class LotteryMotion {
             }
         } else if (style == LotteryAnimationStyle.FAN) {
             long step = fanStep(count);
-            int active = count == 1 ? index(seed, 11, 5) : Math.min(count - 1, Math.max(0, (int) ((t - 460) / step)));
+            int active = count == 1 ? index(seed, 11, 5) : Math.min(count - 1, Math.max(0, (int) ((t - 550) / step)));
             int batch = count == 1 ? 0 : active / 5 * 5;
             for (int i = 0; i < 5; i++) {
                 int winner = batch + i;
                 if (count > 1 && winner >= count) continue;
-                double local = count == 1 ? t - 2350 : t - 460 - winner * step;
+                double local = count == 1 ? t - 2700 : t - 550 - winner * step;
                 boolean drawn = count == 1 ? i == active && local >= 0 : local >= 0;
-                double lift = drawn ? progress(local, 0, 350) : 0;
-                boolean face = drawn && local >= (count == 1 ? 450 : Math.min(220, step * .32));
-                double turn = face ? progress(local, count == 1 ? 450 : Math.min(220, step * .32), count == 1 ? 520 : Math.min(520, step * .52)) : 0;
-                double cardWidth = 40 * Math.max(.06, Math.abs(1 - 2 * turn));
-                double stored = count > 1 && drawn ? progress(local, Math.min(740, step * .92), 350) : 0;
-                double consider = count == 1 && i == (int) ((t - 400) / 330) && t >= 400 && t < 2050
-                        ? Math.sin(Math.PI * Math.min(1, (t - 400 - i * 330) / 270)) * 9 : 0;
-                double arc = Math.abs(i - 2) * 5;
-                double x = 160 + (i - 2) * (25 + 18 * stored) - cardWidth / 2;
-                double y = 58 + arc - lift * 35 - consider + stored * 68;
-                cards.add(new Card(i, x, y, cardWidth, 60, count == 1 ? 0 : winner, turn >= .5, false));
+                double liftLength = count == 1 ? 500 : Math.min(280, step * .3);
+                double turnLength = count == 1 ? 650 : Math.min(560, step * .55);
+                double lift = drawn ? progress(local, 0, liftLength) : 0;
+                double turn = drawn ? progress(local, liftLength + 80, turnLength) : 0;
+                double stored = count > 1 && drawn ? progress(local, liftLength + 80 + turnLength, Math.min(280, step * .25)) : 0;
+                double cardWidth = (42 - stored * 6) * Math.max(.06, Math.abs(1 - 2 * turn));
+                double considerPhase = t - 400 - i * 420;
+                double consider = count == 1 && considerPhase >= 0 && considerPhase < 400
+                        ? Math.sin(Math.PI * considerPhase / 400) * 5 : 0;
+                int batchSize = count == 1 ? 5 : Math.min(5, count - batch);
+                double offset = i - (batchSize - 1) / 2D;
+                double baseX = 160 + offset * 42;
+                double center = count == 1 ? baseX + (160 - baseX) * lift : baseX + offset * 4 * stored;
+                double baseY = 65 + Math.abs(offset) * 3;
+                double y = baseY + (18 - baseY) * lift - consider + stored * 85;
+                cards.add(new Card(i, center - cardWidth / 2, y, cardWidth, 60 - stored * 8, count == 1 ? 0 : winner, turn >= .5, false));
             }
         } else if (style == LotteryAnimationStyle.BOUNCE) {
             int round = Math.max(0, Math.min(3, (int) ((t - 250) / 950)));
@@ -102,12 +109,17 @@ public final class LotteryMotion {
             double local = t - 250 - round * 950;
             for (int i = 0; i < 5; i++) {
                 boolean winner = round == 3 && i == chosen;
-                double phase = local - 180 - i * 90;
-                double hop = phase < 0 || phase > 420 || round == 3 && i > chosen ? 0 : Math.sin(Math.PI * phase / 420) * 12;
-                double drop = winner ? progress(phase, 120, 530) : 0;
-                double x = 48 + i * 46 + (140 - 48 - i * 46) * drop;
+                double phase = local - 180 - i * 135;
+                double hop = phase < 0 || phase > 220 || round == 3 && i > chosen ? 0 : Math.sin(Math.PI * phase / 220) * 4.5;
+                double fall = winner ? Math.max(0, Math.min(1, (phase - 110) / 500)) : 0;
+                double drop = fall * fall;
+                double turn = round == 0 ? 1 : progress(local, 0, 160);
+                double w = 40 * Math.max(.06, Math.abs(1 - 2 * turn));
+                double x = 48 + i * 46 + (40 - w) / 2;
                 double y = 45 - hop + drop * 72;
-                cards.add(new Card(i, x, y, 40, 40, winner ? 0 : -1 - index(seed, round * 5 + i, candidates), true, false));
+                int candidate = candidates >= 5 ? Math.floorMod(index(seed, 73, candidates) + round * 5 + i, candidates)
+                        : index(seed, round * 5 + i, candidates);
+                cards.add(new Card(i, x, y, w, 40, winner ? 0 : -1 - candidate, turn >= .5, false));
             }
         } else if (style == LotteryAnimationStyle.FLIP) {
             long span = flipStep(count);
@@ -129,6 +141,6 @@ public final class LotteryMotion {
         double scale = Math.min(width / 320, height / 180);
         double dx = (width - 320 * scale) / 2, dy = (height - 180 * scale) / 2;
         return new Frame(cards.stream().map(c -> new Card(c.slot(), dx + c.x() * scale, dy + c.y() * scale,
-                c.width() * scale, c.height() * scale, c.reward(), c.face(), c.matched())).toList(), t >= 700, t >= 900);
+                c.width() * scale, c.height() * scale, c.reward(), c.face(), c.matched())).toList(), t >= 1000, false, progress(t, 400, 600));
     }
 }

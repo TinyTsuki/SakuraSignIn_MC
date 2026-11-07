@@ -16,7 +16,9 @@ public class LotteryMotionTest {
     public void newStylesAppendWithoutChangingExistingWireOrdinals() {
         assertArrayEquals(new LotteryAnimationStyle[]{LotteryAnimationStyle.STRIP, LotteryAnimationStyle.CARDS,
                 LotteryAnimationStyle.ROULETTE, LotteryAnimationStyle.INSTANT}, java.util.Arrays.copyOf(LotteryAnimationStyle.values(), 4));
-        assertEquals(STYLES, LotteryAnimationStyle.editorChoices(null));
+        assertEquals(List.of(LotteryAnimationStyle.ENVELOPE, LotteryAnimationStyle.FAN, LotteryAnimationStyle.BOUNCE, LotteryAnimationStyle.FLIP), LotteryAnimationStyle.editorChoices(null));
+        assertFalse(LotteryAnimationStyle.editorChoices(LotteryAnimationStyle.CHEST).contains(LotteryAnimationStyle.CHEST));
+        assertEquals(LotteryAnimationStyle.ENVELOPE, LotteryAnimationStyle.CHEST.presentationStyle());
         assertTrue(LotteryAnimationStyle.editorChoices(LotteryAnimationStyle.STRIP).contains(LotteryAnimationStyle.STRIP));
     }
 
@@ -80,12 +82,58 @@ public class LotteryMotionTest {
 
     @Test
     public void cardsUseTheSlowerApprovedSingleAndBatchTimings() {
-        assertEquals(4100, LotteryMotion.duration(LotteryAnimationStyle.FAN, 1, 0));
-        assertEquals(5200, LotteryMotion.duration(LotteryAnimationStyle.FAN, 5, 0));
-        assertEquals(6300, LotteryMotion.duration(LotteryAnimationStyle.FAN, 10, 0));
+        assertEquals(4600, LotteryMotion.duration(LotteryAnimationStyle.FAN, 1, 0));
+        assertEquals(6350, LotteryMotion.duration(LotteryAnimationStyle.FAN, 5, 0));
+        assertEquals(7600, LotteryMotion.duration(LotteryAnimationStyle.FAN, 10, 0));
         for (var style : STYLES) {
             assertTrue(LotteryMotion.frame(style, 20, 1, 0, 1, Double.NaN, 180).cards().isEmpty());
             assertTrue(LotteryMotion.frame(style, 20, 1, 0, 1, 320, 0).cards().isEmpty());
+        }
+    }
+
+    @Test
+    public void flapOpensContinuouslyAndLegacyChestUsesTheSamePresentation() {
+        double previous = 0;
+        for (int time = 400; time <= 1000; time += 25) {
+            var frame = LotteryMotion.frame(LotteryAnimationStyle.ENVELOPE, time, 1, 12, 1, 320, 180);
+            assertTrue(frame.opening() >= previous);
+            assertTrue(frame.opening() - previous < .1);
+            assertEquals(frame, LotteryMotion.frame(LotteryAnimationStyle.CHEST, time, 1, 12, 1, 320, 180));
+            previous = frame.opening();
+        }
+        assertEquals(1, previous, 0);
+    }
+
+    @Test
+    public void aSingleCardIsLiftedBeforeFlippingAndOtherCardsStayInPlace() {
+        var base = LotteryMotion.frame(LotteryAnimationStyle.FAN, 2600, 1, 12, 1, 320, 180);
+        var lifted = LotteryMotion.frame(LotteryAnimationStyle.FAN, 3200, 1, 12, 1, 320, 180);
+        int moved = 0;
+        for (int i = 0; i < 5; i++) {
+            var before = base.cards().get(i);
+            var after = lifted.cards().get(i);
+            assertFalse(after.face());
+            if (after.y() < before.y() - 1) {
+                moved++;
+                assertEquals(42, after.width(), 0);
+            } else {
+                assertEquals(before.x(), after.x(), 0);
+                assertEquals(before.y(), after.y(), 0);
+            }
+        }
+        assertEquals(1, moved);
+    }
+
+    @Test
+    public void bounceUsesSmallHopsAndWinningDropDoesNotSlideSideways() {
+        for (int seed = 0; seed < 12; seed++) {
+            for (int time = 0; time < LotteryMotion.duration(LotteryAnimationStyle.BOUNCE, 1, seed); time += 20) {
+                var frame = LotteryMotion.frame(LotteryAnimationStyle.BOUNCE, time, 1, 30, seed, 320, 180);
+                for (var card : frame.cards()) {
+                    assertTrue(card.y() >= 40.5 - .001);
+                    assertEquals(68 + card.slot() * 46, card.x() + card.width() / 2, .001);
+                }
+            }
         }
     }
 }

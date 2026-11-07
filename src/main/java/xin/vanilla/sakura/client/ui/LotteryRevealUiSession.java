@@ -32,6 +32,7 @@ public final class LotteryRevealUiSession implements UiPageSession {
     private final List<Reward> winners, preview;
     private List<UiGameElement> winnerIcons, candidateIcons;
     private LotteryMotion.Frame displayedMotion;
+    private double displayedMotionWidth = Double.NaN, displayedMotionHeight = Double.NaN;
     private final List<AutoCloseable> bindings = new ArrayList<>();
     private UiView view;
     private long binding;
@@ -42,7 +43,7 @@ public final class LotteryRevealUiSession implements UiPageSession {
     public LotteryRevealUiSession(LotteryRevealPacket packet, LotteryAnimationStyle style, LongSupplier millis,
                                   BooleanSupplier connection, IntSupplier inventoryKey, Runnable claim) {
         this.packet = Objects.requireNonNull(packet);
-        this.style = Objects.requireNonNull(style);
+        this.style = Objects.requireNonNull(style).presentationStyle();
         this.millis = Objects.requireNonNull(millis);
         this.connection = Objects.requireNonNull(connection);
         this.inventoryKey = Objects.requireNonNull(inventoryKey);
@@ -111,7 +112,7 @@ public final class LotteryRevealUiSession implements UiPageSession {
             if (live(next, token)) action();
         }));
         prepareIcons();
-        next.enabled("motion_shell", style == LotteryAnimationStyle.ENVELOPE || style == LotteryAnimationStyle.CHEST);
+        next.enabled("motion_shell", this.style == LotteryAnimationStyle.ENVELOPE);
         resultsShown = false;
         resultColumns = 0;
         displayedReveal = null;
@@ -225,25 +226,26 @@ public final class LotteryRevealUiSession implements UiPageSession {
 
     private void drawMotion(ScreenCoordinate area) {
         var frame = LotteryMotion.frame(style, elapsed(), winners.size(), preview.size(), packet.getOperationId().hashCode(), area.width(), area.height());
-        if (frame.equals(displayedMotion)) return;
+        if (frame.equals(displayedMotion) && displayedMotionWidth == area.width() && displayedMotionHeight == area.height())
+            return;
         displayedMotion = frame;
+        displayedMotionWidth = area.width();
+        displayedMotionHeight = area.height();
         double scale = Math.min(area.width() / 320, area.height() / 180);
         double dx = (area.width() - 320 * scale) / 2, dy = (area.height() - 180 * scale) / 2;
-        boolean chest = style == LotteryAnimationStyle.CHEST;
-        view.enabled("motion_chest", chest);
         view.enabled("motion_envelope", style == LotteryAnimationStyle.ENVELOPE);
-        view.enabled("motion_light", chest && frame.light());
-        view.enabled("motion_lid_open", chest && frame.open());
-        view.enabled("motion_lid_closed", chest && !frame.open());
-        view.enabled("motion_flap_open", frame.open());
-        view.enabled("motion_flap_closed", !frame.open());
-        view.enabled("motion_front_envelope", !chest);
-        view.enabled("motion_front_chest", chest);
-        boolean shell = chest || style == LotteryAnimationStyle.ENVELOPE;
+        boolean shell = style == LotteryAnimationStyle.ENVELOPE;
+        view.enabled("motion_flap_open", shell && frame.opening() >= .5);
+        view.enabled("motion_flap_closed", shell && frame.opening() < .5);
+        view.enabled("motion_front_envelope", shell);
         view.gameElement("motion_shell", null, shell ? new ScreenCoordinate(dx + 105 * scale, dy + 90 * scale, 110 * scale, 65 * scale)
                 : new ScreenCoordinate(0, 0, 0, 0));
         view.gameElement("motion_front", null, shell ? new ScreenCoordinate(dx + 105 * scale, dy + 90 * scale, 110 * scale, 65 * scale)
                 : new ScreenCoordinate(0, 0, 0, 0));
+        double closedHeight = 39 * scale * Math.max(0, 1 - frame.opening() * 2);
+        double openHeight = 31 * scale * Math.max(0, frame.opening() * 2 - 1);
+        view.gameElement("motion_flap_closed", null, new ScreenCoordinate(0, 0, 110 * scale, closedHeight));
+        view.gameElement("motion_flap_open", null, new ScreenCoordinate(0, -openHeight, 110 * scale, openHeight));
         for (int i = 0; i < 5; i++) {
             int slot = i;
             var card = frame.cards().stream().filter(c -> c.slot() == slot).findFirst().orElse(null);
@@ -260,7 +262,8 @@ public final class LotteryRevealUiSession implements UiPageSession {
             view.gameElement("motion_icon" + i, element);
             Reward reward = card == null || !card.face() ? null : card.reward() >= 0 ? winners.get(card.reward())
                     : candidate < 0 ? null : preview.get(candidate);
-            view.text("motion_name" + i, SakuraComponent.get().literal(reward == null ? "" : name(reward)));
+            view.text("motion_name" + i, SakuraComponent.get().literal(""));
+            view.tooltip("motion_card" + i, SakuraComponent.get().literal(reward == null ? "" : name(reward)));
             view.text("motion_hidden" + i, SakuraComponent.get().literal(card != null && !card.face() ? "\u273f" : element == null ? "?" : ""));
         }
     }

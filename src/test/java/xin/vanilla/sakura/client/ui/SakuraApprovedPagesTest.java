@@ -46,6 +46,36 @@ public class SakuraApprovedPagesTest {
     }
 
     @Test
+    public void envelopeKeepsItsBodyFixedWhileTheFlapMovesAndSmallCardsUseTooltips() throws Exception {
+        long[] now = {0};
+        var packet = new LotteryRevealPacket(UUID.randomUUID() + "-1", UUID.randomUUID().toString(), "Pool",
+                List.of(Reward.getDefault()), List.of(Reward.getDefault()), LotteryPreviewMode.ALL, LotteryAnimationStyle.ENVELOPE);
+        var session = new LotteryRevealUiSession(packet, packet.getAnimationStyle(), () -> now[0], () -> true, () -> 69, () -> {
+        });
+        var view = new RecordingUiView();
+        view.geometry.put("scene", new xin.vanilla.banira.client.data.ScreenCoordinate(0, 0, 320, 180));
+        session.bind(view);
+        view.geometry.put("scene", new xin.vanilla.banira.client.data.ScreenCoordinate(0, 0, 640, 360));
+        session.tick();
+        var body = view.areas.get("motion_shell");
+        assertEquals(220, body.width(), 0);
+        assertEquals(130, body.height(), 0);
+        for (long time : new long[]{450, 600, 800, 1000, 1300}) {
+            now[0] = time;
+            session.tick();
+            assertEquals(body, view.areas.get("motion_shell"));
+            assertEquals("", view.texts.get("motion_name0").toString());
+        }
+        assertTrue(view.areas.get("motion_flap_open").height() > 0);
+        assertEquals(0, view.areas.get("motion_flap_closed").height(), 0);
+        String css = Files.readString(Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in/sakura-motion.css"));
+        assertTrue(css.contains(".motion-name{display:none}"));
+        assertTrue(css.contains("text-overflow:ellipsis"));
+        String html = Files.readString(Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in/lottery-result.html"));
+        assertFalse(html.contains("motion_chest"));
+    }
+
+    @Test
     public void rewardNavigationStaysBesideTheListAndEmptyDetailsHaveNoPlaceholder() throws Exception {
         Path root = Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in");
         String html = Files.readString(root.resolve("rewards.html"));

@@ -19,12 +19,16 @@ public enum LotteryAnimationStyle implements IEnumDescribable {
     CHEST,
     FLIP;
 
+    public LotteryAnimationStyle presentationStyle() {
+        return this == CHEST ? ENVELOPE : this;
+    }
+
     public boolean illustrated() {
         return ordinal() >= ENVELOPE.ordinal();
     }
 
     public static java.util.List<LotteryAnimationStyle> editorChoices(LotteryAnimationStyle current) {
-        var choices = new java.util.ArrayList<>(java.util.List.of(ENVELOPE, FAN, BOUNCE, CHEST, FLIP));
+        var choices = new java.util.ArrayList<>(java.util.List.of(ENVELOPE, FAN, BOUNCE, FLIP));
         if (current != null && !current.illustrated()) choices.add(current);
         return java.util.List.copyOf(choices);
     }
