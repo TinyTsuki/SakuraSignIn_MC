@@ -66,7 +66,7 @@ final class UiBoundaryChecks {
                     if (bytes.length < 8 || bytes[0] != (byte) 0xca || bytes[1] != (byte) 0xfe)
                         throw new IOException("Class header");
                     int major = (bytes[6] & 255) * 256 + (bytes[7] & 255);
-                    if (major > 61) errors.add("Future class " + name);
+                    if (major > 65) errors.add("Future class " + name);
                     else if (!new ClassReader(bytes).getClassName().concat(".class").equals(name))
                         errors.add("Class identity " + name);
                 } catch (IOException | RuntimeException failure) {

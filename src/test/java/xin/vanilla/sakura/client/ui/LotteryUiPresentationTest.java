@@ -106,6 +106,28 @@ public class LotteryUiPresentationTest {
     }
 
     @Test
+    public void confirmedFeeChangeDuringRefreshCannotSubmitTheDraw() {
+        var port = new LotteryUiOperationHandoffTest.Port();
+        var view = new RecordingUiView();
+        var session = new LotteryUiSession(port, () -> true);
+        session.bind(view);
+        session.tick();
+        port.accept();
+        session.tick();
+        port.millis = 3000;
+        session.tick();
+        view.actions.get("batch").run();
+        view.actions.get("confirm_draw").run();
+        assertTrue(port.draws.isEmpty());
+        var pending = port.quotes.get(port.quotes.size() - 1);
+        assertTrue(port.requests.accept(new LotteryQuote(pending, LotteryQuote.Status.READY, 1, 12,
+                "xpPoints(3)", java.util.UUID.randomUUID().toString())));
+        session.tick();
+        session.tick();
+        assertTrue("A fee change must require new consent", port.draws.isEmpty());
+    }
+
+    @Test
     public void everyRejectedQuoteDisablesDrawsAndKeepsAnHonestFailureReason() {
         for (LotteryQuote.Status status : LotteryQuote.Status.values()) {
             if (status == LotteryQuote.Status.READY) continue;
