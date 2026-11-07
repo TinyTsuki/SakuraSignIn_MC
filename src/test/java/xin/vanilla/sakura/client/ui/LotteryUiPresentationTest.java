@@ -231,7 +231,7 @@ public class LotteryUiPresentationTest {
     @Test
     public void approvedTemplatesKeepTheRewardViewportSeparateFromTheDialogHeader() throws Exception {
         Path root = java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in");
-        assertTrue("Dedicated compact lottery stylesheet", Files.exists(root.resolve("lottery.css")));
+        assertTrue("Dedicated compact lottery stylesheet", Files.exists(root.resolve("sakura-lottery.css")));
         for (String name : com.google.common.collect.ImmutableList.of("lottery", "lottery-result")) {
             String html = new String(Files.readAllBytes(root.resolve(name + ".html")), StandardCharsets.UTF_8);
             assertTrue(html.contains("href=\"" + (name.equals("lottery") ? "sakura-lottery" : name) + ".css\""));
@@ -278,7 +278,7 @@ public class LotteryUiPresentationTest {
         String html = new String(Files.readAllBytes(root.resolve("lottery.html")), java.nio.charset.StandardCharsets.UTF_8);
         for (String name : com.google.common.collect.ImmutableList.of("single", "batch"))
             assertFalse(html.contains("id=\"" + name + "_icon\""));
-        String css = new String(Files.readAllBytes(root.resolve("lottery.css")), java.nio.charset.StandardCharsets.UTF_8);
+        String css = new String(Files.readAllBytes(root.resolve("sakura-lottery.css")), java.nio.charset.StandardCharsets.UTF_8);
         assertTrue(html.contains("class=\"pool-rail\""));
         assertTrue(html.indexOf("class=\"billing footer\"") > html.indexOf("class=\"feature\""));
         assertTrue(html.indexOf("id=\"content\"") > html.indexOf("id=\"details_panel\""));
@@ -288,11 +288,13 @@ public class LotteryUiPresentationTest {
 
     @Test
     public void compactViewportKeepsRailAndDetailsIndependentlyScrollable() throws Exception {
-        String css = new String(Files.readAllBytes(java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in/lottery.css")), java.nio.charset.StandardCharsets.UTF_8);
+        String css = new String(Files.readAllBytes(java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in/sakura-lottery.css")), java.nio.charset.StandardCharsets.UTF_8);
         String html = new String(Files.readAllBytes(java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in/lottery.html")), java.nio.charset.StandardCharsets.UTF_8);
         assertTrue(html.contains("id=\"pool_scroll\" class=\"content\""));
         assertTrue(html.contains("id=\"detail\" class=\"content\""));
-        assertTrue(css.contains("max-width:560px"));
+        assertTrue(css.contains("max-width:680px"));
+        String baseCss = new String(Files.readAllBytes(java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in/lottery.css")), StandardCharsets.UTF_8);
+        assertTrue(baseCss.contains("max-width:560px"));
     }
 
     @Test
@@ -304,10 +306,12 @@ public class LotteryUiPresentationTest {
         view.providers.get("fields").bind(cell, 0);
         assertEquals("100%", text(cell, "detail"));
         assertFalse(cell.tooltips.get("icon").toString().contains("%%"));
-        String css = new String(Files.readAllBytes(java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in/lottery.css")), java.nio.charset.StandardCharsets.UTF_8);
+        String css = new String(Files.readAllBytes(java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in/sakura-lottery.css")), java.nio.charset.StandardCharsets.UTF_8);
         assertTrue(css.contains("flex-direction:row"));
         assertTrue(css.contains(".reward-row .label{flex:1;min-width:0}"));
-        assertTrue(css.contains(".reward-row .paragraph{flex-shrink:0"));
+        assertTrue(css.contains(".reward-row .paragraph{flex:none"));
+        String baseCss = new String(Files.readAllBytes(java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in/lottery.css")), StandardCharsets.UTF_8);
+        assertTrue(baseCss.contains(".reward-row .paragraph{flex-shrink:0"));
     }
 
     @Test
@@ -347,5 +351,29 @@ public class LotteryUiPresentationTest {
         assertEquals(6, view.state.rowPosition(), 0);
         result.detach(UiDetachReason.SWITCH);
         assertEquals(18, view.state.rowPosition(), 0);
+    }
+
+    @Test
+    public void drawClickedDuringRefreshWaitsForAMatchingFee() {
+        LotteryUiOperationHandoffTest.Port port = new LotteryUiOperationHandoffTest.Port();
+        RecordingUiView view = new RecordingUiView();
+        LotteryUiSession session = new LotteryUiSession(port, () -> true);
+        session.bind(view);
+        session.tick();
+        port.accept();
+        session.tick();
+        port.millis = 3000;
+        session.tick();
+        view.actions.get("batch").run();
+        view.actions.get("confirm_draw").run();
+        assertTrue(port.draws.isEmpty());
+        xin.vanilla.sakura.data.lottery.LotteryQuoteRequest pending = port.quotes.get(port.quotes.size() - 1);
+        assertTrue(port.requests.accept(new LotteryQuote(pending, LotteryQuote.Status.READY, pending.getGeneration(),
+                12, "xpPoints(3)", java.util.UUID.randomUUID().toString())));
+        session.tick();
+        assertTrue(port.draws.isEmpty());
+        view.actions.get("batch").run();
+        view.actions.get("confirm_draw").run();
+        assertEquals(1, port.draws.size());
     }
 }
