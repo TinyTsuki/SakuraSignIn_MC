@@ -15,7 +15,6 @@ import xin.vanilla.sakura.data.lottery.LotteryOperation;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * 将命令和客户端界面的抽奖请求汇入同一服务端响应流程。
@@ -111,11 +110,17 @@ public final class LotteryDrawDispatcher {
     }
 
     private static void notifySuccess(ServerPlayerEntity player, List<Reward> awarded) {
-        String rewards = awarded.stream().map(reward -> reward.getName(
-                        SakuraUtils.getPlayerLanguage(player), true).toString())
-                .collect(Collectors.joining(", "));
-        SakuraMessages.success(player, SakuraComponent.get().trans(player, "format",
-                "lottery_draw_success_s", rewards), SakuraNotificationTypes.REWARD);
+        SakuraMessages.success(player, successMessage(SakuraUtils.getPlayerLanguage(player), awarded),
+                SakuraNotificationTypes.REWARD);
+    }
+
+    static xin.vanilla.banira.common.data.Component successMessage(String language, List<Reward> awarded) {
+        xin.vanilla.banira.common.data.Component rewards = SakuraComponent.get().empty();
+        for (int index = 0; index < awarded.size(); index++) {
+            if (index > 0) rewards.append(", ");
+            rewards.append(awarded.get(index).getName(language, true));
+        }
+        return SakuraComponent.get().transLang(language, "format", "lottery_draw_success_s", rewards);
     }
 
     public static void notifyFailure(ServerPlayerEntity player, LotteryDrawBatchResult result) {
