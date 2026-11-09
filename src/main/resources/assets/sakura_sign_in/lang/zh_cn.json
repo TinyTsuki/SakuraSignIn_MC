@@ -308,7 +308,7 @@
   "word.sakura_sign_in.lottery_max_draws_tooltip": "输入 1 至 10000\n每日、每周、每月或终身周期内允许抽取的次数",
   "word.sakura_sign_in.lottery_no_pools": "服务器未配置可用的抽奖池",
   "word.sakura_sign_in.lottery_number_range": "数值超出允许范围",
-  "word.sakura_sign_in.lottery_payment_unavailable": "该奖池暂时无法支付",
+  "word.sakura_sign_in.lottery_payment_unavailable": "该奖池暂时无法抽取",
   "word.sakura_sign_in.lottery_permission_denied": "服务端拒绝了本次抽奖请求。",
   "word.sakura_sign_in.lottery_policy_cooldown": "冷却时间",
   "word.sakura_sign_in.lottery_policy_cooldown_tooltip": "每次抽取后等待指定秒数",
