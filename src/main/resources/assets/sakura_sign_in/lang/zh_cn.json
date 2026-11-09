@@ -466,7 +466,7 @@
   "word.sakura_sign_in.lottery_voucher_amount": "每次抽奖数量",
   "word.sakura_sign_in.lottery_expression_invalid": "代券表达式无效",
   "format.sakura_sign_in.lottery_expression_error_ss": "表达式无效：第%s行，第%s列",
-  "word.sakura_sign_in.lottery_payment_unavailable": "该奖池暂时无法支付",
+  "word.sakura_sign_in.lottery_payment_unavailable": "该奖池暂时无法抽取",
   "word.sakura_sign_in.enum_lottery_draw_status_operation_pending": "抽奖操作尚未完成",
   "word.sakura_sign_in.enum_lottery_draw_status_operation_uncertain": "抽奖状态无法确认",
   "format.sakura_sign_in.lottery_partial_complete_ss": "已发放奖励数：%s；%s",
