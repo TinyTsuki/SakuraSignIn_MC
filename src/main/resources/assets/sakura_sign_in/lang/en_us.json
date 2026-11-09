@@ -463,7 +463,7 @@
   "word.sakura_sign_in.lottery_voucher_amount": "Amount per draw",
   "word.sakura_sign_in.lottery_expression_invalid": "Invalid voucher expression",
   "format.sakura_sign_in.lottery_expression_error_ss": "Invalid expression at line %s, column %s",
-  "word.sakura_sign_in.lottery_payment_unavailable": "Payment is unavailable for this pool",
+  "word.sakura_sign_in.lottery_payment_unavailable": "Draws are unavailable for this pool",
   "word.sakura_sign_in.enum_lottery_draw_status_operation_pending": "The draw operation is pending",
   "word.sakura_sign_in.enum_lottery_draw_status_operation_uncertain": "The draw status is uncertain",
   "format.sakura_sign_in.lottery_partial_complete_ss": "Granted rewards: %s; %s",
