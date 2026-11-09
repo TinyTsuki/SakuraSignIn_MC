@@ -332,7 +332,7 @@
   "word.sakura_sign_in.lottery_max_draws_tooltip": "Enter 1 to 10000\nAllowed draws in each daily, weekly, monthly, or lifetime period",
   "word.sakura_sign_in.lottery_no_pools": "The server has no available lottery pools",
   "word.sakura_sign_in.lottery_number_range": "The value is outside the allowed range",
-  "word.sakura_sign_in.lottery_payment_unavailable": "Payment is unavailable for this pool",
+  "word.sakura_sign_in.lottery_payment_unavailable": "Draws are unavailable for this pool",
   "word.sakura_sign_in.lottery_permission_denied": "The server denied this lottery request.",
   "word.sakura_sign_in.lottery_policy_cooldown": "Cooldown",
   "word.sakura_sign_in.lottery_policy_cooldown_tooltip": "Waits a configured number of seconds after each draw",
