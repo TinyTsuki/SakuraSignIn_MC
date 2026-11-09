@@ -32,7 +32,7 @@
     "fabricloader": ">=${loader_version}",
     "fabric-api": "*",
     "java": ">=25",
-    "minecraft": "${minecraft_version}",
+    "minecraft": ["26.1", "26.1.1", "26.1.2"],
     "banira_codex": "${banira_version_range}"
   }
 }
