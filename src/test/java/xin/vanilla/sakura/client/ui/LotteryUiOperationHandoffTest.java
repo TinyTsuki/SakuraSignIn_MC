@@ -3,11 +3,12 @@ package xin.vanilla.sakura.client.ui;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
-import xin.vanilla.banira.client.gui.InputFormScreen;
 import xin.vanilla.banira.api.client.ui.UiCloseReason;
 import xin.vanilla.banira.api.client.ui.UiDetachReason;
 import xin.vanilla.banira.api.client.ui.UiPageSource;
 import xin.vanilla.banira.api.client.ui.UiValue;
+import xin.vanilla.banira.client.gui.InputFormScreen;
+import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.client.gui.lottery.LotteryPaymentViewModel;
 import xin.vanilla.sakura.data.lottery.*;
 import xin.vanilla.sakura.network.LotteryClientRequests;
@@ -31,6 +32,7 @@ public class LotteryUiOperationHandoffTest {
 
     @BeforeClass
     public static void bootstrap() {
+        xin.vanilla.sakura.test.ForgeUnitTestBootstrap.bootstrap();
         SignInUiParityTest.bootstrap();
     }
 
@@ -47,12 +49,13 @@ public class LotteryUiOperationHandoffTest {
 
         Port() {
             requests.observeGeneration(1);
+            daily.setDrawCounts(List.of(1, 5));
             daily.setDescription("Long\nDescription");
             daily.setVoucherExpression("xpPoints(2)");
         }
 
         public void prepare() {
-            payment.select(pool, "all".equals(count) ? -1 : Integer.parseInt(count));
+            payment.select(pool, 5, 1);
         }
 
         public List<LotteryPool> pools() {
@@ -109,6 +112,26 @@ public class LotteryUiOperationHandoffTest {
     }
 
     @Test
+    public void batchSelectionBridgesNativeCountAndKeepsLegacyAll() {
+        Port port = new Port();
+        port.daily.setDrawCounts(List.of(1, 5, 10));
+        RecordingUiView view = new RecordingUiView();
+        LotteryUiSession session = new LotteryUiSession(port, () -> true);
+        session.bind(view);
+        view.changes.get("batch_count").accept(UiValue.text("10"));
+        assertEquals("10", port.count);
+        assertEquals(10, port.batch());
+        session.detach(UiDetachReason.RELOAD);
+        port.daily.setDrawCounts(null);
+        port.count = "all";
+        RecordingUiView legacy = new RecordingUiView();
+        session.bind(legacy);
+        assertEquals(-1, port.batch());
+        assertEquals("all", legacy.values.get("batch_count").asText());
+        assertEquals(SakuraComponent.get().transClient("word", "lottery_draw_all").toString(), legacy.texts.get("batch_label").toString());
+    }
+
+    @Test
     public void bothOriginalOwnersExposePublicSharedPages() {
         assertTrue("Lottery main must retain its original owner", UiPageSource.class.isAssignableFrom(LotteryScreen.class));
         assertTrue("Lottery result must retain its original owner", UiPageSource.class.isAssignableFrom(LotteryRevealScreen.class));
@@ -144,6 +167,8 @@ public class LotteryUiOperationHandoffTest {
             port.accept();
             session.tick();
             first.actions.get("single").run();
+            assertEquals(1, port.quotes.size());
+            first.actions.get("confirm_draw").run();
             assertEquals(2, port.quotes.size());
             assertTrue(port.draws.isEmpty());
             Runnable stale = first.actions.get("single");
@@ -183,6 +208,7 @@ public class LotteryUiOperationHandoffTest {
         session.tick();
         Runnable late = first.actions.get("single");
         late.run();
+        first.actions.get("confirm_draw").run();
         session.close(UiCloseReason.USER_CLOSE);
         port.accept();
         port.payment.tick();
@@ -202,26 +228,42 @@ public class LotteryUiOperationHandoffTest {
     }
 
     @Test
+    public void drawConfirmationCanCancelAndOnlySubmitsOnce() {
+        Port port = new Port();
+        var session = new LotteryUiSession(port, () -> true);
+        var view = new RecordingUiView();
+        session.bind(view);
+        session.tick();
+        port.accept();
+        session.tick();
+        view.actions.get("batch").run();
+        assertTrue(view.enabled.get("confirm_panel"));
+        assertTrue(port.draws.isEmpty());
+        view.actions.get("confirm_cancel").run();
+        view.actions.get("confirm_draw").run();
+        assertTrue(port.draws.isEmpty());
+        view.actions.get("batch").run();
+        view.actions.get("confirm_draw").run();
+        view.actions.get("confirm_draw").run();
+        assertFalse(view.enabled.get("confirm_panel"));
+        assertEquals(1, port.draws.size());
+    }
+
+    @Test
     public void controlsKeepDescriptionCountsModesAndAuthoritativeQuoteWithoutStableScans() {
         Port port = new Port();
         LotteryUiSession session = new LotteryUiSession(port, () -> true);
         RecordingUiView view = new RecordingUiView();
         session.bind(view);
         assertEquals("Long\nDescription", view.texts.get("description").toString());
-        assertEquals(List.of("5", "10", "12", "all"), view.controls.get("count").options().stream().map(option -> option.value()).toList());
-        assertEquals(4, view.controls.get("animation").options().size());
+        assertFalse(view.controls.containsKey("count"));
+        assertFalse(view.controls.containsKey("animation"));
         assertFalse(view.enabled.get("single"));
         session.tick();
         port.accept();
         session.tick();
         assertTrue(view.enabled.get("batch"));
-        assertTrue(view.texts.get("fee").toString().contains("xpPoints(2)"));
-        for (LotteryAnimationStyle style : LotteryAnimationStyle.values()) {
-            view.changes.get("animation").accept(UiValue.text(style.name()));
-            assertEquals(style, port.style);
-        }
-        view.changes.get("count").accept(UiValue.text("12"));
-        assertEquals("12", port.count);
+        assertTrue(view.texts.get("fee").toString().endsWith("\u00d72"));
         int scans = port.scans;
         for (int i = 0; i < 100; i++) session.tick();
         assertEquals("Stable ticks must not rescan pools", scans, port.scans);
@@ -242,21 +284,20 @@ public class LotteryUiOperationHandoffTest {
         assertFalse(view.enabled.get("batch"));
         view.actions.get("batch").run();
         assertTrue(port.draws.isEmpty());
-        port.millis = 3000;
+        assertEquals("Forbidden quotes must not trigger a second immediate request", 1, port.quotes.size());
+        port.millis += 3000;
         session.tick();
         port.accept();
         session.tick();
         assertTrue(view.enabled.get("single"));
         view.actions.get("single").run();
+        view.actions.get("confirm_draw").run();
         assertTrue(port.draws.isEmpty());
         assertEquals(1, port.quotes.get(port.quotes.size() - 1).getCount());
         port.accept();
         session.tick();
         assertEquals(1, port.draws.size());
-        assertFalse(view.enabled.get("pool"));
-        assertFalse(view.enabled.get("count"));
-        view.changes.get("count").accept(UiValue.text("12"));
-        assertEquals("5", port.count);
+        assertFalse(view.changes.containsKey("count"));
         view.actions.get("single").run();
         assertEquals(1, port.draws.size());
     }
