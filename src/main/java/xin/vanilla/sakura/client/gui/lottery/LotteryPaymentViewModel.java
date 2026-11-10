@@ -98,6 +98,12 @@ public final class LotteryPaymentViewModel {
         }
     }
 
+    public void clickConfirmed(int requested, String fee) {
+        LotteryQuote quote = requests.getQuote();
+        if (fee == null || !canOfferDraw(requested) || !fee.equals(quote.getPaymentSummary())) return;
+        click(requested);
+    }
+
     public void click(int requested) {
         if (!canOfferDraw(requested)) return;
         LotteryQuote quote = requests.getQuote();
@@ -137,7 +143,7 @@ public final class LotteryPaymentViewModel {
         return isPending() && !isRefreshing();
     }
 
-    private boolean isRefreshing() {
+    public boolean isRefreshing() {
         return refreshing && !needsQuote && !isDrawing() && intent == null && requests.getPending() != null
                 && seen != null && seen == requests.getQuote() && seen.getGeneration() == requests.getGeneration()
                 && millis.getAsLong() - receivedAt < 2 * REFRESH_MILLIS;
