@@ -34,6 +34,28 @@ public class SignInCalendarPresentationTest {
     }
 
     @Test
+    public void calendarOnlyExplainsSignedAndClaimedMarksAndUnsignedDatesRemainActionable() throws Exception {
+        String html = new String(UiBoundaryChecks.ownResources("sakura_sign_in").get("signin.html"), StandardCharsets.UTF_8);
+        assertFalse(html.contains("legend_not_signed"));
+        lombok.var port = new SignInUiParityTest.Port() {
+            public boolean marked(int date) {
+                return date != 20261009;
+            }
+        };
+        lombok.var view = new RecordingUiView();
+        lombok.var session = new SignInUiSession(port, () -> true);
+        session.bind(view);
+        assertNull(view.icons.get("status0"));
+        assertNotNull(view.icons.get("status1"));
+        assertNotNull(view.icons.get("status2"));
+        assertFalse(view.icons.containsKey("legend_not_signed"));
+        assertNotNull(view.icons.get("legend_unclaimed"));
+        assertNotNull(view.icons.get("legend_claimed"));
+        view.actions.get("day0").run();
+        assertEquals(com.google.common.collect.ImmutableList.of(20261009), port.requests);
+    }
+
+    @Test
     public void sixFullWeeksIncludeBothAdjacentMonthsAndRetainExistingRewards() throws Exception {
         lombok.var original = new SignInUiSession.Cell(20261009, SignInUiParityTest.text("9"), SignInUiParityTest.text("Reward"), new SignInUiParityTest.Port().texture);
         lombok.var cells = grid(LocalDate.of(2026, 10, 1), 7, com.google.common.collect.ImmutableList.of(original));
@@ -108,8 +130,8 @@ public class SignInCalendarPresentationTest {
 
     @Test
     public void adjacentDayNumbersHaveALighterStyleWithoutDisablingExistingDateActions() throws Exception {
-        String css = new String(UiBoundaryChecks.ownResources("sakura_sign_in").get("signin.css"), StandardCharsets.UTF_8);
-        assertTrue(css.contains(".day-adjacent{color:var(--muted);opacity:0.65}"));
+        String css = new String(UiBoundaryChecks.ownResources("sakura_sign_in").get("sakura-calendar.css"), StandardCharsets.UTF_8);
+        assertTrue(css.contains(".day-adjacent{color:#9b8589}"));
         lombok.var original = new SignInUiSession.Cell(20260927, SignInUiParityTest.text("27"), SignInUiParityTest.text(""), null);
         lombok.var cells = grid(LocalDate.of(2026, 10, 1), 7, com.google.common.collect.ImmutableList.of(original));
         lombok.var port = new SignInUiParityTest.Port() {
@@ -126,20 +148,20 @@ public class SignInCalendarPresentationTest {
 
     @Test
     public void themeIconsHaveNoButtonBackgroundOrFrame() throws Exception {
-        String css = new String(UiBoundaryChecks.ownResources("sakura_sign_in").get("signin.css"), StandardCharsets.UTF_8);
+        String css = new String(UiBoundaryChecks.ownResources("sakura_sign_in").get("sakura-calendar.css"), StandardCharsets.UTF_8);
         int start = css.indexOf(".themes button{");
         assertTrue(start >= 0);
         String button = css.substring(start, css.indexOf('}', start));
         assertTrue(button.contains("border:0"));
         assertTrue(button.contains("background:transparent"));
-        assertTrue(button.contains("width:18px"));
-        assertTrue(button.contains("height:18px"));
+        assertTrue(button.contains("width:15px"));
+        assertTrue(button.contains("height:15px"));
     }
 
     @Test
     public void themeStyleOverridesSharedHoverWithoutChangingTheActions() throws Exception {
         String html = new String(UiBoundaryChecks.ownResources("sakura_sign_in").get("signin.html"), StandardCharsets.UTF_8);
-        assertTrue(html.indexOf("shared.css") < html.indexOf("signin.css"));
+        assertTrue(html.indexOf("shared.css") < html.indexOf("sakura-calendar.css"));
         lombok.var port = new SignInUiParityTest.Port();
         lombok.var view = new RecordingUiView();
         new SignInUiSession(port, () -> true).bind(view);

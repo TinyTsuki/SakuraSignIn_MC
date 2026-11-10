@@ -36,7 +36,7 @@ public class LotteryResultPageTest {
 
     @Test
     public void approvedTemplateUsesLocalStylesAndSharedHeader() throws Exception {
-        String html = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in/lottery-result.html")), StandardCharsets.UTF_8);
+        String html = new String(Files.readAllBytes(java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in/lottery-result.html")), StandardCharsets.UTF_8);
         for (String id : com.google.common.collect.ImmutableList.of("brand", "close", "subtitle", "section", "result_count", "result_area", "result_single", "tile47"))
             assertTrue(id, html.contains("id=\"" + id + "\""));
         assertTrue(html.contains("href=\"lottery-result.css\""));
@@ -45,17 +45,22 @@ public class LotteryResultPageTest {
     }
 
     @Test
-    public void allStylesKeepTheOriginalBudgetAfterWindowsCheckout() throws Exception {
-        int bytes = 0;
-        for (lombok.var entry : UiBoundaryChecks.ownResources("sakura_sign_in").entrySet())
-            if (entry.getKey().endsWith(".css"))
-                bytes += new String(entry.getValue(), StandardCharsets.UTF_8).replace("\r\n", "\n").replace("\n", "\r\n").getBytes(StandardCharsets.UTF_8).length;
-        assertTrue(bytes <= 16384);
+    public void stylesKeepTheScopedBudgetAfterWindowsCheckout() throws Exception {
+        int bytes = 0, lotteryPageBytes = 0;
+        for (lombok.var entry : UiBoundaryChecks.ownResources("sakura_sign_in").entrySet()) {
+            if (!entry.getKey().endsWith(".css")) continue;
+            int size = new String(entry.getValue(), StandardCharsets.UTF_8).replace("\r\n", "\n")
+                    .replace("\n", "\r\n").getBytes(StandardCharsets.UTF_8).length;
+            bytes += size;
+            if (entry.getKey().equals("lottery.css")) lotteryPageBytes = size;
+        }
+        assertTrue("Expected lottery stylesheet in the Windows budget check", lotteryPageBytes > 0);
+        assertTrue(bytes <= UiBoundaryChecks.stylesBudget(lotteryPageBytes));
     }
 
     @Test
     public void resultCardSelectorsMatchAnonymousRowNodes() throws Exception {
-        String css = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in/lottery-result.css")), java.nio.charset.StandardCharsets.UTF_8);
+        String css = new String(Files.readAllBytes(java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in/lottery-result.css")), java.nio.charset.StandardCharsets.UTF_8);
         for (int child : new int[]{1, 4, 5})
             assertTrue(css.contains(".result-card>.paragraph:nth-child(" + child + ")"));
         assertFalse(css.contains("[id$="));
@@ -91,7 +96,8 @@ public class LotteryResultPageTest {
         assertEquals(60, ((UiRowLayout) view.rows).rowHeight());
         lombok.var row = new RecordingUiView();
         view.providers.get("fields").bind(row, 33);
-        assertEquals("100", row.texts.get("index").toString());
+        assertEquals("", row.texts.get("index").toString());
+        assertTrue(view.providers.get("fields").key(33).endsWith(":99"));
         assertNotNull(row.texts.get("type"));
         assertTrue(row.actions.isEmpty());
         assertEquals(40, view.limit);

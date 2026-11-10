@@ -58,6 +58,12 @@ public final class LotteryArtwork {
         return new DropdownOption(pool.getId(), pool.getDisplayName(), artwork.item, textures, tooltip);
     }
 
+    public xin.vanilla.banira.api.client.ui.UiGameElement element() {
+        if (texture != null) return xin.vanilla.banira.api.client.ui.UiGameElement.artwork(
+                new DropdownOption("", Texture.of(texture, imageWidth, imageHeight), null));
+        return xin.vanilla.banira.api.client.ui.UiGameElement.artwork(new DropdownOption("", "", item, null, null));
+    }
+
     public void render(MatrixStack graphics, FontRenderer font, int x, int y, int width, int height) {
         if (texture != null) {
             int drawWidth = Math.min(width, height * imageWidth / imageHeight);

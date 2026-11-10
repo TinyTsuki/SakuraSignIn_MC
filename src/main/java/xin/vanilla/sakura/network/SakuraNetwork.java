@@ -25,7 +25,8 @@ import java.util.Date;
  * Sakura 唯一网络入口；注册、发送与客户端可选握手均由 Banira 承担。
  */
 public final class SakuraNetwork {
-    public static final String PROTOCOL_VERSION = "sakura-8";
+    // Nullable animation markers and expanded ordinals differ from protocol 9's direct enum.
+    public static final String PROTOCOL_VERSION = "sakura-10";
     private static final NetworkHandler HANDLER = NetworkHandler.create(
             "main_network",
             BaniraIdentifier.of(SakuraSignIn.MODID, "main_network"),
