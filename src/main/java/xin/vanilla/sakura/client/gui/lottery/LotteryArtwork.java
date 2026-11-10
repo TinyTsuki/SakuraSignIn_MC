@@ -35,6 +35,12 @@ public record LotteryArtwork(ResourceLocation texture, ItemStack item, int image
         return new LotteryArtwork(texture, item.isEmpty() ? new ItemStack(Items.OAK_SAPLING) : item, WIDTH, HEIGHT);
     }
 
+    public xin.vanilla.banira.api.client.ui.UiGameElement element() {
+        if (texture != null)
+            return xin.vanilla.banira.api.client.ui.UiGameElement.artwork(new DropdownOption("", Texture.of(texture, imageWidth, imageHeight), null));
+        return xin.vanilla.banira.api.client.ui.UiGameElement.artwork(new DropdownOption("", "", item, null, null));
+    }
+
     public static boolean hasMain(LotteryPool pool) {
         return !pool.getPosterPng().isEmpty() || !pool.getArtworkItem().isEmpty() || !pool.getArtworkTexture().isEmpty();
     }
