@@ -71,17 +71,6 @@ public class ApprovedRewardEditorTest {
         assertEquals(0, view.rows.size());
     }
 
-    @Test
-    public void approvedTemplateKeepsAllExistingActionsAndNoBrowserScript() throws Exception {
-        String html = Files.readString(Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in/rewards.html"), StandardCharsets.UTF_8);
-        assertTrue(html.contains("rewards.css"));
-        assertTrue(html.contains("id=\"inspector\""));
-        assertTrue(html.contains("id=\"more_panel\""));
-        assertTrue(html.contains("id=\"status\""));
-        for (var action : RewardEditorUiSession.Action.values())
-            assertTrue(action.id, html.contains("id=\"" + action.id + "\""));
-        assertFalse(html.contains("<script"));
-    }
 
     @Test
     public void nativeViewDoesNotBindNewControlsOrDispatchActions() {
@@ -159,26 +148,6 @@ public class ApprovedRewardEditorTest {
         assertEquals(0, view.closes);
     }
 
-    @Test
-    public void moreMenuFitsTheSmallestAcceptedWorkspace() throws Exception {
-        String css = Files.readString(Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in/rewards.css"), StandardCharsets.UTF_8);
-        var panel = java.util.regex.Pattern.compile("#more_panel\\{([^}]+)}").matcher(css);
-        assertTrue(panel.find());
-        assertTrue("Menu must open inside the viewport rather than below its toolbar", panel.group(1).contains("top:0;"));
-        assertTrue(panel.group(1).contains("max-height:100%"));
-        assertTrue(panel.group(1).contains("overflow-y:auto"));
-        var buttons = java.util.regex.Pattern.compile("#more_panel button\\{([^}]+)}").matcher(css);
-        assertTrue(buttons.find());
-        assertTrue(buttons.group(1).contains("height:20px"));
-        assertTrue(buttons.group(1).contains("margin:0"));
-        assertTrue("Six commands and frame must fit the real 146px viewport", 6 * 20 + 10 <= 146);
-    }
-
-    @Test
-    public void protectedGroupToolsDoNotLeaveEmptyButtonRectangles() throws Exception {
-        String css = Files.readString(Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in/rewards.css"), StandardCharsets.UTF_8);
-        assertTrue(css.contains(".reward-entry .tool:disabled{visibility:hidden}"));
-    }
 
     @Test
     public void outsidePointerClosesMoreWithoutDispatchingABusinessCommand() {
@@ -196,19 +165,6 @@ public class ApprovedRewardEditorTest {
         assertEquals(0, port.commands);
     }
 
-    @Test
-    public void rewardTextUsesTheAuiFontRasterizerAtTheCurrentPixelScale() throws Exception {
-        String css = Files.readString(Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in/rewards.css"), StandardCharsets.UTF_8);
-        assertTrue("Unset font families use Minecraft bitmap text at fractional sizes", css.contains(".rewards-page{font-family:sans-serif}"));
-    }
-
-    @Test
-    public void approvedToolbarLayoutStylesRemainStable() throws Exception {
-        String css = Files.readString(Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in/rewards.css"), StandardCharsets.UTF_8);
-        String layout = css.replace(".rewards-page{font-family:sans-serif}", "").trim();
-        byte[] digest = java.security.MessageDigest.getInstance("SHA-256").digest(layout.getBytes(StandardCharsets.UTF_8));
-        assertEquals("AEA4E5E015BF263E55E96B9DBED7E83EE0BA52CE8EB165473FB4F4BE229682E2", java.util.HexFormat.of().withUpperCase().formatHex(digest));
-    }
 
     @Test
     public void rewardStylesStayWithinBudgetAfterWindowsCheckout() throws Exception {

@@ -3,6 +3,9 @@ package xin.vanilla.sakura.client.ui;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.sakura.SakuraComponent;

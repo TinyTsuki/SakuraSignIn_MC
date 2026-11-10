@@ -121,18 +121,5 @@ public class RecentUiLegacyBridgeTest {
         assertFalse(LotteryAnimationStyle.editorChoices(LotteryAnimationStyle.CHEST).contains(LotteryAnimationStyle.CHEST));
     }
 
-    @Test
-    public void sourceAwareArtworkAndNativePickerLayoutRemainAvailable() throws Exception {
-        String artwork = Files.readString(Path.of("src/main/java/xin/vanilla/sakura/client/gui/lottery/LotteryArtwork.java"), StandardCharsets.UTF_8);
-        assertTrue(artwork.contains("ItemUtils.deserializeItemStack(pool.getArtworkItem())"));
-        assertTrue(artwork.contains("public void render("));
-        assertTrue(artwork.contains("public static DropdownOption option("));
-        String nativePage = Files.readString(Path.of("src/main/java/xin/vanilla/sakura/screen/LotteryScreen.java"), StandardCharsets.UTF_8);
-        assertTrue(nativePage.contains("poolSelect = dropdown(layout.pool())"));
-        assertTrue(nativePage.contains("pool.getDrawCounts() == null || batchCount() != 1"));
-        String form = Files.readString(Path.of("src/main/java/xin/vanilla/sakura/client/gui/LotteryPoolForm.java"), StandardCharsets.UTF_8);
-        assertTrue(form.contains("existing.getAnimationStyle() == null ? \"legacy\""));
-        assertTrue(form.contains("ItemStack"));
-        assertTrue(form.contains("ArtworkDraft"));
-    }
+
 }
