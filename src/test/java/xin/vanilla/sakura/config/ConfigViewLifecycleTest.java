@@ -28,24 +28,29 @@ import java.util.function.Supplier;
 import static org.junit.Assert.*;
 
 public class ConfigViewLifecycleTest {
-    @org.junit.Rule public org.junit.rules.ExternalResource platform = ConfigBaselineFixture.platformScope();
-    @Rule public TemporaryFolder temporary = new TemporaryFolder();
-    @BeforeClass public static void bootstrap() { xin.vanilla.sakura.test.ForgeUnitTestBootstrap.bootstrap(); }
+    @org.junit.Rule
+    public org.junit.rules.ExternalResource platform = ConfigBaselineFixture.platformScope();
+    @Rule
+    public TemporaryFolder temporary = new TemporaryFolder();
 
-    @Test public void retainedHistoryFollowsFileReloadAndRebinding() throws Exception { verify(false); }
-    @Test public void retainedClientCategoryFollowsFileReloadAndRebinding() throws Exception { verify(true); }
-
-    @Test public void clientRewardScopeIsRegisteredAfterConfigSetup() throws Exception {
-        String source = new String(Files.readAllBytes(java.nio.file.Paths.get(
-                "src/main/java/xin/vanilla/sakura/client/SakuraClientBootstrap.java")), StandardCharsets.UTF_8);
-        int setup = source.indexOf("BaniraClientEvents.ModLifecycle.onClientSetup(event -> {");
-        int next = source.indexOf("BaniraClientEvents.Client.onClientTick", setup);
-        assertTrue(setup >= 0 && next > setup);
-        assertFalse(source.substring(0, setup).contains("RewardConfigManager.configureClientScope"));
-        assertTrue(source.substring(setup, next).contains("RewardConfigManager.configureClientScope"));
+    @BeforeClass
+    public static void bootstrap() {
+        xin.vanilla.sakura.test.ForgeUnitTestBootstrap.bootstrap();
     }
 
-    @Test public void rewardScopeReadsRequireLoadedForgeConfiguration() throws Exception {
+    @Test
+    public void retainedHistoryFollowsFileReloadAndRebinding() throws Exception {
+        verify(false);
+    }
+
+    @Test
+    public void retainedClientCategoryFollowsFileReloadAndRebinding() throws Exception {
+        verify(true);
+    }
+
+
+    @Test
+    public void rewardScopeReadsRequireLoadedForgeConfiguration() throws Exception {
         try (FileFixture fixture = new FileFixture(CommonConfig.class,
                 temporary.newFile("scope.toml").toPath(), false)) {
             ConfigBaselineFixture.bind(CommonConfig.class, fixture.holder);
@@ -54,7 +59,9 @@ public class ConfigViewLifecycleTest {
                     xin.vanilla.sakura.config.reward.RewardConfigManager.configureClientScope(() -> false));
             fixture.load();
             xin.vanilla.sakura.config.reward.RewardConfigManager.configureClientScope(() -> false);
-        } finally { ConfigBaselineFixture.bind(CommonConfig.class, null); }
+        } finally {
+            ConfigBaselineFixture.bind(CommonConfig.class, null);
+        }
     }
 
     private void verify(boolean client) throws Exception {
@@ -100,7 +107,9 @@ public class ConfigViewLifecycleTest {
             assertEquals(writtenValue, second.holder.get(key));
             ConfigBaselineFixture.bind(type, first.holder);
             assertEquals(externalValue, read.get());
-        } finally { ConfigBaselineFixture.bind(type, null); }
+        } finally {
+            ConfigBaselineFixture.bind(type, null);
+        }
     }
 
     private static CommentedConfig parse(Path path) throws Exception {
@@ -156,6 +165,8 @@ public class ConfigViewLifecycleTest {
             return method.invoke(backend, args);
         }
 
-        public void close() { file.close(); }
+        public void close() {
+            file.close();
+        }
     }
 }

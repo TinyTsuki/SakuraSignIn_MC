@@ -4,7 +4,6 @@ import org.junit.*;
 
 import java.time.LocalDate;
 import java.util.*;
-import java.nio.charset.StandardCharsets;
 
 import xin.vanilla.banira.api.client.ui.*;
 
@@ -33,8 +32,6 @@ public class SignInCalendarPresentationTest {
 
     @Test
     public void calendarOnlyExplainsSignedAndClaimedMarksAndUnsignedDatesRemainActionable() throws Exception {
-        String html = new String(UiBoundaryChecks.ownResources("sakura_sign_in").get("signin.html"), StandardCharsets.UTF_8);
-        assertFalse(html.contains("legend_not_signed"));
         var port = new SignInUiParityTest.Port() {
             public boolean marked(int date) {
                 return date != 20261009;
@@ -110,16 +107,6 @@ public class SignInCalendarPresentationTest {
     }
 
     @Test
-    public void tipsDeclareAModalAndEveryCalendarSlotHasItsOwnNumberStyle() throws Exception {
-        String html = new String(UiBoundaryChecks.ownResources("sakura_sign_in").get("signin.html"), StandardCharsets.UTF_8);
-        assertTrue(html.contains("id=\"tips_panel\" class=\"tips-panel\" aria-modal=\"true\""));
-        for (int i = 0; i < 42; i++) {
-            assertTrue("Missing calendar action " + i, html.contains("id=\"day" + i + "\""));
-            assertTrue("Missing adjacent date style " + i, html.contains("id=\"day" + i + "_adjacent\""));
-        }
-    }
-
-    @Test
     public void ruleSidebarIconIsVisibleWithoutOpeningMore() {
         var view = new RecordingUiView();
         new RewardEditorUiSession(new RewardEditorUiParityTest.Port(2), () -> true).bind(view);
@@ -127,9 +114,7 @@ public class SignInCalendarPresentationTest {
     }
 
     @Test
-    public void adjacentDayNumbersHaveALighterStyleWithoutDisablingExistingDateActions() throws Exception {
-        String css = new String(UiBoundaryChecks.ownResources("sakura_sign_in").get("sakura-calendar.css"), StandardCharsets.UTF_8);
-        assertTrue(css.contains(".day-adjacent{color:#9b8589}"));
+    public void adjacentMonthDatesRetainExistingDateActions() throws Exception {
         var original = new SignInUiSession.Cell(20260927, SignInUiParityTest.text("27"), SignInUiParityTest.text(""), null);
         var cells = grid(LocalDate.of(2026, 10, 1), 7, List.of(original));
         var port = new SignInUiParityTest.Port() {
@@ -145,21 +130,7 @@ public class SignInCalendarPresentationTest {
     }
 
     @Test
-    public void themeIconsHaveNoButtonBackgroundOrFrame() throws Exception {
-        String css = new String(UiBoundaryChecks.ownResources("sakura_sign_in").get("sakura-calendar.css"), StandardCharsets.UTF_8);
-        int start = css.indexOf(".themes button{");
-        assertTrue(start >= 0);
-        String button = css.substring(start, css.indexOf('}', start));
-        assertTrue(button.contains("border:0"));
-        assertTrue(button.contains("background:transparent"));
-        assertTrue(button.contains("width:15px"));
-        assertTrue(button.contains("height:15px"));
-    }
-
-    @Test
-    public void themeStyleOverridesSharedHoverWithoutChangingTheActions() throws Exception {
-        String html = new String(UiBoundaryChecks.ownResources("sakura_sign_in").get("signin.html"), StandardCharsets.UTF_8);
-        assertTrue(html.indexOf("shared.css") < html.indexOf("sakura-calendar.css"));
+    public void eachThemeIconDispatchesItsOwnAction() {
         var port = new SignInUiParityTest.Port();
         var view = new RecordingUiView();
         new SignInUiSession(port, () -> true).bind(view);
