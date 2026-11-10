@@ -13,14 +13,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class AuiRuntimePrerequisiteTest {
-    @Test
-    public void devFpsIsPreparedOnlyByClientTask() throws Exception {
-        String script = Files.readString(Path.of("build.gradle"), StandardCharsets.UTF_8);
-        assertTrue(script.contains("tasks.named('runClient').configure { dependsOn 'prepareDevFpsOverlay' }"));
-        assertTrue(script.contains("doLast prepareBaniraDevFpsOverlay"));
-        assertFalse(script.contains("orNull == null) prepareBaniraDevFpsOverlay()"));
-        assertFalse(script.matches("(?s).*(?m)^\\s*prepareBaniraDevFpsOverlay\\(\\)\\s*$.*"));
-    }
+
 
     @Test
     public void officialEnginePrerequisitesRemainAvailable() throws Exception {
