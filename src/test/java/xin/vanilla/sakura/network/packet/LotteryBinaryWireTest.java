@@ -102,6 +102,25 @@ public class LotteryBinaryWireTest {
         assertEquals(BigDecimal.ONE, packet.getWinner().getProbability());
     }
 
+    @Test
+    public void nullableAnimationStyleRoundTripsAllNineWireValuesWithoutReordering() {
+        assertEquals(Arrays.asList("STRIP", "CARDS", "ROULETTE", "INSTANT", "ENVELOPE", "FAN", "BOUNCE", "CHEST", "FLIP"),
+                Arrays.stream(LotteryAnimationStyle.values()).map(Enum::name).collect(java.util.stream.Collectors.toList()));
+        List<LotteryAnimationStyle> styles = new ArrayList<>(Arrays.asList(LotteryAnimationStyle.values()));
+        styles.add(null);
+        for (LotteryAnimationStyle style : styles) {
+            LotteryRevealPacket packet = new LotteryRevealPacket(SESSION + "-1", TOKEN, "Daily",
+                    Collections.singletonList(Reward.getDefault()), Collections.emptyList(), LotteryPreviewMode.NONE, style);
+            try (Wire wire = new Wire()) {
+                packet.toBytes(wire);
+                LotteryRevealPacket decoded = new LotteryRevealPacket(wire);
+                assertEquals(style, decoded.getAnimationStyle());
+                assertEquals(packet.getWinners(), decoded.getWinners());
+                assertEquals(0, wire.buffer.readableBytes());
+            }
+        }
+    }
+
     static final class Wire implements BaniraPacketBuffer, AutoCloseable {
         final FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.buffer());
 
