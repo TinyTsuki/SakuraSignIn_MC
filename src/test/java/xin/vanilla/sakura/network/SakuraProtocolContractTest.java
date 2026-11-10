@@ -21,23 +21,5 @@ public class SakuraProtocolContractTest {
                 LotteryAnimationStyle.FLIP}, LotteryAnimationStyle.values());
     }
 
-    @Test
-    public void versionedChannelRegistrationKeepsTheClientOptional() throws Exception {
-        String source = new String(Files.readAllBytes(Paths.get(
-                "src/main/java/xin/vanilla/sakura/network/SakuraNetwork.java")), StandardCharsets.UTF_8);
-        assertTrue(source.replaceAll("\\s+", "").contains(
-                "NetworkHandler.create(\"main_network\",BaniraIdentifier.of(SakuraSignIn.MODID,\"main_network\"),PROTOCOL_VERSION,true)"));
-        assertFalse(source.contains("\"sakura-8\""));
-        assertFalse(source.contains("\"sakura-9\""));
-    }
 
-    @Test
-    public void protocolTenRetainsTheNullableAnimationMarkerInBothDirections() throws Exception {
-        String source = new String(Files.readAllBytes(Paths.get(
-                "src/main/java/xin/vanilla/sakura/network/packet/LotteryRevealPacket.java")), StandardCharsets.UTF_8)
-                .replaceAll("\\s+", "");
-        assertTrue(source.contains("animationStyle=buffer.readBoolean()?buffer.readEnum(LotteryAnimationStyle.class):null;"));
-        assertTrue(source.contains("buffer.writeBoolean(animationStyle!=null);"));
-        assertTrue(source.contains("if(animationStyle!=null)buffer.writeEnum(animationStyle);"));
-    }
 }

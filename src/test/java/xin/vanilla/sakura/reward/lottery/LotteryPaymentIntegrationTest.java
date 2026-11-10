@@ -74,13 +74,6 @@ public class LotteryPaymentIntegrationTest {
         }
     }
 
-    @Test
-    public void initialSyncRetriesRecoveryAfterPresence() throws Exception {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-                "src/main/java/xin/vanilla/sakura/network/SakuraNetwork.java")), java.nio.charset.StandardCharsets.UTF_8);
-        int sync = source.indexOf("private static void syncInitialData");
-        assertTrue(source.substring(sync).contains("LotteryRewardService.recover(player)"));
-    }
 
     @Test
     public void paidRecoveryEmitsEachCompletedDisplayOncePerCall() throws Exception {

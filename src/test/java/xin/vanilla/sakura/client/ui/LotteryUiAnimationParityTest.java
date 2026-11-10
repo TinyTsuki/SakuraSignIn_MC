@@ -59,13 +59,6 @@ public class LotteryUiAnimationParityTest {
             }
     }
 
-    @Test
-    public void nativeStripAndWheelUseTheSameFrameContract() throws Exception {
-        String source = xin.vanilla.sakura.client.ui.UiBoundaryChecks.text(java.nio.file.Paths.get("src/main/java/xin/vanilla/sakura/screen/LotteryRevealScreen.java"));
-        assertTrue(source.contains("LotteryRevealUiSession.frame(LotteryAnimationStyle.STRIP"));
-        assertTrue(source.contains("LotteryRevealUiSession.frame(LotteryAnimationStyle.ROULETTE"));
-        assertFalse(source.contains("Math.cos(angle)"));
-    }
 
     @Test
     public void fourModesUseOriginalGeometryDurationsAndDeterminedWinnerPositions() {

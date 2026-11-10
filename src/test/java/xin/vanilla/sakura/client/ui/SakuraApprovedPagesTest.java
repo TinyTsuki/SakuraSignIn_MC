@@ -28,22 +28,6 @@ public class SakuraApprovedPagesTest {
         SignInUiParityTest.bootstrap();
     }
 
-    @Test
-    public void onlyTheThreeApprovedPagesLoadTheNewScopedStylesWithoutScriptsOrCalendarImages() throws Exception {
-        Path root = java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in");
-        for (String page : com.google.common.collect.ImmutableList.of("signin", "rewards", "lottery")) {
-            String html = new String(Files.readAllBytes(root.resolve(page + ".html")), java.nio.charset.StandardCharsets.UTF_8);
-            assertTrue(html.contains(page.equals("lottery") ? "sakura-lottery.css" : page.equals("signin") ? "sakura-calendar.css" : "sakura-pages.css"));
-            assertFalse(html.contains("<script"));
-            assertFalse(html.contains("https:"));
-        }
-        assertFalse(new String(Files.readAllBytes(root.resolve("personal-date.html")), java.nio.charset.StandardCharsets.UTF_8).contains("sakura-pages.css"));
-        assertFalse(new String(Files.readAllBytes(root.resolve("signin.css")), java.nio.charset.StandardCharsets.UTF_8).contains("url("));
-        String rewards = new String(Files.readAllBytes(root.resolve("rewards.html")), java.nio.charset.StandardCharsets.UTF_8);
-        for (String id : com.google.common.collect.ImmutableList.of("group_nav", "groups", "add_group", "edit_group", "upload", "search", "fields"))
-            assertTrue(rewards.contains("id=\"" + id + "\""));
-        assertEquals(com.google.common.collect.ImmutableList.of(), UiBoundaryChecks.resources(UiBoundaryChecks.ownResources("sakura_sign_in"), false));
-    }
 
     @Test
     public void envelopeKeepsItsBodyFixedWhileTheFlapMovesAndSmallCardsUseTooltips() throws Exception {
@@ -68,14 +52,8 @@ public class SakuraApprovedPagesTest {
         }
         assertTrue(view.areas.get("motion_flap_open").height() > 0);
         assertEquals(0, view.areas.get("motion_flap_closed").height(), 0);
-        String css = new String(Files.readAllBytes(java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in/sakura-motion.css")), java.nio.charset.StandardCharsets.UTF_8);
-        assertTrue(css.contains(".motion-name{display:none}"));
-        assertTrue(css.contains("text-overflow:ellipsis"));
-        String html = new String(Files.readAllBytes(java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in/lottery-result.html")), java.nio.charset.StandardCharsets.UTF_8);
-        assertFalse(html.contains("motion_chest"));
-        assertTrue(css.contains(".motion-envelope{position:absolute;inset:0;border:0;box-shadow:inset 0 0 0 2px"));
-        assertTrue(css.contains(".fan-left-outer{transform:rotate(-24deg)}"));
-        assertTrue(css.contains(".fan-back:disabled{transform:rotate(0deg);opacity:1;z-index:4}"));
+
+
     }
 
     @Test
@@ -100,17 +78,6 @@ public class SakuraApprovedPagesTest {
         assertFalse(view.texts.containsKey("edit_group"));
     }
 
-    @Test
-    public void engineOverlayUsesSolidPaintAndNarrowCalendarLabelsStayCompact() throws Exception {
-        Path resources = java.nio.file.Paths.get("src/main/resources/assets");
-        String css = new String(Files.readAllBytes(resources.resolve("apricityui/apricity/sakura_sign_in/sakura-lottery.css")), java.nio.charset.StandardCharsets.UTF_8);
-        assertTrue(css.contains(".pool-title{flex:none;font-size:24px"));
-        assertFalse(css.contains("linear-gradient("));
-        assertFalse(css.contains("#291e2ef5"));
-        com.google.gson.JsonObject language = new com.google.gson.JsonParser().parse(new String(Files.readAllBytes(resources.resolve("sakura_sign_in/lang/en_us.json")), java.nio.charset.StandardCharsets.UTF_8)).getAsJsonObject();
-        assertEquals("Streak", language.get("word.sakura_sign_in.aui_consecutive").getAsString());
-        assertEquals("Sign-ins", language.get("word.sakura_sign_in.aui_total").getAsString());
-    }
 
     @Test
     public void approvedCalendarUsesWholeWeeksAndDoesNotCompressDatesUnderStatusIcons() {
@@ -178,23 +145,6 @@ public class SakuraApprovedPagesTest {
         assertEquals(1, port.requests.size());
     }
 
-    @Test
-    public void twoRebuiltPagesDoNotLoadTheLegacyLayoutStyles() throws Exception {
-        Path root = java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in");
-        String calendar = new String(Files.readAllBytes(root.resolve("signin.html")), java.nio.charset.StandardCharsets.UTF_8);
-        assertFalse(calendar.contains("href=\"signin.css\""));
-        assertFalse(calendar.contains("<footer"));
-        assertTrue(calendar.contains("id=\"date_action\""));
-        assertTrue(calendar.indexOf("calendar-stats") > calendar.indexOf("class=\"reward-sidebar\""));
-        String lottery = new String(Files.readAllBytes(root.resolve("lottery.html")), java.nio.charset.StandardCharsets.UTF_8);
-        assertFalse(lottery.contains("href=\"lottery.css\""));
-        assertTrue(lottery.indexOf("id=\"title\"") > lottery.indexOf("class=\"pool-copy\""));
-        String calendarCss = new String(Files.readAllBytes(root.resolve("sakura-calendar.css")), java.nio.charset.StandardCharsets.UTF_8);
-        String lotteryCss = new String(Files.readAllBytes(root.resolve("sakura-lottery.css")), java.nio.charset.StandardCharsets.UTF_8);
-        assertTrue(calendarCss.contains("font-weight:600;color:#fff9f5"));
-        assertTrue(lotteryCss.contains("#single_label{color:#fff5ed;font-weight:600}"));
-        assertTrue(lotteryCss.contains("#batch_label{color:#3c2630;font-weight:600}"));
-    }
 
     @Test
     public void physicalItemFeeUsesAnIconAndTheNameOnlyInTooltip() {

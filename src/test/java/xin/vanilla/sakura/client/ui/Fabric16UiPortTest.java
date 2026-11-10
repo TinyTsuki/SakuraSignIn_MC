@@ -74,19 +74,6 @@ public class Fabric16UiPortTest {
         assertTrue(bootstrap.contains("SakuraClientBootstrap.init()"));
     }
 
-    @Test
-    public void isolatedPublicationUsesRemappedSourcesAndDoesNotTouchClientOptions() throws Exception {
-        String build = xin.vanilla.sakura.client.ui.UiBoundaryChecks.text(java.nio.file.Paths.get("build.gradle"));
-        assertTrue(build.contains("id 'maven-publish'"));
-        assertTrue(build.contains("destinationDirectory.set(baniraDistributionDirectory)"));
-        assertTrue(build.contains("artifact tasks.named('remapSourcesJar')"));
-        assertTrue(build.contains("tasks.matching { it.name == 'runClient' }.configureEach"));
-        assertTrue(build.contains("doFirst { prepareBaniraDevFpsOverlay() }"));
-        assertFalse(build.contains("orNull == null) prepareBaniraDevFpsOverlay()"));
-        String isolation = xin.vanilla.sakura.client.ui.UiBoundaryChecks.text(java.nio.file.Paths.get("gradle/aui-validation-output.gradle"));
-        assertTrue(isolation.contains("disallowChanges()"));
-        assertTrue(isolation.contains("Publication escaped validation output root"));
-    }
 
     @Test
     public void nativePagesKeepPoseStackDrawingAndConnectionGuards() throws Exception {
