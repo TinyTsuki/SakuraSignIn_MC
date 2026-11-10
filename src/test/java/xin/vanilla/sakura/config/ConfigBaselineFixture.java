@@ -1,9 +1,9 @@
 package xin.vanilla.sakura.config;
 
+import com.electronwill.nightconfig.core.CommentedConfig;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
-import com.electronwill.nightconfig.core.CommentedConfig;
 import net.minecraftforge.common.ForgeConfigSpec;
 import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
 import xin.vanilla.banira.common.config.ConfigHolder;
@@ -22,9 +22,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
-/** Captures actual scanner and access behavior before replacing the handwritten views. */
+/**
+ * Captures actual scanner and access behavior before replacing the handwritten views.
+ */
 public final class ConfigBaselineFixture implements ConfigValueStore {
     private static final Gson JSON = new GsonBuilder().setPrettyPrinting().serializeNulls().create();
     final Map<String, Object> values = new TreeMap<>();
@@ -79,16 +82,22 @@ public final class ConfigBaselineFixture implements ConfigValueStore {
         return result;
     }
 
-    void bind(Class<?> type) { bind(type, holder); }
+    void bind(Class<?> type) {
+        bind(type, holder);
+    }
 
     static org.junit.rules.ExternalResource platformScope() {
         return new org.junit.rules.ExternalResource() {
             private xin.vanilla.banira.platform.BaniraPlatform previous;
-            @Override protected void before() {
+
+            @Override
+            protected void before() {
                 xin.vanilla.sakura.test.BaniraTestPlatform.install();
                 previous = xin.vanilla.banira.platform.BaniraPlatforms.get();
             }
-            @Override protected void after() {
+
+            @Override
+            protected void after() {
                 xin.vanilla.banira.platform.BaniraPlatforms.install(previous);
             }
         };
@@ -104,8 +113,14 @@ public final class ConfigBaselineFixture implements ConfigValueStore {
 
     static void bind(Class<?> type, xin.vanilla.banira.platform.BaniraConfigHandle holder) {
         xin.vanilla.banira.platform.BaniraConfigService service = new xin.vanilla.banira.platform.BaniraConfigService() {
-            public <T> void register(Class<T> config, String modId) { throw new UnsupportedOperationException(); }
-            public <T> T view(Class<?> config, Class<T> view) { throw new UnsupportedOperationException(); }
+            public <T> void register(Class<T> config, String modId) {
+                throw new UnsupportedOperationException();
+            }
+
+            public <T> T view(Class<?> config, Class<T> view) {
+                throw new UnsupportedOperationException();
+            }
+
             public xin.vanilla.banira.platform.BaniraConfigHandle handle(Class<?> config) {
                 return config == type ? holder : null;
             }
@@ -164,13 +179,20 @@ public final class ConfigBaselineFixture implements ConfigValueStore {
     private List<?> sampleList(String path) {
         ConfigEntryDescriptor descriptor = holder.getDescriptor(path);
         switch (descriptor.getValueType()) {
-            case STRING_LIST: return new ArrayList<>(Arrays.asList("tick, clazz -> tick >= 5", "minecraft:arrow"));
-            case INTEGER_LIST: return new ArrayList<>(Collections.singletonList(7));
-            case LONG_LIST: return new ArrayList<>(Collections.singletonList(7L));
-            case DOUBLE_LIST: return new ArrayList<>(Collections.singletonList(0.125D));
-            case BOOLEAN_LIST: return new ArrayList<>(Collections.singletonList(true));
-            case ENUM_LIST: return new ArrayList<>(Collections.singletonList(descriptor.getEnumClass().getEnumConstants()[0]));
-            default: throw new AssertionError(path);
+            case STRING_LIST:
+                return new ArrayList<>(Arrays.asList("tick, clazz -> tick >= 5", "minecraft:arrow"));
+            case INTEGER_LIST:
+                return new ArrayList<>(Collections.singletonList(7));
+            case LONG_LIST:
+                return new ArrayList<>(Collections.singletonList(7L));
+            case DOUBLE_LIST:
+                return new ArrayList<>(Collections.singletonList(0.125D));
+            case BOOLEAN_LIST:
+                return new ArrayList<>(Collections.singletonList(true));
+            case ENUM_LIST:
+                return new ArrayList<>(Collections.singletonList(descriptor.getEnumClass().getEnumConstants()[0]));
+            default:
+                throw new AssertionError(path);
         }
     }
 
@@ -191,22 +213,43 @@ public final class ConfigBaselineFixture implements ConfigValueStore {
         return value instanceof List ? new ArrayList<>((List<?>) value) : value;
     }
 
-    @Override public Set<String> paths() { return values.keySet(); }
-    @Override public Object get(String path) { return values.get(path); }
-    @Override public void set(String path, Object value) {
+    @Override
+    public Set<String> paths() {
+        return values.keySet();
+    }
+
+    @Override
+    public Object get(String path) {
+        return values.get(path);
+    }
+
+    @Override
+    public void set(String path, Object value) {
         if (!values.containsKey(path)) throw new AssertionError("Unknown write: " + path);
         values.put(path, copy(value));
         written.add(path);
     }
-    @Override public Class<?> valueClass(String path) {
+
+    @Override
+    public Class<?> valueClass(String path) {
         Object value = defaults.get(path);
         if (value instanceof Enum) return ((Enum<?>) value).getDeclaringClass();
         return value instanceof List ? List.class : value.getClass();
     }
-    @Override public Object defaultValue(String path) { return copy(defaults.get(path)); }
-    @Override public boolean validate(String path, Object value) {
+
+    @Override
+    public Object defaultValue(String path) {
+        return copy(defaults.get(path));
+    }
+
+    @Override
+    public boolean validate(String path, Object value) {
         ForgeConfigSpec.ValueSpec definition = spec.getSpec().get(path);
         return definition != null && definition.test(value);
     }
-    @Override public void save() { saves++; }
+
+    @Override
+    public void save() {
+        saves++;
+    }
 }

@@ -7,11 +7,16 @@ import xin.vanilla.banira.platform.BaniraPlatforms;
 
 import java.lang.reflect.Proxy;
 
-/** Exercises configured DEFAULTS behavior without registering a fake native mod. */
+/**
+ * Exercises configured DEFAULTS behavior without registering a fake native mod.
+ */
 public final class UnboundConfigPlatform extends ExternalResource {
     private BaniraPlatform previous;
-    @Override protected void before() {
-        BaniraTestPlatform.install(); previous = BaniraPlatforms.get();
+
+    @Override
+    protected void before() {
+        BaniraTestPlatform.install();
+        previous = BaniraPlatforms.get();
         BaniraConfigService service = (BaniraConfigService) Proxy.newProxyInstance(
                 getClass().getClassLoader(), new Class<?>[]{BaniraConfigService.class},
                 (proxy, method, args) -> {
@@ -24,5 +29,9 @@ public final class UnboundConfigPlatform extends ExternalResource {
                     return method.invoke(previous, args);
                 }));
     }
-    @Override protected void after() { BaniraPlatforms.install(previous); }
+
+    @Override
+    protected void after() {
+        BaniraPlatforms.install(previous);
+    }
 }

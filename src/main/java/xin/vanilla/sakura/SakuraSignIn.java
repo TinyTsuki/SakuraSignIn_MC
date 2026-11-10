@@ -5,8 +5,8 @@ import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.common.Mod;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.banira.api.event.BaniraEvents;
 import xin.vanilla.banira.api.BaniraConfigs;
+import xin.vanilla.banira.api.event.BaniraEvents;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.api.reward.SakuraRewards;
 import xin.vanilla.sakura.client.SakuraClientBootstrap;
@@ -17,8 +17,8 @@ import xin.vanilla.sakura.data.calendar.SakuraCalendars;
 import xin.vanilla.sakura.internal.forge.ForgeSakuraEntrypoint;
 import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
-import xin.vanilla.sakura.reward.builtin.BuiltInRewardTypes;
 import xin.vanilla.sakura.reward.builtin.BuiltInRewardRulePermissions;
+import xin.vanilla.sakura.reward.builtin.BuiltInRewardTypes;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 

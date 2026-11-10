@@ -1,14 +1,17 @@
 package xin.vanilla.sakura.data.lottery;
 
 import org.junit.Test;
+
 import java.util.UUID;
+
 import static org.junit.Assert.*;
 
 public class LotteryProtocolValuesTest {
     private static final UUID SESSION = UUID.fromString("11111111-2222-3333-4444-555555555555");
     private static final String TOKEN = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
 
-    @Test public void requestsBindSessionCounterRevisionPoolAndCount() {
+    @Test
+    public void requestsBindSessionCounterRevisionPoolAndCount() {
         LotteryQuoteRequest request = new LotteryQuoteRequest(SESSION, 3, 7, "daily", -1);
         assertEquals(SESSION, request.getSession());
         assertEquals(3, request.getRequestId());
@@ -20,7 +23,8 @@ public class LotteryProtocolValuesTest {
         assertEquals(TOKEN, draw.getQuoteToken());
     }
 
-    @Test public void invalidRequestValuesCannotReachHandlers() {
+    @Test
+    public void invalidRequestValuesCannotReachHandlers() {
         assertThrows(IllegalArgumentException.class, () -> new LotteryQuoteRequest(null, 1, 0, "daily", 1));
         assertThrows(IllegalArgumentException.class, () -> new LotteryQuoteRequest(SESSION, 0, 0, "daily", 1));
         assertThrows(IllegalArgumentException.class, () -> new LotteryQuoteRequest(SESSION, 1, -1, "daily", 1));
@@ -30,7 +34,8 @@ public class LotteryProtocolValuesTest {
         assertThrows(IllegalArgumentException.class, () -> new LotteryDrawRequest(SESSION, 1, 0, "daily", 1, ""));
     }
 
-    @Test public void onlyReadyQuotesCarryAuthorization() {
+    @Test
+    public void onlyReadyQuotesCarryAuthorization() {
         LotteryQuoteRequest request = new LotteryQuoteRequest(SESSION, 3, 7, "daily", 5);
         LotteryQuote quote = new LotteryQuote(request, LotteryQuote.Status.READY, 7, 10, "5 paper", TOKEN);
         assertTrue(quote.isReady());
@@ -43,7 +48,8 @@ public class LotteryProtocolValuesTest {
         assertFalse(new LotteryQuote(request, LotteryQuote.Status.STALE_GENERATION, 8, 0, "", "").isReady());
     }
 
-    @Test public void operationKeysAreCanonicalAndSafeForStorage() {
+    @Test
+    public void operationKeysAreCanonicalAndSafeForStorage() {
         LotteryProtocolLimits.operationId(SESSION + "-1");
         for (String id : new String[]{"../result", SESSION + "-0", SESSION + "-01",
                 SESSION + "-9223372036854775808", "not-a-session-1"})

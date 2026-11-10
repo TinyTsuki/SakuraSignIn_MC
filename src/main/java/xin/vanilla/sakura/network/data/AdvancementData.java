@@ -1,21 +1,21 @@
 package xin.vanilla.sakura.network.data;
 
-import xin.vanilla.sakura.SakuraComponent;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.advancements.Advancement;
 import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.advancements.FrameType;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.TagParser;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
+import xin.vanilla.sakura.SakuraComponent;
 
 /**
  * 进度信息

@@ -2,9 +2,7 @@ package xin.vanilla.sakura.api.reward;
 
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.*;
 
 public class RewardTypeIdTest {
 

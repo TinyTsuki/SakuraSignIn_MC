@@ -1,35 +1,43 @@
 package xin.vanilla.sakura.network.packet;
 
 import org.junit.Test;
-import xin.vanilla.sakura.data.lottery.*;
-import xin.vanilla.sakura.reward.*;
+import xin.vanilla.sakura.data.lottery.LotteryLimitPolicy;
+import xin.vanilla.sakura.data.lottery.LotteryPool;
+import xin.vanilla.sakura.data.lottery.LotteryPreviewMode;
+import xin.vanilla.sakura.reward.Reward;
+import xin.vanilla.sakura.reward.RewardList;
 
 import java.util.Collections;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThrows;
 
 public class LotteryWireBoundaryTest {
     private static final java.util.UUID SESSION = java.util.UUID.fromString("11111111-2222-3333-4444-555555555555");
     private static final String TOKEN = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
-    @Test public void drawRejectsInvalidPoolAndCountAtConstruction() {
+
+    @Test
+    public void drawRejectsInvalidPoolAndCountAtConstruction() {
         for (int count : new int[]{Integer.MIN_VALUE, -2, 0, 101, Integer.MAX_VALUE}) {
             assertThrows(IllegalArgumentException.class, () -> new LotteryDrawRequestPacket(SESSION, 1, 0, "daily", count, TOKEN));
         }
         assertThrows(IllegalArgumentException.class, () -> new LotteryDrawRequestPacket(SESSION, 1, 0, "../daily", 1, TOKEN));
     }
 
-    @Test public void claimRejectsOversizedToken() {
+    @Test
+    public void claimRejectsOversizedToken() {
         assertThrows(IllegalArgumentException.class, () -> new LotteryClaimPacket(SESSION + "-1", repeat('a', 65)));
     }
 
-    @Test public void revealDoesNotInventOrTruncateWinners() {
+    @Test
+    public void revealDoesNotInventOrTruncateWinners() {
         assertThrows(IllegalArgumentException.class, () -> new LotteryRevealPacket(SESSION + "-1", TOKEN, "Daily",
                 Collections.emptyList(), Collections.emptyList(), LotteryPreviewMode.ALL));
         assertThrows(IllegalArgumentException.class, () -> new LotteryRevealPacket(SESSION + "-1", TOKEN, "Daily",
                 Collections.nCopies(101, Reward.getDefault()), Collections.emptyList(), LotteryPreviewMode.ALL));
     }
 
-    @Test public void oversizedLotteryDocumentIsRejectedBeforeSplitting() {
+    @Test
+    public void oversizedLotteryDocumentIsRejectedBeforeSplitting() {
         LotteryPool pool = new LotteryPool("daily", "Daily", LotteryLimitPolicy.DAILY,
                 1, 0, new RewardList());
         com.google.gson.JsonObject content = new com.google.gson.JsonObject();
@@ -41,6 +49,8 @@ public class LotteryWireBoundaryTest {
     }
 
     private static String repeat(char value, int count) {
-        char[] chars = new char[count]; java.util.Arrays.fill(chars, value); return new String(chars);
+        char[] chars = new char[count];
+        java.util.Arrays.fill(chars, value);
+        return new String(chars);
     }
 }

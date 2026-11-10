@@ -1,20 +1,19 @@
 package xin.vanilla.sakura.util;
 
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.Level;
-import xin.vanilla.banira.api.BaniraEnvironment;
+import net.minecraft.world.level.LightLayer;
 import xin.vanilla.banira.api.BaniraServer;
-import xin.vanilla.banira.common.util.Translator;
 import xin.vanilla.banira.common.util.StringUtils;
+import xin.vanilla.banira.common.util.Translator;
 import xin.vanilla.sakura.SakuraSignIn;
-import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.api.SakuraPlayerData;
+import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.enums.ERewardRule;
 
 import javax.annotation.Nullable;
@@ -201,28 +200,6 @@ public class SakuraUtils {
 
     public static String getValidLanguage(@Nullable Player player, @Nullable String language) {
         return Translator.getValidLanguage(player, language);
-    }
-
-    /**
-     * 获取当前mod支持的mc版本
-     *
-     * @return 主版本*1000000+次版本*1000+修订版本， 如 1.16.5 -> 1 * 1000000 + 16 * 1000 + 5 = 10016005
-     */
-    public static int getMcVersion() {
-        String[] parts = BaniraEnvironment.minecraftVersion().split("[^0-9]+");
-        int[] numbers = new int[3];
-        int count = 0;
-        for (String part : parts) {
-            if (part.isEmpty() || count >= numbers.length) {
-                continue;
-            }
-            try {
-                numbers[count++] = Integer.parseInt(part);
-            } catch (NumberFormatException ignored) {
-                // 快照或开发版本中的非数字后缀不参与版本编码。
-            }
-        }
-        return numbers[0] * 1000000 + numbers[1] * 1000 + numbers[2];
     }
 
     /**

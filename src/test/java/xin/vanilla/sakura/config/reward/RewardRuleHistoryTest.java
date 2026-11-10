@@ -16,7 +16,8 @@ import java.util.Collections;
 import static org.junit.Assert.*;
 
 public class RewardRuleHistoryTest {
-    @Test public void incompleteLegacyRewardsAreRejectedForEveryRule() {
+    @Test
+    public void incompleteLegacyRewardsAreRejectedForEveryRule() {
         for (ERewardRule rule : ERewardRule.values()) {
             assertThrows("Incomplete reward accepted for " + rule, java.io.IOException.class,
                     () -> RewardRuleHistory.decode("{\"1\":[{}]}", rule));
@@ -36,7 +37,8 @@ public class RewardRuleHistoryTest {
         return config;
     }
 
-    @Test public void personalDateUndoRestoresMetadata() throws Exception {
+    @Test
+    public void personalDateUndoRestoresMetadata() throws Exception {
         RewardConfig config = config();
         String before = new RewardConfigCodec().encode(config);
         String history = RewardRuleHistory.encode(config, ERewardRule.PERSONAL_DATE_REWARD);
@@ -45,7 +47,8 @@ public class RewardRuleHistoryTest {
         assertEquals(before, new RewardConfigCodec().encode(config));
     }
 
-    @Test public void deletedPersonalDateCanBeRestored() throws Exception {
+    @Test
+    public void deletedPersonalDateCanBeRestored() throws Exception {
         RewardConfig config = config();
         String before = new RewardConfigCodec().encode(config);
         String history = RewardRuleHistory.encode(config, ERewardRule.PERSONAL_DATE_REWARD);
@@ -54,7 +57,8 @@ public class RewardRuleHistoryTest {
         assertEquals(before, new RewardConfigCodec().encode(config));
     }
 
-    @Test public void lotteryUndoRestoresMetadata() throws Exception {
+    @Test
+    public void lotteryUndoRestoresMetadata() throws Exception {
         RewardConfig config = config();
         String before = new RewardConfigCodec().encode(config);
         String history = RewardRuleHistory.encode(config, ERewardRule.LOTTERY_REWARD);
@@ -64,7 +68,8 @@ public class RewardRuleHistoryTest {
         assertEquals(before, new RewardConfigCodec().encode(config));
     }
 
-    @Test public void deletedLotteryCanBeRestored() throws Exception {
+    @Test
+    public void deletedLotteryCanBeRestored() throws Exception {
         RewardConfig config = config();
         String before = new RewardConfigCodec().encode(config);
         String history = RewardRuleHistory.encode(config, ERewardRule.LOTTERY_REWARD);
@@ -73,7 +78,8 @@ public class RewardRuleHistoryTest {
         assertEquals(before, new RewardConfigCodec().encode(config));
     }
 
-    @Test public void emptyRuleCanBeRestoredWithoutChangingOtherRules() throws Exception {
+    @Test
+    public void emptyRuleCanBeRestoredWithoutChangingOtherRules() throws Exception {
         RewardConfig config = config();
         String history = RewardRuleHistory.encode(config, ERewardRule.MONTH_REWARD);
         config.getMonthRewards().put("1", new RewardList());
@@ -83,7 +89,8 @@ public class RewardRuleHistoryTest {
         assertEquals("Original description", config.getLotteryPools().get(0).getDescription());
     }
 
-    @Test public void ordinaryRuleRetainsUnrelatedSubsequentChanges() throws Exception {
+    @Test
+    public void ordinaryRuleRetainsUnrelatedSubsequentChanges() throws Exception {
         RewardConfig config = config();
         config.getMonthRewards().put("1", new RewardList());
         String history = RewardRuleHistory.encode(config, ERewardRule.MONTH_REWARD);
@@ -94,7 +101,8 @@ public class RewardRuleHistoryTest {
         assertEquals("Later change", config.getPersonalDatePresets().get(0).getDisplayName());
     }
 
-    @Test public void mismatchedRuleAndMalformedSnapshotDoNotChangeModel() throws Exception {
+    @Test
+    public void mismatchedRuleAndMalformedSnapshotDoNotChangeModel() throws Exception {
         RewardConfig config = config();
         String before = new RewardConfigCodec().encode(config);
         String history = RewardRuleHistory.encode(config, ERewardRule.LOTTERY_REWARD);
@@ -103,7 +111,8 @@ public class RewardRuleHistoryTest {
         assertEquals(before, new RewardConfigCodec().encode(config));
     }
 
-    @Test public void legacyMapHistoryStillRestoresOrdinaryRule() throws Exception {
+    @Test
+    public void legacyMapHistoryStillRestoresOrdinaryRule() throws Exception {
         RewardConfig config = config();
         config.getMonthRewards().put("2", new RewardList());
         RewardRuleHistory.decode("{\"1\":[]}", ERewardRule.MONTH_REWARD).restore(config);

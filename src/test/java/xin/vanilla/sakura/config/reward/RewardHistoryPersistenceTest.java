@@ -2,7 +2,10 @@ package xin.vanilla.sakura.config.reward;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import xin.vanilla.banira.platform.BaniraPathService;
 import xin.vanilla.banira.platform.BaniraPlatform;
@@ -24,12 +27,15 @@ import java.util.stream.Stream;
 import static org.junit.Assert.*;
 
 public class RewardHistoryPersistenceTest {
-    @Rule public final xin.vanilla.sakura.test.UnboundConfigPlatform platform = new xin.vanilla.sakura.test.UnboundConfigPlatform();
-    @Rule public final TemporaryFolder temporary = new TemporaryFolder();
+    @Rule
+    public final xin.vanilla.sakura.test.UnboundConfigPlatform platform = new xin.vanilla.sakura.test.UnboundConfigPlatform();
+    @Rule
+    public final TemporaryFolder temporary = new TemporaryFolder();
     private BaniraPlatform previousPlatform;
     private RewardConfig previousConfig;
 
-    @Before public void setup() throws Exception {
+    @Before
+    public void setup() throws Exception {
         previousPlatform = BaniraPlatforms.get();
         Path root = temporary.newFolder("config").toPath();
         BaniraPathService paths = (BaniraPathService) Proxy.newProxyInstance(getClass().getClassLoader(),
@@ -48,7 +54,8 @@ public class RewardHistoryPersistenceTest {
         RewardConfigManager.clearRedoList();
     }
 
-    @After public void cleanup() {
+    @After
+    public void cleanup() {
         RewardConfigManager.clearUndoList();
         RewardConfigManager.clearRedoList();
         RewardConfigManager.setRewardConfig(previousConfig);
@@ -63,7 +70,8 @@ public class RewardHistoryPersistenceTest {
         }
     }
 
-    @Test public void personalDateHistoryPersistsCompleteMetadata() throws Exception {
+    @Test
+    public void personalDateHistoryPersistsCompleteMetadata() throws Exception {
         RewardConfig config = RewardConfigManager.getRewardConfig();
         config.getPersonalDatePresets().add(new PersonalDatePreset("birthday", "Birthday",
                 PersonalDateRecurrence.YEARLY, Collections.singletonList(CalendarIds.GREGORIAN),
@@ -76,7 +84,8 @@ public class RewardHistoryPersistenceTest {
         assertEquals(new RewardConfigCodec().encode(config), new RewardConfigCodec().encode(restored));
     }
 
-    @Test public void corruptRecordRemainsAvailableAfterRepair() throws Exception {
+    @Test
+    public void corruptRecordRemainsAvailableAfterRepair() throws Exception {
         ERewardRule rule = ERewardRule.MONTH_REWARD;
         RewardConfigManager.getRewardConfig().getMonthRewards().put("1", new RewardList());
         RewardConfigManager.addUndoRewardOption(rule);
@@ -92,7 +101,8 @@ public class RewardHistoryPersistenceTest {
         assertTrue("Failed reads must not consume history", RewardConfigManager.getUnDoRewardOption(rule).containsKey("1"));
     }
 
-    @Test public void malformedLegacyRewardMustNotReplaceModelOrConsumeHistory() throws Exception {
+    @Test
+    public void malformedLegacyRewardMustNotReplaceModelOrConsumeHistory() throws Exception {
         ERewardRule rule = ERewardRule.MONTH_REWARD;
         RewardConfig config = RewardConfigManager.getRewardConfig();
         config.getMonthRewards().put("1", new RewardList());
@@ -109,7 +119,8 @@ public class RewardHistoryPersistenceTest {
         assertFalse(config.getMonthRewards().containsKey("2"));
     }
 
-    @Test public void legacyMapWithCompleteRewardStillRestores() throws Exception {
+    @Test
+    public void legacyMapWithCompleteRewardStillRestores() throws Exception {
         ERewardRule rule = ERewardRule.MONTH_REWARD;
         RewardList rewards = new RewardList();
         JsonObject content = new JsonObject();
@@ -125,7 +136,8 @@ public class RewardHistoryPersistenceTest {
         assertEquals(rewards, RewardConfigManager.getRewardConfig().getMonthRewards().get("1"));
     }
 
-    @Test public void ordinaryHistoryStillReadsRewardLists() {
+    @Test
+    public void ordinaryHistoryStillReadsRewardLists() {
         ERewardRule rule = ERewardRule.MONTH_REWARD;
         RewardConfigManager.getRewardConfig().getMonthRewards().put("1", new RewardList());
         RewardConfigManager.addUndoRewardOption(rule);

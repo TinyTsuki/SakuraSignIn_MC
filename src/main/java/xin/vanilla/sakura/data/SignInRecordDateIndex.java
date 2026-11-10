@@ -2,13 +2,11 @@ package xin.vanilla.sakura.data;
 
 import xin.vanilla.banira.common.util.DateUtils;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-/** Read-only date lookup cache for the currently loaded sign-in detail records. */
+/**
+ * Read-only date lookup cache for the currently loaded sign-in detail records.
+ */
 public final class SignInRecordDateIndex {
     private List<SignInRecord> source;
     private int sourceSize = -1;

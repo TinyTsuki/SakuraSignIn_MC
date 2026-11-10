@@ -2,20 +2,12 @@ package xin.vanilla.sakura.data.migration;
 
 import net.minecraft.nbt.CompoundTag;
 import org.junit.Test;
-import xin.vanilla.sakura.data.migration.LegacyPlayerData;
-import xin.vanilla.sakura.data.migration.LegacyPlayerDataParser;
 import xin.vanilla.sakura.data.player.PlayerSignInSummary;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * 迁移必须先持久化详情、备份和摘要，最后才允许删除旧节点。

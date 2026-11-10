@@ -6,10 +6,11 @@ import org.junit.Test;
 import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.sakura.data.lottery.*;
-import xin.vanilla.sakura.reward.*;
+import xin.vanilla.sakura.reward.Reward;
+import xin.vanilla.sakura.reward.RewardList;
 
-import java.util.*;
 import java.math.BigDecimal;
+import java.util.*;
 
 import static org.junit.Assert.*;
 

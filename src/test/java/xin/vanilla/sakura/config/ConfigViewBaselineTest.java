@@ -1,13 +1,17 @@
 package xin.vanilla.sakura.config;
 
 import org.junit.Test;
+
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Arrays;
-import static org.junit.Assert.*;
+
+import static org.junit.Assert.assertEquals;
 
 public class ConfigViewBaselineTest {
-    @org.junit.Rule public org.junit.rules.ExternalResource platform = ConfigBaselineFixture.platformScope();
+    @org.junit.Rule
+    public org.junit.rules.ExternalResource platform = ConfigBaselineFixture.platformScope();
+
     @Test
     public void clientListsAreSnapshotsAndEmptyThemeIsNotReplaced() throws Exception {
         ConfigBaselineFixture fixture = new ConfigBaselineFixture(ClientConfig.class);

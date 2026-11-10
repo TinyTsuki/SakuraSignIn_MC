@@ -6,7 +6,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/** Converts finite calendars by walking validated sequential month tables. */
+/**
+ * Converts finite calendars by walking validated sequential month tables.
+ */
 final class TabularDateCalendar implements DateCalendar {
     private final CalendarRuleDefinition definition;
     private final LocalDate epoch;

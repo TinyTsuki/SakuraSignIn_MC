@@ -12,9 +12,7 @@ import java.nio.file.Path;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * 验证旧玩家文件只移除 Sakura Capability，其他数据保持原样。

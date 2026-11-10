@@ -1,7 +1,7 @@
 package xin.vanilla.sakura.reward;
 
-import com.google.gson.JsonElement;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import xin.vanilla.sakura.api.reward.RewardTypeId;

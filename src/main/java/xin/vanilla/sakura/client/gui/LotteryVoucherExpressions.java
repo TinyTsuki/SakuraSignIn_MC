@@ -40,9 +40,12 @@ public final class LotteryVoucherExpressions {
                             if (cost.matchMode() == xin.vanilla.banira.api.cost.ResourceCost.MatchMode.ID)
                                 return new Fields("item", cost.specification(), amount);
                             break;
-                        case "banira:score": return new Fields("score", cost.specification(), amount);
-                        case "banira:xp_point": return new Fields("xpPoints", "", amount);
-                        case "banira:xp_level": return new Fields("xpLevels", "", amount);
+                        case "banira:score":
+                            return new Fields("score", cost.specification(), amount);
+                        case "banira:xp_point":
+                            return new Fields("xpPoints", "", amount);
+                        case "banira:xp_level":
+                            return new Fields("xpLevels", "", amount);
                     }
                 }
             }

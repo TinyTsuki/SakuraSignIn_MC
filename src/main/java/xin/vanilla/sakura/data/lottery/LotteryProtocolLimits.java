@@ -2,6 +2,7 @@ package xin.vanilla.sakura.data.lottery;
 
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
+
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
@@ -18,7 +19,8 @@ public final class LotteryProtocolLimits {
     public static final int MAX_REWARD_CHARS = 32_767;
     public static final int MAX_REWARD_BYTES = 65_536;
 
-    private LotteryProtocolLimits() { }
+    private LotteryProtocolLimits() {
+    }
 
     public static String text(String value, int max) {
         if (value == null || value.length() > max) throw new IllegalArgumentException("Invalid lottery text length");
@@ -58,24 +60,43 @@ public final class LotteryProtocolLimits {
             throw new IllegalArgumentException("Lottery JSON exceeds byte budget");
         try (JsonReader reader = new JsonReader(new StringReader(value))) {
             reader.setLenient(false);
-            if (reader.peek() != JsonToken.BEGIN_OBJECT) throw new IllegalArgumentException("Lottery JSON object required");
+            if (reader.peek() != JsonToken.BEGIN_OBJECT)
+                throw new IllegalArgumentException("Lottery JSON object required");
             int depth = 0, tokens = 0;
             while (reader.peek() != JsonToken.END_DOCUMENT) {
                 if (++tokens > 131_072) throw new IllegalArgumentException("Too many lottery JSON tokens");
                 switch (reader.peek()) {
                     case BEGIN_OBJECT:
                         if (++depth > 64) throw new IllegalArgumentException("Lottery JSON nesting too deep");
-                        reader.beginObject(); break;
+                        reader.beginObject();
+                        break;
                     case BEGIN_ARRAY:
                         if (++depth > 64) throw new IllegalArgumentException("Lottery JSON nesting too deep");
-                        reader.beginArray(); break;
-                    case END_OBJECT: reader.endObject(); depth--; break;
-                    case END_ARRAY: reader.endArray(); depth--; break;
-                    case NAME: reader.nextName(); break;
-                    case STRING: case NUMBER: reader.nextString(); break;
-                    case BOOLEAN: reader.nextBoolean(); break;
-                    case NULL: reader.nextNull(); break;
-                    default: throw new IllegalArgumentException("Invalid lottery JSON");
+                        reader.beginArray();
+                        break;
+                    case END_OBJECT:
+                        reader.endObject();
+                        depth--;
+                        break;
+                    case END_ARRAY:
+                        reader.endArray();
+                        depth--;
+                        break;
+                    case NAME:
+                        reader.nextName();
+                        break;
+                    case STRING:
+                    case NUMBER:
+                        reader.nextString();
+                        break;
+                    case BOOLEAN:
+                        reader.nextBoolean();
+                        break;
+                    case NULL:
+                        reader.nextNull();
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Invalid lottery JSON");
                 }
             }
             if (depth != 0) throw new IllegalArgumentException("Incomplete lottery JSON");

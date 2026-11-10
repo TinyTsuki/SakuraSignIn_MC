@@ -1,7 +1,7 @@
 package xin.vanilla.sakura.screen;
 
-import net.minecraft.client.Minecraft;
 import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.resources.language.I18n;
