@@ -1,0 +1,61 @@
+body{display:flex;align-items:center;justify-content:center;padding:6px;font-family:sans-serif;background:transparent}
+.signin-page{--canvas:#fbf5ec;--panel:#fffcf8;--panel-soft:#f3e7df;--ink:#38252d;--muted:#765f65;--line:#dbc5c7;--accent:#8c3652;--action:#8c3652;--action-hover:#783049;--action-text:#fff9f5;--selected:#f6dce2;background:#fbf5ec;color:#38252d;max-width:680px;max-height:430px;overflow:hidden}
+.calendar-header{display:flex;align-items:center;gap:6px;flex:0 0 28px;min-height:28px;padding:3px 8px;border-bottom:1px solid #dbc5c7;background:#fffcf8}
+.calendar-header .brand{width:18px;height:18px;flex:0 0 18px}
+.calendar-header #title{flex:1;min-width:0;font-size:9px;color:#765f65}
+.signin-body{display:flex;flex:1;min-height:0;min-width:0}
+.calendar-section{display:flex;flex-direction:column;flex:1;min-width:0;min-height:0;padding:9px 10px 5px}
+.monthbar{display:flex;align-items:flex-end;justify-content:space-between;gap:4px;flex:0 0 35px;min-height:35px;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid #dbc5c7}
+.month-display{display:flex;align-items:flex-end;gap:6px;color:#8c3652;min-width:0}
+#month_number{font-size:27px;font-weight:600;line-height:28px;flex:none}
+#month{font-size:7px;line-height:10px;min-width:0;max-width:84px}
+.month-actions{display:flex;gap:1px;flex:none}
+.month-actions .tool{width:15px;min-width:15px;max-width:15px;flex:0 0 15px;height:18px;min-height:18px;padding:2px;background:transparent;border:0}
+.weekdays{display:flex;flex:0 0 15px;height:15px;background:#f3e7df;border-top:1px solid #dbc5c7;border-left:1px solid #dbc5c7}
+.weekdays>div{width:14.2857%;text-align:center;font-size:6px;line-height:14px;min-width:0;border-right:1px solid #dbc5c7;border-bottom:1px solid #dbc5c7;color:#765f65}
+.calendar{position:relative;flex:1;min-width:0;min-height:0;border-left:1px solid #dbc5c7;background:#fffcf8;overflow:hidden}
+.day{position:absolute;width:14.2857%;height:16.6667%;border-right:1px solid #dbc5c7;border-bottom:1px solid #dbc5c7;background:#fffcf8;overflow:hidden}
+.day-shade{position:absolute;inset:0;background:#f4eae3;pointer-events:none}
+.day-shade:disabled{display:none}
+.day button{position:absolute;inset:0;display:block;width:100%;height:100%;min-width:0;min-height:0;padding:0;background:transparent;border:0;border-radius:0}
+.day button:disabled{background:transparent}
+.day button:hover{background:#f5e3e3}
+.day-number{position:absolute;left:4px;top:3px;font-size:9px;line-height:10px;color:#38252d}
+.day-number:disabled{display:none}
+.day-adjacent{color:#9b8589}
+.day-note{position:absolute;left:4px;right:2px;bottom:2px;font-size:5px;line-height:6px;color:#8c3652;white-space:nowrap;overflow:hidden}
+.day-note:disabled{display:none}
+.day-status{position:absolute;right:4px;top:3px;width:9px;height:9px;pointer-events:none}
+.day-selection{position:absolute;inset:0;border:1px solid #8c3652;pointer-events:none}
+.day-selection:disabled{display:none}
+.legend{display:flex;align-items:center;flex:0 0 17px;gap:7px;font-size:5.5px;color:#765f65;min-width:0}
+.legend-item{display:flex;align-items:center;gap:2px;min-width:0}
+.legend-icon{width:8px;height:8px;flex:none}
+.reward-sidebar{display:flex;flex-direction:column;flex:0 0 32%;width:32%;min-width:116px;max-width:224px;min-height:0;padding:9px 9px 5px;background:#fbf1e7;border-left:1px solid #dbc5c7}
+.detail-header{flex:none}
+#detail_month{font-size:7px;color:#8c3652;line-height:10px}
+#detail_day{font-size:32px;font-weight:600;line-height:34px;color:#8c3652}
+#detail_date{display:none}
+#detail_status{margin-top:3px;font-size:6px;line-height:9px;max-height:20px;overflow-y:auto;color:#8c3652}
+.detail-caption{display:flex;justify-content:space-between;gap:4px;flex:none;font-size:7px;margin-top:7px;padding:5px 0;border-top:1px solid #dbc5c7}
+.reward-sidebar #content{padding:0;flex:1;min-height:0}
+#empty{font-size:7px;line-height:10px;color:#765f65;padding:4px 0}
+#empty:disabled{display:none}
+.signin-reward{position:relative;border-bottom:1px solid #dbc5c7;overflow:hidden}
+.signin-reward>.row-icon{position:absolute;left:0;top:5px;width:18px;height:18px}
+.signin-reward>.label{position:absolute;left:23px;right:0;top:4px;height:12px;min-height:12px;font-size:7px;line-height:12px;color:#38252d;white-space:nowrap;overflow:hidden}
+.signin-reward>.paragraph{position:absolute;left:23px;right:0;top:17px;height:9px;font-size:5.5px;line-height:9px;color:#765f65;white-space:nowrap;overflow:hidden;margin:0}
+.date-action{flex:none;padding:5px 0}
+#date_action{width:100%;font-size:7px;font-weight:600;color:#fff9f5;min-height:21px;height:21px}
+#date_action:disabled{color:#9b8589;background:#f3e7df;border-color:#dbc5c7}
+.calendar-stats{display:flex;gap:4px;justify-content:space-between;flex:none;padding:6px 0 2px;border-top:1px solid #dbc5c7}
+.stat{min-width:0;flex:1;font-size:5.5px;line-height:8px;color:#765f65}
+.stat-value{font-size:12px;line-height:15px;color:#8c3652}
+.themes{display:flex;justify-content:flex-end;gap:3px;flex:none;padding-top:4px}
+.themes button{width:15px;min-width:15px;max-width:15px;flex:0 0 15px;height:15px;min-height:15px;padding:0;border:0;background:transparent}
+.tips-panel{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.4);z-index:20}
+.tips-panel:disabled{display:none}
+.tips-dialog{display:flex;flex-direction:column;width:86%;max-height:90%;padding:10px;background:#fffcf8;border:1px solid #dbc5c7;border-radius:4px}
+.tips-dialog .paragraph{font-size:8px;line-height:12px;overflow-y:auto;min-height:0}
+.tip-actions{display:flex;justify-content:flex-end;gap:4px;flex:none}
+.tip-actions button{font-size:8px;min-width:40px}

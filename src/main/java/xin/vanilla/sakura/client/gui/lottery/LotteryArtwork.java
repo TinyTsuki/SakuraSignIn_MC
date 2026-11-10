@@ -2,7 +2,6 @@ package xin.vanilla.sakura.client.gui.lottery;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -30,8 +29,8 @@ public record LotteryArtwork(ResourceLocation texture, ItemStack item, int image
         Minecraft client = Minecraft.getInstance();
         if (texture != null && (client == null || client.getResourceManager().getResource(texture).isEmpty()))
             texture = null;
-        ResourceLocation itemId = pool == null || pool.getArtworkItem().isEmpty() ? null : ResourceLocation.tryParse(pool.getArtworkItem());
-        ItemStack item = itemId == null ? ItemStack.EMPTY : new ItemStack(BuiltInRegistries.ITEM.get(itemId));
+        ItemStack item = pool == null || pool.getArtworkItem().isEmpty() ? ItemStack.EMPTY
+                : xin.vanilla.banira.common.util.ItemUtils.deserializeItemStack(pool.getArtworkItem());
         return new LotteryArtwork(texture, item.isEmpty() ? new ItemStack(Items.CHERRY_SAPLING) : item, WIDTH, HEIGHT);
     }
 
@@ -45,6 +44,12 @@ public record LotteryArtwork(ResourceLocation texture, ItemStack item, int image
         LotteryArtwork artwork = thumbnail(pool);
         Texture[] textures = artwork.texture == null ? null : new Texture[]{Texture.of(artwork.texture, artwork.imageWidth, artwork.imageHeight)};
         return new DropdownOption(pool.getId(), pool.getDisplayName(), artwork.item, textures, tooltip);
+    }
+
+    public xin.vanilla.banira.api.client.ui.UiGameElement element() {
+        if (texture != null)
+            return xin.vanilla.banira.api.client.ui.UiGameElement.artwork(new DropdownOption("", Texture.of(texture, imageWidth, imageHeight), null));
+        return xin.vanilla.banira.api.client.ui.UiGameElement.artwork(new DropdownOption("", "", item, null, null));
     }
 
     public void render(GuiGraphics graphics, int x, int y, int width, int height, int itemSize) {
