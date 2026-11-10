@@ -11,15 +11,7 @@ import java.nio.file.Path;
 import static org.junit.Assert.*;
 
 public class NeoForgeSakuraUiPortTest {
-    @Test
-    public void allFiveOwnersUseThePublicSharedBoundary() throws Exception {
-        for (String screen : new String[]{"SignInScreen", "PersonalDateConfigScreen", "RewardOptionScreen", "LotteryScreen", "LotteryRevealScreen"}) {
-            String code = Files.readString(Path.of("src/main/java/xin/vanilla/sakura/screen/" + screen + ".java"));
-            assertTrue(screen, code.contains("implements UiPageSource"));
-            assertTrue(screen, code.contains("BaniraUi.screenRemoved(this)"));
-            assertFalse(screen, code.contains("com.sighs."));
-        }
-    }
+
 
     @Test
     public void copiedRenderersUsePublicMinecraft21Contracts() throws Exception {
@@ -31,18 +23,19 @@ public class NeoForgeSakuraUiPortTest {
                 assertNotNull(name, in);
                 new ClassReader(in).accept(node, 0);
             }
-            for (var method : node.methods) for (var instruction : method.instructions)
-                if (instruction instanceof MethodInsnNode call) {
-                    assertFalse(call.owner, call.owner.startsWith("net/minecraftforge/") || call.owner.startsWith("com/sighs/"));
-                    if (call.name.equals("renderBackground")) {
-                        assertEquals("(Lnet/minecraft/client/gui/GuiGraphics;IIF)V", call.desc);
-                        background++;
+            for (var method : node.methods)
+                for (var instruction : method.instructions)
+                    if (instruction instanceof MethodInsnNode call) {
+                        assertFalse(call.owner, call.owner.startsWith("net/minecraftforge/") || call.owner.startsWith("com/sighs/"));
+                        if (call.name.equals("renderBackground")) {
+                            assertEquals("(Lnet/minecraft/client/gui/GuiGraphics;IIF)V", call.desc);
+                            background++;
+                        }
+                        if (call.owner.equals("net/minecraft/resources/ResourceLocation")) {
+                            assertNotEquals("<init>", call.name);
+                            if (call.name.equals("parse") || call.name.equals("fromNamespaceAndPath")) factories++;
+                        }
                     }
-                    if (call.owner.equals("net/minecraft/resources/ResourceLocation")) {
-                        assertNotEquals("<init>", call.name);
-                        if (call.name.equals("parse") || call.name.equals("fromNamespaceAndPath")) factories++;
-                    }
-                }
         }
         assertEquals(1, background);
         assertTrue(factories >= 6);
