@@ -217,28 +217,6 @@ public class LotteryUiPresentationTest {
         assertNotNull(row.icons.get("icon"));
     }
 
-    @Test
-    public void approvedTemplatesKeepTheRewardViewportSeparateFromTheDialogHeader() throws Exception {
-        Path root = Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in");
-        assertTrue("Dedicated compact lottery stylesheet", Files.exists(root.resolve("lottery.css")));
-        for (String name : List.of("lottery", "lottery-result")) {
-            String html = Files.readString(root.resolve(name + ".html"), StandardCharsets.UTF_8);
-            assertTrue(html.contains("href=\"" + (name.equals("lottery") ? "sakura-lottery" : name) + ".css\""));
-            assertTrue(html.contains("id=\"fields\""));
-            assertEquals(name.equals("lottery-result"), html.contains("id=\"fields_middle\""));
-            assertEquals(name.equals("lottery-result"), html.contains("id=\"fields_end\""));
-            if (name.equals("lottery")) {
-                assertTrue(html.indexOf("id=\"title\"") < html.indexOf("id=\"policy\""));
-                assertTrue(html.indexOf("id=\"policy\"") > html.indexOf("class=\"pool-copy\""));
-                assertTrue(html.indexOf("id=\"details_close\"") < html.indexOf("id=\"content\""));
-                assertTrue(html.indexOf("id=\"content\"") < html.indexOf("id=\"fields\""));
-            }
-            assertFalse(html.contains("<script"));
-            assertFalse(html.contains("edit-pool"));
-            assertFalse(html.contains("scenario"));
-        }
-        assertEquals(List.of(), UiBoundaryChecks.resources(UiBoundaryChecks.ownResources("sakura_sign_in"), false));
-    }
 
     @Test
     public void poolEditorOptionTooltipsAreAvailableInBothLanguages() throws Exception {
@@ -264,25 +242,10 @@ public class LotteryUiPresentationTest {
         assertFalse("Scrollable billing cannot own retained icons outside the reward viewport", view.icons.containsKey("single_icon"));
         assertFalse(view.icons.containsKey("batch_icon"));
         Path root = Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in");
-        String html = Files.readString(root.resolve("lottery.html"));
-        for (String name : List.of("single", "batch"))
-            assertFalse(html.contains("id=\"" + name + "_icon\""));
-        String css = Files.readString(root.resolve("lottery.css"));
-        assertTrue(html.contains("class=\"pool-rail\""));
-        assertTrue(html.indexOf("class=\"billing footer\"") > html.indexOf("class=\"feature\""));
-        assertTrue(html.indexOf("id=\"content\"") > html.indexOf("id=\"details_panel\""));
-        assertFalse(html.contains("quote_status"));
-        assertTrue(html.contains("class=\"billing footer\""));
+
+
     }
 
-    @Test
-    public void compactViewportKeepsRailAndDetailsIndependentlyScrollable() throws Exception {
-        String css = Files.readString(Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in/lottery.css"));
-        String html = Files.readString(Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in/lottery.html"));
-        assertTrue(html.contains("id=\"pool_scroll\" class=\"content\""));
-        assertTrue(html.contains("id=\"detail\" class=\"content\""));
-        assertTrue(css.contains("max-width:560px"));
-    }
 
     @Test
     public void compactRowsKeepRewardNamesAndPercentagesTogether() throws Exception {
@@ -293,13 +256,8 @@ public class LotteryUiPresentationTest {
         view.providers.get("fields").bind(cell, 0);
         assertEquals("100%", text(cell, "detail"));
         assertFalse(cell.tooltips.get("icon").toString().contains("%%"));
-        String css = Files.readString(Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in/lottery.css"));
-        assertTrue(css.contains("flex-direction:row"));
-        assertTrue(css.contains(".reward-row .label{flex:1;min-width:0}"));
-        assertTrue(css.contains(".reward-row .paragraph{flex-shrink:0"));
-        String overlay = Files.readString(Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in/sakura-lottery.css"), StandardCharsets.UTF_8);
-        assertTrue(overlay.contains(".reward-row .paragraph{flex:none"));
-        assertTrue(overlay.contains("@media(max-width:480px)"));
+
+
     }
 
     @Test

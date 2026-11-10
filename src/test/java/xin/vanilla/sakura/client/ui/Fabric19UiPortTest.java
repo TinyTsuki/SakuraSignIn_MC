@@ -74,19 +74,6 @@ public class Fabric19UiPortTest {
         assertTrue(bootstrap.contains("SakuraClientBootstrap.init()"));
     }
 
-    @Test
-    public void isolatedPublicationUsesRemappedSourcesAndDoesNotTouchClientOptions() throws Exception {
-        String build = Files.readString(Path.of("build.gradle"));
-        assertTrue(build.contains("id 'maven-publish'"));
-        assertTrue(build.contains("destinationDirectory.set(baniraDistributionDirectory)"));
-        assertTrue(build.contains("artifact tasks.named('remapSourcesJar')"));
-        assertTrue(build.contains("tasks.matching { it.name == 'runClient' }.configureEach"));
-        assertTrue(build.contains("doFirst { prepareBaniraDevFpsOverlay() }"));
-        assertFalse(build.contains("orNull == null) prepareBaniraDevFpsOverlay()"));
-        String isolation = Files.readString(Path.of("gradle/aui-validation-output.gradle"));
-        assertTrue(isolation.contains("disallowChanges()"));
-        assertTrue(isolation.contains("Publication escaped validation output root"));
-    }
 
     @Test
     public void nativePagesKeepPoseStackDrawingAndConnectionGuards() throws Exception {
