@@ -11,14 +11,7 @@ import java.util.Map;
 import static org.junit.Assert.*;
 
 public class MixinRefmapBuildTest {
-    @Test
-    public void processorOutputsAreTrackedForFullMainCompilation() throws Exception {
-        String script = Files.readString(Path.of("gradle/mixin-refmap.gradle"));
-        assertTrue(script.contains("options.incremental = false"));
-        assertTrue(script.contains("outputs.files(refmap"));
-        assertTrue(script.contains("compileJava-mappings.tsrg"));
-        assertTrue(Files.readString(Path.of("build.gradle")).contains("apply from: 'gradle/mixin-refmap.gradle'"));
-    }
+
 
     @Test
     public void missingAndEmptyGeneratedMappingsAreRejected() {

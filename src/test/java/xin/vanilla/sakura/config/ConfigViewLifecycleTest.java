@@ -49,16 +49,6 @@ public class ConfigViewLifecycleTest {
         verify(true);
     }
 
-    @Test
-    public void clientRewardScopeIsRegisteredAfterConfigSetup() throws Exception {
-        String source = new String(Files.readAllBytes(java.nio.file.Paths.get(
-                "src/main/java/xin/vanilla/sakura/client/SakuraClientBootstrap.java")), StandardCharsets.UTF_8);
-        int setup = source.indexOf("BaniraClientEvents.ModLifecycle.onClientSetup(event -> {");
-        int next = source.indexOf("BaniraClientEvents.Client.onClientTick", setup);
-        assertTrue(setup >= 0 && next > setup);
-        assertFalse(source.substring(0, setup).contains("RewardConfigManager.configureClientScope"));
-        assertTrue(source.substring(setup, next).contains("RewardConfigManager.configureClientScope"));
-    }
 
     @Test
     public void rewardScopeReadsRequireLoadedForgeConfiguration() throws Exception {

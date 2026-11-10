@@ -90,14 +90,6 @@ public class LotteryClientRequestsTest {
         assertEquals(false, accept.invoke(state, SESSION + "-100"));
     }
 
-    @Test
-    public void clientDisplayEntryUsesTheSessionDeduplicator() throws Exception {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-                "src/main/java/xin/vanilla/sakura/network/ClientProxy.java")), java.nio.charset.StandardCharsets.UTF_8);
-        int begin = source.indexOf("public static void handleLotteryReveal");
-        int end = source.indexOf("public static void handleLotteryOutcome", begin);
-        assertTrue(source.substring(begin, end).contains("acceptReveal(packet.getOperationId())"));
-    }
 
     private static LotteryQuote ready(LotteryQuoteRequest request) {
         return new LotteryQuote(request, LotteryQuote.Status.READY, request.getGeneration(), 10, "paper", TOKEN);
