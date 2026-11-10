@@ -1,12 +1,15 @@
 package xin.vanilla.sakura.client.ui;
 
-import org.junit.*;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import xin.vanilla.banira.api.client.ui.UiPointer;
 
-import java.time.LocalDate;
-import java.util.*;
 import java.nio.charset.StandardCharsets;
-
-import xin.vanilla.banira.api.client.ui.*;
+import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import static org.junit.Assert.*;
 

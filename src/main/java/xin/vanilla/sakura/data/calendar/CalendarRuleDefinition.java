@@ -7,7 +7,9 @@ import lombok.NoArgsConstructor;
 import java.util.ArrayList;
 import java.util.List;
 
-/** A finite sequential calendar table anchored to an ISO date. */
+/**
+ * A finite sequential calendar table anchored to an ISO date.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

@@ -1,13 +1,13 @@
 package xin.vanilla.sakura.data.personaldate;
 
 import org.junit.Test;
-import xin.vanilla.sakura.reward.RewardList;
 import xin.vanilla.sakura.data.calendar.CalendarIds;
 import xin.vanilla.sakura.data.calendar.CalendarRegistry;
+import xin.vanilla.sakura.reward.RewardList;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Collections;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

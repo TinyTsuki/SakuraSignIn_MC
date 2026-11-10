@@ -12,16 +12,13 @@ import xin.vanilla.banira.common.config.ConfigValueStore;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
 public class SakuraNetworkSmokeConfigsTest {
-    @Rule public TemporaryFolder temporary = new TemporaryFolder();
+    @Rule
+    public TemporaryFolder temporary = new TemporaryFolder();
 
     private enum Mode {
         @SerializedName("not-the-toml-name") FIXED_TIME
@@ -131,7 +128,9 @@ public class SakuraNetworkSmokeConfigsTest {
         return new Fixture(temporary.newFolder().toPath());
     }
 
-    private interface CheckedAction { void run() throws Exception; }
+    private interface CheckedAction {
+        void run() throws Exception;
+    }
 
     private static void rejects(CheckedAction action, String message) throws Exception {
         try {
@@ -161,13 +160,33 @@ public class SakuraNetworkSmokeConfigsTest {
             values.put("settings.ratio", 1.0F);
             values.put("settings.enabled", true);
             ConfigValueStore store = new ConfigValueStore() {
-                public Set<String> paths() { return values.keySet(); }
-                public Object get(String path) { return values.get(path); }
-                public void set(String path, Object value) { throw new AssertionError("Must not set holder"); }
-                public Class<?> valueClass(String path) { return values.get(path).getClass(); }
-                public Object defaultValue(String path) { return values.get(path); }
-                public boolean validate(String path, Object value) { return true; }
-                public void save() { throw new AssertionError("Must not save over config evidence"); }
+                public Set<String> paths() {
+                    return values.keySet();
+                }
+
+                public Object get(String path) {
+                    return values.get(path);
+                }
+
+                public void set(String path, Object value) {
+                    throw new AssertionError("Must not set holder");
+                }
+
+                public Class<?> valueClass(String path) {
+                    return values.get(path).getClass();
+                }
+
+                public Object defaultValue(String path) {
+                    return values.get(path);
+                }
+
+                public boolean validate(String path, Object value) {
+                    return true;
+                }
+
+                public void save() {
+                    throw new AssertionError("Must not save over config evidence");
+                }
             };
             holder = ConfigHolder.create("fixture", "fixture", ConfigScope.COMMON, store,
                     Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap());

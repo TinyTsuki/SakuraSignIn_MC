@@ -8,8 +8,6 @@ import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.test.UnboundConfigPlatform;
 
-import static org.junit.Assert.assertEquals;
-
 public class ProbabilityTranslationTest {
     @Rule
     public UnboundConfigPlatform platform = new UnboundConfigPlatform();

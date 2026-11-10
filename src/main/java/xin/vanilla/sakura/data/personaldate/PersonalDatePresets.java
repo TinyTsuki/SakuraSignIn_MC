@@ -4,7 +4,6 @@ import xin.vanilla.sakura.reward.RewardList;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.ArrayList;
 
 public final class PersonalDatePresets {
     private PersonalDatePresets() {

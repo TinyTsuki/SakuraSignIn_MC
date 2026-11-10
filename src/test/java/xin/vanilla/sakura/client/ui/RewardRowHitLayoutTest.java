@@ -1,9 +1,11 @@
 package xin.vanilla.sakura.client.ui;
 
 import org.junit.Test;
+
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Pattern;
-import static org.junit.Assert.*;
+
+import static org.junit.Assert.assertTrue;
 
 public class RewardRowHitLayoutTest {
     private String rule(String selector) throws Exception {

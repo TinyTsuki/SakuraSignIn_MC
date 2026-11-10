@@ -7,7 +7,6 @@ import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.sakura.reward.builtin.MessageRewardCodec;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**

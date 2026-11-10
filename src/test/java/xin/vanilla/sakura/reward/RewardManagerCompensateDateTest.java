@@ -1,8 +1,8 @@
 package xin.vanilla.sakura.reward;
 
 import org.junit.Test;
-import xin.vanilla.sakura.enums.ETimeCoolingMethod;
 import xin.vanilla.banira.common.util.DateUtils;
+import xin.vanilla.sakura.enums.ETimeCoolingMethod;
 
 import java.time.YearMonth;
 import java.time.ZoneId;

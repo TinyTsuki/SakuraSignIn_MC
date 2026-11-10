@@ -50,7 +50,9 @@ public class PersonalDateRewardSnapshot {
 
     public static PersonalDateRewardSnapshot deserializeNBT(CompoundTag tag) {
         RewardList rewards = RewardListJsonCodec.decodeLenient(tag.getString("rewards"),
-                failure -> { throw failure; });
+                failure -> {
+                    throw failure;
+                });
         return new PersonalDateRewardSnapshot(tag.getString("presetId"), tag.getString("presetName"),
                 tag.getInt("slotIndex"), tag.getString("calendarId"), tag.getString("occurrenceKey"),
                 LocalDate.parse(tag.getString("targetDate")), rewards);

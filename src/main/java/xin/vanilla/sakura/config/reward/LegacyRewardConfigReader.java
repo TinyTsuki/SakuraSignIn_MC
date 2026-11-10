@@ -1,17 +1,12 @@
 package xin.vanilla.sakura.config.reward;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
+import com.google.gson.*;
 import com.google.gson.stream.JsonReader;
-import xin.vanilla.sakura.enums.ERewardRule;
 import xin.vanilla.sakura.api.reward.RewardTypeId;
-import xin.vanilla.sakura.api.reward.SakuraRewardTypes;
+import xin.vanilla.sakura.enums.ERewardRule;
+import xin.vanilla.sakura.reward.LegacyRewardTypeIds;
 import xin.vanilla.sakura.reward.Reward;
 import xin.vanilla.sakura.reward.RewardList;
-import xin.vanilla.sakura.reward.LegacyRewardTypeIds;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -115,7 +110,9 @@ public final class LegacyRewardConfigReader {
         return readRewards(array);
     }
 
-    /** 读取早期已分组但仍使用枚举类型名的 schema v2 文档。 */
+    /**
+     * 读取早期已分组但仍使用枚举类型名的 schema v2 文档。
+     */
     public RewardConfigDocument readVersionedV2(String json) throws IOException {
         try {
             JsonObject root = gson.fromJson(json, JsonObject.class);

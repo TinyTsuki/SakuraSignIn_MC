@@ -2,7 +2,9 @@ package xin.vanilla.sakura.data.calendar;
 
 import java.time.LocalDate;
 
-/** Loader-neutral calendar conversion contract. */
+/**
+ * Loader-neutral calendar conversion contract.
+ */
 public interface DateCalendar {
     String id();
 

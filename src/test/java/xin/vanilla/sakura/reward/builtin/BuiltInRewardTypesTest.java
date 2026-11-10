@@ -1,19 +1,15 @@
 package xin.vanilla.sakura.reward.builtin;
 
 import com.google.gson.JsonObject;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import xin.vanilla.sakura.api.reward.RewardDataException;
-import xin.vanilla.sakura.api.reward.RewardRegistryTestSupport;
-import xin.vanilla.sakura.api.reward.RewardTypeDefinition;
-import xin.vanilla.sakura.api.reward.SakuraRewardTypes;
-import xin.vanilla.sakura.api.reward.SakuraRewards;
+import xin.vanilla.sakura.api.reward.*;
 import xin.vanilla.sakura.reward.Reward;
 import xin.vanilla.sakura.reward.RewardOperations;
 
@@ -22,10 +18,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class BuiltInRewardTypesTest {
     @BeforeClass

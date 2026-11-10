@@ -2,7 +2,6 @@ package xin.vanilla.sakura.client.gui;
 
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.Bootstrap;
 import org.junit.BeforeClass;
 import org.junit.Rule;

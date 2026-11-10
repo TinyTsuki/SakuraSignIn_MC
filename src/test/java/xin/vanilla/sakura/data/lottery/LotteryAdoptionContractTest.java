@@ -2,9 +2,9 @@ package xin.vanilla.sakura.data.lottery;
 
 import org.junit.Test;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.nio.charset.StandardCharsets;
 
 import static org.junit.Assert.*;
 

@@ -10,7 +10,9 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.WeekFields;
 
-/** 领取限制计算保持纯函数；只有 recordSuccessfulDraw 会修改玩家状态。 */
+/**
+ * 领取限制计算保持纯函数；只有 recordSuccessfulDraw 会修改玩家状态。
+ */
 public final class LotteryDrawLimiter {
     private LotteryDrawLimiter() {
     }

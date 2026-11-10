@@ -1,7 +1,6 @@
 package xin.vanilla.sakura.client.reward.builtin;
 
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;

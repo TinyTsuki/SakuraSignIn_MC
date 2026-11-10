@@ -4,13 +4,21 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import xin.vanilla.sakura.data.player.HistoryRetentionPolicy;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class ConfigNetworkSnapshotTest {
-    @org.junit.Rule public org.junit.rules.ExternalResource platform = ConfigBaselineFixture.platformScope();
-    @BeforeClass public static void bootstrap() { net.minecraft.SharedConstants.tryDetectVersion(); net.minecraft.server.Bootstrap.bootStrap(); }
+    @org.junit.Rule
+    public org.junit.rules.ExternalResource platform = ConfigBaselineFixture.platformScope();
 
-    @Test public void snapshotReflectsGeneratedWritesWithoutSaving() throws Exception {
+    @BeforeClass
+    public static void bootstrap() {
+        net.minecraft.SharedConstants.tryDetectVersion();
+        net.minecraft.server.Bootstrap.bootStrap();
+    }
+
+    @Test
+    public void snapshotReflectsGeneratedWritesWithoutSaving() throws Exception {
         ConfigBaselineFixture fixture = new ConfigBaselineFixture(CommonConfig.class);
         fixture.bind(CommonConfig.class);
         CommonConfigView view = CommonConfigView.get();

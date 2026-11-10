@@ -1,10 +1,6 @@
 package xin.vanilla.sakura.config;
 
-import xin.vanilla.banira.common.config.BaniraConfig;
-import xin.vanilla.banira.common.config.ConfigData;
-import xin.vanilla.banira.common.config.ConfigHolder;
-import xin.vanilla.banira.common.config.ConfigScope;
-import xin.vanilla.banira.common.config.ConfigEntryDescriptor;
+import xin.vanilla.banira.common.config.*;
 import xin.vanilla.banira.common.config.annotation.Config;
 import xin.vanilla.banira.common.config.annotation.ConfigEntry;
 import xin.vanilla.banira.common.network.packet.ConfigSyncToServer;
