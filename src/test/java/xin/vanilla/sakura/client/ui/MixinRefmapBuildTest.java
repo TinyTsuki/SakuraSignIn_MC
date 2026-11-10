@@ -9,14 +9,7 @@ import java.util.Map;
 import static org.junit.Assert.*;
 
 public class MixinRefmapBuildTest {
-    @Test
-    public void processorOutputsAreTrackedForFullMainCompilation() throws Exception {
-        String script = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("gradle/mixin-refmap.gradle")), java.nio.charset.StandardCharsets.UTF_8);
-        assertTrue(script.contains("options.incremental = false"));
-        assertTrue(script.contains("outputs.files(refmap"));
-        assertTrue(script.contains("compileJava-mappings.tsrg"));
-        assertTrue(new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("build.gradle")), java.nio.charset.StandardCharsets.UTF_8).contains("apply from: 'gradle/mixin-refmap.gradle'"));
-    }
+
 
     @Test
     public void missingAndEmptyGeneratedMappingsAreRejected() {

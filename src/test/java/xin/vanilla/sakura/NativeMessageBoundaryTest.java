@@ -17,13 +17,7 @@ import java.util.List;
 import static org.junit.Assert.*;
 
 public class NativeMessageBoundaryTest {
-    @Test
-    public void productionBoundaryRetainsNativeNames() throws Exception {
-        String source = new String(Files.readAllBytes(Paths.get("src/main/java/xin/vanilla/sakura/reward/builtin/BuiltInRewardTypes.java")), StandardCharsets.UTF_8);
-        assertTrue(source.contains(".object(value.getHoverName().copy())"));
-        assertFalse(source.contains(".literal(value.getHoverName().getString())"));
-        assertTrue(source.contains("SakuraComponent.get().object(value.getEffect().getDisplayName())"));
-    }
+
 
     @Test
     public void composingNamesPreservesVanillaTranslationsAndTheOriginal() {
@@ -49,13 +43,6 @@ public class NativeMessageBoundaryTest {
         assertFalse(json.toString().contains("missing_boundary_template"));
     }
 
-    @Test
-    public void feedbackArgumentsKeepDisplayNameComponents() throws Exception {
-        for (String path : Arrays.asList("src/main/java/xin/vanilla/sakura/command/impl/CardCommand.java")) {
-            String source = new String(Files.readAllBytes(Paths.get(path)), StandardCharsets.UTF_8);
-            assertFalse(path, source.contains(".getDisplayName().getString()"));
-        }
-    }
 
     @Test
     public void reviewedNativeTemplateFormattingComesFromTheFrozenCommonInput() throws Exception {

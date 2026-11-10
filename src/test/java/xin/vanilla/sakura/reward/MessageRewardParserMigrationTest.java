@@ -3,6 +3,9 @@ package xin.vanilla.sakura.reward;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.enums.EnumI18nType;
 import xin.vanilla.sakura.reward.builtin.MessageRewardCodec;

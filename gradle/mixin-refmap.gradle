@@ -1,11 +1,27 @@
-// Mixin's processor deletes its temporary outputs before an incremental no-source compile.
+import groovy.json.JsonSlurper
+
+ext.baniraRequireGeneratedMixinRefmap = { Map manifest, File generated ->
+    def registrations = ['mixins', 'client', 'server'].collectMany { key ->
+        def entries = manifest[key]
+        if (entries == null) return []
+        if (!(entries instanceof List)) throw new GradleException("Invalid Mixin registration list: ${key}")
+        entries
+    }
+    if (!registrations.empty && !generated.isFile()) {
+        throw new GradleException('Missing generated Mixin refmap')
+    }
+}
+
+// Keep annotation processor outputs stable across incremental compilation.
 tasks.named('compileJava', JavaCompile).configure {
     options.incremental = false
+    def configuration = project.file("src/main/resources/${mod_id}.mixins.json")
     def refmap = new File(temporaryDir, "${mod_id}.refmap.json")
     def generated = new File(temporaryDir, 'compileJava-refmap.json')
+    inputs.file(configuration)
     outputs.files(refmap, generated,
             new File(temporaryDir, 'compileJava-mappings.tsrg'))
     doLast {
-        if (!generated.isFile()) throw new GradleException('Missing generated Mixin refmap')
+        project.baniraRequireGeneratedMixinRefmap(new JsonSlurper().parse(configuration) as Map, generated)
     }
 }

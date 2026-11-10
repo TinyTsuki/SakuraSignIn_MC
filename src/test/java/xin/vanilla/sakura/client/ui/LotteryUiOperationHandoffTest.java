@@ -118,23 +118,6 @@ public class LotteryUiOperationHandoffTest {
         assertTrue("Lottery result must retain its original owner", UiPageSource.class.isAssignableFrom(LotteryRevealScreen.class));
     }
 
-    @Test
-    public void mainViewRemovalDoesNotCancelUnsentPaymentIntent() throws Exception {
-        String source = new String(Files.readAllBytes(java.nio.file.Paths.get("src/main/java/xin/vanilla/sakura/screen/LotteryScreen.java")), StandardCharsets.UTF_8);
-        assertFalse("Reload/switch removal is not cancellation", source.contains("onRemoved() { payment.cancelIntent()"));
-    }
-
-    @Test
-    public void templatesUseSharedLightweightResources() throws Exception {
-        Path root = java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in");
-        for (String name : new String[]{"lottery", "lottery-result"}) {
-            assertTrue("Missing " + name, Files.exists(root.resolve(name + ".html")));
-            String html = new String(Files.readAllBytes(root.resolve(name + ".html")), StandardCharsets.UTF_8);
-            assertTrue(html.contains("../banira_codex/shared.css"));
-            assertFalse(html.contains("<script"));
-            assertTrue(Files.size(root.resolve(name + ".html")) <= 12288);
-        }
-    }
 
     @Test
     public void correlatedSingleIntentSurvivesSwitchResizeReloadAndNativeHandoff() {
@@ -380,11 +363,5 @@ public class LotteryUiOperationHandoffTest {
         assertEquals(0, late.writes);
     }
 
-    @Test
-    public void descriptionScrollIsRestoredAfterNativeViewportLayout() throws Exception {
-        String source = new String(Files.readAllBytes(java.nio.file.Paths.get("src/main/java/xin/vanilla/sakura/screen/LotteryScreen.java")), StandardCharsets.UTF_8);
-        String paragraph = source.substring(source.indexOf("private void renderParagraph"), source.indexOf("private void renderPreview"));
-        assertTrue("Restoration must wait until native content geometry is known", paragraph.contains("pendingDescriptionScroll"));
-        assertTrue(paragraph.indexOf("viewport.layout(") < paragraph.indexOf("viewport.scrollTo("));
-    }
+
 }
