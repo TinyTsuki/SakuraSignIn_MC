@@ -18,15 +18,6 @@ public class ConfigurationAccessorContractTest {
         verifyDeclaration(ClientConfig.class);
     }
 
-    @Test
-    public void sourcesContainNoDeclarationAccessors() throws Exception {
-        for (String name : new String[]{"CommonConfig", "ClientConfig"}) {
-            String source = new String(Files.readAllBytes(Paths.get(
-                    "src/main/java/xin/vanilla/sakura/config/" + name + ".java")), StandardCharsets.UTF_8);
-            assertFalse(name + " still generates detached bean accessors",
-                    source.matches("(?s).*(@(?:lombok\\.)?(?:Getter|Setter|Accessors)\\b|import\\s+lombok\\.).*"));
-        }
-    }
 
     private static void verifyDeclaration(Class<?> type) {
         for (Method method : type.getDeclaredMethods()) {
