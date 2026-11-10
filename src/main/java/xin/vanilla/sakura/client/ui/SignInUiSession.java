@@ -2,6 +2,7 @@ package xin.vanilla.sakura.client.ui;
 
 import xin.vanilla.banira.api.client.ui.*;
 import xin.vanilla.banira.client.data.Texture;
+import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.widget.ButtonWidget.PresetStyle;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.sakura.SakuraComponent;
@@ -95,6 +96,18 @@ public final class SignInUiSession implements UiPageSession {
         default long detailRevision() {
             return 0;
         }
+
+        default boolean marked(int date) {
+            return true;
+        }
+
+        default boolean canActivate(int date) {
+            return true;
+        }
+
+        default Component actionLabel(int date) {
+            return SakuraComponent.get().transClient("word", "aui_action_sign_in");
+        }
     }
 
     private final Port port;
@@ -107,6 +120,8 @@ public final class SignInUiSession implements UiPageSession {
     private List<Cell> cells = com.google.common.collect.ImmutableList.of();
     private int selectedDate;
     private long detailRevision = Long.MIN_VALUE;
+    private double gridWidth = -1, gridHeight = -1;
+    private int gridCount = -1;
 
     public SignInUiSession(Port port, BooleanSupplier connection) {
         this.port = Objects.requireNonNull(port);
@@ -125,6 +140,7 @@ public final class SignInUiSession implements UiPageSession {
         if (next.nativeView()) return;
         port.reload();
         long token = generation;
+        bindings.add(next.forwardScroll("calendar", "content", () -> live(next, token) && !port.openingTips()));
         next.gameElement("brand", SakuraUiPages.moduleIcon());
         next.gameElement("close_icon", UiGameElement.preset(PresetStyle.CLOSE));
         text("detail_heading", tr("aui_reward_details"));
@@ -145,6 +161,12 @@ public final class SignInUiSession implements UiPageSession {
         next.tooltip("next-year", SakuraComponent.get().transClient("format", "use_s_key", "↓"));
         bindings.add(next.onAction("close", () -> {
             if (view == next && generation == token) next.requestClose();
+        }));
+        bindings.add(next.onAction("date_action", () -> {
+            if (live(next, token) && !port.openingTips() && cells.stream().anyMatch(cell -> cell.date() == selectedDate && cell.actionable()) && port.canActivate(selectedDate)) {
+                port.activate(selectedDate);
+                refresh();
+            }
         }));
         icon("close", PresetStyle.CLOSE);
         next.tooltip("close", xin.vanilla.banira.BaniraComponent.get().transClientAuto("config_editor_close"));
@@ -183,11 +205,12 @@ public final class SignInUiSession implements UiPageSession {
             int position = index;
             bindings.add(next.onPointer("day" + index, pointer -> {
                 if (pointer.kind() == UiPointer.Kind.MOVE && live(next, token) && !port.openingTips()
-                        && position < cells.size() && cells.get(position).actionable() && cells.get(position).date() != selectedDate
+                        && position < visibleCellCount(cells) && cells.get(position).actionable() && cells.get(position).date() != selectedDate
                         && inside(next, "day" + position, pointer)) select(cells.get(position));
             }));
             bindings.add(next.onAction("day" + index, () -> {
-                if (!live(next, token) || port.openingTips() || position >= cells.size() || !cells.get(position).actionable()) return;
+                if (!live(next, token) || port.openingTips() || position >= visibleCellCount(cells) || !cells.get(position).actionable())
+                    return;
                 Cell selected = cells.get(position);
                 select(selected);
                 port.activate(selected.date());
@@ -240,13 +263,15 @@ public final class SignInUiSession implements UiPageSession {
         cells = com.google.common.collect.ImmutableList.copyOf(port.cells());
         if (cells.size() > 42) throw new IllegalArgumentException("Calendar cell budget");
         view.gameElement("brand", SakuraUiPages.moduleIcon());
-        for (String name : com.google.common.collect.ImmutableList.of("not_signed", "unclaimed", "claimed")) {
+        for (String name : com.google.common.collect.ImmutableList.of("unclaimed", "claimed")) {
             view.gameElement("legend_" + name, UiGameElement.sprite(xin.vanilla.sakura.client.theme.SakuraThemeTextures.status(
-                    name.equals("not_signed") ? "not_signed_in" : name.equals("claimed") ? "rewarded" : "signed_in").texture()));
+                    name.equals("claimed") ? "rewarded" : "signed_in").texture()));
             text("legend_" + name + "_label", tr("aui_" + name));
         }
         text("title", tr("aui_calendar"));
         text("month", port.title());
+        int month = cells.stream().filter(Cell::currentMonth).findFirst().map(cell -> cell.date() / 100 % 100).orElse(0);
+        text("month_number", SakuraComponent.get().literal(month == 0 ? "" : String.format(Locale.ROOT, "%02d", month)));
         text("tips", port.tips());
         view.enabled("tips_panel", port.openingTips());
         List<Component> statistics = port.statistics();
@@ -265,22 +290,55 @@ public final class SignInUiSession implements UiPageSession {
         }
         for (int index = 0; index < 42; index++) {
             Cell cell = index < cells.size() ? cells.get(index) : null;
+            view.enabled("selected" + index, false);
             for (String kind : com.google.common.collect.ImmutableList.of("current", "adjacent")) {
                 String id = "day" + index + "_" + kind;
                 text(id, cell == null ? empty() : cell.day());
                 view.enabled(id, cell != null && cell.currentMonth() == kind.equals("current"));
             }
-            view.gameElement("status" + index, cell == null || cell.icon() == null ? null : UiGameElement.sprite(cell.icon()));
-            view.enabled("day" + index, cell != null && cell.actionable() && !port.openingTips() && connection.getAsBoolean());
+            view.gameElement("status" + index, port.openingTips() || cell == null || !cell.currentMonth() || !port.marked(cell.date()) || cell.icon() == null ? null : UiGameElement.sprite(cell.icon()));
+            view.enabled("day" + index + "_shade", cell != null && !cell.currentMonth());
+            text("day" + index + "_note", cell == null || !cell.currentMonth() ? empty()
+                    : cell.date() == port.today() ? tr("aui_today") : empty());
+            view.enabled("day" + index, index < visibleCellCount(cells) && cell != null && cell.actionable() && !port.openingTips() && connection.getAsBoolean());
             view.tooltip("day" + index, empty());
         }
-        Cell selection = cells.stream().filter(cell -> cell.date() == selectedDate).findFirst()
-                .orElseGet(() -> cells.stream().filter(cell -> cell.date() == port.today()).findFirst()
-                        .orElseGet(() -> cells.stream().filter(Cell::currentMonth).findFirst().orElse(cells.isEmpty() ? null : cells.get(0))));
+        List<Cell> visible = cells.subList(0, visibleCellCount(cells));
+        Cell selection = visible.stream().filter(cell -> cell.date() == selectedDate).findFirst()
+                .orElseGet(() -> visible.stream().filter(cell -> cell.date() == port.today()).findFirst()
+                        .orElseGet(() -> visible.stream().filter(Cell::currentMonth).findFirst().orElse(visible.isEmpty() ? null : visible.get(0))));
         if (selection == null) {
             selectedDate = 0;
             renderDetails(null);
         } else select(selection);
+        gridCount = -1;
+        layoutCalendar();
+    }
+
+    public static int visibleCellCount(List<Cell> cells) {
+        int last = -1;
+        for (int index = 0; index < cells.size(); index++) if (cells.get(index).currentMonth()) last = index;
+        return Math.min(cells.size(), last < 0 ? cells.size() : ((last / 7) + 1) * 7);
+    }
+
+    private void layoutCalendar() {
+        if (view == null || view.nativeView()) return;
+        ScreenCoordinate area = view.bounds("calendar");
+        if (area == null || !Double.isFinite(area.width()) || !Double.isFinite(area.height()) || area.width() <= 1 || area.height() <= 0)
+            return;
+        int count = visibleCellCount(cells);
+        double width = area.width() - 1, height = area.height();
+        if (gridCount == count && gridWidth == width && gridHeight == height) return;
+        gridCount = count;
+        gridWidth = width;
+        gridHeight = height;
+        int rows = Math.max(1, (count + 6) / 7);
+        for (int index = 0; index < 42; index++) {
+            double x = Math.floor((index % 7) * width / 7), y = Math.floor((index / 7) * height / rows);
+            double w = Math.floor((index % 7 + 1) * width / 7) - x, h = Math.floor((index / 7 + 1) * height / rows) - y;
+            view.gameElement("day" + index + "_slot", null, index < count ? new ScreenCoordinate(x, y, w, h) : new ScreenCoordinate(0, 0, 0, 0));
+            view.enabled("day" + index + "_note", index < count && h >= 24 && !port.openingTips());
+        }
     }
 
     private void select(Cell cell) {
@@ -289,13 +347,19 @@ public final class SignInUiSession implements UiPageSession {
             view.state().detailScroll(0);
         }
         selectedDate = cell.date();
+        for (int index = 0; index < 42; index++)
+            view.enabled("selected" + index, !port.openingTips() && index < visibleCellCount(cells) && cells.get(index).date() == selectedDate);
         if (view.state() != null) view.state().selectedId(Integer.toString(selectedDate));
         renderDetails(cell);
     }
 
     private void renderDetails(Cell cell) {
         text("detail_date", SakuraComponent.get().literal(cell == null ? "" : String.format(Locale.ROOT, "%02d / %02d", cell.date() / 100 % 100, cell.date() % 100)));
+        text("detail_month", cell == null ? empty() : SakuraComponent.get().transClient("format", "aui_month_s", cell.date() / 100 % 100));
+        text("detail_day", SakuraComponent.get().literal(cell == null ? "" : String.format(Locale.ROOT, "%02d", cell.date() % 100)));
         text("detail_status", cell == null ? empty() : port.status(cell.date()));
+        text("date_action", cell == null ? empty() : port.actionLabel(cell.date()));
+        view.enabled("date_action", cell != null && cell.actionable() && !port.openingTips() && connection.getAsBoolean() && port.canActivate(cell.date()));
         List<RewardLine> rewards = cell == null || !port.detailsVisible(cell.date()) ? com.google.common.collect.ImmutableList.of() : com.google.common.collect.ImmutableList.copyOf(port.rewards(cell.date()));
         text("empty", cell != null && !port.detailsVisible(cell.date()) ? tr("aui_details_hidden") : rewards.isEmpty() ? tr("aui_no_rewards") : empty());
         view.enabled("empty", rewards.isEmpty());
@@ -346,6 +410,7 @@ public final class SignInUiSession implements UiPageSession {
             port.refresh();
             refresh();
         }
+        layoutCalendar();
     }
 
     public boolean requestClose() {
@@ -360,6 +425,8 @@ public final class SignInUiSession implements UiPageSession {
         view = null;
         revision = Long.MIN_VALUE;
         pressedTheme = -1;
+        gridCount = -1;
+        gridWidth = gridHeight = -1;
         for (AutoCloseable binding : bindings) {
             try {
                 binding.close();

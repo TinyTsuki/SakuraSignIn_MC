@@ -5,6 +5,7 @@ import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.api.reward.client.SakuraRewardClient;
 import xin.vanilla.sakura.client.gui.RewardRenderer;
+import xin.vanilla.sakura.client.gui.lottery.LotteryMotion;
 import xin.vanilla.sakura.data.lottery.LotteryAnimationStyle;
 import xin.vanilla.sakura.network.packet.LotteryRevealPacket;
 import xin.vanilla.sakura.reward.Reward;
@@ -41,6 +42,8 @@ public final class LotteryRevealUiSession implements UiPageSession {
     private final long openedAt;
     private final List<Reward> winners, preview;
     private List<UiGameElement> winnerIcons, candidateIcons;
+    private LotteryMotion.Frame displayedMotion;
+    private double displayedMotionWidth = Double.NaN, displayedMotionHeight = Double.NaN;
     private final List<AutoCloseable> bindings = new ArrayList<>();
     private UiView view;
     private long binding;
@@ -51,7 +54,7 @@ public final class LotteryRevealUiSession implements UiPageSession {
     public LotteryRevealUiSession(LotteryRevealPacket packet, LotteryAnimationStyle style, LongSupplier millis,
                                   BooleanSupplier connection, IntSupplier inventoryKey, Runnable claim) {
         this.packet = Objects.requireNonNull(packet);
-        this.style = Objects.requireNonNull(style);
+        this.style = Objects.requireNonNull(style).presentationStyle();
         this.millis = Objects.requireNonNull(millis);
         this.connection = Objects.requireNonNull(connection);
         this.inventoryKey = Objects.requireNonNull(inventoryKey);
@@ -70,11 +73,11 @@ public final class LotteryRevealUiSession implements UiPageSession {
     }
 
     public static long duration(LotteryAnimationStyle style) {
-        return style == LotteryAnimationStyle.INSTANT ? 0 : style == LotteryAnimationStyle.CARDS ? 4800 : 6800;
+        return LotteryMotion.duration(style, 1, 0);
     }
 
     public boolean revealed() {
-        return skipped || elapsed() >= duration(style);
+        return skipped || elapsed() >= LotteryMotion.duration(style, winners.size(), packet.getOperationId().hashCode());
     }
 
     public void skip() {
@@ -120,10 +123,12 @@ public final class LotteryRevealUiSession implements UiPageSession {
             if (live(next, token)) action();
         }));
         prepareIcons();
+        next.enabled("motion_shell", this.style == LotteryAnimationStyle.ENVELOPE);
         resultsShown = false;
         resultColumns = 0;
         displayedReveal = null;
         displayedConnection = null;
+        displayedMotion = null;
         draw();
     }
 
@@ -131,7 +136,7 @@ public final class LotteryRevealUiSession implements UiPageSession {
         if (winnerIcons != null) return;
         winnerIcons = winners.stream().map(RewardRenderer::uiIcon).collect(java.util.stream.Collectors.toList());
         candidateIcons = new ArrayList<>();
-        for (int i = 0; i < 48; i++)
+        for (int i = 0; i < Math.max(48, preview.size()); i++)
             candidateIcons.add(packet.isPreviewVisible() && !preview.isEmpty()
                     ? RewardRenderer.uiIcon(preview.get(i % preview.size())) : hidden());
     }
@@ -174,6 +179,13 @@ public final class LotteryRevealUiSession implements UiPageSession {
                     view.gameElement("tile" + i, null, new ScreenCoordinate(0, 0, 0, 0));
                 }
                 for (int i = 0; i < 7; i++) view.gameElement("card" + i, null, new ScreenCoordinate(0, 0, 0, 0));
+                for (int i = 0; i < 5; i++) {
+                    view.gameElement("motion_card" + i, null, new ScreenCoordinate(0, 0, 0, 0));
+                    view.gameElement("motion_fanback" + i, null, new ScreenCoordinate(0, 0, 0, 0));
+                    view.gameElement("motion_icon" + i, null);
+                }
+                view.gameElement("motion_shell", null, new ScreenCoordinate(0, 0, 0, 0));
+                view.gameElement("motion_front", null, new ScreenCoordinate(0, 0, 0, 0));
                 view.gameElement("marker", null, new ScreenCoordinate(0, 0, 0, 0));
                 String summary = winners.size() == 1 ? SakuraComponent.get().translateClient("format", "lottery_won_s", name(winners.get(0)))
                         : SakuraComponent.get().translateClient("format", "lottery_won_count_s", winners.size());
@@ -192,6 +204,10 @@ public final class LotteryRevealUiSession implements UiPageSession {
         ScreenCoordinate area = view.bounds("scene");
         if (area == null || !Double.isFinite(area.width()) || !Double.isFinite(area.height()) || area.width() <= 0 || area.height() <= 0)
             return;
+        if (style.illustrated()) {
+            drawMotion(area);
+            return;
+        }
         List<Slot> slots = presentationFrame(style, elapsed(), area.width(), area.height(), preview.size());
         int winner = style == LotteryAnimationStyle.STRIP ? 43 : slots.size() - 1;
         ScreenCoordinate marker = new ScreenCoordinate(0, 0, 0, 0);
@@ -217,6 +233,68 @@ public final class LotteryRevealUiSession implements UiPageSession {
         if (style == LotteryAnimationStyle.STRIP)
             marker = new ScreenCoordinate(area.width() / 2 - 16, area.height() / 2 - 20, 32, 40);
         view.gameElement("marker", null, marker);
+    }
+
+    private void drawMotion(ScreenCoordinate area) {
+        lombok.var frame = LotteryMotion.frame(style, elapsed(), winners.size(), preview.size(), packet.getOperationId().hashCode(), area.width(), area.height());
+        if (frame.equals(displayedMotion) && displayedMotionWidth == area.width() && displayedMotionHeight == area.height())
+            return;
+        displayedMotion = frame;
+        displayedMotionWidth = area.width();
+        displayedMotionHeight = area.height();
+        double scale = Math.min(area.width() / 320, area.height() / 180);
+        double dx = (area.width() - 320 * scale) / 2, dy = (area.height() - 180 * scale) / 2;
+        view.enabled("motion_envelope", style == LotteryAnimationStyle.ENVELOPE);
+        boolean shell = style == LotteryAnimationStyle.ENVELOPE;
+        view.enabled("motion_flap_open", shell && frame.opening() >= .5);
+        view.enabled("motion_flap_closed", shell && frame.opening() < .5);
+        view.enabled("motion_front_envelope", shell);
+        view.gameElement("motion_shell", null, shell ? new ScreenCoordinate(dx + 105 * scale, dy + 90 * scale, 110 * scale, 65 * scale)
+                : new ScreenCoordinate(0, 0, 0, 0));
+        view.gameElement("motion_front", null, shell ? new ScreenCoordinate(dx + 105 * scale, dy + 90 * scale, 110 * scale, 65 * scale)
+                : new ScreenCoordinate(0, 0, 0, 0));
+        double closedHeight = 39 * scale * Math.max(0, 1 - frame.opening() * 2);
+        double openHeight = 31 * scale * Math.max(0, frame.opening() * 2 - 1);
+        view.gameElement("motion_flap_closed", null, new ScreenCoordinate(0, 0, 110 * scale, closedHeight));
+        view.gameElement("motion_flap_open", null, new ScreenCoordinate(0, -openHeight, 110 * scale, openHeight));
+        for (int i = 0; i < 5; i++) {
+            int slot = i;
+            lombok.var card = frame.cards().stream().filter(c -> c.slot() == slot).findFirst().orElse(null);
+            ScreenCoordinate bounds = card == null ? new ScreenCoordinate(0, 0, 0, 0)
+                    : new ScreenCoordinate(card.x(), card.y(), card.width(), card.height());
+            boolean fanBack = style == LotteryAnimationStyle.FAN && card != null && !card.face();
+            double restingY = dy + (65 + Math.abs(i - (frame.cards().size() - 1) / 2D) * 5) * scale;
+            view.enabled("motion_fanback" + i, fanBack && card.y() >= restingY - 6 * scale);
+            view.gameElement("motion_fanback" + i, null, fanBack ? bounds : new ScreenCoordinate(0, 0, 0, 0));
+            view.gameElement("motion_card" + i, null, fanBack ? new ScreenCoordinate(0, 0, 0, 0) : bounds);
+            view.enabled("motion_card" + i, card != null && card.face());
+            view.enabled("motion_match" + i, card != null && card.matched());
+            int candidate = motionCandidate(card, frame);
+            UiGameElement element = card == null || !card.face() ? null : card.reward() >= 0
+                    ? winnerIcons.get(card.reward()) : candidate < 0 ? null : candidateIcons.get(candidate);
+            view.gameElement("motion_icon" + i, element);
+            Reward reward = card == null || !card.face() ? null : card.reward() >= 0 ? winners.get(card.reward())
+                    : candidate < 0 ? null : preview.get(candidate);
+            view.text("motion_name" + i, SakuraComponent.get().literal(""));
+            view.tooltip("motion_card" + i, SakuraComponent.get().literal(reward == null ? "" : name(reward)));
+            view.text("motion_hidden" + i, SakuraComponent.get().literal(card != null && !card.face() ? "\u273f" : element == null ? "?" : ""));
+        }
+    }
+
+    private int motionCandidate(LotteryMotion.Card card, LotteryMotion.Frame frame) {
+        if (card == null || !card.face() || card.reward() >= 0 || !packet.isPreviewVisible() || preview.isEmpty())
+            return -1;
+        int start = Math.floorMod(-1 - card.reward(), preview.size());
+        if (style != LotteryAnimationStyle.FLIP) return start;
+        int winner = frame.cards().get(4).reward();
+        Reward prize = winners.get(winner);
+        for (int i = 0; i < preview.size(); i++) {
+            int at = (start + i) % preview.size();
+            Reward option = preview.get(at);
+            if (!prize.getTypeId().equals(option.getTypeId()) || !prize.getContent().equals(option.getContent()))
+                return at;
+        }
+        return -1;
     }
 
     private void bindResults() {
@@ -261,7 +339,7 @@ public final class LotteryRevealUiSession implements UiPageSession {
                     cell.gameElement("icon", winnerIcons.get(index));
                     cell.text("label", SakuraComponent.get().literal(name(reward)));
                     cell.text("type", SakuraComponent.get().literal(typeName(reward)));
-                    cell.text("index", SakuraComponent.get().literal(String.format(Locale.ROOT, "%02d", index + 1)));
+                    cell.text("index", SakuraComponent.get().literal(""));
                     cell.tooltip("label", SakuraComponent.get().literal(name(reward)));
                     cell.tooltip("type", SakuraComponent.get().literal(typeName(reward)));
                     cell.tooltip("icon", SakuraComponent.get().literal(name(reward)));
@@ -288,7 +366,8 @@ public final class LotteryRevealUiSession implements UiPageSession {
     }
 
     public static List<Slot> frame(LotteryAnimationStyle style, long elapsed, double width, double height, int previews) {
-        if (!Double.isFinite(width) || !Double.isFinite(height) || width <= 0 || height <= 0) return com.google.common.collect.ImmutableList.of();
+        if (!Double.isFinite(width) || !Double.isFinite(height) || width <= 0 || height <= 0)
+            return com.google.common.collect.ImmutableList.of();
         elapsed = Math.max(0, elapsed);
         List<Slot> result = new ArrayList<>();
         if (style == LotteryAnimationStyle.STRIP) {
