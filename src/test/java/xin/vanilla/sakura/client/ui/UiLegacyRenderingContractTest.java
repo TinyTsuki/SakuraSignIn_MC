@@ -28,7 +28,8 @@ public class UiLegacyRenderingContractTest {
             for (AbstractInsnNode instruction : method.instructions) {
                 if (!(instruction instanceof MethodInsnNode)) continue;
                 MethodInsnNode call = (MethodInsnNode) instruction;
-                if (!call.owner.equals("xin/vanilla/banira/client/gui/widget/ItemWidget") || !call.name.equals("renderItem")) continue;
+                if (!call.owner.equals("xin/vanilla/banira/client/gui/widget/ItemWidget") || !call.name.equals("renderItem"))
+                    continue;
                 assertEquals("(Lnet/minecraft/client/renderer/ItemRenderer;Lnet/minecraft/client/gui/FontRenderer;Lnet/minecraft/item/ItemStack;IIZ)V", call.desc);
                 calls++;
             }
@@ -45,7 +46,8 @@ public class UiLegacyRenderingContractTest {
                 if (!(instruction instanceof MethodInsnNode)) continue;
                 MethodInsnNode call = (MethodInsnNode) instruction;
                 assertNotEquals("setShaderTexture", call.name);
-                if (call.owner.equals("net/minecraft/client/renderer/texture/TextureManager") && call.name.equals("bind")) bindings++;
+                if (call.owner.equals("net/minecraft/client/renderer/texture/TextureManager") && call.name.equals("bind"))
+                    bindings++;
                 if (call.owner.equals("net/minecraft/client/renderer/BufferBuilder") && call.name.equals("begin")) {
                     assertEquals("(ILnet/minecraft/client/renderer/vertex/VertexFormat;)V", call.desc);
                     quads++;
@@ -64,7 +66,8 @@ public class UiLegacyRenderingContractTest {
                 if (!(instruction instanceof MethodInsnNode)) continue;
                 MethodInsnNode call = (MethodInsnNode) instruction;
                 assertNotEquals("setShaderTexture", call.name);
-                if (method.name.equals("renderStatusIcon") && call.owner.equals("xin/vanilla/sakura/client/theme/ThemeTexture") && call.name.equals("draw")) draws++;
+                if (method.name.equals("renderStatusIcon") && call.owner.equals("xin/vanilla/sakura/client/theme/ThemeTexture") && call.name.equals("draw"))
+                    draws++;
             }
         }
         assertEquals(2, draws);

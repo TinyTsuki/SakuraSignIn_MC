@@ -51,9 +51,13 @@ public class PlayerMonthSyncPacket implements INetworkPacket {
                 buffer.readUtf(MonthDataTransfer.MAX_PART_CHARS));
     }
 
-    public UUID getPlayerUUID() { return part.getPlayer(); }
+    public UUID getPlayerUUID() {
+        return part.getPlayer();
+    }
 
-    public String getMonth() { return part.getMonth(); }
+    public String getMonth() {
+        return part.getMonth();
+    }
 
     public static List<SignInRecord> decodeRecords(String month, List<String> serialized) {
         List<SignInRecord> records = new ArrayList<>(serialized.size());

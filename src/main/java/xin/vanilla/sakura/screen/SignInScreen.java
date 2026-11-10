@@ -1,7 +1,7 @@
 package xin.vanilla.sakura.screen;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
@@ -105,10 +105,10 @@ public final class SignInScreen extends BaniraScreen implements UiPageSource {
                             java.time.LocalDate.of(DateUtils.getYearPart(month), DateUtils.getMonthOfDate(month), 1),
                             SakuraClientState.getThemeTextureCoordinate().getWeekStart(),
                             signInCells.stream().map(cell -> new SignInUiSession.Cell(
-                            cell.getYear() * 10000 + cell.getMonth() * 100 + cell.getDay(),
-                            SakuraComponent.get().literal(cell.isShowText() ? Integer.toString(cell.getDay()) : "")
-                                    .underlined(cell.getYear() * 10000 + cell.getMonth() * 100 + cell.getDay() == DateUtils.toDateInt(SakuraClock.clientNow())),
-                            cell.uiTooltip(), cell.uiStatusIcon())).collect(java.util.stream.Collectors.toList()));
+                                    cell.getYear() * 10000 + cell.getMonth() * 100 + cell.getDay(),
+                                    SakuraComponent.get().literal(cell.isShowText() ? Integer.toString(cell.getDay()) : "")
+                                            .underlined(cell.getYear() * 10000 + cell.getMonth() * 100 + cell.getDay() == DateUtils.toDateInt(SakuraClock.clientNow())),
+                                    cell.uiTooltip(), cell.uiStatusIcon())).collect(java.util.stream.Collectors.toList()));
                 }
 
                 public Component title() {

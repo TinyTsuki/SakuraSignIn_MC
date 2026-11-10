@@ -3,11 +3,11 @@ package xin.vanilla.sakura.client.ui;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
-import xin.vanilla.banira.client.gui.InputFormScreen;
 import xin.vanilla.banira.api.client.ui.UiCloseReason;
 import xin.vanilla.banira.api.client.ui.UiDetachReason;
 import xin.vanilla.banira.api.client.ui.UiPageSource;
 import xin.vanilla.banira.api.client.ui.UiValue;
+import xin.vanilla.banira.client.gui.InputFormScreen;
 import xin.vanilla.sakura.client.gui.lottery.LotteryPaymentViewModel;
 import xin.vanilla.sakura.data.lottery.*;
 import xin.vanilla.sakura.network.LotteryClientRequests;
@@ -116,7 +116,7 @@ public class LotteryUiOperationHandoffTest {
 
     @Test
     public void mainViewRemovalDoesNotCancelUnsentPaymentIntent() throws Exception {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/java/xin/vanilla/sakura/screen/LotteryScreen.java")),  StandardCharsets.UTF_8);
+        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/java/xin/vanilla/sakura/screen/LotteryScreen.java")), StandardCharsets.UTF_8);
         assertFalse("Reload/switch removal is not cancellation", source.contains("onRemoved() { payment.cancelIntent()"));
     }
 
@@ -125,7 +125,7 @@ public class LotteryUiOperationHandoffTest {
         Path root = java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in");
         for (String name : new String[]{"lottery", "lottery-result"}) {
             assertTrue("Missing " + name, Files.exists(root.resolve(name + ".html")));
-            String html = new String(java.nio.file.Files.readAllBytes(root.resolve(name + ".html")),  StandardCharsets.UTF_8);
+            String html = new String(java.nio.file.Files.readAllBytes(root.resolve(name + ".html")), StandardCharsets.UTF_8);
             assertTrue(html.contains("../banira_codex/shared.css"));
             assertFalse(html.contains("<script"));
             assertTrue(Files.size(root.resolve(name + ".html")) <= 12288);
@@ -358,7 +358,7 @@ public class LotteryUiOperationHandoffTest {
 
     @Test
     public void descriptionScrollIsRestoredAfterNativeViewportLayout() throws Exception {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/java/xin/vanilla/sakura/screen/LotteryScreen.java")),  StandardCharsets.UTF_8);
+        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/java/xin/vanilla/sakura/screen/LotteryScreen.java")), StandardCharsets.UTF_8);
         String paragraph = source.substring(source.indexOf("private void renderParagraph"), source.indexOf("private void renderPreview"));
         assertTrue("Restoration must wait until native content geometry is known", paragraph.contains("pendingDescriptionScroll"));
         assertTrue(paragraph.indexOf("viewport.layout(") < paragraph.indexOf("viewport.scrollTo("));

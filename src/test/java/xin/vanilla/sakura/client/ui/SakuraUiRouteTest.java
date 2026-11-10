@@ -12,9 +12,9 @@ import static org.junit.Assert.assertTrue;
 public class SakuraUiRouteTest {
     @Test
     public void existingEntryFactoriesReachSharedOwnersAndForms() throws Exception {
-        String quick = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/java/xin/vanilla/sakura/client/gui/SakuraQuickActions.java")),  StandardCharsets.UTF_8);
-        String events = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/java/xin/vanilla/sakura/event/ClientEventHandler.java")),  StandardCharsets.UTF_8);
-        String presets = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/java/xin/vanilla/sakura/client/gui/PersonalDatePresetForm.java")),  StandardCharsets.UTF_8);
+        String quick = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/java/xin/vanilla/sakura/client/gui/SakuraQuickActions.java")), StandardCharsets.UTF_8);
+        String events = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/java/xin/vanilla/sakura/event/ClientEventHandler.java")), StandardCharsets.UTF_8);
+        String presets = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/java/xin/vanilla/sakura/client/gui/PersonalDatePresetForm.java")), StandardCharsets.UTF_8);
         assertTrue(quick.contains("new PersonalDateConfigScreen"));
         assertTrue(quick.contains("new ConfigEditorScreen"));
         assertTrue(quick.contains("ClientEventHandler.openSignInScreen"));
@@ -24,7 +24,7 @@ public class SakuraUiRouteTest {
 
     @Test
     public void dateRowsUseTheUnconditionalSharedCommandButton() throws Exception {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/java/xin/vanilla/sakura/client/ui/PersonalDateUiSession.java")),  StandardCharsets.UTF_8);
+        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/java/xin/vanilla/sakura/client/ui/PersonalDateUiSession.java")), StandardCharsets.UTF_8);
         assertTrue("Date rows need a real command listener without a picker input", source.contains("row.onAction(\"apply\""));
         assertFalse(source.contains("row.onAction(\"pick\""));
     }
@@ -32,7 +32,7 @@ public class SakuraUiRouteTest {
     @Test
     public void signInAndPersonalDatesUsePublicSharedPageBoundary() throws Exception {
         for (String name : new String[]{"SignInScreen", "PersonalDateConfigScreen"}) {
-            String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/java/xin/vanilla/sakura/screen/" + name + ".java")),  StandardCharsets.UTF_8);
+            String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/java/xin/vanilla/sakura/screen/" + name + ".java")), StandardCharsets.UTF_8);
             assertTrue(name + " needs the public shared-page contract", source.contains("UiPageSource"));
             assertTrue(source.contains("pageSession()"));
             assertTrue(source.contains("BaniraUi.screenRemoved"));
@@ -42,7 +42,7 @@ public class SakuraUiRouteTest {
 
     @Test
     public void packetRefreshCanReachTheActiveSharedSignInSession() throws Exception {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/java/xin/vanilla/sakura/network/ClientProxy.java")),  StandardCharsets.UTF_8);
+        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/java/xin/vanilla/sakura/network/ClientProxy.java")), StandardCharsets.UTF_8);
         assertTrue("AUI wrappers need an explicit presentation revision", source.contains("SakuraUiPages.signInChanged()"));
     }
 
@@ -51,7 +51,7 @@ public class SakuraUiRouteTest {
         for (String name : new String[]{"signin", "personal-date"}) {
             Path path = java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in/" + name + ".html");
             assertTrue("Missing " + path, Files.exists(path));
-            String html = new String(java.nio.file.Files.readAllBytes(path),  StandardCharsets.UTF_8);
+            String html = new String(java.nio.file.Files.readAllBytes(path), StandardCharsets.UTF_8);
             assertTrue(html.contains("banira_codex/shared.css"));
             assertFalse(html.contains("<script"));
             assertFalse(html.contains("https:"));
@@ -62,12 +62,12 @@ public class SakuraUiRouteTest {
     @Test
     public void sharedViewsDoNotIssueRewardOrDatePacketsAndHaveAllCalendarNodes() throws Exception {
         for (String name : new String[]{"SignInUiSession", "PersonalDateUiSession"}) {
-            String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/java/xin/vanilla/sakura/client/ui/" + name + ".java")),  StandardCharsets.UTF_8);
+            String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/java/xin/vanilla/sakura/client/ui/" + name + ".java")), StandardCharsets.UTF_8);
             assertFalse(source.contains("sendToServer"));
             assertFalse(source.contains("RewardManager"));
             assertFalse(source.contains("xin.vanilla.banira.internal."));
         }
-        String html = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in/signin.html")),  StandardCharsets.UTF_8);
+        String html = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in/signin.html")), StandardCharsets.UTF_8);
         for (int index = 0; index < 40; index++) {
             assertTrue(html.contains("id=\"day" + index + "\""));
             assertTrue(html.contains("id=\"status" + index + "\""));

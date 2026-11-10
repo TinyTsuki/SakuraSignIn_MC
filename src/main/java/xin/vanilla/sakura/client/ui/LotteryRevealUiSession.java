@@ -288,7 +288,8 @@ public final class LotteryRevealUiSession implements UiPageSession {
     }
 
     public static List<Slot> frame(LotteryAnimationStyle style, long elapsed, double width, double height, int previews) {
-        if (!Double.isFinite(width) || !Double.isFinite(height) || width <= 0 || height <= 0) return com.google.common.collect.ImmutableList.of();
+        if (!Double.isFinite(width) || !Double.isFinite(height) || width <= 0 || height <= 0)
+            return com.google.common.collect.ImmutableList.of();
         elapsed = Math.max(0, elapsed);
         List<Slot> result = new ArrayList<>();
         if (style == LotteryAnimationStyle.STRIP) {

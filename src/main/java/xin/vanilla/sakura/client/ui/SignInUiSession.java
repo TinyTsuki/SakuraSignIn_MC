@@ -187,7 +187,8 @@ public final class SignInUiSession implements UiPageSession {
                         && inside(next, "day" + position, pointer)) select(cells.get(position));
             }));
             bindings.add(next.onAction("day" + index, () -> {
-                if (!live(next, token) || port.openingTips() || position >= cells.size() || !cells.get(position).actionable()) return;
+                if (!live(next, token) || port.openingTips() || position >= cells.size() || !cells.get(position).actionable())
+                    return;
                 Cell selected = cells.get(position);
                 select(selected);
                 port.activate(selected.date());

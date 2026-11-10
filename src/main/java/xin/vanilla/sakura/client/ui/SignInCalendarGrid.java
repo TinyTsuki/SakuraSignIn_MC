@@ -1,13 +1,18 @@
 package xin.vanilla.sakura.client.ui;
 
 import xin.vanilla.sakura.SakuraComponent;
+
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public final class SignInCalendarGrid {
-    private SignInCalendarGrid() { }
+    private SignInCalendarGrid() {
+    }
 
     public static List<SignInUiSession.Cell> complete(LocalDate month, int weekStart, List<SignInUiSession.Cell> existing) {
         LocalDate first = month.withDayOfMonth(1).with(TemporalAdjusters.previousOrSame(DayOfWeek.of(weekStart)));

@@ -12,7 +12,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 
-/** Reads external calendar tables and writes the built-in 1900-2100 rules on first use. */
+/**
+ * Reads external calendar tables and writes the built-in 1900-2100 rules on first use.
+ */
 public final class CalendarRuleRepository {
     public static final String FILE_NAME = "calendar-rules.json";
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();

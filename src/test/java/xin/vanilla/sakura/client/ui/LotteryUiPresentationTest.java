@@ -14,9 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 
 import static org.junit.Assert.*;
 
@@ -113,13 +111,25 @@ public class LotteryUiPresentationTest {
             assertFalse(view.enabled.get("single"));
             assertFalse(view.enabled.get("batch"));
             assertEquals("\u2014", text(view, "available"));
-            String key ; switch (status) {
-case FORBIDDEN: key = "lottery_permission_denied"; break;
-case STALE_GENERATION: key = "lottery_configuration_changed"; break;
-case POOL_NOT_FOUND: key = "lottery_pool_not_found"; break;
-case POOL_CLOSED: key = "lottery_pool_closed"; break;
-default: key = "lottery_payment_unavailable"; break;
-};
+            String key;
+            switch (status) {
+                case FORBIDDEN:
+                    key = "lottery_permission_denied";
+                    break;
+                case STALE_GENERATION:
+                    key = "lottery_configuration_changed";
+                    break;
+                case POOL_NOT_FOUND:
+                    key = "lottery_pool_not_found";
+                    break;
+                case POOL_CLOSED:
+                    key = "lottery_pool_closed";
+                    break;
+                default:
+                    key = "lottery_payment_unavailable";
+                    break;
+            }
+            ;
             assertEquals(translated(key), text(view, "info"));
             assertEquals(Boolean.TRUE, view.enabled.get("info"));
             view.actions.get("single").run();
@@ -219,7 +229,7 @@ default: key = "lottery_payment_unavailable"; break;
         Path root = java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in");
         assertTrue("Dedicated compact lottery stylesheet", Files.exists(root.resolve("lottery.css")));
         for (String name : com.google.common.collect.ImmutableList.of("lottery", "lottery-result")) {
-            String html = new String(java.nio.file.Files.readAllBytes(root.resolve(name + ".html")),  StandardCharsets.UTF_8);
+            String html = new String(java.nio.file.Files.readAllBytes(root.resolve(name + ".html")), StandardCharsets.UTF_8);
             assertTrue(html.contains("href=\"" + name + ".css\""));
             assertTrue(html.contains("id=\"fields_middle\""));
             assertTrue(html.contains("id=\"fields_end\""));

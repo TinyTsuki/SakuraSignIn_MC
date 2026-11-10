@@ -74,9 +74,9 @@ public final class RewardEditorUiSession implements UiPageSession {
         boolean probability;
 
         public Detail(String id, String title, String subtitle, String description, UiGameElement icon,
-                         List<Fact> facts, boolean editable, boolean probability) {
+                      List<Fact> facts, boolean editable, boolean probability) {
             facts = com.google.common.collect.ImmutableList.copyOf(facts);
-        
+
             this.id = id;
             this.title = title;
             this.subtitle = subtitle;
@@ -250,7 +250,8 @@ public final class RewardEditorUiSession implements UiPageSession {
         }
         next.gameElement("close", UiGameElement.preset(PresetStyle.CLOSE));
         next.gameElement("close_icon", UiGameElement.preset(PresetStyle.CLOSE));
-        for (String id : com.google.common.collect.ImmutableList.of("more", "details")) next.gameElement(id + "_icon", icon(id));
+        for (String id : com.google.common.collect.ImmutableList.of("more", "details"))
+            next.gameElement(id + "_icon", icon(id));
         next.tooltip("more", tr("aui_more"));
         next.tooltip("details", tr("aui_reward_details"));
         next.text("detail_heading", tr("aui_reward_details"));
@@ -345,10 +346,20 @@ public final class RewardEditorUiSession implements UiPageSession {
         boolean blocked = !wide && detailOpen;
         boolean covered = blocked || moreOpen;
         for (Action action : Action.values()) {
-            boolean menu ; switch (action) {
-case CUT: case MOVE: case SORT: case MERGE: case CLEAR: menu = true; break;
-default: menu = false; break;
-};
+            boolean menu;
+            switch (action) {
+                case CUT:
+                case MOVE:
+                case SORT:
+                case MERGE:
+                case CLEAR:
+                    menu = true;
+                    break;
+                default:
+                    menu = false;
+                    break;
+            }
+            ;
             boolean visible = menu ? moreOpen && !blocked : !covered || action == Action.UPLOAD
                     || action == Action.DOWNLOAD || action == Action.FOLDER || action == Action.HELP;
             view.gameElement(action.id + "_icon", visible ? actionIcon(action) : null);

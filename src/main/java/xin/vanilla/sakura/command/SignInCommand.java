@@ -1,18 +1,9 @@
 package xin.vanilla.sakura.command;
 
 import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.Commands;
-import xin.vanilla.sakura.command.impl.CardCommand;
-import xin.vanilla.sakura.command.impl.DeleteCommand;
-import xin.vanilla.sakura.command.impl.ResetCommand;
-import xin.vanilla.sakura.command.impl.CdkCommand;
-import xin.vanilla.sakura.command.impl.ConfigCommand;
-import xin.vanilla.sakura.command.impl.HelpCommand;
-import xin.vanilla.sakura.command.impl.LanguageCommand;
-import xin.vanilla.sakura.command.impl.SignActionCommand;
-import xin.vanilla.sakura.command.impl.LotteryCommand;
+import xin.vanilla.sakura.command.impl.*;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.util.SakuraUtils;
 

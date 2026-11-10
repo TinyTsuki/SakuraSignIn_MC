@@ -2,8 +2,8 @@ package xin.vanilla.sakura.client;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.IReorderingProcessor;
+import net.minecraft.util.text.ITextComponent;
 
 public final class LegacyGuiText {
     private LegacyGuiText() {

@@ -22,7 +22,8 @@ public class RewardEditorLayoutTest {
     private static Element id(Element root, String id) {
         lombok.var nodes = root.getElementsByTagName("*");
         for (int i = 0; i < nodes.getLength(); i++)
-            if (nodes.item(i) instanceof Element  && id.equals(((Element) nodes.item(i)).getAttribute("id"))) return ((Element) nodes.item(i));
+            if (nodes.item(i) instanceof Element && id.equals(((Element) nodes.item(i)).getAttribute("id")))
+                return ((Element) nodes.item(i));
         throw new AssertionError("Missing control " + id);
     }
 

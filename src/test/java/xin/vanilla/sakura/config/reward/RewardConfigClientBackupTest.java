@@ -1,7 +1,7 @@
 package xin.vanilla.sakura.config.reward;
 
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.Logger;
 import org.apache.logging.log4j.core.appender.AbstractAppender;
@@ -10,8 +10,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import xin.vanilla.banira.platform.BaniraPlatform;
 import xin.vanilla.banira.platform.BaniraPathService;
+import xin.vanilla.banira.platform.BaniraPlatform;
 import xin.vanilla.banira.platform.BaniraPlatforms;
 import xin.vanilla.sakura.test.UnboundConfigPlatform;
 
@@ -28,8 +28,10 @@ import java.util.stream.Stream;
 import static org.junit.Assert.*;
 
 public class RewardConfigClientBackupTest {
-    @Rule public final UnboundConfigPlatform platform = new UnboundConfigPlatform();
-    @Rule public final TemporaryFolder temporary = new TemporaryFolder();
+    @Rule
+    public final UnboundConfigPlatform platform = new UnboundConfigPlatform();
+    @Rule
+    public final TemporaryFolder temporary = new TemporaryFolder();
     private final AtomicBoolean client = new AtomicBoolean();
     private final List<LogEvent> errors = new ArrayList<>();
     private BaniraPlatform previousPlatform;
@@ -38,7 +40,8 @@ public class RewardConfigClientBackupTest {
     private AbstractAppender appender;
     private Path serverDirectory, clientDirectory;
 
-    @Before public void setup() throws Exception {
+    @Before
+    public void setup() throws Exception {
         previousPlatform = BaniraPlatforms.get();
         Path root = temporary.newFolder("config").toPath();
         BaniraPathService paths = (BaniraPathService) Proxy.newProxyInstance(getClass().getClassLoader(),
@@ -61,22 +64,31 @@ public class RewardConfigClientBackupTest {
         assertTrue(clientDirectory.startsWith(root));
         logger = (Logger) LogManager.getLogger(RewardConfigManager.class);
         appender = new AbstractAppender("client-backup-test", null, null, false) {
-            @Override public void append(LogEvent event) {
+            @Override
+            public void append(LogEvent event) {
                 if (event.getLevel().isMoreSpecificThan(Level.ERROR)) errors.add(event.toImmutable());
             }
         };
-        appender.start(); logger.addAppender(appender);
+        appender.start();
+        logger.addAppender(appender);
     }
 
-    @After public void cleanup() {
-        if (logger != null && appender != null) { logger.removeAppender(appender); appender.stop(); }
-        client.set(true); RewardConfigManager.setRewardConfig(previousClient);
-        client.set(false); RewardConfigManager.setRewardConfig(previousServer);
+    @After
+    public void cleanup() {
+        if (logger != null && appender != null) {
+            logger.removeAppender(appender);
+            appender.stop();
+        }
+        client.set(true);
+        RewardConfigManager.setRewardConfig(previousClient);
+        client.set(false);
+        RewardConfigManager.setRewardConfig(previousServer);
         RewardConfigManager.configureClientScope(() -> false);
         BaniraPlatforms.install(previousPlatform);
     }
 
-    @Test public void firstClientSyncSkipsAbsentCacheAndCanSaveWithoutError() throws Exception {
+    @Test
+    public void firstClientSyncSkipsAbsentCacheAndCanSaveWithoutError() throws Exception {
         byte[] authority = "server-original".getBytes(StandardCharsets.UTF_8);
         Files.createDirectories(serverDirectory);
         Files.write(serverDirectory.resolve(RewardConfigRepository.REWARD_FILE_NAME), authority);
@@ -91,14 +103,17 @@ public class RewardConfigClientBackupTest {
         assertArrayEquals(authority, Files.readAllBytes(serverDirectory.resolve(RewardConfigRepository.REWARD_FILE_NAME)));
     }
 
-    @Test public void existingClientCacheIsBackedUpByteForByteBeforeReplacement() throws Exception {
+    @Test
+    public void existingClientCacheIsBackedUpByteForByteBeforeReplacement() throws Exception {
         byte[] original = "{\"before\":\"sync\"}\r\n".getBytes(StandardCharsets.UTF_8);
         Path file = writeCache(original);
         RewardConfigManager.backupRewardOption();
         assertTrue(errors.isEmpty());
         Path backups = clientDirectory.resolve("backups/reward-config");
         List<Path> saved;
-        try (Stream<Path> stream = Files.list(backups)) { saved = stream.collect(Collectors.toList()); }
+        try (Stream<Path> stream = Files.list(backups)) {
+            saved = stream.collect(Collectors.toList());
+        }
         assertEquals(1, saved.size());
         assertArrayEquals(original, Files.readAllBytes(saved.get(0)));
         RewardConfigManager.saveRewardOption();
@@ -107,7 +122,8 @@ public class RewardConfigClientBackupTest {
         assertArrayEquals(original, Files.readAllBytes(saved.get(0)));
     }
 
-    @Test public void invalidCacheSourceStillLogsAnIoError() throws Exception {
+    @Test
+    public void invalidCacheSourceStillLogsAnIoError() throws Exception {
         Path file = clientDirectory.resolve(RewardConfigRepository.REWARD_FILE_NAME);
         Files.createDirectories(file);
         RewardConfigManager.backupRewardOption();
@@ -116,7 +132,8 @@ public class RewardConfigClientBackupTest {
         assertTrue(Files.isDirectory(file));
     }
 
-    @Test public void backupWriteFailureStillLogsAndPreservesSource() throws Exception {
+    @Test
+    public void backupWriteFailureStillLogsAndPreservesSource() throws Exception {
         byte[] original = "preserved-cache".getBytes(StandardCharsets.UTF_8);
         Path file = writeCache(original);
         Files.write(clientDirectory.resolve("backups"), new byte[]{1});
@@ -126,14 +143,16 @@ public class RewardConfigClientBackupTest {
         assertArrayEquals(original, Files.readAllBytes(file));
     }
 
-    @Test public void missingServerConfigurationStillLogsAnError() {
+    @Test
+    public void missingServerConfigurationStillLogsAnError() {
         client.set(false);
         RewardConfigManager.backupRewardOption(false);
         assertEquals(1, errors.size());
         assertTrue(errors.get(0).getThrown() instanceof java.io.IOException);
     }
 
-    @Test public void defaultBackupRemainsStrictInServerScope() {
+    @Test
+    public void defaultBackupRemainsStrictInServerScope() {
         client.set(false);
         RewardConfigManager.backupRewardOption();
         assertEquals(1, errors.size());

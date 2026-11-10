@@ -30,7 +30,7 @@ public class RewardEditorUiParityTest {
     }
 
     private static String source(String relative) throws Exception {
-        return new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/java/xin/vanilla/sakura/" + relative)),  StandardCharsets.UTF_8);
+        return new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/java/xin/vanilla/sakura/" + relative)), StandardCharsets.UTF_8);
     }
 
     static final class Port implements RewardEditorUiSession.Port {
@@ -246,7 +246,7 @@ public class RewardEditorUiParityTest {
     @Test
     public void everyActionHasBothTranslations() throws Exception {
         for (String language : new String[]{"en_us", "zh_cn"}) {
-            com.google.gson.JsonObject json = new com.google.gson.JsonParser().parse(new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/resources/assets/sakura_sign_in/lang/" + language + ".json")),  StandardCharsets.UTF_8)).getAsJsonObject();
+            com.google.gson.JsonObject json = new com.google.gson.JsonParser().parse(new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/resources/assets/sakura_sign_in/lang/" + language + ".json")), StandardCharsets.UTF_8)).getAsJsonObject();
             for (RewardEditorUiSession.Action action : RewardEditorUiSession.Action.values())
                 assertTrue(language + " missing " + action.label, json.has("word.sakura_sign_in." + action.label));
         }
@@ -364,7 +364,7 @@ public class RewardEditorUiParityTest {
     @Test
     public void rewardTemplateAndRealizedRowsFitTheNodeAndStyleBudgets() throws Exception {
         Path root = java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in");
-        String html = new String(java.nio.file.Files.readAllBytes(root.resolve("rewards.html")),  StandardCharsets.UTF_8);
+        String html = new String(java.nio.file.Files.readAllBytes(root.resolve("rewards.html")), StandardCharsets.UTF_8);
         java.util.regex.Matcher nodes = java.util.regex.Pattern.compile("<[a-zA-Z][^>]*>").matcher(html);
         long staticNodes = 0;
         while (nodes.find()) staticNodes++;
@@ -400,7 +400,7 @@ public class RewardEditorUiParityTest {
 
     @Test
     public void sidebarScrollUsesSharedDetailStateAcrossBackendChanges() throws Exception {
-        String html = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in/rewards.html")),  StandardCharsets.UTF_8);
+        String html = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in/rewards.html")), StandardCharsets.UTF_8);
         assertTrue("Sidebar needs the shared retained scroll region", html.contains("id=\"detail\""));
         String owner = source("screen/RewardOptionScreen.java");
         assertTrue(owner.contains("state.detailScroll(-ruleListOffset)"));
@@ -440,7 +440,7 @@ public class RewardEditorUiParityTest {
     public void rewardTemplateHasEveryExistingOperationAndLocalAssets() throws Exception {
         Path path = java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in/rewards.html");
         assertTrue("Reward template missing", Files.exists(path));
-        String html = new String(java.nio.file.Files.readAllBytes(path),  StandardCharsets.UTF_8);
+        String html = new String(java.nio.file.Files.readAllBytes(path), StandardCharsets.UTF_8);
         for (String id : new String[]{"fields", "search", "add", "copy", "cut", "paste", "delete", "undo", "redo", "sort", "merge", "upload", "download", "folder", "help", "move", "clear", "sidebar", "close"})
             assertTrue("Missing operation " + id, html.contains("id=\"" + id + "\""));
         for (int rule = 1; rule <= 12; rule++) assertTrue(html.contains("id=\"rule" + rule + "\""));

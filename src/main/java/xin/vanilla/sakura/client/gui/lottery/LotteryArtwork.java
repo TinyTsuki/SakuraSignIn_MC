@@ -1,11 +1,11 @@
 package xin.vanilla.sakura.client.gui.lottery;
 
-import net.minecraft.client.Minecraft;
 import com.mojang.blaze3d.matrix.MatrixStack;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.util.ResourceLocation;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.util.ResourceLocation;
 import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.client.gui.widget.DropdownOption;
 import xin.vanilla.sakura.data.lottery.LotteryPool;
@@ -21,6 +21,7 @@ public final class LotteryArtwork {
         this.imageWidth = imageWidth;
         this.imageHeight = imageHeight;
     }
+
     private static final int WIDTH = 512, HEIGHT = 288;
 
     public static LotteryArtwork resolve(LotteryPool pool) {
@@ -66,7 +67,8 @@ public final class LotteryArtwork {
                     drawWidth, drawHeight, 0, 0, imageWidth, imageHeight, imageWidth, imageHeight);
             return;
         }
-        if (width >= 16 && height >= 16) xin.vanilla.banira.client.gui.widget.ItemWidget.renderItem(Minecraft.getInstance().getItemRenderer(), font, item,
-                x + (width - 16) / 2, y + (height - 16) / 2, false);
+        if (width >= 16 && height >= 16)
+            xin.vanilla.banira.client.gui.widget.ItemWidget.renderItem(Minecraft.getInstance().getItemRenderer(), font, item,
+                    x + (width - 16) / 2, y + (height - 16) / 2, false);
     }
 }

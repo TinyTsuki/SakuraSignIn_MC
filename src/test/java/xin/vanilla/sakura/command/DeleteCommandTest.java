@@ -8,9 +8,9 @@ import net.minecraft.util.math.vector.Vector2f;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.text.StringTextComponent;
 import org.junit.Test;
-
 import xin.vanilla.sakura.command.impl.DeleteCommand;
 import xin.vanilla.sakura.command.impl.ResetCommand;
+
 import java.time.LocalDate;
 
 import static org.junit.Assert.*;

@@ -114,7 +114,7 @@ public class PersonalDateInputWiringTest {
                         public void visitInvokeDynamicInsn(String name, String descriptor,
                                                            Handle bootstrap, Object... arguments) {
                             for (Object argument : arguments)
-                                if (argument instanceof Handle ) calls.references.add(((Handle) argument));
+                                if (argument instanceof Handle) calls.references.add(((Handle) argument));
                         }
                     };
                 }

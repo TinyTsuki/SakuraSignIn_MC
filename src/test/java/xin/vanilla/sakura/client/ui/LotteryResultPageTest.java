@@ -13,8 +13,6 @@ import xin.vanilla.sakura.network.packet.LotteryRevealPacket;
 import xin.vanilla.sakura.reward.Reward;
 
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -38,7 +36,7 @@ public class LotteryResultPageTest {
 
     @Test
     public void approvedTemplateUsesLocalStylesAndSharedHeader() throws Exception {
-        String html = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in/lottery-result.html")),  StandardCharsets.UTF_8);
+        String html = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in/lottery-result.html")), StandardCharsets.UTF_8);
         for (String id : com.google.common.collect.ImmutableList.of("brand", "close", "subtitle", "section", "result_count", "result_area", "result_single", "tile47"))
             assertTrue(id, html.contains("id=\"" + id + "\""));
         assertTrue(html.contains("href=\"lottery-result.css\""));

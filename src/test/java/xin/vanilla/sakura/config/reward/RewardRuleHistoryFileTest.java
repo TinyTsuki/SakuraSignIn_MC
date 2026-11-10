@@ -1,6 +1,9 @@
 package xin.vanilla.sakura.config.reward;
 
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import xin.vanilla.banira.platform.BaniraPathService;
 import xin.vanilla.banira.platform.BaniraPlatform;
@@ -14,16 +17,20 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Stream;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class RewardRuleHistoryFileTest {
-    @Rule public final xin.vanilla.sakura.test.UnboundConfigPlatform platform = new xin.vanilla.sakura.test.UnboundConfigPlatform();
-    @Rule public final TemporaryFolder temporary = new TemporaryFolder();
+    @Rule
+    public final xin.vanilla.sakura.test.UnboundConfigPlatform platform = new xin.vanilla.sakura.test.UnboundConfigPlatform();
+    @Rule
+    public final TemporaryFolder temporary = new TemporaryFolder();
     private BaniraPlatform previousPlatform;
     private RewardConfig previousConfig;
     private static final ERewardRule RULE = ERewardRule.MONTH_REWARD;
 
-    @Before public void setup() throws Exception {
+    @Before
+    public void setup() throws Exception {
         previousPlatform = BaniraPlatforms.get();
         Path root = temporary.newFolder("config").toPath();
         BaniraPathService paths = (BaniraPathService) Proxy.newProxyInstance(getClass().getClassLoader(),
@@ -38,16 +45,20 @@ public class RewardRuleHistoryFileTest {
                 }));
         previousConfig = RewardConfigManager.getRewardConfig();
         RewardConfigManager.setRewardConfig(new RewardConfig());
-        RewardConfigManager.clearUndoList(); RewardConfigManager.clearRedoList();
+        RewardConfigManager.clearUndoList();
+        RewardConfigManager.clearRedoList();
     }
 
-    @After public void cleanup() {
-        RewardConfigManager.clearUndoList(); RewardConfigManager.clearRedoList();
+    @After
+    public void cleanup() {
+        RewardConfigManager.clearUndoList();
+        RewardConfigManager.clearRedoList();
         RewardConfigManager.setRewardConfig(previousConfig);
         BaniraPlatforms.install(previousPlatform);
     }
 
-    @Test public void diskUndoAndRedoRestoreAnEmptyRule() {
+    @Test
+    public void diskUndoAndRedoRestoreAnEmptyRule() {
         RewardConfigManager.addUndoRewardOption(RULE);
         RewardConfigManager.getRewardConfig().getMonthRewards().put("1", new RewardList());
         assertTrue(RewardConfigManager.undoRewardOption(RULE));
@@ -63,9 +74,11 @@ public class RewardRuleHistoryFileTest {
         }
     }
 
-    @Test public void corruptRecordDoesNotConsumeHistoryOrChangeModel() throws Exception {
+    @Test
+    public void corruptRecordDoesNotConsumeHistoryOrChangeModel() throws Exception {
         RewardConfigManager.addUndoRewardOption(RULE);
-        Path file = undoFile(); byte[] valid = Files.readAllBytes(file);
+        Path file = undoFile();
+        byte[] valid = Files.readAllBytes(file);
         Files.write(file, "{broken".getBytes(StandardCharsets.UTF_8));
         RewardConfigManager.getRewardConfig().getMonthRewards().put("1", new RewardList());
         assertFalse(RewardConfigManager.undoRewardOption(RULE));
@@ -75,7 +88,8 @@ public class RewardRuleHistoryFileTest {
         assertTrue(RewardConfigManager.getRewardConfig().getMonthRewards().isEmpty());
     }
 
-    @Test public void oppositeHistoryWriteFailureLeavesModelAndUndoAvailable() throws Exception {
+    @Test
+    public void oppositeHistoryWriteFailureLeavesModelAndUndoAvailable() throws Exception {
         RewardConfigManager.addUndoRewardOption(RULE);
         Path blocked = RewardConfigManager.getConfigDirectory().resolve("history/redo");
         Files.write(blocked, "blocked".getBytes(StandardCharsets.UTF_8));

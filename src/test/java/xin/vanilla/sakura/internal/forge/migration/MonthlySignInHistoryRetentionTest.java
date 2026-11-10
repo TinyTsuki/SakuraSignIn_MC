@@ -5,31 +5,24 @@ import net.minecraft.nbt.ListNBT;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import xin.vanilla.banira.common.data.KeyValue;
+import xin.vanilla.banira.common.util.DateUtils;
 import xin.vanilla.sakura.data.PlayerSignInData;
 import xin.vanilla.sakura.data.PlayerSignInDataRepository;
 import xin.vanilla.sakura.data.SignInRecord;
 import xin.vanilla.sakura.data.migration.PlayerSummaryStore;
-import xin.vanilla.banira.common.data.KeyValue;
 import xin.vanilla.sakura.data.player.HistoryRetentionPolicy;
 import xin.vanilla.sakura.data.player.PlayerSignInSummary;
 import xin.vanilla.sakura.internal.forge.storage.AtomicNbtFiles;
 import xin.vanilla.sakura.reward.RewardList;
-import xin.vanilla.banira.common.util.DateUtils;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.YearMonth;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.*;
 
 /**
  * 月度详情可以清理，但永久签到摘要必须保持稳定。

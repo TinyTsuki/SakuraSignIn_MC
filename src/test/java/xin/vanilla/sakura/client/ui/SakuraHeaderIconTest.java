@@ -7,7 +7,6 @@ import xin.vanilla.banira.api.client.ui.UiGameElement;
 import xin.vanilla.sakura.client.SakuraClientState;
 import xin.vanilla.sakura.client.theme.BuiltInThemeCatalog;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class SakuraHeaderIconTest {

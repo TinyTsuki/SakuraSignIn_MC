@@ -1,16 +1,14 @@
 package xin.vanilla.sakura.data.personaldate;
 
 import org.junit.Test;
-import xin.vanilla.sakura.reward.RewardList;
 import xin.vanilla.sakura.data.calendar.CalendarIds;
+import xin.vanilla.sakura.reward.RewardList;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class PersonalDateSelectionServiceTest {
     private final PersonalDateSelectionService service = new PersonalDateSelectionService();

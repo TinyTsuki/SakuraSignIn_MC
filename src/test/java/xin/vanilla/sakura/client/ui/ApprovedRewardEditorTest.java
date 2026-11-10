@@ -6,8 +6,6 @@ import org.junit.Test;
 import xin.vanilla.banira.api.client.ui.*;
 
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 import static org.junit.Assert.*;
 
@@ -73,7 +71,7 @@ public class ApprovedRewardEditorTest {
 
     @Test
     public void approvedTemplateKeepsAllExistingActionsAndNoBrowserScript() throws Exception {
-        String html = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in/rewards.html")),  StandardCharsets.UTF_8);
+        String html = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in/rewards.html")), StandardCharsets.UTF_8);
         assertTrue(html.contains("rewards.css"));
         assertTrue(html.contains("id=\"inspector\""));
         assertTrue(html.contains("id=\"more_panel\""));
@@ -161,7 +159,7 @@ public class ApprovedRewardEditorTest {
 
     @Test
     public void moreMenuFitsTheSmallestAcceptedWorkspace() throws Exception {
-        String css = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in/rewards.css")),  StandardCharsets.UTF_8);
+        String css = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in/rewards.css")), StandardCharsets.UTF_8);
         lombok.var panel = java.util.regex.Pattern.compile("#more_panel\\{([^}]+)}").matcher(css);
         assertTrue(panel.find());
         assertTrue("Menu must open inside the viewport rather than below its toolbar", panel.group(1).contains("top:0;"));
@@ -176,7 +174,7 @@ public class ApprovedRewardEditorTest {
 
     @Test
     public void protectedGroupToolsDoNotLeaveEmptyButtonRectangles() throws Exception {
-        String css = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in/rewards.css")),  StandardCharsets.UTF_8);
+        String css = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in/rewards.css")), StandardCharsets.UTF_8);
         assertTrue(css.contains(".reward-entry .tool:disabled{visibility:hidden}"));
     }
 
@@ -198,13 +196,13 @@ public class ApprovedRewardEditorTest {
 
     @Test
     public void rewardTextUsesTheAuiFontRasterizerAtTheCurrentPixelScale() throws Exception {
-        String css = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in/rewards.css")),  StandardCharsets.UTF_8);
+        String css = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in/rewards.css")), StandardCharsets.UTF_8);
         assertTrue("Unset font families use Minecraft bitmap text at fractional sizes", css.contains(".rewards-page{font-family:sans-serif}"));
     }
 
     @Test
     public void approvedToolbarLayoutStylesRemainStable() throws Exception {
-        String css = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in/rewards.css")),  StandardCharsets.UTF_8);
+        String css = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in/rewards.css")), StandardCharsets.UTF_8);
         String layout = css.replace(".rewards-page{font-family:sans-serif}", "").trim();
         byte[] digest = java.security.MessageDigest.getInstance("SHA-256").digest(layout.getBytes(StandardCharsets.UTF_8));
         assertEquals("AEA4E5E015BF263E55E96B9DBED7E83EE0BA52CE8EB165473FB4F4BE229682E2", com.google.common.io.BaseEncoding.base16().encode(digest));
@@ -212,7 +210,7 @@ public class ApprovedRewardEditorTest {
 
     @Test
     public void rewardStylesStayWithinBudgetAfterWindowsCheckout() throws Exception {
-        String css = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in/rewards.css")),  StandardCharsets.UTF_8);
+        String css = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/main/resources/assets/apricityui/apricity/sakura_sign_in/rewards.css")), StandardCharsets.UTF_8);
         String windows = css.replace("\r\n", "\n").replace("\n", "\r\n");
         assertTrue("CRLF checkouts retain the same 4KiB CSS budget", windows.getBytes(StandardCharsets.UTF_8).length <= 4096);
     }

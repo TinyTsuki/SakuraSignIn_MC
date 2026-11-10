@@ -1,7 +1,7 @@
 package xin.vanilla.sakura.screen;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;

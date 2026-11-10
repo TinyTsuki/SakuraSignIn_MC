@@ -3,7 +3,6 @@ package xin.vanilla.sakura.client.ui;
 import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.*;

@@ -5,7 +5,9 @@ import xin.vanilla.banira.common.enums.IEnumDescribable;
 import xin.vanilla.banira.common.util.EnumDescriptionHelper;
 import xin.vanilla.sakura.SakuraComponent;
 
-/** 客户端抽奖表现不参与服务端结果计算。 */
+/**
+ * 客户端抽奖表现不参与服务端结果计算。
+ */
 public enum LotteryAnimationStyle implements IEnumDescribable {
     STRIP,
     CARDS,

@@ -1,9 +1,8 @@
 package xin.vanilla.sakura.client.reward;
 
-import net.minecraft.client.Minecraft;
 import com.mojang.blaze3d.matrix.MatrixStack;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.util.text.ITextComponent;
 import xin.vanilla.banira.client.gui.BaniraScreen;
 import xin.vanilla.sakura.api.reward.RewardTypeId;
 import xin.vanilla.sakura.api.reward.client.RewardClientExtension;
@@ -184,7 +183,7 @@ public final class RewardEditorCoordinator {
 
         @Override
         protected void onRender(MatrixStack graphics, float partialTicks) {
-        int mouseX = (int) inputState.mouseX(), mouseY = (int) inputState.mouseY();
+            int mouseX = (int) inputState.mouseX(), mouseY = (int) inputState.mouseY();
         }
     }
 
@@ -222,7 +221,7 @@ public final class RewardEditorCoordinator {
 
         @Override
         protected void onRender(MatrixStack graphics, float partialTicks) {
-        int mouseX = (int) inputState.mouseX(), mouseY = (int) inputState.mouseY();
+            int mouseX = (int) inputState.mouseX(), mouseY = (int) inputState.mouseY();
         }
     }
 }

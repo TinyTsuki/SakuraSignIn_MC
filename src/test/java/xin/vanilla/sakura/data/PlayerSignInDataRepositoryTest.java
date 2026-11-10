@@ -6,19 +6,19 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import xin.vanilla.banira.common.data.KeyValue;
-import xin.vanilla.sakura.data.migration.PlayerSummaryStore;
+import xin.vanilla.banira.common.util.DateUtils;
+import xin.vanilla.sakura.data.calendar.CalendarIds;
+import xin.vanilla.sakura.data.lottery.LotteryDrawState;
 import xin.vanilla.sakura.data.migration.LegacyPlayerData;
 import xin.vanilla.sakura.data.migration.LegacyPlayerDataParser;
-import xin.vanilla.sakura.data.lottery.LotteryDrawState;
+import xin.vanilla.sakura.data.migration.PlayerSummaryStore;
+import xin.vanilla.sakura.data.personaldate.PlayerPersonalDateSlot;
 import xin.vanilla.sakura.data.player.HistoryRetentionPolicy;
 import xin.vanilla.sakura.data.player.MonthSignInIndex;
 import xin.vanilla.sakura.data.player.PlayerSignInSummary;
-import xin.vanilla.sakura.data.calendar.CalendarIds;
-import xin.vanilla.sakura.data.personaldate.PlayerPersonalDateSlot;
 import xin.vanilla.sakura.internal.forge.migration.MonthlySignInHistoryRepository;
 import xin.vanilla.sakura.internal.forge.storage.AtomicNbtFiles;
 import xin.vanilla.sakura.reward.RewardList;
-import xin.vanilla.banira.common.util.DateUtils;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -27,31 +27,13 @@ import java.lang.reflect.Proxy;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
-import java.util.Collections;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.UUID;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.junit.Assume.assumeTrue;
 
 /**
@@ -483,7 +465,8 @@ public class PlayerSignInDataRepositoryTest {
         Map<String, byte[]> bytes = historyBytes(lane);
         Map<String, FileTime> times = historyTimes(lane);
         lane.data.getSignInRecords().add(new SignInRecord() {
-            @Override public CompoundNBT writeToNBT() {
+            @Override
+            public CompoundNBT writeToNBT() {
                 throw new IllegalArgumentException("record encoding failed");
             }
         });
@@ -619,7 +602,7 @@ public class PlayerSignInDataRepositoryTest {
                 + " maxRatio=" + MAX_SUMMARY_ALLOCATION_RATIO + " enforced=" + enforceTarget);
         if (enforceTarget) {
             assertTrue("Summary save must allocate at least 1% less than the same-window legacy reference; "
-                    + "paired median ratio=" + median + ", maximum=" + MAX_SUMMARY_ALLOCATION_RATIO,
+                            + "paired median ratio=" + median + ", maximum=" + MAX_SUMMARY_ALLOCATION_RATIO,
                     median <= MAX_SUMMARY_ALLOCATION_RATIO);
         }
     }
@@ -802,7 +785,10 @@ public class PlayerSignInDataRepositoryTest {
 
     private static SignInRecord encodedRecord(CompoundNBT encoded) {
         return new SignInRecord() {
-            @Override public CompoundNBT writeToNBT() { return encoded; }
+            @Override
+            public CompoundNBT writeToNBT() {
+                return encoded;
+            }
         };
     }
 
@@ -816,16 +802,21 @@ public class PlayerSignInDataRepositoryTest {
         state.setTotalDraws(7);
         CompoundNBT lottery = state.serializeNBT();
         data.getMonthIndexes().put("alias", new MonthSignInIndex("caller-month") {
-            @Override public CompoundNBT serializeNBT() { return index; }
+            @Override
+            public CompoundNBT serializeNBT() {
+                return index;
+            }
         });
         data.getPersonalDateSlots().add(new PlayerPersonalDateSlot() {
-            @Override public CompoundNBT serializeNBT() {
+            @Override
+            public CompoundNBT serializeNBT() {
                 index.putInt("signedDays", 1 << 28);
                 return slot;
             }
         });
         data.getLotteryDrawStates().add(new LotteryDrawState() {
-            @Override public CompoundNBT serializeNBT() {
+            @Override
+            public CompoundNBT serializeNBT() {
                 slot.putString("lastClaimedOccurrenceKey", "YEARLY:2027");
                 return lottery;
             }
@@ -835,7 +826,8 @@ public class PlayerSignInDataRepositoryTest {
 
     private static SignInRecord sharedRecord(CompoundNBT shared, String date, String payload) {
         return new SignInRecord() {
-            @Override public CompoundNBT writeToNBT() {
+            @Override
+            public CompoundNBT writeToNBT() {
                 shared.putString("compensateTime", date);
                 shared.putString("extensionPayload", payload);
                 return shared;
@@ -846,7 +838,8 @@ public class PlayerSignInDataRepositoryTest {
     private static final class SerializedOverride extends PlayerSignInData {
         private int serializations;
 
-        @Override public CompoundNBT serializeNBT() {
+        @Override
+        public CompoundNBT serializeNBT() {
             serializations++;
             CompoundNBT tag = super.serializeNBT();
             tag.putInt("totalSignInDays", 777);

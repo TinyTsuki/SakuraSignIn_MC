@@ -1,21 +1,22 @@
 package xin.vanilla.sakura.reward;
 
-import net.minecraft.entity.player.PlayerInventory;
+import com.google.gson.JsonParser;
+import io.netty.buffer.Unpooled;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.network.PacketBuffer;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
 import net.minecraft.network.IPacket;
-import net.minecraft.network.play.server.SChatPacket;
+import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.play.ServerPlayNetHandler;
+import net.minecraft.network.play.server.SChatPacket;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.util.text.event.ClickEvent;
 import net.minecraft.util.text.event.HoverEvent;
-import io.netty.buffer.Unpooled;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -37,12 +38,15 @@ import xin.vanilla.sakura.config.reward.RewardConfigManager;
 import xin.vanilla.sakura.data.PlayerSignInData;
 import xin.vanilla.sakura.data.SignInRecord;
 import xin.vanilla.sakura.data.calendar.CalendarIds;
-import xin.vanilla.sakura.data.personaldate.*;
+import xin.vanilla.sakura.data.personaldate.PersonalDateDeliveryMode;
+import xin.vanilla.sakura.data.personaldate.PersonalDatePreset;
+import xin.vanilla.sakura.data.personaldate.PersonalDateRecurrence;
+import xin.vanilla.sakura.data.personaldate.PlayerPersonalDateSlot;
 import xin.vanilla.sakura.data.time.SakuraClock;
 import xin.vanilla.sakura.data.time.SakuraOnlineTime;
 import xin.vanilla.sakura.enums.ESignInType;
-import xin.vanilla.sakura.network.packet.SignInPacket;
 import xin.vanilla.sakura.message.SakuraMessages;
+import xin.vanilla.sakura.network.packet.SignInPacket;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
 import xin.vanilla.sakura.platform.SakuraPlayerDataService;
 import xin.vanilla.sakura.reward.builtin.BuiltInRewardTypes;
@@ -50,7 +54,6 @@ import xin.vanilla.sakura.test.BaniraTestPlatform;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Proxy;
-import com.google.gson.JsonParser;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -58,7 +61,9 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 
-/** Exercises the public entry point and real reward/message executors, without a game server. */
+/**
+ * Exercises the public entry point and real reward/message executors, without a game server.
+ */
 public class RewardManagerDeliveryTest {
     private final List<String> events = new ArrayList<>();
     private PlayerSignInData data;
@@ -127,11 +132,20 @@ public class RewardManagerDeliveryTest {
                 getClass().getClassLoader(), new Class<?>[]{SakuraPlayerDataService.class},
                 (proxy, method, args) -> {
                     switch (method.getName()) {
-                        case "get": return data;
-                        case "save": save(); break;
-                        case "sync": sync(); break;
-                        case "saveAndSync": save(); sync(); break;
-                        default: throw new UnsupportedOperationException(method.getName());
+                        case "get":
+                            return data;
+                        case "save":
+                            save();
+                            break;
+                        case "sync":
+                            sync();
+                            break;
+                        case "saveAndSync":
+                            save();
+                            sync();
+                            break;
+                        default:
+                            throw new UnsupportedOperationException(method.getName());
                     }
                     return null;
                 }));
@@ -315,15 +329,17 @@ public class RewardManagerDeliveryTest {
         assertEquals(3, packetAttempts);
         assertEquals(2, packets.size());
         List<String> received = new ArrayList<>();
-        for (NotificationToClient packet : packets) collectNames(SakuraComponent.get().deserialize(
-                new JsonParser().parse(packet.componentJson()).getAsJsonObject()), received);
+        for (NotificationToClient packet : packets)
+            collectNames(SakuraComponent.get().deserialize(
+                    new JsonParser().parse(packet.componentJson()).getAsJsonObject()), received);
         assertTrue(received.size() > 0 && received.size() < 256);
         data = reload();
         signIn(ESignInType.REWARD, today, true);
         assertEquals(256, inventory().items);
         List<String> afterRetry = new ArrayList<>();
-        for (NotificationToClient packet : packets) collectNames(SakuraComponent.get().deserialize(
-                new JsonParser().parse(packet.componentJson()).getAsJsonObject()), afterRetry);
+        for (NotificationToClient packet : packets)
+            collectNames(SakuraComponent.get().deserialize(
+                    new JsonParser().parse(packet.componentJson()).getAsJsonObject()), afterRetry);
         assertEquals(received, afterRetry);
     }
 
@@ -397,7 +413,8 @@ public class RewardManagerDeliveryTest {
         assertTrue(packets.stream().noneMatch(packet -> packet.componentJson().contains("Birthday")));
         assertEquals(1, saved.getList("signInRecords", 10).getCompound(0).getList("personalDateRewards", 10).size());
         data = reload();
-        packets.clear(); events.clear();
+        packets.clear();
+        events.clear();
         signIn(ESignInType.REWARD, today, true);
         assertEquals(3, data.getSignInCard());
         assertEquals(1, packets.size());
@@ -422,7 +439,8 @@ public class RewardManagerDeliveryTest {
         PlayerUtils.setRemoteClientModInstalled(player, "banira_codex", true);
         failPacketAt = 1;
         signIn(ESignInType.SIGN_IN, today, false);
-        packets.clear(); packetAttempts = 0;
+        packets.clear();
+        packetAttempts = 0;
         signIn(ESignInType.REWARD, today, true);
         assertTrue(packets.stream().noneMatch(packet -> packet.componentJson().contains("Birthday")));
         assertEquals(2, data.getSignInCard());
@@ -599,11 +617,18 @@ public class RewardManagerDeliveryTest {
                 getClass().getClassLoader(), new Class<?>[]{BaniraPacketBuffer.class},
                 (proxy, method, args) -> {
                     switch (method.getName()) {
-                        case "writeUtf": nativeBuffer.writeUtf((String) args[0], (Integer) args[1]); return null;
-                        case "readUtf": return nativeBuffer.readUtf((Integer) args[0]);
-                        case "writeLong": nativeBuffer.writeLong((Long) args[0]); return null;
-                        case "readLong": return nativeBuffer.readLong();
-                        default: throw new UnsupportedOperationException(method.getName());
+                        case "writeUtf":
+                            nativeBuffer.writeUtf((String) args[0], (Integer) args[1]);
+                            return null;
+                        case "readUtf":
+                            return nativeBuffer.readUtf((Integer) args[0]);
+                        case "writeLong":
+                            nativeBuffer.writeLong((Long) args[0]);
+                            return null;
+                        case "readLong":
+                            return nativeBuffer.readLong();
+                        default:
+                            throw new UnsupportedOperationException(method.getName());
                     }
                 });
         try {
@@ -667,15 +692,31 @@ public class RewardManagerDeliveryTest {
 
     private RewardGrantContext context() {
         return new RewardGrantContext() {
-            public ServerPlayerEntity player() { return player; }
-            public UUID playerId() { return player.getUUID(); }
-            public Date signInDate() { return today; }
-            public String sourceId() { return "test"; }
-            public void addSignInCards(int amount) { data.plusSignInCard(amount); }
+            public ServerPlayerEntity player() {
+                return player;
+            }
+
+            public UUID playerId() {
+                return player.getUUID();
+            }
+
+            public Date signInDate() {
+                return today;
+            }
+
+            public String sourceId() {
+                return "test";
+            }
+
+            public void addSignInCards(int amount) {
+                data.plusSignInCard(amount);
+            }
         };
     }
 
-    private CountingInventory inventory() { return (CountingInventory) player.inventory; }
+    private CountingInventory inventory() {
+        return (CountingInventory) player.inventory;
+    }
 
     private static Field field(Class<?> type, String name) throws Exception {
         Field field = type.getDeclaredField(name);
@@ -687,8 +728,14 @@ public class RewardManagerDeliveryTest {
         private int items;
         private boolean full;
         private final TestPlayer owner;
-        CountingInventory(TestPlayer owner) { super(owner); this.owner = owner; }
-        @Override public boolean add(ItemStack stack) {
+
+        CountingInventory(TestPlayer owner) {
+            super(owner);
+            this.owner = owner;
+        }
+
+        @Override
+        public boolean add(ItemStack stack) {
             owner.events.add("item");
             if (full) return false;
             items += stack.getCount();
@@ -707,20 +754,42 @@ public class RewardManagerDeliveryTest {
         private int dropped;
         private boolean failDrop;
 
-        private TestPlayer() { super(null, null, null, null); }
-        @Override public UUID getUUID() { return new UUID(0, 1665); }
-        @Override public boolean hasPermissions(int level) { return true; }
-        @Override public Collection<EffectInstance> getActiveEffects() { return Collections.emptyList(); }
-        @Override public net.minecraft.entity.item.ItemEntity drop(ItemStack stack, boolean random) {
+        private TestPlayer() {
+            super(null, null, null, null);
+        }
+
+        @Override
+        public UUID getUUID() {
+            return new UUID(0, 1665);
+        }
+
+        @Override
+        public boolean hasPermissions(int level) {
+            return true;
+        }
+
+        @Override
+        public Collection<EffectInstance> getActiveEffects() {
+            return Collections.emptyList();
+        }
+
+        @Override
+        public net.minecraft.entity.item.ItemEntity drop(ItemStack stack, boolean random) {
             if (failDrop) return null;
             dropped += stack.getCount();
             try {
                 Class<?> unsafeClass = Class.forName("sun.misc.Unsafe");
                 return (net.minecraft.entity.item.ItemEntity) unsafeClass.getMethod("allocateInstance", Class.class)
                         .invoke(field(unsafeClass, "theUnsafe").get(null), net.minecraft.entity.item.ItemEntity.class);
-            } catch (Exception failure) { throw new IllegalStateException(failure); }
+            } catch (Exception failure) {
+                throw new IllegalStateException(failure);
+            }
         }
-        @Override public boolean isLocalPlayer() { return false; }
+
+        @Override
+        public boolean isLocalPlayer() {
+            return false;
+        }
 
         private void submit(SChatPacket packet) {
             PacketBuffer buffer = new PacketBuffer(Unpooled.buffer());
@@ -758,13 +827,17 @@ public class RewardManagerDeliveryTest {
     private static final class RecordingConnection extends ServerPlayNetHandler {
         private TestPlayer owner;
 
-        private RecordingConnection() { super(null, null, null); }
+        private RecordingConnection() {
+            super(null, null, null);
+        }
 
-        @Override public void send(IPacket<?> packet) {
+        @Override
+        public void send(IPacket<?> packet) {
             owner.submit((SChatPacket) packet);
         }
 
-        @Override public void send(IPacket<?> packet, GenericFutureListener<? extends Future<? super Void>> listener) {
+        @Override
+        public void send(IPacket<?> packet, GenericFutureListener<? extends Future<? super Void>> listener) {
             owner.submit((SChatPacket) packet);
         }
     }

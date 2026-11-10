@@ -9,11 +9,7 @@ import xin.vanilla.sakura.config.reward.RewardConfig;
 import xin.vanilla.sakura.config.reward.RewardConfigManager;
 import xin.vanilla.sakura.enums.ERewardRule;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 服务端只对每种奖励数量的净增加检查新增权限。
@@ -23,7 +19,7 @@ public final class RewardAddPermissionChecker {
     }
 
     public static List<RewardTypeId> requiredAddedTypes(RewardConfig authoritative,
-                                                         RewardConfig candidate) {
+                                                        RewardConfig candidate) {
         Map<RewardTypeId, Integer> before = count(authoritative);
         Map<RewardTypeId, Integer> after = count(candidate);
         List<RewardTypeId> result = new ArrayList<>();

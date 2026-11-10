@@ -1,9 +1,9 @@
 package xin.vanilla.sakura.client.gui;
 
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.util.registry.Bootstrap;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.util.registry.Bootstrap;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -76,8 +76,10 @@ public class LotteryPoolFormTest {
         InputFormScreen.Widget voucher = widget(args, "voucherExpression");
         assertTrue(voucher.pickerReadOnly());
         assertTrue(voucher.defaultValue().contains("2"));
-        Screen owner = new Screen(new net.minecraft.util.text.StringTextComponent("")) {};
-        InputFormScreen editor = (InputFormScreen) voucher.picker().apply(owner, ignored -> {});
+        Screen owner = new Screen(new net.minecraft.util.text.StringTextComponent("")) {
+        };
+        InputFormScreen editor = (InputFormScreen) voucher.picker().apply(owner, ignored -> {
+        });
         assertEquals("xpPoints", editor.uiSession().draft("kind"));
         assertEquals("2", editor.uiSession().draft("amount"));
         assertEquals(2, editor.uiSession().visibleFieldCount());
@@ -86,7 +88,8 @@ public class LotteryPoolFormTest {
         editor.uiSession().draft("objective", "draws");
         editor.uiSession().draft("amount", "7");
         assertTrue(editor.uiSession().submit());
-        InputFormScreen reopened = (InputFormScreen) voucher.picker().apply(owner, ignored -> {});
+        InputFormScreen reopened = (InputFormScreen) voucher.picker().apply(owner, ignored -> {
+        });
         assertEquals("score", reopened.uiSession().draft("kind"));
         assertEquals("draws", reopened.uiSession().draft("objective"));
         assertEquals("7", reopened.uiSession().draft("amount"));

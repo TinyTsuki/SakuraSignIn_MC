@@ -1,8 +1,8 @@
 package xin.vanilla.sakura.data.personaldate;
 
 import org.junit.Test;
-import xin.vanilla.sakura.reward.RewardList;
 import xin.vanilla.sakura.data.calendar.CalendarIds;
+import xin.vanilla.sakura.reward.RewardList;
 
 import java.util.Arrays;
 

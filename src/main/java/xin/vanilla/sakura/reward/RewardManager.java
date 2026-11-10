@@ -1,41 +1,38 @@
 package xin.vanilla.sakura.reward;
 
-import xin.vanilla.sakura.data.time.SakuraClock;
-
-import xin.vanilla.sakura.SakuraComponent;
-import xin.vanilla.sakura.config.CommonConfig;
 import lombok.NonNull;
 import net.minecraft.entity.item.ItemEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.potion.EffectInstance;
 import net.minecraft.potion.Effects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.sakura.config.reward.RewardConfig;
-import xin.vanilla.sakura.config.reward.RewardConfigManager;
-import xin.vanilla.sakura.data.IPlayerSignInData;
-import xin.vanilla.sakura.api.SakuraPlayerData;
-import xin.vanilla.sakura.data.SignInRecord;
-import xin.vanilla.sakura.data.SignInRecordDateIndex;
-import xin.vanilla.sakura.message.SakuraMessages;
-import xin.vanilla.sakura.notification.SakuraNotificationTypes;
-import xin.vanilla.sakura.api.reward.RewardGrantContext;
-import xin.vanilla.sakura.api.reward.RewardGrantResult;
-import xin.vanilla.sakura.config.reward.RewardGroup;
-import xin.vanilla.sakura.enums.ESignInType;
-import xin.vanilla.sakura.enums.ETimeCoolingMethod;
-import xin.vanilla.sakura.network.packet.SignInPacket;
-import xin.vanilla.sakura.util.*;
-import xin.vanilla.sakura.reward.personaldate.PersonalDateRewardDispatcher;
-import xin.vanilla.sakura.reward.personaldate.PersonalDateRewardService;
-import xin.vanilla.sakura.data.personaldate.PersonalDateRewardSnapshot;
-import xin.vanilla.sakura.data.time.OnlineTimeRequirementResult;
-import xin.vanilla.sakura.data.time.SakuraOnlineTime;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.util.CollectionUtils;
 import xin.vanilla.banira.common.util.DateUtils;
-import xin.vanilla.banira.common.util.StringUtils;
+import xin.vanilla.sakura.SakuraComponent;
+import xin.vanilla.sakura.api.SakuraPlayerData;
+import xin.vanilla.sakura.api.reward.RewardGrantContext;
+import xin.vanilla.sakura.api.reward.RewardGrantResult;
+import xin.vanilla.sakura.config.CommonConfig;
+import xin.vanilla.sakura.config.reward.RewardConfig;
+import xin.vanilla.sakura.config.reward.RewardConfigManager;
+import xin.vanilla.sakura.config.reward.RewardGroup;
+import xin.vanilla.sakura.data.IPlayerSignInData;
+import xin.vanilla.sakura.data.SignInRecord;
+import xin.vanilla.sakura.data.SignInRecordDateIndex;
+import xin.vanilla.sakura.data.personaldate.PersonalDateRewardSnapshot;
+import xin.vanilla.sakura.data.time.OnlineTimeRequirementResult;
+import xin.vanilla.sakura.data.time.SakuraClock;
+import xin.vanilla.sakura.data.time.SakuraOnlineTime;
+import xin.vanilla.sakura.enums.ESignInType;
+import xin.vanilla.sakura.enums.ETimeCoolingMethod;
+import xin.vanilla.sakura.message.SakuraMessages;
+import xin.vanilla.sakura.network.packet.SignInPacket;
+import xin.vanilla.sakura.notification.SakuraNotificationTypes;
+import xin.vanilla.sakura.reward.personaldate.PersonalDateRewardDispatcher;
+import xin.vanilla.sakura.reward.personaldate.PersonalDateRewardService;
+import xin.vanilla.sakura.util.SakuraUtils;
 
 import java.awt.*;
 import java.math.BigDecimal;
@@ -54,6 +51,7 @@ public class RewardManager {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final Map<IPlayerSignInData, SignInRecordDateIndex> SIGN_IN_RECORD_INDEXES =
             Collections.synchronizedMap(new WeakHashMap<>());
+
     public static Component getRewardName(String languageCode, Reward reward, boolean withNum) {
         return RewardOperations.describe(languageCode, reward, withNum);
     }
@@ -446,8 +444,8 @@ public class RewardManager {
                     player, signInData, signInDay);
             if (!onlineTime.isAllowed()) {
                 SakuraMessages.send(player, SakuraComponent.get().trans(player, "format",
-                        "sign_in_online_time_required_ss",
-                        onlineTime.getMissingTotalSeconds(), onlineTime.getMissingTodaySeconds()),
+                                "sign_in_online_time_required_ss",
+                                onlineTime.getMissingTotalSeconds(), onlineTime.getMissingTodaySeconds()),
                         notificationType);
                 SakuraPlayerData.saveAndSync(player);
                 return;
@@ -582,7 +580,7 @@ public class RewardManager {
     }
 
     private static List<Component> claimPersonalDateRewards(ServerPlayerEntity player,
-                                                           IPlayerSignInData data, SignInRecord record) {
+                                                            IPlayerSignInData data, SignInRecord record) {
         List<Component> details = new ArrayList<>();
         for (PersonalDateRewardSnapshot snapshot : record.getPersonalDateRewards()) {
             for (Reward reward : snapshot.getRewards()) {
@@ -593,7 +591,7 @@ public class RewardManager {
                         Date.from(snapshot.getTargetDate().atStartOfDay(ZoneId.systemDefault()).toInstant()),
                         "personal_date:" + snapshot.getPresetId())) {
                     details.add(SakuraComponent.get().trans(player, "format", "personal_date_additional_rewards",
-                            snapshot.getPresetName()).append(reward.getName(SakuraUtils.getPlayerLanguage(player), true))
+                                    snapshot.getPresetName()).append(reward.getName(SakuraUtils.getPlayerLanguage(player), true))
                             .color(Color.GREEN.getRGB()));
                 }
             }
@@ -626,7 +624,9 @@ public class RewardManager {
         return grantReward(player, signInData, reward, sourceDate, sourceId);
     }
 
-    /** 已由外层规则完成抽取时跳过概率判定，避免同一奖励被随机两次。 */
+    /**
+     * 已由外层规则完成抽取时跳过概率判定，避免同一奖励被随机两次。
+     */
     public static boolean giveGuaranteedRewardToPlayer(ServerPlayerEntity player,
                                                        IPlayerSignInData signInData,
                                                        Reward reward, Date sourceDate,

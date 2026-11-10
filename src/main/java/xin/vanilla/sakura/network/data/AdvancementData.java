@@ -1,10 +1,9 @@
 package xin.vanilla.sakura.network.data;
 
-import xin.vanilla.sakura.SakuraComponent;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.advancements.Advancement;
 import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.advancements.FrameType;
@@ -16,7 +15,7 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.ITextComponent;
 import xin.vanilla.banira.api.BaniraIdentifier;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
-import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.sakura.SakuraComponent;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;

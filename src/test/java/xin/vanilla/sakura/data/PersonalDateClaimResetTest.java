@@ -4,13 +4,13 @@ import net.minecraft.nbt.CompoundNBT;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import xin.vanilla.banira.common.util.DateUtils;
 import xin.vanilla.sakura.data.calendar.CalendarIds;
 import xin.vanilla.sakura.data.migration.PlayerSummaryStore;
 import xin.vanilla.sakura.data.personaldate.PlayerPersonalDateSlot;
 import xin.vanilla.sakura.data.player.PlayerSignInSummary;
 import xin.vanilla.sakura.internal.forge.migration.MonthlySignInHistoryRepository;
 import xin.vanilla.sakura.internal.forge.storage.AtomicNbtFiles;
-import xin.vanilla.banira.common.util.DateUtils;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -23,7 +23,8 @@ import java.util.UUID;
 import static org.junit.Assert.*;
 
 public class PersonalDateClaimResetTest {
-    @Rule public final TemporaryFolder temporary = new TemporaryFolder();
+    @Rule
+    public final TemporaryFolder temporary = new TemporaryFolder();
     private final UUID uuid = UUID.randomUUID();
     private final Store store = new Store();
 
@@ -217,13 +218,21 @@ public class PersonalDateClaimResetTest {
     private static final class Store implements PlayerSummaryStore {
         private CompoundNBT stored;
         private boolean failNext;
+
         public Optional<PlayerSignInSummary> load(UUID uuid) {
             return stored == null ? Optional.empty() : Optional.of(PlayerSignInSummary.deserializeNBT(stored));
         }
-        public void save(UUID uuid, PlayerSignInSummary summary) { stored = summary.serializeNBT(); }
+
+        public void save(UUID uuid, PlayerSignInSummary summary) {
+            stored = summary.serializeNBT();
+        }
+
         public void saveAndVerify(UUID uuid, PlayerSignInSummary summary) throws IOException {
             save(uuid, summary);
-            if (failNext) { failNext = false; throw new IOException("reset save failed"); }
+            if (failNext) {
+                failNext = false;
+                throw new IOException("reset save failed");
+            }
         }
     }
 }

@@ -4,7 +4,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import net.minecraft.nbt.CompoundNBT;
 
-/** 每名玩家按奖池持久化的领取计数。 */
+/**
+ * 每名玩家按奖池持久化的领取计数。
+ */
 @Data
 @NoArgsConstructor
 public class LotteryDrawState {

@@ -3,13 +3,7 @@ package xin.vanilla.sakura.network.month;
 import org.junit.Test;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.*;
@@ -25,7 +19,7 @@ public class MonthDataTransferTest {
         List<MonthDataTransfer.Part> parts = encode(1, MONTH, Arrays.asList("A", "\u732b"));
         assertEquals(1, parts.size());
         assertArrayEquals(new byte[]{0, 0, 0, 2, 0, 0, 0, 1, 65,
-                0, 0, 0, 3, (byte) 0xe7, (byte) 0x8c, (byte) 0xab},
+                        0, 0, 0, 3, (byte) 0xe7, (byte) 0x8c, (byte) 0xab},
                 Base64.getDecoder().decode(parts.get(0).getPayload()));
         assertEquals(Arrays.asList("A", "\u732b"), complete(parts));
         List<MonthDataTransfer.Part> empty = encode(2, MONTH, Collections.emptyList());

@@ -17,6 +17,7 @@ import static org.junit.Assert.fail;
 public class LotteryPacketTest {
     private static final java.util.UUID SESSION = java.util.UUID.fromString("11111111-2222-3333-4444-555555555555");
     private static final String TOKEN = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
+
     @Test
     public void poolPacketKeepsMetadataAndRewards() {
         LotteryPool pool = new LotteryPool("weekly", "Weekly", LotteryLimitPolicy.COOLDOWN,
@@ -58,11 +59,13 @@ public class LotteryPacketTest {
         try {
             new LotteryPoolSyncPacket(Collections.nCopies(129, pool), 7);
             fail("Oversized update accepted");
-        } catch (IllegalArgumentException expected) { }
+        } catch (IllegalArgumentException expected) {
+        }
         try {
             new LotteryPoolSyncPacket(Arrays.asList(pool, pool), 7);
             fail("Duplicate update accepted");
-        } catch (IllegalArgumentException expected) { }
+        } catch (IllegalArgumentException expected) {
+        }
     }
 
     @Test
@@ -73,7 +76,8 @@ public class LotteryPacketTest {
         try {
             new LotteryPoolSyncPacket(Collections.singletonList(pool), 7);
             fail("Invalid fee accepted");
-        } catch (IllegalArgumentException expected) { }
+        } catch (IllegalArgumentException expected) {
+        }
     }
 
     @Test

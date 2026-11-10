@@ -12,9 +12,7 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Consumer;
 
 import static org.junit.Assert.*;
@@ -75,7 +73,8 @@ public class BuiltInThemeCatalogTest {
         lombok.var manager = (net.minecraft.resources.IResourceManager) java.lang.reflect.Proxy.newProxyInstance(
                 getClass().getClassLoader(), new Class<?>[]{net.minecraft.resources.IResourceManager.class},
                 (proxy, method, args) -> {
-                    if (method.getName().equals("getResource")) throw new FileNotFoundException(String.valueOf(args[0]));
+                    if (method.getName().equals("getResource"))
+                        throw new FileNotFoundException(String.valueOf(args[0]));
                     throw new UnsupportedOperationException(method.getName());
                 });
         for (String id : BuiltInThemeCatalog.themeIds()) {

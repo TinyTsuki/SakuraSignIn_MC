@@ -1,7 +1,7 @@
 package xin.vanilla.sakura.screen;
 
-import net.minecraft.client.Minecraft;
 import com.mojang.blaze3d.matrix.MatrixStack;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.resources.I18n;
 import xin.vanilla.banira.api.client.theme.BaniraThemes;
@@ -23,8 +23,8 @@ import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.api.reward.client.SakuraRewardClient;
 import xin.vanilla.sakura.client.SakuraClientState;
 import xin.vanilla.sakura.client.gui.RewardRenderer;
-import xin.vanilla.sakura.client.gui.lottery.LotteryLayout;
 import xin.vanilla.sakura.client.gui.lottery.LotteryAnimationFrame;
+import xin.vanilla.sakura.client.gui.lottery.LotteryLayout;
 import xin.vanilla.sakura.client.gui.lottery.LotteryRevealLayout;
 import xin.vanilla.sakura.client.ui.LotteryRevealUiSession;
 import xin.vanilla.sakura.client.ui.SakuraUiPages;

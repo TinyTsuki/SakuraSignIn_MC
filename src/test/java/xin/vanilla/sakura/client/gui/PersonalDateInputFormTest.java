@@ -2,7 +2,6 @@ package xin.vanilla.sakura.client.gui;
 
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.registry.Bootstrap;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -62,7 +61,8 @@ public class PersonalDateInputFormTest {
         for (String invalid : com.google.common.collect.ImmutableList.of("6/", "1/2", "-1", "1000", "abc")) {
             assertFalse("Monthly format accepted " + invalid, validate(widget, invalid).isEmpty());
         }
-        for (String valid : com.google.common.collect.ImmutableList.of("0", "6", "999", "001")) assertEquals("", validate(widget, valid));
+        for (String valid : com.google.common.collect.ImmutableList.of("0", "6", "999", "001"))
+            assertEquals("", validate(widget, valid));
     }
 
     @Test
@@ -306,8 +306,8 @@ public class PersonalDateInputFormTest {
             return (InputFormScreen) screen;
         } catch (InvocationTargetException failure) {
             Throwable cause = failure.getCause();
-            if (cause instanceof RuntimeException ) throw ((RuntimeException) cause);
-            if (cause instanceof Error ) throw ((Error) cause);
+            if (cause instanceof RuntimeException) throw ((RuntimeException) cause);
+            if (cause instanceof Error) throw ((Error) cause);
             throw new AssertionError("Date factory failed", cause);
         }
     }

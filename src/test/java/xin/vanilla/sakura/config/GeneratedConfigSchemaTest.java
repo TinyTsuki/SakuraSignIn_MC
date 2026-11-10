@@ -7,25 +7,33 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class GeneratedConfigSchemaTest {
-    @org.junit.Rule public org.junit.rules.ExternalResource platform = ConfigBaselineFixture.platformScope();
-    @BeforeClass public static void bootstrap() { net.minecraft.util.registry.Bootstrap.bootStrap(); }
+    @org.junit.Rule
+    public org.junit.rules.ExternalResource platform = ConfigBaselineFixture.platformScope();
 
-    @Test public void commonSchemaMatchesRegistration() throws Exception {
+    @BeforeClass
+    public static void bootstrap() {
+        net.minecraft.util.registry.Bootstrap.bootStrap();
+    }
+
+    @Test
+    public void commonSchemaMatchesRegistration() throws Exception {
         ConfigBaselineFixture fixture = new ConfigBaselineFixture(CommonConfig.class);
         fixture.bind(CommonConfig.class);
         assertEquals(fixture.defaults, ConfigBaselineFixture.readView(CommonConfigView.get(), CommonConfigView.class));
     }
 
-    @Test public void clientSchemaMatchesRegistration() throws Exception {
+    @Test
+    public void clientSchemaMatchesRegistration() throws Exception {
         ConfigBaselineFixture fixture = new ConfigBaselineFixture(ClientConfig.class);
         fixture.bind(ClientConfig.class);
         assertEquals(fixture.defaults, ConfigBaselineFixture.readView(ClientConfigView.get(), ClientConfigView.class));
     }
 
-    @Test public void shortcutListsAreIndependentAndKeepCommas() throws Exception {
+    @Test
+    public void shortcutListsAreIndependentAndKeepCommas() throws Exception {
         ConfigBaselineFixture.bind(ClientConfig.class, null);
         List<String> original = new ArrayList<>(ClientConfigView.get().signKeys().lastMonth());
         ClientConfigView.get().signKeys().lastMonth().clear();

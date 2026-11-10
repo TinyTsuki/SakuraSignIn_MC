@@ -5,7 +5,8 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class Forge16AuiBoundaryTest {
     private ClassNode read(String name) throws Exception {
@@ -22,7 +23,7 @@ public class Forge16AuiBoundaryTest {
         int resources = 0;
         for (lombok.var method : read("client/theme/BuiltInThemeCatalog").methods)
             for (lombok.var instruction : method.instructions)
-                if (instruction instanceof MethodInsnNode  && ((MethodInsnNode) instruction).name.equals("getResource")) {
+                if (instruction instanceof MethodInsnNode && ((MethodInsnNode) instruction).name.equals("getResource")) {
                     assertEquals("(Lnet/minecraft/util/ResourceLocation;)Lnet/minecraft/resources/IResource;", ((MethodInsnNode) instruction).desc);
                     resources++;
                 }
@@ -34,7 +35,7 @@ public class Forge16AuiBoundaryTest {
         int commands = 0;
         for (lombok.var method : read("reward/builtin/BuiltInRewardTypes").methods)
             for (lombok.var instruction : method.instructions)
-                if (instruction instanceof MethodInsnNode  && ((MethodInsnNode) instruction).name.equals("performCommand")) {
+                if (instruction instanceof MethodInsnNode && ((MethodInsnNode) instruction).name.equals("performCommand")) {
                     assertEquals("(Lnet/minecraft/command/CommandSource;Ljava/lang/String;)I", ((MethodInsnNode) instruction).desc);
                     commands++;
                 }

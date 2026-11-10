@@ -220,12 +220,22 @@ public final class LotteryUiSession implements UiPageSession {
         else if (payment.isWaitingForQuote() || quote == null) state = "lottery_quote_pending";
         else if (ready) state = "";
         else switch (quote.getStatus()) {
-            case FORBIDDEN: state = "lottery_permission_denied"; break;
-            case STALE_GENERATION: state = "lottery_configuration_changed"; break;
-            case POOL_NOT_FOUND: state = "lottery_pool_not_found"; break;
-            case POOL_CLOSED: state = "lottery_pool_closed"; break;
-            default: state = "lottery_payment_unavailable"; break;
-        }
+                case FORBIDDEN:
+                    state = "lottery_permission_denied";
+                    break;
+                case STALE_GENERATION:
+                    state = "lottery_configuration_changed";
+                    break;
+                case POOL_NOT_FOUND:
+                    state = "lottery_pool_not_found";
+                    break;
+                case POOL_CLOSED:
+                    state = "lottery_pool_closed";
+                    break;
+                default:
+                    state = "lottery_payment_unavailable";
+                    break;
+            }
         String countdown = countdown(payment);
         String text = countdown.isEmpty() ? state.isEmpty() ? "" : tr(state).toString()
                 : state.isEmpty() || "lottery_pool_closed".equals(state) ? countdown : countdown + " · " + tr(state);

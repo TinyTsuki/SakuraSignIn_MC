@@ -1,9 +1,9 @@
 package xin.vanilla.sakura.client.gui;
 
-import net.minecraft.util.ResourceLocation;
 import net.minecraft.potion.Effect;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.potion.Effects;
+import net.minecraft.util.ResourceLocation;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import xin.vanilla.sakura.test.BaniraTestPlatform;

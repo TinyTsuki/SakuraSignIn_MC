@@ -1,6 +1,5 @@
 package xin.vanilla.sakura.command.impl;
 
-import xin.vanilla.sakura.SakuraComponent;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -8,13 +7,13 @@ import net.minecraft.command.CommandSource;
 import net.minecraft.command.Commands;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import xin.vanilla.banira.api.BaniraCommonSettings;
-import xin.vanilla.sakura.command.SignInCommand;
+import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.data.KeyValue;
+import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.message.SakuraMessages;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
-import xin.vanilla.banira.common.data.Component;
 
-import java.awt.Color;
+import java.awt.*;
 import java.util.Arrays;
 import java.util.List;
 

@@ -4,13 +4,13 @@ import net.minecraft.entity.player.ServerPlayerEntity;
 import xin.vanilla.banira.api.BaniraModPresence;
 import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.SakuraSignIn;
+import xin.vanilla.sakura.data.lottery.LotteryOperation;
 import xin.vanilla.sakura.message.SakuraMessages;
 import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.network.packet.LotteryRevealPacket;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
 import xin.vanilla.sakura.reward.Reward;
 import xin.vanilla.sakura.util.SakuraUtils;
-import xin.vanilla.sakura.data.lottery.LotteryOperation;
 
 import java.util.ArrayList;
 import java.util.Collections;

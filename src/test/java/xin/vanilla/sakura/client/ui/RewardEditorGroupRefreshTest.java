@@ -3,14 +3,13 @@ package xin.vanilla.sakura.client.ui;
 import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Paths;
 
 import static org.junit.Assert.assertTrue;
 
 public class RewardEditorGroupRefreshTest {
     private String groupEditor() throws Exception {
-        String source = new String(java.nio.file.Files.readAllBytes(Paths.get("src/main/java/xin/vanilla/sakura/screen/RewardOptionScreen.java")),  StandardCharsets.UTF_8);
+        String source = new String(java.nio.file.Files.readAllBytes(Paths.get("src/main/java/xin/vanilla/sakura/screen/RewardOptionScreen.java")), StandardCharsets.UTF_8);
         return source.substring(source.indexOf("private void editRewardGroup("),
                 source.indexOf("private Screen getPersonalDatePresetInputScreen("));
     }

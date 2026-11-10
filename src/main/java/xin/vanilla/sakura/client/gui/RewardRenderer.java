@@ -3,10 +3,10 @@ package xin.vanilla.sakura.client.gui;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.potion.EffectInstance;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.potion.EffectInstance;
+import net.minecraft.util.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.client.ui.UiGameElement;
@@ -80,11 +80,12 @@ public final class RewardRenderer {
         }
 
         public void drawItem(Object stack) {
-            if (stack instanceof ItemStack ) icon = UiGameElement.option(new DropdownOption("", ((ItemStack) stack).copy(), null));
+            if (stack instanceof ItemStack)
+                icon = UiGameElement.option(new DropdownOption("", ((ItemStack) stack).copy(), null));
         }
 
         public void drawEffect(Object effect) {
-            if (effect instanceof EffectInstance ) icon = UiGameElement.effect(((EffectInstance) effect));
+            if (effect instanceof EffectInstance) icon = UiGameElement.effect(((EffectInstance) effect));
         }
 
         public void drawBuiltInIcon(String id) {

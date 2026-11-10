@@ -1,26 +1,19 @@
 package xin.vanilla.sakura.network.packet;
 
 import org.junit.Test;
+import xin.vanilla.banira.common.util.DateUtils;
 import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.data.PlayerSignInData;
 import xin.vanilla.sakura.data.SignInRecord;
+import xin.vanilla.sakura.data.calendar.CalendarIds;
+import xin.vanilla.sakura.data.personaldate.PlayerPersonalDateSlot;
 import xin.vanilla.sakura.network.TestBaniraPacketBuffer;
 import xin.vanilla.sakura.network.month.MonthDataTransfer;
 import xin.vanilla.sakura.reward.RewardList;
-import xin.vanilla.sakura.data.calendar.CalendarIds;
-import xin.vanilla.sakura.data.personaldate.PlayerPersonalDateSlot;
-import xin.vanilla.banira.common.util.DateUtils;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.UUID;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * 玩家摘要与月份详情必须使用两个独立负载。

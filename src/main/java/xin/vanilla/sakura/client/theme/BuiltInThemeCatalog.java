@@ -1,9 +1,9 @@
 package xin.vanilla.sakura.client.theme;
 
 import com.google.gson.*;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.resources.IResourceManager;
 import net.minecraft.resources.IResource;
+import net.minecraft.resources.IResourceManager;
+import net.minecraft.util.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.sakura.SakuraSignIn;
@@ -135,7 +135,8 @@ public final class BuiltInThemeCatalog {
             keys.add("button.arrow." + state);
             for (String id : THEME_IDS) keys.add("selector." + id + "." + state);
         }
-        for (String reward : com.google.common.collect.ImmutableList.of("buff", "point", "level", "card", "message")) keys.add("reward." + reward);
+        for (String reward : com.google.common.collect.ImmutableList.of("buff", "point", "level", "card", "message"))
+            keys.add("reward." + reward);
         if (special) {
             keys.add("status.not_signed_in.special");
             keys.add("status.signed_in.special");

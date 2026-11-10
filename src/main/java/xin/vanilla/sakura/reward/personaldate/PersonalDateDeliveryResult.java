@@ -1,9 +1,10 @@
 package xin.vanilla.sakura.reward.personaldate;
 
 import lombok.Value;
-import java.util.List;
+
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 @Value
 public class PersonalDateDeliveryResult {

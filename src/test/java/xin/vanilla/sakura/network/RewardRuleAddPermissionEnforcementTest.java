@@ -2,13 +2,13 @@ package xin.vanilla.sakura.network;
 
 import org.junit.Test;
 import xin.vanilla.sakura.config.reward.RewardConfig;
-import xin.vanilla.sakura.enums.ERewardRule;
-import xin.vanilla.sakura.reward.RewardList;
-import xin.vanilla.sakura.reward.RewardRuleAddPermissionChecker;
 import xin.vanilla.sakura.data.calendar.CalendarIds;
 import xin.vanilla.sakura.data.personaldate.PersonalDateDeliveryMode;
 import xin.vanilla.sakura.data.personaldate.PersonalDatePreset;
 import xin.vanilla.sakura.data.personaldate.PersonalDateRecurrence;
+import xin.vanilla.sakura.enums.ERewardRule;
+import xin.vanilla.sakura.reward.RewardList;
+import xin.vanilla.sakura.reward.RewardRuleAddPermissionChecker;
 
 import java.util.Arrays;
 import java.util.Collections;

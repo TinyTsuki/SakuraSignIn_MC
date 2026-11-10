@@ -208,15 +208,18 @@ public class SignInUiParityTest {
         SignInUiSession session = new SignInUiSession(port, () -> true);
         RecordingUiView view = new RecordingUiView();
         session.bind(view);
-        for (Consumer<UiPointer> pointer : view.pointers.values()) pointer.accept(new UiPointer(UiPointer.Kind.UP, 10, 10, 1));
+        for (Consumer<UiPointer> pointer : view.pointers.values())
+            pointer.accept(new UiPointer(UiPointer.Kind.UP, 10, 10, 1));
         assertEquals("An unrelated global release must not select any theme", 0, port.themes);
         view.pointers.get("theme2").accept(new UiPointer(UiPointer.Kind.DOWN, 10, 10, 1));
-        for (Consumer<UiPointer> pointer : view.pointers.values()) pointer.accept(new UiPointer(UiPointer.Kind.UP, 10, 10, 1));
+        for (Consumer<UiPointer> pointer : view.pointers.values())
+            pointer.accept(new UiPointer(UiPointer.Kind.UP, 10, 10, 1));
         assertEquals(1, port.themes);
         assertEquals(2, port.selectedTheme);
         assertTrue(port.special);
         view.pointers.get("theme4").accept(new UiPointer(UiPointer.Kind.DOWN, 10, 10, 1));
-        for (Consumer<UiPointer> pointer : view.pointers.values()) pointer.accept(new UiPointer(UiPointer.Kind.UP, -1, -1, 1));
+        for (Consumer<UiPointer> pointer : view.pointers.values())
+            pointer.accept(new UiPointer(UiPointer.Kind.UP, -1, -1, 1));
         assertEquals(1, port.themes);
         Consumer<UiPointer> stale = view.pointers.get("theme3");
         stale.accept(new UiPointer(UiPointer.Kind.DOWN, 10, 10, 1));

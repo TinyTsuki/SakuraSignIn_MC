@@ -11,15 +11,11 @@ import xin.vanilla.sakura.data.SignInRecord;
 import xin.vanilla.sakura.internal.dev.SakuraNetworkSmokeStatus;
 import xin.vanilla.sakura.network.SakuraNetwork;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 
-/** Observes real network-delivered notifications and monthly records, without injecting client data. */
+/**
+ * Observes real network-delivered notifications and monthly records, without injecting client data.
+ */
 final class SakuraNetworkSmokeDeliveryCheck {
     private final long startedAt = System.currentTimeMillis();
     private final Set<Long> seen = new HashSet<>();

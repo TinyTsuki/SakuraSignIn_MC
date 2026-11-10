@@ -38,23 +38,28 @@ public class PersonalDateConfigCommandTest {
         assertEquals(1, IntegerArgumentType.getInteger(context, "slot"));
     }
 
-    @Test public void acceptsGregorianNamespaceAndPreservesFollowingDate() {
+    @Test
+    public void acceptsGregorianNamespaceAndPreservesFollowingDate() {
         calendar("minecraft:gregorian", "minecraft:gregorian");
     }
 
-    @Test public void acceptsLunarNamespace() {
+    @Test
+    public void acceptsLunarNamespace() {
         calendar("sakura_sign_in:chinese_lunar", "sakura_sign_in:chinese_lunar");
     }
 
-    @Test public void appliesVanillaDefaultNamespace() {
+    @Test
+    public void appliesVanillaDefaultNamespace() {
         calendar("gregorian", "minecraft:gregorian");
     }
 
-    @Test public void acceptsResourcePathsWithoutConsumingDateArgument() {
+    @Test
+    public void acceptsResourcePathsWithoutConsumingDateArgument() {
         calendar("example:season/summer", "example:season/summer");
     }
 
-    @Test public void usesSerializableVanillaResourceArgumentAndKeepsSuggestions() {
+    @Test
+    public void usesSerializableVanillaResourceArgumentAndKeepsSuggestions() {
         CommandNode<CommandSource> node = dispatcher().getRoot().getChild("personalDate")
                 .getChild("set").getChild("preset").getChild("slot").getChild("calendar");
         assertTrue(node instanceof ArgumentCommandNode);
@@ -64,14 +69,16 @@ public class PersonalDateConfigCommandTest {
         assertNotNull(node.getChild("date").getCommand());
     }
 
-    @Test public void rejectsMalformedCalendarIds() {
+    @Test
+    public void rejectsMalformedCalendarIds() {
         for (String id : new String[]{"minecraft::gregorian", "Minecraft:gregorian",
                 "minecraft:gre$gorian", "minecraft:gregorian\"", "minecraft:gre\\gorian"}) {
             rejected("set birthday 1 " + id + " 10-9");
         }
     }
 
-    @Test public void rejectsMissingAndTrailingArgumentsAndOutOfRangeSlots() {
+    @Test
+    public void rejectsMissingAndTrailingArgumentsAndOutOfRangeSlots() {
         for (String tail : new String[]{"set birthday 1", "set birthday 1 minecraft:gregorian",
                 "set birthday 1 minecraft:gregorian 10-9 extra", "set birthday 0 minecraft:gregorian 10-9",
                 "set birthday 17 minecraft:gregorian 10-9"}) {
@@ -79,7 +86,8 @@ public class PersonalDateConfigCommandTest {
         }
     }
 
-    @Test public void preservesListAndClearRoutes() {
+    @Test
+    public void preservesListAndClearRoutes() {
         parse("list");
         parse("clear birthday 1");
         parse("clear birthday 16");

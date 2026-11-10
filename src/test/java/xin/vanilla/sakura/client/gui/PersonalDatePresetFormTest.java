@@ -1,7 +1,6 @@
 package xin.vanilla.sakura.client.gui;
 
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.registry.Bootstrap;
 import org.junit.*;
 import xin.vanilla.banira.client.gui.InputFormScreen;
@@ -16,7 +15,10 @@ import xin.vanilla.sakura.reward.RewardList;
 import xin.vanilla.sakura.test.BaniraTestPlatform;
 
 import java.lang.reflect.Field;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 

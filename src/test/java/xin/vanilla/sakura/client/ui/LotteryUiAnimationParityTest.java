@@ -11,7 +11,6 @@ import xin.vanilla.sakura.network.packet.LotteryRevealPacket;
 import xin.vanilla.sakura.reward.Reward;
 
 import java.util.Comparator;
-import java.util.List;
 import java.util.UUID;
 
 import static org.junit.Assert.*;

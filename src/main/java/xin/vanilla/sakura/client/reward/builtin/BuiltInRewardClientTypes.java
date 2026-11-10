@@ -1,9 +1,9 @@
 package xin.vanilla.sakura.client.reward.builtin;
 
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.potion.EffectInstance;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.potion.EffectInstance;
+import net.minecraft.util.ResourceLocation;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.sakura.api.reward.RewardTypeId;
 import xin.vanilla.sakura.api.reward.SakuraRewardTypes;

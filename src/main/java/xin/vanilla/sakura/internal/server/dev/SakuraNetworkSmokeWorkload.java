@@ -10,7 +10,9 @@ import java.time.ZoneId;
 import java.util.Date;
 import java.util.UUID;
 
-/** 仅开发期使用的有界签到历史与奖励查询负载。 */
+/**
+ * 仅开发期使用的有界签到历史与奖励查询负载。
+ */
 public final class SakuraNetworkSmokeWorkload {
     static final int HISTORY_MONTHS = 180;
     static final int RECORDS_PER_MONTH = 20;

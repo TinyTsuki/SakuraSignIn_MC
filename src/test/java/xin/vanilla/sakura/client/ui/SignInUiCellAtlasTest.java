@@ -12,7 +12,6 @@ import xin.vanilla.sakura.enums.ESignInStatus;
 import xin.vanilla.sakura.reward.RewardList;
 import xin.vanilla.sakura.screen.SignInCell;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 public class SignInUiCellAtlasTest {
