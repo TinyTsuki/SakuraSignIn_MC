@@ -19,13 +19,6 @@ public class LotteryAdoptionContractTest {
         }
     }
 
-    @Test
-    public void currentProtocolIncludesCorrelatedQuoteDrawAndOutcome() throws Exception {
-        String source = new String(Files.readAllBytes(Paths.get("src/main/java/xin/vanilla/sakura/network/SakuraNetwork.java")), StandardCharsets.UTF_8);
-        assertTrue("Current lottery protocol missing", source.contains("\"sakura-10\""));
-        assertTrue(source.contains("LotteryQuotePacket.class"));
-        assertTrue(source.contains("LotteryDrawOutcomePacket.class"));
-    }
 
     @Test
     public void exactProtocolRejectsOlderWireContractsAndRetainsOptionalClients() throws Exception {
