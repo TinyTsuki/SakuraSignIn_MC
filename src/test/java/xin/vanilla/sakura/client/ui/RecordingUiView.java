@@ -8,8 +8,8 @@ import xin.vanilla.banira.common.data.Component;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 
 final class RecordingUiView implements UiView {
     final Map<String, Runnable> actions = new HashMap<>();

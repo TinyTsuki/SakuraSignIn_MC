@@ -116,7 +116,8 @@ public final class LotteryPoolValidator {
         }
         if (!validDate(pool.getStartDate()) || !validDate(pool.getEndDate())
                 || !pool.getStartDate().isEmpty() && !pool.getEndDate().isEmpty()
-                && !LotteryWindow.boundary(pool.getStartDate(), false).isBefore(LotteryWindow.boundary(pool.getEndDate(), true))) errors.add("invalid_dates");
+                && !LotteryWindow.boundary(pool.getStartDate(), false).isBefore(LotteryWindow.boundary(pool.getEndDate(), true)))
+            errors.add("invalid_dates");
         try {
             LotteryPng.inspect(pool.getThumbnailPng());
             LotteryPng.inspect(pool.getPosterPng());

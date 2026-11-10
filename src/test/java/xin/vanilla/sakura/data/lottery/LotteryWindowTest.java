@@ -6,7 +6,8 @@ import xin.vanilla.sakura.reward.RewardList;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class LotteryWindowTest {
     private final ZoneId zone = ZoneId.of("Asia/Shanghai");

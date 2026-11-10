@@ -5,10 +5,7 @@ import xin.vanilla.sakura.data.lottery.LotteryLimitPolicy;
 import xin.vanilla.sakura.data.lottery.LotteryPool;
 import xin.vanilla.sakura.reward.RewardList;
 
-import java.util.Arrays;
-
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 
 public class LotteryScreenTest {
     @Test

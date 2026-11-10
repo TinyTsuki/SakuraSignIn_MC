@@ -20,13 +20,14 @@ import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.client.SakuraClientPreferences;
 import xin.vanilla.sakura.client.SakuraClientState;
 import xin.vanilla.sakura.client.gui.RewardRenderer;
-import xin.vanilla.sakura.client.gui.lottery.LotteryLayout;
 import xin.vanilla.sakura.client.gui.lottery.LotteryArtwork;
+import xin.vanilla.sakura.client.gui.lottery.LotteryLayout;
 import xin.vanilla.sakura.client.gui.lottery.LotteryPaymentViewModel;
 import xin.vanilla.sakura.client.ui.LotteryUiSession;
 import xin.vanilla.sakura.client.ui.SakuraUiPages;
 import xin.vanilla.sakura.config.reward.RewardConfigManager;
-import xin.vanilla.sakura.data.lottery.*;
+import xin.vanilla.sakura.data.lottery.LotteryPool;
+import xin.vanilla.sakura.data.lottery.LotteryPreviewMode;
 import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.network.packet.LotteryDrawRequestPacket;
 import xin.vanilla.sakura.network.packet.LotteryQuoteRequestPacket;
@@ -34,7 +35,9 @@ import xin.vanilla.sakura.reward.Reward;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 public final class LotteryScreen extends BaniraScreen implements UiPageSource {
     private static final int STAGE_FILL = 0xff3e2c3c;

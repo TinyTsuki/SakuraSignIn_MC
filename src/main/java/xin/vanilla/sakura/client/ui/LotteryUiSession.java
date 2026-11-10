@@ -1,15 +1,21 @@
 package xin.vanilla.sakura.client.ui;
 
 import xin.vanilla.banira.api.client.ui.*;
-import xin.vanilla.sakura.client.gui.lottery.LotteryArtwork;
 import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.client.gui.RewardRenderer;
-import xin.vanilla.sakura.client.gui.lottery.LotteryPaymentViewModel;
+import xin.vanilla.sakura.client.gui.lottery.LotteryArtwork;
 import xin.vanilla.sakura.client.gui.lottery.LotteryFeePresentation;
-import xin.vanilla.sakura.data.lottery.*;
+import xin.vanilla.sakura.client.gui.lottery.LotteryPaymentViewModel;
+import xin.vanilla.sakura.data.lottery.LotteryLimitPolicy;
+import xin.vanilla.sakura.data.lottery.LotteryPool;
+import xin.vanilla.sakura.data.lottery.LotteryPreviewMode;
+import xin.vanilla.sakura.data.lottery.LotteryQuote;
 import xin.vanilla.sakura.reward.Reward;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
 import java.util.function.BooleanSupplier;
 
 public final class LotteryUiSession implements UiPageSession {

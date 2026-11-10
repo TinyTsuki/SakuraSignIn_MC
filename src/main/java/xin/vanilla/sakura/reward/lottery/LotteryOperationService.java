@@ -107,7 +107,7 @@ public final class LotteryOperationService {
         } catch (IOException | RuntimeException failure) {
             LOGGER.error("Lottery quote unavailable for " + id, failure);
             return new LotteryQuote(request, LotteryQuote.Status.PAYMENT_UNAVAILABLE, revision,
-                        0, "", "", window.remainingMillis(), false);
+                    0, "", "", window.remainingMillis(), false);
         }
     }
 
