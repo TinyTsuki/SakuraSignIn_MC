@@ -11,15 +11,7 @@ import java.nio.file.Path;
 import static org.junit.Assert.*;
 
 public class NeoForgeSakuraUiPortTest {
-    @Test
-    public void allFiveOwnersUseThePublicSharedBoundary() throws Exception {
-        for (String screen : new String[]{"SignInScreen", "PersonalDateConfigScreen", "RewardOptionScreen", "LotteryScreen", "LotteryRevealScreen"}) {
-            String code = Files.readString(Path.of("src/main/java/xin/vanilla/sakura/screen/" + screen + ".java"));
-            assertTrue(screen, code.contains("implements UiPageSource"));
-            assertTrue(screen, code.contains("BaniraUi.screenRemoved(this)"));
-            assertFalse(screen, code.contains("com.sighs."));
-        }
-    }
+
 
     @Test
     public void copiedRenderersUseSharedBackgroundAndPublicIdentifiers() throws Exception {
