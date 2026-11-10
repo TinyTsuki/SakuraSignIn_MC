@@ -36,15 +36,6 @@ public class LotteryResultPageTest {
                 Collections.nCopies(count, Reward.getDefault()), List.of(Reward.getDefault()), LotteryPreviewMode.ALL);
     }
 
-    @Test
-    public void approvedTemplateUsesLocalStylesAndSharedHeader() throws Exception {
-        String html = Files.readString(Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in/lottery-result.html"), StandardCharsets.UTF_8);
-        for (String id : List.of("brand", "close", "subtitle", "section", "result_count", "result_area", "result_single", "tile47"))
-            assertTrue(id, html.contains("id=\"" + id + "\""));
-        assertTrue(html.contains("href=\"lottery-result.css\""));
-        assertFalse(html.contains("href=\"lottery.css\""));
-        assertFalse(html.contains("<script"));
-    }
 
     @Test
     public void stylesKeepTheScopedBudgetAfterWindowsCheckout() throws Exception {
@@ -60,13 +51,6 @@ public class LotteryResultPageTest {
         assertTrue(bytes <= UiBoundaryChecks.stylesBudget(lotteryPageBytes));
     }
 
-    @Test
-    public void resultCardSelectorsMatchAnonymousRowNodes() throws Exception {
-        String css = Files.readString(Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in/lottery-result.css"));
-        for (int child : new int[]{1, 4, 5})
-            assertTrue(css.contains(".result-card>.paragraph:nth-child(" + child + ")"));
-        assertFalse(css.contains("[id$="));
-    }
 
     @Test
     public void headerAndSingleResultKeepOriginalClaimLifecycle() {

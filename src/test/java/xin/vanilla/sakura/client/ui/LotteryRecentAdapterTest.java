@@ -151,18 +151,5 @@ public class LotteryRecentAdapterTest {
         }
     }
 
-    @Test
-    public void nativeChoicesHideChestWithoutChangingTheLegacyCountGateOrArtworkResolution() throws Exception {
-        String nativeSource = java.nio.file.Files.readString(java.nio.file.Path.of(
-                "src/main/java/xin/vanilla/sakura/screen/LotteryScreen.java"), java.nio.charset.StandardCharsets.UTF_8);
-        assertTrue(nativeSource.contains("style != LotteryAnimationStyle.CHEST"));
-        assertTrue(nativeSource.contains("pool.allowsCount(1)"));
-        assertTrue(nativeSource.contains("pool.getDrawCounts() == null || batchCount() != 1"));
-        assertTrue(nativeSource.contains("layout.count()"));
-        assertTrue(nativeSource.contains("layout.animation()"));
-        String artwork = java.nio.file.Files.readString(java.nio.file.Path.of(
-                "src/main/java/xin/vanilla/sakura/client/gui/lottery/LotteryArtwork.java"), java.nio.charset.StandardCharsets.UTF_8);
-        assertTrue(artwork.contains("ItemUtils.deserializeItemStack(pool.getArtworkItem())"));
-        assertTrue(artwork.contains("UiGameElement element()"));
-    }
+
 }

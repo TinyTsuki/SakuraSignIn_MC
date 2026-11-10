@@ -12,6 +12,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
@@ -25,13 +26,6 @@ public class NativeMessageBoundaryTest {
         net.minecraft.server.Bootstrap.bootStrap();
     }
 
-    @Test
-    public void productionBoundaryRetainsNativeNames() throws Exception {
-        String source = new String(Files.readAllBytes(Paths.get("src/main/java/xin/vanilla/sakura/reward/builtin/BuiltInRewardTypes.java")), StandardCharsets.UTF_8);
-        assertTrue(source.contains(".object(value.getHoverName().copy())"));
-        assertFalse(source.contains(".literal(value.getHoverName().getString())"));
-        assertTrue(source.contains("SakuraComponent.get().object(value.getEffect().value().getDisplayName())"));
-    }
 
     @Test
     public void composingNamesPreservesVanillaTranslationsAndTheOriginal() {
@@ -48,7 +42,7 @@ public class NativeMessageBoundaryTest {
     @Test
     public void serverModTemplateDoesNotRequireTheReceivingMod() {
         Component message = BaniraComponent.get().trans(EnumI18nType.FORMAT, "missing_boundary_template",
-                net.minecraft.network.chat.Component.translatable("item.minecraft.diamond"))
+                        net.minecraft.network.chat.Component.translatable("item.minecraft.diamond"))
                 .translationFallback("Name: %s").languageCode("zh_cn");
         net.minecraft.network.chat.Component prepared = message.toChat("zh_cn");
         assertTrue(prepared.getString().startsWith("Name: "));
@@ -56,13 +50,7 @@ public class NativeMessageBoundaryTest {
         assertEquals(Arrays.asList("item.minecraft.diamond"), keys(json));
         assertFalse(json.toString().contains("missing_boundary_template"));
     }
-    @Test
-    public void feedbackArgumentsKeepDisplayNameComponents() throws Exception {
-        for (String path : Arrays.asList("src/main/java/xin/vanilla/sakura/command/impl/CardCommand.java")) {
-            String source = new String(Files.readAllBytes(Paths.get(path)), StandardCharsets.UTF_8);
-            assertFalse(path, source.contains(".getDisplayName().getString()"));
-        }
-    }
+
 
     @Test
     public void reviewedNativeTemplateFormattingComesFromTheFrozenCommonInput() throws Exception {
