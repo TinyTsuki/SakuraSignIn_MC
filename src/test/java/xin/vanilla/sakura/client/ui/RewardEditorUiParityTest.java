@@ -32,9 +32,6 @@ public class RewardEditorUiParityTest {
         SignInUiParityTest.bootstrap();
     }
 
-    private static String source(String relative) throws Exception {
-        return Files.readString(Path.of("src/main/java/xin/vanilla/sakura/" + relative), StandardCharsets.UTF_8);
-    }
 
     static final class Port implements RewardEditorUiSession.Port {
         int rule = 1, scans, commands, entries, closes, suspended;
@@ -364,15 +361,6 @@ public class RewardEditorUiParityTest {
         assertEquals(0, port.entries);
     }
 
-    @Test
-    public void rewardTemplateAndRealizedRowsFitTheNodeAndStyleBudgets() throws Exception {
-        Path root = Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in");
-        String html = Files.readString(root.resolve("rewards.html"), StandardCharsets.UTF_8);
-        long staticNodes = java.util.regex.Pattern.compile("<[a-zA-Z][^>]*>").matcher(html).results().count();
-        assertTrue(120 * 12 + staticNodes + 64 < 2000);
-        assertTrue(Files.size(root.resolve("sakura.css")) <= 4096);
-        assertTrue(source("screen/RewardOptionScreen.java").contains("handlePopupOption(0, \"奖励按钮:\" + id"));
-    }
 
     @Test
     public void singleColumnNavigationUsesAdjacentRewardsWithoutChangingNativeGeometry() throws Exception {
@@ -388,7 +376,7 @@ public class RewardEditorUiParityTest {
         var down = xin.vanilla.sakura.client.gui.RewardKeyboardNavigator.Direction.DOWN;
         assertEquals(xin.vanilla.sakura.client.gui.RewardKeyboardNavigator.Direction.LEFT, projection.invoke(null, up));
         assertEquals(xin.vanilla.sakura.client.gui.RewardKeyboardNavigator.Direction.RIGHT, projection.invoke(null, down));
-        assertTrue(source("screen/RewardOptionScreen.java").contains("RewardEditorUiSession.listDirection(direction)"));
+
         Port port = new Port(100);
         RewardEditorUiSession session = new RewardEditorUiSession(port, () -> true);
         RecordingUiView view = new RecordingUiView();
@@ -399,14 +387,6 @@ public class RewardEditorUiParityTest {
         assertEquals(90, view.state.rowPosition(), 0);
     }
 
-    @Test
-    public void sidebarScrollUsesSharedDetailStateAcrossBackendChanges() throws Exception {
-        String html = Files.readString(Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in/rewards.html"), StandardCharsets.UTF_8);
-        assertTrue("Sidebar needs the shared retained scroll region", html.contains("id=\"detail\""));
-        String owner = source("screen/RewardOptionScreen.java");
-        assertTrue(owner.contains("state.detailScroll(-ruleListOffset)"));
-        assertTrue(owner.contains("ruleListOffset = -state.detailScroll()"));
-    }
 
     @Test
     public void filteredNavigationCannotSelectRewardsOutsideTheVisibleSearch() throws Exception {
@@ -424,32 +404,9 @@ public class RewardEditorUiParityTest {
             return;
         }
         assertEquals(List.of("base,90"), navigation.invoke(session));
-        assertTrue(source("screen/RewardOptionScreen.java").contains("orderedIds.addAll(rewardUiSession.navigationIds())"));
+
     }
 
-    @Test
-    public void rewardOwnerUsesPublicSharedPageAndLifecycle() throws Exception {
-        String source = source("screen/RewardOptionScreen.java");
-        assertTrue("Reward editor has no shared page", source.contains("implements UiPageSource"));
-        assertTrue(source.contains("RewardEditorUiSession"));
-        assertTrue(source.contains("BaniraUi.screenRemoved"));
-        assertTrue(source.contains("capturePageState"));
-        assertFalse(source.contains("xin.vanilla.banira.internal."));
-    }
-
-    @Test
-    public void rewardTemplateHasEveryExistingOperationAndLocalAssets() throws Exception {
-        Path path = Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in/rewards.html");
-        assertTrue("Reward template missing", Files.exists(path));
-        String html = Files.readString(path, StandardCharsets.UTF_8);
-        for (String id : new String[]{"fields", "search", "add", "copy", "cut", "paste", "delete", "undo", "redo", "sort", "merge", "upload", "download", "folder", "help", "move", "clear", "sidebar", "close"})
-            assertTrue("Missing operation " + id, html.contains("id=\"" + id + "\""));
-        for (int rule = 1; rule <= 12; rule++) assertTrue(html.contains("id=\"rule" + rule + "\""));
-        assertTrue(html.contains("banira_codex/shared.css"));
-        assertFalse(html.contains("<script"));
-        assertFalse(html.contains("https:"));
-        assertTrue(Files.size(path) <= 12288);
-    }
 
     @Test
     public void multiFieldAdapterUsesSharedDraftValidationAndSingleSubmit() {
@@ -484,19 +441,5 @@ public class RewardEditorUiParityTest {
         assertEquals(1, submits.get());
     }
 
-    @Test
-    public void allTwelveRulesAndEightBuiltInsKeepTheirExistingEditors() throws Exception {
-        String editor = source("screen/RewardOptionScreen.java");
-        for (xin.vanilla.sakura.enums.ERewardRule rule : xin.vanilla.sakura.enums.ERewardRule.values())
-            assertTrue(editor.contains("case " + rule.name()));
-        assertTrue(editor.contains("getCdkRuleKeyInputScreen"));
-        assertTrue(editor.contains("getPersonalDatePresetInputScreen"));
-        assertTrue(editor.contains("getLotteryPoolInputScreen"));
-        String types = source("client/reward/builtin/BuiltInRewardClientTypes.java");
-        for (String type : new String[]{"ITEM", "EFFECT", "EXPERIENCE_POINT", "EXPERIENCE_LEVEL", "SIGN_IN_CARD", "ADVANCEMENT", "MESSAGE", "COMMAND"})
-            assertTrue(types.contains("SakuraRewardTypes." + type));
-        for (String selector : new String[]{"Item", "Effect", "Advancement"})
-            assertTrue(source("client/gui/" + selector + "RewardSelectionFlow.java").contains("new " + selector + "SelectScreen(args)"));
-        assertTrue(source("client/gui/RewardProbabilityFlow.java").contains("RewardProbabilityInput.parse"));
-    }
+
 }

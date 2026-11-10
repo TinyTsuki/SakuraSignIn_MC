@@ -9,7 +9,10 @@ import org.junit.Test;
 
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.Properties;
 
 import static org.junit.Assert.*;
 
@@ -52,7 +55,13 @@ public class Fabric26PatchMetadataTest {
     public void baniraRemainsRequiredAndTheClientUiEngineRemainsOptional() throws Exception {
         var root = metadata();
         var dependencies = root.getAsJsonObject("depends");
-        assertEquals(">=1.0.4 <1.1.0", dependencies.get("banira_codex").getAsString());
+        var properties = new Properties();
+        try (var reader = Files.newBufferedReader(Path.of("gradle.properties"), StandardCharsets.UTF_8)) {
+            properties.load(reader);
+        }
+        String baniraRange = dependencies.get("banira_codex").getAsString();
+        assertEquals(properties.getProperty("banira_version_range"), baniraRange);
+        assertTrue(VersionPredicate.parse(baniraRange).test(Version.parse(properties.getProperty("banira_version"))));
         assertEquals(">=25", dependencies.get("java").getAsString());
         assertFalse(dependencies.has("apricityui"));
         assertTrue(root.getAsJsonObject("entrypoints").has("main"));

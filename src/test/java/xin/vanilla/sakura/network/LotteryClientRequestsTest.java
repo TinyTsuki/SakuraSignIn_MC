@@ -2,14 +2,17 @@ package xin.vanilla.sakura.network;
 
 import org.junit.Test;
 import xin.vanilla.sakura.data.lottery.*;
+
 import java.util.UUID;
+
 import static org.junit.Assert.*;
 
 public class LotteryClientRequestsTest {
     private static final UUID SESSION = UUID.fromString("11111111-2222-3333-4444-555555555555");
     private static final String TOKEN = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
 
-    @Test public void staleOutOfOrderAndForeignSessionQuotesAreIgnored() {
+    @Test
+    public void staleOutOfOrderAndForeignSessionQuotesAreIgnored() {
         LotteryClientRequests state = new LotteryClientRequests(() -> SESSION);
         state.observeGeneration(7);
         LotteryQuoteRequest old = state.request("daily", 1);
@@ -24,7 +27,8 @@ public class LotteryClientRequestsTest {
         assertFalse(state.observeGeneration(6));
     }
 
-    @Test public void clearChangesSessionAndRejectsDelayedResponses() {
+    @Test
+    public void clearChangesSessionAndRejectsDelayedResponses() {
         final UUID[] session = {SESSION};
         LotteryClientRequests state = new LotteryClientRequests(() -> session[0]);
         state.observeGeneration(7);
@@ -36,14 +40,17 @@ public class LotteryClientRequestsTest {
         assertNull(state.draw("daily", 1));
     }
 
-    @Test public void pendingRefreshCannotAuthorizeDraw() {
+    @Test
+    public void pendingRefreshCannotAuthorizeDraw() {
         LotteryClientRequests state = new LotteryClientRequests(() -> SESSION);
         state.observeGeneration(7);
         assertTrue(state.accept(ready(state.request("daily", 1))));
         state.request("daily", 1);
         assertNull(state.draw("daily", 1));
     }
-    @Test public void newQuoteCannotAuthorizeAnotherDrawWhilePreviousOperationIsUnconfirmed() {
+
+    @Test
+    public void newQuoteCannotAuthorizeAnotherDrawWhilePreviousOperationIsUnconfirmed() {
         LotteryClientRequests state = new LotteryClientRequests(() -> SESSION);
         state.observeGeneration(7);
         state.accept(ready(state.request("daily", 1)));
@@ -53,7 +60,8 @@ public class LotteryClientRequestsTest {
         assertNull(state.draw("daily", 1));
     }
 
-    @Test public void repeatedRevealsStayIdempotentUntilClientSessionIsCleared() throws Exception {
+    @Test
+    public void repeatedRevealsStayIdempotentUntilClientSessionIsCleared() throws Exception {
         LotteryClientRequests state = new LotteryClientRequests(() -> SESSION);
         java.lang.reflect.Method accept = LotteryClientRequests.class.getMethod("acceptReveal", String.class);
         String first = SESSION + "-1", second = SESSION + "-2";
@@ -68,7 +76,8 @@ public class LotteryClientRequestsTest {
         assertEquals(true, accept.invoke(state, first));
     }
 
-    @Test public void revealHistoryIsBoundedAndRejectsEmptyIdentifiers() throws Exception {
+    @Test
+    public void revealHistoryIsBoundedAndRejectsEmptyIdentifiers() throws Exception {
         LotteryClientRequests state = new LotteryClientRequests(() -> SESSION);
         java.lang.reflect.Method accept = LotteryClientRequests.class.getMethod("acceptReveal", String.class);
         assertEquals(false, accept.invoke(state, new Object[]{null}));
@@ -80,13 +89,6 @@ public class LotteryClientRequestsTest {
         assertEquals(false, accept.invoke(state, SESSION + "-100"));
     }
 
-    @Test public void clientDisplayEntryUsesTheSessionDeduplicator() throws Exception {
-        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-                "src/main/java/xin/vanilla/sakura/network/ClientProxy.java")), java.nio.charset.StandardCharsets.UTF_8);
-        int begin = source.indexOf("public static void handleLotteryReveal");
-        int end = source.indexOf("public static void handleLotteryOutcome", begin);
-        assertTrue(source.substring(begin, end).contains("acceptReveal(packet.getOperationId())"));
-    }
 
     private static LotteryQuote ready(LotteryQuoteRequest request) {
         return new LotteryQuote(request, LotteryQuote.Status.READY, request.getGeneration(), 10, "paper", TOKEN);

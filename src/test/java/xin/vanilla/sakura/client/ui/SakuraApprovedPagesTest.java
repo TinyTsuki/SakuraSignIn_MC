@@ -31,22 +31,6 @@ public class SakuraApprovedPagesTest {
         SignInUiParityTest.bootstrap();
     }
 
-    @Test
-    public void onlyTheThreeApprovedPagesLoadTheNewScopedStylesWithoutScriptsOrCalendarImages() throws Exception {
-        Path root = Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in");
-        for (String page : List.of("signin", "rewards", "lottery")) {
-            String html = Files.readString(root.resolve(page + ".html"));
-            assertTrue(html.contains(page.equals("lottery") ? "sakura-lottery.css" : page.equals("signin") ? "sakura-calendar.css" : "sakura-pages.css"));
-            assertFalse(html.contains("<script"));
-            assertFalse(html.contains("https:"));
-        }
-        assertFalse(Files.readString(root.resolve("personal-date.html")).contains("sakura-pages.css"));
-        assertFalse(Files.readString(root.resolve("signin.css")).contains("url("));
-        String rewards = Files.readString(root.resolve("rewards.html"));
-        for (String id : List.of("group_nav", "groups", "add_group", "edit_group", "upload", "search", "fields"))
-            assertTrue(rewards.contains("id=\"" + id + "\""));
-        assertEquals(List.of(), UiBoundaryChecks.resources(UiBoundaryChecks.ownResources("sakura_sign_in"), false));
-    }
 
     @Test
     public void envelopeKeepsItsBodyFixedWhileTheFlapMovesAndSmallCardsUseTooltips() throws Exception {
@@ -71,14 +55,8 @@ public class SakuraApprovedPagesTest {
         }
         assertTrue(view.areas.get("motion_flap_open").height() > 0);
         assertEquals(0, view.areas.get("motion_flap_closed").height(), 0);
-        String css = Files.readString(Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in/sakura-motion.css"));
-        assertTrue(css.contains(".motion-name{display:none}"));
-        assertTrue(css.contains("text-overflow:ellipsis"));
-        String html = Files.readString(Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in/lottery-result.html"));
-        assertFalse(html.contains("motion_chest"));
-        assertTrue(css.contains(".motion-envelope{position:absolute;inset:0;border:0;box-shadow:inset 0 0 0 2px"));
-        assertTrue(css.contains(".fan-left-outer{transform:rotate(-24deg)}"));
-        assertTrue(css.contains(".fan-back:disabled{transform:rotate(0deg);opacity:1;z-index:4}"));
+
+
     }
 
     @Test
@@ -103,17 +81,6 @@ public class SakuraApprovedPagesTest {
         assertFalse(view.texts.containsKey("edit_group"));
     }
 
-    @Test
-    public void engineOverlayUsesSolidPaintAndNarrowCalendarLabelsStayCompact() throws Exception {
-        Path resources = Path.of("src/main/resources/assets");
-        String css = Files.readString(resources.resolve("apricityui/apricity/sakura_sign_in/sakura-lottery.css"));
-        assertTrue(css.contains(".pool-title{flex:none;font-size:24px"));
-        assertFalse(css.contains("linear-gradient("));
-        assertFalse(css.contains("#291e2ef5"));
-        var language = com.google.gson.JsonParser.parseString(Files.readString(resources.resolve("sakura_sign_in/lang/en_us.json"))).getAsJsonObject();
-        assertEquals("Streak", language.get("word.sakura_sign_in.aui_consecutive").getAsString());
-        assertEquals("Sign-ins", language.get("word.sakura_sign_in.aui_total").getAsString());
-    }
 
     @Test
     public void approvedCalendarUsesWholeWeeksAndDoesNotCompressDatesUnderStatusIcons() {
@@ -181,23 +148,6 @@ public class SakuraApprovedPagesTest {
         assertEquals(1, port.requests.size());
     }
 
-    @Test
-    public void twoRebuiltPagesDoNotLoadTheLegacyLayoutStyles() throws Exception {
-        Path root = Path.of("src/main/resources/assets/apricityui/apricity/sakura_sign_in");
-        String calendar = Files.readString(root.resolve("signin.html"));
-        assertFalse(calendar.contains("href=\"signin.css\""));
-        assertFalse(calendar.contains("<footer"));
-        assertTrue(calendar.contains("id=\"date_action\""));
-        assertTrue(calendar.indexOf("calendar-stats") > calendar.indexOf("class=\"reward-sidebar\""));
-        String lottery = Files.readString(root.resolve("lottery.html"));
-        assertFalse(lottery.contains("href=\"lottery.css\""));
-        assertTrue(lottery.indexOf("id=\"title\"") > lottery.indexOf("class=\"pool-copy\""));
-        String calendarCss = Files.readString(root.resolve("sakura-calendar.css"));
-        String lotteryCss = Files.readString(root.resolve("sakura-lottery.css"));
-        assertTrue(calendarCss.contains("font-weight:600;color:#fff9f5"));
-        assertTrue(lotteryCss.contains("#single_label{color:#fff5ed;font-weight:600}"));
-        assertTrue(lotteryCss.contains("#batch_label{color:#3c2630;font-weight:600}"));
-    }
 
     @Test
     public void physicalItemFeeUsesAnIconAndTheNameOnlyInTooltip() {

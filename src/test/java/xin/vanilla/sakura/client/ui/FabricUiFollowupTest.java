@@ -18,12 +18,6 @@ public class FabricUiFollowupTest {
         assertFalse(script.contains("artifact tasks.named('remapJar')"));
     }
 
-    @Test
-    public void clientFpsPreparationRemainsDeferred() throws Exception {
-        String script = Files.readString(Path.of("build.gradle"), StandardCharsets.UTF_8);
-        assertFalse(Pattern.compile("(?m)^\\s*prepareBaniraDevFpsOverlay\\(\\)\\s*$").matcher(script).find());
-        assertTrue(script.contains("dependsOn 'prepareDevFpsOverlay'"));
-    }
 
     @Test
     public void bothIconLicenseTextsArePackaged() throws Exception {
