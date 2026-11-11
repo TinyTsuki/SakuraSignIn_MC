@@ -1,11 +1,11 @@
 package xin.vanilla.sakura.client.ui;
 
 import xin.vanilla.banira.api.client.ui.*;
-import xin.vanilla.sakura.client.gui.lottery.LotteryArtwork;
 import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.client.gui.RewardRenderer;
-import xin.vanilla.sakura.client.gui.lottery.LotteryPaymentViewModel;
+import xin.vanilla.sakura.client.gui.lottery.LotteryArtwork;
 import xin.vanilla.sakura.client.gui.lottery.LotteryFeePresentation;
+import xin.vanilla.sakura.client.gui.lottery.LotteryPaymentViewModel;
 import xin.vanilla.sakura.data.lottery.*;
 import xin.vanilla.sakura.reward.Reward;
 
