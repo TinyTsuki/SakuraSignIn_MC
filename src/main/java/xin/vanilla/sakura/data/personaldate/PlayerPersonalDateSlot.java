@@ -3,8 +3,9 @@ package xin.vanilla.sakura.data.personaldate;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import net.minecraft.nbt.CompoundTag;
-import java.util.Map;
+
 import java.util.LinkedHashMap;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor

@@ -1,10 +1,6 @@
 package xin.vanilla.sakura.client.gui;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 将混合选择转换为稳定、有序的组与奖励 ID。
@@ -25,7 +21,9 @@ public final class RewardSelectionIds {
         return new ArrayList<>(keys);
     }
 
-    /** 折叠状态不影响完整规则中的奖励 ID。 */
+    /**
+     * 折叠状态不影响完整规则中的奖励 ID。
+     */
     public static List<String> rewardIds(Map<String, ? extends List<?>> groups) {
         List<String> ids = new ArrayList<>();
         if (groups != null) {
@@ -35,7 +33,7 @@ public final class RewardSelectionIds {
     }
 
     public static List<String> rewardIdsForGroup(Map<String, ? extends List<?>> groups,
-                                                  String groupKey) {
+                                                 String groupKey) {
         List<String> ids = new ArrayList<>();
         List<?> rewards = groups == null ? null : groups.get(groupKey);
         if (groupKey != null && rewards != null) {
@@ -47,7 +45,7 @@ public final class RewardSelectionIds {
     }
 
     public static List<String> selectionIds(Map<String, ? extends List<?>> groups,
-                                             String groupPrefix) {
+                                            String groupPrefix) {
         List<String> ids = new ArrayList<>();
         if (groups != null && groupPrefix != null) {
             groups.forEach((key, rewards) -> {

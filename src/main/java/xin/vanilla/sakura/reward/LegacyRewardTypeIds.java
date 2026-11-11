@@ -6,7 +6,9 @@ import xin.vanilla.sakura.api.reward.SakuraRewardTypes;
 
 import java.util.Locale;
 
-/** 旧奖励枚举名称到稳定类型 ID 的唯一迁移入口。 */
+/**
+ * 旧奖励枚举名称到稳定类型 ID 的唯一迁移入口。
+ */
 public final class LegacyRewardTypeIds {
     private LegacyRewardTypeIds() {
     }
