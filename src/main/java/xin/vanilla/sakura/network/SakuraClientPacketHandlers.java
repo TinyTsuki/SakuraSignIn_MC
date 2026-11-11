@@ -1,18 +1,9 @@
 package xin.vanilla.sakura.network;
 
-import xin.vanilla.sakura.network.packet.AdvancementPacket;
-import xin.vanilla.sakura.network.packet.PlayerDataSyncPacket;
-import xin.vanilla.sakura.network.packet.PlayerMonthSyncPacket;
-import xin.vanilla.sakura.network.packet.RewardOptionSyncPacket;
-import xin.vanilla.sakura.network.packet.PersonalDatePresetSyncPacket;
-import xin.vanilla.sakura.network.packet.CommonConfigSnapshotPacket;
-import xin.vanilla.sakura.network.packet.LotteryPoolSyncPacket;
-import xin.vanilla.sakura.network.packet.LotteryRevealPacket;
-import xin.vanilla.sakura.network.packet.LotteryQuotePacket;
-import xin.vanilla.sakura.network.packet.LotteryDrawOutcomePacket;
+import xin.vanilla.sakura.network.packet.*;
 
-import java.util.function.Consumer;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  * 公共包处理器通过回调进入客户端代码，专用服务器不会链接 Minecraft 客户端类。
@@ -34,8 +25,10 @@ public final class SakuraClientPacketHandlers {
     };
     private static BiConsumer<LotteryRevealPacket, Object> lotteryReveal = (packet, origin) -> {
     };
-    private static BiConsumer<LotteryQuotePacket, Object> lotteryQuote = (packet, origin) -> { };
-    private static BiConsumer<LotteryDrawOutcomePacket, Object> lotteryOutcome = (packet, origin) -> { };
+    private static BiConsumer<LotteryQuotePacket, Object> lotteryQuote = (packet, origin) -> {
+    };
+    private static BiConsumer<LotteryDrawOutcomePacket, Object> lotteryOutcome = (packet, origin) -> {
+    };
     private static Consumer<Boolean> rewardUploadResult = success -> {
     };
 
@@ -98,8 +91,13 @@ public final class SakuraClientPacketHandlers {
         lotteryReveal.accept(packet, origin);
     }
 
-    public static void handle(LotteryQuotePacket packet, Object origin) { lotteryQuote.accept(packet, origin); }
-    public static void handle(LotteryDrawOutcomePacket packet, Object origin) { lotteryOutcome.accept(packet, origin); }
+    public static void handle(LotteryQuotePacket packet, Object origin) {
+        lotteryQuote.accept(packet, origin);
+    }
+
+    public static void handle(LotteryDrawOutcomePacket packet, Object origin) {
+        lotteryOutcome.accept(packet, origin);
+    }
 
     public static void handleRewardUploadResult(boolean success) {
         rewardUploadResult.accept(success);

@@ -1,23 +1,11 @@
 package xin.vanilla.sakura.reward.personaldate;
 
 import xin.vanilla.sakura.data.IPlayerSignInData;
-import xin.vanilla.sakura.data.personaldate.PersonalDateDeliveryMode;
-import xin.vanilla.sakura.data.personaldate.PersonalDateEvaluator;
-import xin.vanilla.sakura.data.personaldate.PersonalDateOccurrence;
-import xin.vanilla.sakura.data.personaldate.PersonalDatePreset;
-import xin.vanilla.sakura.data.personaldate.PlayerPersonalDateSlot;
-import xin.vanilla.sakura.data.personaldate.PersonalDateRewardSnapshot;
-import xin.vanilla.sakura.data.SignInRecord;
+import xin.vanilla.sakura.data.personaldate.*;
 import xin.vanilla.sakura.reward.Reward;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * 汇总有效周期并推进领取游标，不依赖玩家实体或加载器事件。
@@ -80,8 +68,8 @@ public final class PersonalDateRewardService {
     }
 
     public List<PersonalDateRewardSnapshot> reserveForSignIn(LocalDate currentDate,
-                                                            List<PersonalDatePreset> presets,
-                                                            IPlayerSignInData data) {
+                                                             List<PersonalDatePreset> presets,
+                                                             IPlayerSignInData data) {
         List<PersonalDateRewardSnapshot> snapshots = new ArrayList<>();
         Set<String> seen = new HashSet<>();
         Set<String> periods = new HashSet<>();

@@ -1,8 +1,6 @@
 package xin.vanilla.sakura.data.migration;
 
 import net.minecraft.nbt.CompoundTag;
-import xin.vanilla.sakura.data.migration.LegacyPlayerData;
-import xin.vanilla.sakura.data.migration.LegacyPlayerDataParser;
 import xin.vanilla.sakura.data.player.PlayerSignInSummary;
 
 import java.io.IOException;

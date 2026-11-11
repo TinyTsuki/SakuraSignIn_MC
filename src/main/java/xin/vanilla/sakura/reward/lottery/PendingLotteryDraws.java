@@ -1,7 +1,10 @@
 package xin.vanilla.sakura.reward.lottery;
 
 import lombok.Value;
-import java.util.*;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 public final class PendingLotteryDraws {
     private static final long EXPIRES_MS = 10 * 60 * 1000L;
@@ -9,10 +12,12 @@ public final class PendingLotteryDraws {
     private static long sequence;
     private static final Map<UUID, Pending> VALUES = new HashMap<>();
 
-    private PendingLotteryDraws() { }
+    private PendingLotteryDraws() {
+    }
 
     public static synchronized Pending get(UUID player) {
-        expire(); return VALUES.get(player);
+        expire();
+        return VALUES.get(player);
     }
 
     public static synchronized Pending put(UUID player) {
@@ -22,31 +27,43 @@ public final class PendingLotteryDraws {
         Pending pending = new Pending(COMMAND_SESSION + "-" + Math.incrementExact(sequence),
                 UUID.randomUUID().toString(), System.currentTimeMillis());
         sequence++;
-        VALUES.put(player, pending); return pending;
+        VALUES.put(player, pending);
+        return pending;
     }
 
     public static synchronized Pending put(UUID player, String operationId, String token) {
         expire();
         xin.vanilla.sakura.data.lottery.LotteryProtocolLimits.operationId(operationId);
         xin.vanilla.sakura.data.lottery.LotteryProtocolLimits.token(token);
-        if (!VALUES.containsKey(player) && VALUES.size() >= 256) throw new IllegalArgumentException("Too many lottery displays");
+        if (!VALUES.containsKey(player) && VALUES.size() >= 256)
+            throw new IllegalArgumentException("Too many lottery displays");
         Pending pending = new Pending(operationId, token, System.currentTimeMillis());
-        VALUES.put(player, pending); return pending;
+        VALUES.put(player, pending);
+        return pending;
     }
+
     public static synchronized boolean acknowledge(UUID player, String operationId, String token) {
         Pending pending = get(player);
         if (pending == null || !pending.operationId.equals(operationId) || !pending.token.equals(token)) return false;
-        VALUES.remove(player); return true;
+        VALUES.remove(player);
+        return true;
     }
 
-    public static synchronized void remove(UUID player) { VALUES.remove(player); }
-    public static synchronized void clear() { VALUES.clear(); }
+    public static synchronized void remove(UUID player) {
+        VALUES.remove(player);
+    }
+
+    public static synchronized void clear() {
+        VALUES.clear();
+    }
+
     private static void expire() {
         long now = System.currentTimeMillis();
         VALUES.entrySet().removeIf(entry -> now - entry.getValue().createdAt >= EXPIRES_MS);
     }
 
-    @Value public static class Pending {
+    @Value
+    public static class Pending {
         String operationId;
         String token;
         long createdAt;

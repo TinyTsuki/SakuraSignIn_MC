@@ -36,7 +36,9 @@ public final class RewardKeyboardNavigator {
                 .orElse(null);
     }
 
-    /** 左右移动严格使用界面绘制顺序，行末会自然进入相邻奖励组。 */
+    /**
+     * 左右移动严格使用界面绘制顺序，行末会自然进入相邻奖励组。
+     */
     public static String findAdjacent(String currentId, List<String> orderedIds,
                                       Direction direction) {
         if (currentId == null || orderedIds == null

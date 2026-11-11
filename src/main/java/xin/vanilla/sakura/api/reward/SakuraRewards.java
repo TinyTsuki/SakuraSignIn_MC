@@ -3,12 +3,7 @@ package xin.vanilla.sakura.api.reward;
 import xin.vanilla.banira.api.permission.BaniraVirtualPermission;
 import xin.vanilla.banira.api.permission.BaniraVirtualPermissionRegistry;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * 奖励类型的公共注册入口；冻结后只允许查询。
