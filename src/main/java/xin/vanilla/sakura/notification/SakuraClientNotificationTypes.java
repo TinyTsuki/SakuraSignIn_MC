@@ -18,6 +18,7 @@ public final class SakuraClientNotificationTypes {
                 translated("mod_name")
         );
         for (String typeId : SakuraNotificationTypes.all()) {
+            BaniraClientNotificationTypes.registerImportance(typeId, SakuraNotificationTypes.defaultImportant(typeId));
             String leaf = typeId.substring(typeId.lastIndexOf('.') + 1);
             BaniraClientNotificationTypes.register(
                     typeId,
