@@ -9,7 +9,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
-/** 仅供开发期跨进程烟测交换进度，不参与正常游戏逻辑。 */
+/**
+ * 仅供开发期跨进程烟测交换进度，不参与正常游戏逻辑。
+ */
 public final class SakuraNetworkSmokeStatus {
     private static final String ENABLED_PROPERTY = "sakura.networkSmoke";
     private static final String PHASE_PROPERTY = "sakura.networkSmoke.phase";

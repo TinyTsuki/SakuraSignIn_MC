@@ -10,25 +10,21 @@ import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.AtomicMoveNotSupportedException;
-import java.nio.file.AccessDeniedException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.LinkOption;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
+import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
-/** One world-owned repository; every returned write is forced and read back. */
+/**
+ * One world-owned repository; every returned write is forced and read back.
+ */
 public final class NeoForgeLotteryOperationRepository implements LotteryOperationRepository {
     @FunctionalInterface
-    interface Replacement { void replace(Path source, Path target) throws IOException; }
+    interface Replacement {
+        void replace(Path source, Path target) throws IOException;
+    }
 
     private final Path root;
     private final Replacement replacement;
@@ -37,12 +33,14 @@ public final class NeoForgeLotteryOperationRepository implements LotteryOperatio
     public NeoForgeLotteryOperationRepository(Path worldData) {
         this(worldData, NeoForgeLotteryOperationRepository::replace);
     }
+
     NeoForgeLotteryOperationRepository(Path worldData, Replacement replacement) {
         this.root = worldData.resolve("sakura_sign_in").resolve("lottery").toAbsolutePath().normalize();
         this.replacement = replacement;
     }
 
-    @Override public synchronized LotteryOperation load(UUID playerId, String operationId) throws IOException {
+    @Override
+    public synchronized LotteryOperation load(UUID playerId, String operationId) throws IOException {
         Path file = file(playerId, operationId);
         String json = read(file, LotteryOperationCodec.MAX_BYTES);
         if (json == null) return null;
@@ -52,7 +50,8 @@ public final class NeoForgeLotteryOperationRepository implements LotteryOperatio
         return operation;
     }
 
-    @Override public synchronized List<LotteryOperation> list(UUID playerId) throws IOException {
+    @Override
+    public synchronized List<LotteryOperation> list(UUID playerId) throws IOException {
         List<LotteryOperation> result = new ArrayList<>();
         Path directory = directory(playerId);
         try (DirectoryStream<Path> files = Files.newDirectoryStream(directory, "*.json")) {
@@ -63,17 +62,21 @@ public final class NeoForgeLotteryOperationRepository implements LotteryOperatio
                 if (op == null) throw new IOException("Lottery record disappeared during read");
                 result.add(op);
             }
-        } catch (NoSuchFileException missing) { return result; }
+        } catch (NoSuchFileException missing) {
+            return result;
+        }
         return result;
     }
 
-    @Override public synchronized List<LotteryOperation> incomplete(UUID playerId) throws IOException {
+    @Override
+    public synchronized List<LotteryOperation> incomplete(UUID playerId) throws IOException {
         List<LotteryOperation> result = list(playerId);
         result.removeIf(LotteryOperation::isTerminal);
         return result;
     }
 
-    @Override public synchronized void write(LotteryOperation operation) throws IOException {
+    @Override
+    public synchronized void write(LotteryOperation operation) throws IOException {
         UUID player = operation.getPlayerId();
         List<LotteryOperation> records = list(player);
         LotteryOperation previous = records.stream().filter(value -> value.getOperationId()
@@ -104,19 +107,30 @@ public final class NeoForgeLotteryOperationRepository implements LotteryOperatio
         List<LotteryOperation> allowed = new ArrayList<>();
         allowed.add(before.uncertain());
         switch (before.getStage()) {
-            case PREPARED: allowed.add(before.paying()); allowed.add(before.rolledBack()); break;
+            case PREPARED:
+                allowed.add(before.paying());
+                allowed.add(before.rolledBack());
+                break;
             case PAYING:
                 if (next.getReceipt() != null) allowed.add(before.paid(next.getReceipt()));
-                allowed.add(before.rolledBack()); break;
+                allowed.add(before.rolledBack());
+                break;
             case PAID:
-                if (before.isRollbackPending()) { allowed.add(before.rolledBack()); break; }
+                if (before.isRollbackPending()) {
+                    allowed.add(before.rolledBack());
+                    break;
+                }
                 allowed.add(before.selectRewards());
-                if (!before.getRewards().isEmpty() && before.getGrantedCount() < before.getCount()) allowed.add(before.granting());
+                if (!before.getRewards().isEmpty() && before.getGrantedCount() < before.getCount())
+                    allowed.add(before.granting());
                 if (before.getGrantedCount() == before.getCount()) allowed.add(before.complete());
                 if (before.getGrantedCount() == 0) allowed.add(before.beginRollback());
                 break;
-            case GRANTING: allowed.add(before.grantSucceeded()); break;
-            default: return false;
+            case GRANTING:
+                allowed.add(before.grantSucceeded());
+                break;
+            default:
+                return false;
         }
         for (LotteryOperation candidate : allowed) if (encoded.equals(codec.encode(candidate))) return true;
         return false;
@@ -150,28 +164,39 @@ public final class NeoForgeLotteryOperationRepository implements LotteryOperatio
             long value = object.get("sequence").getAsBigDecimal().longValueExact();
             if (value <= 0) throw new IllegalArgumentException("Invalid replay watermark");
             return value;
-        } catch (RuntimeException invalid) { throw new IOException("Invalid lottery replay watermark: " + file, invalid); }
+        } catch (RuntimeException invalid) {
+            throw new IOException("Invalid lottery replay watermark: " + file, invalid);
+        }
     }
+
     private static String watermarkJson(UUID session, long sequence) {
         com.google.gson.JsonObject object = new com.google.gson.JsonObject();
-        object.addProperty("schemaVersion", 1); object.addProperty("session", session.toString());
+        object.addProperty("schemaVersion", 1);
+        object.addProperty("session", session.toString());
         object.addProperty("sequence", sequence);
         return object.toString();
     }
+
     private void writeHighWater(UUID player, UUID session, long sequence, long previous) throws IOException {
         atomicWrite(directory(player).resolve("_sessions").resolve(session + ".json"), watermarkJson(session, sequence),
                 previous == 0 ? null : watermarkJson(session, previous));
     }
 
-    @Override public void flush() { }
+    @Override
+    public void flush() {
+    }
 
     private Path directory(UUID playerId) throws IOException {
         if (playerId == null) throw new IOException("Lottery player required");
         return root.resolve(playerId.toString());
     }
+
     private Path file(UUID playerId, String operationId) throws IOException {
-        try { LotteryProtocolLimits.operationId(operationId); }
-        catch (IllegalArgumentException invalid) { throw new IOException("Invalid lottery operation path", invalid); }
+        try {
+            LotteryProtocolLimits.operationId(operationId);
+        } catch (IllegalArgumentException invalid) {
+            throw new IOException("Invalid lottery operation path", invalid);
+        }
         return directory(playerId).resolve(operationId + ".json");
     }
 
@@ -186,7 +211,9 @@ public final class NeoForgeLotteryOperationRepository implements LotteryOperatio
             byte[] bytes = Files.readAllBytes(file);
             if (bytes.length > maxBytes) throw new IOException("Lottery record exceeds limits: " + file);
             return new String(bytes, StandardCharsets.UTF_8);
-        } catch (NoSuchFileException missing) { return null; }
+        } catch (NoSuchFileException missing) {
+            return null;
+        }
     }
 
     private void atomicWrite(Path file, String json, String expected) throws IOException {
@@ -201,30 +228,39 @@ public final class NeoForgeLotteryOperationRepository implements LotteryOperatio
             }
             long started = System.nanoTime();
             while (true) {
-                if (Thread.currentThread().isInterrupted()) throw new InterruptedIOException("Lottery write interrupted");
+                if (Thread.currentThread().isInterrupted())
+                    throw new InterruptedIOException("Lottery write interrupted");
                 if (!java.util.Objects.equals(expected, read(file, LotteryOperationCodec.MAX_BYTES)))
                     throw new IOException("Lottery record changed before replacement: " + file);
-                try { replacement.replace(temporary, file); break; }
-                catch (AccessDeniedException denied) {
+                try {
+                    replacement.replace(temporary, file);
+                    break;
+                } catch (AccessDeniedException denied) {
                     if (!System.getProperty("os.name", "").startsWith("Windows")
                             || System.nanoTime() - started >= 1_000_000_000L) throw denied;
                     Files.readAttributes(temporary, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
-                    try { Thread.sleep(25); }
-                    catch (InterruptedException interrupted) {
+                    try {
+                        Thread.sleep(25);
+                    } catch (InterruptedException interrupted) {
                         Thread.currentThread().interrupt();
                         InterruptedIOException failure = new InterruptedIOException("Lottery write interrupted");
-                        failure.initCause(interrupted); failure.addSuppressed(denied); throw failure;
+                        failure.initCause(interrupted);
+                        failure.addSuppressed(denied);
+                        throw failure;
                     }
                 }
             }
             if (!json.equals(read(file, LotteryOperationCodec.MAX_BYTES)))
                 throw new IOException("Lottery record readback failed: " + file);
-        } finally { Files.deleteIfExists(temporary); }
+        } finally {
+            Files.deleteIfExists(temporary);
+        }
     }
 
     private static void replace(Path source, Path target) throws IOException {
-        try { Files.move(source, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING); }
-        catch (AtomicMoveNotSupportedException unsupported) {
+        try {
+            Files.move(source, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+        } catch (AtomicMoveNotSupportedException unsupported) {
             Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
         }
     }

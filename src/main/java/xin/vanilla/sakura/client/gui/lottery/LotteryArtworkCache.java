@@ -11,12 +11,7 @@ import xin.vanilla.sakura.data.lottery.LotteryPool;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.security.MessageDigest;
-import java.util.Base64;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.HexFormat;
-import java.util.Map;
+import java.util.*;
 
 public final class LotteryArtworkCache {
     private static final Map<String, Artwork> UPLOADED = new HashMap<>();

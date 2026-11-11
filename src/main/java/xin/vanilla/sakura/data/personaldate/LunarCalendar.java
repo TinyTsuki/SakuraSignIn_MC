@@ -42,7 +42,9 @@ public final class LunarCalendar {
             0x0d520
     };
 
-    /** Builds the editable table written to calendar-rules.json on first startup. */
+    /**
+     * Builds the editable table written to calendar-rules.json on first startup.
+     */
     public static CalendarRuleDefinition ruleDefinition() {
         List<CalendarYearRule> years = new ArrayList<>();
         for (int year = FIRST_YEAR; year <= LAST_YEAR; year++) {

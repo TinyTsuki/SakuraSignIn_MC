@@ -2,7 +2,10 @@ package xin.vanilla.sakura.internal.neoforge.player;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.stats.Stats;
-/** 读取原版累计在线时长统计，避免维护重复计时器。 */
+
+/**
+ * 读取原版累计在线时长统计，避免维护重复计时器。
+ */
 public final class NeoForgePlayerOnlineTime {
     private NeoForgePlayerOnlineTime() {
     }

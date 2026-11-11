@@ -1,7 +1,7 @@
 package xin.vanilla.sakura.screen;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.*;
+import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;

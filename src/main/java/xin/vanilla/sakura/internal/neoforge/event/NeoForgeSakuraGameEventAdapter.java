@@ -1,9 +1,7 @@
 package xin.vanilla.sakura.internal.neoforge.event;
 
-import xin.vanilla.sakura.data.time.SakuraClock;
-
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -12,6 +10,7 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.common.util.BaniraScheduler;
+import xin.vanilla.banira.common.util.DateUtils;
 import xin.vanilla.banira.common.util.ReflectionUtils;
 import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.sakura.api.SakuraPlayerData;
@@ -19,15 +18,15 @@ import xin.vanilla.sakura.command.SignInCommand;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.data.migration.LegacyMigrationResult;
+import xin.vanilla.sakura.data.time.OnlineTimeRequirementResult;
+import xin.vanilla.sakura.data.time.SakuraClock;
+import xin.vanilla.sakura.data.time.SakuraOnlineTime;
 import xin.vanilla.sakura.enums.ESignInType;
 import xin.vanilla.sakura.network.packet.SignInPacket;
 import xin.vanilla.sakura.reward.RewardManager;
 import xin.vanilla.sakura.reward.personaldate.PersonalDateDeliveryResult;
 import xin.vanilla.sakura.reward.personaldate.PersonalDateOnlineCheckSchedule;
 import xin.vanilla.sakura.reward.personaldate.PersonalDateRewardDispatcher;
-import xin.vanilla.sakura.data.time.SakuraOnlineTime;
-import xin.vanilla.sakura.data.time.OnlineTimeRequirementResult;
-import xin.vanilla.banira.common.util.DateUtils;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -57,8 +56,11 @@ public final class NeoForgeSakuraGameEventAdapter {
             xin.vanilla.sakura.network.packet.LotteryPoolSyncPacket.clearServerTransfers();
             xin.vanilla.sakura.reward.lottery.PendingLotteryDraws.clear();
             xin.vanilla.sakura.reward.lottery.LotteryDrawDispatcher.clearCommands();
-            try { xin.vanilla.sakura.internal.neoforge.lottery.NeoForgeLotteryServices.stop(); }
-            catch (Exception failure) { LOGGER.error("Lottery operation flush failed", failure); }
+            try {
+                xin.vanilla.sakura.internal.neoforge.lottery.NeoForgeLotteryServices.stop();
+            } catch (Exception failure) {
+                LOGGER.error("Lottery operation flush failed", failure);
+            }
         });
         NeoForge.EVENT_BUS.addListener(NeoForgeSakuraGameEventAdapter::onPlayerCloned);
         NeoForge.EVENT_BUS.addListener(NeoForgeSakuraGameEventAdapter::onPlayerLoggedIn);

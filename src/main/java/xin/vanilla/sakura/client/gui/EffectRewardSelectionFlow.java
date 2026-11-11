@@ -12,6 +12,7 @@ import java.util.function.Consumer;
  */
 public final class EffectRewardSelectionFlow {
     private static final int DEFAULT_DURATION_TICKS = 600;
+
     private EffectRewardSelectionFlow() {
     }
 

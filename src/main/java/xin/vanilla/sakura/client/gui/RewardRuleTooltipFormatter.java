@@ -6,7 +6,9 @@ import xin.vanilla.sakura.enums.ERewardRule;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/** 将奖励组的紧凑规则键转换为可读的 Shift 悬浮说明。 */
+/**
+ * 将奖励组的紧凑规则键转换为可读的 Shift 悬浮说明。
+ */
 public final class RewardRuleTooltipFormatter {
     private static final Pattern DATE_RANGE = Pattern.compile(
             "(\\d{4})(?:~(\\d+))?[-/](\\d{1,2})(?:~(\\d+))?[-/](\\d{1,2})(?:~(\\d+))?(?:[T ](\\d{1,2}):(\\d{1,2})(?::(\\d{1,2}))?)?");

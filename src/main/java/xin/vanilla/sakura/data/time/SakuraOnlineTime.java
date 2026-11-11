@@ -6,7 +6,9 @@ import xin.vanilla.sakura.data.IPlayerSignInData;
 import java.time.LocalDate;
 import java.util.Objects;
 
-/** Loader-neutral facade for vanilla play-time statistics. */
+/**
+ * Loader-neutral facade for vanilla play-time statistics.
+ */
 public final class SakuraOnlineTime {
     private static volatile OnlineTimeProvider provider;
 
