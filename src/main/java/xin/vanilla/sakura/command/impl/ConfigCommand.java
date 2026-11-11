@@ -1,6 +1,5 @@
 package xin.vanilla.sakura.command.impl;
 
-import xin.vanilla.sakura.util.SakuraUtils;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.commands.CommandSourceStack;
@@ -10,6 +9,7 @@ import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.util.CommandUtils;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.config.reward.RewardConfigManager;
+import xin.vanilla.sakura.util.SakuraUtils;
 
 /**
  * 配置指令入口：通用配置使用描述符点路径，玩家数据使用独立子树。

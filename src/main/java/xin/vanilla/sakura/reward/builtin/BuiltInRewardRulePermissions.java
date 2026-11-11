@@ -9,7 +9,9 @@ import java.util.EnumMap;
 import java.util.Locale;
 import java.util.Map;
 
-/** 内置奖励规则新增权限，查看权限仍由服务端配置控制。 */
+/**
+ * 内置奖励规则新增权限，查看权限仍由服务端配置控制。
+ */
 public final class BuiltInRewardRulePermissions {
     private static final Map<ERewardRule, RewardAddPermission> PERMISSIONS =
             new EnumMap<>(ERewardRule.class);

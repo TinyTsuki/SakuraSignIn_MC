@@ -1,10 +1,10 @@
 package xin.vanilla.sakura.reward.builtin;
 
 import com.google.gson.JsonObject;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.resources.Identifier;
-import net.minecraft.core.registries.BuiltInRegistries;
 import xin.vanilla.sakura.api.reward.RewardCodec;
 import xin.vanilla.sakura.api.reward.RewardDataException;
 

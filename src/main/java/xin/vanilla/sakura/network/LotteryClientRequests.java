@@ -1,6 +1,9 @@
 package xin.vanilla.sakura.network;
 
-import xin.vanilla.sakura.data.lottery.*;
+import xin.vanilla.sakura.data.lottery.LotteryDrawRequest;
+import xin.vanilla.sakura.data.lottery.LotteryQuote;
+import xin.vanilla.sakura.data.lottery.LotteryQuoteRequest;
+
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -14,24 +17,42 @@ public final class LotteryClientRequests {
     private LotteryDrawRequest activeDraw;
 
     public LotteryClientRequests(Supplier<UUID> sessions) {
-        this.sessions = sessions; clear();
+        this.sessions = sessions;
+        clear();
     }
 
     public void clear() {
-        session = java.util.Objects.requireNonNull(sessions.get()); sequence = 0; generation = -1;
-        pending = null; quote = null; activeDraw = null; seenReveals.clear();
+        session = java.util.Objects.requireNonNull(sessions.get());
+        sequence = 0;
+        generation = -1;
+        pending = null;
+        quote = null;
+        activeDraw = null;
+        seenReveals.clear();
     }
 
-    public long getGeneration() { return generation; }
-    public LotteryQuote getQuote() { return quote; }
-    public LotteryQuoteRequest getPending() { return pending; }
-    public boolean isDrawing() { return activeDraw != null; }
+    public long getGeneration() {
+        return generation;
+    }
+
+    public LotteryQuote getQuote() {
+        return quote;
+    }
+
+    public LotteryQuoteRequest getPending() {
+        return pending;
+    }
+
+    public boolean isDrawing() {
+        return activeDraw != null;
+    }
 
     public boolean acceptReveal(String operationId) {
         if (operationId == null || operationId.isEmpty() || !seenReveals.add(operationId)) return false;
         if (seenReveals.size() > 100) {
             java.util.Iterator<String> oldest = seenReveals.iterator();
-            oldest.next(); oldest.remove();
+            oldest.next();
+            oldest.remove();
         }
         return true;
     }
@@ -44,7 +65,11 @@ public final class LotteryClientRequests {
 
     public boolean observeGeneration(long value) {
         if (value < 0 || value < generation) return false;
-        if (generation != value) { generation = value; pending = null; quote = null; }
+        if (generation != value) {
+            generation = value;
+            pending = null;
+            quote = null;
+        }
         return true;
     }
 
@@ -58,16 +83,20 @@ public final class LotteryClientRequests {
     public boolean accept(LotteryQuote incoming) {
         if (incoming == null || pending == null || !pending.equals(incoming.getRequest())
                 || incoming.getGeneration() < generation) return false;
-        generation = incoming.getGeneration(); pending = null; quote = incoming;
+        generation = incoming.getGeneration();
+        pending = null;
+        quote = incoming;
         return true;
     }
 
     public LotteryDrawRequest draw(String poolId, int count) {
         if (activeDraw != null || pending != null || quote == null || !quote.isReady() || quote.getGeneration() != generation
-                || !quote.getRequest().getPoolId().equals(poolId) || quote.getRequest().getCount() != count) return null;
+                || !quote.getRequest().getPoolId().equals(poolId) || quote.getRequest().getCount() != count)
+            return null;
         LotteryDrawRequest draw = new LotteryDrawRequest(session, Math.incrementExact(sequence), generation,
                 poolId, count, quote.getQuoteToken());
-        sequence = draw.getRequest().getRequestId(); quote = null;
+        sequence = draw.getRequest().getRequestId();
+        quote = null;
         activeDraw = draw;
         return draw;
     }

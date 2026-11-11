@@ -1,0 +1,1 @@
+package xin.vanilla.sakura.mixin;

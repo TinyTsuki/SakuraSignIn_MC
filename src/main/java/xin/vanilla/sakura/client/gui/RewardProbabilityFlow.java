@@ -2,12 +2,10 @@ package xin.vanilla.sakura.client.gui;
 
 import net.minecraft.client.gui.screens.Screen;
 import xin.vanilla.banira.client.gui.InputFormScreen;
-import xin.vanilla.banira.common.util.NumberUtils;
 import xin.vanilla.banira.client.gui.component.Text;
 import xin.vanilla.banira.common.data.ScopedComponent;
 import xin.vanilla.sakura.SakuraSignIn;
 import xin.vanilla.sakura.reward.Reward;
-import xin.vanilla.banira.common.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.util.function.Consumer;
