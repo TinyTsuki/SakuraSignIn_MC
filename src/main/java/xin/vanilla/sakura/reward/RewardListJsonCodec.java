@@ -1,18 +1,15 @@
 package xin.vanilla.sakura.reward;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonParser;
+import com.google.gson.*;
 import xin.vanilla.sakura.api.reward.RewardTypeId;
 
 import java.math.BigDecimal;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-/** 签到详情中的奖励快照允许逐项容错，不能拖垮整份玩家数据。 */
+/**
+ * 签到详情中的奖励快照允许逐项容错，不能拖垮整份玩家数据。
+ */
 public final class RewardListJsonCodec {
     private static final Gson GSON = new Gson();
 
@@ -33,7 +30,7 @@ public final class RewardListJsonCodec {
     }
 
     public static RewardList decodeLenient(String json,
-                                            Consumer<RuntimeException> warningSink) {
+                                           Consumer<RuntimeException> warningSink) {
         Objects.requireNonNull(warningSink, "warningSink");
         try {
             JsonElement parsed = new JsonParser().parse(json == null ? "[]" : json);
@@ -48,7 +45,7 @@ public final class RewardListJsonCodec {
     }
 
     public static RewardList decodeLenient(JsonArray source,
-                                            Consumer<RuntimeException> warningSink) {
+                                           Consumer<RuntimeException> warningSink) {
         Objects.requireNonNull(warningSink, "warningSink");
         RewardList rewards = new RewardList();
         if (source == null) {

@@ -2,14 +2,20 @@ package xin.vanilla.sakura.network.packet;
 
 import lombok.Getter;
 import xin.vanilla.banira.common.api.INetworkPacket;
-import xin.vanilla.banira.common.network.*;
+import xin.vanilla.banira.common.network.BaniraNetworkContext;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
+import xin.vanilla.sakura.data.lottery.LotteryAnimationStyle;
+import xin.vanilla.sakura.data.lottery.LotteryPreviewMode;
+import xin.vanilla.sakura.data.lottery.LotteryProtocolLimits;
 import xin.vanilla.sakura.network.SakuraClientPacketHandlers;
 import xin.vanilla.sakura.network.lottery.LotteryPacketFields;
-import xin.vanilla.sakura.reward.*;
-import xin.vanilla.sakura.data.lottery.*;
+import xin.vanilla.sakura.reward.Reward;
+import xin.vanilla.sakura.reward.RewardJsonCodec;
 
-import java.util.*;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 @Getter
 public final class LotteryRevealPacket implements INetworkPacket {

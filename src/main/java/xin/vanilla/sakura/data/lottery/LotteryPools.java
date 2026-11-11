@@ -1,7 +1,7 @@
 package xin.vanilla.sakura.data.lottery;
 
-import xin.vanilla.sakura.reward.RewardList;
 import xin.vanilla.sakura.reward.Reward;
+import xin.vanilla.sakura.reward.RewardList;
 
 import java.util.ArrayList;
 import java.util.List;

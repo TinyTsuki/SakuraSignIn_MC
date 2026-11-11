@@ -1,26 +1,47 @@
 package xin.vanilla.sakura.client.gui.lottery;
 
 import xin.vanilla.sakura.data.lottery.LotteryAnimationStyle;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 public final class LotteryAnimationFrame {
-    private LotteryAnimationFrame() { }
+    private LotteryAnimationFrame() {
+    }
+
     public static final class Slot {
         private final int index;
         private final double x, y;
         private final boolean active;
+
         private Slot(int index, double x, double y, boolean active) {
-            this.index = index; this.x = x; this.y = y; this.active = active;
+            this.index = index;
+            this.x = x;
+            this.y = y;
+            this.active = active;
         }
-        public int index() { return index; }
-        public double x() { return x; }
-        public double y() { return y; }
-        public boolean active() { return active; }
+
+        public int index() {
+            return index;
+        }
+
+        public double x() {
+            return x;
+        }
+
+        public double y() {
+            return y;
+        }
+
+        public boolean active() {
+            return active;
+        }
     }
+
     public static List<Slot> frame(LotteryAnimationStyle style, long elapsed, double width, double height, int previews) {
-        if (!Double.isFinite(width) || !Double.isFinite(height) || width <= 0 || height <= 0) return Collections.emptyList();
+        if (!Double.isFinite(width) || !Double.isFinite(height) || width <= 0 || height <= 0)
+            return Collections.emptyList();
         elapsed = Math.max(0, elapsed);
         List<Slot> result = new ArrayList<>();
         if (style == LotteryAnimationStyle.STRIP) {
@@ -41,7 +62,11 @@ public final class LotteryAnimationFrame {
                     int y = (count + 4) / 2 - x;
                     if (y < 2 || (x - 1) * 32 > spanX || (y - 1) * 32 > spanY) continue;
                     double score = Math.abs(Math.log((spanX / (x - 1)) / (spanY / (y - 1))));
-                    if (score < best) { best = score; columns = x; rows = y; }
+                    if (score < best) {
+                        best = score;
+                        columns = x;
+                        rows = y;
+                    }
                 }
             }
             List<double[]> positions = new ArrayList<>();

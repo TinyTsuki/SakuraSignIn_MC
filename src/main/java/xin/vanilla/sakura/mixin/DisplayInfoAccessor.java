@@ -6,7 +6,9 @@ import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
-/** Keep advancement serialization on common fields across Fabric versions. */
+/**
+ * Keep advancement serialization on common fields across Fabric versions.
+ */
 @Mixin(DisplayInfo.class)
 public interface DisplayInfoAccessor {
     @Accessor("icon")

@@ -15,7 +15,9 @@ import xin.vanilla.sakura.data.personaldate.PlayerPersonalDateSlot;
 import java.util.ArrayList;
 import java.util.List;
 
-/** 玩家只上传日期值，领取游标不会进入客户端候选负载。 */
+/**
+ * 玩家只上传日期值，领取游标不会进入客户端候选负载。
+ */
 @Getter
 public final class PersonalDateSlotUpdatePacket implements INetworkPacket {
     private static final int MAX_SLOTS = 2048;

@@ -1,13 +1,13 @@
 package xin.vanilla.sakura.internal.fabric.migration;
 
+import lombok.Getter;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import lombok.Getter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xin.vanilla.sakura.data.migration.SignInHistoryStore;
 import xin.vanilla.sakura.data.SignInRecord;
 import xin.vanilla.sakura.data.migration.LegacyPlayerData;
+import xin.vanilla.sakura.data.migration.SignInHistoryStore;
 import xin.vanilla.sakura.data.player.HistoryRetentionPolicy;
 import xin.vanilla.sakura.internal.fabric.storage.AtomicNbtFiles;
 import xin.vanilla.sakura.internal.fabric.storage.SignInDeletionJournal;
@@ -17,12 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.YearMonth;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 

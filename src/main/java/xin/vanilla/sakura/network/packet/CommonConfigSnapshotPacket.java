@@ -1,8 +1,8 @@
 package xin.vanilla.sakura.network.packet;
 
 import lombok.Getter;
-import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.api.BaniraConfigs;
+import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.config.ConfigHolder;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
@@ -13,7 +13,9 @@ import xin.vanilla.sakura.network.SakuraClientPacketHandlers;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/** Sakura 自己的初始配置快照不会冒充 Banira 配置编辑器操作。 */
+/**
+ * Sakura 自己的初始配置快照不会冒充 Banira 配置编辑器操作。
+ */
 @Getter
 public final class CommonConfigSnapshotPacket implements INetworkPacket {
     private static final int MAX_ENTRIES = 2048;
