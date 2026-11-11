@@ -10,13 +10,15 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/** 服务端只对奖励规则组数量的净增加检查新增权限。 */
+/**
+ * 服务端只对奖励规则组数量的净增加检查新增权限。
+ */
 public final class RewardRuleAddPermissionChecker {
     private RewardRuleAddPermissionChecker() {
     }
 
     public static List<ERewardRule> requiredAddedRules(RewardConfig authoritative,
-                                                        RewardConfig candidate) {
+                                                       RewardConfig candidate) {
         List<ERewardRule> result = new ArrayList<>();
         for (ERewardRule rule : ERewardRule.values()) {
             int before = groupCount(authoritative, rule);

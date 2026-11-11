@@ -6,7 +6,9 @@ import xin.vanilla.sakura.reward.Reward;
 
 import java.util.List;
 
-/** 一次服务端权威连抽的完整结果。 */
+/**
+ * 一次服务端权威连抽的完整结果。
+ */
 @Value
 public class LotteryDrawBatchResult {
     LotteryDrawStatus status;

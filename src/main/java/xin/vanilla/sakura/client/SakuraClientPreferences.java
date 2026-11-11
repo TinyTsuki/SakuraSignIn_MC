@@ -11,7 +11,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
-/** 保存不适合进入同步配置的纯客户端界面偏好。 */
+/**
+ * 保存不适合进入同步配置的纯客户端界面偏好。
+ */
 public final class SakuraClientPreferences {
     private static final Path FILE = BaniraDataPaths.gameConfigPath()
             .resolve(SakuraSignIn.MODID).resolve("client-state.json");

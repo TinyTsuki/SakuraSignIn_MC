@@ -6,6 +6,7 @@ import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.resolver.ServerAddress;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.common.util.DateUtils;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.client.SakuraClientState;
 import xin.vanilla.sakura.data.IPlayerSignInData;
@@ -13,7 +14,6 @@ import xin.vanilla.sakura.enums.ESignInType;
 import xin.vanilla.sakura.internal.dev.SakuraNetworkSmokeStatus;
 import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.network.packet.SignInPacket;
-import xin.vanilla.banira.common.util.DateUtils;
 
 import java.io.Reader;
 import java.lang.reflect.Field;
@@ -22,16 +22,14 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
-import java.util.Properties;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-/** 通过真实客户端网络包覆盖签到、补签、奖励同步与重启后的摘要恢复。 */
+/**
+ * 通过真实客户端网络包覆盖签到、补签、奖励同步与重启后的摘要恢复。
+ */
 public final class SakuraNetworkSmokeClientRunner {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final long TIMEOUT_NANOS = TimeUnit.SECONDS.toNanos(180);
@@ -327,7 +325,9 @@ public final class SakuraNetworkSmokeClientRunner {
         CONNECT, LOGIN_SYNC, SIGN_IN, RE_SIGN_IN, UI_WORKLOAD, SERVER_FINISH, FINAL_SUMMARY, FINISHED
     }
 
-    /** Owns a dev-only Fabric client plugin and exports its native protobuf. */
+    /**
+     * Owns a dev-only Fabric client plugin and exports its native protobuf.
+     */
     private static final class ReflectiveClientSparkProfile {
         private final Object sampler;
         private final Future<?> future;
@@ -411,7 +411,8 @@ public final class SakuraNetworkSmokeClientRunner {
             } catch (InterruptedException error) {
                 Thread.currentThread().interrupt();
                 throw new IllegalStateException("Interrupted writing client Spark report", error);
-            } catch (ReflectiveOperationException | java.io.IOException | java.util.concurrent.ExecutionException error) {
+            } catch (ReflectiveOperationException | java.io.IOException |
+                     java.util.concurrent.ExecutionException error) {
                 throw new IllegalStateException("Unable to write client Spark report", error);
             }
         }
@@ -431,7 +432,8 @@ public final class SakuraNetworkSmokeClientRunner {
 
         private static Class<?> base(Object plugin) {
             Class<?> type = plugin.getClass();
-            while (type != null && !type.getName().equals("me.lucko.spark.fabric.plugin.FabricSparkPlugin")) type = type.getSuperclass();
+            while (type != null && !type.getName().equals("me.lucko.spark.fabric.plugin.FabricSparkPlugin"))
+                type = type.getSuperclass();
             if (type == null) throw new IllegalStateException("Spark base plugin was not found");
             return type;
         }

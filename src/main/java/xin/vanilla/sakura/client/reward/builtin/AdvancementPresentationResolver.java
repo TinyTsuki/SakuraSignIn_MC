@@ -2,15 +2,17 @@ package xin.vanilla.sakura.client.reward.builtin;
 
 import lombok.Value;
 import net.minecraft.advancements.DisplayInfo;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.client.SakuraClientState;
 import xin.vanilla.sakura.network.data.AdvancementData;
 
-/** 将同步的进度展示数据转换为稳定的奖励图标与名称。 */
+/**
+ * 将同步的进度展示数据转换为稳定的奖励图标与名称。
+ */
 final class AdvancementPresentationResolver {
     private AdvancementPresentationResolver() {
     }

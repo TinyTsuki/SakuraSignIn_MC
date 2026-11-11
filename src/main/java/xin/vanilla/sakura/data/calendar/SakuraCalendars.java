@@ -7,7 +7,9 @@ import xin.vanilla.sakura.SakuraSignIn;
 
 import java.io.IOException;
 
-/** Owns the authoritative calendar snapshot for the current server session. */
+/**
+ * Owns the authoritative calendar snapshot for the current server session.
+ */
 public final class SakuraCalendars {
     private static final Logger LOGGER = LogManager.getLogger();
     private static volatile CalendarRegistry registry = CalendarRegistry.builtIns();
