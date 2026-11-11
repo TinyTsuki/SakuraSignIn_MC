@@ -12,8 +12,8 @@ import xin.vanilla.sakura.config.reward.RewardConfigManager;
 import xin.vanilla.sakura.data.calendar.SakuraCalendars;
 import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.notification.SakuraNotificationTypes;
-import xin.vanilla.sakura.reward.builtin.BuiltInRewardTypes;
 import xin.vanilla.sakura.reward.builtin.BuiltInRewardRulePermissions;
+import xin.vanilla.sakura.reward.builtin.BuiltInRewardTypes;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 

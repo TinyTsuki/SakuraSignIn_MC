@@ -12,10 +12,10 @@ import net.minecraft.commands.arguments.GameProfileArgument;
 import net.minecraft.server.level.ServerPlayer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.config.reward.RewardConfigManager;
-import xin.vanilla.banira.common.data.Component;
 
 import java.io.IOException;
 import java.util.Collection;

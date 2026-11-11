@@ -2,8 +2,9 @@ package xin.vanilla.sakura.network.packet;
 
 import lombok.Getter;
 import xin.vanilla.banira.common.api.INetworkPacket;
-import xin.vanilla.banira.common.network.*;
-import xin.vanilla.sakura.data.lottery.*;
+import xin.vanilla.banira.common.network.BaniraNetworkContext;
+import xin.vanilla.banira.common.network.BaniraPacketBuffer;
+import xin.vanilla.sakura.data.lottery.LotteryQuote;
 import xin.vanilla.sakura.network.SakuraClientPacketHandlers;
 import xin.vanilla.sakura.network.lottery.LotteryPacketFields;
 

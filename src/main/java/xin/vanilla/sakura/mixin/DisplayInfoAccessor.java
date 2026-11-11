@@ -6,7 +6,9 @@ import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
-/** The vanilla getters are client-only on older Fabric dedicated servers. */
+/**
+ * The vanilla getters are client-only on older Fabric dedicated servers.
+ */
 @Mixin(DisplayInfo.class)
 public interface DisplayInfoAccessor {
     @Accessor("icon")

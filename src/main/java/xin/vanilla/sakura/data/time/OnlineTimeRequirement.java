@@ -2,7 +2,9 @@ package xin.vanilla.sakura.data.time;
 
 import java.time.LocalDate;
 
-/** Uses the vanilla lifetime play-time statistic and a persisted daily baseline. */
+/**
+ * Uses the vanilla lifetime play-time statistic and a persisted daily baseline.
+ */
 public final class OnlineTimeRequirement {
     private OnlineTimeRequirement() {
     }

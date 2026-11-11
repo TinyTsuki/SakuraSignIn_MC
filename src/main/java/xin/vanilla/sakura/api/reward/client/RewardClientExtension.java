@@ -1,11 +1,11 @@
 package xin.vanilla.sakura.api.reward.client;
 
 import lombok.Getter;
+import xin.vanilla.banira.common.data.Component;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.function.Supplier;
-import xin.vanilla.banira.common.data.Component;
 
 @Getter
 public final class RewardClientExtension<T> {
@@ -42,7 +42,9 @@ public final class RewardClientExtension<T> {
             return this;
         }
 
-        /** 类型选择器中的名称；未提供时显示 namespaced ID。 */
+        /**
+         * 类型选择器中的名称；未提供时显示 namespaced ID。
+         */
         public Builder<T> typeName(Supplier<Component> value) {
             this.typeName = Objects.requireNonNull(value, "typeName");
             return this;

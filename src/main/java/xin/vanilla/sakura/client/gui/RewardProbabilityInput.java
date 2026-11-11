@@ -4,7 +4,9 @@ import xin.vanilla.banira.common.util.NumberUtils;
 
 import java.math.BigDecimal;
 
-/** 在界面百分比与配置内部 0~1 概率之间进行唯一的一处转换。 */
+/**
+ * 在界面百分比与配置内部 0~1 概率之间进行唯一的一处转换。
+ */
 public final class RewardProbabilityInput {
     public static final String PERCENT_REGEX = "(100(?:\\.0{0,5})?|(?:\\d{1,2})(?:\\.\\d{0,5})?)?";
     private static final BigDecimal HUNDRED = new BigDecimal("100");

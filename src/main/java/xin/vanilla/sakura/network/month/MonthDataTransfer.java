@@ -1,24 +1,12 @@
 package xin.vanilla.sakura.network.month;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.LongSupplier;
 
 public final class MonthDataTransfer {
@@ -26,7 +14,8 @@ public final class MonthDataTransfer {
     public static final int MAX_SNAPSHOT_BYTES = 4 * 1024 * 1024;
     public static final int MAX_RECORDS = 1024;
 
-    private MonthDataTransfer() { }
+    private MonthDataTransfer() {
+    }
 
     public static List<Part> encode(UUID player, String month, long revision, List<String> records) {
         validateIdentity(player, month, revision);
@@ -76,8 +65,13 @@ public final class MonthDataTransfer {
         require(revision > 0, "Invalid revision");
     }
 
-    private static int encodedLength(int bytes) { return ((bytes + 2) / 3) * 4; }
-    private static int partCount(int bytes) { return (encodedLength(bytes) + MAX_PART_CHARS - 1) / MAX_PART_CHARS; }
+    private static int encodedLength(int bytes) {
+        return ((bytes + 2) / 3) * 4;
+    }
+
+    private static int partCount(int bytes) {
+        return (encodedLength(bytes) + MAX_PART_CHARS - 1) / MAX_PART_CHARS;
+    }
 
     private static void require(boolean condition, String message) {
         if (!condition) throw new IllegalArgumentException(message);
@@ -114,16 +108,38 @@ public final class MonthDataTransfer {
             this.payload = payload;
         }
 
-        public UUID getPlayer() { return player; }
-        public String getMonth() { return month; }
-        public long getRevision() { return revision; }
-        public int getIndex() { return index; }
-        public int getCount() { return count; }
-        public int getDecodedBytes() { return decodedBytes; }
-        public String getPayload() { return payload; }
+        public UUID getPlayer() {
+            return player;
+        }
+
+        public String getMonth() {
+            return month;
+        }
+
+        public long getRevision() {
+            return revision;
+        }
+
+        public int getIndex() {
+            return index;
+        }
+
+        public int getCount() {
+            return count;
+        }
+
+        public int getDecodedBytes() {
+            return decodedBytes;
+        }
+
+        public String getPayload() {
+            return payload;
+        }
     }
 
-    /** Confined to the client thread; expire on ticks and clear on disconnect. */
+    /**
+     * Confined to the client thread; expire on ticks and clear on disconnect.
+     */
     public static final class Receiver {
         private static final long TTL_NANOS = 30_000_000_000L;
         private final LongSupplier nanoClock;
@@ -153,7 +169,7 @@ public final class MonthDataTransfer {
             try {
                 Part first = current.first;
                 require(first.player.equals(part.player) && first.month.equals(part.month)
-                        && first.count == part.count && first.decodedBytes == part.decodedBytes,
+                                && first.count == part.count && first.decodedBytes == part.decodedBytes,
                         "Conflicting snapshot metadata");
                 if (part.index < current.next) {
                     require(part.payload.equals(current.payloads[part.index]), "Conflicting duplicate");

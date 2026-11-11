@@ -2,7 +2,9 @@ package xin.vanilla.sakura.reward.personaldate;
 
 import java.time.LocalDate;
 
-/** 日期变化立即检查，其他时间只按低频间隔兜底。 */
+/**
+ * 日期变化立即检查，其他时间只按低频间隔兜底。
+ */
 public final class PersonalDateOnlineCheckSchedule {
     private final long safetyIntervalTicks;
     private long lastTick = Long.MIN_VALUE;

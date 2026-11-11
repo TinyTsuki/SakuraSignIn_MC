@@ -1,17 +1,16 @@
 package xin.vanilla.sakura.command.impl;
 
-import xin.vanilla.sakura.SakuraComponent;
-import xin.vanilla.sakura.SakuraLang;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.server.level.ServerPlayer;
+import xin.vanilla.sakura.SakuraComponent;
+import xin.vanilla.sakura.SakuraLang;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.message.SakuraMessages;
-import xin.vanilla.banira.common.data.Component;
 
 /**
  * 玩家语言设置指令。

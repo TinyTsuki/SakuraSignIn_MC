@@ -1,7 +1,7 @@
 package xin.vanilla.sakura.screen;
 
-import net.minecraft.client.Minecraft;
 import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.util.FormattedCharSequence;
 import xin.vanilla.banira.api.client.theme.BaniraThemes;
@@ -307,7 +307,7 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
             if (pool.getCooldownSeconds() > 0)
                 details += " \u00b7 " + SakuraComponent.get().translateClient("format", "lottery_interval_s", pool.getCooldownSeconds());
             xin.vanilla.sakura.client.LegacyGuiText.draw(stack, font, font.plainSubstrByWidth(details, layout.title().width()),
-                layout.title().x(), layout.title().y() + 12, getEffectiveTheme().textSecondary(), false);
+                    layout.title().x(), layout.title().y() + 12, getEffectiveTheme().textSecondary(), false);
             String fee = payment.summary();
             String cost = fee == null ? SakuraComponent.get().translateClient("word", "lottery_quote_pending")
                     : SakuraComponent.get().translateClient("format", "lottery_cost_per_draw_s",
@@ -398,8 +398,9 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
             for (int i = start; i < end; i++) {
                 int local = i - start, x = area.x() + 4 + local % columns * 34, y = area.y() + 5 + local / columns * 34;
                 Reward reward = rewards.get(i);
-                if (mode.showsItems()) RewardRenderer.renderCustomReward(stack, Minecraft.getInstance().getItemRenderer(), font,
-                        SakuraClientState.getThemeTexture(), SakuraClientState.getThemeTextureCoordinate(), reward, x, y, true, true);
+                if (mode.showsItems())
+                    RewardRenderer.renderCustomReward(stack, Minecraft.getInstance().getItemRenderer(), font,
+                            SakuraClientState.getThemeTexture(), SakuraClientState.getThemeTextureCoordinate(), reward, x, y, true, true);
                 else {
                     shape(stack, x, y, 16, 16, getEffectiveTheme().buttonBgHover(), 3, 1);
                     xin.vanilla.sakura.client.LegacyGuiText.draw(stack, font, "?", x + 5, y + 4, getEffectiveTheme().textPrimary(), false);

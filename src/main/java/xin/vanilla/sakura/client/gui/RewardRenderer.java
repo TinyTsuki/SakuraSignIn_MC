@@ -81,7 +81,8 @@ public final class RewardRenderer {
         }
 
         public void drawItem(Object stack) {
-            if (stack instanceof ItemStack) icon = UiGameElement.option(new DropdownOption("", ((ItemStack) stack).copy(), null));
+            if (stack instanceof ItemStack)
+                icon = UiGameElement.option(new DropdownOption("", ((ItemStack) stack).copy(), null));
         }
 
         public void drawEffect(Object effect) {
