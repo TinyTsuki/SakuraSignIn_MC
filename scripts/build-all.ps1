@@ -162,7 +162,20 @@ function Get-GradleVersion {
 }
 
 function Get-GradleJavaVersion {
-    param([Version]$GradleVersion)
+    param(
+        [Version]$GradleVersion,
+        [int]$TargetJavaVersion
+    )
+
+    if ($TargetJavaVersion -gt 21) {
+        if ($TargetJavaVersion -ne 25) {
+            throw "Gradle JVM selection is not configured for Java $TargetJavaVersion"
+        }
+        if ($GradleVersion -lt [Version]"9.1") {
+            throw "Java 25 requires Gradle 9.1 or newer; selected Gradle $GradleVersion"
+        }
+        return "25"
+    }
 
     # Current Gradle 8/9 branches also load plugins such as Loom 1.15 that require Java 21.
     if ($GradleVersion.Major -ge 8) {
@@ -317,7 +330,7 @@ foreach ($branch in $Branches) {
     $targetJavaVersion = Get-JavaVersion $branch
     $targetJavaHome = Get-JavaHome $branch $targetJavaVersion
     $gradleVersion = Get-GradleVersion $branch
-    $gradleJavaVersion = Get-GradleJavaVersion $gradleVersion
+    $gradleJavaVersion = Get-GradleJavaVersion $gradleVersion $targetJavaVersion
     $gradleJavaHome = Get-JavaHome $branch $gradleJavaVersion
     Write-Host "[$branch] $commit, Target Java $targetJavaVersion ($targetJavaHome), Gradle $gradleVersion on Java $gradleJavaVersion ($gradleJavaHome)"
 
@@ -351,9 +364,10 @@ foreach ($branch in $Branches) {
             $env:Path = "$gradleJavaHome\bin;$previousPath"
             $toolchainPaths = @($targetJavaHome, $gradleJavaHome) | Select-Object -Unique
             $toolchainProperty = "-Dorg.gradle.java.installations.paths=$($toolchainPaths -join ',')"
+            $gradleJavaProperty = "-Dorg.gradle.java.home=$gradleJavaHome"
             Push-Location $worktreeBase
             try {
-                & ".\gradlew.bat" @tasks "--no-daemon" "--console=plain" $toolchainProperty
+                & ".\gradlew.bat" @tasks "--no-daemon" "--console=plain" $toolchainProperty $gradleJavaProperty
                 if ($LASTEXITCODE -ne 0) {
                     throw "Gradle failed for $branch with exit code $LASTEXITCODE"
                 }
