@@ -282,7 +282,7 @@ public final class PersonalDateConfigScreen extends xin.vanilla.banira.client.gu
         SakuraNetwork.sendToServer(new PersonalDateSlotUpdatePacket(selected));
         draft.submitted(slots);
         SakuraClientNotifications.success(SakuraComponent.get().transClient(
-                "word", "personal_date_save_success"), SakuraNotificationTypes.REWARD);
+                "word", "personal_date_save_success"), SakuraNotificationTypes.CONFIG);
     }
 
     private void openBaniraPlayerConfig() {
