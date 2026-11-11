@@ -2,15 +2,12 @@ package xin.vanilla.sakura.data.calendar;
 
 import xin.vanilla.sakura.data.personaldate.LunarCalendar;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
-/** Immutable runtime calendar snapshot loaded by the server. */
+/**
+ * Immutable runtime calendar snapshot loaded by the server.
+ */
 public final class CalendarRegistry {
     private final Map<String, DateCalendar> calendars;
 

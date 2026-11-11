@@ -23,7 +23,6 @@ import xin.vanilla.sakura.SakuraComponent;
 import xin.vanilla.sakura.client.gui.RewardRenderer;
 import xin.vanilla.sakura.client.theme.SakuraThemeTextures;
 import xin.vanilla.sakura.client.theme.ThemeTexture;
-import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.data.time.SakuraClock;
 import xin.vanilla.sakura.enums.ESignInStatus;

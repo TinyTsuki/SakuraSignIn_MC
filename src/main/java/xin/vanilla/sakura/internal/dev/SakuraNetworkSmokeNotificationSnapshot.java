@@ -2,9 +2,12 @@ package xin.vanilla.sakura.internal.dev;
 
 import xin.vanilla.banira.common.data.Component;
 
-/** Canonical expected transport input, with explicit inherited language on the detached copy. */
+/**
+ * Canonical expected transport input, with explicit inherited language on the detached copy.
+ */
 public final class SakuraNetworkSmokeNotificationSnapshot {
-    private SakuraNetworkSmokeNotificationSnapshot() { }
+    private SakuraNetworkSmokeNotificationSnapshot() {
+    }
 
     public static String json(Component component, String language) {
         Component copy = component.clone();

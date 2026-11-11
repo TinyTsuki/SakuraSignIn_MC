@@ -306,7 +306,7 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
             if (pool.getCooldownSeconds() > 0)
                 details += " \u00b7 " + SakuraComponent.get().translateClient("format", "lottery_interval_s", pool.getCooldownSeconds());
             stack.drawString(font, font.plainSubstrByWidth(details, layout.title().width()),
-                layout.title().x(), layout.title().y() + 12, getEffectiveTheme().textSecondary(), false);
+                    layout.title().x(), layout.title().y() + 12, getEffectiveTheme().textSecondary(), false);
             String fee = payment.summary();
             String cost = fee == null ? SakuraComponent.get().translateClient("word", "lottery_quote_pending")
                     : SakuraComponent.get().translateClient("format", "lottery_cost_per_draw_s",

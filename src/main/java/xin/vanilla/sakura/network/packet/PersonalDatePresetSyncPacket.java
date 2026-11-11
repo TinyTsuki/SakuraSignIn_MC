@@ -7,32 +7,26 @@ import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.banira.common.network.SplitPacket;
-import xin.vanilla.sakura.data.personaldate.PersonalDateDeliveryMode;
-import xin.vanilla.sakura.data.personaldate.PersonalDatePreset;
-import xin.vanilla.sakura.data.personaldate.PersonalDatePresets;
-import xin.vanilla.sakura.data.personaldate.PersonalDateRecurrence;
-import xin.vanilla.sakura.data.calendar.CalendarDescriptor;
-import xin.vanilla.sakura.network.SakuraClientPacketHandlers;
-import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.config.CommonConfig;
 import xin.vanilla.sakura.config.reward.RewardConfig;
 import xin.vanilla.sakura.config.reward.RewardConfigManager;
+import xin.vanilla.sakura.data.calendar.CalendarDescriptor;
 import xin.vanilla.sakura.data.calendar.SakuraCalendars;
-import xin.vanilla.sakura.data.personaldate.PersonalDatePresetValidator;
+import xin.vanilla.sakura.data.personaldate.*;
+import xin.vanilla.sakura.enums.ERewardRule;
+import xin.vanilla.sakura.network.SakuraClientPacketHandlers;
+import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.reward.RewardAddPermissionChecker;
-import xin.vanilla.sakura.reward.RewardRuleAddPermissionChecker;
 import xin.vanilla.sakura.reward.RewardJsonCodec;
 import xin.vanilla.sakura.reward.RewardList;
-import xin.vanilla.sakura.enums.ERewardRule;
+import xin.vanilla.sakura.reward.RewardRuleAddPermissionChecker;
 import xin.vanilla.sakura.util.SakuraUtils;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
-/** 个性化日期预设使用独立分包同步，并由服务端权威校验客户端修改。 */
+/**
+ * 个性化日期预设使用独立分包同步，并由服务端权威校验客户端修改。
+ */
 @Getter
 public final class PersonalDatePresetSyncPacket extends SplitPacket implements INetworkPacket,
         SplitPacket.MergeableSplitPacket<PersonalDatePresetSyncPacket>,

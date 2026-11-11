@@ -1,16 +1,15 @@
 package xin.vanilla.sakura.internal.server.dev;
 
-import xin.vanilla.banira.common.util.DateUtils;
-
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.common.MinecraftForge;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.BaniraServer;
 import xin.vanilla.banira.api.event.BaniraEvents;
+import xin.vanilla.banira.common.util.DateUtils;
 import xin.vanilla.sakura.api.SakuraPlayerData;
 import xin.vanilla.sakura.api.reward.SakuraRewardTypes;
 import xin.vanilla.sakura.config.CommonConfig;
@@ -19,23 +18,25 @@ import xin.vanilla.sakura.config.reward.RewardConfigManager;
 import xin.vanilla.sakura.data.IPlayerSignInData;
 import xin.vanilla.sakura.data.time.SakuraClock;
 import xin.vanilla.sakura.enums.ETimeCoolingMethod;
-import xin.vanilla.sakura.internal.dev.SakuraNetworkSmokeStatus;
 import xin.vanilla.sakura.internal.dev.SakuraNetworkSmokeConfigs;
+import xin.vanilla.sakura.internal.dev.SakuraNetworkSmokeStatus;
 import xin.vanilla.sakura.reward.Reward;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.charset.StandardCharsets;
-import java.util.Properties;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-/** 在真实专服 tick 与客户端网络包之间验证签到、补签、奖励和持久化。 */
+/**
+ * 在真实专服 tick 与客户端网络包之间验证签到、补签、奖励和持久化。
+ */
 public final class SakuraNetworkSmokeServerRunner {
     private static final Logger LOGGER = LogManager.getLogger();
     private static boolean ready;
@@ -296,7 +297,9 @@ public final class SakuraNetworkSmokeServerRunner {
         }
     }
 
-    /** 旧 Spark 没有稳定的导出 facade；只用反射调用它自己的 sampler 与 protobuf 报告。 */
+    /**
+     * 旧 Spark 没有稳定的导出 facade；只用反射调用它自己的 sampler 与 protobuf 报告。
+     */
     private static final class ReflectiveSparkProfile {
         private static final String REPORT_PROPERTY = "sakura.networkSmoke.sparkReport";
         private final Object sampler;
@@ -378,7 +381,8 @@ public final class SakuraNetworkSmokeServerRunner {
             } catch (InterruptedException error) {
                 Thread.currentThread().interrupt();
                 throw new IllegalStateException("Interrupted writing Spark report", error);
-            } catch (ReflectiveOperationException | java.io.IOException | java.util.concurrent.ExecutionException error) {
+            } catch (ReflectiveOperationException | java.io.IOException |
+                     java.util.concurrent.ExecutionException error) {
                 throw new IllegalStateException("Unable to write Spark report", error);
             }
         }

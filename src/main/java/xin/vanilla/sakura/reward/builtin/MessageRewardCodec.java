@@ -54,7 +54,8 @@ public final class MessageRewardCodec implements RewardCodec<Component> {
         if (json.has("hoverEvent")) {
             result.hoverEvent(HoverEvent.CODEC.parse(JsonOps.INSTANCE, json.get("hoverEvent")).getOrThrow());
         }
-        for (JsonElement child : array(json, "children")) result.getChildren().add(decodeLegacy(child.getAsJsonObject()));
+        for (JsonElement child : array(json, "children"))
+            result.getChildren().add(decodeLegacy(child.getAsJsonObject()));
         for (JsonElement arg : array(json, "args")) result.getArgs().add(decodeLegacy(arg.getAsJsonObject()));
         return result;
     }

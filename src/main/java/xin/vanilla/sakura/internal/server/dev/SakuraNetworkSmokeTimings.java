@@ -2,7 +2,9 @@ package xin.vanilla.sakura.internal.server.dev;
 
 import java.util.Arrays;
 
-/** Bounded per-operation wall-clock samples for development profiling. */
+/**
+ * Bounded per-operation wall-clock samples for development profiling.
+ */
 final class SakuraNetworkSmokeTimings {
     private final long[] values;
     private int count;
@@ -23,8 +25,13 @@ final class SakuraNetworkSmokeTimings {
         maximum = Math.max(maximum, nanos);
     }
 
-    int count() { return count; }
-    long average() { return count == 0 ? 0 : total / count; }
+    int count() {
+        return count;
+    }
+
+    long average() {
+        return count == 0 ? 0 : total / count;
+    }
 
     long percentile(int percentile) {
         if (percentile < 1 || percentile > 100) throw new IllegalArgumentException("Invalid percentile");
@@ -34,7 +41,9 @@ final class SakuraNetworkSmokeTimings {
         return sorted[(int) Math.ceil(count * (percentile / 100.0)) - 1];
     }
 
-    long maximum() { return maximum; }
+    long maximum() {
+        return maximum;
+    }
 
     String summary() {
         return "count=" + count + " average-ns=" + average() + " p50-ns=" + percentile(50)

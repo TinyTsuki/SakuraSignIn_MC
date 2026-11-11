@@ -5,7 +5,9 @@ import xin.vanilla.banira.common.enums.IEnumDescribable;
 import xin.vanilla.banira.common.util.EnumDescriptionHelper;
 import xin.vanilla.sakura.SakuraComponent;
 
-/** 控制普通玩家能看到的奖池身份与概率信息。 */
+/**
+ * 控制普通玩家能看到的奖池身份与概率信息。
+ */
 public enum LotteryPreviewMode implements IEnumDescribable {
     ALL,
     ITEMS_ONLY,

@@ -10,12 +10,7 @@ import xin.vanilla.sakura.api.reward.*;
 import xin.vanilla.sakura.reward.builtin.BuiltInRewardTypes;
 
 import java.math.BigDecimal;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * 注册表的类型擦除边界，业务调用方不需要自行强制转换。
@@ -76,7 +71,7 @@ public final class RewardOperations {
      * 每个奖励独立执行，单个扩展失败不会阻断同批次的其他奖励。
      */
     public static List<RewardGrantResult> grantAll(RewardGrantContext context,
-                                                    Iterable<Reward> rewards) {
+                                                   Iterable<Reward> rewards) {
         List<RewardGrantResult> results = new ArrayList<>();
         if (rewards == null) {
             return results;
@@ -158,7 +153,8 @@ public final class RewardOperations {
                     Optional<PreparedReward> result = slots.get(index).merge(candidate);
                     if (result.isPresent()) {
                         PreparedReward value = result.get();
-                        slots.set(index, value); output.set(index, value.reward);
+                        slots.set(index, value);
+                        output.set(index, value.reward);
                         if (!candidate.group.equals(value.group)) {
                             indices.remove(Integer.valueOf(index));
                             addIndex(groups, value.group, index);
@@ -170,7 +166,8 @@ public final class RewardOperations {
             }
             if (!merged) {
                 addIndex(groups, candidate.group, output.size());
-                output.add(candidate.reward); slots.add(candidate);
+                output.add(candidate.reward);
+                slots.add(candidate);
             }
         }
         return Optional.of(output);
@@ -196,7 +193,9 @@ public final class RewardOperations {
         private final MergeGroup group;
 
         private PreparedReward(Reward reward, RewardTypeDefinition<Object> definition, Object value) {
-            this.reward = reward; this.definition = definition; this.value = value;
+            this.reward = reward;
+            this.definition = definition;
+            this.value = value;
             this.group = new MergeGroup(reward, definition.getMerger().key(value));
         }
 
@@ -222,18 +221,26 @@ public final class RewardOperations {
         private final boolean disabled;
 
         private MergeGroup(Reward reward, RewardMergeKey key) {
-            this.type = reward.getTypeId(); this.key = key;
+            this.type = reward.getTypeId();
+            this.key = key;
             this.probability = reward.getProbability().stripTrailingZeros();
-            this.rewarded = reward.isRewarded(); this.disabled = reward.isDisabled();
+            this.rewarded = reward.isRewarded();
+            this.disabled = reward.isDisabled();
         }
-        @Override public boolean equals(Object other) {
+
+        @Override
+        public boolean equals(Object other) {
             if (this == other) return true;
             if (!(other instanceof MergeGroup)) return false;
             MergeGroup value = (MergeGroup) other;
             return rewarded == value.rewarded && disabled == value.disabled
                     && type.equals(value.type) && Objects.equals(key, value.key) && probability.equals(value.probability);
         }
-        @Override public int hashCode() { return Objects.hash(type, key, probability, rewarded, disabled); }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(type, key, probability, rewarded, disabled);
+        }
     }
 
     @SuppressWarnings("unchecked")
