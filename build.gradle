@@ -74,12 +74,9 @@ dependencies {
     // Development runtime performance mod; not bundled into published artifacts.
     runtimeOnly "maven.modrinth:embeddium:J7b96IEd"
     implementation "net.neoforged:neoforge:${neo_version}"
-    testImplementation 'junit:junit:4.13.2'
 
     compileOnly 'org.projectlombok:lombok:1.18.34'
     annotationProcessor 'org.projectlombok:lombok:1.18.34'
-    testCompileOnly 'org.projectlombok:lombok:1.18.34'
-    testAnnotationProcessor 'org.projectlombok:lombok:1.18.34'
 
     implementation(baniraCodexCoords) {
         changing = true
