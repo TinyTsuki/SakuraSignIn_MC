@@ -41,6 +41,9 @@ public final class SakuraNotificationTypes {
     }
 
     public static void registerServerTypes() {
+        for (String type : DEFAULT_DISPLAYS.keySet()) {
+            BaniraNotificationTypes.registerImportance(type, defaultImportant(type));
+        }
         DEFAULT_DISPLAYS.forEach((typeId, display) -> BaniraNotificationTypes.register(
                 typeId, EnumPosition.TOP_CENTER, EnumMoveType.AUTO, display
         ));
@@ -52,5 +55,9 @@ public final class SakuraNotificationTypes {
 
     public static Iterable<String> all() {
         return DEFAULT_DISPLAYS.keySet();
+    }
+
+    public static boolean defaultImportant(String typeId) {
+        return REWARD.equals(typeId) || CDK.equals(typeId) || ADMIN_BROADCAST.equals(typeId);
     }
 }
