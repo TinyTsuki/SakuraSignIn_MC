@@ -116,7 +116,7 @@ public class ClientProxy {
             RewardConfigManager.saveRewardOption();
             SakuraClientNotifications.syncSuccess(
                     SakuraComponent.get().trans("word", "reward_option_download_success"),
-                    SakuraNotificationTypes.REWARD
+                    SakuraNotificationTypes.CONFIG
             );
         } catch (RuntimeException exception) {
             SakuraClientNotifications.error(
@@ -131,7 +131,7 @@ public class ClientProxy {
         Component message = SakuraComponent.get().trans("word", success ? "reward_option_upload_success" : "reward_option_upload_failed"
         );
         if (success) {
-            SakuraClientNotifications.success(message, SakuraNotificationTypes.REWARD);
+            SakuraClientNotifications.success(message, SakuraNotificationTypes.CONFIG);
         } else {
             SakuraClientNotifications.error(message, SakuraNotificationTypes.REWARD);
         }
