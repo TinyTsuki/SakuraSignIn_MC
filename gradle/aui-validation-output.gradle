@@ -37,9 +37,7 @@ if (validationRoot != null) {
             def isolated = new File(local).canonicalFile
             publications.findAll { it instanceof org.gradle.api.publish.maven.tasks.PublishToMavenRepository }.each { task ->
                 def target = task.repository.url.scheme == 'file' ? new File(task.repository.url).canonicalFile : null
-                def contractTest = task.name == 'publishMavenJavaPublicationToPublicationContractRepository'
-                        && target == layout.buildDirectory.dir('publication-contract-repository').get().asFile.canonicalFile
-                if (target != isolated && !contractTest) throw new GradleException("Validation publication escaped isolated Maven root: ${task.path}")
+                if (target != isolated) throw new GradleException("Validation publication escaped isolated Maven root: ${task.path}")
             }
         }
         graph.allTasks.findAll { it instanceof AbstractArchiveTask }.each { archive ->
