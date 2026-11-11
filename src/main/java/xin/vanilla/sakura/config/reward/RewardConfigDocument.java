@@ -2,11 +2,11 @@ package xin.vanilla.sakura.config.reward;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import xin.vanilla.sakura.data.lottery.LotteryPool;
+import xin.vanilla.sakura.data.personaldate.PersonalDatePreset;
 
 import java.util.ArrayList;
 import java.util.List;
-import xin.vanilla.sakura.data.personaldate.PersonalDatePreset;
-import xin.vanilla.sakura.data.lottery.LotteryPool;
 
 /**
  * 奖励配置的持久化文档，版本升级只在编解码层处理。

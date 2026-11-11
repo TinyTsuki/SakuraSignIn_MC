@@ -1,19 +1,18 @@
 package xin.vanilla.sakura.data.player;
 
-import xin.vanilla.sakura.util.SakuraNbt;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+import xin.vanilla.sakura.data.lottery.LotteryDrawState;
+import xin.vanilla.sakura.data.personaldate.PlayerPersonalDateSlot;
+import xin.vanilla.sakura.util.SakuraNbt;
 
-import java.util.Map;
-import java.util.TreeMap;
 import java.util.ArrayList;
 import java.util.List;
-
-import xin.vanilla.sakura.data.personaldate.PlayerPersonalDateSlot;
-import xin.vanilla.sakura.data.lottery.LotteryDrawState;
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * 永久摘要不依赖可清理的月度详情，签到判定与累计统计始终可用。

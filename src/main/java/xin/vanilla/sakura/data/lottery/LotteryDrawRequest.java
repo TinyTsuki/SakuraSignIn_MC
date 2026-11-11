@@ -1,6 +1,7 @@
 package xin.vanilla.sakura.data.lottery;
 
 import lombok.Value;
+
 import java.util.UUID;
 
 @Value

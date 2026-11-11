@@ -1,9 +1,6 @@
 package xin.vanilla.sakura.config.reward;
 
-import xin.vanilla.banira.common.util.NumberUtils;
-
 import com.google.gson.*;
-import com.google.gson.reflect.TypeToken;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -13,22 +10,19 @@ import org.apache.logging.log4j.Logger;
 import xin.vanilla.banira.api.BaniraDataPaths;
 import xin.vanilla.banira.api.BaniraEnvironment;
 import xin.vanilla.banira.common.data.KeyValue;
+import xin.vanilla.banira.common.util.NumberUtils;
+import xin.vanilla.banira.common.util.StringUtils;
 import xin.vanilla.sakura.SakuraSignIn;
+import xin.vanilla.sakura.data.lottery.LotteryLimitPolicy;
+import xin.vanilla.sakura.data.lottery.LotteryPool;
+import xin.vanilla.sakura.data.personaldate.PersonalDatePreset;
 import xin.vanilla.sakura.enums.ERewardRule;
 import xin.vanilla.sakura.network.data.RewardOptionSyncData;
 import xin.vanilla.sakura.network.data.RewardOptionSyncKind;
 import xin.vanilla.sakura.network.packet.RewardOptionSyncPacket;
-import xin.vanilla.sakura.config.reward.LegacyRewardConfigReader;
-import xin.vanilla.sakura.config.reward.RewardConfigCodec;
-import xin.vanilla.sakura.config.reward.RewardConfigRepository;
-import xin.vanilla.sakura.config.reward.RewardGroup;
 import xin.vanilla.sakura.reward.Reward;
 import xin.vanilla.sakura.reward.RewardList;
-import xin.vanilla.sakura.data.personaldate.PersonalDatePreset;
-import xin.vanilla.sakura.data.lottery.LotteryLimitPolicy;
-import xin.vanilla.sakura.data.lottery.LotteryPool;
 import xin.vanilla.sakura.util.SakuraUtils;
-import xin.vanilla.banira.common.util.StringUtils;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -42,10 +36,10 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.function.Predicate;
 
 public class RewardConfigManager {
     public static final Gson GSON = new GsonBuilder().enableComplexMapKeySerialization().create();

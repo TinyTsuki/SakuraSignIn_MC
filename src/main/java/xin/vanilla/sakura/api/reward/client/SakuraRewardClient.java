@@ -6,12 +6,7 @@ import xin.vanilla.sakura.api.reward.RewardTypeId;
 import xin.vanilla.sakura.reward.Reward;
 import xin.vanilla.sakura.reward.RewardOperations;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * 客户端展示与编辑扩展注册表，与服务端奖励定义分别冻结。
@@ -63,7 +58,9 @@ public final class SakuraRewardClient {
         return frozen;
     }
 
-    /** 客户端名称和图标必须由同一展示扩展解析。 */
+    /**
+     * 客户端名称和图标必须由同一展示扩展解析。
+     */
     public static Component displayName(Reward reward, String languageCode,
                                         boolean withAmount) {
         Registration<?> registration = reward == null ? null
@@ -84,9 +81,20 @@ public final class SakuraRewardClient {
                                                  String languageCode, boolean withAmount) {
         Object value = RewardOperations.decode(reward);
         RewardDisplayContext context = new RewardDisplayContext() {
-            @Override public Reward reward() { return reward; }
-            @Override public String languageCode() { return languageCode; }
-            @Override public boolean withAmount() { return withAmount; }
+            @Override
+            public Reward reward() {
+                return reward;
+            }
+
+            @Override
+            public String languageCode() {
+                return languageCode;
+            }
+
+            @Override
+            public boolean withAmount() {
+                return withAmount;
+            }
         };
         return registration.getExtension().getPresentation().displayName(context, value);
     }
