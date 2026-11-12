@@ -1,4 +1,8 @@
 {
+  "word.sakura_sign_in.lottery_draw_counts_hint": "用逗号分隔档位，例如 1,5,10。",
+  "word.sakura_sign_in.lottery_draw_counts_invalid": "请输入 1 到 100 之间不重复的档位，最多 12 个。",
+  "word.sakura_sign_in.lottery_voucher_incomplete": "请填写当前代券类型所需的物品、计分项和数量。",
+  "word.sakura_sign_in.lottery_batch_rule_invalid": "至少启用一种抽取方式，连抽次数不可超过奖池额度。",
   "word.sakura_sign_in.enum_lottery_animation_style_strip_tooltip": "奖励横向滚动，在中央指示处停下。",
   "word.sakura_sign_in.enum_lottery_animation_style_cards_tooltip": "翻开卡片揭晓奖励。",
   "word.sakura_sign_in.enum_lottery_animation_style_roulette_tooltip": "沿轮盘依次高亮候选奖励。",

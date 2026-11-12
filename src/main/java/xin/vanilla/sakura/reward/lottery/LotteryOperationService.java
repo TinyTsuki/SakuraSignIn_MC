@@ -85,8 +85,9 @@ public final class LotteryOperationService {
         tickets.remove(id);
         LotteryPool pool = runtime.pool(request.getPoolId());
         if (pool == null) return rejected(request, LotteryQuote.Status.POOL_NOT_FOUND, revision);
+        LotteryWindow window = null;
         try {
-            LotteryWindow window = LotteryWindow.at(pool, clock.getAsLong(), zone);
+            window = LotteryWindow.at(pool, clock.getAsLong(), zone);
             if (!window.open()) return new LotteryQuote(request, LotteryQuote.Status.POOL_CLOSED, revision,
                     0, pool.getVoucherExpression(), "", window.remainingMillis(), window.opensNext());
             if (!pool.allowsCount(request.getCount()) || blocked.contains(id)
@@ -102,7 +103,8 @@ public final class LotteryOperationService {
                     snapshot.getVoucherExpression(), token, window.remainingMillis(), false);
         } catch (IOException | RuntimeException failure) {
             LOGGER.error("Lottery quote unavailable for " + id, failure);
-            return rejected(request, LotteryQuote.Status.PAYMENT_UNAVAILABLE, revision);
+            return new LotteryQuote(request, LotteryQuote.Status.PAYMENT_UNAVAILABLE, revision,
+                    0, pool.getVoucherExpression(), "", window == null ? 0 : window.remainingMillis(), false);
         }
     }
 
