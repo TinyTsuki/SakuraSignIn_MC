@@ -88,14 +88,14 @@ public final class LotteryOperationService {
         try {
             LotteryWindow window = LotteryWindow.at(pool, clock.getAsLong(), zone);
             if (!window.open()) return new LotteryQuote(request, LotteryQuote.Status.POOL_CLOSED, revision,
-                    0, "", "", window.remainingMillis(), window.opensNext());
+                    0, pool.getVoucherExpression(), "", window.remainingMillis(), window.opensNext());
             if (!pool.allowsCount(request.getCount()) || blocked.contains(id)
                     || !repository.incomplete(id).isEmpty() || !hasRewards(pool))
-                return unavailableQuote(request, revision, window);
+                return unavailableQuote(request, revision, window, pool.getVoucherExpression());
             LotteryPool snapshot = LotteryPools.copy(pool);
             int count = capacity(player, snapshot, runtime.costs(player));
             if (count < 1 || request.getCount() > count)
-                return unavailableQuote(request, revision, window);
+                return unavailableQuote(request, revision, window, snapshot.getVoucherExpression());
             String token = LotteryProtocolLimits.token(tokens.get());
             tickets.put(id, new Ticket(request, token, snapshot, nanos.getAsLong()));
             return new LotteryQuote(request, LotteryQuote.Status.READY, revision, count,
@@ -106,9 +106,9 @@ public final class LotteryOperationService {
         }
     }
 
-    private static LotteryQuote unavailableQuote(LotteryQuoteRequest request, long revision, LotteryWindow window) {
+    private static LotteryQuote unavailableQuote(LotteryQuoteRequest request, long revision, LotteryWindow window, String fee) {
         return new LotteryQuote(request, LotteryQuote.Status.PAYMENT_UNAVAILABLE, revision,
-                0, "", "", window.remainingMillis(), false);
+                0, fee, "", window.remainingMillis(), false);
     }
 
     public LotteryDrawBatchResult draw(Object player, LotteryDrawRequest request) {
