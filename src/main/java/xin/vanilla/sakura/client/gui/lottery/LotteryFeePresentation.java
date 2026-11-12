@@ -16,7 +16,7 @@ public class LotteryFeePresentation {
     UiGameElement icon;
 
     public static LotteryFeePresentation of(String summary) {
-        if (summary == null) return new LotteryFeePresentation("\u2014", "", null);
+        if (summary == null) return new LotteryFeePresentation("-", "", null);
         if (summary.isEmpty()) return new LotteryFeePresentation(tr("lottery_free"), tr("lottery_free"), null);
         try {
             lombok.var cost = BaniraCosts.parse(summary);
