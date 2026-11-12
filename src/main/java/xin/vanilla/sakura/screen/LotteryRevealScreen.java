@@ -53,7 +53,7 @@ public final class LotteryRevealScreen extends BaniraScreen implements UiPageSou
     public LotteryRevealScreen(Screen parent, LotteryRevealPacket packet) {
         super(SakuraComponent.get().transClient("word", "lottery_result"));
         this.packet = packet;
-        LotteryAnimationStyle resolvedStyle = packet.getAnimationStyle() == null ? ClientConfig.get().display().lotteryAnimationStyle()
+        LotteryAnimationStyle resolvedStyle = packet.getAnimationStyle() == null ? LotteryAnimationStyle.ENVELOPE
                 : packet.getAnimationStyle();
         this.style = resolvedStyle.presentationStyle();
         revealSession = new LotteryRevealUiSession(packet, style, () -> System.nanoTime() / 1_000_000,
@@ -165,8 +165,12 @@ public final class LotteryRevealScreen extends BaniraScreen implements UiPageSou
         double scale = Math.min(area.width() / 320D, area.height() / 180D);
         int cx = area.x() + area.width() / 2, base = area.y() + area.height() / 2;
         boolean shell = style == LotteryAnimationStyle.ENVELOPE;
+        boolean chest = packet.getAnimationStyle() == LotteryAnimationStyle.CHEST;
         if (shell) {
             shape(stack, cx - (int) (55 * scale), base, (int) (110 * scale), (int) (65 * scale), getEffectiveTheme().buttonBg(), 4, 1);
+            if (chest)
+                shape(stack, cx - (int) (55 * scale), base - (int) (30 * scale * frame.opening()), (int) (110 * scale), (int) (20 * scale), getEffectiveTheme().buttonBgHover(), 4, 1);
+            else if (frame.opening() > .5) envelopeFlap(stack, cx, base, scale, frame.opening());
         }
         lombok.var winners = packet.getWinners();
         lombok.var candidates = packet.getPreview();
@@ -185,8 +189,27 @@ public final class LotteryRevealScreen extends BaniraScreen implements UiPageSou
             if (reward != null && (card.reward() >= 0 || packet.isPreviewVisible()))
                 renderReward(stack, reward, x + Math.max(0, (int) (card.width() - 16) / 2), y + Math.max(0, (int) (card.height() - 16) / 2));
         }
-        if (shell)
+        if (shell) {
             shape(stack, cx - (int) (55 * scale), base + (int) (25 * scale), (int) (110 * scale), (int) (40 * scale), getEffectiveTheme().buttonBg(), 4, 1);
+            if (chest)
+                shape(stack, cx - (int) (4 * scale), base + (int) (25 * scale), Math.max(2, (int) (8 * scale)), Math.max(2, (int) (12 * scale)), getEffectiveTheme().buttonBorderHover(), 1, 0);
+            else if (frame.opening() <= .5) envelopeFlap(stack, cx, base, scale, frame.opening());
+        }
+    }
+
+    private void envelopeFlap(MatrixStack stack, int cx, int base, double scale, double opening) {
+        int halfWidth = Math.max(1, (int) (55 * scale));
+        int tip = (int) Math.round(30 * scale * (1 - 2 * Math.max(0, Math.min(1, opening))));
+        int height = Math.abs(tip), direction = tip < 0 ? -1 : 1;
+        int edge = getEffectiveTheme().buttonBorderHover();
+        for (int row = 0; row <= height; row++) {
+            int half = height == 0 ? halfWidth : (int) Math.round(halfWidth * (1 - row / (double) height));
+            int y = base + direction * row;
+            shape(stack, cx - half, y, half * 2 + 1, 1, getEffectiveTheme().buttonBgHover(), 0, 0);
+            shape(stack, cx - half, y, 1, 1, edge, 0, 0);
+            shape(stack, cx + half, y, 1, 1, edge, 0, 0);
+        }
+        shape(stack, cx - halfWidth, base, halfWidth * 2 + 1, 1, edge, 0, 0);
     }
 
     private void renderStrip(MatrixStack stack, long elapsed) {
@@ -324,6 +347,12 @@ public final class LotteryRevealScreen extends BaniraScreen implements UiPageSou
     }
 
     private void shape(MatrixStack stack, int x, int y, int width, int height, int color, int radius, int border) {
+        if (border == 1) {
+            BaseShapeWidget.drawShape(new ShapeDrawArgs().stack(stack).type(ShapeDrawArgs.ShapeType.RECT).color(color)
+                    .rect(new ShapeDrawArgs.RectParams().x(x).y(y).width(width).height(height).radius(radius)
+                            .cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE).border(0)));
+            color = getEffectiveTheme().buttonBorderHover();
+        }
         BaseShapeWidget.drawShape(new ShapeDrawArgs().stack(stack).type(ShapeDrawArgs.ShapeType.RECT).color(color)
                 .rect(new ShapeDrawArgs.RectParams().x(x).y(y).width(width).height(height).radius(radius)
                         .cornerMode(ShapeDrawArgs.RoundedCornerMode.FINE).border(border)));
