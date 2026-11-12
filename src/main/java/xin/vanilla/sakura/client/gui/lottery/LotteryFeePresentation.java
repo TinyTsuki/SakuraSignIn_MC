@@ -9,7 +9,7 @@ import xin.vanilla.sakura.SakuraComponent;
 
 public record LotteryFeePresentation(String text, String tooltip, UiGameElement icon) {
     public static LotteryFeePresentation of(String summary) {
-        if (summary == null) return new LotteryFeePresentation("\u2014", "", null);
+        if (summary == null) return new LotteryFeePresentation("-", "", null);
         if (summary.isEmpty()) return new LotteryFeePresentation(tr("lottery_free"), tr("lottery_free"), null);
         try {
             var cost = BaniraCosts.parse(summary);
