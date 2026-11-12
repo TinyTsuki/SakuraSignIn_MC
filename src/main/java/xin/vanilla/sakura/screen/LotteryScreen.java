@@ -51,7 +51,7 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
     private final NotificationDetailViewport infoViewport = new NotificationDetailViewport();
     private final NotificationDetailViewport descriptionViewport = new NotificationDetailViewport();
     private LotteryLayout layout;
-    private DropdownSelectWidget poolSelect, countSelect, animationSelect;
+    private DropdownSelectWidget poolSelect, countSelect;
     private ButtonWidget singleDrawButton, batchDrawButton;
     private String selectedPoolId = "";
     private int previewScrollRows;
@@ -117,11 +117,13 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
             }
 
             public LotteryAnimationStyle animation() {
-                return ClientConfig.get().display().lotteryAnimationStyle();
+                LotteryPool pool = selectedPool();
+                return pool == null || pool.getAnimationStyle() == null ? LotteryAnimationStyle.ENVELOPE
+                        : pool.getAnimationStyle().presentationStyle();
             }
 
             public void animation(LotteryAnimationStyle value) {
-                setAnimation(value);
+
             }
 
             public long generation() {
@@ -151,13 +153,6 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
         List<String> values = drawCounts(selectedPool()).stream().filter(value -> !"1".equals(value)).collect(Collectors.toCollection(ArrayList::new));
         if (values.isEmpty()) values.add("1");
         return values;
-    }
-
-    private static void setAnimation(LotteryAnimationStyle style) {
-        if (style != ClientConfig.get().display().lotteryAnimationStyle()) {
-            ClientConfig.get().display().lotteryAnimationStyle(style);
-            ClientConfig.save();
-        }
     }
 
     @Override
@@ -212,17 +207,6 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
         batchDrawButton.onClick(button -> payment.click(batchCount()));
         batchDrawButton.enabled(false);
         addWidget(batchDrawButton);
-
-        animationSelect = dropdown(layout.animation());
-        animationSelect.optionEntries(Arrays.stream(LotteryAnimationStyle.values())
-                .filter(style -> style != LotteryAnimationStyle.CHEST)
-                .map(style -> new DropdownOption(style.name(), style.enumDescription().toString(),
-                        net.minecraft.world.item.ItemStack.EMPTY, null, null)).collect(Collectors.toList()));
-        animationSelect.selectedValues(Collections.singletonList(ClientConfig.get().display().lotteryAnimationStyle().presentationStyle().name()));
-        animationSelect.onSelectionChanged(values -> {
-            if (values.isEmpty() || selectedPool() != null && selectedPool().getAnimationStyle() != null) return;
-            setAnimation(LotteryAnimationStyle.valueOf(values.get(0)));
-        });
 
         ButtonWidget closeButton = new ButtonWidget(this);
         closeButton.presetStyleClose().radius(3).padding(1);
@@ -311,14 +295,15 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
             stack.text(font, font.plainSubstrByWidth(details, layout.title().width()),
                     layout.title().x(), layout.title().y() + 12, getEffectiveTheme().textSecondary(), false);
             String fee = payment.summary();
+            xin.vanilla.sakura.client.gui.lottery.LotteryFeePresentation feeView = xin.vanilla.sakura.client.gui.lottery.LotteryFeePresentation.of(fee);
             String cost = fee == null ? SakuraComponent.get().translateClient("word", "lottery_quote_pending")
                     : SakuraComponent.get().translateClient("format", "lottery_cost_per_draw_s",
-                    fee.isEmpty() ? SakuraComponent.get().translateClient("word", "lottery_free") : fee);
+                    feeView.icon() == null ? feeView.tooltip() : feeView.text());
             LotteryQuote quote = payment.quote();
             boolean ready = quote != null && quote.isReady() && !payment.isWaitingForQuote() && !payment.isDrawing()
                     && quote.getGeneration() == displayedGeneration && pool.getId().equals(quote.getRequest().getPoolId());
-            String available = SakuraComponent.get().translateClient("word", "lottery_available_count")
-                    + ": " + (ready ? String.valueOf(quote.getAvailableCount()) : "\u2014");
+            String available = ready ? SakuraComponent.get().translateClient("word", "lottery_available_count")
+                    + ": " + quote.getAvailableCount() : "";
             String status = payment.isDrawing() ? SakuraComponent.get().translateClient("word", "lottery_drawing")
                     : quote != null && !quote.isReady() && !payment.isWaitingForQuote()
                     ? SakuraComponent.get().translateClient("word", quote.getStatus() == LotteryQuote.Status.POOL_CLOSED
@@ -328,8 +313,16 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
                 status = status.isEmpty() || quote != null && quote.getStatus() == LotteryQuote.Status.POOL_CLOSED
                         ? countdown : countdown + " · " + status;
             }
-            renderParagraph(stack, layout.info(), infoViewport, infoScrollbar,
-                    cost + "\n" + available + (status.isEmpty() ? "" : "\n" + status), getEffectiveTheme().textSecondary());
+            LotteryLayout.Rect feeArea = layout.info();
+            if (feeView.icon() != null) {
+                xin.vanilla.banira.client.gui.widget.ItemWidget.renderItem(stack, font, feeView.icon().option().icon(), feeArea.x(), feeArea.y(), false);
+                if (!dropdownOpen() && inputState.mouseX() >= feeArea.x() && inputState.mouseX() < feeArea.x() + 18
+                        && inputState.mouseY() >= feeArea.y() && inputState.mouseY() < feeArea.y() + 18)
+                    tooltip(stack, feeView.tooltip());
+                feeArea = new LotteryLayout.Rect(feeArea.x() + 20, feeArea.y(), Math.max(1, feeArea.width() - 20), feeArea.height());
+            }
+            renderParagraph(stack, feeArea, infoViewport, infoScrollbar,
+                    cost + (available.isEmpty() ? "" : "\n" + available) + (status.isEmpty() ? "" : "\n" + status), getEffectiveTheme().textSecondary());
             LotteryLayout.Rect description = layout.description();
             if (xin.vanilla.sakura.client.gui.lottery.LotteryArtwork.hasMain(pool)) {
                 int artworkWidth = Math.min(description.width() / 3, description.height() * 2);
@@ -429,7 +422,7 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
     }
 
     private boolean dropdownOpen() {
-        return poolSelect.dropdownOpen() || countSelect.dropdownOpen() || animationSelect.dropdownOpen();
+        return poolSelect.dropdownOpen() || countSelect.dropdownOpen();
     }
 
     private void deferRewardTooltip(GuiGraphicsExtractor stack, LotteryPool pool, Reward reward,
@@ -459,12 +452,6 @@ public final class LotteryScreen extends BaniraScreen implements UiPageSource {
     private void configureCountOptions() {
         if (countSelect == null) return;
         LotteryPool pool = selectedPool();
-        if (animationSelect != null) {
-            LotteryAnimationStyle style = pool == null ? null : pool.getAnimationStyle();
-            animationSelect.enabled(style == null);
-            animationSelect.selectedValues(Collections.singletonList((style == null
-                    ? ClientConfig.get().display().lotteryAnimationStyle() : style).presentationStyle().name()));
-        }
         List<String> values = batchCounts();
         countSelect.optionEntries(values.stream().map(value -> new DropdownOption(value,
                 "all".equals(value) ? SakuraComponent.get().translateClient("word", "lottery_draw_all")
