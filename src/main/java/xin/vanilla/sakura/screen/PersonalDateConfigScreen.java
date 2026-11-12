@@ -84,10 +84,6 @@ public final class PersonalDateConfigScreen extends xin.vanilla.banira.client.gu
                     savePlayerConfig();
                 }
 
-                public void commonConfig() {
-                    openBaniraPlayerConfig();
-                }
-
                 public boolean dirty() {
                     return draft.dirty(slots);
                 }
@@ -156,7 +152,6 @@ public final class PersonalDateConfigScreen extends xin.vanilla.banira.client.gu
     @Override
     protected void buildPlayerConfig(CollapsiblePanelWidget root) {
         dateSections.clear();
-        addBaniraConfigRow(root);
         List<PersonalDatePreset> presets = activePresets();
         if (presets.isEmpty()) {
             addEmptyRow(root);
@@ -173,18 +168,6 @@ public final class PersonalDateConfigScreen extends xin.vanilla.banira.client.gu
             }
             section.refreshLayout();
         }
-    }
-
-    private void addBaniraConfigRow(CollapsiblePanelWidget root) {
-        double width = root.getContentWidth();
-        ButtonWidget button = new ButtonWidget(this);
-        button.id("banira_player_config");
-        button.bounds(new ScreenCoordinate(0, 0, width, ROW_HEIGHT));
-        Component title = SakuraComponent.get().transClient("word", "banira_player_config");
-        button.text(title);
-        button.onClick(clicked -> openBaniraPlayerConfig());
-        addPlayerRow(root, button, ROW_HEIGHT, null, null, title, null,
-                "banira", "common", "player config");
     }
 
     private void addEmptyRow(CollapsiblePanelWidget root) {
@@ -283,12 +266,6 @@ public final class PersonalDateConfigScreen extends xin.vanilla.banira.client.gu
         draft.submitted(slots);
         SakuraClientNotifications.success(SakuraComponent.get().transClient(
                 "word", "personal_date_save_success"), SakuraNotificationTypes.CONFIG);
-    }
-
-    private void openBaniraPlayerConfig() {
-        Minecraft.getInstance().setScreen(new CustomPlayerConfigEditScreen(
-                new CustomPlayerConfigEditScreen.Args().parentScreen(this)
-                        .season(BaniraThemes.seasonFor(SakuraSignIn.MODID))));
     }
 
     private String calendarName(String id) {

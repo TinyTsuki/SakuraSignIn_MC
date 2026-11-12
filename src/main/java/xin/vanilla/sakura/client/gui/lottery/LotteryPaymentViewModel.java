@@ -75,7 +75,10 @@ public final class LotteryPaymentViewModel {
         if (quote != null && quote != seen && quote.getRequest().getPoolId().equals(poolId)) {
             seen = quote;
             windowSampleAt = millis.getAsLong();
-            if (quote.isReady()) summary = quote.getPaymentSummary();
+            if (quote.getGeneration() == generation && (quote.isReady()
+                    || quote.getStatus() == LotteryQuote.Status.PAYMENT_UNAVAILABLE
+                    || quote.getStatus() == LotteryQuote.Status.POOL_CLOSED))
+                summary = quote.getPaymentSummary();
             if (intent != null) {
                 DrawIntent requested = intent;
                 intent = null;

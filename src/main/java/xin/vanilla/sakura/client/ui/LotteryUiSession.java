@@ -254,7 +254,7 @@ public final class LotteryUiSession implements UiPageSession {
         view.enabled("details_panel", false);
         view.text("confirm_draw_count", SakuraComponent.get().transClient("format", "lottery_draw_count_s", count));
         view.text("confirm_fee", SakuraComponent.get().transClient("format", "lottery_cost_per_draw_s",
-                fee.isEmpty() ? tr("lottery_free").toString() : fee));
+                LotteryFeePresentation.of(fee).tooltip()));
         view.enabled("confirm_draw", true);
         view.enabled("confirm_panel", true);
         displayedStatus = null;
@@ -330,6 +330,7 @@ public final class LotteryUiSession implements UiPageSession {
         view.enabled("fee_icon", fee.icon() != null);
         view.tooltip("fee_icon", literal(fee.tooltip()));
         view.text("available", literal(billing.available()));
+        view.enabled("available", !billing.available().isEmpty());
         view.tooltip("available", literal(billing.available()));
         view.enabled("single", single);
         view.enabled("batch", batch);
@@ -354,7 +355,7 @@ public final class LotteryUiSession implements UiPageSession {
 
     private static Billing billing(LotteryPaymentViewModel payment, LotteryPool pool, long generation, boolean compact) {
         String fee = payment.summary();
-        String cost = pool == null || fee == null ? "\u2014" : fee.isEmpty() ? tr("lottery_free").toString() : fee;
+        String cost = pool == null || fee == null ? "-" : LotteryFeePresentation.of(fee).tooltip();
         LotteryQuote quote = payment.quote();
         boolean waiting = payment.isPending() && !payment.isRefreshing();
         boolean ready = !waiting && !payment.isDrawing() && quote != null && quote.isReady()
@@ -368,9 +369,9 @@ public final class LotteryUiSession implements UiPageSession {
             case POOL_CLOSED -> "lottery_pool_closed";
             default -> "lottery_payment_unavailable";
         };
-        String available = ready ? String.valueOf(quote.getAvailableCount()) : "\u2014";
+        String available = ready ? String.valueOf(quote.getAvailableCount()) : "-";
         return new Billing(compact ? cost : tr("lottery_cost_label") + ": " + cost,
-                compact ? SakuraComponent.get().translateClient("format", "lottery_remaining_s", available) : tr("lottery_available_count") + ": " + available,
+                !ready ? "" : compact ? SakuraComponent.get().translateClient("format", "lottery_remaining_s", available) : tr("lottery_available_count") + ": " + available,
                 state.isEmpty() ? "" : tr(state).toString());
     }
 

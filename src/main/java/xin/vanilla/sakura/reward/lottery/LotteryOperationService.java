@@ -87,19 +87,19 @@ public final class LotteryOperationService {
         if (pool == null) return rejected(request, LotteryQuote.Status.POOL_NOT_FOUND, revision);
         var window = xin.vanilla.sakura.data.lottery.LotteryWindow.at(pool, clock.getAsLong(), zone);
         if (!window.open()) return new LotteryQuote(request, LotteryQuote.Status.POOL_CLOSED, revision,
-                0, "", "", window.remainingMillis(), window.opensNext());
+                0, pool.getVoucherExpression(), "", window.remainingMillis(), window.opensNext());
         try {
             if (blocked.contains(id) || !repository.incomplete(id).isEmpty() || !hasRewards(pool))
                 return new LotteryQuote(request, LotteryQuote.Status.PAYMENT_UNAVAILABLE, revision,
-                        0, "", "", window.remainingMillis(), false);
+                        0, pool.getVoucherExpression(), "", window.remainingMillis(), false);
             LotteryPool snapshot = LotteryPools.copy(pool);
             if (!snapshot.allowsCount(request.getCount()))
                 return new LotteryQuote(request, LotteryQuote.Status.PAYMENT_UNAVAILABLE, revision,
-                        0, "", "", window.remainingMillis(), false);
+                        0, snapshot.getVoucherExpression(), "", window.remainingMillis(), false);
             int count = capacity(player, snapshot, runtime.costs(player));
             if (request.getCount() > count)
                 return new LotteryQuote(request, LotteryQuote.Status.PAYMENT_UNAVAILABLE, revision,
-                        0, "", "", window.remainingMillis(), false);
+                        0, snapshot.getVoucherExpression(), "", window.remainingMillis(), false);
             String token = LotteryProtocolLimits.token(tokens.get());
             tickets.put(id, new Ticket(request, token, snapshot, nanos.getAsLong()));
             return new LotteryQuote(request, LotteryQuote.Status.READY, revision, count,
@@ -107,7 +107,7 @@ public final class LotteryOperationService {
         } catch (IOException | RuntimeException failure) {
             LOGGER.error("Lottery quote unavailable for " + id, failure);
             return new LotteryQuote(request, LotteryQuote.Status.PAYMENT_UNAVAILABLE, revision,
-                    0, "", "", window.remainingMillis(), false);
+                    0, pool.getVoucherExpression(), "", window.remainingMillis(), false);
         }
     }
 
