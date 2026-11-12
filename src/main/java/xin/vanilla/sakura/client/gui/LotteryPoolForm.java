@@ -105,12 +105,11 @@ public final class LotteryPoolForm {
         args.addWidget(artworkField("poster", "lottery_poster_png", artwork, false));
         args.addWidget(artworkField("thumbnail", "lottery_thumbnail_png", artwork, true));
         var animations = new java.util.ArrayList<DropdownOption>();
-        animations.add(option("legacy", "lottery_animation_legacy"));
         for (var animation : xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.editorChoices(existing == null ? null : existing.getAnimationStyle())) {
             animations.add(new DropdownOption(animation.name(), animation.enumDescription().toString()));
         }
         args.addWidget(dropdown("animationStyle", "lottery_animation", existing == null ? "ENVELOPE"
-                        : existing.getAnimationStyle() == null ? "legacy" : existing.getAnimationStyle().presentationStyle().name(),
+                        : existing.getAnimationStyle() == null ? "ENVELOPE" : existing.getAnimationStyle().presentationStyle().name(),
                 animations.toArray(DropdownOption[]::new)));
         args.setCallback(results -> {
             LotteryPool candidate = new LotteryPool(results.value("id"), results.value("name"),
@@ -137,8 +136,8 @@ public final class LotteryPoolForm {
             candidate.setArtworkItem(artwork.item);
             candidate.setArtworkTexture(artwork.texture);
             String animation = results.value("animationStyle");
-            if (animation != null && !"legacy".equals(animation))
-                candidate.setAnimationStyle(xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.valueOf(animation));
+            candidate.setAnimationStyle(xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.valueOf(
+                    animation == null ? "ENVELOPE" : animation));
             var errors = LotteryPoolValidator.validate(candidate);
             if (!errors.isEmpty()) {
                 results.runningResult(tr(errors.contains("invalid_dates") ? "lottery_date_invalid"
@@ -168,7 +167,7 @@ public final class LotteryPoolForm {
                     String value = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
                     selection.set(value);
                     selected.accept(value);
-                }, false));
+                }, true));
     }
 
     private static net.minecraft.world.item.ItemStack itemStack(String id) {
@@ -339,7 +338,7 @@ public final class LotteryPoolForm {
                     String id = xin.vanilla.banira.common.util.ItemUtils.getItemRegistry(stack.getItem()).toString();
                     selectedItem.set(id);
                     callback.accept(id);
-                }, false))
+                }, true))
                 .visibleWhen(result -> "item".equals(result.value("kind"))));
         args.addWidget(new InputFormScreen.Widget().name("objective").title(text("lottery_voucher_objective"))
                 .maxLength(128).defaultValue("score".equals(current.kind) ? current.specification : "")

@@ -26,8 +26,6 @@ public final class PersonalDateUiSession implements UiPageSession {
 
         void save();
 
-        void commonConfig();
-
         default boolean dirty() {
             return false;
         }
@@ -86,7 +84,6 @@ public final class PersonalDateUiSession implements UiPageSession {
         next.text("category_title", SakuraComponent.get().transClient("word", "aui_categories"));
         next.text("breadcrumb", SakuraComponent.get().transClient("word", "personal_date_config"));
         next.text("save", BaniraComponent.get().transClientAuto("config_editor_save"));
-        next.text("common", SakuraComponent.get().transClient("word", "banira_player_config"));
         next.gameElement("close", UiGameElement.preset(PresetStyle.CLOSE));
         next.tooltip("close", BaniraComponent.get().transClientAuto("config_editor_close"));
         next.control("search", new UiControlSpec(UiControlSpec.Kind.TEXT, 32767, "", false));
@@ -117,9 +114,6 @@ public final class PersonalDateUiSession implements UiPageSession {
                 refresh();
             }
         }));
-        bindings.add(next.onAction("common", () -> {
-            if (live(next, token)) port.commonConfig();
-        }));
         bindings.add(next.onAction("close", () -> {
             if (view == next && generation == token) next.requestClose();
         }));
@@ -140,7 +134,6 @@ public final class PersonalDateUiSession implements UiPageSession {
         owner.text("category_count", SakuraComponent.get().literal(String.valueOf(headers.size())));
         owner.text("status", SakuraComponent.get().transClient("word", port.dirty() ? "aui_unsaved" : "aui_no_changes"));
         owner.enabled("save", connection.getAsBoolean());
-        owner.enabled("common", connection.getAsBoolean());
         owner.rows("categories", new UiRowLayout() {
             public int rowHeight() {
                 return 20;
