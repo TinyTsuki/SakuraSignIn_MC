@@ -10,6 +10,7 @@ public final class LotteryPoolValidator {
     public static final int MAX_DESCRIPTION = 2048;
     public static final int MAX_VOUCHER_EXPRESSION = 4096;
     public static final int MAX_DRAW_OPTIONS = 12;
+    public static final int MAX_BATCH_SIZE = 100;
     public static final int MAX_ARTWORK_ID = 128;
 
     public static List<Integer> parseDrawCounts(String text) {
@@ -26,7 +27,7 @@ public final class LotteryPoolValidator {
 
     private static void validateCounts(List<Integer> counts) {
         if (counts.isEmpty() || counts.size() > MAX_DRAW_OPTIONS
-                || counts.stream().anyMatch(count -> count < 1 || count > 100)
+                || counts.stream().anyMatch(count -> count < 1 || count > MAX_BATCH_SIZE)
                 || new java.util.HashSet<>(counts).size() != counts.size())
             throw new IllegalArgumentException("Invalid draw counts");
     }
@@ -105,12 +106,10 @@ public final class LotteryPoolValidator {
         }
         try {
             List<Integer> counts = pool.getDrawCounts();
-            if (counts != null) {
-                validateCounts(counts);
-                if (pool.getLimitPolicy() != LotteryLimitPolicy.UNLIMITED && pool.getLimitPolicy() != LotteryLimitPolicy.COOLDOWN
-                        && counts.stream().anyMatch(count -> count > pool.getMaxDraws()))
-                    errors.add("invalid_draw_modes");
-            }
+            validateCounts(counts);
+            if (pool.getLimitPolicy() != LotteryLimitPolicy.UNLIMITED && pool.getLimitPolicy() != LotteryLimitPolicy.COOLDOWN
+                    && counts.stream().anyMatch(count -> count > pool.getMaxDraws()))
+                errors.add("invalid_draw_modes");
         } catch (IllegalArgumentException | NullPointerException failure) {
             errors.add("invalid_draw_modes");
         }

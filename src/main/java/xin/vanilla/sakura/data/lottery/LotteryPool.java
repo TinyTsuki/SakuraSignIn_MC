@@ -12,6 +12,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 public class LotteryPool {
+    public static final LotteryAnimationStyle DEFAULT_ANIMATION_STYLE = LotteryAnimationStyle.STRIP;
     private String id = "";
     private String displayName = "";
     private String description = "";
@@ -20,7 +21,12 @@ public class LotteryPool {
     private int maxDraws = 1;
     private int cooldownSeconds;
     private LotteryPreviewMode previewMode = LotteryPreviewMode.ALL;
-    private LotteryAnimationStyle animationStyle;
+    private LotteryAnimationStyle animationStyle = DEFAULT_ANIMATION_STYLE;
+    @lombok.EqualsAndHashCode.Exclude
+    private boolean singleDraw = true;
+    @lombok.EqualsAndHashCode.Exclude
+    private int batchSize;
+    @lombok.EqualsAndHashCode.Exclude
     private List<Integer> drawCounts;
     private String startDate = "";
     private String endDate = "";
@@ -47,15 +53,55 @@ public class LotteryPool {
         this.previewMode = previewMode == null ? LotteryPreviewMode.ALL : previewMode;
     }
 
-    public void setDrawCounts(List<Integer> counts) {
-        drawCounts = counts == null ? null : List.copyOf(counts);
+    @lombok.EqualsAndHashCode.Include
+    private List<Integer> effectiveCounts() {
+        return getDrawCounts();
     }
 
     public List<Integer> getDrawCounts() {
-        return drawCounts == null ? null : List.copyOf(drawCounts);
+        if (drawCounts != null) return List.copyOf(drawCounts);
+        if (singleDraw) return batchSize > 1 ? List.of(1, batchSize) : List.of(1);
+        return batchSize > 1 ? List.of(batchSize) : List.of();
+    }
+
+    public void setDrawCounts(List<Integer> counts) {
+        drawCounts = List.copyOf(counts);
+        singleDraw = drawCounts.contains(1);
+        batchSize = drawCounts.stream().mapToInt(Integer::intValue).filter(count -> count > 1).max().orElse(0);
+    }
+
+    public boolean isSingleDraw() {
+        return getDrawCounts().contains(1);
+    }
+
+    public int getBatchSize() {
+        return drawCounts == null ? batchSize : drawCounts.stream().mapToInt(Integer::intValue)
+                .filter(count -> count > 1).max().orElse(0);
+    }
+
+    public void setSingleDraw(boolean allowed) {
+        drawCounts = null;
+        singleDraw = allowed;
+    }
+
+    public void setBatchSize(int count) {
+        drawCounts = null;
+        batchSize = count;
     }
 
     public boolean allowsCount(int count) {
-        return drawCounts == null ? count == -1 || count >= 1 && count <= 100 : drawCounts.contains(count);
+        return getDrawCounts().contains(count);
+    }
+
+    public int defaultDrawCount() {
+        return getDrawCounts().stream().mapToInt(Integer::intValue).min().orElse(0);
+    }
+
+    public LotteryAnimationStyle getAnimationStyle() {
+        return animationStyle == null ? DEFAULT_ANIMATION_STYLE : animationStyle;
+    }
+
+    public void setAnimationStyle(LotteryAnimationStyle style) {
+        animationStyle = style == null ? DEFAULT_ANIMATION_STYLE : style;
     }
 }
