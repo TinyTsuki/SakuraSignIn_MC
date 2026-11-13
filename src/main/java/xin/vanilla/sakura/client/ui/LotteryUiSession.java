@@ -26,33 +26,10 @@ public final class LotteryUiSession implements UiPageSession {
         void pool(String id);
 
         default int batch() {
-            try {
-                return "all".equals(count()) ? -1 : Integer.parseInt(count());
-            } catch (NumberFormatException invalid) {
-                return 0;
-            }
+            return 0;
         }
 
         default void batch(int value) {
-            count(value == -1 ? "all" : String.valueOf(value));
-        }
-
-        default List<String> counts() {
-            return List.of();
-        }
-
-        default String count() {
-            return "0";
-        }
-
-        default void count(String value) {
-        }
-
-        default LotteryAnimationStyle animation() {
-            return LotteryAnimationStyle.STRIP;
-        }
-
-        default void animation(LotteryAnimationStyle value) {
         }
 
         long generation();
@@ -105,14 +82,14 @@ public final class LotteryUiSession implements UiPageSession {
         next.gameElement("close_icon", icon("close"));
         next.tooltip("close", xin.vanilla.banira.BaniraComponent.get().transClientAuto("config_editor_close"));
         bindings.add(next.onAction("single", () -> {
-            if (live(next, token) && selectedPool != null && selectedPool.allowsCount(1)) {
+            if (live(next, token) && selectedPool != null && selectedPool.isSingleDraw()) {
                 confirm(1);
             }
         }));
         bindings.add(next.onValue("batch_count", value -> {
             if (!live(next, token) || selectedPool == null || port.payment().isDrawing()) return;
-            for (int count : batchCounts()) {
-                if ((count > 1 || count == -1) && String.valueOf(count).equals(value.asText())) {
+            for (int count : selectedPool.getDrawCounts()) {
+                if (count > 1 && String.valueOf(count).equals(value.asText())) {
                     port.batch(count);
                     updateBatchLabel();
                     status();
@@ -121,7 +98,7 @@ public final class LotteryUiSession implements UiPageSession {
             }
         }));
         bindings.add(next.onAction("batch", () -> {
-            if (live(next, token) && selectedPool != null && hasBatch()) {
+            if (live(next, token) && selectedPool != null && selectedPool.getBatchSize() > 1) {
                 confirm(batchCount());
             }
         }));
@@ -161,9 +138,9 @@ public final class LotteryUiSession implements UiPageSession {
         view.text("title", title);
         view.tooltip("title", title);
         view.gameElement("poster", pool == null ? null : LotteryArtwork.resolve(pool).element());
-        view.enabled("single_slot", pool != null && pool.allowsCount(1));
-        view.enabled("batch_slot", pool != null && hasBatch());
-        List<Integer> batches = pool == null ? List.of() : batchCounts();
+        view.enabled("single_slot", pool != null && pool.isSingleDraw());
+        view.enabled("batch_slot", pool != null && pool.getBatchSize() > 1);
+        List<Integer> batches = pool == null ? List.of() : pool.getDrawCounts().stream().filter(count -> count > 1).toList();
         view.enabled("batch_picker", batches.size() > 1);
         if (batches.size() > 1) {
             var options = batches.stream().map(count -> new xin.vanilla.banira.client.gui.widget.DropdownOption(
@@ -258,28 +235,11 @@ public final class LotteryUiSession implements UiPageSession {
         }, 20);
     }
 
-    private List<Integer> batchCounts() {
-        if (selectedPool == null) return List.of();
-        if (selectedPool.getDrawCounts() != null)
-            return selectedPool.getDrawCounts().stream().filter(count -> count > 1).toList();
-        return port.counts().stream().map(value -> {
-            try {
-                return "all".equals(value) ? -1 : Integer.parseInt(value);
-            } catch (NumberFormatException invalid) {
-                return 0;
-            }
-        }).filter(count -> (count > 1 || count == -1) && selectedPool.allowsCount(count)).toList();
-    }
-
-    private boolean hasBatch() {
-        return selectedPool != null && selectedPool.allowsCount(batchCount())
-                && (selectedPool.getDrawCounts() == null || batchCount() != 1);
-    }
-
     private int batchCount() {
         if (selectedPool == null) return 0;
         int current = port.batch();
-        return (current > 1 || current == -1) && selectedPool.allowsCount(current) ? current : batchCounts().stream().findFirst().orElse(0);
+        return current > 1 && selectedPool.allowsCount(current) ? current : selectedPool.getDrawCounts().stream()
+                .filter(count -> count > 1).findFirst().orElse(0);
     }
 
     private void confirm(int count) {
@@ -306,8 +266,6 @@ public final class LotteryUiSession implements UiPageSession {
     }
 
     private void updateBatchLabel() {
-        if (batchCount() == -1)
-            view.text("batch_label", tr("lottery_draw_all_short"));
         if (batchCount() > 1)
             view.text("batch_label", SakuraComponent.get().transClient("format", "lottery_draw_count_s", batchCount()));
     }
@@ -351,8 +309,8 @@ public final class LotteryUiSession implements UiPageSession {
         long minutes = payment.windowMinutes();
         String countdownLabel = minutes > 0 ? countdownLabel(payment) : "";
         String countdownTime = minutes > 0 ? countdownTime(minutes) : "";
-        boolean single = pool != null && pool.allowsCount(1) && payment.canOfferDraw(1);
-        boolean batch = pool != null && hasBatch() && payment.canOfferDraw(batchCount());
+        boolean single = pool != null && pool.isSingleDraw() && payment.canOfferDraw(1);
+        boolean batch = pool != null && pool.getBatchSize() > 1 && payment.canOfferDraw(batchCount());
         String stamp = List.of(billing, single, batch, payment.isDrawing(), countdownLabel, countdownTime).toString();
         if (stamp.equals(displayedStatus)) return;
         displayedStatus = stamp;

@@ -1,6 +1,8 @@
 package xin.vanilla.sakura.client.gui.lottery;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
@@ -52,6 +54,10 @@ public record LotteryArtwork(ResourceLocation texture, ItemStack item, int image
     }
 
     public void render(PoseStack graphics, Font font, int x, int y, int width, int height) {
+        render(graphics, x, y, width, height, 16);
+    }
+
+    public void render(PoseStack graphics, int x, int y, int width, int height, int itemSize) {
         if (texture != null) {
             int drawWidth = Math.min(width, height * imageWidth / imageHeight);
             int drawHeight = drawWidth * imageHeight / imageWidth;
@@ -60,7 +66,18 @@ public record LotteryArtwork(ResourceLocation texture, ItemStack item, int image
                     drawWidth, drawHeight, 0, 0, imageWidth, imageHeight, imageWidth, imageHeight);
             return;
         }
-        if (width >= 16 && height >= 16) xin.vanilla.banira.client.gui.widget.ItemWidget.renderItem(font, item,
-                x + (width - 16) / 2, y + (height - 16) / 2, false);
+        int size = Math.min(itemSize, Math.min(width, height));
+        if (size <= 0 || item.isEmpty()) return;
+        PoseStack modelView = RenderSystem.getModelViewStack();
+        modelView.pushPose();
+        try {
+            modelView.translate(x + (width - size) / 2.0, y + (height - size) / 2.0, 0);
+            modelView.scale(size / 16.0F, size / 16.0F, 1);
+            RenderSystem.applyModelViewMatrix();
+            xin.vanilla.banira.client.gui.widget.ItemWidget.renderItem(Minecraft.getInstance().font, item, 0, 0, false);
+        } finally {
+            modelView.popPose();
+            RenderSystem.applyModelViewMatrix();
+        }
     }
 }
