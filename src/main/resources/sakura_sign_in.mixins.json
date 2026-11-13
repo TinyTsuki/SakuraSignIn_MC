@@ -6,9 +6,7 @@
   "mixins": [
     "DisplayInfoAccessor"
   ],
-  "client": [
-    "MinecraftClientMixin"
-  ],
+  "client": [],
   "injectors": {
     "defaultRequire": 1
   }
