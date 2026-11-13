@@ -28,7 +28,6 @@ import xin.vanilla.sakura.client.gui.lottery.LotteryMotion;
 import xin.vanilla.sakura.client.gui.lottery.LotteryRevealLayout;
 import xin.vanilla.sakura.client.ui.LotteryRevealUiSession;
 import xin.vanilla.sakura.client.ui.SakuraUiPages;
-import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.data.lottery.LotteryAnimationStyle;
 import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.network.packet.LotteryClaimPacket;
@@ -52,9 +51,7 @@ public final class LotteryRevealScreen extends BaniraScreen implements UiPageSou
     public LotteryRevealScreen(Screen parent, LotteryRevealPacket packet) {
         super(SakuraComponent.get().transClient("word", "lottery_result"));
         this.packet = packet;
-        LotteryAnimationStyle selectedStyle = packet.getAnimationStyle() == null ? LotteryAnimationStyle.ENVELOPE
-                : packet.getAnimationStyle();
-        this.style = selectedStyle.presentationStyle();
+        this.style = packet.getAnimationStyle().presentationStyle();
         revealSession = new LotteryRevealUiSession(packet, style, () -> System.nanoTime() / 1_000_000,
                 () -> uiConnection == Minecraft.getInstance().getConnection(),
                 () -> Minecraft.getInstance().options.keyInventory.getKey().getValue(),
