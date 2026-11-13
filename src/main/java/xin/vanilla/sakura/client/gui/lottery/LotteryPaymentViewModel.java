@@ -16,10 +16,17 @@ public final class LotteryPaymentViewModel {
     private final Consumer<LotteryDrawRequest> sendDraw;
     private String poolId = "", summary;
     private int count = 1;
-    private int fallbackCount = 1;
     private int quoteCount = 1;
-    private Integer intent;
-    private String intentFee;
+    private java.util.List<Integer> allowed = com.google.common.collect.ImmutableList.of(1);
+
+    @lombok.Value
+    @lombok.experimental.Accessors(fluent = true)
+    private static class DrawIntent {
+        int count;
+        String confirmedFee;
+    }
+
+    private DrawIntent intent;
     private long generation = -1, lastRequestAt, receivedAt;
     private boolean needsQuote, refreshing;
     private LotteryQuote seen;
@@ -33,15 +40,19 @@ public final class LotteryPaymentViewModel {
     }
 
     public void select(String poolId, int count) {
-        select(poolId, count, 1);
+        select(poolId, count, true);
     }
 
-    public void select(String poolId, int count, int fallbackCount) {
-        if (this.poolId.equals(poolId) && this.count == count && this.fallbackCount == fallbackCount) return;
+    public void select(String poolId, int count, boolean singleAllowed) {
+        select(poolId, singleAllowed && count != 1 ? com.google.common.collect.ImmutableList.of(count, 1) : com.google.common.collect.ImmutableList.of(count));
+    }
+
+    public void select(String poolId, java.util.List<Integer> counts) {
+        if (this.poolId.equals(poolId) && allowed.equals(counts)) return;
         if (!this.poolId.equals(poolId)) summary = null;
         this.poolId = poolId;
-        this.count = count;
-        this.fallbackCount = fallbackCount;
+        allowed = com.google.common.collect.ImmutableList.copyOf(counts);
+        count = counts.isEmpty() ? 1 : counts.get(0);
         quoteCount = count;
         intent = null;
         seen = null;
@@ -73,15 +84,16 @@ public final class LotteryPaymentViewModel {
                     || quote.getStatus() == LotteryQuote.Status.POOL_CLOSED))
                 summary = quote.getPaymentSummary();
             if (intent != null) {
-                int requested = intent;
+                DrawIntent requested = intent;
                 intent = null;
-                if (quote.isReady() && quote.getRequest().getCount() == requested
-                        && intentFee.equals(quote.getPaymentSummary())) draw(requested);
+                if (quote.isReady() && quote.getRequest().getCount() == requested.count()
+                        && requested.confirmedFee().equals(quote.getPaymentSummary())) draw(requested.count());
             }
+            int smallest = allowed.stream().mapToInt(Integer::intValue).min().orElse(count);
             if (quote.getStatus() == LotteryQuote.Status.PAYMENT_UNAVAILABLE
-                    && quote.getRequest().getCount() != fallbackCount) {
-                quoteCount = fallbackCount;
-                request(fallbackCount, false);
+                    && quote.getRequest().getCount() != smallest) {
+                quoteCount = smallest;
+                request(smallest, false);
                 return;
             }
         }
@@ -101,20 +113,22 @@ public final class LotteryPaymentViewModel {
         }
     }
 
-    public void clickConfirmed(int requested, String fee) {
-        LotteryQuote quote = requests.getQuote();
-        if (fee == null || !canOfferDraw(requested) || !fee.equals(quote.getPaymentSummary())) return;
-        click(requested);
-    }
-
     public void click(int requested) {
         if (!canOfferDraw(requested)) return;
+        startDraw(requested, requests.getQuote().getPaymentSummary());
+    }
+
+    public void clickConfirmed(int requested, String fee) {
         LotteryQuote quote = requests.getQuote();
+        if (fee == null || !canOfferDraw(requested) || quote == null || !fee.equals(quote.getPaymentSummary())) return;
+        startDraw(requested, fee);
+    }
+
+    private void startDraw(int requested, String fee) {
         LotteryQuoteRequest pending = requests.getPending();
-        if (pending == null && quote.getRequest().getCount() == requested) draw(requested);
+        if (pending == null && requests.getQuote().getRequest().getCount() == requested) draw(requested);
         else {
-            intent = requested;
-            intentFee = quote.getPaymentSummary();
+            intent = new DrawIntent(requested, fee);
             if (pending == null || pending.getCount() != requested) request(requested, false);
         }
     }
@@ -155,6 +169,7 @@ public final class LotteryPaymentViewModel {
     private boolean permits(LotteryQuote quote, int requested) {
         return quote != null && quote.isReady() && quote.getGeneration() == requests.getGeneration()
                 && quote.getRequest().getPoolId().equals(poolId)
+                && allowed.contains(requested)
                 && (quote.getRequest().getCount() == requested
                 || requested > 0 && requested <= quote.getAvailableCount());
     }

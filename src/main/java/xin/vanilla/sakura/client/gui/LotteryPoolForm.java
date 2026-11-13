@@ -67,14 +67,14 @@ public final class LotteryPoolForm {
         VoucherDraft voucher = new VoucherDraft(existing == null ? "" : existing.getVoucherExpression());
         args.addWidget(new InputFormScreen.Widget().name("voucherExpression")
                 .title(text("lottery_cost_label")).type(InputFormScreen.WidgetType.PICKER)
-                .pickerReadOnly(true).defaultValue(voucher.summary())
+                .pickerReadOnly(true).allowEmpty(true).defaultValue(voucher.summary())
                 .picker((screen, selected) -> voucherPicker(screen, voucher, selected))
                 .validator(result -> voucherError(voucher.expression)));
         args.addWidget(dropdown("policy", "lottery_limit_policy",
                 existing == null ? LotteryLimitPolicy.DAILY.name()
                         : existing.getLimitPolicy().name(),
                 Arrays.stream(LotteryLimitPolicy.values()).map(policy -> option(
-                                policy.name(), "lottery_policy_" + policy.name().toLowerCase()))
+                                policy.name(), "lottery_policy_" + policy.name().toLowerCase(java.util.Locale.ROOT)))
                         .toArray(DropdownOption[]::new)));
         args.addWidget(number("maxDraws", "lottery_max_draws",
                 "lottery_max_draws_tooltip",
@@ -85,32 +85,30 @@ public final class LotteryPoolForm {
         args.addWidget(dropdown("previewMode", "lottery_preview_mode",
                 (existing == null ? LotteryPreviewMode.ALL : existing.getPreviewMode()).name(),
                 Arrays.stream(LotteryPreviewMode.values()).map(mode -> option(
-                                mode.name(), "lottery_preview_" + mode.name().toLowerCase()))
+                                mode.name(), "lottery_preview_" + mode.name().toLowerCase(java.util.Locale.ROOT)))
                         .toArray(DropdownOption[]::new)));
         ArtworkDraft artwork = new ArtworkDraft(existing);
         args.addWidget(new InputFormScreen.Widget().name("drawCounts").title(text("lottery_batch_count"))
-                .tooltip(text("lottery_draw_sizes_hint")).maxLength(64).allowEmpty(true)
-                .defaultValue(existing == null ? "1,10" : existing.getDrawCounts() == null ? ""
-                        : existing.getDrawCounts().stream().map(String::valueOf).collect(java.util.stream.Collectors.joining(",")))
+                .hint(text("lottery_draw_counts_hint")).tooltip(text("lottery_draw_counts_hint")).maxLength(64)
+                .defaultValue(existing == null ? "1,10" : existing.getDrawCounts().stream()
+                        .map(String::valueOf).collect(java.util.stream.Collectors.joining(",")))
                 .validator(result -> {
                     try {
-                        if (!result.value().trim().isEmpty()) LotteryPoolValidator.parseDrawCounts(result.value());
+                        LotteryPoolValidator.parseDrawCounts(result.value());
                         return "";
                     } catch (IllegalArgumentException failure) {
-                        return tr("lottery_draw_sizes_invalid");
+                        return tr("lottery_draw_counts_invalid");
                     }
                 }));
         args.addWidget(date("startDate", "lottery_start_date", existing == null ? "" : existing.getStartDate()));
         args.addWidget(date("endDate", "lottery_end_date", existing == null ? "" : existing.getEndDate()));
         args.addWidget(artworkField("poster", "lottery_poster_png", artwork, false));
         args.addWidget(artworkField("thumbnail", "lottery_thumbnail_png", artwork, true));
-        java.util.List<DropdownOption> animations = new java.util.ArrayList<DropdownOption>();
-        for (xin.vanilla.sakura.data.lottery.LotteryAnimationStyle animation : xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.editorChoices(existing == null ? null : existing.getAnimationStyle())) {
-            animations.add(new DropdownOption(animation.name(), animation.enumDescription().toString()));
-        }
-        args.addWidget(dropdown("animationStyle", "lottery_animation", existing == null ? "ENVELOPE"
-                        : existing.getAnimationStyle() == null ? "ENVELOPE" : existing.getAnimationStyle().presentationStyle().name(),
-                animations.toArray(new DropdownOption[0])));
+        args.addWidget(dropdown("animationStyle", "lottery_animation",
+                (existing == null ? xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.ENVELOPE : existing.getAnimationStyle().presentationStyle()).name(),
+                xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.editorChoices(existing == null ? null : existing.getAnimationStyle()).stream().map(style -> option(
+                                style.name(), "enum_lottery_animation_style_" + style.name().toLowerCase(java.util.Locale.ROOT)))
+                        .toArray(DropdownOption[]::new)));
         args.setCallback(results -> {
             LotteryPool candidate = new LotteryPool(results.value("id"), results.value("name"),
                     LotteryLimitPolicy.valueOf(results.value("policy")),
@@ -120,14 +118,11 @@ public final class LotteryPoolForm {
                     existing == null ? new RewardList() : existing.getRewards());
             candidate.setDescription(results.value("description"));
             candidate.setVoucherExpression(voucher.expression);
-            String counts = java.util.Objects.toString(results.value("drawCounts"), "");
-            if (!counts.trim().isEmpty()) {
-                try {
-                    candidate.setDrawCounts(LotteryPoolValidator.parseDrawCounts(counts));
-                } catch (IllegalArgumentException failure) {
-                    results.runningResult(tr("lottery_draw_sizes_invalid"));
-                    return;
-                }
+            try {
+                candidate.setDrawCounts(LotteryPoolValidator.parseDrawCounts(results.value("drawCounts")));
+            } catch (IllegalArgumentException failure) {
+                results.runningResult(tr("lottery_draw_counts_invalid"));
+                return;
             }
             candidate.setStartDate(java.util.Objects.toString(results.value("startDate"), "").trim());
             candidate.setEndDate(java.util.Objects.toString(results.value("endDate"), "").trim());
@@ -137,11 +132,11 @@ public final class LotteryPoolForm {
             candidate.setArtworkTexture(artwork.texture);
             String animation = results.value("animationStyle");
             candidate.setAnimationStyle(xin.vanilla.sakura.data.lottery.LotteryAnimationStyle.valueOf(
-                    animation == null ? "ENVELOPE" : animation));
+                    animation == null ? LotteryPool.DEFAULT_ANIMATION_STYLE.name() : animation));
             java.util.List<String> errors = LotteryPoolValidator.validate(candidate);
             if (!errors.isEmpty()) {
                 results.runningResult(tr(errors.contains("invalid_dates") ? "lottery_date_invalid"
-                        : errors.contains("invalid_draw_modes") ? "lottery_draw_sizes_invalid" : "input_format_invalid"));
+                        : errors.contains("invalid_draw_modes") ? "lottery_batch_rule_invalid" : "input_format_invalid"));
                 return;
             }
             connectedSubmit.accept(candidate);
@@ -386,7 +381,7 @@ public final class LotteryPoolForm {
                     expression = voucher.expression;
                 save.accept(expression);
             } catch (IllegalArgumentException invalid) {
-                results.runningResult(tr("input_format_invalid"));
+                results.runningResult(tr("lottery_voucher_incomplete"));
             }
         });
         return new InputFormScreen(args);
@@ -418,7 +413,7 @@ public final class LotteryPoolForm {
                 case "free":
                     return tr("lottery_free");
                 case "item":
-                    return cost.specification + amount;
+                    return itemName(cost.specification) + amount;
                 case "score":
                     return tr("lottery_voucher_score") + ": " + cost.specification + amount;
                 case "xpPoints":
@@ -447,7 +442,7 @@ public final class LotteryPoolForm {
                                                  int min, int max) {
         return new InputFormScreen.Widget().name(name).title(text(titleKey))
                 .tooltip(text(hintKey)).maxLength(String.valueOf(max).length())
-                .regex("[0-9]{1,8}")
+                .regex("[0-9]{1," + String.valueOf(max).length() + "}")
                 .defaultValue(String.valueOf(value))
                 .validator(result -> {
                     try {
@@ -467,10 +462,11 @@ public final class LotteryPoolForm {
     }
 
     private static DropdownOption option(String value, String key) {
-        String label = tr(key);
-        String description = tr(key + "_tooltip");
-        return new DropdownOption(value, label, net.minecraft.world.item.ItemStack.EMPTY, null,
-                SakuraComponent.get().literal(description.endsWith("." + key + "_tooltip") ? label : description));
+        String tooltipKey = key + "_tooltip";
+        String tooltip = tr(tooltipKey);
+        return new DropdownOption(value, tr(key), net.minecraft.world.item.ItemStack.EMPTY,
+                null, tooltip.equals(tooltipKey) || tooltip.equals("word.sakura_sign_in." + tooltipKey)
+                ? null : SakuraComponent.get().literal(tooltip));
     }
 
     private static Text text(String key) {

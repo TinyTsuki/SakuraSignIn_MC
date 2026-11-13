@@ -717,6 +717,7 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
 
         // 绑定背景纹理
         ThemeTexture background = SakuraThemeTextures.get("background.editor");
+        com.mojang.blaze3d.systems.RenderSystem.color4f(1f, 1f, 1f, 1f);
         Minecraft.getInstance().getTextureManager().bind(background.location());
 
         // 获取屏幕宽高
