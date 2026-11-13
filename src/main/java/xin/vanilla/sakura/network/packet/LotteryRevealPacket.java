@@ -5,6 +5,7 @@ import xin.vanilla.banira.common.api.INetworkPacket;
 import xin.vanilla.banira.common.network.BaniraNetworkContext;
 import xin.vanilla.banira.common.network.BaniraPacketBuffer;
 import xin.vanilla.sakura.data.lottery.LotteryAnimationStyle;
+import xin.vanilla.sakura.data.lottery.LotteryPool;
 import xin.vanilla.sakura.data.lottery.LotteryPreviewMode;
 import xin.vanilla.sakura.data.lottery.LotteryProtocolLimits;
 import xin.vanilla.sakura.network.SakuraClientPacketHandlers;
@@ -63,6 +64,10 @@ public final class LotteryRevealPacket implements INetworkPacket {
             throw new IllegalArgumentException("Unexpected hidden lottery preview");
         preview = copy(values, !previewMode.showsProbabilities());
         animationStyle = buffer.readBoolean() ? buffer.readEnum(LotteryAnimationStyle.class) : null;
+    }
+
+    public LotteryAnimationStyle getAnimationStyle() {
+        return animationStyle == null ? LotteryPool.DEFAULT_ANIMATION_STYLE : animationStyle;
     }
 
     public List<Reward> getWinners() {
