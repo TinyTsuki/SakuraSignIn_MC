@@ -1,6 +1,7 @@
 package xin.vanilla.sakura.client.gui.lottery;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.item.ItemStack;
@@ -65,6 +66,10 @@ public final class LotteryArtwork {
     }
 
     public void render(MatrixStack graphics, FontRenderer font, int x, int y, int width, int height) {
+        render(graphics, x, y, width, height, 16);
+    }
+
+    public void render(MatrixStack graphics, int x, int y, int width, int height, int itemSize) {
         if (texture != null) {
             int drawWidth = Math.min(width, height * imageWidth / imageHeight);
             int drawHeight = drawWidth * imageHeight / imageWidth;
@@ -73,8 +78,15 @@ public final class LotteryArtwork {
                     drawWidth, drawHeight, 0, 0, imageWidth, imageHeight, imageWidth, imageHeight);
             return;
         }
-        if (width >= 16 && height >= 16)
-            xin.vanilla.banira.client.gui.widget.ItemWidget.renderItem(Minecraft.getInstance().getItemRenderer(), font, item,
-                    x + (width - 16) / 2, y + (height - 16) / 2, false);
+        int size = Math.min(itemSize, Math.min(width, height));
+        if (size <= 0 || item.isEmpty()) return;
+        RenderSystem.pushMatrix();
+        try {
+            RenderSystem.translated(x + (width - size) / 2.0, y + (height - size) / 2.0, 0);
+            RenderSystem.scalef(size / 16.0F, size / 16.0F, 1);
+            xin.vanilla.banira.client.gui.widget.ItemWidget.renderItem(Minecraft.getInstance().getItemRenderer(), Minecraft.getInstance().font, item, 0, 0, false);
+        } finally {
+            RenderSystem.popMatrix();
+        }
     }
 }

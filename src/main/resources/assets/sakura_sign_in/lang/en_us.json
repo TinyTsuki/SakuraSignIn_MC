@@ -1,4 +1,8 @@
 {
+  "word.sakura_sign_in.lottery_draw_counts_hint": "Separate draw sizes with commas, e.g. 1,5,10.",
+  "word.sakura_sign_in.lottery_draw_counts_invalid": "Use up to 12 distinct draw sizes from 1 to 100.",
+  "word.sakura_sign_in.lottery_voucher_incomplete": "Choose an item or enter a scoreboard objective as required, and set the amount.",
+  "word.sakura_sign_in.lottery_batch_rule_invalid": "Allow at least one draw mode. A batch must fit the pool quota.",
   "word.sakura_sign_in.lottery_animation_legacy": "Player preference",
   "word.sakura_sign_in.lottery_pool_closed": "This pool is currently closed",
   "word.sakura_sign_in.lottery_time_remaining": "Time remaining",

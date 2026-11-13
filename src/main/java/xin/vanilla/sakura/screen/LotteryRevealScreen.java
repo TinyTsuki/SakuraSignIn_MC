@@ -29,7 +29,6 @@ import xin.vanilla.sakura.client.gui.lottery.LotteryMotion;
 import xin.vanilla.sakura.client.gui.lottery.LotteryRevealLayout;
 import xin.vanilla.sakura.client.ui.LotteryRevealUiSession;
 import xin.vanilla.sakura.client.ui.SakuraUiPages;
-import xin.vanilla.sakura.config.ClientConfig;
 import xin.vanilla.sakura.data.lottery.LotteryAnimationStyle;
 import xin.vanilla.sakura.network.SakuraNetwork;
 import xin.vanilla.sakura.network.packet.LotteryClaimPacket;
