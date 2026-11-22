@@ -180,7 +180,7 @@ public final class BuiltInRewardTypes {
     private static void registerCommand() {
         SakuraRewards.register(RewardTypeDefinition.builder(SakuraRewardTypes.COMMAND,
                         new CommandRewardCodec(), (context, value) -> {
-                            String command = value.replace("@s", context.player().getName().getString());
+                            String command = value.command().replace("@s", context.player().getName().getString());
                             net.minecraft.commands.Commands commands = context.player().level().getServer().getCommands();
                             var permission = PermissionLevel.byId(CommonConfig.get().permission().permissionCommandReward());
                             net.minecraft.commands.CommandSourceStack source = context.player()
@@ -189,10 +189,11 @@ public final class BuiltInRewardTypes {
                             commands.performCommand(commands.getDispatcher().parse(command, source), command);
                             return RewardGrantResult.success();
                         })
-                .validator(value -> value == null || value.trim().isEmpty()
+                .validator(value -> value == null || value.command().isEmpty()
                         ? Collections.singletonList(new RewardViolation("command", "non_blank"))
                         : Collections.emptyList())
-                .describer((language, value, withAmount) -> typeName(language, 8))
+                .describer((language, value, withAmount) -> value.displayName().isEmpty()
+                        ? typeName(language, 8) : SakuraComponent.get().literal(value.displayName()))
                 .addPermission(permission(SakuraRewardTypes.COMMAND, 2))
                 .build());
     }
