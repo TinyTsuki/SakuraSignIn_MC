@@ -48,6 +48,7 @@ repositories {
 }
 
 dependencies {
+    testImplementation 'junit:junit:4.13.2'
     modRuntimeOnly "maven.modrinth:fabric-permissions-api:62DUD085"
     modRuntimeOnly "maven.modrinth:sodium-extra:anDafurZ"
     modRuntimeOnly "maven.modrinth:spark:cALUj9l1"
