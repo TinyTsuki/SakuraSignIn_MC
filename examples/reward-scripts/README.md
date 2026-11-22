@@ -48,6 +48,45 @@ Badges use compact units (`k`, `M`, `B`, `T`, etc.); labels keep the exact value
 Scripts load when the server starts; edit the runtime `config` copy, then restart
 the server (or leave and re-enter a single-player world). `examples` is not watched.
 
+## Choosing an example
+
+| Script | Target mod | Minecraft / loader |
+| --- | --- | --- |
+| `FtbMoneyReward.java` | FTB Money 1605.1.4 | Forge 1.16.5 |
+| `ViScriptShopReward.java` | ViScriptShop 1.2.5 | Forge 1.20.1 / NeoForge 1.21.1 |
+
+These are optional server-local integrations, not dependencies of Sakura.
+Install only the example matching your actual mod environment. A file appearing
+in another Sakura branch does not imply that the target mod supports that platform.
+
+## ViScriptShop example
+
+`ViScriptShopReward.java` grants the player's ViScriptShop virtual money through
+its public static `getMoney(ServerPlayer)` and `addMoney(ServerPlayer, double)`
+API. It does not edit persistent tags or bypass the shop's currency backend.
+API references: [Forge source](https://github.com/zhenshiz/ViScriptShop/blob/7394fec2db913e403550017d44845b4769a860ac/src/main/java/com/viscriptshop/util/ViScriptShopServerUtil.java),
+[NeoForge source](https://github.com/zhenshiz/ViScriptShop/blob/09f399813d1b5c6d4e7cdc8d86a690ec8a681e77/src/main/java/com/viscriptshop/util/ViScriptShopServerUtil.java).
+
+Install ViScriptShop and its required dependencies, put this script in the runtime
+server's `config/sakura_sign_in/reward-scripts/`, then restart the server. Add a
+**ViScriptShop Coins** reward (Chinese clients see **ViScriptShop 金币**) and enter
+the amount in the visual **金币数量** field. Clients do not need this script;
+they receive the field metadata and localized name from the server.
+
+Default: 100. This example deliberately accepts 0.01 through 1,000,000,000 with
+at most two decimal places. The `amount` field also supplies the compact icon
+badge. The full amount remains in the reward description. These limits are the
+example's policy, not a claim about the shop's own maximum balance.
+
+Missing or changed APIs fail without falling back to commands or other rewards.
+Invalid balances and amounts lost to double precision are rejected before the
+write. The script performs one addition, then checks the resulting balance.
+External currency caps or exceptions after a write can leave a partial side
+effect: investigate the balance before manually retrying, and never automate
+retries. The script does not attempt to roll back another mod's transaction.
+The example has compilation and simulated-API behavior coverage; that does not
+replace testing your installed shop version, currency backend and server.
+
 ## FTB Money example
 
 `FtbMoneyReward.java` targets the FTB Money **Forge 1.16.5 / 1605.1.4** API:
