@@ -116,6 +116,7 @@ repositories {
 }
 
 dependencies {
+    testImplementation 'junit:junit:4.13.2'
     runtimeOnly fg.deobf("maven.modrinth:spark:1dlOe6ez")
     // Development runtime performance mod; not bundled into published artifacts.
     runtimeOnly fg.deobf("maven.modrinth:embeddium:AYqEbec0")
