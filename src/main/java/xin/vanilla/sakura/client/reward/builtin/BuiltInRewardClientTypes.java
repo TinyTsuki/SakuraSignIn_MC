@@ -37,6 +37,7 @@ public final class BuiltInRewardClientTypes {
             @Override
             public void renderIcon(RewardRenderContext context, Identifier value) {
                 context.drawItem(AdvancementPresentationResolver.resolve(value).getIcon());
+                context.drawAmount("");
             }
 
             @Override
@@ -51,10 +52,13 @@ public final class BuiltInRewardClientTypes {
                 context.drawBuiltInIcon("message");
             }
         }, BuiltInRewardEditors.message());
-        register(SakuraRewardTypes.COMMAND, 80, 8, new BasePresentation<String>() {
+        register(SakuraRewardTypes.COMMAND, 80, 8, new BasePresentation<xin.vanilla.sakura.reward.builtin.CommandRewardData>() {
             @Override
-            public void renderIcon(RewardRenderContext context, String value) {
-                context.drawItem(new ItemStack(Items.REPEATING_COMMAND_BLOCK));
+            public void renderIcon(RewardRenderContext context, xin.vanilla.sakura.reward.builtin.CommandRewardData value) {
+                ItemStack icon = value.displayIcon().isEmpty() ? ItemStack.EMPTY
+                        : xin.vanilla.banira.common.util.ItemUtils.deserializeItemStack(value.displayIcon());
+                context.drawItem(icon.isEmpty() ? new ItemStack(Items.REPEATING_COMMAND_BLOCK) : icon);
+                context.drawAmount("");
             }
         }, BuiltInRewardEditors.command());
     }

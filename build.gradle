@@ -97,6 +97,7 @@ repositories {
 }
 
 dependencies {
+    testImplementation 'junit:junit:4.13.2'
     implementation "net.neoforged:neoforge:${neo_version}"
 
     compileOnly 'org.projectlombok:lombok:1.18.48'

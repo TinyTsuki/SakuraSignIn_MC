@@ -9,6 +9,17 @@ import java.util.function.Consumer;
  * 公共包处理器通过回调进入客户端代码，专用服务器不会链接 Minecraft 客户端类。
  */
 public final class SakuraClientPacketHandlers {
+    private static BiConsumer<ScriptRewardTypesPacket, Object> scriptRewards = (packet, origin) -> {
+    };
+
+    public static void registerScriptRewards(BiConsumer<ScriptRewardTypesPacket, Object> handler) {
+        scriptRewards = handler;
+    }
+
+    public static void handle(ScriptRewardTypesPacket packet, Object origin) {
+        scriptRewards.accept(packet, origin);
+    }
+
     private static Consumer<PlayerDataSyncPacket> playerSummary = packet -> {
     };
     private static Consumer<PlayerMonthSyncPacket> playerMonth = packet -> {

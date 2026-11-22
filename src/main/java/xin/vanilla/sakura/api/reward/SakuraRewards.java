@@ -10,6 +10,7 @@ import java.util.*;
  */
 public final class SakuraRewards {
     private static final Map<RewardTypeId, RewardTypeDefinition<?>> DEFINITIONS = new LinkedHashMap<>();
+    private static final Map<RewardTypeId, RewardTypeDefinition<?>> SCRIPTS = new LinkedHashMap<>();
     private static boolean frozen;
 
     private SakuraRewards() {
@@ -29,7 +30,23 @@ public final class SakuraRewards {
     }
 
     public static synchronized Optional<RewardTypeDefinition<?>> find(RewardTypeId id) {
-        return Optional.ofNullable(DEFINITIONS.get(id));
+        return Optional.ofNullable(DEFINITIONS.containsKey(id) ? DEFINITIONS.get(id) : SCRIPTS.get(id));
+    }
+
+    /**
+     * Separate server-session types; the frozen mod registry cannot be overwritten.
+     */
+    public static synchronized void replaceScriptTypes(List<RewardTypeDefinition<?>> definitions) {
+        Map<RewardTypeId, RewardTypeDefinition<?>> next = new LinkedHashMap<>();
+        for (RewardTypeDefinition<?> definition : definitions) {
+            RewardTypeId id = definition.getId();
+            if (DEFINITIONS.containsKey(id) || next.put(id, definition) != null) {
+                throw new IllegalArgumentException("Duplicate reward type: " + id);
+            }
+        }
+        next.values().forEach(definition -> registerVirtualPermission(definition.getAddPermission().getVirtualPermissionKey()));
+        SCRIPTS.clear();
+        SCRIPTS.putAll(next);
     }
 
     public static synchronized RewardTypeDefinition<?> require(RewardTypeId id) {
@@ -38,6 +55,7 @@ public final class SakuraRewards {
 
     public static synchronized List<RewardTypeDefinition<?>> all() {
         List<RewardTypeDefinition<?>> result = new ArrayList<>(DEFINITIONS.values());
+        result.addAll(SCRIPTS.values());
         result.sort((first, second) -> first.getId().compareTo(second.getId()));
         return Collections.unmodifiableList(result);
     }
@@ -52,6 +70,7 @@ public final class SakuraRewards {
 
     static synchronized void clearForTests() {
         DEFINITIONS.clear();
+        SCRIPTS.clear();
         frozen = false;
     }
 
