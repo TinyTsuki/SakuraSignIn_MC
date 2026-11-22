@@ -533,5 +533,17 @@
   "word.sakura_sign_in.enum_lottery_animation_style_chest": "开箱",
   "word.sakura_sign_in.enum_lottery_animation_style_chest_tooltip": "打开宝箱，逐件取出奖励。",
   "word.sakura_sign_in.enum_lottery_animation_style_flip": "翻牌",
-  "word.sakura_sign_in.enum_lottery_animation_style_flip_tooltip": "依次翻开五张牌，相同牌标示中奖内容。"
+  "word.sakura_sign_in.enum_lottery_animation_style_flip_tooltip": "依次翻开五张牌，相同牌标示中奖内容。",
+  "word.sakura_sign_in.reward_display_name": "显示名称（可选）",
+  "word.sakura_sign_in.reward_display_icon": "显示物品（可选）",
+  "word.sakura_sign_in.script_reward_data": "奖励数据（JSON）",
+  "word.sakura_sign_in.script_reward_amount": "数量",
+  "word.sakura_sign_in.script_reward_enabled": "开启",
+  "word.sakura_sign_in.script_reward_disabled": "关闭",
+  "word.sakura_sign_in.script_reward_integer": "整数",
+  "word.sakura_sign_in.script_reward_decimal": "数值",
+  "word.sakura_sign_in.quick_action_cdk": "兑换码兑换",
+  "word.sakura_sign_in.cdk_code": "兑换码",
+  "word.sakura_sign_in.cdk_input_invalid": "兑换码为空、过长或含有无效字符",
+  "word.sakura_sign_in.cdk_session_changed": "服务器连接已变化，请重新打开兑换界面"
 }

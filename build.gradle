@@ -52,6 +52,7 @@ repositories {
 }
 
 dependencies {
+    testImplementation 'junit:junit:4.13.2'
     modRuntimeOnly "maven.modrinth:sodium-extra:DwCPxThW"
     modRuntimeOnly "maven.modrinth:spark:qyMNf4Pn"
     // Development runtime performance mod; not bundled into published artifacts.
