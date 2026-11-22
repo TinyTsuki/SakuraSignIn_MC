@@ -94,7 +94,7 @@ public final class RewardEditorCoordinator {
             return false;
         }
         ValueTransitionScreen<T> transition = new ValueTransitionScreen<>(parent, value -> {
-            Reward draft = new Reward(value, registration.getTypeId(), BigDecimal.ONE);
+            Reward draft = SakuraRewardClient.create(value, registration.getTypeId(), BigDecimal.ONE);
             Minecraft.getInstance().setScreen(RewardProbabilityFlow.create(
                     parent,
                     BigDecimal.ONE,
@@ -120,12 +120,12 @@ public final class RewardEditorCoordinator {
         }
         final T initial;
         try {
-            initial = RewardOperations.decode(original);
+            initial = SakuraRewardClient.decode(original);
         } catch (RuntimeException exception) {
             return false;
         }
         ValueTransitionScreen<T> transition = new ValueTransitionScreen<>(parent, value -> {
-            Reward updated = new Reward(value, registration.getTypeId(),
+            Reward updated = SakuraRewardClient.create(value, registration.getTypeId(),
                     original.getProbability());
             updated.setRewarded(original.isRewarded()).setDisabled(original.isDisabled());
             onSubmit.accept(updated);

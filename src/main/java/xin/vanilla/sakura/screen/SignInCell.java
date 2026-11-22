@@ -65,7 +65,7 @@ public final class SignInCell extends BaseWidget {
         if (!permissions.details) return result;
         String language = Minecraft.getInstance().options.languageCode;
         for (Reward reward : rewardList) {
-            result.append("\n").append(reward.getName(language, true));
+            result.append("\n").append(xin.vanilla.sakura.api.reward.client.SakuraRewardClient.displayName(reward, language, true));
             if (permissions.probability)
                 result.append(" (" + reward.getProbability().stripTrailingZeros().toPlainString() + ")");
         }
@@ -81,7 +81,7 @@ public final class SignInCell extends BaseWidget {
         boolean probability = tooltipPermissions().probability;
         String language = Minecraft.getInstance().options.languageCode;
         return rewardList.stream().map(reward -> new xin.vanilla.sakura.client.ui.SignInUiSession.RewardLine(
-                reward.getName(language, true), probability ? SakuraComponent.get().transClient("format", "aui_probability_s",
+                xin.vanilla.sakura.api.reward.client.SakuraRewardClient.displayName(reward, language, true), probability ? SakuraComponent.get().transClient("format", "aui_probability_s",
                 reward.getProbability().multiply(java.math.BigDecimal.valueOf(100)).stripTrailingZeros().toPlainString())
                 : SakuraComponent.get().literal(""), RewardRenderer.uiIcon(reward))).collect(java.util.stream.Collectors.toList());
     }

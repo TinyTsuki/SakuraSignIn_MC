@@ -44,6 +44,10 @@ public final class SakuraQuickActions {
                 SakuraComponent.get().transClient("key", "categories"),
                 context -> ClientEventHandler.openSignInScreen(context.currentScreen()),
                 new QuickActionContextMenuItem(
+                        SakuraComponent.get().transClient("word", "quick_action_cdk"),
+                        context -> Minecraft.getInstance().setScreen(CdkRedemptionForm.create(context.currentScreen()))
+                ),
+                new QuickActionContextMenuItem(
                         SakuraComponent.get().transClient("word", "quick_action_lottery"),
                         context -> Minecraft.getInstance().setScreen(
                                 new LotteryScreen(context.currentScreen()))
@@ -89,6 +93,7 @@ public final class SakuraQuickActions {
                 + "|" + SakuraComponent.get().translateClient("key", "categories")
                 + "|" + SakuraComponent.get().translateClient("word", "edit_reward_config")
                 + "|" + SakuraComponent.get().translateClient("word", "quick_action_lottery")
+                + "|" + SakuraComponent.get().translateClient("word", "quick_action_cdk")
                 + "|" + SakuraComponent.get().translateClient("word", "edit_player_config")
                 + "|" + SakuraComponent.get().translateClient("word", "edit_client_config")
                 + "|" + SakuraComponent.get().translateClient("word", "edit_server_config");

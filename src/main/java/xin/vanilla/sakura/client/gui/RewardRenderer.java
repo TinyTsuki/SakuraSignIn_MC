@@ -40,16 +40,17 @@ public final class RewardRenderer {
         try {
             SakuraRewardClient.Registration registration = SakuraRewardClient.find(reward.getTypeId()).orElse(null);
             if (registration != null)
-                registration.getExtension().getPresentation().renderIcon(context, RewardOperations.decode(reward));
+                registration.getExtension().getPresentation().renderIcon(context, SakuraRewardClient.decode(reward));
         } catch (RuntimeException | LinkageError failure) {
             LOGGER.warn("Reward icon failed for {}", reward.getTypeId(), failure);
         }
-        return context.icon;
+        return context.amount == null ? context.icon : context.icon.withBadge(context.amount);
     }
 
     private static final class UiIconContext implements RewardRenderContext {
         private final Reward reward;
-        private UiGameElement icon = UiGameElement.option(new DropdownOption("", new ItemStack(Items.BARRIER), null));
+        private String amount;
+        private UiGameElement icon = UiGameElement.option(new DropdownOption("", new ItemStack(Items.BARRIER), null)).withBadge("");
 
         private UiIconContext(Reward reward) {
             this.reward = reward;
@@ -94,6 +95,7 @@ public final class RewardRenderer {
         }
 
         public void drawAmount(String text) {
+            amount = text;
         }
 
         public void drawPlaceholder(String id) {
@@ -122,6 +124,7 @@ public final class RewardRenderer {
         } else {
             context.drawPlaceholder(reward.getTypeId().toString());
         }
+        context.flushAmount();
 
         if (showText && showQuality
                 && reward.getProbability().compareTo(BigDecimal.ONE) != 0) {
@@ -139,7 +142,7 @@ public final class RewardRenderer {
     private static void renderResolved(SakuraRewardClient.Registration registration,
                                        NativeRenderContext context, Reward reward) {
         try {
-            Object value = RewardOperations.decode(reward);
+            Object value = SakuraRewardClient.decode(reward);
             registration.getExtension().getPresentation().renderIcon(context, value);
         } catch (Throwable exception) {
             LOGGER.warn("Reward presentation failed for {}", reward.getTypeId(), exception);
@@ -171,6 +174,8 @@ public final class RewardRenderer {
         private final int x;
         private final int y;
         private final boolean showAmount;
+        private String amount;
+        private String defaultAmount;
 
         private NativeRenderContext(MatrixStack graphics,
                                     FontRenderer font, ResourceLocation texture,
@@ -221,7 +226,8 @@ public final class RewardRenderer {
         public void drawItem(Object itemStack) {
             if (itemStack instanceof ItemStack) {
                 ItemWidget.renderItem(Minecraft.getInstance().getItemRenderer(), font, (ItemStack) itemStack,
-                        x, y, showAmount);
+                        x, y, false);
+                defaultAmount = String.valueOf(((ItemStack) itemStack).getCount());
             } else {
                 drawPlaceholder(reward.getTypeId().toString());
             }
@@ -229,6 +235,7 @@ public final class RewardRenderer {
 
         @Override
         public void drawEffect(Object effectInstance) {
+            defaultAmount = null;
             if (effectInstance instanceof EffectInstance) {
                 EffectIconWidget.drawEffectIcon(stack, font, (EffectInstance) effectInstance,
                         x, y, ICON_SIZE, ICON_SIZE, showAmount);
@@ -239,6 +246,7 @@ public final class RewardRenderer {
 
         @Override
         public void drawBuiltInIcon(String iconId) {
+            defaultAmount = null;
             if (!com.google.common.collect.ImmutableSet.of("point", "level", "card", "message").contains(iconId)) {
                 drawPlaceholder(reward.getTypeId().toString());
                 return;
@@ -248,14 +256,19 @@ public final class RewardRenderer {
 
         @Override
         public void drawAmount(String text) {
-            if (!showAmount || text == null) return;
-            int width = font.width(text);
-            xin.vanilla.sakura.client.LegacyGuiText.draw(graphics, font, text, (int) (x + ICON_SIZE - width / 2.0F - 2),
-                    y + ICON_SIZE - font.lineHeight + 2, 0xFFFFFFFF, true);
+            amount = text;
+        }
+
+        private void flushAmount() {
+            String value = amount == null ? defaultAmount : amount;
+            if (showAmount && value != null)
+                xin.vanilla.banira.client.gui.widget.IconBadge.draw(graphics, font, value, x, y, ICON_SIZE);
         }
 
         @Override
         public void drawPlaceholder(String typeId) {
+            amount = null;
+            defaultAmount = null;
             ItemWidget.renderItem(Minecraft.getInstance().getItemRenderer(), font, new ItemStack(Items.BARRIER),
                     x, y, false);
         }
