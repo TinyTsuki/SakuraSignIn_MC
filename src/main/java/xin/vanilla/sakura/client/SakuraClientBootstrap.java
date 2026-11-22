@@ -39,6 +39,12 @@ public final class SakuraClientBootstrap {
         BaniraThemes.register(SakuraSignIn.MODID,
                 () -> ClientConfig.get().display().interfaceThemeMode());
         BuiltInRewardClientTypes.register();
+        SakuraClientPacketHandlers.registerScriptRewards((packet, origin) -> {
+            net.minecraft.client.Minecraft client = net.minecraft.client.Minecraft.getInstance();
+            if (client.getConnection() != null && client.getConnection().getConnection() == origin) {
+                xin.vanilla.sakura.client.reward.ScriptRewardClient.install(packet.descriptors());
+            }
+        });
         signInKey = BaniraInput.registerKey(
                 SakuraSignIn.MODID, "sign_in", GLFWKey.GLFW_KEY_UNKNOWN);
         BaniraKeyHandle rewardOptionKey = BaniraInput.registerKey(
@@ -75,6 +81,7 @@ public final class SakuraClientBootstrap {
             ClientEventHandler.onClientTick(signInKey, rewardOptionKey);
         });
         BaniraClientEvents.Player.onClientLoggedOut(event -> {
+            SakuraRewardClient.replaceRemoteScripts(java.util.Collections.emptyMap());
             ClientProxy.clearMonthTransfers();
             ClientProxy.clearLotteryTransfers();
             SakuraClientState.clearSession();
