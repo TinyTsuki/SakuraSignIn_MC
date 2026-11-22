@@ -23,6 +23,10 @@ public final class RewardOperations {
 
     public static <T> JsonObject encode(RewardTypeId typeId, T value) {
         try {
+            if (SakuraRewardTypes.COMMAND.equals(typeId) && value instanceof String) {
+                return new xin.vanilla.sakura.reward.builtin.CommandRewardCodec().encode(
+                        new xin.vanilla.sakura.reward.builtin.CommandRewardData((String) value, "", ""));
+            }
             return definition(typeId).getCodec().encode(value);
         } catch (RewardDataException exception) {
             throw new JsonParseException("Unable to encode reward type " + typeId, exception);
@@ -45,7 +49,7 @@ public final class RewardOperations {
         }
         try {
             return describeResolved(raw, languageCode, reward.getContent(), withAmount);
-        } catch (RewardDataException | RuntimeException exception) {
+        } catch (RewardDataException | RuntimeException | LinkageError exception) {
             LOGGER.warn("Unable to describe reward type {}", reward.getTypeId(), exception);
             return SakuraComponent.get().literal(reward.getTypeId().toString());
         }
@@ -61,7 +65,7 @@ public final class RewardOperations {
             return grantResolved(raw, context, reward.getContent());
         } catch (RewardDataException exception) {
             return RewardGrantResult.of(RewardGrantStatus.INVALID_CONTENT, exception.getMessage());
-        } catch (RuntimeException exception) {
+        } catch (RuntimeException | LinkageError exception) {
             LOGGER.error("Reward executor failed for type {}", reward.getTypeId(), exception);
             return RewardGrantResult.of(RewardGrantStatus.FAILED, exception.getClass().getSimpleName());
         }
