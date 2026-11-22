@@ -526,5 +526,17 @@
   "format.sakura_sign_in.lottery_until_s": "Open through %s",
   "word.sakura_sign_in.lottery_voucher_points_tooltip": "Consume raw experience points.",
   "word.sakura_sign_in.lottery_voucher_levels_tooltip": "Consume whole experience levels.",
-  "word.sakura_sign_in.lottery_voucher_score_tooltip": "Deduct points from a scoreboard objective."
+  "word.sakura_sign_in.lottery_voucher_score_tooltip": "Deduct points from a scoreboard objective.",
+  "word.sakura_sign_in.reward_display_name": "Display name (optional)",
+  "word.sakura_sign_in.reward_display_icon": "Display item (optional)",
+  "word.sakura_sign_in.script_reward_data": "Reward data (JSON)",
+  "word.sakura_sign_in.script_reward_amount": "Amount",
+  "word.sakura_sign_in.script_reward_enabled": "Enabled",
+  "word.sakura_sign_in.script_reward_disabled": "Disabled",
+  "word.sakura_sign_in.script_reward_integer": "Whole number",
+  "word.sakura_sign_in.script_reward_decimal": "Number",
+  "word.sakura_sign_in.quick_action_cdk": "Redeem Code",
+  "word.sakura_sign_in.cdk_code": "Redemption Code",
+  "word.sakura_sign_in.cdk_input_invalid": "The code is empty, too long, or contains invalid characters",
+  "word.sakura_sign_in.cdk_session_changed": "The server connection changed. Reopen the redemption form"
 }

@@ -25,8 +25,8 @@ import java.util.Date;
  * Sakura 唯一网络入口；注册、发送与客户端可选握手均由 Banira 承担。
  */
 public final class SakuraNetwork {
-    // Nullable animation markers and expanded ordinals differ from protocol 9's direct enum.
-    public static final String PROTOCOL_VERSION = "sakura-10";
+    // Script reward descriptors require a matching modded client; vanilla clients remain optional.
+    public static final String PROTOCOL_VERSION = "sakura-13";
     private static final NetworkHandler HANDLER = NetworkHandler.create(
             "main_network",
             BaniraIdentifier.of(SakuraSignIn.MODID, "main_network"),
@@ -34,6 +34,8 @@ public final class SakuraNetwork {
             true
     );
     private static boolean initialized;
+    private static final xin.vanilla.sakura.reward.script.ScriptRewardLanguageSync SCRIPT_LANGUAGES =
+            new xin.vanilla.sakura.reward.script.ScriptRewardLanguageSync();
 
     private SakuraNetwork() {
     }
@@ -98,7 +100,21 @@ public final class SakuraNetwork {
                 LotteryQuotePacket::new, LotteryQuotePacket::handle);
         HANDLER.register(LotteryDrawOutcomePacket.class, LotteryDrawOutcomePacket::toBytes,
                 LotteryDrawOutcomePacket::new, LotteryDrawOutcomePacket::handle);
+        HANDLER.register(ScriptRewardTypesPacket.class, ScriptRewardTypesPacket::toBytes,
+                ScriptRewardTypesPacket::new, ScriptRewardTypesPacket::handle);
         BaniraModPresence.register(SakuraSignIn.MODID, SakuraNetwork::syncInitialData);
+        xin.vanilla.banira.api.event.BaniraEvents.Server.onTick(event -> {
+            net.minecraft.server.MinecraftServer server = event.serverAs(net.minecraft.server.MinecraftServer.class);
+            if (server != null && server.getTickCount() % 20 == 0
+                    && !xin.vanilla.sakura.reward.script.RewardScriptLoader.descriptors().isEmpty()) {
+                server.getPlayerList().getPlayers().forEach(SakuraNetwork::syncScriptRewards);
+            }
+        });
+        xin.vanilla.banira.api.event.BaniraEvents.Player.onLoggedOut(event -> {
+            ServerPlayer player = event.playerAs(ServerPlayer.class);
+            if (player != null) removeScriptRewardSession(player.connection);
+        });
+        xin.vanilla.banira.api.event.BaniraEvents.Server.onStopping(event -> clearScriptRewardSessions());
         initialized = true;
     }
 
@@ -151,6 +167,7 @@ public final class SakuraNetwork {
             return;
         }
         ServerPlayer player = (ServerPlayer) playerObject;
+        syncScriptRewards(player);
         sendToPlayer(new CommonConfigSnapshotPacket(CommonConfig.networkSnapshot()), player);
         SakuraPlayerData.sync(player);
         sendToPlayer(new ServerTimeSyncPacket(), player);
@@ -161,6 +178,22 @@ public final class SakuraNetwork {
         sendSplitToPlayer(new AdvancementPacket(
                 player.server.getAdvancements().getAllAdvancements()
         ), player);
+    }
+
+    public static void syncScriptRewards(ServerPlayer player) {
+        if (!BaniraModPresence.isRemoteClientInstalled(player, SakuraSignIn.MODID)) return;
+        // Presence can arrive before vanilla client settings. Refresh after the real locale arrives.
+        SCRIPT_LANGUAGES.sync(player.connection, xin.vanilla.sakura.SakuraLang.getServerPlayerLanguage(player), language ->
+                sendToPlayer(new ScriptRewardTypesPacket(
+                        xin.vanilla.sakura.reward.script.RewardScriptLoader.descriptors(language)), player));
+    }
+
+    public static void removeScriptRewardSession(Object connection) {
+        SCRIPT_LANGUAGES.remove(connection);
+    }
+
+    public static void clearScriptRewardSessions() {
+        SCRIPT_LANGUAGES.clear();
     }
 
     private static String monthOf(Date date) {
