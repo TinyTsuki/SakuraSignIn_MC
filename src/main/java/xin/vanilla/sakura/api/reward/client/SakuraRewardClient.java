@@ -13,6 +13,7 @@ import java.util.*;
  */
 public final class SakuraRewardClient {
     private static final Map<RewardTypeId, Registration<?>> EXTENSIONS = new LinkedHashMap<>();
+    private static final Map<RewardTypeId, Registration<?>> REMOTE_SCRIPTS = new LinkedHashMap<>();
     private static boolean frozen;
 
     private SakuraRewardClient() {
@@ -32,7 +33,29 @@ public final class SakuraRewardClient {
     }
 
     public static synchronized Optional<Registration<?>> find(RewardTypeId typeId) {
-        return Optional.ofNullable(EXTENSIONS.get(typeId));
+        return Optional.ofNullable(EXTENSIONS.containsKey(typeId) ? EXTENSIONS.get(typeId) : REMOTE_SCRIPTS.get(typeId));
+    }
+
+    public static synchronized void replaceRemoteScripts(Map<RewardTypeId, RewardClientExtension<com.google.gson.JsonObject>> extensions) {
+        Map<RewardTypeId, Registration<?>> next = new LinkedHashMap<>();
+        extensions.forEach((id, extension) -> {
+            if (EXTENSIONS.containsKey(id))
+                throw new IllegalArgumentException("Server script shadows a local reward type: " + id);
+            next.put(id, new Registration<>(id, extension));
+        });
+        REMOTE_SCRIPTS.clear();
+        REMOTE_SCRIPTS.putAll(next);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static synchronized <T> T decode(Reward reward) {
+        return REMOTE_SCRIPTS.containsKey(reward.getTypeId())
+                ? (T) xin.vanilla.sakura.api.reward.script.JsonRewardCodec.copy(reward.getContent()) : RewardOperations.decode(reward);
+    }
+
+    public static synchronized <T> Reward create(T value, RewardTypeId id, java.math.BigDecimal probability) {
+        return REMOTE_SCRIPTS.containsKey(id) ? new Reward(xin.vanilla.sakura.api.reward.script.JsonRewardCodec.copy((com.google.gson.JsonObject) value), id, probability)
+                : new Reward(value, id, probability);
     }
 
     public static synchronized Registration<?> require(RewardTypeId typeId) {
@@ -42,6 +65,7 @@ public final class SakuraRewardClient {
 
     public static synchronized List<Registration<?>> all() {
         List<Registration<?>> result = new ArrayList<>(EXTENSIONS.values());
+        result.addAll(REMOTE_SCRIPTS.values());
         result.sort((first, second) -> {
             int bySort = Integer.compare(first.getExtension().getSortOrder(),
                     second.getExtension().getSortOrder());
@@ -79,7 +103,7 @@ public final class SakuraRewardClient {
     @SuppressWarnings({"rawtypes", "unchecked"})
     private static Component displayNameResolved(Registration registration, Reward reward,
                                                  String languageCode, boolean withAmount) {
-        Object value = RewardOperations.decode(reward);
+        Object value = decode(reward);
         RewardDisplayContext context = new RewardDisplayContext() {
             @Override
             public Reward reward() {
@@ -101,6 +125,7 @@ public final class SakuraRewardClient {
 
     static synchronized void clearForTests() {
         EXTENSIONS.clear();
+        REMOTE_SCRIPTS.clear();
         frozen = false;
     }
 

@@ -8,6 +8,9 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import xin.vanilla.banira.client.gui.component.Text;
+import xin.vanilla.banira.client.gui.InputFormScreen;
+import xin.vanilla.sakura.reward.builtin.CommandRewardData;
+import xin.vanilla.sakura.reward.builtin.CommandRewardCodec;
 import xin.vanilla.banira.common.data.Component;
 import xin.vanilla.banira.common.util.NumberUtils;
 import xin.vanilla.sakura.SakuraComponent;
@@ -89,24 +92,43 @@ final class BuiltInRewardEditors {
                         SakuraComponent.get().literal(values.get(0))));
     }
 
-    static RewardEditorProvider<String> command() {
+    static RewardEditorProvider<CommandRewardData> command() {
         return StandardRewardEditors.custom(context -> Minecraft.getInstance().setScreen(
                 commandScreen(context)));
     }
 
-    static Screen commandScreen(RewardEditContext<String> context) {
-        return new StringInputScreen(parent(context), title("enter_command"), hint(), "",
-                context.getInitialValue() == null ? "" : context.getInitialValue(),
-                values -> {
-                    StringList errors = new StringList();
-                    if (values.get(0).startsWith("/")) {
-                        context.getSubmit().accept(values.get(0));
-                    } else {
-                        errors.add(SakuraComponent.get().transClient(
-                                "format", "enter_value_s_error", values.get(0)).toString());
-                    }
-                    return errors;
-                });
+    static Screen commandScreen(RewardEditContext<CommandRewardData> context) {
+        CommandRewardData initial = context.getInitialValue() == null
+                ? new CommandRewardData("", "", "") : context.getInitialValue();
+        InputFormScreen.Args args = new InputFormScreen.Args().setParentScreen(parent(context))
+                .setHeaderTitle(title("enter_command"));
+        args.addWidget(new InputFormScreen.Widget().name("command").title(title("enter_command"))
+                .maxLength(32767).defaultValue(initial.command()));
+        args.addWidget(new InputFormScreen.Widget().name("displayName").title(title("reward_display_name"))
+                .allowEmpty(true).maxLength(128).defaultValue(initial.displayName()));
+        java.util.concurrent.atomic.AtomicReference<String> selectedIcon = new java.util.concurrent.atomic.AtomicReference<>(initial.displayIcon());
+        args.addWidget(new InputFormScreen.Widget().name("displayIcon").title(title("reward_display_icon"))
+                .allowEmpty(true).maxLength(256).defaultValue(initial.displayIcon())
+                .type(InputFormScreen.WidgetType.PICKER)
+                .picker((screen, selected) -> ItemRewardSelectionFlow.create(screen,
+                        xin.vanilla.banira.common.util.ItemUtils.deserializeItemStack(selectedIcon.get().isEmpty()
+                                ? "minecraft:repeating_command_block" : selectedIcon.get()),
+                        stack -> {
+                            String icon = stack.isEmpty() ? "" : xin.vanilla.banira.common.util.ItemUtils.getItemRegistry(stack.getItem()).toString();
+                            selectedIcon.set(icon);
+                            selected.accept(icon);
+                        })));
+        args.setCallback(results -> {
+            CommandRewardData value = new CommandRewardData(results.value("command"),
+                    results.value("displayName"), results.value("displayIcon"));
+            try {
+                new CommandRewardCodec().encode(value);
+                context.getSubmit().accept(value);
+            } catch (xin.vanilla.sakura.api.reward.RewardDataException failure) {
+                results.runningResult(SakuraComponent.get().transClient("word", "input_format_invalid").toString());
+            }
+        });
+        return new InputFormScreen(args);
     }
 
     private static Screen parent(RewardEditContext<?> context) {

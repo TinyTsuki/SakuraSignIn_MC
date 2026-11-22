@@ -52,10 +52,20 @@ public final class SakuraSignIn {
         SakuraNetwork.initialize();
 
         BaniraEvents.Server.onStarting(event -> {
+            xin.vanilla.sakura.reward.script.RewardScriptLoader.clear();
+            xin.vanilla.sakura.reward.script.RewardScriptLoader.load(
+                    xin.vanilla.banira.api.BaniraDataPaths.gameConfigPath()
+                            .resolve(MODID).resolve("reward-scripts"));
             SakuraCalendars.reload();
             RewardConfigManager.loadRewardOption();
             LOGGER.debug("Sign-in reward data loaded");
         });
-        BaniraEvents.Server.onStopping(event -> SakuraPlayerData.saveAllAndClear());
+        BaniraEvents.Server.onStopping(event -> {
+            try {
+                SakuraPlayerData.saveAllAndClear();
+            } finally {
+                xin.vanilla.sakura.reward.script.RewardScriptLoader.clear();
+            }
+        });
     }
 }
