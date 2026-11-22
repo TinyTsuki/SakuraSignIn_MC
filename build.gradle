@@ -70,6 +70,7 @@ repositories {
 }
 
 dependencies {
+    testImplementation 'junit:junit:4.13.2'
     runtimeOnly "maven.modrinth:spark:v5qtqRQi"
     // Development runtime performance mod; not bundled into published artifacts.
     runtimeOnly "maven.modrinth:embeddium:J7b96IEd"
