@@ -1,0 +1,11 @@
+.dates-page { font-family:default; }
+.dates-page .config-sidebar {
+    width:100%; min-width:0; max-width:none; max-height:55px;
+    border:0; padding:0; flex:0 0 auto;
+}
+.dates-page .config-main { min-height:0; min-width:0; }
+.dates-page .date-group { background:var(--fold-header,var(--panel-soft)); }
+.dates-page .date-group>.row-action { color:var(--ink); }
+.dates-page .config-footer { padding:3px 6px; }
+.dates-page .config-footer #status { flex:1; }
+.dates-page .config-footer button { flex:0 1 80px; min-width:0; }
