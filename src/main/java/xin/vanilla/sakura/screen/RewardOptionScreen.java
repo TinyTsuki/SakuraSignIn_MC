@@ -3004,7 +3004,6 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
 
     private boolean moveRewardSelection(int keyCode) {
         RewardKeyboardNavigator.Direction direction = navigationDirection(keyCode);
-        if (uiKeyNavigation) direction = RewardEditorUiSession.listDirection(direction);
         if (direction == null || rewardSelection.primary() == null
                 || rewardSelection.primary().startsWith("标题")
                 || !popupOption.isEmpty() || draggingRewardId != null
@@ -3017,6 +3016,7 @@ public class RewardOptionScreen extends BaniraScreen implements UiPageSource {
         List<String> orderedIds = new ArrayList<>();
         if (uiKeyNavigation && rewardUiSession != null) {
             orderedIds.addAll(rewardUiSession.navigationIds());
+            points.addAll(rewardUiSession.navigationPoints());
         } else {
             REWARD_BUTTONS.forEach((id, widget) -> {
                 if (!id.startsWith("标题")) {
