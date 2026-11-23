@@ -171,9 +171,21 @@ public class RewardScriptLoaderTest {
     }
 
     @Test
+    public void startupLoadsLegacyScriptsAndPrefersMatchingNewFilenames() throws Exception {
+        Path legacy = folder(), current = folder();
+        source(legacy, "Legacy", script("Legacy", "test:legacy"));
+        source(legacy, "Shared", script("Shared", "test:old"));
+        source(current, "Shared", script("Shared", "test:new"));
+        RewardScriptLoader.load(current, legacy);
+        assertNotNull(SakuraRewards.require(RewardTypeId.parse("test:legacy")));
+        assertNotNull(SakuraRewards.require(RewardTypeId.parse("test:new")));
+        assertThrows(RuntimeException.class, () -> SakuraRewards.require(RewardTypeId.parse("test:old")));
+    }
+
+    @Test
     public void ftbExampleCompilesAndRejectsInvalidAmountsWithoutCoreDependency() throws Exception {
         Path dir = folder();
-        Files.copy(Paths.get("examples/reward-scripts/FtbMoneyReward.java"), dir.resolve("FtbMoneyReward.java"));
+        Files.copy(ExampleScriptFiles.resolve("FtbMoneyReward.java"), dir.resolve("FtbMoneyReward.java"));
         RewardScriptLoader.load(dir);
         RewardTypeDefinition<?> type = SakuraRewards.require(RewardTypeId.parse("example:ftb_money"));
         @SuppressWarnings("unchecked") RewardValidator<JsonObject> validator = (RewardValidator<JsonObject>) type.getValidator();
