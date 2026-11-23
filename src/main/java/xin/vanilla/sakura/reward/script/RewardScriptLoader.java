@@ -10,7 +10,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -23,17 +22,13 @@ public final class RewardScriptLoader {
     private RewardScriptLoader() {
     }
 
-    public static List<ScriptSource> readSources(Path directory) throws IOException {
-        if (!Files.exists(directory)) return Collections.emptyList();
-        List<Path> files;
-        try (Stream<Path> paths = Files.list(directory)) {
-            files = paths.filter(path -> path.getFileName().toString().endsWith(".java"))
-                    .sorted().limit(33).collect(Collectors.toList());
-        }
-        if (files.size() > 32) throw new IOException("At most 32 reward scripts are allowed");
+    public static List<ScriptSource> readSources(Path directory, Path... legacyDirectories) throws IOException {
+        Map<String, Path> files = new TreeMap<>();
+        collectSources(directory, files);
+        for (Path legacy : legacyDirectories) collectSources(legacy, files);
         List<ScriptSource> sources = new ArrayList<>();
         long total = 0;
-        for (Path path : files) {
+        for (Path path : files.values()) {
             String file = path.getFileName().toString();
             String name = file.substring(0, file.length() - 5);
             if (!name.matches("[A-Za-z_][A-Za-z0-9_]*") || Files.isSymbolicLink(path)
@@ -59,10 +54,24 @@ public final class RewardScriptLoader {
         return sources;
     }
 
-    public static void load(Path directory) {
+    private static void collectSources(Path directory, Map<String, Path> files) throws IOException {
+        if (!Files.exists(directory, LinkOption.NOFOLLOW_LINKS)) return;
+        if (!Files.isDirectory(directory, LinkOption.NOFOLLOW_LINKS))
+            throw new IOException("Invalid reward script directory: " + directory);
+        try (DirectoryStream<Path> paths = Files.newDirectoryStream(directory, "*.java")) {
+            for (Path path : paths) {
+                String file = path.getFileName().toString();
+                if (!file.endsWith(".java")) continue;
+                files.putIfAbsent(file, path);
+                if (files.size() > 32) throw new IOException("At most 32 reward scripts are allowed");
+            }
+        }
+    }
+
+    public static void load(Path directory, Path... legacyDirectories) {
         List<ScriptSource> sources;
         try {
-            sources = readSources(directory);
+            sources = readSources(directory, legacyDirectories);
         } catch (IOException error) {
             throw new IllegalStateException("Unable to read reward scripts from " + directory, error);
         }
