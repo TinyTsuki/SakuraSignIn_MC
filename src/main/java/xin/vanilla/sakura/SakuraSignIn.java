@@ -54,6 +54,7 @@ public final class SakuraSignIn {
         BaniraEvents.Server.onStarting(event -> {
             xin.vanilla.sakura.reward.script.RewardScriptLoader.clear();
             xin.vanilla.sakura.reward.script.RewardScriptLoader.load(
+                    xin.vanilla.banira.api.BaniraDataPaths.configPath().resolve(MODID).resolve("scripts"),
                     xin.vanilla.banira.api.BaniraDataPaths.gameConfigPath()
                             .resolve(MODID).resolve("reward-scripts"));
             SakuraCalendars.reload();
