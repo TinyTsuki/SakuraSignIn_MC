@@ -12,7 +12,7 @@ body { display:flex; align-items:center; justify-content:center; padding:0; font
 }
 .reward-left { max-width:112px; overflow:hidden; border-right:1px solid #32252e; }
 .reward-left-head { display:flex; align-items:center; min-height:24px; padding:2px; }
-.reward-left-head .tool,.reward-command-rail .tool {
+.reward-left-head .tool,.reward-command-rail .tool,.reward-command-rail #close.ui-close {
     height:18px; min-height:18px; max-height:18px; width:18px; min-width:18px; max-width:18px;
     flex:0 0 18px; background:var(--button,#f3e7df); border-color:var(--line);
 }
@@ -30,15 +30,47 @@ body { display:flex; align-items:center; justify-content:center; padding:0; font
 .reward-group-nav.group-current { color:var(--ink); }
 .rewards-page .search { position:relative; flex:0 0 22px; width:auto; margin:2px 4px 0; min-height:22px; }
 .rewards-page #search { height:19px; min-height:19px; }
-.rewards-page .sectionbar { height:24px; padding:2px 4px; }
-.rewards-page .reward-tools { height:23px; min-height:23px; padding:2px 4px; border-color:var(--line); }
+.rewards-page .sectionbar {
+    height:24px; padding:2px 4px; margin:0 4px;
+    background:var(--fold-header,#fff6fa); border:1px solid var(--line); border-radius:3px 3px 0 0;
+}
+.rewards-page #section { font-size:9px; font-weight:600; }
+.rewards-page .reward-tools { height:23px; min-height:23px; margin:0 4px; padding:2px 4px; border-color:var(--line); }
 .rewards-page .reward-tools .tool { width:18px; min-width:18px; max-width:18px; flex-basis:18px; }
 .rewards-page .reward-tools button { height:18px; min-height:18px; }
-.rewards-page #content { position:relative; padding:4px; }
+.rewards-page #content {
+    position:relative; padding:3px; margin:0 4px 4px;
+    background:var(--native-panel,#fcf1f5); border:1px solid var(--line); border-radius:0 0 3px 3px;
+}
 .rewards-page #empty { text-align:center; padding:6px 4px; }
-.rewards-page .reward-entry { background:var(--surface,#fcf8f3); border-color:var(--line); }
-.rewards-page .reward-group { background:var(--fold-header,#f2e7e4); }
-.rewards-page .reward-selected { background:var(--button-focused,#f1dce4); }
+.rewards-page #fields { display:flex; flex-direction:row; flex-wrap:wrap; align-content:flex-start; }
+#fields .reward-tile { position:relative; flex:0 0 16.666%; padding:0; overflow:hidden; }
+#fields .reward-columns-4 { width:25.000%; flex-basis:25.000%; }
+#fields .reward-columns-5 { width:20.000%; flex-basis:20.000%; }
+#fields .reward-columns-6 { width:16.666%; flex-basis:16.666%; }
+#fields .reward-columns-7 { width:14.285%; flex-basis:14.285%; }
+#fields .reward-columns-8 { width:12.500%; flex-basis:12.500%; }
+#fields .reward-columns-9 { width:11.111%; flex-basis:11.111%; }
+#fields .reward-columns-10 { width:10.000%; flex-basis:10.000%; }
+#fields .reward-columns-11 { width:9.090%; flex-basis:9.090%; }
+#fields .reward-columns-12 { width:8.333%; flex-basis:8.333%; }
+.reward-tile>.row-action {
+    position:absolute; left:0; top:1px; width:100%; height:30px; min-height:30px; max-height:30px;
+    padding:2px; background:transparent; border:1px solid transparent; border-radius:3px;
+}
+.reward-tile>.row-action:hover { background:var(--hover,#f5dfeb); border-color:var(--focus,#a44367); }
+.reward-selected>.row-action {
+    background:var(--button-focused,#f1dce4); border:1px solid var(--accent,#a44367);
+}
+.reward-tile>.row-icon {
+    position:absolute; left:50%; top:6px; margin-left:-10px; width:20px; height:20px; pointer-events:none;
+}
+.reward-tile>.editor { position:absolute; top:3px; left:3px; width:8px; height:8px; z-index:1; }
+.reward-tile>.editor>.input {
+    width:8px; height:8px; min-height:8px; padding:0; margin:0; opacity:.52;
+}
+.reward-selected>.editor>.input,.reward-tile:hover>.editor>.input { opacity:1; }
+.reward-tile.reward-group>.row-action { padding-left:3px; }
 .rewards-page #inspector { background:var(--surface,#fcf8f3); border-color:var(--line); }
 .rewards-page #inspector,.rewards-page #inspector_dock { min-width:95px; }
 .rewards-page .detail-top,.rewards-page .detail-content { padding:3px 5px; }

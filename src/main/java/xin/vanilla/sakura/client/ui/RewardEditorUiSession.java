@@ -7,8 +7,9 @@ import xin.vanilla.banira.client.data.Texture;
 import xin.vanilla.banira.client.gui.search.ConfigSearchQuery;
 import xin.vanilla.banira.client.gui.widget.ButtonWidget.PresetStyle;
 import xin.vanilla.banira.common.data.Component;
+import xin.vanilla.banira.internal.client.ui.UiRowPresentation;
 import xin.vanilla.sakura.SakuraComponent;
-import xin.vanilla.sakura.client.gui.RewardKeyboardNavigator.Direction;
+import xin.vanilla.sakura.client.gui.RewardKeyboardNavigator;
 import xin.vanilla.sakura.enums.ERewardRule;
 
 import java.util.*;
@@ -120,6 +121,7 @@ public final class RewardEditorUiSession implements UiPageSession {
     private int chromeState = -1;
     private String selectedGroup = "";
     private int selectedRule;
+    private int gridColumns = 6;
     private static final String[] RULE_KEYS = {"reward_base", "reward_continuous", "reward_cycle", "reward_year",
             "reward_month", "reward_week", "reward_time", "reward_cumulative", "reward_random", "reward_cdk",
             "reward_personal_date", "reward_lottery"};
@@ -149,8 +151,18 @@ public final class RewardEditorUiSession implements UiPageSession {
         revealId = Objects.requireNonNull(id);
     }
 
-    public static Direction listDirection(Direction direction) {
-        return direction == Direction.UP ? Direction.LEFT : direction == Direction.DOWN ? Direction.RIGHT : direction;
+    public List<RewardKeyboardNavigator.Point> navigationPoints() {
+        List<RewardKeyboardNavigator.Point> points = new ArrayList<>(navigationIds.size());
+        for (int index = 0; index < navigationIds.size(); index++) {
+            points.add(new RewardKeyboardNavigator.Point(navigationIds.get(index), index % gridColumns, index / gridColumns));
+        }
+        return points;
+    }
+
+    private int columnsFor(UiView owner) {
+        var area = owner.bounds("content");
+        if (area == null || area.width() <= 0) return gridColumns;
+        return Math.max(4, Math.min(12, (int) ((area.width() - 14) / 30)));
     }
 
     private boolean live(UiView owner, long token) {
@@ -343,8 +355,6 @@ public final class RewardEditorUiSession implements UiPageSession {
     private void rowSprites(UiView row, Entry entry) {
         boolean visible = !moreOpen && (wide || !detailOpen);
         row.gameElement("icon", visible ? entry.group() ? icon(entry.collapsed() ? "chevron_right" : "chevron_down") : entry.icon() : null);
-        row.gameElement("apply", visible && entry.editable() ? icon("edit") : null);
-        row.gameElement("delete", visible && (!entry.group() || entry.editable()) ? icon("delete") : null);
     }
 
     private void detailAction(UiView owner, long token, EntryAction action) {
@@ -426,7 +436,8 @@ public final class RewardEditorUiSession implements UiPageSession {
         List<Entry> entries = all.stream().filter(entry -> !grouped || !entry.group()
                         && (selectedGroup.isEmpty() || selectedGroup.equals(groupFor.get(entry.id()))))
                 .filter(entry -> search.matches(entry.id(), entry.label(), entry.detail(), entry.tooltip())).toList();
-        owner.text("section", ruleName(port.rule()));
+        Entry activeGroup = groups.stream().filter(entry -> entry.id().equals(selectedGroup)).findFirst().orElse(null);
+        owner.text("section", activeGroup == null ? ruleName(port.rule()) : SakuraComponent.get().literal(activeGroup.label()));
         owner.text("status", port.status());
         owner.text("count", SakuraComponent.get().literal(entries.stream().filter(entry -> !entry.group()).count() + " / "
                 + all.stream().filter(entry -> !entry.group()).count()));
@@ -445,18 +456,20 @@ public final class RewardEditorUiSession implements UiPageSession {
         owner.text("empty", port.redacted() ? tr("reward_rule_permission_denied_page")
                 : port.rule() == 0 ? tr("reward_rule_type") : entries.isEmpty() ? tr("aui_no_rewards") : SakuraComponent.get().literal(""));
         owner.enabled("empty", port.redacted() || port.rule() == 0 || entries.isEmpty());
-        owner.rows("fields", new UiRowLayout() {
+        gridColumns = columnsFor(owner);
+        int columns = gridColumns;
+        owner.rows("fields", new UiRowPresentation() {
             public int rowHeight() {
-                return 28;
+                return 32;
             }
 
-            public boolean textTools() {
-                return true;
+            public int columns() {
+                return columns;
             }
 
             public String rowClass(int index) {
                 Entry entry = entries.get(index);
-                return "row reward-entry"
+                return "reward-tile reward-columns-" + columns
                         + (entry.group() ? " reward-group" : "") + (entry.selected() ? " reward-selected" : "");
             }
 
@@ -481,8 +494,7 @@ public final class RewardEditorUiSession implements UiPageSession {
                 rowBindings.put(row, owned);
                 Entry entry = entries.get(index);
                 rowEntries.put(row, entry);
-                row.text("open", SakuraComponent.get().literal(entry.label()));
-                row.text("label", SakuraComponent.get().literal(entry.detail()));
+                row.text("open", entry.group() ? SakuraComponent.get().literal(entry.label()) : SakuraComponent.get().empty());
                 row.value("input", UiValue.bool(entry.selected()));
                 row.tooltip("input", tr("aui_select"));
                 owned.add(row.onValue("input", value -> {
@@ -493,7 +505,9 @@ public final class RewardEditorUiSession implements UiPageSession {
                         if (live(owner, token)) refresh();
                     }
                 }));
-                row.tooltip("open", SakuraComponent.get().literal(entry.tooltip()));
+                String probability = entry.group() ? "" : port.probability(entry.id()).toVanilla().getString();
+                String tooltip = entry.tooltip().isBlank() ? entry.label() : entry.tooltip();
+                row.tooltip("open", SakuraComponent.get().literal(probability.isBlank() ? tooltip : tooltip + "\n" + probability));
                 bindEntry(row, owned, "open", entry, EntryAction.SELECT, owner, token, rowsToken);
                 owned.add(row.onLongAction("open", () -> {
                     if (live(owner, token) && !detailBlocks() && rowRevision == rowsToken && rowBindings.get(row) == owned) {
@@ -515,18 +529,6 @@ public final class RewardEditorUiSession implements UiPageSession {
                         }
                     }
                 }));
-                row.gameElement("apply", icon("edit"));
-                row.tooltip("apply", tr("edit"));
-                row.enabled("apply", entry.editable());
-                bindEntry(row, owned, "apply", entry, EntryAction.EDIT, owner, token, rowsToken);
-                row.text("reset", port.probability(entry.id()));
-                row.tooltip("reset", tr("edit_probability"));
-                row.enabled("reset", !entry.group());
-                bindEntry(row, owned, "reset", entry, EntryAction.PROBABILITY, owner, token, rowsToken);
-                row.gameElement("delete", icon("delete"));
-                row.tooltip("delete", tr("delete"));
-                row.enabled("delete", !entry.group() || entry.editable());
-                bindEntry(row, owned, "delete", entry, EntryAction.DELETE, owner, token, rowsToken);
                 rowSprites(row, entry);
             }
         }, 120);
@@ -622,7 +624,7 @@ public final class RewardEditorUiSession implements UiPageSession {
     public void tick() {
         if (view != null && !view.nativeView() && connection.getAsBoolean()) {
             port.tick();
-            if (revision != port.revision()) refresh();
+            if (revision != port.revision() || gridColumns != columnsFor(view)) refresh();
             else chrome();
         }
     }
