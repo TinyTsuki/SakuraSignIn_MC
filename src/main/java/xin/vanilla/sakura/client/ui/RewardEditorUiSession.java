@@ -4,6 +4,7 @@ import net.minecraft.resources.ResourceLocation;
 import xin.vanilla.banira.BaniraComponent;
 import xin.vanilla.banira.api.client.ui.*;
 import xin.vanilla.banira.client.data.Texture;
+import xin.vanilla.banira.client.data.ScreenCoordinate;
 import xin.vanilla.banira.client.gui.search.ConfigSearchQuery;
 import xin.vanilla.banira.client.gui.widget.ButtonWidget.PresetStyle;
 import xin.vanilla.banira.common.data.Component;
@@ -116,12 +117,15 @@ public final class RewardEditorUiSession implements UiPageSession {
     private List<String> navigationIds = List.of();
     private long generation, rowRevision, revision = Long.MIN_VALUE;
     private boolean closed;
+    private boolean filterOpen;
 
     private enum Popup {NONE, GROUPS, DETAILS, MORE}
 
     private Popup popup = Popup.NONE;
     private Detail selectedDetail;
     private int chromeState = -1;
+    private ScreenCoordinate menuBounds;
+    private double menuScroll;
     private String selectedGroup = "";
     private int selectedRule;
     private int gridColumns = 6;
@@ -183,9 +187,23 @@ public final class RewardEditorUiSession implements UiPageSession {
         next.text("title", tr("reward_option_title"));
         next.control("search", new UiControlSpec(UiControlSpec.Kind.TEXT, 32767, "", false));
         next.draft("search", query);
-        Component searchHint = BaniraComponent.get().transClientAuto("config_editor_search_hint");
+        filterOpen |= !query.isEmpty();
+        Component searchHint = tr("aui_reward_filter");
         next.text("search_hint", searchHint);
         next.tooltip("search", searchHint);
+        next.tooltip("reward_filter_toggle", searchHint);
+        bindings.add(next.onAction("reward_filter_toggle", () -> {
+            if (!live(next, token)) return;
+            popup = Popup.NONE;
+            filterOpen = !filterOpen;
+            if (!filterOpen && !query.isEmpty()) {
+                query = "";
+                next.draft("search", "");
+                clearFocus(next);
+                if (next.state() != null) next.state().rowPosition(0);
+                refresh();
+            } else chrome();
+        }));
         bindings.add(next.onAction("clear_search", () -> {
             if (live(next, token)) {
                 query = "";
@@ -236,7 +254,6 @@ public final class RewardEditorUiSession implements UiPageSession {
         next.tooltip("details", tr("aui_reward_details"));
         next.text("detail_edit", tr("edit"));
         next.text("detail_probability", tr("edit_probability"));
-        next.text("groups_heading", tr("aui_group"));
         next.tooltip("group_picker", tr("aui_group"));
         next.gameElement("group_arrow", icon("chevron_down"));
         bindings.add(next.onAction("group_picker", () -> {
@@ -270,12 +287,11 @@ public final class RewardEditorUiSession implements UiPageSession {
             }
         }));
         bindings.add(next.onPointer("workspace", pointer -> {
-            if (!live(next, token) || popup != Popup.MORE || pointer.kind() != UiPointer.Kind.DOWN || pointer.button() != 0 || !pointer.finite())
+            if (!live(next, token) || pointer.kind() != UiPointer.Kind.DOWN || pointer.button() != 0 || !pointer.finite())
                 return;
-            var bounds = next.bounds("more_panel");
-            if (bounds != null && bounds.width() > 0 && bounds.height() > 0
-                    && (pointer.x() < bounds.x() || pointer.x() >= bounds.x() + bounds.width()
-                    || pointer.y() < bounds.y() || pointer.y() >= bounds.y() + bounds.height())) {
+            String menu = popup == Popup.MORE ? "more_panel" : popup == Popup.GROUPS ? "group_nav" : null;
+            String trigger = popup == Popup.MORE ? "more" : "group_picker";
+            if (menu != null && !inside(next, menu, pointer) && !inside(next, trigger, pointer)) {
                 popup = Popup.NONE;
                 clearFocus(next);
                 chrome();
@@ -318,14 +334,23 @@ public final class RewardEditorUiSession implements UiPageSession {
     private void chrome() {
         if (view == null) return;
         boolean hint = query.isEmpty() && (view.state() == null || !"search".equals(view.state().focusedField()));
-        int state = popup.ordinal() | (hint ? 4 : 0);
-        if (state == chromeState) return;
+        int state = popup.ordinal() | (hint ? 4 : 0) | (filterOpen ? 8 : 0);
+        ScreenCoordinate bounds = switch (popup) {
+            case GROUPS -> view.bounds("group_nav");
+            case MORE -> view.bounds("more_panel");
+            default -> null;
+        };
+        double scroll = bounds != null && view.state() != null ? view.state().scrollOffset() : 0;
+        if (state == chromeState && Objects.equals(menuBounds, bounds) && menuScroll == scroll) return;
         chromeState = state;
+        menuBounds = bounds;
+        menuScroll = scroll;
         boolean moreOpen = popup == Popup.MORE;
         boolean detailOpen = popup == Popup.DETAILS;
         view.enabled("group_nav", popup == Popup.GROUPS);
         view.enabled("inspector", detailOpen);
         view.enabled("more_panel", moreOpen);
+        view.enabled("reward_filter", filterOpen);
         view.enabled("search_hint", hint);
         view.gameElement("detail_icon", detailOpen && selectedDetail != null ? selectedDetail.icon() : null);
         view.gameElement("close_details", detailOpen ? UiGameElement.preset(PresetStyle.CLOSE) : null);
@@ -334,19 +359,26 @@ public final class RewardEditorUiSession implements UiPageSession {
                 case CUT, MOVE, SORT, MERGE, CLEAR -> true;
                 default -> false;
             };
-            boolean visible = menu ? moreOpen : !moreOpen || action == Action.UPLOAD
-                    || action == Action.DOWNLOAD || action == Action.FOLDER || action == Action.HELP;
+            boolean visible = menu ? moreOpen : !covered(view, action.id + "_icon");
             view.gameElement(action.id + "_icon", visible ? actionIcon(action) : null);
         }
-        view.gameElement("more_icon", moreOpen ? null : icon("more"));
-        view.gameElement("details_icon", moreOpen ? null : icon("details"));
-        view.gameElement("edit_group_icon", moreOpen ? null : icon("edit"));
+        view.gameElement("more_icon", covered(view, "more_icon") ? null : icon("more"));
+        view.gameElement("details_icon", covered(view, "details_icon") ? null : icon("details"));
+        view.gameElement("edit_group_icon", covered(view, "edit_group_icon") ? null : icon("edit"));
         rowEntries.forEach((row, entry) -> rowSprites(row, entry));
     }
 
     private void rowSprites(UiView row, Entry entry) {
-        boolean visible = popup != Popup.MORE;
+        boolean visible = !covered(row, "open");
         row.gameElement("icon", visible ? entry.group() ? icon(entry.collapsed() ? "chevron_right" : "chevron_down") : entry.icon() : null);
+    }
+
+    private boolean covered(UiView owner, String id) {
+        if (menuBounds == null || menuBounds.width() <= 0 || menuBounds.height() <= 0) return false;
+        ScreenCoordinate b = owner.bounds(id);
+        return b != null && b.width() > 0 && b.height() > 0
+                && b.x() < menuBounds.x() + menuBounds.width() && b.x() + b.width() > menuBounds.x()
+                && b.y() < menuBounds.y() + menuBounds.height() && b.y() + b.height() > menuBounds.y();
     }
 
     private void detailAction(UiView owner, long token, EntryAction action) {
@@ -412,6 +444,7 @@ public final class RewardEditorUiSession implements UiPageSession {
         boolean canSwitchGroup = grouped && groups.size() > 1;
         if (!canSwitchGroup && popup == Popup.GROUPS) popup = Popup.NONE;
         owner.enabled("group_picker", canSwitchGroup);
+        owner.enabled("group_anchor", canSwitchGroup);
         owner.enabled("section", !canSwitchGroup);
         owner.enabled("add_group", grouped && port.enabled(Action.ADD_GROUP));
         owner.enabled("reward_navigation", port.sidebarOpen());
@@ -613,7 +646,11 @@ public final class RewardEditorUiSession implements UiPageSession {
     }
 
     private static boolean inside(UiView row, UiPointer pointer) {
-        var bounds = row.bounds("open");
+        return inside(row, "open", pointer);
+    }
+
+    private static boolean inside(UiView view, String id, UiPointer pointer) {
+        var bounds = view.bounds(id);
         return pointer.finite() && bounds != null && Double.isFinite(bounds.x()) && Double.isFinite(bounds.y())
                 && Double.isFinite(bounds.width()) && Double.isFinite(bounds.height()) && bounds.width() > 0 && bounds.height() > 0
                 && pointer.x() >= bounds.x() && pointer.x() < bounds.x() + bounds.width()
@@ -675,6 +712,7 @@ public final class RewardEditorUiSession implements UiPageSession {
         navigationIds = List.of();
         selectedDetail = null;
         popup = Popup.NONE;
+        menuBounds = null;
         chromeState = -1;
         clearRows();
         release(bindings);
