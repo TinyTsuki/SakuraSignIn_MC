@@ -10,7 +10,6 @@ import xin.vanilla.sakura.api.reward.script.*;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
@@ -18,7 +17,7 @@ import static org.junit.Assert.*;
 
 public class ViScriptShopRewardExampleTest {
     private JsonRewardScript compile() throws Exception {
-        String source = new String(Files.readAllBytes(Paths.get("examples/reward-scripts/ViScriptShopReward.java")), StandardCharsets.UTF_8);
+        String source = new String(Files.readAllBytes(ExampleScriptFiles.resolve("ViScriptShopReward.java")), StandardCharsets.UTF_8);
         try (ScriptSession<RewardScript> session = BaniraScripts.open("example-test", RewardScript.class, "1",
                 new ScriptLimits(262144, 1048576, 32), Runnable::run)) {
             return (JsonRewardScript) session.prepare(Collections.singletonList(new ScriptSource("vss",
