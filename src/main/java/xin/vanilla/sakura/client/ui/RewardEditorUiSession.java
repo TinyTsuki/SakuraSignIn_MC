@@ -116,7 +116,10 @@ public final class RewardEditorUiSession implements UiPageSession {
     private List<String> navigationIds = List.of();
     private long generation, rowRevision, revision = Long.MIN_VALUE;
     private boolean closed;
-    private boolean moreOpen, detailOpen, wide;
+
+    private enum Popup {NONE, GROUPS, DETAILS, MORE}
+
+    private Popup popup = Popup.NONE;
     private Detail selectedDetail;
     private int chromeState = -1;
     private String selectedGroup = "";
@@ -169,10 +172,6 @@ public final class RewardEditorUiSession implements UiPageSession {
         return !closed && view == owner && generation == token && connection.getAsBoolean();
     }
 
-    private boolean detailBlocks() {
-        return detailOpen && !wide;
-    }
-
     @Override
     public void bind(UiView next) {
         detach(UiDetachReason.RELOAD);
@@ -207,9 +206,8 @@ public final class RewardEditorUiSession implements UiPageSession {
             next.text(action.id + "_label", tr(action.label));
             next.tooltip(action.id, tr(action.label));
             bindings.add(next.onAction(action.id, () -> {
-                boolean outside = action == Action.UPLOAD || action == Action.DOWNLOAD || action == Action.FOLDER || action == Action.HELP;
-                if (live(next, token) && (!detailBlocks() || outside) && port.enabled(action)) {
-                    moreOpen = false;
+                if (live(next, token) && port.enabled(action)) {
+                    popup = Popup.NONE;
                     clearFocus(next);
                     if (action == Action.ADD && !selectedGroup.isEmpty())
                         port.entry(selectedGroup, EntryAction.FOCUS_GROUP);
@@ -223,10 +221,9 @@ public final class RewardEditorUiSession implements UiPageSession {
             next.text(id, ruleName(rule.getCode()));
             next.tooltip(id, tr("reward_rule_description_" + rule.getCode()));
             bindings.add(next.onAction(id, () -> {
-                if (!live(next, token) || detailBlocks()) return;
+                if (!live(next, token)) return;
                 clearFocus(next);
-                moreOpen = false;
-                detailOpen = false;
+                popup = Popup.NONE;
                 port.rule(rule.getCode());
                 if (next.state() != null) next.state().rowPosition(0);
                 refresh();
@@ -237,14 +234,22 @@ public final class RewardEditorUiSession implements UiPageSession {
         for (String id : List.of("more", "details")) next.gameElement(id + "_icon", icon(id));
         next.tooltip("more", tr("aui_more"));
         next.tooltip("details", tr("aui_reward_details"));
-        next.text("detail_heading", tr("aui_reward_details"));
         next.text("detail_edit", tr("edit"));
         next.text("detail_probability", tr("edit_probability"));
-        next.text("detail_add", tr("ui_reward_add"));
         next.text("groups_heading", tr("aui_group"));
+        next.tooltip("group_picker", tr("aui_group"));
+        next.gameElement("group_arrow", icon("chevron_down"));
+        bindings.add(next.onAction("group_picker", () -> {
+            if (live(next, token)) {
+                clearFocus(next);
+                popup = popup == Popup.GROUPS ? Popup.NONE : Popup.GROUPS;
+                refresh();
+            }
+        }));
         next.tooltip("edit_group", tr("aui_edit_group"));
         bindings.add(next.onAction("edit_group", () -> {
-            if (live(next, token) && !detailBlocks() && !selectedGroup.isEmpty() && !port.redacted()) {
+            if (live(next, token) && !selectedGroup.isEmpty() && !port.redacted()) {
+                popup = Popup.NONE;
                 port.entry(selectedGroup, EntryAction.EDIT);
                 if (live(next, token)) refresh();
             }
@@ -253,46 +258,37 @@ public final class RewardEditorUiSession implements UiPageSession {
         bindings.add(next.onAction("more", () -> {
             if (live(next, token)) {
                 clearFocus(next);
-                detailOpen = false;
-                moreOpen = !moreOpen;
+                popup = popup == Popup.MORE ? Popup.NONE : Popup.MORE;
                 chrome();
             }
         }));
         bindings.add(next.onAction("details", () -> {
             if (live(next, token)) {
                 clearFocus(next);
-                moreOpen = false;
-                detailOpen = !detailOpen;
+                popup = popup == Popup.DETAILS ? Popup.NONE : Popup.DETAILS;
                 chrome();
             }
         }));
         bindings.add(next.onPointer("workspace", pointer -> {
-            if (!live(next, token) || !moreOpen || pointer.kind() != UiPointer.Kind.DOWN || pointer.button() != 0 || !pointer.finite())
+            if (!live(next, token) || popup != Popup.MORE || pointer.kind() != UiPointer.Kind.DOWN || pointer.button() != 0 || !pointer.finite())
                 return;
             var bounds = next.bounds("more_panel");
             if (bounds != null && bounds.width() > 0 && bounds.height() > 0
                     && (pointer.x() < bounds.x() || pointer.x() >= bounds.x() + bounds.width()
                     || pointer.y() < bounds.y() || pointer.y() >= bounds.y() + bounds.height())) {
-                moreOpen = false;
+                popup = Popup.NONE;
                 clearFocus(next);
                 chrome();
             }
         }));
-        for (String id : List.of("close_details", "inspector_shade"))
-            bindings.add(next.onAction(id, () -> {
-                if (live(next, token)) {
-                    detailOpen = false;
-                    chrome();
-                }
-            }));
-        bindings.add(next.onAction("detail_edit", () -> detailAction(next, token, EntryAction.EDIT)));
-        bindings.add(next.onAction("detail_probability", () -> detailAction(next, token, EntryAction.PROBABILITY)));
-        bindings.add(next.onAction("detail_add", () -> {
-            if (live(next, token) && port.enabled(Action.ADD)) {
-                port.command(Action.ADD);
-                if (live(next, token)) refresh();
+        bindings.add(next.onAction("close_details", () -> {
+            if (live(next, token)) {
+                popup = Popup.NONE;
+                chrome();
             }
         }));
+        bindings.add(next.onAction("detail_edit", () -> detailAction(next, token, EntryAction.EDIT)));
+        bindings.add(next.onAction("detail_probability", () -> detailAction(next, token, EntryAction.PROBABILITY)));
         next.tooltip("close", BaniraComponent.get().transClientAuto("config_editor_close"));
         bindings.add(next.onAction("close", () -> {
             if (view == next && generation == token) next.requestClose();
@@ -321,39 +317,35 @@ public final class RewardEditorUiSession implements UiPageSession {
 
     private void chrome() {
         if (view == null) return;
-        var bounds = view.bounds("workspace");
-        wide = bounds != null && bounds.width() >= 430;
         boolean hint = query.isEmpty() && (view.state() == null || !"search".equals(view.state().focusedField()));
-        int state = (wide ? 1 : 0) | (detailOpen ? 2 : 0) | (moreOpen ? 4 : 0) | (hint ? 8 : 0);
+        int state = popup.ordinal() | (hint ? 4 : 0);
         if (state == chromeState) return;
         chromeState = state;
-        view.enabled("inspector_dock", wide);
-        view.enabled("inspector", wide || detailOpen);
-        view.enabled("inspector_shade", !wide && detailOpen);
-        view.enabled("close_details", !wide);
+        boolean moreOpen = popup == Popup.MORE;
+        boolean detailOpen = popup == Popup.DETAILS;
+        view.enabled("group_nav", popup == Popup.GROUPS);
+        view.enabled("inspector", detailOpen);
         view.enabled("more_panel", moreOpen);
         view.enabled("search_hint", hint);
-        view.gameElement("detail_icon", (wide || detailOpen) && selectedDetail != null ? selectedDetail.icon() : null);
-        view.gameElement("close_details", !wide && detailOpen ? UiGameElement.preset(PresetStyle.CLOSE) : null);
-        boolean blocked = !wide && detailOpen;
-        boolean covered = blocked || moreOpen;
+        view.gameElement("detail_icon", detailOpen && selectedDetail != null ? selectedDetail.icon() : null);
+        view.gameElement("close_details", detailOpen ? UiGameElement.preset(PresetStyle.CLOSE) : null);
         for (Action action : Action.values()) {
             boolean menu = switch (action) {
                 case CUT, MOVE, SORT, MERGE, CLEAR -> true;
                 default -> false;
             };
-            boolean visible = menu ? moreOpen && !blocked : !covered || action == Action.UPLOAD
+            boolean visible = menu ? moreOpen : !moreOpen || action == Action.UPLOAD
                     || action == Action.DOWNLOAD || action == Action.FOLDER || action == Action.HELP;
             view.gameElement(action.id + "_icon", visible ? actionIcon(action) : null);
         }
-        view.gameElement("more_icon", covered ? null : icon("more"));
-        view.gameElement("details_icon", covered ? null : icon("details"));
-        view.gameElement("edit_group_icon", covered ? null : icon("edit"));
+        view.gameElement("more_icon", moreOpen ? null : icon("more"));
+        view.gameElement("details_icon", moreOpen ? null : icon("details"));
+        view.gameElement("edit_group_icon", moreOpen ? null : icon("edit"));
         rowEntries.forEach((row, entry) -> rowSprites(row, entry));
     }
 
     private void rowSprites(UiView row, Entry entry) {
-        boolean visible = !moreOpen && (wide || !detailOpen);
+        boolean visible = popup != Popup.MORE;
         row.gameElement("icon", visible ? entry.group() ? icon(entry.collapsed() ? "chevron_right" : "chevron_down") : entry.icon() : null);
     }
 
@@ -377,7 +369,9 @@ public final class RewardEditorUiSession implements UiPageSession {
         view.enabled("detail_icon", detail != null && detail.icon() != null);
         view.enabled("detail_subtitle", detail != null && detail.subtitle() != null && !detail.subtitle().isBlank());
         chromeState = -1;
-        view.text("detail_title", detail == null ? ruleName(port.rule()) : SakuraComponent.get().literal(detail.title()));
+        Component title = detail == null ? ruleName(port.rule()) : SakuraComponent.get().literal(detail.title());
+        view.text("detail_title", title);
+        view.tooltip("detail_title", title);
         view.text("detail_subtitle", SakuraComponent.get().literal(detail == null ? "" : detail.subtitle()));
         view.text("detail_description", port.redacted() ? tr("reward_rule_permission_denied_page")
                 : detail == null ? port.rule() == 0 ? tr("reward_rule_type") : tr("reward_rule_description_" + port.rule()) : SakuraComponent.get().literal(detail.description()));
@@ -390,7 +384,6 @@ public final class RewardEditorUiSession implements UiPageSession {
         }
         view.enabled("detail_edit", detail != null && detail.editable());
         view.enabled("detail_probability", detail != null && detail.probability());
-        view.enabled("detail_add", port.enabled(Action.ADD));
     }
 
     private void refresh() {
@@ -416,10 +409,12 @@ public final class RewardEditorUiSession implements UiPageSession {
             selectedRule = port.rule();
             selectedGroup = groups.isEmpty() ? "" : groups.get(0).id();
         }
-        boolean showGroups = grouped && port.rule() != 0 && (groups.size() > 1 || port.enabled(Action.ADD_GROUP));
-        owner.enabled("group_nav", showGroups);
-        owner.enabled("reward_navigation", port.sidebarOpen() || showGroups);
-        owner.enabled("edit_group", grouped && groups.stream().anyMatch(e -> e.id().equals(selectedGroup) && e.editable()));
+        boolean canSwitchGroup = grouped && groups.size() > 1;
+        if (!canSwitchGroup && popup == Popup.GROUPS) popup = Popup.NONE;
+        owner.enabled("group_picker", canSwitchGroup);
+        owner.enabled("section", !canSwitchGroup);
+        owner.enabled("add_group", grouped && port.enabled(Action.ADD_GROUP));
+        owner.enabled("reward_navigation", port.sidebarOpen());
         Map<String, String> groupFor = new HashMap<>();
         String group = "";
         for (Entry entry : all) {
@@ -431,13 +426,17 @@ public final class RewardEditorUiSession implements UiPageSession {
             String focus = revealId != null ? revealId : detail == null ? "" : detail.id();
             String focusedGroup = groups.stream().anyMatch(e -> e.id().equals(focus)) ? focus : groupFor.get(focus);
             if (focusedGroup != null) selectedGroup = focusedGroup;
-            bindGroups(owner, token, rowsToken, groups);
+            if (popup == Popup.GROUPS) bindGroups(owner, token, rowsToken, groups);
         }
         List<Entry> entries = all.stream().filter(entry -> !grouped || !entry.group()
                         && (selectedGroup.isEmpty() || selectedGroup.equals(groupFor.get(entry.id()))))
                 .filter(entry -> search.matches(entry.id(), entry.label(), entry.detail(), entry.tooltip())).toList();
         Entry activeGroup = groups.stream().filter(entry -> entry.id().equals(selectedGroup)).findFirst().orElse(null);
-        owner.text("section", activeGroup == null ? ruleName(port.rule()) : SakuraComponent.get().literal(activeGroup.label()));
+        owner.enabled("edit_group", grouped && activeGroup != null && activeGroup.editable());
+        Component groupTitle = activeGroup == null ? ruleName(port.rule()) : SakuraComponent.get().literal(activeGroup.label());
+        owner.text("section", groupTitle);
+        owner.text("group_current", groupTitle);
+        owner.tooltip("group_picker", groupTitle);
         owner.text("status", port.status());
         owner.text("count", SakuraComponent.get().literal(entries.stream().filter(entry -> !entry.group()).count() + " / "
                 + all.stream().filter(entry -> !entry.group()).count()));
@@ -499,7 +498,7 @@ public final class RewardEditorUiSession implements UiPageSession {
                 row.tooltip("input", tr("aui_select"));
                 owned.add(row.onValue("input", value -> {
                     if (value.kind() == UiValue.Kind.BOOLEAN && value.asBoolean() != entry.selected()
-                            && live(owner, token) && !detailBlocks() && rowRevision == rowsToken && rowBindings.get(row) == owned && !port.redacted()) {
+                            && live(owner, token) && rowRevision == rowsToken && rowBindings.get(row) == owned && !port.redacted()) {
                         clearFocus(owner);
                         port.entry(entry.id(), EntryAction.TOGGLE);
                         if (live(owner, token)) refresh();
@@ -510,7 +509,7 @@ public final class RewardEditorUiSession implements UiPageSession {
                 row.tooltip("open", SakuraComponent.get().literal(probability.isBlank() ? tooltip : tooltip + "\n" + probability));
                 bindEntry(row, owned, "open", entry, EntryAction.SELECT, owner, token, rowsToken);
                 owned.add(row.onLongAction("open", () -> {
-                    if (live(owner, token) && !detailBlocks() && rowRevision == rowsToken && rowBindings.get(row) == owned) {
+                    if (live(owner, token) && rowRevision == rowsToken && rowBindings.get(row) == owned) {
                         clearFocus(owner);
                         port.entry(entry.id(), EntryAction.GROUP_SELECT);
                         refresh();
@@ -522,7 +521,7 @@ public final class RewardEditorUiSession implements UiPageSession {
                         rightPressed[0] = live(owner, token) && rowRevision == rowsToken && rowBindings.get(row) == owned && inside(row, pointer);
                     } else if (pointer.kind() == UiPointer.Kind.UP && rightPressed[0]) {
                         rightPressed[0] = false;
-                        if (pointer.button() == 1 && live(owner, token) && !detailBlocks() && rowRevision == rowsToken && rowBindings.get(row) == owned && inside(row, pointer) && !port.redacted()) {
+                        if (pointer.button() == 1 && live(owner, token) && rowRevision == rowsToken && rowBindings.get(row) == owned && inside(row, pointer) && !port.redacted()) {
                             clearFocus(owner);
                             port.entry(entry.id(), EntryAction.CONTEXT);
                             if (live(owner, token)) refresh();
@@ -555,7 +554,7 @@ public final class RewardEditorUiSession implements UiPageSession {
             }
 
             public int rowHeight() {
-                return 30;
+                return 17;
             }
 
             public String scrollerId() {
@@ -585,9 +584,10 @@ public final class RewardEditorUiSession implements UiPageSession {
                 row.text("detail", SakuraComponent.get().literal(group.detail()));
                 row.tooltip("label", SakuraComponent.get().literal(group.tooltip()));
                 owned.add(row.onAction("label", () -> {
-                    if (!live(owner, token) || rowRevision != rowsToken || detailBlocks() || groupBindings.get(row) != owned)
+                    if (!live(owner, token) || rowRevision != rowsToken || groupBindings.get(row) != owned)
                         return;
                     selectedGroup = group.id();
+                    popup = Popup.NONE;
                     if (owner.state() != null) owner.state().rowPosition(0);
                     port.entry(group.id(), EntryAction.FOCUS_GROUP);
                     if (live(owner, token)) refresh();
@@ -598,7 +598,7 @@ public final class RewardEditorUiSession implements UiPageSession {
 
     private void bindEntry(UiView row, List<AutoCloseable> owned, String id, Entry entry, EntryAction action, UiView owner, long token, long rowsToken) {
         owned.add(row.onAction(id, () -> {
-            if (!live(owner, token) || detailBlocks() || rowRevision != rowsToken || rowBindings.get(row) != owned || port.redacted())
+            if (!live(owner, token) || rowRevision != rowsToken || rowBindings.get(row) != owned || port.redacted())
                 return;
             if ((action == EntryAction.EDIT && !entry.editable()) || (action == EntryAction.PROBABILITY && entry.group())
                     || (action == EntryAction.DELETE && entry.group() && !entry.editable())) return;
@@ -632,14 +632,12 @@ public final class RewardEditorUiSession implements UiPageSession {
     @Override
     public boolean key(int key, int scan, int modifiers, boolean pressed) {
         if (view == null || closed || !connection.getAsBoolean()) return false;
-        if (pressed && key == 256 && (moreOpen || detailBlocks())) {
-            moreOpen = false;
-            detailOpen = false;
+        if (pressed && key == 256 && popup != Popup.NONE) {
+            popup = Popup.NONE;
             clearFocus(view);
             chrome();
             return true;
         }
-        if (detailBlocks()) return true;
         if (view.state() != null && !view.state().focusedField().isEmpty()) return false;
         boolean handled = port.key(key, scan, modifiers, pressed);
         if (handled) refresh();
@@ -676,8 +674,7 @@ public final class RewardEditorUiSession implements UiPageSession {
         view = null;
         navigationIds = List.of();
         selectedDetail = null;
-        moreOpen = false;
-        detailOpen = false;
+        popup = Popup.NONE;
         chromeState = -1;
         clearRows();
         release(bindings);
