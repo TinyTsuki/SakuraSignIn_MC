@@ -1,0 +1,72 @@
+body { padding:8px; font-family:default; }
+.lottery {
+    --stage:#3e2c3c; --stage-edge:#826073; --stage-text:#fff3f5; --stage-muted:#ebcdd7;
+    --pool-active:#69445b; --pool-focus:#ffb7d2;
+    --ink:var(--text,#38252d); --line:var(--border,#dbc5c7);
+    --panel:var(--input,#fffafc); --panel-soft:var(--button,#f3e7df); --muted:var(--text,#38252d);
+    max-width:640px; max-height:350px; padding:0 8px 4px;
+    background:var(--native-panel,#fff0f5); color:var(--ink);
+    border:0; border-radius:8px;
+}
+.lottery-topbar {
+    align-items:flex-start; gap:4px; flex:0 0 auto; height:auto; min-height:50px;
+    padding:5px 0 4px; background:transparent; border:0;
+}
+#screen_title,#brand { display:none; }
+.pool-heading { flex:1; min-width:0; min-height:0; }
+.pool-title {
+    font-family:default; font-size:14px; line-height:16px; max-height:32px; color:var(--ink);
+    white-space:pre-wrap; overflow-wrap:anywhere; overflow-y:auto;
+}
+#policy {
+    font-size:8px; line-height:10px; margin:0; max-height:14px; color:var(--disabled-text,#725661);
+}
+.lottery-topbar #close { background:var(--button,#f3e7df); border-color:var(--line); }
+.lottery-body { gap:6px; }
+.pool-rail {
+    flex:0 0 19%; width:19%; max-width:106px; min-width:62px; padding:0;
+    background:transparent; border:0;
+}
+#pool_label { display:none; }
+.pool-card { background:var(--stage); border:1px solid var(--stage); margin-bottom:2px; }
+.pool-card.selected { background:var(--pool-active); border:2px solid var(--pool-focus); }
+.pool-card:hover { border-color:var(--pool-focus); }
+.pool-card .row-icon { left:3px; right:3px; top:2px; height:20px; width:auto; }
+.pool-card .label {
+    padding:23px 4px 0; color:var(--stage-text); text-align:center; text-overflow:ellipsis;
+}
+.pool-card .paragraph { display:none; }
+.feature { background:var(--stage); border:1px solid var(--stage-edge); border-radius:5px; }
+.lottery .pool-copy {
+    flex:0 0 45%; width:45%; justify-content:flex-start; padding:5px 4px 4px 7px;
+}
+#time { margin:0 0 3px; border-left:0; padding-left:0; }
+#time_label,#time_value { color:var(--stage-muted); }
+.lottery #detail { flex:0 1 auto; margin:0; max-height:52px; }
+#description { color:var(--stage-text); }
+.lottery .feature-tools { margin-top:3px; gap:3px; }
+.feature-tools button,.featured-icon { background:var(--stage); border-color:var(--stage-edge); }
+.lottery .artwork { left:46%; top:3%; right:2%; bottom:3%; }
+.lottery .billing {
+    gap:4px; min-height:33px; padding:4px 0 0; margin-top:5px;
+    background:transparent; border-color:var(--stage-edge);
+}
+.fee-group { gap:2px 7px; font-size:8px; }
+#fee,#available { min-width:0; color:var(--ink); text-overflow:ellipsis; }
+#info { color:var(--muted); }
+#available:disabled,#info:disabled { display:none; }
+#single_slot,#batch_slot { flex:0 1 auto; min-width:0; }
+#single,#batch {
+    min-width:40px; height:22px; min-height:22px; padding:0 4px; font-size:8px; white-space:nowrap;
+}
+#single { background:var(--button,#f3e7df); color:var(--ink); border-color:var(--button-border,#dbc5c7); }
+#batch { background:var(--button,#f3e7df); color:var(--ink); border-color:var(--button-border,#dbc5c7); }
+#single:hover,#batch:hover { background:var(--hover,#f5e3e3); border-color:var(--button-hover-border,#8c3652); }
+#single_label,#batch_label { color:var(--ink); }
+#single:disabled,#batch:disabled { background:var(--disabled,#f3e7df); border-color:var(--line); }
+#single:disabled #single_label,#batch:disabled #batch_label { color:var(--disabled-text,#725661); }
+#batch_picker { width:29px; }
+.lottery-dialog { background:var(--native-panel,#fff0f5); border-color:var(--line); }
+#fields .reward-row { border-color:var(--line); }
+.reward-row .paragraph { color:var(--muted); }
+.dialog-actions button { flex:1; }
