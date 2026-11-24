@@ -57,10 +57,36 @@ the server (or leave and re-enter a single-player world). `examples` is not watc
 | --- | --- | --- |
 | `FtbMoneyReward.java` | FTB Money 1605.1.4 | Forge 1.16.5 |
 | `ViScriptShopReward.java` | ViScriptShop 1.2.5 | Forge 1.20.1 / NeoForge 1.21.1 |
+| `VaultEconomyReward.java` | Vault + an active economy provider | Bukkit-compatible hybrid server with Sakura and Banira |
 
 These are optional server-local integrations, not dependencies of Sakura.
 Install only the example matching your actual mod environment. A file appearing
 in another Sakura branch does not imply that the target mod supports that platform.
+
+## Vault economy example
+
+Install [Vault](https://github.com/MilkBowl/Vault) and an economy plugin that
+registers a Vault `Economy` provider on the same server. Vault alone does not
+hold balances. A Bukkit-compatible hybrid server must also run the matching
+Sakura and Banira mods, expose Bukkit to the mod or server-thread class loader,
+and run reward claims on the Bukkit primary thread. Plain mod-loader servers
+and plugin-only servers do not meet these requirements.
+
+Put `VaultEconomyReward.java` in `config/vanilla.xin/sakura_sign_in/scripts/`,
+restart, and add **Vault Currency** (`example:vault_economy`; Chinese: **Vault 货币**).
+The visual amount field defaults to 100 and accepts 0.01 to 1,000,000,000 with up
+to two decimal places. For providers with fewer decimal places, use an amount
+that they can represent. The amount supplies the icon badge and claim message.
+Clients do not need Vault, the provider plugin, or the script.
+
+The script looks up the currently registered economy service and the online
+Bukkit player by UUID, then calls `depositPlayer(OfflinePlayer, double)` once.
+It accepts success only when Vault confirms it with `transactionSuccess()`.
+Missing services, a disconnected player, and unsupported scale fail without a
+deposit. If a provider throws after receiving a deposit, check the balance and
+provider logs before retrying. There is no command fallback or automatic retry
+inside the script. Validate the actual provider and hybrid server before using
+it on a live server. [Vault API reference](https://github.com/MilkBowl/VaultAPI).
 
 ## ViScriptShop example
 
